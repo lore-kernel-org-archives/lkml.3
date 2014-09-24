@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaIXIFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 04:05:34 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:7440 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753293AbaIXH60 (ORCPT
+	id S1754238AbaIXIFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 04:05:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42358 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293AbaIXIFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 03:58:26 -0400
-X-IronPort-AV: E=Sophos;i="5.04,587,1406563200"; 
-   d="scan'208";a="36385393"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
-        <jan.kiszka@web.de>, <pbonzini@redhat.com>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v8 3/8] kvm: Make init_rmode_identity_map() return 0 on success.
-Date: Wed, 24 Sep 2014 15:57:53 +0800
-Message-ID: <1411545478-9848-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com>
+	Wed, 24 Sep 2014 04:05:35 -0400
+Date: Tue, 23 Sep 2014 22:11:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-usb@vger.kernel.org, Peter.Chen@freescale.com,
+        stern@rowland.harvard.edu, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, balbi@ti.com, linux-tegra@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        yoshihiro.shimoda.uh@renesas.com, linux-kernel@vger.kernel.org,
+        antoine.tenart@free-electrons.com
+Subject: Re: [PATCH v5 1/2] usb: rename phy to usb_phy in HCD
+Message-ID: <20140924051138.GA4440@kroah.com>
+References: <5072811.p8odmvpxdS@wasted.cogentembedded.com>
+ <2282553.NrZjRxyKlv@wasted.cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.71]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2282553.NrZjRxyKlv@wasted.cogentembedded.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In init_rmode_identity_map(), there two variables indicating the return
-value, r and ret, and it return 0 on error, 1 on success. The function
-is only called by vmx_create_vcpu(), and r is redundant.
+On Fri, Sep 05, 2014 at 01:42:09AM +0400, Sergei Shtylyov wrote:
+> From: Antoine Tenart <antoine.tenart@free-electrons.com>
+> 
+> The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+> modifications are done in all drivers accessing it.
+> This is in preparation to adding the generic PHY support.
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> [Sergei: added missing 'drivers/usb/misc/lvstest.c' file, resolved rejects
+> caused by patch reordering, updated changelog.]
+> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> 
+> ---
+> Changes in version 5:
+> - imported the patch from Antoine Tenart's series;
+> - added missing 'drivers/usb/misc/lvstest.c' file;
+> - resolved rejects caused by patch reordering;
+> - refreshed patch;
+> - updated changelog.
+> 
+>  drivers/usb/chipidea/host.c   |    2 +-
+>  drivers/usb/core/hcd.c        |   20 ++++++++++----------
+>  drivers/usb/core/hub.c        |    8 ++++----
+>  drivers/usb/host/ehci-fsl.c   |   16 ++++++++--------
+>  drivers/usb/host/ehci-hub.c   |    2 +-
+>  drivers/usb/host/ehci-msm.c   |    4 ++--
+>  drivers/usb/host/ehci-tegra.c |   16 ++++++++--------
+>  drivers/usb/host/ohci-omap.c  |   20 ++++++++++----------
+>  drivers/usb/misc/lvstest.c    |    8 ++++----
+>  include/linux/usb/hcd.h       |    2 +-
+>  10 files changed, 49 insertions(+), 49 deletions(-)
 
-This patch removes the redundant variable r, and make init_rmode_identity_map()
-return 0 on success, -errno on failure.
+This doesn't apply to my tree at all anymore, can you refresh it and
+resend?
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kvm/vmx.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+thanks,
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 4fb84ad..72a0470 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3939,45 +3939,42 @@ out:
- 
- static int init_rmode_identity_map(struct kvm *kvm)
- {
--	int i, idx, r, ret = 0;
-+	int i, idx, ret = 0;
- 	pfn_t identity_map_pfn;
- 	u32 tmp;
- 
- 	if (!enable_ept)
--		return 1;
-+		return 0;
- 
- 	/* Protect kvm->arch.ept_identity_pagetable_done. */
- 	mutex_lock(&kvm->slots_lock);
- 
--	if (likely(kvm->arch.ept_identity_pagetable_done)) {
--		ret = 1;
-+	if (likely(kvm->arch.ept_identity_pagetable_done))
- 		goto out2;
--	}
- 
- 	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
- 
--	r = alloc_identity_pagetable(kvm);
--	if (r)
-+	ret = alloc_identity_pagetable(kvm);
-+	if (ret)
- 		goto out2;
- 
- 	idx = srcu_read_lock(&kvm->srcu);
--	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
--	if (r < 0)
-+	ret = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
-+	if (ret)
- 		goto out;
- 	/* Set up identity-mapping pagetable for EPT in real mode */
- 	for (i = 0; i < PT32_ENT_PER_PAGE; i++) {
- 		tmp = (i << 22) + (_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |
- 			_PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_PSE);
--		r = kvm_write_guest_page(kvm, identity_map_pfn,
-+		ret = kvm_write_guest_page(kvm, identity_map_pfn,
- 				&tmp, i * sizeof(tmp), sizeof(tmp));
--		if (r < 0)
-+		if (ret)
- 			goto out;
- 	}
- 	kvm->arch.ept_identity_pagetable_done = true;
--	ret = 1;
-+
- out:
- 	srcu_read_unlock(&kvm->srcu, idx);
--
- out2:
- 	mutex_unlock(&kvm->slots_lock);
- 	return ret;
-@@ -7604,11 +7601,13 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
- 	if (err)
- 		goto free_vcpu;
- 
-+	/* Set err to -ENOMEM to handle memory allocation error. */
-+	err = -ENOMEM;
-+
- 	vmx->guest_msrs = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 	BUILD_BUG_ON(ARRAY_SIZE(vmx_msr_index) * sizeof(vmx->guest_msrs[0])
- 		     > PAGE_SIZE);
- 
--	err = -ENOMEM;
- 	if (!vmx->guest_msrs) {
- 		goto uninit_vcpu;
- 	}
-@@ -7641,8 +7640,8 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
- 		if (!kvm->arch.ept_identity_map_addr)
- 			kvm->arch.ept_identity_map_addr =
- 				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
--		err = -ENOMEM;
--		if (!init_rmode_identity_map(kvm))
-+		err = init_rmode_identity_map(kvm);
-+		if (err < 0)
- 			goto free_vmcs;
- 	}
- 
--- 
-1.8.3.1
-
+greg k-h
