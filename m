@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585AbaIXJpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:45:25 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:37724 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407AbaIXJpV (ORCPT
+	id S1753872AbaIXJpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:45:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36795 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753620AbaIXJpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:45:21 -0400
-Message-ID: <542292A7.6000600@redhat.com>
-Date: Wed, 24 Sep 2014 11:45:11 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>, Gleb Natapov <gleb@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        Alex Williamson <Alex.Williamson@redhat.com>, kvm@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [next-20140923] KVM: Remove KVM_VFIO
-References: <1411499391.24045.13.camel@x220> <5421D82E.6090103@redhat.com> <1411546927.19525.12.camel@x220>
-In-Reply-To: <1411546927.19525.12.camel@x220>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Sep 2014 05:45:30 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Revert "mfd: wm5102: Manually apply register patch"
+Date: Wed, 24 Sep 2014 10:37:10 +0100
+Message-Id: <1411551431-13045-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 24/09/2014 10:22, Paul Bolle ha scritto:
-> There are no checks for CONFIG_KVM_VFIO and nothing depends on KVM_VFIO.
-> Setting KVM_VFIO has no effect. Remove that Kconfig symbol.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> I choose not to mention commit 80ce1639727e ("KVM: VFIO: register
-> kvm_device_ops dynamically") as references to linux-next commits might
-> go stale and only confuse future readers.
+This reverts commit d9d03496f6f904a3588bdb8b215853bc4e50132c.
 
-In the case of KVM, linux-commit hashes are substantially stable.  I'll
-add back the reference.
+It seems this commit was applied twice, once through ASoC and once
+through MFD:
 
-Thanks for the patch, I'll apply it.
+commit 4c9bb8bc352a14c9613c77bc3f1e9038cd086b9b
+mfd: wm5102: Manually apply register patch
 
-Paolo
+commit d9d03496f6f904a3588bdb8b215853bc4e50132c
+mfd: wm5102: Manually apply register patch
+
+This has lead to a small piece of duplicate code. It is harmless hence
+how it has gone unoticed for so long. This patch reverts one of the two
+commits removing the unneeded code.
+
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 4afb232..72b3202 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -393,18 +393,6 @@ static int arizona_runtime_resume(struct device *dev)
+ 		break;
+ 	}
+ 
+-	switch (arizona->type) {
+-	case WM5102:
+-		ret = wm5102_patch(arizona);
+-		if (ret != 0) {
+-			dev_err(arizona->dev, "Failed to apply patch: %d\n",
+-				ret);
+-			goto err;
+-		}
+-	default:
+-		break;
+-	}
+-
+ 	ret = regcache_sync(arizona->regmap);
+ 	if (ret != 0) {
+ 		dev_err(arizona->dev, "Failed to restore register cache\n");
+-- 
+1.7.2.5
+
