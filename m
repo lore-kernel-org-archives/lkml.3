@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaIXJep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 05:34:45 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:59037 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751989AbaIXJen (ORCPT
+	id S1752389AbaIXJhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 05:37:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44542 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaIXJhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 05:34:43 -0400
-Message-ID: <5422902C.4020005@atmel.com>
-Date: Wed, 24 Sep 2014 17:34:36 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 24 Sep 2014 05:37:08 -0400
+Date: Wed, 24 Sep 2014 12:36:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] staging: dgap: adds missing iounmap for re_map_port
+ in dgap_release_remap()
+Message-ID: <20140924093648.GA5811@mwanda>
+References: <20140923002208.GA20768@devel>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <nicolas.ferre@atmel.com>, <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] misc: atmel-ssc: prepare clock only when request
-References: <1411549019-12663-1-git-send-email-voice.shen@atmel.com> <20140924090736.GC16977@sirena.org.uk>
-In-Reply-To: <20140924090736.GC16977@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923002208.GA20768@devel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tue, Sep 23, 2014 at 09:22:08AM +0900, Daeseok Youn wrote:
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/dgap/dgap.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+> index 779d144..637ea8a 100644
+> --- a/drivers/staging/dgap/dgap.c
+> +++ b/drivers/staging/dgap/dgap.c
+> @@ -1026,6 +1026,7 @@ static void dgap_release_remap(struct board_t *brd)
+>  	release_mem_region(brd->membase, 0x200000);
+>  	release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
+>  	iounmap(brd->re_map_membase);
+> +	iounmap(brd->re_map_port);
 
-On 09/24/2014 05:07 PM, Mark Brown wrote:
-> On Wed, Sep 24, 2014 at 04:56:59PM +0800, Bo Shen wrote:
->> Prepare SSC clock only when request SSC channel, the clock will be
->> enabled when initialize the SSC.
->
-> You should send this to the drivers/misc maintainer.
 
-Thanks, it has been done.
+I don't think it matters, but at least aesthetically it would be better
+to unmap first and then release the regions.  (You can do this in a
+different patch).
 
-Best Regards,
-Bo Shen
+regards,
+dan carpenter
 
