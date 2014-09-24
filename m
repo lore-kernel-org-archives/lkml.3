@@ -1,318 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaIXLCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 07:02:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39003 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaIXLC3 (ORCPT
+	id S1753291AbaIXLDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 07:03:54 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:52794 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274AbaIXLCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 07:02:29 -0400
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH 3/5] ARCNET: add com20020 PCI IDs with metadata
-Date: Wed, 24 Sep 2014 13:02:01 +0200
-Message-Id: <1411556523-28100-4-git-send-email-m.grzeschik@pengutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411556523-28100-1-git-send-email-m.grzeschik@pengutronix.de>
-References: <1411556523-28100-1-git-send-email-m.grzeschik@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 24 Sep 2014 07:02:21 -0400
+Date: Wed, 24 Sep 2014 12:02:12 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v4 1/3] mfd/axp20x: extend axp20x to support axp288 pmic
+Message-ID: <20140924110212.GH19999@lee--X1>
+References: <1410912715-25903-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410912715-25903-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20140918053926.GC8740@lee--X1>
+ <20140918053252.34829684@ultegra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140918053252.34829684@ultegra>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds metadata for the com20020 to prepare for devices with
-multiple io address areas with multi card interfaces.
+On Thu, 18 Sep 2014, Jacob Pan wrote:
+> Lee Jones <lee.jones@linaro.org> wrote:
+> > On Tue, 16 Sep 2014, Jacob Pan wrote:
+> > 
+> > > X-Powers AXP288 is a customized PMIC for Intel Baytrail-CR
+> > > platforms. Similar to AXP202/209, AXP288 comes with USB charger,
+> > > more LDO and BUCK channels, and AD converters. It also provides
+> > > extended status and interrupt reporting capabilities than the
+> > > devices currently supported in axp20x.c.
+> > > 
+> > > In addition to feature extension, this patch also adds ACPI binding
+> > > for enumeration.
+> > > 
+> > > This consolidated driver should support more X-Powers' PMICs in
+> > > both device tree and ACPI enumerated platforms.
+> > > 
+> > > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > > ---
+> > >  drivers/mfd/Kconfig        |   3 +-
+> > >  drivers/mfd/axp20x.c       | 353
+> > > +++++++++++++++++++++++++++++++++++++--------
+> > > include/linux/mfd/axp20x.h |  58 ++++++++ 3 files changed, 354
+> > > insertions(+), 60 deletions(-)
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
----
- drivers/net/arcnet/com20020-pci.c | 216 ++++++++++++++++++++++++++++++++------
- include/linux/com20020.h          |  16 +++
- 2 files changed, 197 insertions(+), 35 deletions(-)
+[...]
 
-diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
-index cbc44f5..d08d539 100644
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -63,6 +63,8 @@ MODULE_LICENSE("GPL");
- 
- static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
-+	struct com20020_pci_channel_map *cm;
-+	struct com20020_pci_card_info *ci;
- 	struct net_device *dev;
- 	struct arcnet_local *lp;
- 	int ioaddr, err;
-@@ -75,19 +77,15 @@ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
- 
- 	dev->netdev_ops = &com20020_netdev_ops;
- 
-+	ci = (struct com20020_pci_card_info *)id->driver_data;
-+
- 	lp = netdev_priv(dev);
- 
- 	pci_set_drvdata(pdev, dev);
- 
--	// SOHARD needs PCI base addr 4
--	if (pdev->vendor==0x10B5) {
--		BUGMSG(D_NORMAL, "SOHARD\n");
--		ioaddr = pci_resource_start(pdev, 4);
--	}
--	else {
--		BUGMSG(D_NORMAL, "Contemporary Controls\n");
--		ioaddr = pci_resource_start(pdev, 2);
--	}
-+	cm = &ci->chan_map_tbl[0];
-+	BUGMSG(D_NORMAL, "%s Controls\n", ci->name);
-+	ioaddr = pci_resource_start(pdev, cm->bar);
- 
- 	if (!request_region(ioaddr, ARCNET_TOTAL_SIZE, "com20020-pci")) {
- 		BUGMSG(D_INIT, "IO region %xh-%xh already allocated.\n",
-@@ -105,7 +103,7 @@ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
- 	dev->irq = pdev->irq;
- 	dev->dev_addr[0] = node;
- 	lp->card_name = "PCI COM20020";
--	lp->card_flags = id->driver_data;
-+	lp->card_flags = ci->flags;
- 	lp->backplane = backplane;
- 	lp->clockp = clockp & 7;
- 	lp->clockm = clockm & 3;
-@@ -144,32 +142,180 @@ static void com20020pci_remove(struct pci_dev *pdev)
- 	free_netdev(dev);
- }
- 
-+static struct com20020_pci_card_info card_info_10mbit = {
-+	.name = "ARC-PCI",
-+	.devcount = 1,
-+	.chan_map_tbl = {
-+		{ 2, 0x00, 0x08 },
-+	},
-+	.flags = ARC_CAN_10MBIT,
-+};
-+
-+static struct com20020_pci_card_info card_info_5mbit = {
-+	.name = "ARC-PCI",
-+	.devcount = 1,
-+	.chan_map_tbl = {
-+		{ 2, 0x00, 0x08 },
-+	},
-+	.flags = ARC_IS_5MBIT,
-+};
-+
-+static struct com20020_pci_card_info card_info_sohard = {
-+	.name = "PLX-PCI",
-+	.devcount = 1,
-+	/* SOHARD needs PCI base addr 4 */
-+	.chan_map_tbl = {
-+		{4, 0x00, 0x08},
-+	},
-+	.flags = ARC_CAN_10MBIT,
-+};
-+
- static DEFINE_PCI_DEVICE_TABLE(com20020pci_id_table) = {
--	{ 0x1571, 0xa001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa003, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa004, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa005, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa006, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa007, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa008, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
--	{ 0x1571, 0xa009, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa00a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa00b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa00c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa00d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa00e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
--	{ 0x1571, 0xa201, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x1571, 0xa202, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x1571, 0xa203, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
--	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
--	{0,}
-+	{
-+		0x1571, 0xa001,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0,
-+	},
-+	{
-+		0x1571, 0xa002,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0,
-+	},
-+	{
-+		0x1571, 0xa003,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0
-+	},
-+	{
-+		0x1571, 0xa004,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0,
-+	},
-+	{
-+		0x1571, 0xa005,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0
-+	},
-+	{
-+		0x1571, 0xa006,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0
-+	},
-+	{
-+		0x1571, 0xa007,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0
-+	},
-+	{
-+		0x1571, 0xa008,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		0
-+	},
-+	{
-+		0x1571, 0xa009,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa00a,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa00b,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa00c,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa00d,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa00e,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_5mbit
-+	},
-+	{
-+		0x1571, 0xa201,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x1571, 0xa202,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x1571, 0xa203,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x1571, 0xa204,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x1571, 0xa205,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x1571, 0xa206,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x10B5, 0x9030,
-+		0x10B5, 0x2978,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_sohard
-+	},
-+	{
-+		0x10B5, 0x9050,
-+		0x10B5, 0x2273,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_sohard
-+	},
-+	{
-+		0x14BA, 0x6000,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{
-+		0x10B5, 0x2200,
-+		PCI_ANY_ID, PCI_ANY_ID,
-+		0, 0,
-+		(kernel_ulong_t)&card_info_10mbit
-+	},
-+	{ 0, }
- };
- 
- MODULE_DEVICE_TABLE(pci, com20020pci_id_table);
-diff --git a/include/linux/com20020.h b/include/linux/com20020.h
-index 5dcfb94..6a1ceca 100644
---- a/include/linux/com20020.h
-+++ b/include/linux/com20020.h
-@@ -41,6 +41,22 @@ extern const struct net_device_ops com20020_netdev_ops;
- #define BUS_ALIGN  1
- #endif
- 
-+#define PLX_PCI_MAX_CARDS 1
-+
-+struct com20020_pci_channel_map {
-+	u32 bar;
-+	u32 offset;
-+	u32 size;               /* 0x00 - auto, e.g. length of entire bar */
-+};
-+
-+struct com20020_pci_card_info {
-+	const char *name;
-+	int devcount;
-+
-+	struct com20020_pci_channel_map chan_map_tbl[PLX_PCI_MAX_CARDS];
-+
-+	unsigned int flags;
-+};
- 
- #define _INTMASK  (ioaddr+BUS_ALIGN*0)	/* writable */
- #define _STATUS   (ioaddr+BUS_ALIGN*0)	/* readable */
+> > > -static const struct regmap_irq_chip axp20x_regmap_irq_chip = {
+> > > +static struct acpi_device_id axp20x_acpi_match[] = {
+> > > +	{
+> > > +		.id = "INT33F4",
+> > > +		.driver_data = (kernel_ulong_t)AXP288_ID,
+> > 
+> > Why do you need to cast this?
+> > 
+> to make sure match driver_data which is different in acpi_device_id than
+> of_device_id.
+
+You don't need the cast.
+
+[...]
+
+> > > +static int axp20x_match_device(struct axp20x_dev *axp20x, struct
+> > > device *dev) +{
+> > > +	const struct acpi_device_id *acpi_id;
+> > > +	const struct of_device_id *of_id;
+> > > +
+> > > +	of_id = of_match_device(axp20x_of_match, dev);
+> > > +	if (of_id)
+> > > +		axp20x->variant = (long) of_id->data;
+> > > +	else {
+> > > +		acpi_id =
+> > > acpi_match_device(dev->driver->acpi_match_table, dev);
+> > > +		if (!acpi_id || !acpi_id->driver_data) {
+> > > +			dev_err(dev, "Unable to determine ID\n");
+> > > +			return -ENODEV;
+> > > +		}
+> > > +		axp20x->variant = (long) acpi_id->driver_data;
+> > > +	}
+> > 
+> > We can do better error handling here and give the user a better sense
+> > of what happened if anything were to go wrong.  Do:
+> > 
+> > if (dev->of_node)
+> >   of_id = of_match_device()
+> >   if (!of_id)
+> >     error()
+> this will give false error on ACPI based platforms, right? in reality
+
+Why would it?  dev->of_node should be NULL if running ACPI?
+
+[...]
+
+> > > +	switch (axp20x->variant) {
+> > > +	case AXP202_ID:
+> > > +	case AXP209_ID:
+> > > +		axp20x->nr_cells = ARRAY_SIZE(axp20x_cells);
+> > > +		axp20x->cells = axp20x_cells;
+> > > +		axp20x->regmap_cfg = &axp20x_regmap_config;
+> > > +		axp20x_regmap_irq_chip.num_regs	= 5;
+> > > +		axp20x_regmap_irq_chip.irqs = axp20x_regmap_irqs;
+> > > +		axp20x_regmap_irq_chip.num_irqs	=
+> > > +			ARRAY_SIZE(axp20x_regmap_irqs);
+> > > +		break;
+> > > +	case AXP288_ID:
+> > > +		axp20x->cells = axp288_cells;
+> > > +		axp20x->nr_cells = ARRAY_SIZE(axp288_cells);
+> > > +		axp20x->regmap_cfg = &axp288_regmap_config;
+> > > +		axp20x_regmap_irq_chip.irqs = axp288_regmap_irqs;
+> > > +		axp20x_regmap_irq_chip.num_irqs	=
+> > > +			ARRAY_SIZE(axp288_regmap_irqs);
+> > > +		axp20x_regmap_irq_chip.num_regs	= 6;
+> > > +		break;
+> > > +	default:
+> > > +		dev_err(dev, "unsupported AXP20X ID %lu\n",
+> > > axp20x->variant);
+> > > +		return -ENODEV;
+> > 
+> > -EINVAL might be better here.
+> I was considering the return value gets propagated to probe function
+> which is used to query the existence of a device per driver model. But
+> I have no strong preference.
+
+I think -EINVAL would be better as the argument passed in
+axp20x->variant is invalid.
+
+define EINVAL          22      /* Invalid argument */
+
+> > > +	}
+> > > +	dev_info(dev, "AXP20x variant %s found\n",
+> > > +		axp20x_model_names[axp20x->variant]);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > >  static int axp20x_i2c_probe(struct i2c_client *i2c,
+> > > -			 const struct i2c_device_id *id)
+> > > +			const struct i2c_device_id *id)
+> > 
+> > Sneaky. ;)
+> I should not fix the extra white spaces here, unrelated to this patch.
+> will remove.
+
+It's okay.  I don't mind little things like this occasionally.  I find
+them more amusing than harmful.
+
+[...]
+
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
