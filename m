@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaIXTN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 15:13:56 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:63478 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750914AbaIXTNz (ORCPT
+	id S1751772AbaIXTRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 15:17:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40563 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaIXTRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 15:13:55 -0400
-Message-ID: <1411586033.19525.34.camel@x220>
-Subject: [PATCH] unicore32: Remove unneeded Kconfig entry NO_IOPORT_MAP
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 24 Sep 2014 21:13:53 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Sep 2014 19:13:53.0500 (UTC) FILETIME=[AE35F9C0:01CFD82B]
-X-RcptDomain: vger.kernel.org
+	Wed, 24 Sep 2014 15:17:31 -0400
+Date: Wed, 24 Sep 2014 20:17:27 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: NeilBrown <neilb@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernfs: use stack-buf for small writes.
+Message-ID: <20140924191727.GG7996@ZenIV.linux.org.uk>
+References: <20140923140633.35efbe7a@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923140633.35efbe7a@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Architectures only need a Kconfig entry for NO_IOPORT_MAP if it is
-possible that its value will be 'y'. For unicore32 its value will always
-be 'n', making it pointless. Remove it.
+On Tue, Sep 23, 2014 at 02:06:33PM +1000, NeilBrown wrote:
+> 
+> For a write <= 128 characters, don't use kmalloc.
+> 
+> mdmon, part of mdadm, will sometimes need to write
+> to a sysfs file in order to allow writes to the array
+> to continue.  This is important to support RAID metadata
+> types that the kernel doesn't know about.
+> 
+> It is important that this write doesn't block on
+> memory allocation.  The safest way to ensure that is to
+> use an on-stack buffer.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by playing with arch/unicore32/configs/unicore32_defconfig. This
-patch made no difference whatsoever to the generated .config file.
-Please note that it has
-    CONFIG_HAS_IOPORT_MAP=y
+Is it, now?  What happens if caller of write(2) loses CPU and gets
+the page it's writing from swapped out, just as it's getting to
+issuing the actual syscall?  copy_from_user() will fault and cause
+memory allocation for you...
 
-set after invoking "make oldconfig" both before and after this patch.
+> Writes are always small, typically less than 10 characters.
 
- arch/unicore32/Kconfig | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index 928237a7b9ca..2322cc87e7cb 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -27,9 +27,6 @@ config UNICORE32
- config GENERIC_CSUM
- 	def_bool y
- 
--config NO_IOPORT_MAP
--	bool
--
- config STACKTRACE_SUPPORT
- 	def_bool y
- 
--- 
-1.9.3
-
+Translation: "but my userland code uses it _that_ way; surely, nobody
+would do anything else..."
