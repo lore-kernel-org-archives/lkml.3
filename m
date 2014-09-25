@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467AbaIYMFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:05:40 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60675 "EHLO
+	id S1752561AbaIYMFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:05:44 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60707 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaIYMFY (ORCPT
+	with ESMTP id S1752478AbaIYMFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:05:24 -0400
-Subject: [PATCH 1/5] fuse: add FOPEN_SYNC_RELEASE flag to ff->open_flags
+	Thu, 25 Sep 2014 08:05:40 -0400
+Subject: [PATCH 2/5] fuse: cosmetic rework of fuse_send_readpages
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, avati@gluster.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 25 Sep 2014 16:05:22 +0400
-Message-ID: <20140925120508.540.32801.stgit@dhcp-10-30-22-200.sw.ru>
+Date: Thu, 25 Sep 2014 16:05:38 +0400
+Message-ID: <20140925120527.540.87627.stgit@dhcp-10-30-22-200.sw.ru>
 In-Reply-To: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
 References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
 User-Agent: StGit/0.16
@@ -24,31 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The feature will be governed by fuse file open flag FOPEN_SYNC_RELEASE.
-Userspace can enable it on per file basis in the same way as for
-FOPEN_KEEP_CACHE or FOPEN_DIRECT_IO.
+The patch change arguments of fuse_send_readpages to give it access to inode
+(will be used in the next patch of patch-set). The change is cosmetic,
+no logic changed.
 
 Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- include/uapi/linux/fuse.h |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/fuse/file.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/include/uapi/linux/fuse.h b/include/uapi/linux/fuse.h
-index 25084a0..607c45c 100644
---- a/include/uapi/linux/fuse.h
-+++ b/include/uapi/linux/fuse.h
-@@ -205,10 +205,13 @@ struct fuse_file_lock {
-  * FOPEN_DIRECT_IO: bypass page cache for this open file
-  * FOPEN_KEEP_CACHE: don't invalidate the data cache on open
-  * FOPEN_NONSEEKABLE: the file is not seekable
-+ * FOPEN_SYNC_RELEASE: synchronously release file on last fput,
-+ *                     which, in turn, not always bound to fclose(2)!
-  */
- #define FOPEN_DIRECT_IO		(1 << 0)
- #define FOPEN_KEEP_CACHE	(1 << 1)
- #define FOPEN_NONSEEKABLE	(1 << 2)
-+#define FOPEN_SYNC_RELEASE	(1 << 3)
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 912061a..7723b3f 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -827,8 +827,17 @@ static void fuse_readpages_end(struct fuse_conn *fc, struct fuse_req *req)
+ 		fuse_file_put(req->ff, false);
+ }
  
- /**
-  * INIT request/reply flags
+-static void fuse_send_readpages(struct fuse_req *req, struct file *file)
++struct fuse_fill_data {
++	struct fuse_req *req;
++	struct file *file;
++	struct inode *inode;
++	unsigned nr_pages;
++};
++
++static void fuse_send_readpages(struct fuse_fill_data *data)
+ {
++	struct fuse_req *req = data->req;
++	struct file *file = data->file;
+ 	struct fuse_file *ff = file->private_data;
+ 	struct fuse_conn *fc = ff->fc;
+ 	loff_t pos = page_offset(req->pages[0]);
+@@ -850,13 +859,6 @@ static void fuse_send_readpages(struct fuse_req *req, struct file *file)
+ 	}
+ }
+ 
+-struct fuse_fill_data {
+-	struct fuse_req *req;
+-	struct file *file;
+-	struct inode *inode;
+-	unsigned nr_pages;
+-};
+-
+ static int fuse_readpages_fill(void *_data, struct page *page)
+ {
+ 	struct fuse_fill_data *data = _data;
+@@ -872,7 +874,7 @@ static int fuse_readpages_fill(void *_data, struct page *page)
+ 	     req->pages[req->num_pages - 1]->index + 1 != page->index)) {
+ 		int nr_alloc = min_t(unsigned, data->nr_pages,
+ 				     FUSE_MAX_PAGES_PER_REQ);
+-		fuse_send_readpages(req, data->file);
++		fuse_send_readpages(data);
+ 		if (fc->async_read)
+ 			req = fuse_get_req_for_background(fc, nr_alloc);
+ 		else
+@@ -925,7 +927,7 @@ static int fuse_readpages(struct file *file, struct address_space *mapping,
+ 	err = read_cache_pages(mapping, pages, fuse_readpages_fill, &data);
+ 	if (!err) {
+ 		if (data.req->num_pages)
+-			fuse_send_readpages(data.req, file);
++			fuse_send_readpages(&data);
+ 		else
+ 			fuse_put_request(fc, data.req);
+ 	}
 
