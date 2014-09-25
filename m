@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbaIYXcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:32:20 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52013 "HELO
+	id S1752966AbaIYXdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:33:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63121 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751875AbaIYXcT (ORCPT
+	with SMTP id S1751987AbaIYXdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:32:19 -0400
+	Thu, 25 Sep 2014 19:33:03 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        David Laight <David.Laight@aculab.com>
-Subject: Re: [PATCH v3] cpufreq: powernv: Set the cpus to nominal frequency during reboot/kexec
-Date: Fri, 26 Sep 2014 01:52:09 +0200
-Message-ID: <4913652.kENFQcqa9E@vostro.rjw.lan>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 12/22] cpuidle: Replace strnicmp with strncasecmp
+Date: Fri, 26 Sep 2014 01:52:53 +0200
+Message-ID: <19635709.J0Hgc1vM0J@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohpo=uB252XLfx3tHPA8uk5RPkWB0SPQ_UxzVw70c-DWuHWg@mail.gmail.com>
-References: <1410430423-1246-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <CAKohpo=uB252XLfx3tHPA8uk5RPkWB0SPQ_UxzVw70c-DWuHWg@mail.gmail.com>
+In-Reply-To: <1410900696-6481-13-git-send-email-linux@rasmusvillemoes.dk>
+References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk> <1410900696-6481-13-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,36 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 11, 2014 05:03:22 PM Viresh Kumar wrote:
-> On 11 September 2014 15:43, Shilpasri G Bhat
-> <shilpa.bhat@linux.vnet.ibm.com> wrote:
-> > This patch ensures the cpus to kexec/reboot at nominal frequency.
-> > Nominal frequency is the highest cpu frequency on PowerPC at
-> > which the cores can run without getting throttled.
-> >
-> > If the host kernel had set the cpus to a low pstate and then it
-> > kexecs/reboots to a cpufreq disabled kernel it would cause the target
-> > kernel to perform poorly. It will also increase the boot up time of
-> > the target kernel. So set the cpus to high pstate, in this case to
-> > nominal frequency before rebooting to avoid such scenarios.
-> >
-> > The reboot notifier will set the cpus to nominal frequncy.
-> >
-> > Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
-> > Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> > ---
-> > Changes v2->v3:
-> > We return EBUSY when cpufreq governor tries to change the frequency
-> > after rebooting is set to true. This results in console being flushed
-> > with error messages indicating failed attempts to change the
-> > frequency. So instead of returning EBUSY we return 0 to stop the
-> > governor from changing the frequency without alerting a failure to
-> > do the same on reboot, as this  is not an errorneaos condition.
+On Tuesday, September 16, 2014 10:51:26 PM Rasmus Villemoes wrote:
+> The kernel used to contain two functions for length-delimited,
+> case-insensitive string comparison, strnicmp with correct semantics
+> and a slightly buggy strncasecmp. The latter is the POSIX name, so
+> strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
+> for the new strncasecmp to avoid breaking existing users.
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> To allow the compat wrapper strnicmp to be removed at some point in
+> the future, and to avoid the extra indirection cost, do
+> s/strnicmp/strncasecmp/g.
+> 
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
 Queued up for 3.18, thanks!
+
+> ---
+>  drivers/cpuidle/governor.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
+> index ca89412..fb9f511 100644
+> --- a/drivers/cpuidle/governor.c
+> +++ b/drivers/cpuidle/governor.c
+> @@ -28,7 +28,7 @@ static struct cpuidle_governor * __cpuidle_find_governor(const char *str)
+>  	struct cpuidle_governor *gov;
+>  
+>  	list_for_each_entry(gov, &cpuidle_governors, governor_list)
+> -		if (!strnicmp(str, gov->name, CPUIDLE_NAME_LEN))
+> +		if (!strncasecmp(str, gov->name, CPUIDLE_NAME_LEN))
+>  			return gov;
+>  
+>  	return NULL;
+> 
 
 -- 
 I speak only for myself.
