@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaIYFAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:00:09 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42031 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaIYFAH (ORCPT
+	id S1752010AbaIYFBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 01:01:10 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:42754 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaIYFBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:00:07 -0400
-Date: Thu, 25 Sep 2014 06:00:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Elshad Mustafayev <elshadimo@gmail.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: acctc.c: Fixed else if not generally userful
- after a break or return warning
-Message-ID: <20140925050004.GM7996@ZenIV.linux.org.uk>
-References: <E1XX0bN-00032o-0x@feisty.vs19.net>
- <1411619466.4026.2.camel@joe-AO725>
- <CAAm9=9QeO_VtdY+fJ5JbrBhN52z=JUeU09Nh3Mp04QWf+Qyygw@mail.gmail.com>
+	Thu, 25 Sep 2014 01:01:08 -0400
+Date: Thu, 25 Sep 2014 07:01:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/5 - resend] SCHED: add some "wait..on_bit...timeout()"
+ interfaces.
+Message-ID: <20140925050103.GB20431@gmail.com>
+References: <20140924012422.4838.29188.stgit@notabene.brown>
+ <20140924012832.4838.59410.stgit@notabene.brown>
+ <20140924070418.GA990@gmail.com>
+ <20140925135519.3ae1fa60@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAm9=9QeO_VtdY+fJ5JbrBhN52z=JUeU09Nh3Mp04QWf+Qyygw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925135519.3ae1fa60@notabene.brown>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:34:11AM -0400, Elshad Mustafayev wrote:
-> I am sorry if I disturbed you. I just follow the steps in kernel newbies to
-> get me in kernel development.
 
-It's not you, it's checkpatch.pl plus the fairly common tendency to give
-that thing a lot more respect than it deserves...
+* NeilBrown <neilb@suse.de> wrote:
 
-Basically, it's OK as a tool that draws ones attention to a subset of
-code that might or might not be worth looking at; it gives both false
-positives and false negatives and as long as there's not too much of those,
-it's useful.  Provided that it does *not* replace one's taste.  I.e. "hey,
-it points to these lines; let's take a look, some of those might be
-worth some attention", rather than "The Most Holy Oracle Has Spoken;
-Do What It Says".
+> 
+> In commit c1221321b7c25b53204447cff9949a6d5a7ddddc
+>    sched: Allow wait_on_bit_action() functions to support a timeout
+> 
+> I suggested that a "wait_on_bit_timeout()" interface would not meet my
+> need.  This isn't true - I was just over-engineering.
+> 
+> Including a 'private' field in wait_bit_key instead of a focused
+> "timeout" field was just premature generalization.  If some other
+> use is ever found, it can be generalized or added later.
+> 
+> So this patch renames "private" to "timeout" with a meaning "stop
+> waiting when "jiffies" reaches or passes "timeout",
+> and adds two of the many possible wait..bit..timeout() interfaces:
+> 
+> wait_on_page_bit_killable_timeout(), which is the one I want to use,
+> and out_of_line_wait_on_bit_timeout() which is a reasonably general
+> example.  Others can be added as needed.
+> 
+> Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> 
+> ---
+> This time with EXPORT_SYMBOL_GPL.
+
+Looks good to me, thanks!
+
+Acked-by: Ingo Molnar <mingo@kernel.org>
+
+	Ingo
