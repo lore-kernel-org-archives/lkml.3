@@ -1,94 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaIYGcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:32:55 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:63626 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328AbaIYGcx (ORCPT
+	id S1751790AbaIYGj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:39:56 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53124 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaIYGjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:32:53 -0400
-From: Johannes Pointner <johannes.pointner@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property for  subnodes
-Date: Thu, 25 Sep 2014 08:31:46 +0200
-Message-ID: <1660410.j399mvljTo@lenovobook>
-User-Agent: KMail/4.14 (Linux/3.16.3-1-ARCH; KDE/4.14.0; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 25 Sep 2014 02:39:53 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, anton@samba.org, stable@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH v3] powerpc/iommu/ddw: Fix endianness
+Date: Thu, 25 Sep 2014 16:39:18 +1000
+Message-Id: <1411627167-22927-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 2.0.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092506-0017-0000-0000-00000040BB43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for compatible property of subnodes.
+rtas_call() accepts and returns values in CPU endianness.
+The ddw_query_response and ddw_create_response structs members are
+defined and treated as BE but as they are passed to rtas_call() as
+(u32 *) and they get byteswapped automatically, the data is CPU-endian.
+This fixes ddw_query_response and ddw_create_response definitions and use.
 
-Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+of_read_number() is designed to work with device tree cells - it assumes
+the input is big-endian and returns data in CPU-endian. However due
+to the ddw_create_response struct fix, create.addr_hi/lo are already
+CPU-endian so do not byteswap them.
+
+ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
+3 cells which are big-endian as it is a device tree. rtas_call() accepts
+a RTAS token in CPU-endian. This makes use of of_property_read_u32_array
+to byte swap and avoid the need for a number of be32_to_cpu calls.
+
+Cc: stable@vger.kernel.org # v3.13
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Anton Blanchard <anton@samba.org>
+[aik: folded Anton's patch with of_property_read_u32_array]
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
- .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
- 2 files changed, 12 insertions(+), 4 deletions(-)
+Changes:
+v3:
+* of_property_read_u32_array() is used for ddw_avail[]
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
-index 4f05d20..8ae3a3b 100644
---- a/Documentation/devicetree/bindings/regulator/tps65217.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
-@@ -14,6 +14,9 @@ Required properties:
- Optional properties:
- - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
+v2:
+* updated commit log
+* fixed definition of ddw_query_response and ddw_create_response
+---
+ arch/powerpc/platforms/pseries/iommu.c | 51 +++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 23 deletions(-)
+
+diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+index 4642d6a..de1ec54 100644
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -329,16 +329,16 @@ struct direct_window {
  
-+Required subnode properties:
-+- compatible: "ti,tps65217-pmic"
+ /* Dynamic DMA Window support */
+ struct ddw_query_response {
+-	__be32 windows_available;
+-	__be32 largest_available_block;
+-	__be32 page_size;
+-	__be32 migration_capable;
++	u32 windows_available;
++	u32 largest_available_block;
++	u32 page_size;
++	u32 migration_capable;
+ };
+ 
+ struct ddw_create_response {
+-	__be32 liobn;
+-	__be32 addr_hi;
+-	__be32 addr_lo;
++	u32 liobn;
++	u32 addr_hi;
++	u32 addr_lo;
+ };
+ 
+ static LIST_HEAD(direct_window_list);
+@@ -725,16 +725,18 @@ static void remove_ddw(struct device_node *np, bool remove_prop)
+ {
+ 	struct dynamic_dma_window_prop *dwp;
+ 	struct property *win64;
+-	const u32 *ddw_avail;
++	u32 ddw_avail[3];
+ 	u64 liobn;
+-	int len, ret = 0;
++	int ret = 0;
 +
-   The valid names for regulators are:
-   tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
++	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
++					 &ddw_avail[0], 3);
  
-@@ -23,9 +26,11 @@ Example:
+-	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
+ 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
+ 	if (!win64)
+ 		return;
  
- 	tps: tps@24 {
- 		compatible = "ti,tps65217";
-+		reg = <0x24>;
- 		ti,pmic-shutdown-controller;
+-	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
++	if (ret || win64->length < sizeof(*dwp))
+ 		goto delprop;
  
--		regulators {
-+		tps_pmic: regulators {
-+			compatible = "ti,tps65217-pmic";
- 			dcdc1_reg: dcdc1 {
- 				regulator-min-microvolt = <900000>;
- 				regulator-max-microvolt = <1800000>;
-diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-index 5fb9279..f92f154 100644
---- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-@@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
- Required properties:
- - compatible: "ti,tps65217"
- - reg: I2C slave address
--- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-+- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
-+
-+Required subnode properties:
-+- compatible: "ti,tps65217-bl"
- - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
- - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
- - default-brightness: valid values: 0-100
+ 	dwp = win64->value;
+@@ -872,8 +874,9 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
  
--Each regulator is defined using the standard binding for regulators.
+ 	do {
+ 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
+-		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
+-				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
++		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
++				cfg_addr, BUID_HI(buid), BUID_LO(buid),
++				page_shift, window_shift);
+ 	} while (rtas_busy_delay(ret));
+ 	dev_info(&dev->dev,
+ 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
+@@ -910,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	int page_shift;
+ 	u64 dma_addr, max_addr;
+ 	struct device_node *dn;
+-	const u32 *uninitialized_var(ddw_avail);
++	u32 ddw_avail[3];
+ 	struct direct_window *window;
+ 	struct property *win64;
+ 	struct dynamic_dma_window_prop *ddwprop;
+@@ -942,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	 * for the given node in that order.
+ 	 * the property is actually in the parent, not the PE
+ 	 */
+-	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
+-	if (!ddw_avail || len < 3 * sizeof(u32))
++	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
++					 &ddw_avail[0], 3);
++	if (ret)
+ 		goto out_failed;
  
- Example:
+        /*
+@@ -966,11 +970,11 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 		dev_dbg(&dev->dev, "no free dynamic windows");
+ 		goto out_failed;
+ 	}
+-	if (be32_to_cpu(query.page_size) & 4) {
++	if (query.page_size & 4) {
+ 		page_shift = 24; /* 16MB */
+-	} else if (be32_to_cpu(query.page_size) & 2) {
++	} else if (query.page_size & 2) {
+ 		page_shift = 16; /* 64kB */
+-	} else if (be32_to_cpu(query.page_size) & 1) {
++	} else if (query.page_size & 1) {
+ 		page_shift = 12; /* 4kB */
+ 	} else {
+ 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
+@@ -980,7 +984,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	/* verify the window * number of ptes will map the partition */
+ 	/* check largest block * page size > max memory hotplug addr */
+ 	max_addr = memory_hotplug_max();
+-	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
++	if (query.largest_available_block < (max_addr >> page_shift)) {
+ 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
+ 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
+ 			  1ULL << page_shift);
+@@ -1006,8 +1010,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	if (ret != 0)
+ 		goto out_free_prop;
  
- 	tps: tps@24 {
- 		reg = <0x24>;
- 		compatible = "ti,tps65217";
--		backlight {
-+		tps_bl: backlight {
-+			compatible = "ti,tps65217-bl";
- 			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
- 			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
- 			default-brightness = <50>;
+-	ddwprop->liobn = create.liobn;
+-	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
++	ddwprop->liobn = cpu_to_be32(create.liobn);
++	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
++			create.addr_lo);
+ 	ddwprop->tce_shift = cpu_to_be32(page_shift);
+ 	ddwprop->window_shift = cpu_to_be32(len);
+ 
+@@ -1039,7 +1044,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
+ 	list_add(&window->list, &direct_window_list);
+ 	spin_unlock(&direct_window_list_lock);
+ 
+-	dma_addr = of_read_number(&create.addr_hi, 2);
++	dma_addr = be64_to_cpu(ddwprop->dma_base);
+ 	goto out_unlock;
+ 
+ out_free_window:
 -- 
-2.1.0
+2.0.0
+
