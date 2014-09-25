@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaIYJKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:10:38 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53589 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIYJKb (ORCPT
+	id S1752162AbaIYJQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:16:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47131 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaIYJQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:10:31 -0400
-Message-ID: <1411636227.15810.15.camel@marge.simpson.net>
-Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	Thu, 25 Sep 2014 05:16:03 -0400
+Date: Thu, 25 Sep 2014 11:15:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
 Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
         tglx@linutronix.de, ilya.dryomov@inktank.com,
         linux-kernel@vger.kernel.org
-Date: Thu, 25 Sep 2014 11:10:27 +0200
-In-Reply-To: <20140925090619.GA5430@worktop>
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+Message-ID: <20140925091556.GB5430@worktop>
 References: <20140924081845.572814794@infradead.org>
-	 <1411633803.15810.12.camel@marge.simpson.net>
-	 <20140925090619.GA5430@worktop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+ <1411633803.15810.12.camel@marge.simpson.net>
+ <20140925090619.GA5430@worktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925090619.GA5430@worktop>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-25 at 11:06 +0200, Peter Zijlstra wrote: 
+On Thu, Sep 25, 2014 at 11:06:19AM +0200, Peter Zijlstra wrote:
 > On Thu, Sep 25, 2014 at 10:30:03AM +0200, Mike Galbraith wrote:
 > > On Wed, 2014-09-24 at 10:18 +0200, Peter Zijlstra wrote: 
 > > > Hi,
@@ -72,15 +72,10 @@ On Thu, 2014-09-25 at 11:06 +0200, Peter Zijlstra wrote:
 > there (then again, I'm half asleep) and stuff seems to have gotten
 > inlined.
 
-0xffffffff8110227a is in kauditd_thread (include/linux/freezer.h:56).
-51       * DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION
-52       * If try_to_freeze causes a lockdep warning it means the caller may deadlock
-53       */
-54      static inline bool try_to_freeze_unsafe(void)
-55      {
-56              might_sleep();
-57              if (likely(!freezing(current)))
-58                      return false;
-59              return __refrigerator(false);
-60      }
+D'uh asleep indeed. Its the try_to_freeze() call. Curious construct
+there, they don't actually have a wait loop, just a single go round.
 
+I suppose just flipping the scheudle() and try_to_freeze() should do the
+trick. Ugly code that, but then again, I think audit is known for that.
+
+Can you give that a go?
