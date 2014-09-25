@@ -1,114 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaIYObx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:31:53 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42393 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753301AbaIYObw (ORCPT
+	id S1753023AbaIYOf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:35:29 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:40259 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaIYOf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:31:52 -0400
-Date: Thu, 25 Sep 2014 15:31:42 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
-        "'Uwe =?iso-8859-1?Q?Kleine-K=F6nig'?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        DL-WW-ContributionOfficers-Linux 
-	<DL-WW-ContributionOfficers-Linux@sonymobile.com>
-Subject: Re: [PATCH resend] arm:extend the reserved memory for initrd to be
-	page aligned
-Message-ID: <20140925143142.GF5182@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103D6DB49161F@CNBJMBX05.corpusers.net> <20140919095959.GA2295@e104818-lin.cambridge.arm.com>
+	Thu, 25 Sep 2014 10:35:26 -0400
+Date: Thu, 25 Sep 2014 10:33:46 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 04/22] x86/xen/MSI: Eliminate arch_msix_mask_irq() and
+ arch_msi_mask_irq()
+Message-ID: <20140925143346.GF20089@laptop.dumpdata.com>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-5-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140919095959.GA2295@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1411614872-4009-5-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 11:00:02AM +0100, Catalin Marinas wrote:
-> On Fri, Sep 19, 2014 at 08:09:47AM +0100, Wang, Yalin wrote:
-> > this patch extend the start and end address of initrd to be page aligned,
-> > so that we can free all memory including the un-page aligned head or tail
-> > page of initrd, if the start or end address of initrd are not page
-> > aligned, the page can't be freed by free_initrd_mem() function.
-> > 
-> > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+On Thu, Sep 25, 2014 at 11:14:14AM +0800, Yijing Wang wrote:
+> Commit 0e4ccb150 added two __weak arch functions arch_msix_mask_irq()
+> and arch_msi_mask_irq() to fix a bug found when running xen in x86.
+> Introduced these two funcntions make MSI code complex. And mask/unmask
+
+"These two functions made the MSI code more complex."
+> is the irq actions related to interrupt controller, should not use
+> weak arch functions to override mask/unmask interfaces. This patch
+
+I am bit baffled of what you are saying.
+> reverted commit 0e4ccb150 and export struct irq_chip msi_chip, modify
+> msi_chip->irq_mask/irq_unmask() in xen init functions to fix this
+> bug for simplicity. Also this is preparation for using struct
+> msi_chip instead of weak arch MSI functions in all platforms.
+> Keep default_msi_mask_irq() and default_msix_mask_irq() in
+> linux/msi.h to make s390 MSI code compile happy, they wiil be removed
+
+s/wiil/will.
+
+> in the later patch.
 > 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+I don't even remember testing it - I guess I did the earlier version.
+
+So a couple of questions since I've totally forgotten about this:
+
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 50f67a3..5f8f3af 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -162,7 +162,7 @@ static inline __attribute_const__ u32 msi_mask(unsigned x)
+>   * reliably as devices without an INTx disable bit will then generate a
+>   * level IRQ which will never be cleared.
+>   */
+> -u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+> +u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>  {
+>  	u32 mask_bits = desc->masked;
+>  
+> @@ -176,14 +176,9 @@ u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>  	return mask_bits;
+>  }
+>  
+> -__weak u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+> -{
+> -	return default_msi_mask_irq(desc, mask, flag);
+> -}
+> -
+>  static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>  {
+> -	desc->masked = arch_msi_mask_irq(desc, mask, flag);
+> +	desc->masked = __msi_mask_irq(desc, mask, flag);
+>  }
+>  
+>  /*
+> @@ -193,7 +188,7 @@ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
+>   * file.  This saves a few milliseconds when initialising devices with lots
+>   * of MSI-X interrupts.
+>   */
+> -u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
+> +u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
+>  {
+>  	u32 mask_bits = desc->masked;
+>  	unsigned offset = desc->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
+> @@ -206,14 +201,9 @@ u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
+>  	return mask_bits;
+>  }
+>  
+> -__weak u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
+> -{
+> -	return default_msix_mask_irq(desc, flag);
+> -}
+> -
+>  static void msix_mask_irq(struct msi_desc *desc, u32 flag)
+>  {
+> -	desc->masked = arch_msix_mask_irq(desc, flag);
+> +	desc->masked = __msix_mask_irq(desc, flag);
+>  }
+>  
+>  static void msi_set_mask_bit(struct irq_data *data, u32 flag)
+> @@ -852,7 +842,7 @@ void pci_msi_shutdown(struct pci_dev *dev)
+>  	/* Return the device with MSI unmasked as initial states */
+>  	mask = msi_mask(desc->msi_attrib.multi_cap);
+>  	/* Keep cached state to be restored */
+> -	arch_msi_mask_irq(desc, mask, ~mask);
+> +	__msi_mask_irq(desc, mask, ~mask);
+
+If I am reading this right, it will call the old 'default_msi_mask_irq'
+which is exactly what we don't want to do under Xen. We want to call
+the NOP code.
+>  
+>  	/* Restore dev->irq to its default pin-assertion irq */
+>  	dev->irq = desc->msi_attrib.default_irq;
+> @@ -950,7 +940,7 @@ void pci_msix_shutdown(struct pci_dev *dev)
+>  	/* Return the device with MSI-X masked as initial states */
+>  	list_for_each_entry(entry, &dev->msi_list, list) {
+>  		/* Keep cached states to be restored */
+> -		arch_msix_mask_irq(entry, 1);
+> +		__msix_mask_irq(entry, 1);
+
+Ditto here.
+
+Looking more at this code I have to retract my Reviewed-by and Tested-by
+on the whole series.
+
+Is it possible to get a git tree for this please?
+
+>  	}
+>  
+>  	msix_clear_and_set_ctrl(dev, PCI_MSIX_FLAGS_ENABLE, 0);
+> diff --git a/include/linux/msi.h b/include/linux/msi.h
+> index 45ef8cb..cc46a62 100644
+> --- a/include/linux/msi.h
+> +++ b/include/linux/msi.h
+> @@ -19,6 +19,8 @@ void read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+>  void get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+>  void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
+>  void write_msi_msg(unsigned int irq, struct msi_msg *msg);
+> +u32 __msix_mask_irq(struct msi_desc *desc, u32 flag);
+> +u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
+>  
+>  struct msi_desc {
+>  	struct {
+> @@ -59,8 +61,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev);
+>  
+>  void default_teardown_msi_irqs(struct pci_dev *dev);
+>  void default_restore_msi_irqs(struct pci_dev *dev);
+> -u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
+> -u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
+> +#define default_msi_mask_irq	__msi_mask_irq
+> +#define default_msix_mask_irq	__msix_mask_irq
+>  
+>  struct msi_chip {
+>  	struct module *owner;
+> -- 
+> 1.7.1
 > 
-> (as I said, if Russell doesn't have any objections please send the patch
-> to his patch system)
-
-I now have an objection.  The patches in the emails were properly formatted.
-The patches which were submitted to the patch system (there's two of them
-doing the same thing...) are not:
-
---- ../kernel.torvalds.git.origin/arch/arm/mm/init.c    2014-09-24 16:24:06.863759000 +0800
-+++ arch/arm/mm/init.c  2014-09-24 16:27:11.455456000 +0800
-
-This is totally broken.  Let's read the patch(1) man page:
-
-       First, patch takes an ordered list of candidate file names as follows:
-
-        � If the header is that of a context diff, patch takes the old and new
-          file  names  in  the  header.  A name is ignored if it does not have
-          enough slashes to satisfy the -pnum or --strip=num option.  The name
-          /dev/null is also ignored.
-
-        � If  there is an Index: line in the leading garbage and if either the
-          old and new names are both absent  or  if  patch  is  conforming  to
-          POSIX, patch takes the name in the Index: line.
-
-        � For the purpose of the following rules, the candidate file names are
-          considered to be in the order (old, new, index), regardless  of  the
-          order that they appear in the header.
-
-       Then patch selects a file name from the candidate list as follows:
-
-        � If  some  of  the named files exist, patch selects the first name if
-          conforming to POSIX, and the best name otherwise.
-...
-        � If no named files exist, no RCS, ClearCase, Perforce, or SCCS master
-          was found, some names are given, patch is not conforming  to  POSIX,
-          and  the patch appears to create a file, patch selects the best name
-          requiring the creation of the fewest directories.
-
-        � If no file name results from the above heuristics, you are asked for
-          the name of the file to patch, and patch selects that name.
-
-...
-
-NOTES FOR PATCH SENDERS
-       There are several things you should bear in mind if you are going to be
-       sending out patches.
-...
-       If the recipient is supposed to use the -pN option, do not send  output
-       that looks like this:
-
-          diff -Naur v2.0.29/prog/README prog/README
-          --- v2.0.29/prog/README   Mon Mar 10 15:13:12 1997
-          +++ prog/README   Mon Mar 17 14:58:22 1997
-
-       because  the two file names have different numbers of slashes, and dif-
-       ferent versions of patch interpret  the  file  names  differently.   To
-       avoid confusion, send output that looks like this instead:
-
-          diff -Naur v2.0.29/prog/README v2.0.30/prog/README
-          --- v2.0.29/prog/README   Mon Mar 10 15:13:12 1997
-          +++ v2.0.30/prog/README   Mon Mar 17 14:58:22 1997
-
-So I'm going to reject this crap.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
