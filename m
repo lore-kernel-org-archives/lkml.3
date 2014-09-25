@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbaIYO0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:26:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33306 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaIYO0C (ORCPT
+	id S1753317AbaIYO1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:27:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33860 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429AbaIYO1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:26:02 -0400
-Date: Thu, 25 Sep 2014 10:23:40 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+	Thu, 25 Sep 2014 10:27:44 -0400
+Date: Thu, 25 Sep 2014 16:27:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Joe.C" <srv_yingjoe.chen@mediatek.com>
+cc: Jiang Liu <jiang.liu@linux.intel.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-Message-ID: <20140925142340.GE20089@laptop.dumpdata.com>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, srv_heupstream@mediatek.com,
+        yingjoe.chen@gmail.com, hc.yen@mediatek.com, eddie.huang@mediatek.com,
+        nathan.chung@mediatek.com, yh.chen@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Subject: Re: [PATCH] [RFC] Using hierarchy irqdomian to implement MTK
+ intpol.
+In-Reply-To: <1411574696-1881-1-git-send-email-srv_yingjoe.chen@mediatek.com>
+Message-ID: <alpine.DEB.2.10.1409251609500.4604@nanos>
+References: <1411574696-1881-1-git-send-email-srv_yingjoe.chen@mediatek.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
-> This series is based Bjorn's pci/msi branch
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
+On Thu, 25 Sep 2014, Joe.C wrote:
+> From: "Joe.C" <yingjoe.chen@mediatek.com>
+> 
+> Here's the first draft of using hierarchy irqdomain to implement MTK intpol
+> support. I have tested it and intpol works fine. Before continue, I'd like
+> to get your comments. This is based on Jiang's hierarchy irqdomian [1] and
+> my mediatek SoC basic support [2].
+> 
+> Simplified block diagram for interrupt:
+> 
+>     ---------      ---------
+>  ---| CIRQ  |------|ARM GIC|
+>  ---|       |------|       |
+>  ---|       |------|       |
+>  ---|       |------|       |
+>  ---|       |------|       |
+>     ---------      ---------
+>  
+> In device tree, interrupt-parent for other devices is cirq, child of gic.
+> This describe HW better and allow device to specify polarity as it is sent
+> by the device. I'm using interrupt-parent to specify irq domain parent in
+> cirq now. Maybe adding another name like 'interrupt-domain-parent' will be
+> better.
 
-Is there a git tree for these patches?
+I leave that to the DT folks.
+ 
+> Currently only set_type is implement in CIRQ, but I think this could extended
+> to cover all function gic_arch_extn provided.
+
+Right. Marc, can you have a look at this whether you can see how that
+might replace the rest of the arch_extn hackery?
+
+At least the avoidance of the set_type mess looks pretty reasonable.
+ 
+> In order to use hierarchy irq domain, gic can't use legacy irq domain anymore.
+> If arm,hierarchy-irq-domain property is specified, GIC will work in hierarchy
+> way and all interrupt must be set by device tree.
 > 
-> Currently, there are a lot of weak arch functions in MSI code.
-> Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
-> This series use MSI chip framework to refactor MSI code across all platforms
-> to eliminate weak arch functions. Then all MSI irqs will be managed in a 
-> unified framework. Because this series changed a lot of ARCH MSI code,
-> so tests in the platforms which MSI code modified are warmly welcomed!
-> 
-> v1->v2:
-> Add a patch to make s390 MSI code build happy between patch "x86/xen/MSI: E.."
-> and "s390/MSI: Use MSI..". Fix several typo problems found by Lucas.
-> 
-> RFC->v1: 
-> Updated "[patch 4/21] x86/xen/MSI: Eliminate...", export msi_chip instead
-> of #ifdef to fix MSI bug in xen running in x86. 
-> Rename arch_get_match_msi_chip() to arch_find_msi_chip().
-> Drop use struct device as the msi_chip argument, we will do that
-> later in another patchset.
-> 
-> Yijing Wang (22):
->   PCI/MSI: Clean up struct msi_chip argument
->   PCI/MSI: Remove useless bus->msi assignment
->   MSI: Remove the redundant irq_set_chip_data()
->   x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
->   s390/MSI: Use __msi_mask_irq() instead of default_msi_mask_irq()
->   PCI/MSI: Introduce weak arch_find_msi_chip() to find MSI chip
->   PCI/MSI: Refactor struct msi_chip to make it become more common
->   x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   x86/MSI: Remove unused MSI weak arch functions
->   MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
->   MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   IA64/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   Sparc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   tile/MSI: Use MSI chip framework to configure MSI/MSI-X irq
->   PCI/MSI: Clean up unused MSI arch functions
-> 
->  arch/arm/mach-iop13xx/include/mach/pci.h |    2 +
->  arch/arm/mach-iop13xx/iq81340mc.c        |    1 +
->  arch/arm/mach-iop13xx/iq81340sc.c        |    1 +
->  arch/arm/mach-iop13xx/msi.c              |    9 ++-
->  arch/arm/mach-iop13xx/pci.c              |    6 ++
->  arch/ia64/kernel/msi_ia64.c              |   18 ++++-
->  arch/mips/pci/msi-octeon.c               |   35 ++++++----
->  arch/mips/pci/msi-xlp.c                  |   18 ++++--
->  arch/mips/pci/pci-xlr.c                  |   15 ++++-
->  arch/powerpc/kernel/msi.c                |   14 +++-
->  arch/s390/pci/pci.c                      |   18 ++++-
->  arch/sparc/kernel/pci.c                  |   14 +++-
->  arch/tile/kernel/pci_gx.c                |   14 +++-
->  arch/x86/include/asm/apic.h              |    4 +
->  arch/x86/include/asm/pci.h               |    4 +-
->  arch/x86/include/asm/x86_init.h          |    7 --
->  arch/x86/kernel/apic/io_apic.c           |   16 ++++-
->  arch/x86/kernel/x86_init.c               |   34 ---------
->  arch/x86/pci/xen.c                       |   60 +++++++++-------
->  drivers/iommu/irq_remapping.c            |    9 ++-
->  drivers/irqchip/irq-armada-370-xp.c      |    8 +--
->  drivers/pci/host/pci-tegra.c             |    8 ++-
->  drivers/pci/host/pcie-designware.c       |    4 +-
->  drivers/pci/host/pcie-rcar.c             |    8 ++-
->  drivers/pci/msi.c                        |  114 ++++++++++++++----------------
->  drivers/pci/probe.c                      |    1 -
->  include/linux/msi.h                      |   26 ++-----
->  27 files changed, 266 insertions(+), 202 deletions(-)
-> 
+> One thing worth mention is arg in irq_domain_alloc_irqs. On x86, msi is using
+> struct irq_alloc_info, to pass data between irq domain. In irq_create_of_mapping(),
+> of_phandle_args is used. All allocs in irq_domain chain will need to use same
+> interrupt-cells formats.
+
+Right, but we leave that to the architecture implementation. It needs
+to be consistent within an architecture, so we should change the "void
+*arg" to a well defined type. For OF architectures this would be
+of_phandle_args, other architectures can define their own struct type
+which allows to transport data between the domains. That ensures
+compile time type checking.
+
+Thanks,
+
+	tglx
