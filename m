@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaIYTfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 15:35:32 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41026 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaIYTfb (ORCPT
+	id S1752571AbaIYTgC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:36:02 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:37843 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaIYTgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 15:35:31 -0400
-Message-ID: <54246E82.1050305@infradead.org>
-Date: Thu, 25 Sep 2014 12:35:30 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 25 Sep 2014 15:36:00 -0400
+Date: Thu, 25 Sep 2014 14:35:55 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Mel Gorman <mgorman@suse.de>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickens <hughd@google.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: page allocator bug in 3.16?
+Message-ID: <20140925143555.1f276007@as>
+In-Reply-To: <54246506.50401@hurleysoftware.com>
+References: <54246506.50401@hurleysoftware.com>
 MIME-Version: 1.0
-To: Frans Klaver <fransklaver@gmail.com>, Oscar Utbult <oscar@oscr.io>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Changed "&" with "and" in Documentation/applying-patches.txt.
-References: <1411652495-100852-1-git-send-email-oscar@oscr.io> <CAH6sp9NqiNincavwB9bQ94EvG8ZjvUPLH5u3j04OV2JMz7wTEg@mail.gmail.com> <e692e73445c591af1bea3ce0a87755c6@oscr.io> <20140925191254.GA2073@gmail.com>
-In-Reply-To: <20140925191254.GA2073@gmail.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/14 12:12, Frans Klaver wrote:
-> On Thu, Sep 25, 2014 at 06:28:47PM +0200, Oscar Utbult wrote:
->> On 2014-09-25 16:48, Frans Klaver wrote:
->>> On Thu, Sep 25, 2014 at 3:41 PM,  <oscar@oscr.io> wrote:
->>>> Subject: [PATCH 1/1] Changed "&" with "and" in 
->>>> Documentation/applying-patches.txt.
->>>
->>> Documentation/SubmittingPatches says:
->>>
->>> Describe your changes in imperative mood, e.g. "make xyzzy do frotz"
->>> instead of "[This patch] makes xyzzy do frotz" or "[I] changed xyzzy
->>> to do frotz", as if you are giving orders to the codebase to change
->>> its behaviour.
->>
->> Thank you for your feedback Frans.
->>
->> So for example a better description would have been: "use 'and' instead 
->> of '&'"?
+On Thu, 25 Sep 2014 14:55:02 -0400
+Peter Hurley <peter@hurleysoftware.com> wrote:
+
+> After several days uptime with a 3.16 kernel (generally running
+> Thunderbird, emacs, kernel builds, several Chrome tabs on multiple
+> desktop workspaces) I've been seeing some really extreme slowdowns.
 > 
-> Yes. It is useful to still mention it is affecting documentation only
-> though. This helps identifying whether a change may be related to a
-> defect for example.
+> Mostly the slowdowns are associated with gpu-related tasks, like
+> opening new emacs windows, switching workspaces, laughing at internet
+> gifs, etc. Because this x86_64 desktop is nouveau-based, I didn't pursue
+> it right away -- 3.15 is the first time suspend has worked reliably.
 > 
-> By the way, I just grepped through the documentation, and there are
-> quite some situations where this same change would happen, so if we care
-> enough, all those instances could be changed. I don't know if we care
-> enough though. That's for others, like Randy, to decide.
+> This week I started looking into what the slowdown was and discovered
+> it's happening during dma allocation through swiotlb (the cpus can do
+> intel iommu but I don't use it because it's not the default for most users).
+> 
+> I'm still working on a bisection but each step takes 8+ hours to
+> validate and even then I'm no longer sure I still have the 'bad'
+> commit in the bisection. [edit: yup, I started over]
+> 
 
-I think that we don't care enough.  The referenced web page talks about
-formal documentation.  We aren't quite formal IMO.
+There are six ttm patches queued for 3.16.4:
 
-
--- 
-~Randy
+drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
+drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
+drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
+drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
+drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
+drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
