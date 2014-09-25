@@ -1,71 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaIYLhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:37:06 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33903 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750947AbaIYLhE (ORCPT
+	id S1751939AbaIYLnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:43:45 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:43201 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351AbaIYLnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:37:04 -0400
-X-Sasl-enc: u9NGLRe7A853FWnHK6Pl9KWAY25DZVb1POO9dXo6Spq7 1411645022
-Date: Thu, 25 Sep 2014 08:36:45 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140925113643.GB10569@khazad-dum.debian.net>
-References: <20140919001311.GB5331@khazad-dum.debian.net>
- <CALCETrVoeqQUXH7g+reu=hUvCJoiy+edHKBqYKPWXPCS3_UtUw@mail.gmail.com>
- <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
- <20140923200054.GB16467@pd.tnic>
- <20140924145658.GB31678@khazad-dum.debian.net>
- <20140925085158.GF22317@nazgul.tnic>
+	Thu, 25 Sep 2014 07:43:43 -0400
+Date: Thu, 25 Sep 2014 13:43:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] mm: memcontrol: do not iterate uninitialized memcgs
+Message-ID: <20140925114339.GD12090@dhcp22.suse.cz>
+References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+ <20140925024054.GA4888@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140925085158.GF22317@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925024054.GA4888@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Borislav Petkov wrote:
-> > But IMHO we still need to detect and do something smart when
-> > x86_capability changes due to a microcode update.
-> > 
-> > And I'd really prefer it to be "update x86_capability, warn the user and
-> > carry on" for anything that is not going to crash the kernel.
+On Wed 24-09-14 22:40:55, Johannes Weiner wrote:
+> Argh, buggy css_put() against the root.  Hand grenades, everywhere.
+> Update:
 > 
-> The problem is with hiding CPUID bits and userspace using HLE after
-> having detected it previously. I think we'll be on the safe side if we
+> ---
+> From 9b0b4d72d71cd8acd7aaa58d2006c751decc8739 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Wed, 24 Sep 2014 22:00:20 -0400
+> Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+> 
+> The cgroup iterators yield css objects that have not yet gone through
+> css_online(), but they are not complete memcgs at this point and so
+> the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
+> iteration skip memcgs not yet fully initialized") set out to implement
+> exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+> not meet the ordering requirements for memcg, and so we still may see
+> partially initialized memcgs from the iterators.
 
-It is safe to apply this particular batch of problematic microcode updades
-inside the regular initramfs, as long as you do it as one of the very first
-tasks.
+I do not see how would this happen. CSS_ONLINE is set after css_online
+callback returns and mem_cgroup_css_online ends the core initialization
+with mutex_unlock which should provide sufficient memory ordering
+requirements (kmem is not covered but activate_kmem_mutex kmem.tcp by
+proto_list_mutex). So the worst thing that might happen is that we miss
+an already initialized memcg but that shouldn't matter because such a
+memcg doesn't contain any tasks nor memory. memcg_has_children doesn't
+rely on our iterators so important parts will not miss anything.
 
-This isn't an useless fix, it will allow systems without early initramfs
-support to operate correctly after a microcode update.  And kernels 3.0, 3.2
-and 3.4 _cannot_ apply early initramfs microcode updates at all, so they
-need it.
+So I do not see any bug right now. The flag abuse is another story and I
+do agree we should use proper memcg specific synchronization here as
+explained by Tejun in other email.
 
-Besides, we need to detect and scream bloody murder when microcode updates
-do something like this anyway, now that the pandora box was opened.  If
-we're going to detect it, might as well fix it when it is not something the
-kernel uses.
+> The cgroup core can not reasonably provide a clear answer on whether
+> the object around the css has been fully initialized, as that depends
+> on controller-specific locking and lifetime rules.  Thus, introduce a
+> memcg-specific flag that is set after the memcg has been initialized
+> in css_online(), and read before mem_cgroup_iter() callers access the
+> memcg members.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+With updated changelog
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> Cc: <stable@vger.kernel.org>	[3.12+]
+
+This is not necessary IMO
+
+> ---
+>  mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
+>  1 file changed, 31 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 306b6470784c..bafdac0f724e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -292,6 +292,9 @@ struct mem_cgroup {
+>  	/* vmpressure notifications */
+>  	struct vmpressure vmpressure;
+>  
+> +	/* css_online() has been completed */
+> +	bool initialized;
+> +
+>  	/*
+>  	 * the counter to account for mem+swap usage.
+>  	 */
+> @@ -1090,10 +1093,23 @@ skip_node:
+>  	 * skipping css reference should be safe.
+>  	 */
+>  	if (next_css) {
+> -		if ((next_css == &root->css) ||
+> -		    ((next_css->flags & CSS_ONLINE) &&
+> -		     css_tryget_online(next_css)))
+> -			return mem_cgroup_from_css(next_css);
+> +		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
+> +
+> +		if (next_css == &root->css)
+> +			return memcg;
+> +
+> +		if (css_tryget_online(next_css)) {
+> +			if (memcg->initialized) {
+> +				/*
+> +				 * Make sure the caller's accesses to
+> +				 * the memcg members are issued after
+> +				 * we see this flag set.
+> +				 */
+> +				smp_rmb();
+> +				return memcg;
+> +			}
+> +			css_put(next_css);
+> +		}
+>  
+>  		prev_css = next_css;
+>  		goto skip_node;
+> @@ -5413,6 +5429,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+>  	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
+> +	int ret;
+>  
+>  	if (css->id > MEM_CGROUP_ID_MAX)
+>  		return -ENOSPC;
+> @@ -5449,7 +5466,16 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+>  	}
+>  	mutex_unlock(&memcg_create_mutex);
+>  
+> -	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
+> +	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Make sure the initialization is visible before the flag */
+> +	smp_wmb();
+> +
+> +	memcg->initialized = true;
+> +
+> +	return 0;
+>  }
+>  
+>  /*
+> -- 
+> 2.1.0
+> 
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Michal Hocko
+SUSE Labs
