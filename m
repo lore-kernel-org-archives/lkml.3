@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaIYV4V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:56:21 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:43643 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaIYV4T (ORCPT
+	id S1752737AbaIYV5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:57:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33252 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751595AbaIYV5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:56:19 -0400
+	Thu, 25 Sep 2014 17:57:34 -0400
+Date: Thu, 25 Sep 2014 18:56:12 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: tglx@linutronix.de, jason@lakedaemon.net
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregory.clement@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, alior@marvell.com,
+        tawfik@marvell.com, mw@semihalf.com,
+        Grzegorz Jaszczyk <jaz@semihalf.com>
+Subject: Re: [PATCH 0/2] Marvell Armada 375/38x MPIC/MSI fixes
+Message-ID: <20140925215612.GA3846@arch.cereza>
+References: <1411643839-64925-1-git-send-email-jaz@semihalf.com>
 MIME-Version: 1.0
-Date: Thu, 25 Sep 2014 23:56:18 +0200
-X-Google-Sender-Auth: yQ-XDwRLtiLQDMXw8wb1KW8MTgE
-Message-ID: <CAJZ5v0hsuZ-Xhsqvz=1SnL1438nyhiBvd+GTZa16OkWmxz=F2g@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management fixes for 3.17-rc7
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411643839-64925-1-git-send-email-jaz@semihalf.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Jason,
 
-Please pull from
+On 25 Sep 01:17 PM, Grzegorz Jaszczyk wrote:
+> This patchset contains a set of fixes for issues found while doing some test
+> with different interrupts configuration on Armada 375 and Armada 38x Marvell
+> SoCs. The patches were tested and apply on v3.17-rc6.
+> 
+> Any feedback is welcome.
+> 
+> Grzegorz Jaszczyk (2):
+>   irqchip: armada-370-xp: fix MSI interrupt handling
+>   irqchip: armada-370-xp: fix MPIC interrupt handling
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.17-rc7
+The second patch fixes an unhandled IRQ storm triggered by the mvpp2
+ethernet driver, when the kernel is built with CONFIG_SMP=n.
 
-to receive ACPI and power management fixes for v3.17-rc7 (or
-for the final v3.17 if there's no -rc7) with top-most commit
-381e63da44301f49be5876d56a5da2434f132dff
+When any network activity is attempted the kernel is interrupted by a per-cpu 
+IRQ (which is not the one the driver expects). The interrupt is not mapped 
+into Linux's virtual IRQ space, so the result is:
 
- Merge branches 'pm-cpufreq' and 'pm-sleep'
+  irq 0, desc: ee004000, depth: 1, count: 0, unhandled: 0
+  ->handle_irq():  c00466e8, handle_bad_irq+0x0/0x260
+  ->irq_data.chip(): c1181460, 0xc1181460
+  ->action():   (null)
+     IRQ_NOPROBE set
+   IRQ_NOREQUEST set
 
-on top of commit 0f33be009b89d2268e94194dc4fd01a7851b6d51
+For both patches:
 
- Linux 3.17-rc6
+Fixes: bc69b8adfe22 ("irqchip: armada-370-xp: Setup a chained handler for the MPIC")
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-These are regression fixes (ACPI hotplug, cpufreq, hibernation, ACPI
-LPSS driver), fixes for stuff that never worked correctly (ACPI GPIO
-support in some cases and a wrong sign of an error code in the ACPI
-core in one place), and one blacklist item for ACPI backlight handling.
-
-Specifics:
-
- - Revert of a recent hibernation core commit that introduced
-   a NULL pointer dereference during resume for at least one user
-   (Rafael J Wysocki).
-
- - Fix for the ACPI LPSS (Low-Power Subsystem) driver to disable
-   asynchronous PM callback execution for LPSS devices during system
-   suspend/resume (introduced in 3.16) which turns out to break
-   ordering expectations on some systems.  From Fu Zhonghui.
-
- - cpufreq core fix related to the handling of sysfs nodes during
-   system suspend/resume that has been broken for intel_pstate
-   since 3.15 from Lan Tianyu.
-
- - Restore the generation of "online" uevents for ACPI container
-   devices that was removed in 3.14, but some user space utilities
-   turn out to need them (Rafael J Wysocki).
-
- - The cpufreq core fails to release a lock in an error code path
-   after changes made in 3.14.  Fix from Prarit Bhargava.
-
- - ACPICA and ACPI/GPIO fixes to make the handling of ACPI GPIO
-   operation regions (which means AML using GPIOs) work correctly
-   in all cases from Bob Moore and Srinivas Pandruvada.
-
- - Fix for a wrong sign of the ACPI core's create_modalias() return
-   value in case of an error from Mika Westerberg.
-
- - ACPI backlight blacklist entry for ThinkPad X201s from Aaron Lu.
-
-Thanks!
-
-
----------------
-
-Aaron Lu (1):
-      ACPI / video: disable native backlight for ThinkPad X201s
-
-Bob Moore (1):
-      ACPICA: Update to GPIO region handler interface.
-
-Fu Zhonghui (1):
-      ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
-
-Lan Tianyu (1):
-      cpufreq: fix cpufreq suspend/resume for intel_pstate
-
-Mika Westerberg (1):
-      ACPI / scan: Correct error return value of create_modalias()
-
-Prarit Bhargava (1):
-      cpufreq: release policy->rwsem on error
-
-Rafael J. Wysocki (2):
-      ACPI / hotplug: Generate online uevents for ACPI containers
-      Revert "PM / Hibernate: Iterate over set bits instead of PFNs in
-swsusp_free()"
-
-Srinivas Pandruvada (1):
-      gpio / ACPI: Use pin index and bit length
-
----------------
-
- drivers/acpi/acpi_lpss.c       |  1 -
- drivers/acpi/acpica/aclocal.h  |  1 +
- drivers/acpi/acpica/acobject.h |  1 +
- drivers/acpi/acpica/dsfield.c  |  2 ++
- drivers/acpi/acpica/evregion.c | 47 +++++++++++++++++++----------
- drivers/acpi/acpica/exfield.c  | 67 ++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/acpica/exprep.c   |  2 ++
- drivers/acpi/container.c       |  8 +++++
- drivers/acpi/scan.c            |  5 +++-
- drivers/acpi/video.c           |  8 +++++
- drivers/cpufreq/cpufreq.c      | 10 ++++---
- drivers/gpio/gpiolib-acpi.c    |  5 +++-
- include/acpi/acpi_bus.h        |  1 +
- kernel/power/snapshot.c        | 50 ++++++++++---------------------
- 14 files changed, 150 insertions(+), 58 deletions(-)
+Thanks,
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
