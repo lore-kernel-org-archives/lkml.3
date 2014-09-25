@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaIYExT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 00:53:19 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:59500 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaIYExR (ORCPT
+	id S1751693AbaIYEzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 00:55:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40991 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaIYEzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 00:53:17 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 25 Sep 2014 00:59:31 -0400 (EDT)
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Cong Wang <cwang@twopensource.com>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-In-Reply-To: <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu> <20140910083136.GP6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu> <541059C9.1040200@oracle.com>
- <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu> <20140910143306.GD4783@worktop.ger.corp.intel.com> <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 25 Sep 2014 00:55:04 -0400
+Date: Wed, 24 Sep 2014 21:54:40 -0700
+From: "tip-bot for Bryan O'Donoghue" <tipbot@zytor.com>
+Message-ID: <tip-02276a3a677d681f0cd227d7111c71fdbce23832@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        pure.logic@nexus-software.ie, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        pure.logic@nexus-software.ie, tglx@linutronix.de
+In-Reply-To: <1411590363-8052-1-git-send-email-pure.logic@nexus-software.ie>
+References: <1411590363-8052-1-git-send-email-pure.logic@nexus-software.ie>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/intel/quark:
+  Add comment on TLB flush to setup_arch()
+Git-Commit-ID: 02276a3a677d681f0cd227d7111c71fdbce23832
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  02276a3a677d681f0cd227d7111c71fdbce23832
+Gitweb:     http://git.kernel.org/tip/02276a3a677d681f0cd227d7111c71fdbce23832
+Author:     Bryan O'Donoghue <pure.logic@nexus-software.ie>
+AuthorDate: Wed, 24 Sep 2014 21:26:03 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 25 Sep 2014 06:52:15 +0200
 
-So I noticed Cong Wang's patch (3577af70a2ce4853d58e57d832e687d739281479)
-	perf: Fix a race condition in perf_remove_from_context()
+x86/intel/quark: Add comment on TLB flush to setup_arch()
 
-and that sounds a lot like the weird fork()/memory-corruption bug that the 
-fuzzer has been triggering.
+Quark X1000 requires CR3 to be rewritten to flush TLB entries
+irrespective of the PGE bits in CR4 or PTE.PGE.
 
-So I applied that patch alone on top of the 3.17-rc4 kernel that I could 
-reproducibly reboot... and with the patch I can't trigger the problem 
-anymore.
+Add a comment to setup_arch() to indicate that the code:
 
-Now that just might mean the patch pushed the code around enough so my 
-test doesn't trigger, but there is hope that maybe this fixes things.
+  load_cr3(swapper_pg_dir);
+  __flush_tlb_all();
 
-Cong Wang, do you have more info on how you came across this bug?  And how 
-you tracked down the problem?
+Will already have flushed the TLB @ the CR3 reload allowing us
+to skip over a potential if/else for Quark.
 
-Thanks,
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Link: http://lkml.kernel.org/r/1411590363-8052-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/setup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Vince
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 41ead8d..e7d7f6e 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -878,6 +878,11 @@ void __init setup_arch(char **cmdline_p)
+ 			initial_page_table + KERNEL_PGD_BOUNDARY,
+ 			KERNEL_PGD_PTRS);
+ 
++	/*
++	 * Locate the page directory and flush the TLB.
++	 * On Quark X1000 rewriting CR3 flushes the TLB no if/else is required
++	 * to choose between __flush_tlb() and __flush_tlb_all()
++	 */
+ 	load_cr3(swapper_pg_dir);
+ 	__flush_tlb_all();
+ #else
