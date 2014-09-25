@@ -1,182 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaIYBbn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 21:31:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61034 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281AbaIYBbl (ORCPT
+	id S1751568AbaIYBkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 21:40:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41567 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaIYBko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 21:31:41 -0400
+	Wed, 24 Sep 2014 21:40:44 -0400
+Message-ID: <54237281.5020308@huawei.com>
+Date: Thu, 25 Sep 2014 09:40:17 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140925010638.GB17364@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
- <1411344191-2842-4-git-send-email-minchan@kernel.org> <CALZtOND9YOXPQ0vNKFVrs+yhnkbWkKg8FD78cHmqJWhLyo89Gw@mail.gmail.com>
- <20140925010638.GB17364@bbox>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Wed, 24 Sep 2014 21:31:20 -0400
-X-Google-Sender-Auth: 90TDQrAWEHKCATVl_ICzWsOT5YA
-Message-ID: <CALZtONAyFjD-+dNt5LnSTYwSnC86HwZ=mZQ6OK2U0TpZ_975+w@mail.gmail.com>
-Subject: Re: [PATCH v1 3/5] mm: VM can be aware of zram fullness
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Miao Xie" <miaox@cn.fujitsu.com>, Kees Cook <keescook@chromium.org>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v4 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 9:06 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Wed, Sep 24, 2014 at 10:12:18AM -0400, Dan Streetman wrote:
->> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
->> > VM uses nr_swap_pages to throttle amount of swap when it reclaims
->> > anonymous pages because the nr_swap_pages means freeable space
->> > of swap disk.
->> >
->> > However, it's a problem for zram because zram can limit memory
->> > usage by knob(ie, mem_limit) so that swap out can fail although
->> > VM can see lots of free space from zram disk but no more free
->> > space in zram by the limit. If it happens, VM should notice it
->> > and stop reclaimaing until zram can obtain more free space but
->> > we don't have a way to communicate between VM and zram.
->> >
->> > This patch adds new hint SWAP_FULL so that zram can say to VM
->> > "I'm full" from now on. Then VM cannot reclaim annoymous page
->> > any more. If VM notice swap is full, it can remove swap_info_struct
->> > from swap_avail_head and substract remained freeable space from
->> > nr_swap_pages so that VM can think swap is full until VM frees a
->> > swap and increase nr_swap_pages again.
->> >
->> > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > ---
->> >  include/linux/blkdev.h |  1 +
->> >  mm/swapfile.c          | 44 ++++++++++++++++++++++++++++++++++++++------
->> >  2 files changed, 39 insertions(+), 6 deletions(-)
->> >
->> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
->> > index c7220409456c..39f074e0acd7 100644
->> > --- a/include/linux/blkdev.h
->> > +++ b/include/linux/blkdev.h
->> > @@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
->> >
->> >  enum swap_blk_hint {
->> >         SWAP_FREE,
->> > +       SWAP_FULL,
->> >  };
->> >
->> >  struct block_device_operations {
->> > diff --git a/mm/swapfile.c b/mm/swapfile.c
->> > index 209112cf8b83..71e3df0431b6 100644
->> > --- a/mm/swapfile.c
->> > +++ b/mm/swapfile.c
->> > @@ -493,6 +493,29 @@ static unsigned long scan_swap_map(struct swap_info_struct *si,
->> >         int latency_ration = LATENCY_LIMIT;
->> >
->> >         /*
->> > +        * If zram is full, we don't need to scan and want to stop swap.
->> > +        * For it, we removes si from swap_avail_head and decreases
->> > +        * nr_swap_pages to prevent further anonymous reclaim so that
->> > +        * VM can restart swap out if zram has a free space.
->> > +        * Look at swap_entry_free.
->> > +        */
->> > +       if (si->flags & SWP_BLKDEV) {
->> > +               struct gendisk *disk = si->bdev->bd_disk;
->> > +
->> > +               if (disk->fops->swap_hint && disk->fops->swap_hint(
->> > +                               si->bdev, SWAP_FULL, NULL)) {
->> > +                       spin_lock(&swap_avail_lock);
->> > +                       WARN_ON(plist_node_empty(&si->avail_list));
->> > +                       plist_del(&si->avail_list, &swap_avail_head);
->> > +                       spin_unlock(&swap_avail_lock);
->> > +                       atomic_long_sub(si->pages - si->inuse_pages,
->> > +                                               &nr_swap_pages);
->> > +                       si->full = true;
->> > +                       return 0;
->> > +               }
->> > +       }
->> > +
->> > +       /*
->> >          * We try to cluster swap pages by allocating them sequentially
->> >          * in swap.  Once we've allocated SWAPFILE_CLUSTER pages this
->> >          * way, however, we resort to first-free allocation, starting
->> > @@ -798,6 +821,14 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
->> >         /* free if no reference */
->> >         if (!usage) {
->> >                 bool was_full;
->> > +               struct gendisk *virt_swap = NULL;
->> > +
->> > +               /* Check virtual swap */
->> > +               if (p->flags & SWP_BLKDEV) {
->> > +                       virt_swap = p->bdev->bd_disk;
->> > +                       if (!virt_swap->fops->swap_hint)
->>
->> not a big deal, but can't you just combine these two if's to simplify this?
->
-> Do you want this?
->
-> if (p->flags & SWP_BLKDEV && p->bdev->bd_disk->fops->swap_hint)
->         virt_swap = p->bdev->bd_disk;
+Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
+defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
+because it is used as bit number. Redefine it as decimal bit number.
 
-ah sorry, i wasn't paying attention there, you're right accessing
-virt_swap after you set it is probably better.
+Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
 
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Kees Cook <keescook@chromium.org>
+[ lizf: slightly modified subject and changelog ]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
->
->
->>
->> > +                               virt_swap = NULL;
->> > +               }
->> >
->> >                 dec_cluster_info_page(p, p->cluster_info, offset);
->> >                 if (offset < p->lowest_bit)
->> > @@ -814,17 +845,18 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
->> >                                           &swap_avail_head);
->> >                         spin_unlock(&swap_avail_lock);
->> >                         p->full = false;
->> > +                       if (virt_swap)
->> > +                               atomic_long_add(p->pages -
->> > +                                               p->inuse_pages,
->> > +                                               &nr_swap_pages);
->>
->> a comment here might be good, to clarify it relies on the check at the
->> top of scan_swap_map previously subtracting the same number of pages.
->
-> Okay.
->
->>
->>
->> >                 }
->> >
->> >                 atomic_long_inc(&nr_swap_pages);
->> >                 p->inuse_pages--;
->> >                 frontswap_invalidate_page(p->type, offset);
->> > -               if (p->flags & SWP_BLKDEV) {
->> > -                       struct gendisk *disk = p->bdev->bd_disk;
->> > -                       if (disk->fops->swap_hint)
->> > -                               disk->fops->swap_hint(p->bdev,
->> > -                                               SWAP_FREE, (void *)offset);
->> > -               }
->> > +               if (virt_swap)
->> > +                       virt_swap->fops->swap_hint(p->bdev,
->> > +                                       SWAP_FREE, (void *)offset);
->> >         }
->> >
->> >         return usage;
->> > --
->> > 2.0.0
->> >
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..4557765 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1957,7 +1957,7 @@ static inline void memalloc_noio_restore(unsigned int flags)
+ }
+ 
+ /* Per-process atomic flags. */
+-#define PFA_NO_NEW_PRIVS 0x00000001	/* May not gain new privileges. */
++#define PFA_NO_NEW_PRIVS 0	/* May not gain new privileges. */
+ 
+ static inline bool task_no_new_privs(struct task_struct *p)
+ {
+-- 
+1.8.0.2
+
