@@ -1,87 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaIYN7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:59:12 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:60870 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaIYN7J (ORCPT
+	id S1753344AbaIYOAC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:00:02 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:1721 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751981AbaIYOAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:59:09 -0400
-Message-ID: <1411653544.15810.47.camel@marge.simpson.net>
-Subject: BUG: sleeping function called from invalid context at
- drivers/cpufreq/cpufreq.c:370
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
-        tglx@linutronix.de, ilya.dryomov@inktank.com,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Date: Thu, 25 Sep 2014 15:59:04 +0200
-In-Reply-To: <1411639019.15810.31.camel@marge.simpson.net>
-References: <20140924081845.572814794@infradead.org>
-	 <1411633803.15810.12.camel@marge.simpson.net>
-	 <20140925090619.GA5430@worktop> <20140925091556.GB5430@worktop>
-	 <1411639019.15810.31.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Sep 2014 10:00:00 -0400
+X-IronPort-AV: E=Sophos;i="5.04,597,1406563200"; 
+   d="scan'208";a="36467736"
+From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        David Howells <dhowells@redhat.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
+ to ns
+Thread-Topic: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
+ to ns
+Thread-Index: AQHP195u16fgq2K+Ek2axoqmdIkT2JwRzrJw
+Date: Thu, 25 Sep 2014 12:52:56 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E5C4C2D@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
+In-Reply-To: <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8PE08nY023157
 
-On Thu, 2014-09-25 at 11:56 +0200, Mike Galbraith wrote: 
-> On Thu, 2014-09-25 at 11:15 +0200, Peter Zijlstra wrote:
+Hi,
+
+	Any comments?
+
+Thanks,
+- Chen
+
+> -----Original Message-----
+> From: containers-bounces@lists.linux-foundation.org
+> Subject: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according to ns
 > 
-> > I suppose just flipping the scheudle() and try_to_freeze() should do the
-> > trick. Ugly code that, but then again, I think audit is known for that.
-> > 
-> > Can you give that a go?
+> If some issues occurred inside a container guest, host user
+> could not know which process is in trouble just by guest pid:
+> the users of container guest only knew the pid inside containers.
+> This will bring obstacle for trouble shooting.
 > 
-> Yeah, seems that fixed that one.
-
-pcc-cpufreq: spin_lock() -> wait_event() -> gripe() gripe() gripe()...
-
-[   50.756280] BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
-[   50.850582] in_atomic(): 1, irqs_disabled(): 0, pid: 2636, name: modprobe
-[   50.926744] Preemption disabled at:[<ffffffffa04d74d7>] pcc_cpufreq_target+0x27/0x200 [pcc_cpufreq]
-[   51.025044]
-[   51.045454] CPU: 57 PID: 2636 Comm: modprobe Tainted: G            E  3.17.0-default #7
-[   51.136727] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
-[   51.218484]  00000000ffffffff ffff88026c46b828 ffffffff81589dbd 0000000000000000
-[   51.300293]  ffff880037978090 ffff88026c46b848 ffffffff8108e1df ffff880037978090
-[   51.382666]  0000000000000000 ffff88026c46b878 ffffffff8108e298 ffff88026d73ec00
-[   51.464884] Call Trace:
-[   51.495159]  [<ffffffff81589dbd>] dump_stack+0x4d/0x90
-[   51.555439]  [<ffffffff8108e1df>] ___might_sleep+0x10f/0x180
-[   51.620610]  [<ffffffff8108e298>] __might_sleep+0x48/0xd0
-[   51.684774]  [<ffffffff8145b905>] cpufreq_freq_transition_begin+0x75/0x140 drivers/cpufreq/cpufreq.c:370 wait_event(policy->transition_wait, !policy->transition_ongoing);
-[   51.767992]  [<ffffffff8108fc99>] ? preempt_count_add+0xb9/0xc0
-[   51.833294]  [<ffffffffa04d7513>] pcc_cpufreq_target+0x63/0x200 [pcc_cpufreq] drivers/cpufreq/pcc-cpufreq.c:207 spin_lock(&pcc_lock);
-[   51.930204]  [<ffffffff810e0d0f>] ? update_ts_time_stats+0x7f/0xb0
-[   52.009288]  [<ffffffff8145be55>] __cpufreq_driver_target+0x85/0x170
-[   52.082479]  [<ffffffff8145e4c8>] od_check_cpu+0xa8/0xb0
-[   52.143874]  [<ffffffff8145ef10>] dbs_check_cpu+0x180/0x1d0
-[   52.207329]  [<ffffffff8145f310>] cpufreq_governor_dbs+0x3b0/0x720
-[   52.276916]  [<ffffffff8145ebe3>] od_cpufreq_governor_dbs+0x33/0xe0
-[   52.349048]  [<ffffffff814593d9>] __cpufreq_governor+0xa9/0x210
-[   52.415040]  [<ffffffff81459fb2>] cpufreq_set_policy+0x1e2/0x2e0
-[   52.480473]  [<ffffffff8145a6cc>] cpufreq_init_policy+0x8c/0x110
-[   52.545829]  [<ffffffff8145c9a0>] ? cpufreq_update_policy+0x1b0/0x1b0
-[   52.615796]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
-[   52.681961]  [<ffffffff8145c6c6>] __cpufreq_add_dev+0x596/0x6b0
-[   52.746288]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
-[   52.830472]  [<ffffffff8145c7ee>] cpufreq_add_dev+0xe/0x10
-[   52.894106]  [<ffffffff81408e81>] subsys_interface_register+0xc1/0xf0
-[   52.970763]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
-[   53.038953]  [<ffffffff8145b3d7>] cpufreq_register_driver+0x117/0x2a0
-[   53.110751]  [<ffffffffa016c65d>] pcc_cpufreq_init+0x55/0x9f8 [pcc_cpufreq]
-[   53.186920]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
-[   53.267583]  [<ffffffff81000298>] do_one_initcall+0xc8/0x1f0
-[   53.330601]  [<ffffffff811a731d>] ? __vunmap+0x9d/0x100
-[   53.388285]  [<ffffffff810eb9a0>] do_init_module+0x30/0x1b0
-[   53.451958]  [<ffffffff810edfa6>] load_module+0x686/0x710
-[   53.514007]  [<ffffffff810ebb20>] ? do_init_module+0x1b0/0x1b0
-[   53.581246]  [<ffffffff810ee1db>] SyS_init_module+0x9b/0xc0
-[   53.644024]  [<ffffffff8158f7a9>] system_call_fastpath+0x16/0x1b
-
-
+> This patch adds four fields: NStgid, NSpid, NSpgid and NSsid:
+> a) In init_pid_ns, nothing changed;
+> 
+> b) In one pidns, will tell the pid inside containers:
+> NStgid:	21776   5       1
+> NSpid:  21776   5       1
+> NSpgid:	21776   5       1
+> NSsid:  21729   1       0
+> ** Process id is 21776 in level 0, 5 in level 1, 1 in level 2.
+> 
+> c) If pidns is nested, it depends on which pidns are you in.
+> NStgid: 5       1
+> NSpid:  5       1
+> NSpgid: 5       1
+> NSsid:  1       0
+> ** Views from level 1
+> 
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+> v3: add another two fielsd: NSpgid and NSsid.
+> v2: add two new fields: NStgid and NSpid.
+>     keep fields of Tgid and Pid unchanged for back compatibility.
+> 
+>  fs/proc/array.c | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/fs/proc/array.c b/fs/proc/array.c
+> index cd3653e..c30875d 100644
+> --- a/fs/proc/array.c
+> +++ b/fs/proc/array.c
+> @@ -193,6 +193,23 @@ static inline void task_state(struct seq_file *m, struct
+> pid_namespace *ns,
+>  		from_kgid_munged(user_ns, cred->egid),
+>  		from_kgid_munged(user_ns, cred->sgid),
+>  		from_kgid_munged(user_ns, cred->fsgid));
+> +	seq_puts(m, "NStgid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_tgid_nr_ns(p, pid->numbers[g].ns));
+> +	seq_puts(m, "\nNSpid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_pid_nr_ns(p, pid->numbers[g].ns));
+> +	seq_puts(m, "\nNSpgid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_pgrp_nr_ns(p, pid->numbers[g].ns));
+> +	seq_puts(m, "\nNSsid:");
+> +	for (g = ns->level; g <= pid->level; g++)
+> +		seq_printf(m, "\t%d ",
+> +			task_session_nr_ns(p, pid->numbers[g].ns));
+> +	seq_putc(m, '\n');
+> 
+>  	task_lock(p);
+>  	if (p->files)
+> --
+> 1.9.0
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
