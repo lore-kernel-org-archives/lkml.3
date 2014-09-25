@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaIYXb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:31:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50184 "HELO
+	id S1753069AbaIYXcU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:32:20 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52013 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751772AbaIYXbZ (ORCPT
+	with SMTP id S1751875AbaIYXcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:31:25 -0400
+	Thu, 25 Sep 2014 19:32:19 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
-        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [REPOST PATCH v4 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Fri, 26 Sep 2014 01:51:14 +0200
-Message-ID: <2373913.b8GhYem2Rt@vostro.rjw.lan>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        David Laight <David.Laight@aculab.com>
+Subject: Re: [PATCH v3] cpufreq: powernv: Set the cpus to nominal frequency during reboot/kexec
+Date: Fri, 26 Sep 2014 01:52:09 +0200
+Message-ID: <4913652.kENFQcqa9E@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAObsKC0PcfBTJv8zZYUiys4NxvS=JMd3jjedUam5oZ4tNLwhA@mail.gmail.com>
-References: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com> <1960419.9oqpSxvdev@vostro.rjw.lan> <CAAObsKC0PcfBTJv8zZYUiys4NxvS=JMd3jjedUam5oZ4tNLwhA@mail.gmail.com>
+In-Reply-To: <CAKohpo=uB252XLfx3tHPA8uk5RPkWB0SPQ_UxzVw70c-DWuHWg@mail.gmail.com>
+References: <1410430423-1246-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <CAKohpo=uB252XLfx3tHPA8uk5RPkWB0SPQ_UxzVw70c-DWuHWg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -30,40 +29,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 24, 2014 03:31:55 PM Tomeu Vizoso wrote:
-> On 24 September 2014 15:32, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Wednesday, September 24, 2014 10:42:13 AM Tomeu Vizoso wrote:
-> >> On 14 September 2014 19:06, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> > On Friday, September 12, 2014 11:11:25 AM Tomeu Vizoso wrote:
-> >> >> On 3 September 2014 17:49, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
-> >> >> > Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
-> >> >> >
-> >> >> > It can be used by memory controllers to calculate the optimum clock frequency
-> >> >> > based on the bandwidth needs of the different memory clients.
-> >> >> >
-> >> >> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> >> >> > Acked-by: Pavel Machek <pavel@ucw.cz>
-> >> >>
-> >> >> Hi Rafael,
-> >> >>
-> >> >> will you take this one for 3.18?
-> >> >
-> >> > Quite likely, but I'm traveling now, so I'll do that after I'm back home
-> >> > in a few days.  I'll write to you if there are any problems.
-> >>
-> >> Don't want to be annoying, but thought I might ping you just in case
-> >> this fell through the cracks.
+On Thursday, September 11, 2014 05:03:22 PM Viresh Kumar wrote:
+> On 11 September 2014 15:43, Shilpasri G Bhat
+> <shilpa.bhat@linux.vnet.ibm.com> wrote:
+> > This patch ensures the cpus to kexec/reboot at nominal frequency.
+> > Nominal frequency is the highest cpu frequency on PowerPC at
+> > which the cores can run without getting throttled.
 > >
-> > No, it didn't.
+> > If the host kernel had set the cpus to a low pstate and then it
+> > kexecs/reboots to a cpufreq disabled kernel it would cause the target
+> > kernel to perform poorly. It will also increase the boot up time of
+> > the target kernel. So set the cpus to high pstate, in this case to
+> > nominal frequency before rebooting to avoid such scenarios.
 > >
-> > I'm wondering about patch [2/2], though.  I'm assuming that you'll push you
-> > later through the Tegra DRM driver, right?
+> > The reboot notifier will set the cpus to nominal frequncy.
+> >
+> > Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+> > Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> > ---
+> > Changes v2->v3:
+> > We return EBUSY when cpufreq governor tries to change the frequency
+> > after rebooting is set to true. This results in console being flushed
+> > with error messages indicating failed attempts to change the
+> > frequency. So instead of returning EBUSY we return 0 to stop the
+> > governor from changing the frequency without alerting a failure to
+> > do the same on reboot, as this  is not an errorneaos condition.
 > 
-> Yes, that was Stephen's suggestion:
-> 
-> https://lkml.org/lkml/2014/8/25/439
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-OK, patch [1/2] queued up for 3.18, thanks!
+Queued up for 3.18, thanks!
 
 -- 
 I speak only for myself.
