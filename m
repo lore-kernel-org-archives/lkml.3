@@ -1,50 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaIYJYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:24:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60595 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaIYJYt (ORCPT
+	id S1752739AbaIYJZx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:25:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46412 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaIYJZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:24:49 -0400
-Date: Thu, 25 Sep 2014 11:24:46 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140925092446.GC19396@linutronix.de>
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
- <20140911111721.GB17476@xps8300>
- <54118AAB.2010205@linutronix.de>
- <5419B825.5000201@linutronix.de>
- <20140919102212.GA31784@xps8300>
- <541C0C64.5010206@linutronix.de>
- <20140922074605.GB26114@xps8300>
+	Thu, 25 Sep 2014 05:25:52 -0400
+Date: Thu, 25 Sep 2014 11:25:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] perf, x86: Add INTEL_FLAGS_UEVENT_CONSTRAINT
+Message-ID: <20140925092545.GB4140@worktop.programming.kicks-ass.net>
+References: <1411569288-5627-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140922074605.GB26114@xps8300>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411569288-5627-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Heikki Krogerus | 2014-09-22 10:46:05 [+0300]:
 
->Well, there are no other SoCs at the moment that would need it, and
->it's actually possible that there never will be. So yes, just handle
->that also in the omap specific code.
 
-Okay. So let me move the irq routine and the workarounds into omap then.
-
->Thanks,
->
-
-Sebastian
+Yes, these compile just fine. Thanks!
