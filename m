@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaIYNJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:09:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57754 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaIYNJZ (ORCPT
+	id S1753280AbaIYNJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:09:37 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40368 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaIYNJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:09:25 -0400
-Message-ID: <1411650539.5671.4.camel@pengutronix.de>
-Subject: Re: [PATCH 1/9] ARM: dts: vf610: Add system reset controller (SRC)
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        jingchang.lu@freescale.com,
-        Huang Yongcai-B20788 <b20788@freescale.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org
-Date: Thu, 25 Sep 2014 15:08:59 +0200
-In-Reply-To: <45f7af8b2dbe11967bb2ad87826b934c@agner.ch>
-References: <cover.1411404079.git.stefan@agner.ch>
-	 <2ca1cf3732a00512fa19b6118f9fb30aba014deb.1411404079.git.stefan@agner.ch>
-	 <CACRpkdbryJVW9e9N5+f3rWEGZ2YvLPJsvBtNSa9nPJpLVXhm0g@mail.gmail.com>
-	 <45f7af8b2dbe11967bb2ad87826b934c@agner.ch>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 25 Sep 2014 09:09:35 -0400
+Date: Thu, 25 Sep 2014 14:08:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20140925130847.GQ27755@sirena.org.uk>
+References: <1411628381-4029-1-git-send-email-addy.ke@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rKoHqF+aPLVth8b2"
+Content-Disposition: inline
+In-Reply-To: <1411628381-4029-1-git-send-email-addy.ke@rock-chips.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.7
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/rockchip: fix bug that cause the failture to read
+ data in DMA mode
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
 
-Am Mittwoch, den 24.09.2014, 18:41 +0200 schrieb Stefan Agner:
-> Am 2014-09-24 11:16, schrieb Linus Walleij:
-> > On Mon, Sep 22, 2014 at 7:09 PM, Stefan Agner <stefan@agner.ch> wrote:
-> > 
-> >> Add device tree property for system reset controller.
-> >>
-> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> > 
-> > Are there already device tree bindings for SRC and GRC?
-> 
-> Yes there are used in the i.MX6 world for instance, see imx6qdl.dtsi.
-> The SRC also has quite generic documentation, however, the GPC module
-> currently lacks documentation...
+--rKoHqF+aPLVth8b2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A patch that adds GPC binding documentation is part of this i.MX6 power
-domain series:
+On Thu, Sep 25, 2014 at 02:59:41PM +0800, Addy Ke wrote:
+> In my test on RK3288-pinky board, if spi is enabled, it will begin to
+> read data from slave regardless of whether the DMA is ready. So we
+> need prepare DMA before spi is enable.
 
-http://www.spinics.net/lists/devicetree/msg48454.html
+Applied, thanks.
 
-regards
-Philipp
+--rKoHqF+aPLVth8b2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUJBPfAAoJECTWi3JdVIfQUpcH/jwD1U4mFyYRJ0NxDY7xL/6c
+TVWcpXm9CuQPWc8T4Wy/DP6C7z3NRp536fWn2wgIfV5X87aGlRtdqqZ21aI4tnw5
+NmkRDu1isk1FplzR9eitLArFZFsUaeMFwHS88H2r+3FbvBfOSo1g80p701ebtVUb
+Sso5wMEpuc3pUFIvbVQDmqoOIOS+bJgkYFmqZVPYNHyT7gctj+alznM0PvR28uzp
+h42VF71K/1Kw4BQuMER4inc0z06rchMHmkfQJq4l19mfUDsdmyW7KizQM7eKNSc3
+npDuiSgT3Whonl+NvDoNsSmZLt5GYSNRsZUWbl3RhHHMJRl2tZASLADVj4yoFxQ=
+=x3pf
+-----END PGP SIGNATURE-----
+
+--rKoHqF+aPLVth8b2--
