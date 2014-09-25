@@ -1,188 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaIYP0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:26:50 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57005 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaIYPYG (ORCPT
+	id S1754077AbaIYP2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:28:00 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:56523 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079AbaIYP16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:24:06 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v5 01/10] blk-mq: handle failure path for initializing hctx
-Date: Thu, 25 Sep 2014 23:23:38 +0800
-Message-Id: <1411658627-19754-2-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
-References: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
+	Thu, 25 Sep 2014 11:27:58 -0400
+Date: Thu, 25 Sep 2014 17:27:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] mm: memcontrol: simplify detecting when the
+ memory+swap limit is hit
+Message-ID: <20140925152754.GF11080@dhcp22.suse.cz>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+ <1411571338-8178-3-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411571338-8178-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure of initializing one hctx isn't handled, so this patch
-introduces blk_mq_init_hctx() and its pair to handle it explicitly.
-Also this patch makes code cleaner.
+On Wed 24-09-14 11:08:57, Johannes Weiner wrote:
+> When attempting to charge pages, we first charge the memory counter
+> and then the memory+swap counter.  If one of the counters is at its
+> limit, we enter reclaim, but if it's the memory+swap counter, reclaim
+> shouldn't swap because that wouldn't change the situation.  However,
+> if the counters have the same limits, we never get to the memory+swap
+> limit.  To know whether reclaim should swap or not, there is a state
+> flag that indicates whether the limits are equal and whether hitting
+> the memory limit implies hitting the memory+swap limit.
+> 
+> Just try the memory+swap counter first.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- block/blk-mq.c |  114 ++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 69 insertions(+), 45 deletions(-)
+OK, this makes sense and makes the reclaim code little bit more
+readable (). I would just add that the patch shouldn't have any visible
+effectes because that is not apparent from the description.
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 03f5c79..d8c7f90 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1509,6 +1509,20 @@ static int blk_mq_hctx_notify(void *data, unsigned long action,
- 	return NOTIFY_OK;
- }
- 
-+static void blk_mq_exit_hctx(struct request_queue *q,
-+		struct blk_mq_tag_set *set,
-+		struct blk_mq_hw_ctx *hctx, unsigned int hctx_idx)
-+{
-+	blk_mq_tag_idle(hctx);
-+
-+	if (set->ops->exit_hctx)
-+		set->ops->exit_hctx(hctx, hctx_idx);
-+
-+	blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
-+	kfree(hctx->ctxs);
-+	blk_mq_free_bitmap(&hctx->ctx_map);
-+}
-+
- static void blk_mq_exit_hw_queues(struct request_queue *q,
- 		struct blk_mq_tag_set *set, int nr_queue)
- {
-@@ -1518,17 +1532,8 @@ static void blk_mq_exit_hw_queues(struct request_queue *q,
- 	queue_for_each_hw_ctx(q, hctx, i) {
- 		if (i == nr_queue)
- 			break;
--
--		blk_mq_tag_idle(hctx);
--
--		if (set->ops->exit_hctx)
--			set->ops->exit_hctx(hctx, i);
--
--		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
--		kfree(hctx->ctxs);
--		blk_mq_free_bitmap(&hctx->ctx_map);
-+		blk_mq_exit_hctx(q, set, hctx, i);
- 	}
--
- }
- 
- static void blk_mq_free_hw_queues(struct request_queue *q,
-@@ -1543,53 +1548,72 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
- 	}
- }
- 
--static int blk_mq_init_hw_queues(struct request_queue *q,
--		struct blk_mq_tag_set *set)
-+static int blk_mq_init_hctx(struct request_queue *q,
-+		struct blk_mq_tag_set *set,
-+		struct blk_mq_hw_ctx *hctx, unsigned hctx_idx)
- {
--	struct blk_mq_hw_ctx *hctx;
--	unsigned int i;
-+	int node;
-+
-+	node = hctx->numa_node;
-+	if (node == NUMA_NO_NODE)
-+		node = hctx->numa_node = set->numa_node;
-+
-+	INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
-+	INIT_DELAYED_WORK(&hctx->delay_work, blk_mq_delay_work_fn);
-+	spin_lock_init(&hctx->lock);
-+	INIT_LIST_HEAD(&hctx->dispatch);
-+	hctx->queue = q;
-+	hctx->queue_num = hctx_idx;
-+	hctx->flags = set->flags;
-+	hctx->cmd_size = set->cmd_size;
-+
-+	blk_mq_init_cpu_notifier(&hctx->cpu_notifier,
-+					blk_mq_hctx_notify, hctx);
-+	blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
-+
-+	hctx->tags = set->tags[hctx_idx];
- 
- 	/*
--	 * Initialize hardware queues
-+	 * Allocate space for all possible cpus to avoid allocation at
-+	 * runtime
- 	 */
--	queue_for_each_hw_ctx(q, hctx, i) {
--		int node;
-+	hctx->ctxs = kmalloc_node(nr_cpu_ids * sizeof(void *),
-+					GFP_KERNEL, node);
-+	if (!hctx->ctxs)
-+		goto unregister_cpu_notifier;
- 
--		node = hctx->numa_node;
--		if (node == NUMA_NO_NODE)
--			node = hctx->numa_node = set->numa_node;
-+	if (blk_mq_alloc_bitmap(&hctx->ctx_map, node))
-+		goto free_ctxs;
- 
--		INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
--		INIT_DELAYED_WORK(&hctx->delay_work, blk_mq_delay_work_fn);
--		spin_lock_init(&hctx->lock);
--		INIT_LIST_HEAD(&hctx->dispatch);
--		hctx->queue = q;
--		hctx->queue_num = i;
--		hctx->flags = set->flags;
--		hctx->cmd_size = set->cmd_size;
-+	hctx->nr_ctx = 0;
- 
--		blk_mq_init_cpu_notifier(&hctx->cpu_notifier,
--						blk_mq_hctx_notify, hctx);
--		blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
-+	if (set->ops->init_hctx &&
-+	    set->ops->init_hctx(hctx, set->driver_data, hctx_idx))
-+		goto free_bitmap;
- 
--		hctx->tags = set->tags[i];
-+	return 0;
- 
--		/*
--		 * Allocate space for all possible cpus to avoid allocation at
--		 * runtime
--		 */
--		hctx->ctxs = kmalloc_node(nr_cpu_ids * sizeof(void *),
--						GFP_KERNEL, node);
--		if (!hctx->ctxs)
--			break;
-+ free_bitmap:
-+	blk_mq_free_bitmap(&hctx->ctx_map);
-+ free_ctxs:
-+	kfree(hctx->ctxs);
-+ unregister_cpu_notifier:
-+	blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
- 
--		if (blk_mq_alloc_bitmap(&hctx->ctx_map, node))
--			break;
-+	return -1;
-+}
- 
--		hctx->nr_ctx = 0;
-+static int blk_mq_init_hw_queues(struct request_queue *q,
-+		struct blk_mq_tag_set *set)
-+{
-+	struct blk_mq_hw_ctx *hctx;
-+	unsigned int i;
- 
--		if (set->ops->init_hctx &&
--		    set->ops->init_hctx(hctx, set->driver_data, i))
-+	/*
-+	 * Initialize hardware queues
-+	 */
-+	queue_for_each_hw_ctx(q, hctx, i) {
-+		if (blk_mq_init_hctx(q, set, hctx, i))
- 			break;
- 	}
- 
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c | 47 +++++++++++++----------------------------------
+>  1 file changed, 13 insertions(+), 34 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 1ec22bf380d0..89c920156c2a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -315,9 +315,6 @@ struct mem_cgroup {
+>  	/* OOM-Killer disable */
+>  	int		oom_kill_disable;
+>  
+> -	/* set when res.limit == memsw.limit */
+> -	bool		memsw_is_minimum;
+> -
+>  	/* protect arrays of thresholds */
+>  	struct mutex thresholds_lock;
+>  
+> @@ -1804,8 +1801,6 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
+>  
+>  	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
+>  		noswap = true;
+> -	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
+> -		noswap = true;
+>  
+>  	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
+>  		if (loop)
+> @@ -2543,16 +2538,17 @@ retry:
+>  		goto done;
+>  
+>  	size = batch * PAGE_SIZE;
+> -	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
+> -		if (!do_swap_account)
+> +	if (!do_swap_account ||
+> +	    !res_counter_charge(&memcg->memsw, size, &fail_res)) {
+> +		if (!res_counter_charge(&memcg->res, size, &fail_res))
+>  			goto done_restock;
+> -		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
+> -			goto done_restock;
+> -		res_counter_uncharge(&memcg->res, size);
+> +		if (do_swap_account)
+> +			res_counter_uncharge(&memcg->memsw, size);
+> +		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> +	} else {
+>  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
+>  		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+> -	} else
+> -		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> +	}
+>  
+>  	if (batch > nr_pages) {
+>  		batch = nr_pages;
+> @@ -3615,7 +3611,6 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+>  				unsigned long long val)
+>  {
+>  	int retry_count;
+> -	u64 memswlimit, memlimit;
+>  	int ret = 0;
+>  	int children = mem_cgroup_count_children(memcg);
+>  	u64 curusage, oldusage;
+> @@ -3642,24 +3637,16 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
+>  		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
+>  		 */
+>  		mutex_lock(&set_limit_mutex);
+> -		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+> -		if (memswlimit < val) {
+> +		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val) {
+>  			ret = -EINVAL;
+>  			mutex_unlock(&set_limit_mutex);
+>  			break;
+>  		}
+>  
+> -		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+> -		if (memlimit < val)
+> +		if (res_counter_read_u64(&memcg->res, RES_LIMIT) < val)
+>  			enlarge = 1;
+>  
+>  		ret = res_counter_set_limit(&memcg->res, val);
+> -		if (!ret) {
+> -			if (memswlimit == val)
+> -				memcg->memsw_is_minimum = true;
+> -			else
+> -				memcg->memsw_is_minimum = false;
+> -		}
+>  		mutex_unlock(&set_limit_mutex);
+>  
+>  		if (!ret)
+> @@ -3684,7 +3671,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
+>  					unsigned long long val)
+>  {
+>  	int retry_count;
+> -	u64 memlimit, memswlimit, oldusage, curusage;
+> +	u64 oldusage, curusage;
+>  	int children = mem_cgroup_count_children(memcg);
+>  	int ret = -EBUSY;
+>  	int enlarge = 0;
+> @@ -3703,22 +3690,14 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
+>  		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
+>  		 */
+>  		mutex_lock(&set_limit_mutex);
+> -		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+> -		if (memlimit > val) {
+> +		if (res_counter_read_u64(&memcg->res, RES_LIMIT) > val) {
+>  			ret = -EINVAL;
+>  			mutex_unlock(&set_limit_mutex);
+>  			break;
+>  		}
+> -		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+> -		if (memswlimit < val)
+> +		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val)
+>  			enlarge = 1;
+>  		ret = res_counter_set_limit(&memcg->memsw, val);
+> -		if (!ret) {
+> -			if (memlimit == val)
+> -				memcg->memsw_is_minimum = true;
+> -			else
+> -				memcg->memsw_is_minimum = false;
+> -		}
+>  		mutex_unlock(&set_limit_mutex);
+>  
+>  		if (!ret)
+> -- 
+> 2.1.0
+> 
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
