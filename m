@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaIYHyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:54:36 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.40]:49642 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaIYHye (ORCPT
+	id S1752149AbaIYHzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:55:05 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63712 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751800AbaIYHzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:54:34 -0400
-X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 03:54:34 EDT
-Date: Thu, 25 Sep 2014 09:47:34 +0200 (CEST)
-From: Nikolaus Voss <n.voss@weinmann-emt.de>
-X-X-Sender: nv@fox.voss.local
-To: Thierry Reding <thierry.reding@gmail.com>
-cc: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: atmel-pwm: fix calculation of prescale value
-In-Reply-To: <20140925065229.GD12423@ulmo>
-Message-ID: <alpine.DEB.2.10.1409250934090.38376@fox.voss.local>
-References: <20140924055851.CE51140656@mail.steuer-voss.de> <20140925065229.GD12423@ulmo>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 25 Sep 2014 03:55:02 -0400
+Message-ID: <5423CA53.5020207@6wind.com>
+Date: Thu, 25 Sep 2014 09:54:59 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Df-Sender: cG9zdGZpeEBzdGV1ZXItdm9zcy5kZQ==
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Network Development <netdev@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com> <CALCETrWnZtWstBviDxcHpLpjHF3R+sgS48RYf2pbKBYeExZVOQ@mail.gmail.com> <54228F8B.2030804@6wind.com> <CALCETrXMkV_1XR2mXOoO_2_vpB=6cPbWAAOhPFhPbDa_1P+zxw@mail.gmail.com>
+In-Reply-To: <CALCETrXMkV_1XR2mXOoO_2_vpB=6cPbWAAOhPFhPbDa_1P+zxw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
-
-On Thu, 25 Sep 2014, Thierry Reding wrote:
-> Please Cc the linux-pwm@vger.kernel.org mailing list for PWM-related
-> patches in the future.
-
-ok, I ran get_maintainer.pl on an old kernel...
-
-> Also a couple more comments:
+Le 24/09/2014 19:05, Andy Lutomirski a écrit :
+> On Wed, Sep 24, 2014 at 2:31 AM, Nicolas Dichtel
+> <nicolas.dichtel@6wind.com> wrote:
+>> Le 23/09/2014 21:26, Andy Lutomirski a écrit :
+>>
+>>> On Tue, Sep 23, 2014 at 6:20 AM, Nicolas Dichtel
+>>> <nicolas.dichtel@6wind.com> wrote:
+>>>>
+>>>> The goal of this serie is to be able to multicast netlink messages with
+>>>> an
+>>>> attribute that identify a peer netns.
+>>>> This is needed by the userland to interpret some informations contained
+>>>> in
+>>>> netlink messages (like IFLA_LINK value, but also some other attributes in
+>>>> case
+>>>> of x-netns netdevice (see also
+>>>> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
+>>>> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
+>>>>
+>>>> Ids are stored in the parent user namespace. These ids are valid only
+>>>> inside
+>>>> this user namespace. The user can retrieve these ids via a new netlink
+>>>> messages,
+>>>> but only if peer netns are in the same user namespace.
+>>>
+>>>
+>>> What about the parent / ancestors of the owning userns?  Can processes
+>>> in those usernses see any form of netns id?
+>>
+>> With this serie no. I'm not sure if ancestors really needs to be able to
+>> get these ids. What is your opinion?
 >
-> In the patch description: "pwm frequency" should be "PWM frequency".
-
-ok.
-
->> +	div = (unsigned long long)clk_get_rate(atmel_pwm->clk) * period_ns;
->> +	do_div(div, (int)1e9);
->
-> 1e9 should be NSEC_PER_SEC.
->
-
->> -		}
->> +		div >>= 1;
->> +		++pres;
->
-> Unless you really need the prefix increment behaviour (you don't in this
-> case) I prefer using the postfix operator because it is slightly more
-> idiomatic.
-
-ok (as I mostly do C++ programming, I prefer the prefix as it is usually
-more efficient for user-defined types).
-
-> No need for you to respin the patch, I've fixed up the above when
-> applying.
-
-Thanks!
-
-Niko
-
+> I might be missing some consideration here, but I would hope that ip
+> link would work correctly if I have a veth interface shared with a
+> netns that's in a child userns.
+No, you're right. Will send a v3.
