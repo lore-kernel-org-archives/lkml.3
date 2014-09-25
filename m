@@ -1,85 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaIYOf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:35:56 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33915 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914AbaIYOfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:35:55 -0400
-Date: Thu, 25 Sep 2014 16:35:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: linux-mm@kvack.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hrtimer deadlock caused by nohz_full
-In-Reply-To: <20140925141425.GA21702@redhat.com>
-Message-ID: <alpine.DEB.2.10.1409251630210.4604@nanos>
-References: <20140925141425.GA21702@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752914AbaIYOka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:40:30 -0400
+Received: from relay2.sgi.com ([192.48.180.65]:45499 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751641AbaIYOk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:40:28 -0400
+From: James Custer <jcuster@sgi.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com
+Cc: James Custer <jcuster@sgi.com>
+Subject: [PATCH] x86: Allow 1GB pages to be SPECIAL similar to 2MB
+Date: Thu, 25 Sep 2014 09:40:24 -0500
+Message-Id: <1411656024-33114-1-git-send-email-jcuster@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Dave Jones wrote:
+Superpages allocated by SGI's superpages module can be backed by 1GB pages,
+but direct i/o cannot be used. The superpages module uses _PAGE_BIT_SPECIAL
+to disable direct i/o because some code depends on the memory being backed
+by page structures. But, because superpages have no backing page structures
+this causes a panic.
 
-> Got this on a box that had been fuzzing for 12 hours or so.
-> There's also some timer stuff going on htere, so cc'ing the usual suspects.
+This is the way direct i/o on 1GB pages fails:
 
-And it's a hrtimer lockup
- 
->  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
->  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
->  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
->  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
->  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
->  <<EOE>>  <IRQ>  [<ffffffffa1823ac4>] _raw_spin_unlock_irqrestore+0x24/0x70
->  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
->  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
->  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
->  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
->  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
->  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
->  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
->  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
->  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
->  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
->  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
->  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
->  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
->  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
->  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
->  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
+               BUG: unable to handle kernel paging request at ffffea0038000000
+[60463.203795] IP: [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
+[60463.210058] PGD 83ffd3067 PUD 83ffd2067 PMD 0
+[60463.215052] Oops: 0000 [#1] SMP
 
-hrtimer_interrupt
-  tick_sched_timer
-    tick_sched_handle
-      update_process_times
-        irq_work_run
-	  irq_work_run_list
-	    nohz_full_kick_work_func
-	      __tick_nohz_full_check
-	        tick_nohz_restart
-                  hrtimer_cancel
+Stack traceback for pid 77136
+0xffff8867a88ae300    77136    74825  1   56   R  0xffff8867a88ae970 *readdirectsp
+ [<ffffffff8103c93a>] gup_huge_pud+0x9a/0xe0
+ [<ffffffff8103cc33>] gup_pud_range+0x173/0x1b0
+ [<ffffffff8103cd57>] get_user_pages_fast+0xe7/0x1b0
+ [<ffffffff8118eac3>] dio_get_page+0x83/0x150
+ [<ffffffff8118f641>] do_direct_IO+0x81/0x420
+ [<ffffffff8118fb89>] direct_io_worker+0x1a9/0x340
+ [<ffffffffa00c5de8>] ext3_direct_IO+0xe8/0x2c0 [ext3]
+ [<ffffffff810fa527>] generic_file_aio_read+0x237/0x260
+ [<ffffffff81159878>] do_sync_read+0xc8/0x110
+ [<ffffffff8115a027>] vfs_read+0xc7/0x130
+ [<ffffffff8115a193>] sys_read+0x53/0xa0
+ [<ffffffff81466192>] system_call_fastpath+0x16/0x1b
 
-And that hrtimer_cancel is:
+gup_huge_pud() is trying to find the page structure, and with superpages there
+is none.
 
-static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+With direct i/o on 2MB pages:
+
+static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+                int write, struct page **pages, int *nr)
 {
-	hrtimer_cancel(&ts->sched_timer);
+ ...
+                if (pmd_none(pmd) || pmd_trans_splitting(pmd))
+                        return 0;
 
-Now, that's really bad because we are in the timer callback of
-ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
-callback to complete.
+and pmd_trans_splitting() is testing _PAGE_SPLITTING, which is an alias
+for _PAGE_SPECIAL which we set on the 2MB or 1GB pages mapped in by superpages.
 
-Frederic !?!?
+But gup_pud_range() has no such check:
 
-Thanks,
+static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+                        int write, struct page **pages, int *nr)
+{
+  ...
+                if (pud_none(pud))
+                        return 0;
 
-	tglx
+Therefore direct i/o on 1GB pages attempts to get a page structure and panics.
+
+Signed-off-by: James Custer <jcuster@sgi.com>
+---
+ arch/x86/mm/gup.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index dd74e46..12ca9cf 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -121,7 +121,6 @@ static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
+ 		mask |= _PAGE_RW;
+ 	if ((pte_flags(pte) & mask) != mask)
+ 		return 0;
+-	/* hugepages are never "special" */
+ 	VM_BUG_ON(pte_flags(pte) & _PAGE_SPECIAL);
+ 	VM_BUG_ON(!pfn_valid(pte_pfn(pte)));
+ 
+@@ -191,7 +190,6 @@ static noinline int gup_huge_pud(pud_t pud, unsigned long addr,
+ 		mask |= _PAGE_RW;
+ 	if ((pte_flags(pte) & mask) != mask)
+ 		return 0;
+-	/* hugepages are never "special" */
+ 	VM_BUG_ON(pte_flags(pte) & _PAGE_SPECIAL);
+ 	VM_BUG_ON(!pfn_valid(pte_pfn(pte)));
+ 
+@@ -223,7 +221,7 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+ 		pud_t pud = *pudp;
+ 
+ 		next = pud_addr_end(addr, end);
+-		if (pud_none(pud))
++		if (pud_none(pud) || (pud_val(pud) & _PAGE_SPECIAL))
+ 			return 0;
+ 		if (unlikely(pud_large(pud))) {
+ 			if (!gup_huge_pud(pud, addr, next, write, pages, nr))
+-- 
+1.7.12.4
+
