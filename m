@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaIYDS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:18:28 -0400
-Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:54080
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752213AbaIYDT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:19:56 -0400
+Received: from mail-bn1on0147.outbound.protection.outlook.com ([157.56.110.147]:45960
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752464AbaIYDS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:18:26 -0400
-From: Robin Gong <b38343@freescale.com>
-To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <a.zummo@towertech.it>, <grant.likely@linaro.org>,
-        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
-        <LW@KARO-electronics.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+	id S1751426AbaIYDTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:19:55 -0400
+X-Greylist: delayed 3577 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Sep 2014 23:19:54 EDT
+From: Fancy Fang <chen.fang@freescale.com>
+To: <m.szyprowski@samsung.com>, <hverkuil@xs4all.nl>, <m.chehab@samsung.com>
+CC: <shawn.guo@freescale.com>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1] rtc: snvs: add poweroff function
-Date: Thu, 25 Sep 2014 10:13:53 +0800
-Message-ID: <1411611233-29919-1-git-send-email-b38343@freescale.com>
+Subject: [PATCH v2] [media] videobuf-dma-contig: set vm_pgoff to be zero to pass the sanity check in vm_iomap_memory().
+Date: Thu, 25 Sep 2014 09:59:25 +0800
+Message-ID: <1411610365-22425-1-git-send-email-chen.fang@freescale.com>
 X-Mailer: git-send-email 1.9.1
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(50466002)(81342003)(19580395003)(46102003)(50226001)(68736004)(77982003)(21056001)(31966008)(47776003)(81542003)(44976005)(74502003)(83072002)(20776003)(92566001)(83322001)(6806004)(10300001)(90102001)(89996001)(104016003)(87286001)(120916001)(104166001)(36756003)(33646002)(92726001)(106466001)(99396003)(229853001)(87936001)(77156001)(80022003)(107046002)(88136002)(50986999)(64706001)(19580405001)(74662003)(85306004)(102836001)(85852003)(79102003)(48376002)(95666004)(97736003)(84676001)(2201001)(105606002)(76482002)(4396001)(93916002)(62966002)(921003)(1121002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB349;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(105606002)(107046002)(95666004)(74662003)(81156004)(81342003)(89996001)(230783001)(104016003)(229853001)(104166001)(86362001)(76482002)(102836001)(92726001)(62966002)(64706001)(575784001)(88136002)(21056001)(97736003)(79102003)(4396001)(80022003)(69596002)(50226001)(50986999)(74502003)(46102003)(87286001)(50466002)(77156001)(48376002)(31966008)(44976005)(81542003)(85306004)(68736004)(93916002)(33646002)(10300001)(20776003)(92566001)(36756003)(106466001)(19580395003)(2201001)(83322001)(84676001)(90102001)(83072002)(85852003)(6806004)(19580405001)(120916001)(77982003)(99396003)(47776003)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB352;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB349;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB352;
 X-Forefront-PRVS: 0345CFD558
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=yibin.gong@freescale.com; 
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=chen.fang@freescale.com; 
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On i.mx6 chips, PMIC_ON_REQ can be pulled by snvs LPCR. That can be
-used poweroff system if PMIC_ON_REQ connected with external PMIC or
-power control circuit.Power up again if PMIC_ON_REQ pulled high.
+When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
+will assign the corresponding offset to the 'boff' field of the
+videobuf_buffer for each requested buffer sequentially. Later, user
+may call mmap() to map one or all of the buffers with the 'offset'
+parameter which is equal to its 'boff' value. Obviously, the 'offset'
+value is only used to find the matched buffer instead of to be the
+real offset from the buffer's physical start address as used by
+vm_iomap_memory(). So, in some case that if the offset is not zero,
+vm_iomap_memory() will fail.
 
-Signed-off-by: Robin Gong <b38343@freescale.com>
+Signed-off-by: Fancy Fang <chen.fang@freescale.com>
+Reviewed-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Reviewed-by: Hans Verkuil <hverkuil@xs4all.nl>
 ---
- Documentation/devicetree/bindings/crypto/fsl-sec4.txt |  4 ++++
- drivers/rtc/rtc-snvs.c                                | 18 ++++++++++++++++++
- 2 files changed, 22 insertions(+)
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-index e402277..00d67f2 100644
---- a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-+++ b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-@@ -363,11 +363,15 @@ Secure Non-Volatile Storage (SNVS) Low Power (LP) RTC Node
-       Value type: <prop-encoded-array>
-       Definition: A standard property.  Specifies the physical
-           address and length of the SNVS LP configuration registers.
-+  - fsl,poweroff
-+      Usage: opertional, recommend if PMIC_ON_REQ connected with external
-+	PMIC or power control circuit.
- 
- EXAMPLE
- 	sec_mon_rtc_lp@314000 {
- 		compatible = "fsl,sec-v4.0-mon-rtc-lp";
- 		reg = <0x34 0x58>;
-+		fsl,poweroff;
- 	};
- 
- =====================================================================
-diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
-index fa384fe..ef32541 100644
---- a/drivers/rtc/rtc-snvs.c
-+++ b/drivers/rtc/rtc-snvs.c
-@@ -29,6 +29,8 @@
- #define SNVS_LPCR_SRTC_ENV	(1 << 0)
- #define SNVS_LPCR_LPTA_EN	(1 << 1)
- #define SNVS_LPCR_LPWUI_EN	(1 << 3)
-+#define SNVS_LPCR_DP		(1 << 5)
-+#define SNVS_LPCR_TOP		(1 << 6)
- #define SNVS_LPSR_LPTA		(1 << 0)
- 
- #define SNVS_LPPGDR_INIT	0x41736166
-@@ -41,6 +43,8 @@ struct snvs_rtc_data {
- 	spinlock_t lock;
- };
- 
-+static void __iomem *snvs_base;
+diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+index bf80f0f..e02353e 100644
+--- a/drivers/media/v4l2-core/videobuf-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+@@ -305,6 +305,15 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 	/* Try to remap memory */
+ 	size = vma->vm_end - vma->vm_start;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 +
- static u32 rtc_read_lp_counter(void __iomem *ioaddr)
- {
- 	u64 read1, read2;
-@@ -241,8 +245,17 @@ static irqreturn_t snvs_rtc_irq_handler(int irq, void *dev_id)
- 	return events ? IRQ_HANDLED : IRQ_NONE;
- }
- 
-+static void snvs_poweroff(void)
-+{
-+	u32 value;
++	/* the "vm_pgoff" is just used in v4l2 to find the
++	 * corresponding buffer data structure which is allocated
++	 * earlier and it does not mean the offset from the physical
++	 * buffer start address as usual. So set it to 0 to pass
++	 * the sanity check in vm_iomap_memory().
++	 */
++	vma->vm_pgoff = 0;
 +
-+	value = readl(snvs_base + SNVS_LPCR);
-+	writel(value | SNVS_LPCR_DP | SNVS_LPCR_TOP, snvs_base + SNVS_LPCR);
-+}
-+
- static int snvs_rtc_probe(struct platform_device *pdev)
- {
-+	struct device_node *np = pdev->dev.of_node;
- 	struct snvs_rtc_data *data;
- 	struct resource *res;
- 	int ret;
-@@ -260,6 +273,11 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 	if (data->irq < 0)
- 		return data->irq;
- 
-+	if (np && of_get_property(np, "fsl,poweroff", NULL)) {
-+		snvs_base = data->ioaddr;
-+		pm_power_off = snvs_poweroff;
-+	}
-+
- 	platform_set_drvdata(pdev, data);
- 
- 	spin_lock_init(&data->lock);
+ 	retval = vm_iomap_memory(vma, mem->dma_handle, size);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ",
 -- 
 1.9.1
 
