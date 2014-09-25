@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaIYEIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 00:08:41 -0400
-Received: from ozlabs.org ([103.22.144.67]:56038 "EHLO ozlabs.org"
+	id S1750877AbaIYEWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 00:22:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:58169 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715AbaIYEIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 00:08:39 -0400
-Date: Thu, 25 Sep 2014 14:08:31 +1000
+	id S1750703AbaIYEWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 00:22:15 -0400
+Date: Thu, 25 Sep 2014 14:22:06 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Lee Jones <lee.jones@linaro.org>, Guenter Roeck <linux@roeck-us.net>,
-        Guodong Xu <guodong.xu@linaro.org>
+To: Sebastian Reichel <sre@kernel.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andreas Werner <andreas.werner@men.de>
-Subject: linux-next: manual merge of the mfd tree with the hwmon-staging
- tree
-Message-ID: <20140925140831.4c283b73@canb.auug.org.au>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: linux-next: build warning after merge of the battery tree
+Message-ID: <20140925142206.5ebea1eb@canb.auug.org.au>
 X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/v9JWNJ=0OhxcoMFBEWW8wLn"; protocol="application/pgp-signature"
+ boundary="Sig_/mKdjJXhf2Ek4L=9Ux=sujuu"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/v9JWNJ=0OhxcoMFBEWW8wLn
+--Sig_/mKdjJXhf2Ek4L=9Ux=sujuu
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Hi Lee,
+Hi Sebastian,
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/mfd/Makefile between commit dfbdcd7cefca ("mfd: menf21bmc:
-Introduce MEN 14F021P00 BMC MFD Core driver") from the hwmon-staging
-tree and commit bc69ade0238e ("mfd: Add HI6421 PMIC Core driver") from
-the mfd tree.
+After merging the battery tree, today's linux-next build (powerpc
+ppc64_defconfig and x86_64 allmodconfig) produced this warning:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+fs/sysfs/Kconfig:1:error: recursive dependency detected!
+fs/sysfs/Kconfig:1:	symbol SYSFS is selected by CHARGER_MAX14577
+drivers/power/Kconfig:327:	symbol CHARGER_MAX14577 depends on POWER_SUPPLY
+drivers/power/Kconfig:1:	symbol POWER_SUPPLY is selected by HID_SONY
+drivers/hid/Kconfig:649:	symbol HID_SONY depends on NEW_LEDS
+drivers/leds/Kconfig:8:	symbol NEW_LEDS is selected by SENSORS_APPLESMC
+drivers/hwmon/Kconfig:299:	symbol SENSORS_APPLESMC depends on HWMON
+drivers/hwmon/Kconfig:5:	symbol HWMON is selected by EEEPC_LAPTOP
+drivers/platform/x86/Kconfig:496:	symbol EEEPC_LAPTOP depends on HOTPLUG_PCI
+drivers/pci/hotplug/Kconfig:5:	symbol HOTPLUG_PCI depends on SYSFS
+
+Caused by commit e30110e9c96f ("charger: max14577: Configure
+battery-dependent settings from DTS and sysfs").  Consider depending on
+SYSFS instead of selecting it ... or maybe making your driver work even
+without it.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/mfd/Makefile
-index d58068aa8aa9,f1b2e2c9264e..000000000000
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@@ -169,7 -171,7 +171,8 @@@ obj-$(CONFIG_MFD_AS3711)	+=3D as3711.
-  obj-$(CONFIG_MFD_AS3722)	+=3D as3722.o
-  obj-$(CONFIG_MFD_STW481X)	+=3D stw481x.o
-  obj-$(CONFIG_MFD_IPAQ_MICRO)	+=3D ipaq-micro.o
- +obj-$(CONFIG_MFD_MENF21BMC)	+=3D menf21bmc.o
-+ obj-$(CONFIG_MFD_HI6421_PMIC)	+=3D hi6421-pmic-core.o
- =20
-  intel-soc-pmic-objs		:=3D intel_soc_pmic_core.o intel_soc_pmic_crc.o
-  obj-$(CONFIG_INTEL_SOC_PMIC)	+=3D intel-soc-pmic.o
-
---Sig_/v9JWNJ=0OhxcoMFBEWW8wLn
+--Sig_/mKdjJXhf2Ek4L=9Ux=sujuu
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUI5VEAAoJEMDTa8Ir7ZwVpAoP/jGPO0Vso/QjdvAA2Mq22iAI
-xnl5eHtyeUmgB/o1/9GRUYJH181oPImA/DQFGI+WWCJPZBQQntWr570f0YYs7tsr
-Qmym61OfXbofSr2ZhAy7dTzy55/Kg9bz958hkLTzVfGpMWOekkSLvgqwduIflE4C
-jRuHhKJyJYKdqLansxGGN3dQfGiClHdLLYsGh68pHCM7yM3ytbMBPYBJJLeJkMNz
-d9zGw51LZcWq4a4ha8wCzJvxKLxSXtXOwHp7E++qZ7Wd7Xo8hhiQPHpXlCAEFtFq
-A5jyLyv18VFUIpdpp2ltLnkm37acOhGa/FmrD4leOsm/lIo1OtxIOiVLX/lVbiBS
-Neu7SgVsjfgPapDjFK3uGqSCawrbuSfnYmPVu16oYIfbVSCUgmMqltrsEKOI2k+x
-dK7L7ftZ3I/IuAo4B3MEQ965zBNRnDnMAxRc99/QK6/k/YOgMgS4ES9293SlFbDq
-9HKy/66httSdQB4BDZexa6KNvxpC/APe/MkdKYdOcwIQrc1ka3BMhcHqf7WPtP8U
-q4STUoeh9afsKXaB4LA9NYrnsDQp1wlyaIGgKu/i3I0JY71Y0eJPTcdvw9Kthfj3
-s5qi+R+l2WrtJ8N3+Ocv5j0OOWgnBT5DcP4NINtN+CnP+b4ofb3ffFA8JAmaCJa3
-RERDQInpuJ5Ndzq01IUg
-=+UJJ
+iQIcBAEBCAAGBQJUI5h0AAoJEMDTa8Ir7ZwVt3gQAIWb8K9NsTpnFveIUt1pzYeB
+jQm3uJddM59VMPUWT4t19NPmhzk59nExa3r3RpmpNNqg/3I6TH28ixV2elF+ccCt
+fCbhuFQd+rBnSYrVFiDbHawqTSUFF+Fjsnw9vym9c6g6u7u9CNETUKYfkGy6ngub
+0t4e3650mTOoY0orhnx9nHP7llvMVLoxt8VZoJFiZxwPSzvzcD895P0ZhNZ/r+x4
+LUbU+0aNDnYyz9WVc0Cx+6bl8BfWjdEOIHmSBm/dNnXy9qLUUCNhXnXLMFsFjWR0
+84sp5d0fY93V8rksBfSQanGFdIaFUviaG+NBU6bjpAzSH16OI9bsouX3xtnSRYIE
+h5U4YRUZQEJlsMoYgaoJTPc9jMS+nhA9O74sevv4cYs4/lQA7z1u0xL1iCR1e4zD
+5BCTYQT6LPcTTi71SRHukFYmp9J+Q46zjZ3mW74X+BghcOx2wO4IpqG/s929XoDX
+RWiD6h8bN77AtbUFJ34iyK+cP1lJT1jZqMrAx+IUBLc3SYFgpzOAKaubym5YMQ3s
+bi9NyZtPnux36rLIOnOY+K9KV9oIKj0bi9fuaKmYaPu5XEYULv3T2c3/o/YVG1V3
+PVS6735mnj/Y78xEplkF+H3Nd66ESElZLqW5fWAeoVssXOa/wD5wmuvaVmVNHDmE
+h91ZVRTKlTh0YCQXuYc5
+=oFTN
 -----END PGP SIGNATURE-----
 
---Sig_/v9JWNJ=0OhxcoMFBEWW8wLn--
+--Sig_/mKdjJXhf2Ek4L=9Ux=sujuu--
