@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaIYJzl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:55:41 -0400
-Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:61341
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750984AbaIYJzi convert rfc822-to-8bit (ORCPT
+	id S1752586AbaIYJ4k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:56:40 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51894 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaIYJ4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:55:38 -0400
-From: Thomas Shao <huishao@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>, Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "KY Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Drivers: hv: util: Implement Time Synchronization using
- host time sample
-Thread-Topic: [PATCH] Drivers: hv: util: Implement Time Synchronization
- using host time sample
-Thread-Index: AQHP1vKMtDPVAvlpRESa+FlYjIeumZwOWccAgAMGX4CAADTtAA==
-Date: Thu, 25 Sep 2014 09:40:42 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
- <20140923075610.GA10933@aepfle.de> <20140925060745.GA9450@sucs.org>
-In-Reply-To: <20140925060745.GA9450@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(189002)(51704005)(3905003)(199003)(377454003)(24454002)(13464003)(76176999)(50986999)(31966008)(44976005)(23726002)(106116001)(86146001)(55846006)(97756001)(15395725005)(85306004)(97736003)(15202345003)(83322001)(107046002)(69596002)(19580405001)(90102001)(16796002)(21056001)(19580395003)(106466001)(54356999)(6806004)(76482002)(68736004)(79102003)(66066001)(10300001)(84676001)(120916001)(47776003)(86612001)(33656002)(85852003)(92726001)(81542003)(2656002)(87936001)(83072002)(46102003)(77096002)(74502003)(20776003)(15975445006)(64706001)(81342003)(74662003)(77982003)(50466002)(80022003)(86362001)(46406003)(19300405004)(81156004)(4396001)(95666004)(92566001)(99396003)(562404015);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1211;H:mail.microsoft.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1211;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 0345CFD558
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	Thu, 25 Sep 2014 05:56:39 -0400
+Subject: Re: [PATCH v5 1/2] arcmsr: simplify ioctl data read/write
+From: Ching Huang <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <5422E7BB.6090108@redhat.com>
+References: <1411551214.4648.51.camel@Centos6.3-64>
+	 <5422E7BB.6090108@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Sep 2014 17:56:33 +0800
+Message-ID: <1411638993.8266.46.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Thursday, September 25, 2014 2:08 PM
-> To: Olaf Hering
-> Cc: Thomas Shao; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
-> apw@canonical.com; jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
-> Subject: Re: [PATCH] Drivers: hv: util: Implement Time Synchronization using
-> host time sample
-> 
-> On Tue, Sep 23, 2014 at 09:56:10AM +0200, Olaf Hering wrote:
-> > On Tue, Sep 23, Thomas Shao wrote:
+On Wed, 2014-09-24 at 17:48 +0200, Tomas Henzl wrote:
+> On 09/24/2014 11:33 AM, Ching Huang wrote:
+> > From: Ching Huang <ching2048@areca.com.tw>
 > >
-> > > In current hyper-v time sync service,it only gets the initial clock
-> > > time from the host. It didn't process the following time samples.
-> > > This change introduced a module parameter called host_time_sync. If
-> > > it is set to true, the guest will periodically sychronize it's time
-> > > with the host clock using host time sample. By default it is
-> > > disabled, because we still recommend user to configure NTP for time
-> synchronization.
+> > This patch is relative to:
+> > http://git.infradead.org/users/hch/scsi-queue.git/tree/drivers-for-3.18:/drivers/scsi/arcmsr
+> >
+> > change in v5:
+> > 1. rename firstindex to getIndex, lastindex to putIndex for readability
+> > 2. define ARCMSR_API_DATA_BUFLEN as 1032
+> > 3. simplify ioctl data read by marcro CIRC_CNT_TO_END and CIRC_CNT
+> >
+> > Signed-off-by: Ching Huang <ching 2048@areca.com.tw>
+> > ---
+> >
+> ...
+> > +		pQbuffer = &acb->wqbuffer[acb->wqbuf_putIndex];
+> > +		cnt2end = ARCMSR_MAX_QBUFFER - acb->wqbuf_putIndex;
+> > +		if (user_len > cnt2end) {
+> > +			memcpy(pQbuffer, ptmpuserbuffer, cnt2end);
+> > +			ptmpuserbuffer += cnt2end;
+> > +			user_len -= cnt2end;
+> > +			acb->wqbuf_putIndex = 0;
+> > +			pQbuffer = acb->wqbuffer;
+> >  		}
+> > +		memcpy(pQbuffer, ptmpuserbuffer, user_len);
+> > +		acb->wqbuf_putIndex += user_len;
+> > +		acb->wqbuf_putIndex %= ARCMSR_MAX_QBUFFER;
+> > +		if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
+> This test^ is most likely useless, it looks like you set the
+> ACB_F_MESSAGE_WQBUFFER_CLEARED every time you have added some data to the buffer
+> and clear it when the buffer gets empty. I think you could get rid of
+> the ACB_F_MESSAGE_WQBUFFER_CLEARED completely. Also the ACB_F_MESSAGE_RQBUFFER_CLEARED doesn't
+> seems to be ever evaluated.
+> I'm not sure with the ACB_F_MESSAGE_WQBUFFER_READED, but that one probably is also
+> a candidate for removal.
+You are right. ACB_F_MESSAGE_WQBUFFER_CLEARED, ACB_F_MESSAGE_RQBUFFER_CLEARED, ACB_F_MESSAGE_WQBUFFER_READED
+are seem useless.
+> ...
+> > @@ -678,15 +679,15 @@ struct AdapterControlBlock
+> >  	unsigned int				uncache_size;
+> >  	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
+> >  	/* data collection buffer for read from 80331 */
+> > -	int32_t				rqbuf_firstindex;
+> > +	int32_t				rqbuf_getIndex;
+> What is the reason for using an exact size int32 (instead of a plain int) here?
+There is not special reason have to int32, int is OK.
+> >  	/* first of read buffer  */
+> > -	int32_t				rqbuf_lastindex;
+> > +	int32_t				rqbuf_putIndex;
+> >  	/* last of read buffer   */
+> >  	uint8_t				wqbuffer[ARCMSR_MAX_QBUFFER];
+> >  	/* data collection buffer for write to 80331  */
+> > -	int32_t				wqbuf_firstindex;
+> > +	int32_t				wqbuf_getIndex;
+> >  	/* first of write buffer */
+> > -	int32_t				wqbuf_lastindex;
+> > +	int32_t				wqbuf_putIndex;
+> >  	/* last of write buffer  */
+> >  	uint8_t				devstate[ARCMSR_MAX_TARGETID][ARCMSR_MAX_TARGETLUN];
+> >  	/* id0 ..... id15, lun0...lun7 */
 > 
-> You [Microsoft?] do? Can you link to public sources where is this stated
-> please? I don't see any mention of doing this on
-> http://technet.microsoft.com/en-us/library/dn720239.aspx .. The only
-> official Microsoft information with respect to Hyper-V guest time
-> synchronisation I've seen has been for Windows guests but perhaps I've
-> looked in the wrong places.
+> The comments I've added are not directly related to this patch,
+> but you may still address them in a new patch
+> so -
+> Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 > 
-> The reason I ask is because regular ntpd is not enough to discipline a Linux
-> Hyper-V guest's clock. So much drift can occur under load that ntpd can't
-> bring the clock under sync. For now, I've been using Chrony which has a
-> higher tolerance for correcting drifting clocks. I'm not the only one seeing this
-> either (see http://serverfault.com/a/488528/203726
-> and
-> http://serverfault.com/questions/523389/linux-clock-loses-10-minutes-
-> every-week
-> ).
 > 
-> It would be good to something official about this issue as it is painful when
-> happens.
 > 
 
-Hi Sitsofe,
 
-As far as I know, currently the document about time sync in Hyper-V is only for Windows. Below is a doc from MSDN:
-http://blogs.msdn.com/b/virtual_pc_guy/archive/2010/11/19/time-synchronization-in-hyper-v.aspx 
-We are working on the document about Time Sync on Hyper-V to cover both Linux and Windows.
-
-> --
-> Sitsofe | http://sucs.org/~sits/
