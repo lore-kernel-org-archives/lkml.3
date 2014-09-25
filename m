@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbaIYV6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:58:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43866 "EHLO mail.kernel.org"
+	id S1753123AbaIYV60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:58:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43880 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016AbaIYV6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:58:19 -0400
+	id S1753071AbaIYV6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 17:58:23 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/14] perf evlist: Monitor POLLERR and POLLHUP events too
-Date: Thu, 25 Sep 2014 18:57:40 -0300
-Message-Id: <1411682271-3771-4-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/14] perf evlist: We need to poll all event file descriptors
+Date: Thu, 25 Sep 2014 18:57:41 -0300
+Message-Id: <1411682271-3771-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411682271-3771-1-git-send-email-acme@kernel.org>
 References: <1411682271-3771-1-git-send-email-acme@kernel.org>
@@ -28,24 +28,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We want to know when the fd went away, like when a monitored thread
-exits.
+Because we want to notice when they get POLLHUP'ed, so that we can
+figure out when all threads exited in a workload being monitored.
 
-If we do not monitor such events, then the tools will wait forever on
-events from a vanished thread, like when running:
+We can't just monitor the fds that were mmaped, we need to notice when
+all the fds that were PERF_EVENT_IOC_SET_OUTPUT'ed too, because the mmap
+stays even after the fd that originally was used to do the mmap call
+went away, its only when all the set-output fds for a mmap are gone that
+the mmap is.
 
- $ sleep 5s &
- $ perf record -p `pidof sleep`
-
-This builds upon the kernel patch by Jiri Olsa that actually makes a
-poll on those file descriptors to return POLLHUP.
-
-It is also needed to change the tools to use
-perf_evlist__filter_pollfd() to check if there are remainings fds to
-monitor or if all are gone, in which case they will exit the
-poll/mmap/read loop.
-
-Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Don Zickus <dzickus@redhat.com>
@@ -56,25 +47,35 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-a4fslwspov0bs69nj825hqpq@git.kernel.org
+Link: http://lkml.kernel.org/r/20140908151016.GH17728@krava.brq.redhat.com
+Link: http://lkml.kernel.org/n/tip-24omlq5asrfg4uo3muuzn2bl@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/evlist.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 023bc3873ae9..502cd11ab17e 100644
+index 502cd11ab17e..6b13bfa7ac2c 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -424,7 +424,7 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
- {
- 	fcntl(fd, F_SETFL, O_NONBLOCK);
- 	evlist->pollfd[evlist->nr_fds].fd = fd;
--	evlist->pollfd[evlist->nr_fds].events = POLLIN;
-+	evlist->pollfd[evlist->nr_fds].events = POLLIN | POLLERR | POLLHUP;
- 	evlist->nr_fds++;
+@@ -717,8 +717,6 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
+ 		evlist->mmap[idx].base = NULL;
+ 		return -1;
+ 	}
+-
+-	perf_evlist__add_pollfd(evlist, fd);
+ 	return 0;
  }
  
+@@ -745,6 +743,8 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 				return -1;
+ 		}
+ 
++		perf_evlist__add_pollfd(evlist, fd);
++
+ 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+ 		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+ 			return -1;
 -- 
 1.9.3
 
