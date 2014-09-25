@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaIYHGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:06:09 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:45152 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaIYHGF (ORCPT
+	id S1751800AbaIYHLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:11:47 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:59612 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaIYHLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:06:05 -0400
-Date: Thu, 25 Sep 2014 09:06:01 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 02/22] PCI/MSI: Remove useless bus->msi assignment
-Message-ID: <20140925070601.GF12423@ulmo>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <1411614872-4009-3-git-send-email-wangyijing@huawei.com>
+	Thu, 25 Sep 2014 03:11:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Peter Chen <peter.chen@freescale.com>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com,
+        alexandre.belloni@free-electrons.com, p.zabel@pengutronix.de,
+        jszhang@marvell.com, sebastian.hesselbarth@gmail.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Thu, 25 Sep 2014 09:11:35 +0200
+Message-ID: <3696520.MDUrkdjfGZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140925011647.GB3716@peterchendt>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com> <20140925011647.GB3716@peterchendt>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kbCYTQG2MZjuOjyn"
-Content-Disposition: inline
-In-Reply-To: <1411614872-4009-3-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/Ccb5GYl6UvZIpT4H7BhZPuvVbkUpfK97KwucD59Jkd
+ oGSOpGs4ahx/fz8E5AshK7e0tjOT7GstmX9OAw3lRB6ak6I84L
+ 6kW0eyq6DNVP50zgsMyFRm41pLSOx2KLfMiSCWTHxyVbzltXsr
+ zXPzJfkMUtm4+7CCvQDj+2M48GzlvzzSE3cC4IScEUveug1/m+
+ PGSvz4P0V9e1uE91nxyhqfBlwzJ5dwZGMOW1W+vnQqpgKqagt9
+ DTiJFdIZ8Qsn2RZvVey9hGxCUwpVU/IyqPPR+tQBfjQP+GynCx
+ dsZIzc1Z4KNhXI0k/fhGMSbCFNuXG4NGi9hSW4EEHs7U5reNJM
+ fvDmpoNEPTg3arK9/3HM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 25 September 2014 09:16:48 Peter Chen wrote:
+> > +     }
+> > +
+> > +     if (dev->of_node) {
+> > +             ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+> > +             if (ret)
+> > +                     goto clk_err;
+> > +     } else {
+> > +             ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> > +             if (ret)
+> > +                     goto clk_err;
+> > +     }
+> 
+> Hi Antoine, the above code may not be needed, since get phy and set dma
+> mask are common operation, we can do it at core code, the only thing you
+> need to do is something like: dev->dma_mask = DMA_BIT_MASK(32).
+> 
 
---kbCYTQG2MZjuOjyn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Certainly not, doing that would be broken for a number of reasons:
 
-On Thu, Sep 25, 2014 at 11:14:12AM +0800, Yijing Wang wrote:
-> Currently, PCI drivers will initialize bus->msi in
-> pcibios_add_bus(). pcibios_add_bus() will be called
-> in every pci bus initialization. So the bus->msi
-> assignment in pci_alloc_child_bus() is useless.
+- dev->dma_mask is a pointer, a driver should not reassign that
+- the device may have been set up for a bus that requires a smaller mask
+  that is already set, changing the mask would cause data corruption
+- setting just the dma mask but not coherent mask is wrong
+- setting the dma mask can fail, e.g. if the mask is smaller than the
+  smallest memory zone, so you have to check the return value.
 
-I think this should be the other way around. The default should be to
-inherit bus->msi from the parent. That way drivers don't typically have
-to do it, yet they can still opt to override it if they need to.
-
-For Tegra for example I think it would work if we assigned the MSI chip
-to the root bus (in tegra_pcie_scan_bus()) and then have it propagated
-to child busses in pci_alloc_child_bus() so that tegra_pcie_add_bus()
-can be removed altogether.
-
-Thierry
-
---kbCYTQG2MZjuOjyn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUI77YAAoJEN0jrNd/PrOhZ/IQAMCSt26z+T6Q8TozfHBY40d1
-VjyfIqF++JMHsJp9JBnJk7W/SdKcW+ClXvgZjtR4hqvTRlYUBPk6Sn3JWpi3RslY
-GHt/y1pNGzk05qLADjlA8CAGVjq0Vspw5WO5SLjzu10gfvcddAX7YKRcWz5vW9uv
-TcG+NFcDyGRaNg+ATkJ8Ep4rVN3eIkh9te9CE/pG5zQAV+NEZkaN4v9hRFubWIPy
-HUXyDu+8aTJ3YUyhrXkbGR23i0lLzcWsqhrcjbbbQj0swxngijMgBbzJU2jJ0rxx
-5CjTbs0mgvqKfsX1WQ3Df61rSN/krlMiZeD66YuMTuWdlzZkGJqpHCDkKdx2rITZ
-o2IXg6faK1OARr8JfubrXil2utfpJkvBJR2fWmH0j37ZkEb249skTCAnb2yroyhJ
-Mz3BmS+nAgPJkQUTTVZigeR+90KASb/WQrFPZhvOPK/ioMy0UyGy6uvNYm4rLXK+
-gWN2TjIaniEFM60xJLFPgsVuf9XXKUZ0REybeTiDM65mofLUSkxtMbK/mrcBdHgF
-kdO+JJ93hN6vnnqpqA/QjKNJebZm0PUjSTZvXIlzBs/v+gOh4bWewATJLbcgll/g
-w85vBMPaceGBcjBIBul927T7Uf+2pLOmJHmM+eCzXSdxAyQ8qx75Su9uWOY3sX3Q
-JDxVrWb34Dj7sIqL36a3
-=f2MC
------END PGP SIGNATURE-----
-
---kbCYTQG2MZjuOjyn--
+	Arnd
