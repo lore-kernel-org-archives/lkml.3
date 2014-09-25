@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaIYHSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:18:09 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44886 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaIYHSH (ORCPT
+	id S1752524AbaIYHT1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:19:27 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:42317 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaIYHTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:18:07 -0400
-Message-ID: <5423C1A8.6080603@collabora.co.uk>
-Date: Thu, 25 Sep 2014 09:18:00 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 25 Sep 2014 03:19:24 -0400
+Date: Thu, 25 Sep 2014 09:19:20 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 03/22] MSI: Remove the redundant irq_set_chip_data()
+Message-ID: <20140925071919.GH12423@ulmo>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Kukjin Kim <kgene@kernel.org>, "'Doug Anderson'" <dianders@chromium.org>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, "'Daniel Drake'" <drake@endlessm.com>,
-        "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        =?windows-1252?Q?=27Andreas_F=E4rber=27?= <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: dts: Add rtc_src clk for s3c-rtc on exynos5250-snow
-References: <1410954633-27025-1-git-send-email-javier.martinez@collabora.co.uk> <1410954633-27025-3-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=W7xJ01m2oLtuDnogOmrpwpztbir=59oSWU6oojFYUWKw@mail.gmail.com> <5419ADF9.3010509@suse.de> <00f801cfd6f6$07e10500$17a30f00$@kernel.org> <5421992F.6070908@samsung.com> <54219D47.6010102@collabora.co.uk> <54233A84.7040902@collabora.co.uk> <54235360.7090303@samsung.com>
-In-Reply-To: <54235360.7090303@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mhjHhnbe5PrRcwjY"
+Content-Disposition: inline
+In-Reply-To: <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
 
-On 09/25/2014 01:27 AM, Kukjin Kim wrote:
->>
->> Today I also had time to review the rebased patches from Andreas and found
->> two issues introduced during the merge conflict resolution:
->>
-> Oops. Thanks for your quick fix it up.
->
+--mhjHhnbe5PrRcwjY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-You are welcome.
- 
->> 1) The spi_1 dev node on exynos5250-smdk5250.dts now uses the old "cs-gpio"
->>     DT property under the controller-data instead of the standard "cs-gpios"
->>     under the SPI parent. IOW, is a regression of the bug fixed in commit
->>     e138d43 ("ARM: dts: fix the chip select gpios definition in the SPI nodes").
->>
->> 2) The display-timings child node of the dp-controller was removed in commit
->>     a98c3c2 ("ARM: dts: update display related nodes for exynos5250-snow") but
->>     was introduced again in the Snow DTS during the merge.
->>
->> I'll post a series that fixes both issues with the following patches:
->>
-> I've applied them.
-> 
->> Javier Martinez Canillas (2):
->>        ARM: dts: Fix chip select GPIO on smdk5250
->>        ARM: dts: Remove display timings node from exynos5250-snow
->>
->> I see that you already send a pull request to arm-soc maintainers so probably
->> these will be part of the fixes during the 3.18 rc cycle.
->>
-> I'll queue them in my third pull-request maybe today :)
-> 
+On Thu, Sep 25, 2014 at 11:14:13AM +0800, Yijing Wang wrote:
+> Currently, pcie-designware, pcie-rcar, pci-tegra drivers
+> use irq chip_data to save the msi_chip pointer. They
+> already call irq_set_chip_data() in their own MSI irq map
+> functions. So irq_set_chip_data() in arch_setup_msi_irq()
+> is useless.
 
-Great. It would be awesome also if you can also pick Sjoerd's USB series [0]
-which solves an issue with USB on certain configurations.
+Again, I think this should be the other way around. If drivers do
+something that's already handled by the core, then the duplicate code
+should be dropped from the drivers.
 
-I looked at your for-next branch but I didn't see those patches there.
+Thierry
 
-> Thanks,
-> Kukjin
-> 
+--mhjHhnbe5PrRcwjY
+Content-Type: application/pgp-signature
 
-Thanks a lot and best regards,
-Javier
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-[0]: https://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg37045.html
+iQIcBAEBAgAGBQJUI8H3AAoJEN0jrNd/PrOhD9gP/irz9NSH3coHma+k59CgfNee
+Eadp8ruJoWHsk+kNc+VP4X8QUfFbawc4Y9GarISl2soj926zV/hj8I7CSKn7im1g
+OEWOG1+IoZY+1142DUhZRfqgw+kPIsHL2nKRK6RJCWhpIxIrh1f7/LcSyrWUbS9r
+7t6FJUljEAZ4oSmW8FDuK4hrK9s53zIKQkvv2zfbOv7sAvnYuJM4r5EteKEkxVqy
+VEwvbqgS5Ccf4PKJKnISrCAV9z4H8kYF2PN0e7+8x9l6WOsdz5yEszOJmoREGMzG
+eCUaBYi7Tl7jAqdQkJfEePdK7BotGIbuffF2j76j1TTgOKp2HEoMlTxLv9SldxMa
+9NoNSP5NzJzSyK6Pawx84xkhKnMd5TWLD7IMcDvfcMIbQ+IZiXDnNjQ9diG3RjhT
+zLyMRZc5MdOfL8ScPzrYYUATbIEFmJdB0rUZ6u9ivHdRsVqZ6pJbRz/C/QPfd92M
+dDXoVvcRDGGgaM66PbfYykArWhGI+hPG4ip3t5CpA2KLqLm9BapvqSc0H6V9y5w8
+nuBHS0pk3mojCR9naMzuOy0nqME7SU9QiOiMMvv6uZztE2y3udRmkZNHX32DSi7l
+6YLq84EA/LyOtPp9jrRH1eKZLty5qyY2mO9Le46GAragc909SMnKpNAWJyV+RLLm
+9fhn8sFnEUFKzDPptCkB
+=WmVy
+-----END PGP SIGNATURE-----
+
+--mhjHhnbe5PrRcwjY--
