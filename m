@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaIYNa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:30:59 -0400
-Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:62603
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751574AbaIYNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:30:57 -0400
-X-Greylist: delayed 1122 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 09:30:56 EDT
-Message-ID: <542410D3.2060507@freescale.com>
-Date: Thu, 25 Sep 2014 15:55:47 +0300
-From: Laurentiu Tudor <b10716@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753198AbaIYNco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:32:44 -0400
+Received: from cube.luon.net ([37.72.100.20]:53478 "EHLO cube.luon.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaIYNcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:32:42 -0400
+X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 09:32:42 EDT
+Date: Thu, 25 Sep 2014 15:27:17 +0200
+From: Sjoerd Simons <sjoerd@luon.net>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com
+Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
+Message-ID: <20140925132717.GA13579@dusk.luon.net>
+References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-To: Jingchang Lu <jingchang.lu@freescale.com>, <mturquette@linaro.org>
-CC: <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add CLK_OF_DECLARE
- support
-References: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
-In-Reply-To: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.166.1]
-X-ClientProxiedBy: DB4PR03CA0013.eurprd03.prod.outlook.com (25.160.39.151) To
- BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB314;
-X-Forefront-PRVS: 0345CFD558
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(24454002)(377454003)(479174003)(189002)(199003)(33656002)(120916001)(47776003)(20776003)(85306004)(92566001)(102836001)(76482002)(50466002)(77096002)(87976001)(101416001)(64706001)(65956001)(46102003)(83072002)(65806001)(85852003)(95666004)(76176999)(23676002)(92726001)(64126003)(80022003)(107046002)(31966008)(77982003)(81342003)(87266999)(4396001)(79102003)(81542003)(74662003)(21056001)(99136001)(83506001)(42186005)(105586002)(66066001)(50986999)(65816999)(54356999)(90102001)(97736003)(74502003)(36756003)(10300001)(99396003)(106356001)(83322001)(80316001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB314;H:[10.171.73.112];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingchang,
+Playing a bit with todays linux-next on my jetson, it seems this patch is
+still required for enabling the GPU. Is there anything blocking it (firmware
+not available yet in liux-firmware?)
 
-On 09/23/2014 09:46 AM, Jingchang Lu wrote:
-> The IP is shared by PPC and ARM, this renames it to qoriq for better
-> represention, and this also adds the CLK_OF_DECLARE support for being
-> initialized by of_clk_init() on ARM.
+On Mon, May 19, 2014 at 06:24:10PM +0900, Alexandre Courbot wrote:
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra124-jetson-tk1.dts | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 > 
+> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+> index e31fb61a81d3..15a194d1277f 100644
+> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+> @@ -30,6 +30,12 @@
+>  		};
+>  	};
+>  
+> +	gpu@0,57000000 {
+> +		status = "okay";
+> +
+> +		vdd-supply = <&vdd_gpu>;
+> +	};
+> +
+>  	pinmux: pinmux@0,70000868 {
+>  		pinctrl-names = "default";
+>  		pinctrl-0 = <&state_default>;
+> @@ -1505,7 +1511,7 @@
+>  					regulator-always-on;
+>  				};
+>  
+> -				sd6 {
+> +				vdd_gpu: sd6 {
+>  					regulator-name = "+VDD_GPU_AP";
+>  					regulator-min-microvolt = <650000>;
+>  					regulator-max-microvolt = <1200000>;
 
-I think you need to also update drivers/cpufreq/Kconfig.powerpc
-to use the renamed config option.
-
----
-Best Regards, Laurentiu
+-- 
+If you put it off long enough, it might go away.
