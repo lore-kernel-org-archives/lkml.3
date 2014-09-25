@@ -1,237 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaIYFU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:20:26 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:54493 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaIYFUX (ORCPT
+	id S1752180AbaIYFXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 01:23:47 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36780 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaIYFXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:20:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411364719-28064-1-git-send-email-gautam.vivek@samsung.com>
-References: <CAFp+6iGXLKhtGaHm=dFDGCpN38G=w6mX0PuatskBhvcL_HA=Bg@mail.gmail.com>
-	<1411364719-28064-1-git-send-email-gautam.vivek@samsung.com>
-Date: Thu, 25 Sep 2014 10:50:22 +0530
-X-Google-Sender-Auth: SsT40SP-XnGsQcdJgxZrbWqa8TA
-Message-ID: <CAFp+6iE0DGZ722kqFmBSDSzKLJ38=n3yfzx8t8knncjGbuAkyA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/2] usb: host: ehci-exynos: Remove unnecessary usb-phy support
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Sep 2014 01:23:45 -0400
+From: Matt Ranostay <mranostay@gmail.com>
+To: galak@codeaurora.org, dmitry.torokhov@gmail.com, zonque@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org
+Cc: devicetree@vger.kernel.org, Matt Ranostay <mranostay@gmail.com>
+Subject: [PATCH v3 2/3] cap11xx: Add support for various cap11xx devices
+Date: Wed, 24 Sep 2014 22:24:21 -0700
+Message-Id: <1411622662-16581-3-git-send-email-mranostay@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411622662-16581-1-git-send-email-mranostay@gmail.com>
+References: <1411622662-16581-1-git-send-email-mranostay@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Several other variants of the cap11xx device exists with a varying
+number of capacitance detection channels. Add support for creating
+the channels dynamically.
 
+Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+---
+ .../devicetree/bindings/input/cap11xx.txt          |  3 +-
+ drivers/input/keyboard/cap11xx.c                   | 65 +++++++++++++++-------
+ 2 files changed, 46 insertions(+), 22 deletions(-)
 
-On Mon, Sep 22, 2014 at 11:15 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Now that we have completely moved from older USB-PHY drivers
-> to newer GENERIC-PHY drivers for PHYs available with USB controllers
-> on Exynos series of SoCs, we can remove the support for the same
-> in our host drivers too.
->
-> We also defer the probe for our host in case we end up getting
-> EPROBE_DEFER error when getting PHYs.
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> ---
-
-Did this one got missed for usb-next ?
-I can only see "usb: host: ohci-exynos: Remove unnecessary usb-phy support"
-in the next branch.
-
-Ignore me if you have already taken care of this, and plan to queue it up.
-
->
-> Changes since v4:
->  - returning 'ret' instead of PTR_ERR(phy), since ret is nothing but that only.
->
-> Changes since v3:
->  - Addressed review comments by Alan:
->    -- Skipped renaming 'phy_number' variable,
->    -- resorted to just adding minimal change required for phy assignment.
->    -- updated patch description to mention EPROBE_DEFER support.
->
->  drivers/usb/host/ehci-exynos.c |   74 +++++++++++-----------------------------
->  1 file changed, 20 insertions(+), 54 deletions(-)
->
-> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-> index 2eed9a4..7189f2e 100644
-> --- a/drivers/usb/host/ehci-exynos.c
-> +++ b/drivers/usb/host/ehci-exynos.c
-> @@ -21,11 +21,8 @@
->  #include <linux/of_gpio.h>
->  #include <linux/phy/phy.h>
->  #include <linux/platform_device.h>
-> -#include <linux/usb/phy.h>
-> -#include <linux/usb/samsung_usb_phy.h>
->  #include <linux/usb.h>
->  #include <linux/usb/hcd.h>
-> -#include <linux/usb/otg.h>
->
->  #include "ehci.h"
->
-> @@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
->
->  struct exynos_ehci_hcd {
->         struct clk *clk;
-> -       struct usb_phy *phy;
-> -       struct usb_otg *otg;
-> -       struct phy *phy_g[PHY_NUMBER];
-> +       struct phy *phy[PHY_NUMBER];
->  };
->
->  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-> @@ -60,8 +55,9 @@ static int exynos_ehci_get_phy(struct device *dev,
->         struct device_node *child;
->         struct phy *phy;
->         int phy_number;
-> -       int ret = 0;
-> +       int ret;
->
-> +       /* Get PHYs for the controller */
->         for_each_available_child_of_node(dev->of_node, child) {
->                 ret = of_property_read_u32(child, "reg", &phy_number);
->                 if (ret) {
-> @@ -77,31 +73,21 @@ static int exynos_ehci_get_phy(struct device *dev,
->                 }
->
->                 phy = devm_of_phy_get(dev, child, NULL);
-> +               exynos_ehci->phy[phy_number] = phy;
->                 of_node_put(child);
-> -               if (IS_ERR(phy))
-> -                       /* Lets fallback to older USB-PHYs */
-> -                       goto usb_phy_old;
-> -               exynos_ehci->phy_g[phy_number] = phy;
-> -               /* Make the older PHYs unavailable */
-> -               exynos_ehci->phy = ERR_PTR(-ENXIO);
-> -       }
-> -
-> -       return 0;
-> -
-> -usb_phy_old:
-> -       exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -       if (IS_ERR(exynos_ehci->phy)) {
-> -               ret = PTR_ERR(exynos_ehci->phy);
-> -               if (ret != -ENXIO && ret != -ENODEV) {
-> -                       dev_err(dev, "no usb2 phy configured\n");
-> -                       return ret;
-> +               if (IS_ERR(phy)) {
-> +                       ret = PTR_ERR(phy);
-> +                       if (ret == -EPROBE_DEFER) {
-> +                               return ret;
-> +                       } else if (ret != -ENOSYS && ret != -ENODEV) {
-> +                               dev_err(dev,
-> +                                       "Error retrieving usb2 phy: %d\n", ret);
-> +                               return ret;
-> +                       }
->                 }
-> -               dev_dbg(dev, "Failed to get usb2 phy\n");
-> -       } else {
-> -               exynos_ehci->otg = exynos_ehci->phy->otg;
->         }
->
-> -       return ret;
-> +       return 0;
->  }
->
->  static int exynos_ehci_phy_enable(struct device *dev)
-> @@ -111,16 +97,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
->         int i;
->         int ret = 0;
->
-> -       if (!IS_ERR(exynos_ehci->phy))
-> -               return usb_phy_init(exynos_ehci->phy);
-> -
->         for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-> -               if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -                       ret = phy_power_on(exynos_ehci->phy_g[i]);
-> +               if (!IS_ERR(exynos_ehci->phy[i]))
-> +                       ret = phy_power_on(exynos_ehci->phy[i]);
->         if (ret)
->                 for (i--; i >= 0; i--)
-> -                       if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -                               phy_power_off(exynos_ehci->phy_g[i]);
-> +                       if (!IS_ERR(exynos_ehci->phy[i]))
-> +                               phy_power_off(exynos_ehci->phy[i]);
->
->         return ret;
->  }
-> @@ -131,14 +114,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
->         struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
->         int i;
->
-> -       if (!IS_ERR(exynos_ehci->phy)) {
-> -               usb_phy_shutdown(exynos_ehci->phy);
-> -               return;
-> -       }
-> -
->         for (i = 0; i < PHY_NUMBER; i++)
-> -               if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -                       phy_power_off(exynos_ehci->phy_g[i]);
-> +               if (!IS_ERR(exynos_ehci->phy[i]))
-> +                       phy_power_off(exynos_ehci->phy[i]);
->  }
->
->  static void exynos_setup_vbus_gpio(struct device *dev)
-> @@ -231,9 +209,6 @@ skip_phy:
->                 goto fail_io;
->         }
->
-> -       if (exynos_ehci->otg)
-> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
-> -
->         err = exynos_ehci_phy_enable(&pdev->dev);
->         if (err) {
->                 dev_err(&pdev->dev, "Failed to enable USB phy\n");
-> @@ -273,9 +248,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
->
->         usb_remove_hcd(hcd);
->
-> -       if (exynos_ehci->otg)
-> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
-> -
->         exynos_ehci_phy_disable(&pdev->dev);
->
->         clk_disable_unprepare(exynos_ehci->clk);
-> @@ -298,9 +270,6 @@ static int exynos_ehci_suspend(struct device *dev)
->         if (rc)
->                 return rc;
->
-> -       if (exynos_ehci->otg)
-> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
-> -
->         exynos_ehci_phy_disable(dev);
->
->         clk_disable_unprepare(exynos_ehci->clk);
-> @@ -316,9 +285,6 @@ static int exynos_ehci_resume(struct device *dev)
->
->         clk_prepare_enable(exynos_ehci->clk);
->
-> -       if (exynos_ehci->otg)
-> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
-> -
->         ret = exynos_ehci_phy_enable(dev);
->         if (ret) {
->                 dev_err(dev, "Failed to enable USB phy\n");
-> --
-> 1.7.10.4
->
-
-
-
+diff --git a/Documentation/devicetree/bindings/input/cap11xx.txt b/Documentation/devicetree/bindings/input/cap11xx.txt
+index 738f5f3..8031aa5 100644
+--- a/Documentation/devicetree/bindings/input/cap11xx.txt
++++ b/Documentation/devicetree/bindings/input/cap11xx.txt
+@@ -7,9 +7,10 @@ Required properties:
+ 
+ 	compatible:		Must be on the following, depending on the model:
+ 					"microchip,cap1106"
++					"microchip,cap1126"
++					"microchip,cap1188"
+ 
+ 	reg:			The I2C slave address of the device.
+-				Only 0x28 is valid.
+ 
+ 	interrupts:		Property describing the interrupt line the
+ 				device's ALERT#/CM_IRQ# pin is connected to.
+diff --git a/drivers/input/keyboard/cap11xx.c b/drivers/input/keyboard/cap11xx.c
+index 0da2e83..adb979e 100644
+--- a/drivers/input/keyboard/cap11xx.c
++++ b/drivers/input/keyboard/cap11xx.c
+@@ -1,7 +1,6 @@
+ /*
+  * Input driver for Microchip CAP11xx based capacitive touch sensors
+  *
+- *
+  * (c) 2014 Daniel Mack <linux@zonque.org>
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -54,8 +53,6 @@
+ #define CAP11XX_REG_MANUFACTURER_ID	0xfe
+ #define CAP11XX_REG_REVISION		0xff
+ 
+-#define CAP11XX_NUM_CHN 6
+-#define CAP11XX_PRODUCT_ID	0x55
+ #define CAP11XX_MANUFACTURER_ID	0x5d
+ 
+ struct cap11xx_priv {
+@@ -63,7 +60,25 @@ struct cap11xx_priv {
+ 	struct input_dev *idev;
+ 
+ 	/* config */
+-	unsigned short keycodes[CAP11XX_NUM_CHN];
++	u32 *keycodes;
++	unsigned int num_channels;
++};
++
++struct cap11xx_hw_model {
++	uint8_t product_id;
++	unsigned int num_channels;
++};
++
++enum {
++	CAP1106,
++	CAP1126,
++	CAP1188,
++};
++
++struct cap11xx_hw_model cap11xx_devices[] = {
++	[CAP1106] = { .product_id = 0x55, .num_channels = 6 },
++	[CAP1126] = { .product_id = 0x53, .num_channels = 6 },
++	[CAP1188] = { .product_id = 0x50, .num_channels = 8 },
+ };
+ 
+ static const struct reg_default cap11xx_reg_defaults[] = {
+@@ -150,7 +165,7 @@ static irqreturn_t cap11xx_thread_func(int irq_num, void *data)
+ 	if (ret < 0)
+ 		goto out;
+ 
+-	for (i = 0; i < CAP11XX_NUM_CHN; i++)
++	for (i = 0; i < priv->num_channels; i++)
+ 		input_report_key(priv->idev, priv->keycodes[i],
+ 				 status & (1 << i));
+ 
+@@ -187,14 +202,23 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+ 	struct device *dev = &i2c_client->dev;
+ 	struct cap11xx_priv *priv;
+ 	struct device_node *node;
++	struct cap11xx_hw_model *cap = &cap11xx_devices[id->driver_data];
+ 	int i, error, irq, gain = 0;
+ 	unsigned int val, rev;
+-	u32 gain32, keycodes[CAP11XX_NUM_CHN];
++	u32 gain32;
+ 
+ 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	BUG_ON(!cap->num_channels);
++
++	priv->num_channels = cap->num_channels;
++	priv->keycodes = devm_kcalloc(dev,
++		priv->num_channels, sizeof(u32), GFP_KERNEL);
++	if (!priv->keycodes)
++		return -ENOMEM;
++
+ 	priv->regmap = devm_regmap_init_i2c(i2c_client, &cap11xx_regmap_config);
+ 	if (IS_ERR(priv->regmap))
+ 		return PTR_ERR(priv->regmap);
+@@ -203,9 +227,9 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+ 	if (error)
+ 		return error;
+ 
+-	if (val != CAP11XX_PRODUCT_ID) {
++	if (val != cap->product_id) {
+ 		dev_err(dev, "Product ID: Got 0x%02x, expected 0x%02x\n",
+-			val, CAP11XX_PRODUCT_ID);
++			val, cap->product_id);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -234,17 +258,12 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+ 			dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+ 	}
+ 
+-	BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
+-
+ 	/* Provide some useful defaults */
+-	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+-		keycodes[i] = KEY_A + i;
++	for (i = 0; i < priv->num_channels; i++)
++		priv->keycodes[i] = KEY_A + i;
+ 
+ 	of_property_read_u32_array(node, "linux,keycodes",
+-				   keycodes, ARRAY_SIZE(keycodes));
+-
+-	for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+-		priv->keycodes[i] = keycodes[i];
++		priv->keycodes, priv->num_channels);
+ 
+ 	error = regmap_update_bits(priv->regmap, CAP11XX_REG_MAIN_CONTROL,
+ 				   CAP11XX_REG_MAIN_CONTROL_GAIN_MASK,
+@@ -268,17 +287,17 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+ 	if (of_property_read_bool(node, "autorepeat"))
+ 		__set_bit(EV_REP, priv->idev->evbit);
+ 
+-	for (i = 0; i < CAP11XX_NUM_CHN; i++)
++	for (i = 0; i < priv->num_channels; i++)
+ 		__set_bit(priv->keycodes[i], priv->idev->keybit);
+ 
+ 	__clear_bit(KEY_RESERVED, priv->idev->keybit);
+ 
+ 	priv->idev->keycode = priv->keycodes;
+-	priv->idev->keycodesize = sizeof(priv->keycodes[0]);
+-	priv->idev->keycodemax = ARRAY_SIZE(priv->keycodes);
++	priv->idev->keycodesize = sizeof(u32);
++	priv->idev->keycodemax = priv->num_channels;
+ 
+ 	priv->idev->id.vendor = CAP11XX_MANUFACTURER_ID;
+-	priv->idev->id.product = CAP11XX_PRODUCT_ID;
++	priv->idev->id.product = cap->product_id;
+ 	priv->idev->id.version = rev;
+ 
+ 	priv->idev->open = cap11xx_input_open;
+@@ -312,12 +331,16 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+ 
+ static const struct of_device_id cap11xx_dt_ids[] = {
+ 	{ .compatible = "microchip,cap1106", },
++	{ .compatible = "microchip,cap1126", },
++	{ .compatible = "microchip,cap1188", },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, cap11xx_dt_ids);
+ 
+ static const struct i2c_device_id cap11xx_i2c_ids[] = {
+-	{ "cap1106", 0 },
++	{ "cap1106", CAP1106 },
++	{ "cap1126", CAP1126 },
++	{ "cap1188", CAP1188 },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i2c, cap11xx_i2c_ids);
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.9.1
+
