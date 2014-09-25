@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaIYCR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:17:27 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:45853 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaIYCR0 (ORCPT
+	id S1752222AbaIYCRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:17:35 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:53227 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaIYCRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:17:26 -0400
-Date: Wed, 24 Sep 2014 22:17:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zefan Li <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Miao Xie <miaox@cn.fujitsu.com>, Kees Cook <keescook@chromium.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v4 1/3] sched: fix confusing PFA_NO_NEW_PRIVS constant
-Message-ID: <20140925021721.GA5530@mtj.dyndns.org>
-References: <54237281.5020308@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54237281.5020308@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 24 Sep 2014 22:17:33 -0400
+Message-ID: <1411611449.25671.1.camel@phoenix>
+Subject: [PATCH] regulator: qcom_rpm: Fix FORCE_MODE_IS_2_BITS macro
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Sep 2014 10:17:29 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 09:40:17AM +0800, Zefan Li wrote:
-> Commit 1d4457f99928 ("sched: move no_new_privs into new atomic flags")
-> defined PFA_NO_NEW_PRIVS as hexadecimal value, but it is confusing
-> because it is used as bit number. Redefine it as decimal bit number.
-> 
-> Note this changes the bit position of PFA_NOW_NEW_PRIVS from 1 to 0.
-> 
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Miao Xie <miaox@cn.fujitsu.com>
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Acked-by: Kees Cook <keescook@chromium.org>
-> [ lizf: slightly modified subject and changelog ]
-> Signed-off-by: Zefan Li <lizefan@huawei.com>
+Current code does not take the macro parameter, fix it.
+This is not a problem at this moment because the only user actually passes
+vreg to FORCE_MODE_IS_2_BITS().
 
-Applied to cgroup/for-3.17-fixes.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/qcom_rpm-regulator.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
-
+diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
+index 8d5969a..b55cd5b 100644
+--- a/drivers/regulator/qcom_rpm-regulator.c
++++ b/drivers/regulator/qcom_rpm-regulator.c
+@@ -50,7 +50,7 @@ struct rpm_reg_parts {
+ };
+ 
+ #define FORCE_MODE_IS_2_BITS(reg) \
+-	((vreg->parts->fm.mask >> vreg->parts->fm.shift) == 3)
++	(((reg)->parts->fm.mask >> (reg)->parts->fm.shift) == 3)
+ 
+ struct qcom_rpm_reg {
+ 	struct qcom_rpm *rpm;
 -- 
-tejun
+1.9.1
+
+
+
