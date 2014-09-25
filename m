@@ -1,29 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaIYMpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:45:15 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37268 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaIYMpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:45:13 -0400
-Message-ID: <1411649105.4768.48.camel@hornet>
-Subject: Re: [PATCH v2 2/2] perf: Userspace event
-From: Pawel Moll <pawel.moll@arm.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Thu, 25 Sep 2014 13:45:05 +0100
-In-Reply-To: <87oau5k0u9.fsf@sejong.aot.lge.com>
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
-	 <1411491787-25938-3-git-send-email-pawel.moll@arm.com>
-	 <87oau5k0u9.fsf@sejong.aot.lge.com>
+	id S1752719AbaIYMrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:47:06 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:39487 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821AbaIYMrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 08:47:04 -0400
+Message-ID: <1411649225.18580.134.camel@iivanov-dev>
+Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonathan Cameron <jic23@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Fugang Duan <B38611@freescale.com>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Collins <collinsd@codeaurora.org>
+Date: Thu, 25 Sep 2014 15:47:05 +0300
+In-Reply-To: <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
+References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com>
+	 <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
@@ -32,39 +40,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-24 at 07:07 +0100, Namhyung Kim wrote:
-> On Tue, 23 Sep 2014 18:03:07 +0100, Pawel Moll wrote:
-> > This patch adds a new PERF_COUNT_SW_UEVENT software event
-> > and a related PERF_SAMPLE_UEVENT sample. User can now
-> > write to the the perf file descriptor, injecting such
-> > event in the perf buffer.
+
+Hi Stan, few comment bellow.
+
+On Wed, 2014-09-24 at 15:56 +0300, Stanimir Varbanov wrote:
+> The voltage ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+> 15bits resolution and register space inside PMIC accessible across
+> SPMI bus.
 > 
-> It seems the PERF_SAMPLE_UEVENT sample can be injected to any event.  So
-> why the PERF_COUNT_SW_UEVENT is needed?  At least one can use the
-> SW_DUMMY event for that purpose.
+> The vadc driver registers itself through IIO interface.
+> 
+> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  drivers/iio/adc/Kconfig                       |   10 +
+>  drivers/iio/adc/Makefile                      |    1 +
+>  drivers/iio/adc/qcom-spmi-vadc.c              | 1029 +++++++++++++++++++++++++
+>  include/dt-bindings/iio/qcom,spmi-pmic-vadc.h |  119 +++
+>  4 files changed, 1159 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/iio/adc/qcom-spmi-vadc.c
+>  create mode 100644 include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
+> 
+> diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+> index 11b048a..ec48360 100644
+> --- a/drivers/iio/adc/Kconfig
+> +++ b/drivers/iio/adc/Kconfig
+> @@ -206,6 +206,16 @@ config NAU7802
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called nau7802.
+>  
+> +config QCOM_SPMI_VADC
+> +	tristate "Qualcomm SPMI PMIC voltage ADC"
+> +	depends on SPMI
 
-You're right. I needed a different SW type in one of my early
-prototypes, but it's not the case any more. Consider it gone.
++ select REGMAP_SPMI
 
-> Also I think it'd be better to be a record type (PERF_RECORD_XXX)
-> instead of a sample flag (PERF_SAMPLE_XXX).  In perf tools, we already
-> use perf_user_event_type for synthesized userspace events.  This way it
-> can avoid unnecessary sample processing for userspace events.
+<snip>
 
-Fine with me. If no one objects, I'm more than happy to use
-PERF_RECORD_UEVENT = 11 for it.
+> +
+> +static int vadc_read(struct vadc_priv *vadc, u16 offset, u8 *data)
+> +{
+> +	return regmap_bulk_read(vadc->regmap, vadc->base + offset, data, 1);
 
-> For contents, I prefer to give complete control to users - kernel
-> doesn't need to care about it other than its size.  If one just wants to
-> use strings only, she can write them directly.  If others want to mix
-> different types of data, they might need to define a data format for
-> their use.
+just regmap_read() ?
 
-Are you saying to drop even the "type 0 means zero-terminated string"
-definition, even if everything else is up to the user? I quite like that
-idea, especially combined with write()ing to the perf_fd (it is very
-much like trace_marker then, which is beautiful in its simplicity), but
-the feelings are not that strong to fight a war over it.
+> +}
+> +
 
-Pawel
+General comment, most of the dev_dbg looks like legitimate dev_err's to me.
+
+Regards,
+Ivan 
+
 
