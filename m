@@ -1,127 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709AbaIYPGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:06:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42132 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752585AbaIYPGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:06:23 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <khilman@linaro.org>
-CC: Geert Uytterhoeven <geert+renesas@glider.be>, <linux-pm@vger.kernel.org>,
-        <ben.dooks@codethink.co.uk>, <laurent.pinchart@ideasonboard.com>,
-        <grant.likely@secretlab.ca>, <ulf.hansson@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [RFC PATCH 4/4] ARM: dts: k2hk-evm: add pm domains for net, qmss and knav_dmas
-Date: Thu, 25 Sep 2014 18:05:37 +0300
-Message-ID: <1411657537-25238-5-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411657537-25238-1-git-send-email-grygorii.strashko@ti.com>
-References: <1411657537-25238-1-git-send-email-grygorii.strashko@ti.com>
+	id S1753398AbaIYPKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:10:34 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:44256 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaIYPKc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 11:10:32 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 25 Sep 2014 17:07:57 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, johan@kernel.org
+Subject: Re: [PATCH v3 3/3] mfd: viperboard: remove unused platform_device
+Message-ID: <20140925150757.GH32124@localhost>
+References: <1411656197-26517-1-git-send-email-octavian.purdila@intel.com>
+ <1411656197-26517-4-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411656197-26517-4-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Keystone PM domains nodes for NetCP, NetCPx, QMSS, KNAV-DMA
-devices.
+On Thu, Sep 25, 2014 at 05:43:17PM +0300, Octavian Purdila wrote:
 
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- arch/arm/boot/dts/k2hk-evm.dts | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+Where's the commit message body?
 
-diff --git a/arch/arm/boot/dts/k2hk-evm.dts b/arch/arm/boot/dts/k2hk-evm.dts
-index 91371f7..a7b468c 100644
---- a/arch/arm/boot/dts/k2hk-evm.dts
-+++ b/arch/arm/boot/dts/k2hk-evm.dts
-@@ -58,6 +58,13 @@
- 				clock-output-names = "refclk-ddr3b";
- 			};
- 		};
-+
-+		qmss_domain: qmss_pm_controller {
-+			compatible = "ti,keystone-gpc";
-+			clocks = <&chipclk13>;
-+			#power-domain-cells = <0>;
-+		};
-+
- 		qmss: qmss@2a40000 {
- 			compatible = "ti,keystone-navigator-qmss";
- 			dma-coherent;
-@@ -65,6 +72,8 @@
- 			#size-cells = <1>;
- 			clocks = <&chipclk13>;
- 			ranges;
-+			power-domains = <&qmss_domain>;
-+
- 			queue-range	= <0 0x4000>;
- 			linkram0	= <0x100000 0x8000>;
- 			linkram1	= <0x0 0x10000>;
-@@ -192,12 +201,20 @@
- 			};
- 		}; /* qmss */
- 
-+		knav_dmas_domain: knav_dmas_pm_controller {
-+			compatible = "ti,keystone-gpc";
-+			clocks = <&clkpa>, <&clkxge>;
-+			#power-domain-cells = <0>;
-+		};
-+
- 		knav_dmas: knav_dmas@0 {
- 			compatible = "ti,keystone-navigator-dma";
- 			clocks = <&clkpa>, <&clkxge>;
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ranges;
-+			power-domains = <&knav_dmas_domain>;
-+
- 			ti,navigator-cloud-address = <0x23a80000 0x23a90000
- 						   0x23aa0000 0x23ab0000>;
- 
-@@ -222,6 +239,12 @@
- 			};
- 		};
- 
-+		netcp_domain: netcp_pm_controller {
-+			compatible = "ti,keystone-gpc";
-+			clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
-+			#power-domain-cells = <0>;
-+		};
-+
- 		netcp: netcp@2090000 {
- 			reg = <0x2620110 0x8>;
- 			reg-names = "efuse";
-@@ -229,6 +252,7 @@
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ranges;
-+			power-domains = <&netcp_domain>;
- 
- 			clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
- 			dma-coherent;
-@@ -302,11 +326,18 @@
- 			};
- 		};
- 
-+		netcpx_domain: netcpx_pm_controller {
-+			compatible = "ti,keystone-gpc";
-+			clocks = <&clkxge>;
-+			#power-domain-cells = <0>;
-+		};
-+
- 		netcpx: netcpx@2f00000 {
- 			compatible = "ti,netcp-1.0";
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ranges;
-+			power-domains = <&netcpx_domain>;
- 
- 			clocks = <&clkxge>;
- 			clock-names = "clk_xge";
--- 
-1.9.1
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>  drivers/mfd/viperboard.c       | 1 -
+>  include/linux/mfd/viperboard.h | 1 -
+>  2 files changed, 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
+> index 57fac1d..1e7c316 100644
+> --- a/drivers/mfd/viperboard.c
+> +++ b/drivers/mfd/viperboard.c
+> @@ -74,7 +74,6 @@ static int vprbrd_probe(struct usb_interface *interface,
+>  
+>  	/* save our data pointer in this interface device */
+>  	usb_set_intfdata(interface, vb);
+> -	dev_set_drvdata(&vb->pdev.dev, vb);
 
+This looks ok, as the subdrivers are accessing the driver data via the
+usb-interface (their parent) device.
+
+You verified that too, right?
+
+>  
+>  	/* get version information, major first, minor then */
+>  	pipe = usb_rcvctrlpipe(vb->usb_dev, 0);
+> diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
+> index af928d0..afc14ed 100644
+> --- a/include/linux/mfd/viperboard.h
+> +++ b/include/linux/mfd/viperboard.h
+> @@ -104,7 +104,6 @@ struct vprbrd {
+>  	struct usb_device *usb_dev; /* the usb device for this device */
+>  	struct mutex lock;
+>  	u8 *buf;
+> -	struct platform_device pdev;
+>  };
+>  
+>  #endif /* __MFD_VIPERBOARD_H__ */
+
+Still feels like the kind of clean up that should have a Tested-by.
+
+Johan
