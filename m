@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570AbaIYJKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:10:21 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:48880 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaIYJKR (ORCPT
+	id S1752894AbaIYJKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:10:38 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:53589 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaIYJKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:10:17 -0400
-Message-ID: <5423DBED.4090306@codethink.co.uk>
-Date: Thu, 25 Sep 2014 10:10:05 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: rdunlap@infradead.org, viro@zeniv.linux.org.uk, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@codethink.co.uk, keescook@chromium.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: [PATCH RESUBMIT 1/2] fs/seq_file: Create new function seq_open_init()
-References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk>	<1411557356-10673-2-git-send-email-rob.jones@codethink.co.uk> <20140924143904.b6f12611013876253d8ac50a@linux-foundation.org>
-In-Reply-To: <20140924143904.b6f12611013876253d8ac50a@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 25 Sep 2014 05:10:31 -0400
+Message-ID: <1411636227.15810.15.camel@marge.simpson.net>
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, ilya.dryomov@inktank.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 25 Sep 2014 11:10:27 +0200
+In-Reply-To: <20140925090619.GA5430@worktop>
+References: <20140924081845.572814794@infradead.org>
+	 <1411633803.15810.12.camel@marge.simpson.net>
+	 <20140925090619.GA5430@worktop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-09-25 at 11:06 +0200, Peter Zijlstra wrote: 
+> On Thu, Sep 25, 2014 at 10:30:03AM +0200, Mike Galbraith wrote:
+> > On Wed, 2014-09-24 at 10:18 +0200, Peter Zijlstra wrote: 
+> > > Hi,
+> > > 
+> > > This is a refresh of the nested sleep debug stuff which I posted as an RFC a
+> > > while back: lkml.kernel.org/r/20140804103025.478913141@infradead.org
+> > > 
+> > > Since then a number of issues identified by these patches have allready made
+> > > their way upstream:
+> > > 
+> > >     de713b57947a ("atm/svc: Fix blocking in wait loop")
+> > >     7c3af9752573 ("nfs: don't sleep with inode lock in lock_and_join_requests")
+> > > 
+> > > And I finally got some time to finish up these patches so we could merge them.
+> > > So please have a look and if nobody holllers we'll merge this 'soon'.
+> > 
+> > My DL980 hollered itself to death while booting.
+> > 
+> > [   39.587224] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff811021d0>] kauditd_thread+0x130/0x1e0
+> > [   39.706325] Modules linked in: iTCO_wdt(E) gpio_ich(E) iTCO_vendor_support(E) joydev(E) i7core_edac(E) lpc_ich(E) hid_generic(E) hpwdt(E) mfd_core(E) edac_core(E) bnx2(E) shpchp(E) sr_mod(E) ehci_pci(E) hpilo(E) netxen_nic(E) ipmi_si(E) cdrom(E) pcspkr(E) sg(E) acpi_power_meter(E) ipmi_msghandler(E) button(E) ext4(E) jbd2(E) mbcache(E) crc16(E) usbhid(E) radeon(E) ttm(E) drm_kms_helper(E) drm(E) i2c_algo_bit(E) uhci_hcd(E) ehci_hcd(E) usbcore(E) sd_mod(E) thermal(E) usb_common(E) processor(E) scsi_dh_hp_sw(E) scsi_dh_emc(E) scsi_dh_rdac(E) scsi_dh_alua(E) scsi_dh(E) ata_generic(E) ata_piix(E) libata(E) hpsa(E) cciss(E) scsi_mod(E)
+> > [   40.373599] CPU: 9 PID: 1974 Comm: kauditd Tainted: G            E  3.17.0-default #2
+> > [   40.506928] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
+> > [   40.613753]  0000000000001bd9 ffff88026f3d3d78 ffffffff815b2fc2 ffff88026f3d3db8
+> > [   40.728720]  ffffffff8106613c ffff88026f3d3da8 ffff88026b4fa110 0000000000000000
+> > [   40.816116]  0000000000000038 ffffffff8180ff47 ffff88026f3d3e58 ffff88026f3d3e18
+> > [   40.905088] Call Trace:
+> > [   40.938325]  [<ffffffff815b2fc2>] dump_stack+0x72/0x88
+> > [   41.000143]  [<ffffffff8106613c>] warn_slowpath_common+0x8c/0xc0
+> > [   41.067996]  [<ffffffff81066226>] warn_slowpath_fmt+0x46/0x50
+> > [   41.132669]  [<ffffffff811021d0>] ? kauditd_thread+0x130/0x1e0
+> > [   41.204105]  [<ffffffff811021d0>] ? kauditd_thread+0x130/0x1e0
+> > [   41.270699]  [<ffffffff8108d214>] __might_sleep+0x84/0xa0
+> > [   41.333979]  [<ffffffff8110224b>] kauditd_thread+0x1ab/0x1e0
+> > [   41.398612]  [<ffffffff810940c0>] ? try_to_wake_up+0x210/0x210
+> > [   41.465435]  [<ffffffff811020a0>] ? audit_printk_skb+0x70/0x70
+> > [   41.534628]  [<ffffffff810859db>] kthread+0xeb/0x100
+> > [   41.596562]  [<ffffffff810858f0>] ? kthread_freezable_should_stop+0x80/0x80
+> > [   41.678973]  [<ffffffff815b85bc>] ret_from_fork+0x7c/0xb0
+> > [   41.742073]  [<ffffffff810858f0>] ? kthread_freezable_should_stop+0x80/0x80
+> 
+> Cute,.. where exactly is that __might_sleep coming from; nothing obvious
+> there (then again, I'm half asleep) and stuff seems to have gotten
+> inlined.
 
+0xffffffff8110227a is in kauditd_thread (include/linux/freezer.h:56).
+51       * DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION
+52       * If try_to_freeze causes a lockdep warning it means the caller may deadlock
+53       */
+54      static inline bool try_to_freeze_unsafe(void)
+55      {
+56              might_sleep();
+57              if (likely(!freezing(current)))
+58                      return false;
+59              return __refrigerator(false);
+60      }
 
-On 24/09/14 22:39, Andrew Morton wrote:
-> On Wed, 24 Sep 2014 12:15:55 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
->
->> Add a new function to help reduce boilerplate code.
->>
->> This is a wrapper function for seq_open() that will simplify the code in a
->> significant number of cases where seq_open() is currently called.
->>
->> It's first use is in __seq_open_private(), thereby recovering most of
->> the code space used by the new function.
->
-> It would be nice to include one or more of the conversions in this patch
-> series so we can see what the effects look like.
-
-There are certainly lots of candidates around. However, I thought that
-the change to __seq_open_private() already gave a good illustration of
-the level of savings to be made, in that it more or less made the new
-function "self financing".
-
->
->> --- a/fs/seq_file.c
->> +++ b/fs/seq_file.c
->> @@ -639,28 +639,38 @@ int seq_release_private(struct inode *inode, struct file *file)
->>   }
->>   EXPORT_SYMBOL(seq_release_private);
->>
->> +int seq_open_init(struct file *f, const struct seq_operations *ops, void *p)
->> +{
->> +	struct seq_file *s;
->> +	int rc;
->> +
->> +	rc = seq_open(f, ops);
->> +	if (rc)
->> +		return rc;
->> +
->> +	s = f->private_data;
->> +	s->private = p;
->> +
->> +	return 0;
->> +}
->> +EXPORT_SYMBOL(seq_open_init);
->
-> A global exported-to-modules interface should be documented, please.
-> Especially when it has a void* argument.  seq_file.c is patchy - some
-> of it is documented, some of it uses the read-programmers-mind
-> approach.
-
-I have included documentation as the second patch. Would it have been
-better to include them in a single patch? I didn't do that because
-seq_file and Documentation have different maintainers. I'm still
-learning the protocols here.
-
->
->
-> __seq_open_private() has
-> 	void *private;
->
-> single_open() has
-> 	void *data
->
-> And now seq_open_init() has
-> 	void *p
->
-> but these all refer to the same thing.  Can we have a bit of
-> consistency in the naming please?  I suggest "private", to match
-> the seq_file field.
-
-A valid point and I can easily make the change but fixing single_open()
-would mean that the patch is addressing two issues, is that acceptable?
-Another protocol question, sorry.
-
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
