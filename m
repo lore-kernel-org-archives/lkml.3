@@ -1,216 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaIYDzn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:55:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53326 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736AbaIYDzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:55:32 -0400
-Date: Thu, 25 Sep 2014 13:55:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/5 - resend] SCHED: add some "wait..on_bit...timeout()"
- interfaces.
-Message-ID: <20140925135519.3ae1fa60@notabene.brown>
-In-Reply-To: <20140924070418.GA990@gmail.com>
-References: <20140924012422.4838.29188.stgit@notabene.brown>
-	<20140924012832.4838.59410.stgit@notabene.brown>
-	<20140924070418.GA990@gmail.com>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1750971AbaIYEGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 00:06:39 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:39361 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaIYEGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 00:06:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/j.ngX_FFR/P+u=EKiLXN4ri"; protocol="application/pgp-signature"
+In-Reply-To: <cover.1411594644.git.milosz@adfin.com>
+References: <cover.1410810247.git.milosz@adfin.com> <cover.1411594644.git.milosz@adfin.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Thu, 25 Sep 2014 06:06:14 +0200
+X-Google-Sender-Auth: nbVLm6NemeCYBmzvQ_9IC_g5R58
+Message-ID: <CAHO5Pa2AbW+ndgUBjjB==NnwQjVuvbYaYdW8v0x-CjYYQEr9AA@mail.gmail.com>
+Subject: Re: [RFC v3 0/4] vfs: Non-blockling buffered fs read (page cache only)
+To: Milosz Tanski <milosz@adfin.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-aio <linux-aio@kvack.org>, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/j.ngX_FFR/P+u=EKiLXN4ri
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello Milosz,
 
+On Wed, Sep 24, 2014 at 11:46 PM, Milosz Tanski <milosz@adfin.com> wrote:
+> This patcheset introduces an ability to perform a non-blocking read from
+> regular files in buffered IO mode. This works by only for those filesystems
+> that have data in the page cache.
+>
+> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
+> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
+> extra flag argument (RWF_NONBLOCK).
+>
+> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
+> perform buffered IO operations. They submit the work form another thread
+> that performs network IO and epoll or other threads that perform CPU work. This
+> leads to increased latency for processing, esp. in the case of data that's
+> already cached in the page cache.
+>
+> With the new interface the applications will now be able to fetch the data in
+> their network / cpu bound thread(s) and only defer to a threadpool if it's not
+> there. In our own application (VLDB) we've observed a decrease in latency for
+> "fast" request by avoiding unnecessary queuing and having to swap out current
+> tasks in IO bound work threads.
 
-In commit c1221321b7c25b53204447cff9949a6d5a7ddddc
-   sched: Allow wait_on_bit_action() functions to support a timeout
-
-I suggested that a "wait_on_bit_timeout()" interface would not meet my
-need.  This isn't true - I was just over-engineering.
-
-Including a 'private' field in wait_bit_key instead of a focused
-"timeout" field was just premature generalization.  If some other
-use is ever found, it can be generalized or added later.
-
-So this patch renames "private" to "timeout" with a meaning "stop
-waiting when "jiffies" reaches or passes "timeout",
-and adds two of the many possible wait..bit..timeout() interfaces:
-
-wait_on_page_bit_killable_timeout(), which is the one I want to use,
-and out_of_line_wait_on_bit_timeout() which is a reasonably general
-example.  Others can be added as needed.
-
-Acked-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Signed-off-by: NeilBrown <neilb@suse.de>
-
----
-This time with EXPORT_SYMBOL_GPL.
+Since this is a change to the user-space API, could you CC future
+versions of this patch set to linux-api@vgerr.kernel.org please, as
+per Documentation/SubmitChecklist. See also
+https://www.kernel.org/doc/man-pages/linux-api-ml.html.
 
 Thanks,
-NeilBrown
+
+Michael
 
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 3df8c7db7a4e..87f9e4230d3a 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -502,6 +502,8 @@ static inline int lock_page_or_retry(struct page *page,=
- struct mm_struct *mm,
- extern void wait_on_page_bit(struct page *page, int bit_nr);
-=20
- extern int wait_on_page_bit_killable(struct page *page, int bit_nr);
-+extern int wait_on_page_bit_killable_timeout(struct page *page,
-+					     int bit_nr, unsigned long timeout);
-=20
- static inline int wait_on_page_locked_killable(struct page *page)
- {
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 6fb1ba5f9b2f..80115bf88671 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -25,7 +25,7 @@ struct wait_bit_key {
- 	void			*flags;
- 	int			bit_nr;
- #define WAIT_ATOMIC_T_BIT_NR	-1
--	unsigned long		private;
-+	unsigned long		timeout;
- };
-=20
- struct wait_bit_queue {
-@@ -154,6 +154,7 @@ int __wait_on_bit_lock(wait_queue_head_t *, struct wait=
-_bit_queue *, wait_bit_ac
- void wake_up_bit(void *, int);
- void wake_up_atomic_t(atomic_t *);
- int out_of_line_wait_on_bit(void *, int, wait_bit_action_f *, unsigned);
-+int out_of_line_wait_on_bit_timeout(void *, int, wait_bit_action_f *, unsi=
-gned, unsigned long);
- int out_of_line_wait_on_bit_lock(void *, int, wait_bit_action_f *, unsigne=
-d);
- int out_of_line_wait_on_atomic_t(atomic_t *, int (*)(atomic_t *), unsigned=
-);
- wait_queue_head_t *bit_waitqueue(void *, int);
-@@ -859,6 +860,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode=
-, int sync, void *key);
-=20
- extern int bit_wait(struct wait_bit_key *);
- extern int bit_wait_io(struct wait_bit_key *);
-+extern int bit_wait_timeout(struct wait_bit_key *);
-+extern int bit_wait_io_timeout(struct wait_bit_key *);
-=20
- /**
-  * wait_on_bit - wait for a bit to be cleared
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index 15cab1a4f84e..5a62915f47a8 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -343,6 +343,18 @@ int __sched out_of_line_wait_on_bit(void *word, int bi=
-t,
- }
- EXPORT_SYMBOL(out_of_line_wait_on_bit);
-=20
-+int __sched out_of_line_wait_on_bit_timeout(
-+	void *word, int bit, wait_bit_action_f *action,
-+	unsigned mode, unsigned long timeout)
-+{
-+	wait_queue_head_t *wq =3D bit_waitqueue(word, bit);
-+	DEFINE_WAIT_BIT(wait, word, bit);
-+
-+	wait.key.timeout =3D jiffies + timeout;
-+	return __wait_on_bit(wq, &wait, action, mode);
-+}
-+EXPORT_SYMBOL_GPL(out_of_line_wait_on_bit_timeout);
-+
- int __sched
- __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
- 			wait_bit_action_f *action, unsigned mode)
-@@ -520,3 +532,27 @@ __sched int bit_wait_io(struct wait_bit_key *word)
- 	return 0;
- }
- EXPORT_SYMBOL(bit_wait_io);
-+
-+__sched int bit_wait_timeout(struct wait_bit_key *word)
-+{
-+	unsigned long now =3D ACCESS_ONCE(jiffies);
-+	if (signal_pending_state(current->state, current))
-+		return 1;
-+	if (time_after_eq(now, word->timeout))
-+		return -EAGAIN;
-+	schedule_timeout(word->timeout - now);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(bit_wait_timeout);
-+
-+__sched int bit_wait_io_timeout(struct wait_bit_key *word)
-+{
-+	unsigned long now =3D ACCESS_ONCE(jiffies);
-+	if (signal_pending_state(current->state, current))
-+		return 1;
-+	if (time_after_eq(now, word->timeout))
-+		return -EAGAIN;
-+	io_schedule_timeout(word->timeout - now);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(bit_wait_io_timeout);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 90effcdf948d..cbe5a9013f70 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -703,6 +703,19 @@ int wait_on_page_bit_killable(struct page *page, int b=
-it_nr)
- 			     bit_wait_io, TASK_KILLABLE);
- }
-=20
-+int wait_on_page_bit_killable_timeout(struct page *page,
-+				       int bit_nr, unsigned long timeout)
-+{
-+	DEFINE_WAIT_BIT(wait, &page->flags, bit_nr);
-+
-+	wait.key.timeout =3D jiffies + timeout;
-+	if (!test_bit(bit_nr, &page->flags))
-+		return 0;
-+	return __wait_on_bit(page_waitqueue(page), &wait,
-+			     bit_wait_io_timeout, TASK_KILLABLE);
-+}
-+EXPORT_SYMBOL_GPL(wait_on_page_bit_killable_timeout);
-+
- /**
-  * add_page_wait_queue - Add an arbitrary waiter to a page's wait queue
-  * @page: Page defining the wait queue of interest
+> Version 3 highlights:
+>  - Down to 2 syscalls from 4; can user fp or argument position.
+>  - RWF_NONBLOCK value flag is not the same O_NONBLOCK, per Jeff.
+>
+> Version 2 highlights:
+>  - Put the flags argument into kiocb (less noise), per. Al Viro
+>  - O_DIRECT checking early in the process, per. Jeff Moyer
+>  - Resolved duplicate (c&p) code in syscall code, per. Jeff
+>  - Included perf data in thread cover letter, per. Jeff
+>  - Created a new flag (not O_NONBLOCK) for readv2, perf Jeff
+>
+>
+> Some perf data generated using fio comparing the posix aio engine to a version
+> of the posix AIO engine that attempts to performs "fast" reads before
+> submitting the operations to the queue. This workflow is on ext4 partition on
+> raid0 (test / build-rig.) Simulating our database access patern workload using
+> 16kb read accesses. Our database uses a home-spun posix aio like queue (samba
+> does the same thing.)
+>
+> f1: ~73% rand read over mostly cached data (zipf med-size dataset)
+> f2: ~18% rand read over mostly un-cached data (uniform large-dataset)
+> f3: ~9% seq-read over large dataset
+>
+> before:
+>
+> f1:
+>     bw (KB  /s): min=   11, max= 9088, per=0.56%, avg=969.54, stdev=827.99
+>     lat (msec) : 50=0.01%, 100=1.06%, 250=5.88%, 500=4.08%, 750=12.48%
+>     lat (msec) : 1000=17.27%, 2000=49.86%, >=2000=9.42%
+> f2:
+>     bw (KB  /s): min=    2, max= 1882, per=0.16%, avg=273.28, stdev=220.26
+>     lat (msec) : 250=5.65%, 500=3.31%, 750=15.64%, 1000=24.59%, 2000=46.56%
+>     lat (msec) : >=2000=4.33%
+> f3:
+>     bw (KB  /s): min=    0, max=265568, per=99.95%, avg=174575.10,
+>                  stdev=34526.89
+>     lat (usec) : 2=0.01%, 4=0.01%, 10=0.02%, 20=0.27%, 50=10.82%
+>     lat (usec) : 100=50.34%, 250=5.05%, 500=7.12%, 750=6.60%, 1000=4.55%
+>     lat (msec) : 2=8.73%, 4=3.49%, 10=1.83%, 20=0.89%, 50=0.22%
+>     lat (msec) : 100=0.05%, 250=0.02%, 500=0.01%
+> total:
+>    READ: io=102365MB, aggrb=174669KB/s, minb=240KB/s, maxb=173599KB/s,
+>          mint=600001msec, maxt=600113msec
+>
+> after (with fast read using preadv2 before submit):
+>
+> f1:
+>     bw (KB  /s): min=    3, max=14897, per=1.28%, avg=2276.69, stdev=2930.39
+>     lat (usec) : 2=70.63%, 4=0.01%
+>     lat (msec) : 250=0.20%, 500=2.26%, 750=1.18%, 2000=0.22%, >=2000=25.53%
+> f2:
+>     bw (KB  /s): min=    2, max= 2362, per=0.14%, avg=249.83, stdev=222.00
+>     lat (msec) : 250=6.35%, 500=1.78%, 750=9.29%, 1000=20.49%, 2000=52.18%
+>     lat (msec) : >=2000=9.99%
+> f3:
+>     bw (KB  /s): min=    1, max=245448, per=100.00%, avg=177366.50,
+>                  stdev=35995.60
+>     lat (usec) : 2=64.04%, 4=0.01%, 10=0.01%, 20=0.06%, 50=0.43%
+>     lat (usec) : 100=0.20%, 250=1.27%, 500=2.93%, 750=3.93%, 1000=7.35%
+>     lat (msec) : 2=14.27%, 4=2.88%, 10=1.54%, 20=0.81%, 50=0.22%
+>     lat (msec) : 100=0.05%, 250=0.02%
+> total:
+>    READ: io=103941MB, aggrb=177339KB/s, minb=213KB/s, maxb=176375KB/s,
+>          mint=600020msec, maxt=600178msec
+>
+> Interpreting the results you can see total bandwidth stays the same but overall
+> request latency is decreased in f1 (random, mostly cached) and f3 (sequential)
+> workloads. There is a slight bump in latency for since it's random data that's
+> unlikely to be cached but we're always trying "fast read".
+>
+> In our application we have starting keeping track of "fast read" hits/misses
+> and for files / requests that have a lot hit ratio we don't do "fast reads"
+> mostly getting rid of extra latency in the uncached cases.
+>
+> I've performed other benchmarks and I have no observed any perf regressions in
+> any of the normal (old) code paths.
+>
+>
+> I have co-developed these changes with Christoph Hellwig.
+>
+> Milosz Tanski (4):
+>   vfs: Prepare for adding a new preadv/pwritev with user flags.
+>   vfs: Define new syscalls preadv2,pwritev2
+>   vfs: Export new vector IO syscalls (with flags) to userland
+>   vfs: RWF_NONBLOCK flag for preadv2
+>
+>  arch/x86/syscalls/syscall_32.tbl  |   2 +
+>  arch/x86/syscalls/syscall_64.tbl  |   2 +
+>  drivers/target/target_core_file.c |   6 +-
+>  fs/cifs/file.c                    |   6 ++
+>  fs/nfsd/vfs.c                     |   4 +-
+>  fs/ocfs2/file.c                   |   6 ++
+>  fs/pipe.c                         |   3 +-
+>  fs/read_write.c                   | 121 +++++++++++++++++++++++++++++---------
+>  fs/splice.c                       |   2 +-
+>  fs/xfs/xfs_file.c                 |   4 ++
+>  include/linux/aio.h               |   2 +
+>  include/linux/fs.h                |   7 ++-
+>  include/linux/syscalls.h          |   6 ++
+>  include/uapi/asm-generic/unistd.h |   6 +-
+>  mm/filemap.c                      |  22 ++++++-
+>  mm/shmem.c                        |   4 ++
+>  16 files changed, 163 insertions(+), 40 deletions(-)
+>
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-aio' in
+> the body to majordomo@kvack.org.  For more info on Linux AIO,
+> see: http://www.kvack.org/aio/
+> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
 
---Sig_/j.ngX_FFR/P+u=EKiLXN4ri
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIVAwUBVCOSJznsnt1WYoG5AQKMvxAAsMS+jKndGkOzvOOMmhCXptAylUfOrCik
-YLoiZaS8z9Sl9scIu+M9rEF8lzHRkFtucRVoEMSwogl3DVIt2zC4xK66yU4j12P/
-ncHqjngDWXgddJqsim1aRD7kmYN/xhbvUCOkS9DfPuQr0Myrt0uso5kufYUvsMtt
-fLZpn0G3w6qPtHKZD4p3NZfKgaKWAXLrV2hj0cyisT8dy7+AvOhAIbUwDm+5vPMj
-kYTtryCrIAAIrJDfPzZWGAjyTn6JfS3bRLdMuEr0DZP3o+mAnJANwC6pTzMKogwz
-p3TZy+MvDus2/XY2xKbKDu8nYdohL96DHQxygFHd/aF1y/ZUcoVEjmHr5iIxbffs
-7MJh3eNvHYUYmaqtPDy2tEtb47gOCQ3J4zVNTj5krdkbOnOfZfDXaI8mEEhRVJkz
-u7DtNwQokA01DtC76O24I7nUR8CxMfWghN1SUE/fJBupZ0N5VfnzIelRqhSFzoDP
-SBfsK+r0MyyizNPgNd8v5BU7SvtKx6uLaSWGAOXI5MiUJnOCdoFEGcwrQVoC0oyW
-jsWv6HXf9P7nbK4AlJXqA54s/ScQ5LBBfRguIzmRkqFefOQc/2zOqrMcKZU5CM/G
-qMKoRBzswLIrJnV9G6cis5T7sGvdLgtqnr1eY+fGMl1sWvNZTsAH6vNY06fvfe9r
-AQEvHzLJIPs=
-=O97G
------END PGP SIGNATURE-----
-
---Sig_/j.ngX_FFR/P+u=EKiLXN4ri--
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
