@@ -1,125 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaIYPR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:17:59 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60712 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028AbaIYPR5 (ORCPT
+	id S1753903AbaIYPS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:18:28 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:51854 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaIYPS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:17:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
-Date: Thu, 25 Sep 2014 17:15:14 +0200
-Message-ID: <4240583.SJ4jiIW6Zy@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <3361270.4SkjDs5lox@wuerfel>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <20140925145538.GN20043@arm.com> <3361270.4SkjDs5lox@wuerfel>
+	Thu, 25 Sep 2014 11:18:26 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140925151403.GH19396@linutronix.de>
+References: <5411C810.7070906@linutronix.de> <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com> <54129F6C.7040508@linutronix.de> <20140912094010.GE28458@ci00147.xsens-tech.local> <5412C21A.8020203@linutronix.de> <20140912102816.GF28458@ci00147.xsens-tech.local> <541716DC.9020904@linutronix.de> <20140917102812.GA20438@ci00147.xsens-tech.local> <20140921204100.GA10111@linutronix.de> <20140922092853.GH20438@ci00147.xsens-tech.local> <20140925151403.GH19396@linutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:UBQcWo5PBVEEup3rjthNQnQgJqNuqB7dFQ6y5jIALiZ
- UI9IHL/05xlocgJKO0xydgcNDind/WWy5kwehC0GKIOzysBap+
- gkekTDePeutOzPi1Q4HSd0zI10P6lgWgp7C70g6tm9PL9RE1BM
- YGdHlixquM0/qBY25uun1oo9AtyTQ+hLiw+hHJwlA2q9AH8RiR
- 19GN/1LS7FVEcFASkx/SFu/XGqGHiy4y/k5OMfsZA4ezUrksJk
- WcwWbwL0qVclro1O1rPdeuLWwlQvCHswKa3Q/LHE03BdlEEKgq
- bA/umAmJlB544cdnz6fjITBo5Hz4ZguyeSjXUzeqSk4jRmw4uh
- ne6kUU5ggLnoQGm6iVsc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround for AM33xx
+From: Frans Klaver <fransklaver@gmail.com>
+Date: Thu, 25 Sep 2014 17:18:15 +0200
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Frans Klaver <frans.klaver@xsens.com>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Message-ID: <f4e9604d-6de0-4b56-8565-3a532686e745@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 September 2014 17:07:47 Arnd Bergmann wrote:
+On 25 September 2014 17:14:03 CEST, Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+>* Frans Klaver | 2014-09-22 11:28:54 [+0200]:
+>
+>>I guess then we'd still have to answer the question why the yocto
+>build
+>>calls set_termios() so often, but that's not on you then. Did you
+>notice
+>>it even changing settings? We might want to fix this even if the
+>kernel
+>>should be able to cope.
+>
+>could you please test uart_v10_pre3? I dropped a few register sets and
+>delayed the register update until TX-DMA is complete. I am traveling
+>currently and have only my boneblack and it passes my limited testing.
+>If it solves your problems, too then I would address Heikki's latest
+>comments and prepare the final v10 (and I hope I didn't break beagle
+>board in between).
 
-> The current version doesn't let you do that, so I'll keel the #ifdef
-> sections separate. This also means that I won't apply your patch 17:
-> we will keep needing the #ifdef to support all three relevant combinations:
-> 
-> a) architectures that provide neither and want to get the defaults
->    from asm-generic
-> b) architectures that provide the non-relaxed versions and want tog
->    to get just the relaxed version from asm-generic
-> c) architectures that provide both
-> 
+That'll be Monday earliest for me. 
 
-And here is the new version I applied:
-
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 508a57257de5..3e976be3bdd4 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -174,6 +174,43 @@ static inline void writeq(u64 value, void __iomem *addr)
- #endif /* CONFIG_64BIT */
- 
- /*
-+ * {read,write}{b,w,l,q}_relaxed() are like the regular version, but
-+ * are not guaranteed to provide ordering against spinlocks or memory
-+ * accesses.
-+ */
-+#ifndef readb_relaxed
-+#define readb_relaxed readb
-+#endif
-+
-+#ifndef readw_relaxed
-+#define readw_relaxed readw
-+#endif
-+
-+#ifndef readl_relaxed
-+#define readl_relaxed readl
-+#endif
-+
-+#ifndef readq_relaxed
-+#define readq_relaxed readq
-+#endif
-+
-+#ifndef writeb_relaxed
-+#define writeb_relaxed writeb
-+#endif
-+
-+#ifndef writew_relaxed
-+#define writew_relaxed writew
-+#endif
-+
-+#ifndef writel_relaxed
-+#define writel_relaxed writel
-+#endif
-+
-+#ifndef writeq_relaxed
-+#define writeq_relaxed writeq
-+#endif
-+
-+/*
-  * {read,write}s{b,w,l,q}() repeatedly access the same memory address in
-  * native endianness in 8-, 16-, 32- or 64-bit chunks (@count times).
-  */
+>
+>>Thanks again,
+>>Frans
+>
+>Sebastian
+>
+>_______________________________________________
+>linux-arm-kernel mailing list
+>linux-arm-kernel@lists.infradead.org
+>http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
 
