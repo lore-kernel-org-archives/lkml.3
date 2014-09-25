@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaIYSGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:06:39 -0400
-Received: from smtprelay0149.hostedemail.com ([216.40.44.149]:44323 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753127AbaIYSGg (ORCPT
+	id S1754179AbaIYSHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:07:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34693 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaIYSH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:06:36 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2736:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:4425:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13149:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: kiss91_392f444ae3513
-X-Filterd-Recvd-Size: 2435
-Message-ID: <1411668391.3460.2.camel@joe-AO725>
-Subject: Re: project wide: git config entry for [diff] renames=true
-From: Joe Perches <joe@perches.com>
-To: Jeff King <peff@peff.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
-        git <git@vger.kernel.org>
-Date: Thu, 25 Sep 2014 11:06:31 -0700
-In-Reply-To: <20140925180005.GA11755@peff.net>
-References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
-	 <1411591401-5874-1-git-send-email-sojka@merica.cz>
-	 <1411591401-5874-4-git-send-email-sojka@merica.cz>
-	 <20140925150353.GA15325@kroah.com> <1411660111.4026.24.camel@joe-AO725>
-	 <20140925180005.GA11755@peff.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	Thu, 25 Sep 2014 14:07:27 -0400
+Date: Thu, 25 Sep 2014 11:07:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: rdunlap@infradead.org, viro@zeniv.linux.org.uk, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@codethink.co.uk, keescook@chromium.org,
+        penguin-kernel@I-love.SAKURA.ne.jp
+Subject: Re: [PATCH RESUBMIT 1/2] fs/seq_file: Create new function
+ seq_open_init()
+Message-Id: <20140925110725.71eea76c45b74a0f8f3689c2@linux-foundation.org>
+In-Reply-To: <542456E0.1040404@codethink.co.uk>
+References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk>
+	<1411557356-10673-2-git-send-email-rob.jones@codethink.co.uk>
+	<20140924143904.b6f12611013876253d8ac50a@linux-foundation.org>
+	<5423DBED.4090306@codethink.co.uk>
+	<20140925105033.ae4684eef16b5a323b9dbdd6@linux-foundation.org>
+	<542456E0.1040404@codethink.co.uk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-25 at 14:00 -0400, Jeff King wrote:
-> On Thu, Sep 25, 2014 at 08:48:31AM -0700, Joe Perches wrote:
-> 
-> > On Thu, 2014-09-25 at 17:03 +0200, Greg Kroah-Hartman wrote:
-> > 
-> > > In the future, please generate a git "move" diff, which makes it easier
-> > > to review, and prove that nothing really changed.  It also helps if the
-> > > file is a bit different from what you diffed against, which in my case,
-> > > was true.
-> > 
-> > Maybe it'd be possible to add 
-> > 
-> > [diff]
-> > 	renames = true
-> > 
-> > to the .git/config file.
-> > 
-> > but I don't find a mechanism to add anything to the
-> > .git/config and have it be pulled.
-> 
-> There is no such mechanism within git. We've resisted adding one because
-> of the danger of something like:
-> 
->   [diff]
->     external = rm -rf /
-> 
-> diff.renames is probably safe, but any config-sharing mechanism would
-> have to deal with either whitelisting, or providing some mechanism for
-> the puller to review changes before blindly following them.
+On Thu, 25 Sep 2014 18:54:40 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
 
-Another mechanism might be to add a repository
-top level .gitconfig and add whatever to that.
+> On 25/09/14 18:50, Andrew Morton wrote:
+> > On Thu, 25 Sep 2014 10:10:05 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
+> >
+> >>> A global exported-to-modules interface should be documented, please.
+> >>> Especially when it has a void* argument.  seq_file.c is patchy - some
+> >>> of it is documented, some of it uses the read-programmers-mind
+> >>> approach.
+> >>
+> >> I have included documentation as the second patch. Would it have been
+> >> better to include them in a single patch? I didn't do that because
+> >> seq_file and Documentation have different maintainers. I'm still
+> >> learning the protocols here.
+> >
+> > A single patch would be OK.
+> >
+> > Documentation/ is nice, but I don't think people think to look there.
+> > Some kerneldoc within the .c would be a good addition.
+> 
+> Now is a good time, can you point me at an instance of good practice of
+> this?
 
-
-
+Search fs/seq_file.c for "^/**"?
