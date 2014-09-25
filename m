@@ -1,190 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaIYJhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:37:32 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:53352 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIYJh3 (ORCPT
+	id S1751875AbaIYJpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:45:47 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:23703 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750977AbaIYJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:37:29 -0400
+	Thu, 25 Sep 2014 05:45:44 -0400
+X-IronPort-AV: E=Sophos;i="5.04,595,1406563200"; 
+   d="scan'208";a="36458469"
+From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+CC: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Subject: RE: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
+Thread-Topic: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
+Thread-Index: AQHP2B9fg7fXYJuHqkyMH2KrB37CkZwRL65A
+Date: Thu, 25 Sep 2014 09:45:41 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E5C471E@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <20140924174527.GF10474@mguzik>
+In-Reply-To: <20140924174527.GF10474@mguzik>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Thu, 25 Sep 2014 11:36:48 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, kernel@pengutronix.de,
-        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com
-Subject: Re: [PATCH v2 2/5] pinctrl: imx: add gpio pinmux support for vf610
-In-Reply-To: <20140925090714.GH6405@dragon>
-References: <cover.1411492954.git.stefan@agner.ch>
- <bb68d2360314158cd8ccb9c6794877c3bb45d72e.1411492954.git.stefan@agner.ch>
- <20140925024712.GB6405@dragon> <1d3735aff5e0961c43d349d673a1c2b2@agner.ch>
- <20140925090714.GH6405@dragon>
-Message-ID: <26008fa68a3eaf5f806a7dc4df48f77e@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8P9juWh022022
 
-Am 2014-09-25 11:07, schrieb Shawn Guo:
-> On Thu, Sep 25, 2014 at 09:00:41AM +0200, Stefan Agner wrote:
->> Am 2014-09-25 04:47, schrieb Shawn Guo:
->> > On Tue, Sep 23, 2014 at 07:37:54PM +0200, Stefan Agner wrote:
->> >> Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
->> >> This is needed since direction configuration is not part of the
->> >> GPIO module in Vybrid.
->> >>
->> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> >> ---
->> >>  drivers/pinctrl/pinctrl-imx.c   | 54 +++++++++++++++++++++++++++++++++++++++++
->> >>  drivers/pinctrl/pinctrl-imx.h   |  1 +
->> >>  drivers/pinctrl/pinctrl-vf610.c |  2 +-
->> >>  3 files changed, 56 insertions(+), 1 deletion(-)
->> >>
->> >> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
->> >> index 0d4558b..64d1b59 100644
->> >> --- a/drivers/pinctrl/pinctrl-imx.c
->> >> +++ b/drivers/pinctrl/pinctrl-imx.c
->> >> @@ -294,10 +294,59 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
->> >>  	return 0;
->> >>  }
->> >>
->> >> +static int imx_pmx_gpio_request_enable(struct pinctrl_dev *pctldev,
->> >> +			struct pinctrl_gpio_range *range, unsigned offset)
->> >> +{
->> >> +	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
->> >> +	const struct imx_pinctrl_soc_info *info = ipctl->info;
->> >> +	const struct imx_pin_reg *pin_reg;
->> >> +	u32 reg;
->> >> +
->> >> +	if (!(info->flags & GPIO_CONTROL))
->> >> +		return -EINVAL;
->> >> +
->> >> +	pin_reg = &info->pin_regs[offset];
->> >> +	if (pin_reg->mux_reg == -1)
->> >> +		return -EINVAL;
->> >> +
->> >> +	reg = readl(ipctl->base + pin_reg->mux_reg);
->> >> +	reg &= ~(0x7 << 20);
->> >> +	writel(reg, ipctl->base + pin_reg->mux_reg);
->> >
->> > Isn't this setup redundant at all, since imx_pmx_enable() already takes
->> > care of setting mux register including GPIO mode?
->> >
->>
->> Yes currently this is redundant, when a pinmux is actually applied. What
->> is the expected behaviour? Is a explicit pinmux necessary before we can
->> use GPIO? If not, maybe it would make more sense to use imx_pmx_enable
->> here to write all pinctrl settings?
-> 
-> Okay, as per Documentation/pinctrl.txt, it's required that GPIO and
-> PINCTRL can be used as orthogonal.  That said, your code does the right
-> thing.  Sorry for the noisy comment.
-> 
+Hi,
 
-I'm happy you came up with this, since its the thing which I'm must
-unsure whether this is right.
+> -----Original Message-----
+> From: Mateusz Guzik [mailto:mguzik@redhat.com]
+> Sent: Thursday, September 25, 2014 1:45 AM
+> On Wed, Sep 24, 2014 at 06:00:26PM +0800, Chen Hanxiao wrote:
+> > +static int
+> > +pidns_list_filter(void)
+> > +{
+> > +	struct pidns_list *pos, *pos_t;
+> > +	struct pid_namespace *ns0, *ns1;
+> > +	struct pid *pid0, *pid1;
+> > +	int flag = 0;
+> > +	int rc;
+> > +
+> > +	/* screen pid with relationship
+> > +	 * in pidns_list, we may add pids like
+> > +	 * ns0   ns1   ns2
+> > +	 * pid1->pid2->pid3
+> > +	 * we should screen pid1, pid2 and keep pid3
+> > +	 */
+> > +	list_for_each_entry(pos, &pidns_list, list) {
+> > +		list_for_each_entry(pos_t, &pidns_list, list) {
+> 
+> In the previous thread I tried to note this will be terribly inefficient
+> to use and adding a list of children to pid_namespace struct would deal
+> with the problem.
 
-Right now, if you just export a random pin (which has no pinmux
-configured in dt), you get an error since this function fails (mux_reg
-== -1). But I guess we can't avoid it, we need the pinctrl framework to
-have a valid setting before we fiddle around with the pad.
+If that, we had to add a children list, maybe another sibling list
+in pid_namespace struct and maintain them.
+That cost too much.
 
-But now, if there is a pinmux configuration in dt, but its not applied
-(using pinctrl-0 = ...), the export will succeed, however the GPIO will
-not really be usable since no sane pad configuration is not applied
-(input/output buffer disabled, no drive-strength)... So we might well
-just don't change the mux here too.
+For this feature, I think we'd better not touch pid_namespace struct.
+As we need not to know the hierarchy so frequently,
+I think such kind of inefficient is acceptable.
 
-IMHO, fully orthogonal is not possible, since on Vybrid those two depend
-on each other. But in order to make it "more orthogonal", we maybe
-should force applying the full configuration in
-imx_pmx_gpio_request_enable (e.g. drive strenght etc), rather then only
-mux the pad to to GPIO...
+> 
+> > +			flag = 0;
+> > +			pid0 = pos->pid;
+> > +			pid1 = pos_t->pid;
+> > +			ns0 = pid0->numbers[pid0->level].ns;
+> > +			ns1 = pid1->numbers[pid1->level].ns;
+> > +			if (pos->pid->level < pos_t->pid->level)
+> > +				for (; ns1 != NULL; ns1 = ns1->parent)
+> > +					if (ns0 == ns1) {
+> > +						flag = 1;
+> > +						break;
+> > +					}
+> > +			if (flag == 1)
+> > +				break;
+> > +		}
+> > +
+> > +		if (flag == 0) {
+> > +			rc = pidns_list_add(pos->pid, &pidns_tree);
+> > +			if (rc)
+> > +				goto out;
+> > +		}
+> > +	}
+> > +
+> > +	/* Now all usefull stuff are in pidns_tree, free pidns_list*/
+> > +	free_pidns_list(&pidns_list);
+> > +
+> > +	return 0;
+> > +
+> > +out:
+> > +	free_pidns_list(&pidns_tree);
+> > +	return rc;
+> > +}
+> > +
+> > +/* collect pids in pidns_list,
+> > + * then remove duplicated ones,
+> > + * add the rest to pidns_tree
+> > + */
+> > +static int proc_pidns_list_refresh(void)
+> > +{
+> > +	struct pid *pid;
+> > +	struct task_struct *p;
+> > +	int rc;
+> > +
+> > +	/* collect pid in differet ns */
+> > +	rcu_read_lock();
+> > +	for_each_process(p) {
+> > +		pid = task_pid(p);
+> > +		if (pid && (pid->level > 0)) {
+> > +			rc = pidns_list_add(pid, &pidns_list);
+> > +			if (rc)
+> > +				goto out;
+> > +		}
+> > +	}
+> > +
+> > +	/* screen duplicate pids from list pidns_list
+> > +	* and form a new list pidns_tree
+> > +	*/
+> > +	rc = pidns_list_filter();
+> > +	if (rc)
+> > +		goto out;
+> > +	rcu_read_unlock();
+> > +
+> > +	return 0;
+> > +
+> > +out:
+> > +	free_pidns_list(&pidns_list);
+> > +	rcu_read_unlock();
+> > +	return rc;
+> > +}
+> > +
+> > +static int nslist_proc_show(struct seq_file *m, void *v)
+> > +{
+> > +	struct pidns_list *pos;
+> > +	struct pid_namespace *ns, *curr_ns;
+> > +	struct pid *pid;
+> > +	char pid_buf[32];
+> > +	int i, curr_level;
+> > +	int rc;
+> > +
+> > +	curr_ns = task_active_pid_ns(current);
+> > +
+> > +	mutex_lock(&pidns_list_lock);
+> > +	rc = proc_pidns_list_refresh();
+> > +	if (rc) {
+> > +		mutex_unlock(&pidns_list_lock);
+> > +		return rc;
+> > +	}
+> > +
+> > +	/* print pid namespace hierarchy */
+> > +	list_for_each_entry(pos, &pidns_tree, list) {
+> 
+> What keeps pid_namespace's safe to use? Similarly to previous patch,
+> here we hit a place where the code is not protected with rcu and
+> structures were just plugged into the list.
+> 
+Will fix.
+All list should be protected by rcu lock.
 
-What do you think?
+> Recreating the list for each open seems quite unnecessary as well. 
+> 
+> One could work around that by caching generated output and having a
+> generation counter for namespaces to know whether the content is stale.
+> But that still does not seem right.
+> 
+That will bring another issue:
+We had to *keep* that list and update it
+even if we don't open pidns_hierarchy.
 
->>
->> >> +
->> >> +	return 0;
->> >> +}
->> >> +
->> >> +static int imx_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
->> >> +	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
->> >> +{
->> >> +	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
->> >> +	const struct imx_pinctrl_soc_info *info = ipctl->info;
->> >> +	const struct imx_pin_reg *pin_reg;
->> >> +	u32 reg;
->> >> +
->> >> +	if (!(info->flags & GPIO_CONTROL))
->> >> +		return -EINVAL;
->> >> +
->> >> +	pin_reg = &info->pin_regs[offset];
->> >> +	if (pin_reg->mux_reg == -1)
->> >> +		return -EINVAL;
->> >> +
->> >> +	reg = readl(ipctl->base + pin_reg->mux_reg);
->> >> +	if (input)
->> >> +		reg &= ~0x2;
->> >> +	else
->> >> +		reg |= 0x2;
->> >
->> > This is all about Output Buffer Enable (OBE) bit.  What about Input
->> > Buffer Enable (IBE) bit?  Don't we need to set or clear it as per GPIO
->> > direction as well?
->> >
->>
->> The leave the input buffer doesn't hurt, it allows to read back the
->> value which is actually "on the wire". If a pin is hard on GND, one can
->> actually see that.
+This patch try to solve this when open /proc/pidns_hierarchy by:
+a) recreated the list when open
+b) show it in a procfs text file
+c) drop that list
+
+> It looks like in the original thread someone suggested hooking this up
+> under proc as a directory tree which sounds much better to me.
+
+Dir trees provide the same information as proc text files did:
+a symlink name like /proc/PID/ns/pid.
+
+Refresh dir trees needs a lot of codes too.
+So a procfs text file is a better choice.
+
+Thanks,
+- Chen
+
 > 
-> Okay.
+> Just my $0,03.
 > 
->>
->> >> +	writel(reg, ipctl->base + pin_reg->mux_reg);
->> >> +
->> >> +	return 0;
->> >> +}
->> >> +
->> >>  static const struct pinmux_ops imx_pmx_ops = {
->> >>  	.get_functions_count = imx_pmx_get_funcs_count,
->> >>  	.get_function_name = imx_pmx_get_func_name,
->> >>  	.get_function_groups = imx_pmx_get_groups,
->> >> +	.gpio_request_enable = imx_pmx_gpio_request_enable,
->> >> +	.gpio_set_direction = imx_pmx_gpio_set_direction,
->> >>  	.enable = imx_pmx_enable,
->> >>  };
->> >>
->> >> @@ -579,6 +628,11 @@ int imx_pinctrl_probe(struct platform_device *pdev,
->> >>  		dev_err(&pdev->dev, "wrong pinctrl info\n");
->> >>  		return -EINVAL;
->> >>  	}
->> >> +
->> >> +	/* GPIO control functions only intended for shared mux/conf register */
->> >> +	if (info->flags & GPIO_CONTROL)
->> >> +		BUG_ON(!(info->flags & SHARE_MUX_CONF_REG));
->> >> +
->> >
->> > If this is always true, why don't we just use flag SHARE_MUX_CONF_REG
->> > and save GPIO_CONTROL?  This check doesn't make too much sense to me if
->> > we choose to have a new flag for GPIO setup.  IMO, we should probably
->> > either drop the GPIO_CONTROL flag or the check.
->> >
->>
->> Well, this is always true because the vf610 driver configures both
->> configs. But when somebody accidentally enables GPIO_CONFIG without
->> understanding the implications... This was more meant like "don't try to
->> use the GPIO_CONTROL just like that, its Vybird specific".
+> > +		pid = pos->pid;
+> > +		curr_level = -1;
+> > +		ns = pid->numbers[pid->level].ns;
+> > +		/* Check whether a pid has relationship with current ns */
+> > +		for (; ns != NULL; ns = ns->parent)
+> > +			if (ns == curr_ns)
+> > +				curr_level = curr_ns->level;
+> > +
+> > +		if (curr_level == -1)
+> > +			continue;
+> > +
+> > +		for (i = curr_level + 1; i <= pid->level; i++) {
+> > +			ns = pid->numbers[i].ns;
+> > +			/* show PID '1' in specific pid ns */
+> > +			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
+> > +				pid_vnr(find_pid_ns(1, ns)));
+> > +			seq_printf(m, "%s ", pid_buf);
+> > +		}
+> > +
+> > +		seq_putc(m, '\n');
+> > +	}
+> > +
+> > +	free_pidns_list(&pidns_tree);
+> > +	mutex_unlock(&pidns_list_lock);
+> > +
+> > +	return 0;
+> > +}
 > 
-> But it will become a blocker if some day an i.MX controller (no flag
-> SHARE_MUX_CONF_REG) needs to use GPIO_CONFIG.
-> 
->> But I'm ok to remove this runtime check, maybe a comment describing the
->> flags is more appropriate..?
-> 
-> Sounds good.
-> 
-> Shawn
+> --
+> Mateusz Guzik
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
