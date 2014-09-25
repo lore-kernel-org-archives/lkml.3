@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaIYLCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:02:32 -0400
-Received: from mail.schreyben.de ([176.9.239.78]:42321 "EHLO mail.schreyben.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaIYLCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:02:30 -0400
-Message-ID: <5423F644.50707@schreyben.de>
-Date: Thu, 25 Sep 2014 13:02:28 +0200
-From: Schrey <debian-kernel@schreyben.de>
-Organization: unorganised, like, totally.
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752222AbaIYLEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:04:53 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:42075 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaIYLEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 07:04:52 -0400
+Message-ID: <5423F6CF.5050802@mentor.com>
+Date: Thu, 25 Sep 2014 14:04:47 +0300
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: linux-stable: backport usb related commit to 3.10 and 3.12?
-References: <53F878AD.1000408@schreyben.de>
-In-Reply-To: <53F878AD.1000408@schreyben.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] genalloc: fix device node resource counter
+References: <1411588260-29825-1-git-send-email-vladimir_zapolskiy@mentor.com> <20140924135831.ec76a8c60294a93e2da3b7af@linux-foundation.org>
+In-Reply-To: <20140924135831.ec76a8c60294a93e2da3b7af@linux-foundation.org>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Andrew,
 
-resending; multiple systems are and have been working fine
-for me, with that commit backported to kernel 3.10 and 3.12.
-
-2014-08-23:
-> Greetings.
+On 24.09.2014 23:58, Andrew Morton wrote:
+> On Wed, 24 Sep 2014 22:51:00 +0300 Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com> wrote:
 >
-> On an administered server, I noticed that there's a constant load
-> around 0.70 when running kernels 3.10 and 3.12, even if
-> the system is doing nothing, and in single user mode.
-> Culprit seems to be the process 'khubd'.
-> No such effect when running kernels 3.4 or 3.14.
+>> The change balances a usage counter of np_pool device_node, which is
+>> incremented on preceding of_parse_phandle() call.
+>>
+>> ...
+>>
+>> --- a/lib/genalloc.c
+>> +++ b/lib/genalloc.c
+>> @@ -637,6 +637,7 @@ struct gen_pool *of_get_named_gen_pool(struct device_node *np,
+>>   	if (!np_pool)
+>>   		return NULL;
+>>   	pdev = of_find_device_by_node(np_pool);
+>> +	of_node_put(np_pool);
+>>   	if (!pdev)
+>>   		return NULL;
+>>   	return dev_get_gen_pool(&pdev->dev);
 >
-> I reverse bisected linux-stable and found that the following commit
-> fixes it for me, for both kernel 3.10 and 3.12:
+> Looks good, thanks.
 >
-> [08d1dec6f4054e3613f32051d9b149d4203ce0d2] usb:hub set 
-> hub->change_bits when over-current happens
+> However...  when fixing a bug, please always describe the end-user
+> visible effects of that bug.  Amongst other things this is to help me
+> and others decide which kernel version(s) need the patch.
 >
->
-> Could that commit be backported to the stable 3.10 and 3.12 series?
->
-> (Disclaimer: I'm not a programmer, but I'd be happy to help with any 
-> testing involved)
->
-> Regards
-> Ingmar
->
-> -------------------------------------------------------------------------- 
->
->
-> $ git diff ac5166bcdb43889a5bd837f5076b78049e1f8bca 
-> 08d1dec6f4054e3613f32051d9b149d4203ce0d2
-> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-> index c1422a0..babba88 100644
-> --- a/drivers/usb/core/hub.c
-> +++ b/drivers/usb/core/hub.c
-> @@ -1147,7 +1147,8 @@ static void hub_activate(struct usb_hub *hub, 
-> enum hub_activation_type type)
->                         /* Tell khubd to disconnect the device or
->                          * check for a new connection
->                          */
-> -                       if (udev || (portstatus & 
-> USB_PORT_STAT_CONNECTION))
-> +                       if (udev || (portstatus & 
-> USB_PORT_STAT_CONNECTION) ||
-> +                           (portstatus & USB_PORT_STAT_OVERCURRENT))
->                                 set_bit(port1, hub->change_bits);
->
->                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
->
+> I'm assuming that the effect will be, at worst, a memory leak at the
+> rate of one device_node per hot-unplug event and is hence a very minor
+> thing?
 >
 
+yes, you are correct, moreover there are not so many users of 
+of_get_named_gen_pool() in vanilla (I counted 3), however since the 
+change is in ./lib folder, it may be considered as relatively important 
+one. I think it is sufficient to have the change in linux-next only.
 
--- 
-this space for rent
-
+With best wishes,
+Vladimir
