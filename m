@@ -1,87 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaIYLpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:45:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57646 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750864AbaIYLpS (ORCPT
+	id S1751698AbaIYLtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:49:50 -0400
+Received: from gilgamesh.semihalf.com ([213.17.239.106]:31688 "EHLO
+	gilgamesh.semihalf.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaIYLtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:45:18 -0400
-Date: Thu, 25 Sep 2014 12:44:17 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 01/17] asm-generic: io: implement relaxed accessor
- macros as conditional wrappers
-Message-ID: <20140925114417.GJ20043@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <4501051.vdxhyhkTWv@wuerfel>
- <20140925103846.GI20043@arm.com>
- <14780144.KRcmhp8YbE@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <14780144.KRcmhp8YbE@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 25 Sep 2014 07:49:49 -0400
+X-Greylist: delayed 1914 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 07:49:47 EDT
+From: Grzegorz Jaszczyk <jaz@semihalf.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: tglx@linutronix.de, jason@lakedaemon.net,
+        ezequiel.garcia@free-electrons.com, gregory.clement@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, alior@marvell.com,
+        tawfik@marvell.com, mw@semihalf.com, jaz@semihalf.com
+Subject: [PATCH 0/2] Marvell Armada 375/38x MPIC/MSI fixes
+Date: Thu, 25 Sep 2014 13:17:17 +0200
+Message-Id: <1411643839-64925-1-git-send-email-jaz@semihalf.com>
+X-Mailer: git-send-email 2.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:43:41AM +0100, Arnd Bergmann wrote:
-> On Thursday 25 September 2014 11:38:46 Will Deacon wrote:
-> > On Thu, Sep 25, 2014 at 11:32:00AM +0100, Arnd Bergmann wrote:
-> > > On Wednesday 24 September 2014 18:17:20 Will Deacon wrote:
-> > > > {read,write}{b,w,l,q}_relaxed are implemented by some architectures in
-> > > > order to permit memory-mapped I/O accesses with weaker barrier semantics
-> > > > than the non-relaxed variants.
-> > > > 
-> > > > This patch adds wrappers to asm-generic so that drivers can rely on the
-> > > > relaxed accessors being available, even if they don't always provide
-> > > > weaker ordering guarantees. Since some architectures both include
-> > > > asm-generic/io.h and define some relaxed accessors, the definitions here
-> > > > are conditional for the time being.
-> > > > 
-> > > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > > > ---
-> > > >  include/asm-generic/io.h | 26 ++++++++++++++++++++++++++
-> > > >  1 file changed, 26 insertions(+)
-> > > > 
-> > > 
-> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Thanks, Arnd. Do you have other patches queued for asm-generic, or shall I
-> > take this patch (on its own) via the arm64 tree?
-> 
-> I don't have other patches queued up yet, but Thierry has another patch
-> for asm-generic/io.h that I want to merge, so this time I'd prefer to
-> take it through my tree in case there are conflicts.
+This patchset contains a set of fixes for issues found while doing some test
+with different interrupts configuration on Armada 375 and Armada 38x Marvell
+SoCs. The patches were tested and apply on v3.17-rc6.
 
-Ok, suits me. I'll drop this from my series when it hits mainline.
+Any feedback is welcome.
 
-Will
+Grzegorz Jaszczyk (2):
+  irqchip: armada-370-xp: fix MSI interrupt handling
+  irqchip: armada-370-xp: fix MPIC interrupt handling
+
+ drivers/irqchip/irq-armada-370-xp.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
+
+-- 
+1.8.3.1
+
