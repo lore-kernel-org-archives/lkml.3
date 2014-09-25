@@ -1,112 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaIYQCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:02:45 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48425 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866AbaIYQCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:02:43 -0400
-Date: Thu, 25 Sep 2014 12:02:30 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Meelis Roos <mroos@linux.ee>
-Subject: Re: [PATCH v2] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
-Message-ID: <20140925160230.GF32725@hmsreliant.think-freely.org>
-References: <20140924093021.GA7929@erable>
- <20140924101647.GA4651@hmsreliant.think-freely.org>
- <20140925151519.GA12225@erable>
+	id S1753979AbaIYQDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:03:34 -0400
+Received: from mail-by2on0064.outbound.protection.outlook.com ([207.46.100.64]:63952
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753735AbaIYQDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 12:03:32 -0400
+Date: Thu, 25 Sep 2014 09:02:17 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [RFC] pinctrl driver for Zynq
+References: <c2b9a1c1-d3b9-48c5-9c14-a4c3a95965fa@BN1AFFO11FD046.protection.gbl>
+ <20140925081748.GB26991@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140925151519.GA12225@erable>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140925081748.GB26991@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20974.007
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <85851374-20d5-400b-b773-ea6ba2acdaf7@BY2FFO11FD045.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(164054003)(51704005)(189002)(24454002)(377424004)(86362001)(83506001)(53416004)(47776003)(92566001)(1496007)(92726001)(85852003)(23676002)(20776003)(83072002)(95666004)(21056001)(50986999)(87936001)(31696002)(64706001)(19580395003)(54356999)(76176999)(70736001)(102836001)(81542003)(74662003)(81342003)(46102003)(50466002)(79102003)(106466001)(85202003)(6806004)(85182001)(77096002)(85306004)(44976005)(19580405001)(110136001)(83322001)(31966008)(10300001)(107046002)(4396001)(74316001)(77982003)(99396003)(76482002)(104016003)(80022003)(74502003)(120916001)(90102001)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB019;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0345CFD558
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 03:15:19PM +0000, Sylvain 'ythier' Hitier wrote:
-> Hello,
+On Thu, 2014-09-25 at 10:17AM +0200, Steffen Trumtrar wrote:
+> Hi!
 > 
-> When: 2014-09-24_3@06-16-47 -0400
-> Who:  Neil Horman
-> What:
-> > You do probably want to fixup
-> > the changelog to be a bit more clear as to whats going on here.
+> On Wed, Sep 24, 2014 at 02:09:14PM -0700, Sören Brinkmann wrote:
+> > Hi,
+> > 
+> > I think I have pinctrl driver that is covering the pinmux options of
+> > Zynq and I also figured out how the DT bindings work.
+> > 
+> > But there are a couple of things that probably could be done better.
+> > 
+> > One thing making the DT bindings explode, seems to be all those single
+> > pin functions that can be muxed to every pin.
+> > Next to GPIO, this applies to SD card and write protect - which are even
+> > present twice since Zynq has two SDIO cores. Just these functions
+> > account for a couple of hundred nodes in the DT and a bunch of lines in
+> > the driver. Is there a better way to do this?
+> > 
+> > In particular for GPIO there seemed to be a better solution with
+> > implementing gpio_request_enable(), but that seemed to allow GPIO in
+> > parallel to request and mux the pin which does not work on Zynq. IOW: I
+> > expected the core would reject a call of gpio_request_enable for a pin
+> > that is already muxed to some other function, but that was not the case
+> > in my testing. Am I missing something here?
+> > 
+> > And finally, for SD card detect and write protect, we actually have to
+> > disable the muxing. The problem with those functions is, that they have
+> > a dedicated mux for that function which is in parallel to the "normal"
+> > pinmuxes. So, muxing a "normal" function to a pin would not void the
+> > muxing of the SD signals. I thought this would be easily resolved by
+> > implementing the 'disable' op, but after I did that, I noticed that
+> > there is only a stale documentation comment of this member of struct
+> > pinmux_ops left, the actual function pointer is gone.
+> > 
+> > 	Thanks,
+> > 	Sören
+> > 
+> > ------------8<-----------------8<-------------------8<--------------8<----------
+> > Date: Mon, 15 Sep 2014 17:24:35 -0700
+> > Subject: [PATCH RFC] pinctrl: Add driver for Zynq
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  arch/arm/boot/dts/zynq-7000.dtsi | 3039 +++++++++++++++++++++++++++++++++++++-
+> >  arch/arm/boot/dts/zynq-zc706.dts |   13 +
+> >  arch/arm/mach-zynq/Kconfig       |    1 +
+> >  drivers/pinctrl/Kconfig          |    8 +
+> >  drivers/pinctrl/Makefile         |    1 +
+> >  drivers/pinctrl/pinctrl-zynq.c   |  927 ++++++++++++
+> >  6 files changed, 3988 insertions(+), 1 deletion(-)
+> >  create mode 100644 drivers/pinctrl/pinctrl-zynq.c
+> > 
+> > diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+> > index 6cc83d4c6c76..814873da0392 100644
+> > --- a/arch/arm/boot/dts/zynq-7000.dtsi
+> > +++ b/arch/arm/boot/dts/zynq-7000.dtsi
+> > @@ -229,7 +229,7 @@
+> >  		slcr: slcr@f8000000 {
+> >  			#address-cells = <1>;
+> >  			#size-cells = <1>;
+> > -			compatible = "xlnx,zynq-slcr", "syscon";
+> > +			compatible = "xlnx,zynq-slcr", "syscon", "simple-bus";
+> >  			reg = <0xF8000000 0x1000>;
+> >  			ranges;
+> >  			clkc: clkc@100 {
+> > @@ -250,6 +250,3043 @@
+> >  						"dbg_trc", "dbg_apb";
+> >  				reg = <0x100 0x100>;
+> >  			};
+> > +
+> > +			pinctrl0: pinctrl@700 {
+> > +				compatible = "xlnx,pinctrl-zynq";
+> > +				reg = <0x700 0x200>;
+> > +
+> > +				pinctrl_i2c0_0: pinctrl-i2c0@0 {
+> > +					i2c0-mux {
+> > +						function = "i2c0";
+> > +						pins = "i2c0_0_grp";
+> > +					};
+> > +				};
+> > +
 > 
-> Date:   Wed Sep 24 09:22:16 2014 +0000
+> (...)
 > 
-> 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+> > +				pinctrl_sdio1_cd_54: pinctrl-sdio1_cd@54 {
+> > +					sdio1_cd-mux {
+> > +						function = "sdio1_cd";
+> > +						pins = "sdio1_emio_cd_grp";
+> > +					};
+> > +				};
+> > +			};
+> >  		};
+> >  
 > 
-> In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
->   # 3c59x: Add dma error checking and recovery
-> the intent is to split out the mapping from the byte-swapping in order to
-> insert a dma_mapping_error() check.
-> 
-> Kinda this semantic patch:
-> 
->     // See http://coccinelle.lip6.fr/
->     //
->     // Beware, grouik-and-dirty!
->     @@
->     expression DEV, X, Y, Z;
->     @@
->     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
->     +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
->     +   if (dma_mapping_error(&DEV->dev, addr))
->     +       /* snip */;
->     +   cpu_to_le32(addr)
-> 
-> However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
-> 
->     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
->     +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
->     //                    ^^^^^^^^^^^
->     //                    That mismatches the 3 other changes!
->     +   if (dma_mapping_error(&DEV->dev, addr))
->     +       /* snip */;
->     +   cpu_to_le32(addr)
-> 
-> Let's remove the leftover cpu_to_le32() for coherency.
-> 
-> v2: Better changelog.
-> 
-> Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
->   # 3c59x: Add dma error checking and recovery
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Meelis Roos <mroos@linux.ee>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
-> ---
->  drivers/net/ethernet/3com/3c59x.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-> index 8ca49f04..0a3108b3 100644
-> --- a/drivers/net/ethernet/3com/3c59x.c
-> +++ b/drivers/net/ethernet/3com/3c59x.c
-> @@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
->  		}
->  	}
->  #else
-> -	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
-> +	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
->  	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
->  		goto out_dma_err;
->  	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
-> 
-> Regards,
-> Sylvain "ythier" Hitier
-> 
-> -- 
-> Business is about being busy, not being rich...
-> Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
-> There's THE room for ideals in this mechanical place!
-> 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Thanks!
-Neil
+> Wouldn't this reaaally bloat the dtb?
+> I know that imx decided to remove all the pinctrls from the dtsis, because
+> the dtbs got to big.
 
+Yep, it absolutely does and I don't really know what to do about it.
+Listing them all is a lot. Not listing them all would force board DTs to
+potentially duplicate such nodes. This is definitely one of the things
+I'm seeking input on.
+Is there any good solution or best practice?
+
+	Sören
