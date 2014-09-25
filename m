@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592AbaIYLRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:17:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37776 "EHLO mx2.suse.de"
+	id S1752187AbaIYL3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:29:00 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35192 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752194AbaIYLQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:16:59 -0400
-Date: Thu, 25 Sep 2014 13:16:55 +0200
-From: Jan Kara <jack@suse.cz>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Milosz Tanski <milosz@adfin.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-aio <linux-aio@kvack.org>, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [RFC v3 0/4] vfs: Non-blockling buffered fs read (page cache
- only)
-Message-ID: <20140925111655.GA8169@quack.suse.cz>
-References: <cover.1410810247.git.milosz@adfin.com>
- <cover.1411594644.git.milosz@adfin.com>
- <CAHO5Pa2AbW+ndgUBjjB==NnwQjVuvbYaYdW8v0x-CjYYQEr9AA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHO5Pa2AbW+ndgUBjjB==NnwQjVuvbYaYdW8v0x-CjYYQEr9AA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751302AbaIYL26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 07:28:58 -0400
+Message-ID: <1411644540.18580.128.camel@iivanov-dev>
+Subject: Re: [PATCH] USB: Remove .owner field for driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Thu, 25 Sep 2014 14:29:00 +0300
+In-Reply-To: <1411557494-32535-1-git-send-email-kiran.padwal@smartplayin.com>
+References: <1411557494-32535-1-git-send-email-kiran.padwal@smartplayin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25-09-14 06:06:14, Michael Kerrisk wrote:
-> Hello Milosz,
+On Wed, 2014-09-24 at 16:48 +0530, Kiran Padwal wrote:
+> There is no need to init .owner field.
 > 
-> On Wed, Sep 24, 2014 at 11:46 PM, Milosz Tanski <milosz@adfin.com> wrote:
-> > This patcheset introduces an ability to perform a non-blocking read from
-> > regular files in buffered IO mode. This works by only for those filesystems
-> > that have data in the page cache.
-> >
-> > It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
-> > new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
-> > extra flag argument (RWF_NONBLOCK).
-> >
-> > It's a very common patern today (samba, libuv, etc..) use a large threadpool to
-> > perform buffered IO operations. They submit the work form another thread
-> > that performs network IO and epoll or other threads that perform CPU work. This
-> > leads to increased latency for processing, esp. in the case of data that's
-> > already cached in the page cache.
-> >
-> > With the new interface the applications will now be able to fetch the data in
-> > their network / cpu bound thread(s) and only defer to a threadpool if it's not
-> > there. In our own application (VLDB) we've observed a decrease in latency for
-> > "fast" request by avoiding unnecessary queuing and having to swap out current
-> > tasks in IO bound work threads.
+> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+> "mmc: remove .owner field for drivers using module_platform_driver"
 > 
-> Since this is a change to the user-space API, could you CC future
-> versions of this patch set to linux-api@vgerr.kernel.org please, as
-  There's typo in the address. It should be:
-linux-api@vger.kernel.org
+> This patch removes the superflous .owner field for drivers which
+> use the module_platform_driver API, as this is overriden in
+> platform_driver_register anyway."
+> 
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thank you Kiran.
+
+Reviewed-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+
+
