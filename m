@@ -1,303 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037AbaIYSjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:39:08 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64434 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804AbaIYSjD (ORCPT
+	id S1754113AbaIYSjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:39:32 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:61511 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754050AbaIYSjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:39:03 -0400
-Date: Thu, 25 Sep 2014 11:38:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] watchdog: qcom: add support for KPSS WDT
-Message-ID: <20140925183857.GA12340@roeck-us.net>
-References: <cover.1411667144.git.joshc@codeaurora.org>
- <ae171484ae036b331f06814251872c7602a54996.1411667144.git.joshc@codeaurora.org>
+	Thu, 25 Sep 2014 14:39:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ae171484ae036b331f06814251872c7602a54996.1411667144.git.joshc@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925181024.GA9360@cloud>
+References: <1411668214-19199-1-git-send-email-bobby.prani@gmail.com> <20140925181024.GA9360@cloud>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Thu, 25 Sep 2014 14:39:00 -0400
+Message-ID: <CAJhHMCCjkTioUqh8fDTd2xgJ9q-Mb4bfu1ueu+uPjH2JU9bVyQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] rcu: Add sparse check for RCU_INIT_POINTER()
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:48:51PM -0500, Josh Cartwright wrote:
-> Add a driver for the watchdog timer block found in the Krait Processor
-> Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+On Thu, Sep 25, 2014 at 2:10 PM,  <josh@joshtriplett.org> wrote:
+> On Thu, Sep 25, 2014 at 02:03:34PM -0400, Pranith Kumar wrote:
+>> Add a sparse check when RCU_INIT_POINTER() is used to assign a non __rcu
+>> annotated pointer.
+>>
+>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+>
+> Have you checked if this introduces a significant number of new warnings
+> in the kernel?
+>
+> If not:
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>
 
-Hi Josh,
 
-just a couple of minor comments this time (yes, I know,
-I am being difficult ;-).
+I tested the above patch on a small test case where we are assigning
+to a non __rcu annotated pointer and sparse does warn in that case.
 
-Thanks,
-Guenter
+I tried doing that and there were too many address space warnings
+(maybe?) not related to __rcu annotation.
 
-> ---
->  drivers/watchdog/Kconfig    |  13 +++
->  drivers/watchdog/Makefile   |   1 +
->  drivers/watchdog/qcom-wdt.c | 189 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 203 insertions(+)
->  create mode 100644 drivers/watchdog/qcom-wdt.c
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 79d2589..c389ed7 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -421,6 +421,19 @@ config SIRFSOC_WATCHDOG
->  	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
->  	  the watchdog triggers the system will be reset.
->  
-> +config QCOM_WDT
-> +	tristate "QCOM watchdog"
-> +	depends on HAS_IOMEM
-> +	depends on ARCH_QCOM
-> +	select WATCHDOG_CORE
-> +	help
-> +	  Say Y here to include Watchdog timer support for the watchdog found
-> +	  on QCOM chipsets.  Currently supported targets are the MSM8960,
-> +	  APQ8064, and IPQ8064.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called qcom_wdt.
-> +
->  # AVR32 Architecture
->  
->  config AT32AP700X_WDT
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index 985a66c..cede21e 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -57,6 +57,7 @@ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
->  obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
->  obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
->  obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
-> +obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
->  obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
->  
->  # AVR32 Architecture
-> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-> new file mode 100644
-> index 0000000..0f56ca3
-> --- /dev/null
-> +++ b/drivers/watchdog/qcom-wdt.c
-> @@ -0,0 +1,189 @@
-> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/watchdog.h>
-> +
-> +#define WDT_RST		0x0
-> +#define WDT_EN		0x8
-> +#define WDT_BITE_TIME	0x24
-> +
-> +struct qcom_wdt {
-> +	struct watchdog_device	wdd;
-> +	struct clk		*clk;
-> +	unsigned long		rate;
-> +	void __iomem		*base;
-> +};
-> +
-> +static inline
-> +struct qcom_wdt *to_qcom_wdt(struct watchdog_device *wdd)
-> +{
-> +	return container_of(wdd, struct qcom_wdt, wdd);
-> +}
-> +
-> +static int qcom_wdt_start(struct watchdog_device *wdd)
-> +{
-> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
-> +
-> +	writel(0, wdt->base + WDT_EN);
-> +	writel(1, wdt->base + WDT_RST);
-> +	writel(wdd->timeout * wdt->rate, wdt->base + WDT_BITE_TIME);
-> +	writel(1, wdt->base + WDT_EN);
-> +	return 0;
-> +}
-> +
-> +static int qcom_wdt_stop(struct watchdog_device *wdd)
-> +{
-> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
-> +
-> +	writel(0, wdt->base + WDT_EN);
-> +	return 0;
-> +}
-> +
-> +static int qcom_wdt_ping(struct watchdog_device *wdd)
-> +{
-> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
-> +
-> +	writel(1, wdt->base + WDT_RST);
-> +	return 0;
-> +}
-> +
-> +static int qcom_wdt_set_timeout(struct watchdog_device *wdd,
-> +				unsigned int timeout)
-> +{
-> +	wdd->timeout = timeout;
-> +	return qcom_wdt_start(wdd);
-> +}
-> +
-> +static const struct watchdog_ops qcom_wdt_ops = {
-> +	.start		= qcom_wdt_start,
-> +	.stop		= qcom_wdt_stop,
-> +	.ping		= qcom_wdt_ping,
-> +	.set_timeout	= qcom_wdt_set_timeout,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static const struct watchdog_info qcom_wdt_info = {
-> +	.options	= WDIOF_KEEPALIVEPING
-> +			| WDIOF_MAGICCLOSE
-> +			| WDIOF_SETTIMEOUT,
-> +	.identity	= KBUILD_MODNAME,
-> +};
-> +
-> +static int qcom_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct qcom_wdt *wdt;
-> +	struct resource *res;
-> +	int ret;
-> +
-> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
-> +	if (!wdt)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	wdt->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(wdt->base)) {
-> +		ret = PTR_ERR(wdt->base);
-> +		goto err_out;
+May be a diff of previous warnings and later warnings should show up
+if any new warnings are being generated...
 
-This is really unnecessary. Just return PTR_ERR((wdt->base) as you did before.
-No need to make the code more complicated than necessary.
+diff before.log after.log
 
-Basic rule is: If you can return immediately, do it. Otherwise use goto
-and have a single error handler.
+> drivers/md/dm.c:2239:9: error: incompatible types in comparison expression (different address spaces)
 
-> +	}
-> +
-> +	wdt->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(wdt->clk)) {
-> +		ret = PTR_ERR(wdt->clk);
-> +		goto err_out;
+Looking at this it shows that RCU_INIT_POINTER() is being used on a
+non __rcu pointer. I will send in a patch fixing that.
 
-Same here.
-
-> +	}
-> +
-> +	ret = clk_prepare_enable(wdt->clk);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to setup clock\n");
-> +		goto err_out;
-
-and here.
-
-> +	}
-> +
-> +	/*
-> +	 * We use the clock rate to calculate the max timeout, so ensure it's
-> +	 * not zero to avoid a divide-by-zero exception.
-> +	 *
-> +	 * WATCHDOG_CORE assumes units of seconds, if the WDT is clocked such
-> +	 * that it would bite before a second elapses it's usefulness is
-> +	 * limited.  Bail if this is the case.
-> +	 */
-> +	wdt->rate = clk_get_rate(wdt->clk);
-> +	if (wdt->rate == 0 ||
-> +	    wdt->rate > 0x10000000U) {
-> +		dev_err(&pdev->dev, "invalid clock rate\n");
-> +		ret = -EINVAL;
-> +		goto err_clk_unprepare;
-> +	}
-> +
-> +	wdt->wdd.dev = &pdev->dev;
-> +	wdt->wdd.info = &qcom_wdt_info;
-> +	wdt->wdd.ops = &qcom_wdt_ops;
-> +	wdt->wdd.min_timeout = 1;
-> +	wdt->wdd.max_timeout = 0x10000000U / wdt->rate;
-> +
-> +	/*
-> +	 * If 'timeout-sec' unspecified in devicetree, assume a 30 second
-> +	 * default, unless the max timeout is less than 30 seconds, then use
-> +	 * the max instead.
-> +	 */
-> +	wdt->wdd.timeout = min(wdt->wdd.max_timeout, 30U);
-
-Good idea.
-
-> +	watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev);
-> +
-> +	ret = watchdog_register_device(&wdt->wdd);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to register watchdog\n");
-> +		goto err_clk_unprepare;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, wdt);
-> +	return 0;
-> +
-> +err_clk_unprepare:
-> +	clk_disable_unprepare(wdt->clk);
-> +err_out:
-> +	return ret;
-> +}
-> +
-> +static int qcom_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
-> +
-> +	watchdog_unregister_device(&wdt->wdd);
-> +	clk_disable_unprepare(wdt->clk);
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id qcom_wdt_of_table[] = {
-> +	{ .compatible = "qcom,kpss-wdt-msm8960", },
-> +	{ .compatible = "qcom,kpss-wdt-apq8064", },
-> +	{ .compatible = "qcom,kpss-wdt-ipq8064", },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, qcom_wdt_of_table);
-> +
-> +static struct platform_driver qcom_watchdog_driver = {
-> +	.probe	= qcom_wdt_probe,
-> +	.remove	= qcom_wdt_remove,
-> +	.driver	= {
-> +		.name		= KBUILD_MODNAME,
-> +		.of_match_table	= qcom_wdt_of_table,
-> +	},
-> +};
-> +module_platform_driver(qcom_watchdog_driver);
-> +
-> +MODULE_DESCRIPTION("QCOM KPSS Watchdog Driver");
-> +MODULE_LICENSE("GPL v2");
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+Thanks!
+-- 
+Pranith
