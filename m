@@ -1,291 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaIYOE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:04:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53269 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaIYOET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:04:19 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <sandeep_n@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v4 1/3] Documentation: dt: net: Add binding doc for Keystone NetCP ethernet driver
-Date: Thu, 25 Sep 2014 10:03:23 -0400
-Message-ID: <1411653805-29257-2-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411653805-29257-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1411653805-29257-1-git-send-email-santosh.shilimkar@ti.com>
+	id S1752955AbaIYOKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:10:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54566 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595AbaIYOKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:10:42 -0400
+Date: Thu, 25 Sep 2014 09:09:55 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Peter Chen <peter.chen@freescale.com>, <balbi@ti.com>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
+        <jszhang@marvell.com>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140925140955.GB28045@saruman>
+Reply-To: <balbi@ti.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <62705234.gKJDtUQLyT@wuerfel>
+ <20140924022736.GA5307@peterchendt>
+ <2990737.4KzKXPZhaB@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R3G7APHDIzY6R/pk"
+Content-Disposition: inline
+In-Reply-To: <2990737.4KzKXPZhaB@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sandeep Nair <sandeep_n@ti.com>
+--R3G7APHDIzY6R/pk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The network coprocessor (NetCP) is a hardware accelerator that processes
-Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
-switch sub-module to send and receive packets. NetCP also includes a packet
-accelerator (PA) module to perform packet classification operations such as
-header matching, and packet modification operations such as checksum
-generation. NetCP can also optionally include a Security Accelerator(SA)
-capable of performing IPSec operations on ingress/egress packets.
+Hi,
 
-Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
-includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
-1Gb/s rates per Ethernet port.
+On Wed, Sep 24, 2014 at 09:44:19AM +0200, Arnd Bergmann wrote:
+> > It is a good suggestion for adding DT support for core driver, Since we=
+ did
+> > not do it at the first, it is a little embarrass at current situation.
+> >=20
+> > - For the new chipidea glue drivers, it is ok we can have a child node
+> > for core device at glue device node, and some common entries can be the=
+re
+> > like: phy, vbus, dr_mode, etc. We need to add support for getting
+> > these common things for both through device tree and platform data
+> > (parent is DT support and parent is non-DT support) at core driver.
+>=20
+> I don't really want to see the child devices show up in DT, as this is
+> really an implementation detail of the way that the driver currently work=
+s,
+> and IMHO we should change that.
+>=20
+> I know that Felipe disagrees with me on this, but almost every other
+> driver that has soc-specific specializations does not use parent/child
+> nodes, neither in DT nor in Linux. Instead you have a single device
+> node that gets distinguished by "compatible" string.
 
-NetCP Subsystem device tree layout looks something like below:
+I have two answers for this:
 
------------------------------
-  NetCP subsystem(10G or 1G)
------------------------------
-	|
-	|-> NetCP Devices ->	|
-	|			|-> GBE/XGBE Switch
-	|			|
-	|			|-> Packet Accelerator
-	|			|
-	|			|-> Security Accelerator
-	|
-	|
-	|
-	|-> NetCP Interfaces ->	|
-				|-> Ethernet Port 0
-				|
-				|-> Ethernet Port 1
-				|
-				|-> Ethernet Port 2
-				|
-				|-> Ethernet Port 3
+1) We need to let different buses use the same device. The same IP can
+be used on PCI, platform, OMAP (yes, OMAP is pretty much a bus, even
+though we're using platform-bus with a bunch of code to match things),
+AMBA, etc.
 
-Common driver supports GBE as well XGBE network processors.
+2) I like to mode the HW in code and if you look into RTL you'll see
+that PCIe, OMAP, QCOM, Exynos, etc, take a semi-bus-agnostic core IP and
+write a wrapper IP to make it fit into the SoC. That Wrapper is also an
+IP of its own and has its own clocks, sometimes its own IRQs. Not to
+mention that PM requirements for different architectures might be (and
+actually are) different, while PM requirements for the core IP is
+"generic" because it comes from IP provider.
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: David Miller <davem@davemloft.net>
+By using a parent device, we can hide all platform-/bus-specific details
+on the parent driver and keep core driver "pristine". I see many, many
+benefits of doing things this way and many of the benefits are already
+cooked into the driver model itself, so why not use it ?
 
-Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- .../devicetree/bindings/net/keystone-netcp.txt     |  197 ++++++++++++++++++++
- 1 file changed, 197 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/keystone-netcp.txt
+> > - For the existing glue drivers, since we can't change existed dts, we =
+can
+> > only do it from future SoC support. Then, in this kinds of glue drivers,
+> > we need to support for both create core driver by node and by current
+> > calling platform_device_add way.
+>=20
+> We should be able to easily change the ci_hdrc_add_device call into
+> a different exported function that calls a version of the probe()
+> code directly, as we do in all sorts of other drivers (ehci, ohci,
+> dwc2, ..., but not dwc3 and musb as they are maintained by Felipe).
 
-diff --git a/Documentation/devicetree/bindings/net/keystone-netcp.txt b/Documentation/devicetree/bindings/net/keystone-netcp.txt
-new file mode 100644
-index 0000000..a7d061b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/keystone-netcp.txt
-@@ -0,0 +1,197 @@
-+This document describes the device tree bindings associated with the
-+keystone network coprocessor(NetCP) driver support.
-+
-+The network coprocessor (NetCP) is a hardware accelerator that processes
-+Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsytem with a ethernet
-+switch sub-module to send and receive packets. NetCP also includes a packet
-+accelerator (PA) module to perform packet classification operations such as
-+header matching, and packet modification operations such as checksum
-+generation. NetCP can also optionally include a Security Accelerator (SA)
-+capable of performing IPSec operations on ingress/egress packets.
-+
-+Keystone II SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
-+includes a 3-port Ethernet switch sub-module capable of 10Gb/s and 1Gb/s rates
-+per Ethernet port.
-+
-+Keystone NetCP driver has a plug-in module architecture where each of the NetCP
-+sub-modules exist as a loadable kernel module which plug in to the netcp core.
-+These sub-modules are represented as "netcp-devices" in the dts bindings. It is
-+mandatory to have the ethernet switch sub-module for the ethernet interface to
-+be operational. Any other sub-module like the PA is optional.
-+
-+NetCP Ethernet SubSystem Layout:
-+
-+-----------------------------
-+  NetCP subsystem(10G or 1G)
-+-----------------------------
-+	|
-+	|-> NetCP Devices ->	|
-+	|			|-> GBE/XGBE Switch
-+	|			|
-+	|			|-> Packet Accelerator
-+	|			|
-+	|			|-> Security Accelerator
-+	|
-+	|
-+	|
-+	|-> NetCP Interfaces ->	|
-+				|-> Ethernet Port 0
-+				|
-+				|-> Ethernet Port 1
-+				|
-+				|-> Ethernet Port 2
-+				|
-+				|-> Ethernet Port 3
-+
-+
-+NetCP subsystem properties:
-+Required properties:
-+- compatible:	Should be "ti,netcp-1.0"
-+- clocks:	phandle to the reference clocks for the subsystem.
-+- dma-id:	Navigator packet dma instance id.
-+
-+Optional properties:
-+- reg:		register location and the size for the following register
-+		regions in the specified order.
-+		- Efuse MAC address register
-+- dma-coherent:	Present if dma operations are coherent
-+- big-endian:	Keystone devices can be operated in a mode where the DSP is in
-+		the big endian mode. In such cases enable this option. This
-+		option should also be enabled if the ARM is operated in
-+		big endian mode with the DSP in little endian.
-+
-+NetCP device properties: Device specification for NetCP sub-modules.
-+1Gb/10Gb (gbe/xgbe) ethernet switch sub-module specifications.
-+Required properties:
-+- label:	Must be "netcp-gbe" for 1Gb & "netcp-xgbe" for 10Gb.
-+- reg:		register location and the size for the following register
-+		regions in the specified order.
-+		- subsystem registers
-+		- serdes registers
-+- tx-channel:	the navigator packet dma channel number for tx.
-+- tx-queue:	the navigator queue number associated with the tx dma channel.
-+- interfaces:	specification for each of the switch port to be registered as a
-+		network interface in the stack.
-+-- slave-port:	Switch port number, 0 based numbering.
-+-- link-interface:	type of link interface, supported options are
-+			- mac<->mac auto negotiate mode: 0
-+			- mac<->phy mode: 1
-+			- mac<->mac forced mode: 2
-+			- mac<->fiber mode: 3
-+			- mac<->phy mode with no mdio: 4
-+			- 10Gb mac<->phy mode : 10
-+			- 10Gb mac<->mac forced mode : 11
-+----phy-handle:	phandle to PHY device
-+
-+Optional properties:
-+- enable-ale:	NetCP driver keeps the address learning feature in the ethernet
-+		switch module disabled. This attribute is to enable the address
-+		learning.
-+- secondary-slave-ports:	specification for each of the switch port not be
-+				registered as a network interface. NetCP driver
-+				will only initialize these ports and attach PHY
-+				driver to them if needed.
-+
-+NetCP interface properties: Interface specification for NetCP sub-modules.
-+Required properties:
-+- rx-channel:	the navigator packet dma channel number for rx.
-+- rx-queue:	the navigator queue number associated with rx dma channel.
-+- rx-pool:	specifies the number of descriptors to be used & the region-id
-+		for creating the rx descriptor pool.
-+- tx-pool:	specifies the number of descriptors to be used & the region-id
-+		for creating the tx descriptor pool.
-+- rx-queue-depth:	number of descriptors in each of the free descriptor
-+			queue (FDQ) for the pktdma Rx flow. There can be at
-+			present a maximum of 4 queues per Rx flow.
-+- rx-buffer-size:	the buffer size for each of the Rx flow FDQ.
-+- tx-completion-queue:	the navigator queue number where the descriptors are
-+			recycled after Tx DMA completion.
-+
-+Optional properties:
-+- efuse-mac:	If this is 1, then the MAC address for the interface is
-+		obtained from the device efuse mac address register
-+- local-mac-address:	the driver is designed to use the of_get_mac_address api
-+			only if efuse-mac is 0. When efuse-mac is 0, the MAC
-+			address is obtained from local-mac-address. If this
-+			attribute is not present, then the driver will use a
-+			random MAC address.
-+- "netcp-device label":	phandle to the device specification for each of NetCP
-+			sub-module attached to this interface.
-+
-+Example binding:
-+
-+netcp: netcp@2090000 {
-+	reg = <0x2620110 0x8>;
-+	reg-names = "efuse";
-+	compatible = "ti,netcp-1.0";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+
-+	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-+	dma-coherent;
-+	/* big-endian; */
-+	dma-id = <0>;
-+
-+	netcp-devices {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		gbe@0x2090000 {
-+			label = "netcp-gbe";
-+			reg = <0x2090000 0xf00>;
-+			/* enable-ale; */
-+			tx-queue = <648>;
-+			tx-channel = <8>;
-+
-+			interfaces {
-+				gbe0: interface-0 {
-+					slave-port = <0>;
-+					link-interface	= <4>;
-+				};
-+				gbe1: interface-1 {
-+					slave-port = <1>;
-+					link-interface	= <4>;
-+				};
-+			};
-+
-+			secondary-slave-ports {
-+				port-2 {
-+					slave-port = <2>;
-+					link-interface	= <2>;
-+				};
-+				port-3 {
-+					slave-port = <3>;
-+					link-interface	= <2>;
-+				};
-+			};
-+		};
-+	};
-+
-+	netcp-interfaces {
-+		interface-0 {
-+			rx-channel = <22>;
-+			rx-pool = <1024 12>;
-+			tx-pool = <1024 12>;
-+			rx-queue-depth = <128 128 0 0>;
-+			rx-buffer-size = <1518 4096 0 0>;
-+			rx-queue = <8704>;
-+			tx-completion-queue = <8706>;
-+			efuse-mac = <1>;
-+			netcp-gbe = <&gbe0>;
-+
-+		};
-+		interface-1 {
-+			rx-channel = <23>;
-+			rx-pool = <1024 12>;
-+			tx-pool = <1024 12>;
-+			rx-queue-depth = <128 128 0 0>;
-+			rx-buffer-size = <1518 4096 0 0>;
-+			rx-queue = <8705>;
-+			tx-completion-queue = <8707>;
-+			efuse-mac = <0>;
-+			local-mac-address = [02 18 31 7e 3e 6f];
-+			netcp-gbe = <&gbe1>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
+Go back a few commits and you'll see EHCI couldn't even be built with
+different glues (say ehci-omap and ehci-pci).
 
+> We can also gradually move in some of the other glue drivers into
+> the main driver if the differences are small enough.
+
+you'll end up with a bunch of conflicting requirements very soon. In
+fact that's one reason for MUSB being a mess. It was, originally, a
+single driver with platform-specific glue chosen in build-time. To this
+day, we still can't have different DMA glues on the kernel and
+TUSB6010-glue doesn't work with anybody else.
+
+When you have a single driver like that, you end up accepting
+platform-specific details into the core IP just because the changes are
+small enough.
+
+> Moving the PCI driver over to this model requires a little more
+> work but is absolutely doable (again, see ehci, ahci, sdhci examples)
+> by moving the platform_device handling out of core.c and changing
+> it just operate on the plain 'struct device', with an exported
+> probe function that gets called on either the platform device
+> or the pci device.
+
+sounds like a disaster waiting to happen for me.
+
+--=20
+balbi
+
+--R3G7APHDIzY6R/pk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUJCIzAAoJEIaOsuA1yqREbeQQAJZTwa44eNwo5RJvl6YLWZD0
+aCLZj9jiVM4WxDM4bJKNSAfyoNiWzPrSkJgax6nPE/G/7CYZruyfMZzpbn0sc0Zo
+/djO/TGuQiOIYsZVvgLoCUGUtnaFZuDlt7xUslt5QjWRDfO5+QwRzrlhxx1AowMQ
+GHYoLUMt5VUFIe4w22P9Pbcc9SXVEHxLe9+kPh7BwjL8XZioRg/4mgFeua6v20Wa
+/2N8YS8Doe8vAcxe99LUY00w+RZW2T0WjhoISQhd5oaSvcAIfKyJ5HDASgX6ecJy
+45fH25bF/0t19sFo8CD4h95qyvKW+nK+6CN5zYf3DC0IVMmlDLKntJWYwU9io0To
+bmJOAM2kaeQnBCGetDVdNEl+1OJvzuc6dHX+ZZp0gytCRGzB1CQz+9ahgmF/oBuI
+/wNXo004HayeIjilHzq5t3mforl5Anxu9uGMiPKId1iBGS6RG/2PK4yOXJullJLh
+xzuh7bJjEVbL4bmndg7gm6TnLtyESAneYOrQB43+LOiPzjixkwQ2AmdbfSzXVe3Y
+C7/da3swc9zMz7mM59HjwXnxzbF0TnrcwLMYfw98t0jY7yR0VMkhViBW+Dxv5Y15
+1sD1nzpdjD7b+iH/U8VirwTAYvhvJNj2lkyq9jc0qpsZPjWXEka9wNCLCmNV0NHu
+mtWemsYFno+K25Lb0vFg
+=Or18
+-----END PGP SIGNATURE-----
+
+--R3G7APHDIzY6R/pk--
