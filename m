@@ -1,114 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaIYUGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:06:08 -0400
-Received: from mail-bn1bon0136.outbound.protection.outlook.com ([157.56.111.136]:32947
+	id S1752243AbaIYUIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:08:13 -0400
+Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:15168
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750933AbaIYUGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:06:06 -0400
-Message-ID: <1411675555.13320.200.camel@snotra.buserror.net>
-Subject: Re: [PATCH 1/3 v2] drivers/bus: Added Freescale Management Complex
- APIs
+	id S1751939AbaIYUIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 16:08:12 -0400
+Message-ID: <1411675680.13320.201.camel@snotra.buserror.net>
+Subject: Re: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
+ CLK_OF_DECLARE support
 From: Scott Wood <scottwood@freescale.com>
-To: German Rivera <German.Rivera@freescale.com>
-CC: Kim Phillips <kim.phillips@freescale.com>, <gregkh@linuxfoundation.org>,
-        <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <stuart.yoder@freescale.com>, <agraf@suse.de>,
-        <linuxppc-release@linux.freescale.net>,
-        Erez Nir-RM30794 <nir.erez@freescale.com>
-Date: Thu, 25 Sep 2014 15:05:55 -0500
-In-Reply-To: <5424466A.1010103@freescale.com>
-References: <1411166981-3610-1-git-send-email-German.Rivera@freescale.com>
-			<1411166981-3610-2-git-send-email-German.Rivera@freescale.com>
-			<20140923194901.894483bfaef97d13d12c75a5@freescale.com>
-			<54237CBF.2010706@freescale.com>
-		 <20140924224006.f924cefdd347464519da8190@freescale.com>
-		 <54243873.9060509@freescale.com>
-	 <1411661796.13320.191.camel@snotra.buserror.net>
-	 <5424466A.1010103@freescale.com>
+To: Lu Jingchang-B35083 <jingchang.lu@freescale.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 25 Sep 2014 15:08:00 -0500
+In-Reply-To: <d4a375f40b544cf1ae78ac82dc20569c@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
+	 <d4a375f40b544cf1ae78ac82dc20569c@BL2PR03MB467.namprd03.prod.outlook.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [2601:2:5800:3f7:416f:c6f:49e6:9e61]
-X-ClientProxiedBy: BN1PR08CA0031.namprd08.prod.outlook.com (10.242.217.159) To
- DM2PR0301MB0735.namprd03.prod.outlook.com (25.160.97.143)
+X-ClientProxiedBy: BLUPR08CA0071.namprd08.prod.outlook.com (10.141.200.51) To
+ BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0735;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
 X-Forefront-PRVS: 0345CFD558
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(51444003)(189002)(479174003)(377454003)(377424004)(24454002)(31966008)(83072002)(23676002)(85306004)(77156001)(42186005)(83322001)(93886004)(62966002)(92566001)(99396003)(77096002)(97736003)(50986999)(105586002)(50466002)(104166001)(88136002)(120916001)(10300001)(90102001)(92726001)(47776003)(64706001)(76176999)(21056001)(33646002)(4396001)(107046002)(81542003)(74662003)(106356001)(89996001)(79102003)(74502003)(110136001)(85852003)(93916002)(103116003)(81342003)(87286001)(50226001)(77982003)(80022003)(87976001)(101416001)(95666004)(102836001)(20776003)(46102003)(76482002)(86362001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0735;H:[IPv6:2601:2:5800:3f7:416f:c6f:49e6:9e61];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(13464003)(51704005)(189002)(377424004)(377454003)(199003)(92566001)(106356001)(95666004)(21056001)(42186005)(50466002)(104166001)(76482002)(50226001)(120916001)(62966002)(10300001)(97736003)(81342003)(77156001)(74502003)(77096002)(86362001)(90102001)(33646002)(77982003)(105586002)(47776003)(80022003)(20776003)(85306004)(101416001)(85852003)(23676002)(4396001)(79102003)(88136002)(31966008)(107046002)(19580405001)(76176999)(83072002)(110136001)(102836001)(64706001)(83322001)(103116003)(93916002)(74662003)(46102003)(81542003)(89996001)(19580395003)(87976001)(99396003)(50986999)(87286001)(92726001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:416f:c6f:49e6:9e61];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-25 at 11:44 -0500, German Rivera wrote:
-> On 09/25/2014 11:16 AM, Scott Wood wrote:
-> > Then again, the management complex is not supposed to be on the
-> > performance critical path, so why not simplify by just always do the
-> > locking here?
-> >
-> But about the few MC commands that need to run on interrupt context
-> (such as to inspect or clear MC interrupts)?
-
-I think that should be disallowed.  Unless you can guarantee that the MC
-firmware will respond in a very short time, have those interrupts move
-their work into a workqueue, with the MC interrupt masked until
-completion.  We do similar things for interrupts from i2c devices, etc.
-
-> >> The intent of doing the udelay() in the middle of the polling loop was
-> >> to throttle down the frequency of I/Os done while polling for the
-> >> completion of the command. Can you elaborate on why ".5ms udelay upsets
-> >> basic kernel functionality"?
-> >
-> > It introduces latency, especially since it's possible for it to happen
-> > with interrupts disabled.  And you're actually potentially blocking for
-> > more than that, since 500us is just one iteration of the loop.
-> >
-> > The jiffies test for exiting the loop is 500ms, which is *way* too long
-> > to spend in a critical section.
-> >
-> But that would be a worst case, since that is a timeout check.
-> What timeout value do you think would be more appropriate in this case?
-
-Worst case latency matters.  Some workloads would be bothered by an
-occasional 500us.  Even normal interactive use would notice 500ms.
-
-> >> Would it be better to just use "plain delay loop", instead of the udelay
-> >> call, such as the following?
-> >>
-> >> for (i = 0; i < 1000; i++)
-> >>      ;
-> >
-> > No, never do that.  You have no idea how long it will actually take.
-> > GCC might even optimize it out entirely.
-> >
-> Ok, so udelay is not good here, a plain vanilla delay loop is not good 
-> either. Are there other alternatives or we just don't worry about
-> throttling down the frequency of I/Os done in the polling loop?
-
-udelay is OK for this purpose, but not for so long, and find some way to
-make the kernel preemptible between loop iterations.
-
-> (Given the fact that MC commands are not expected to be executed that 
-> frequently, to frequently cause a lot of I/O traffic with this polling loop)
-> 
-> >> I can see that in the cases where we use "completion interrupts", the
-> >> ISR can signal the completion, and the polling loop can be replaced by
-> >> waiting on the completion. However, I don't see how using a completion
-> >> can help make a polling loop more efficient, if you don't have a
-> >> "completion interrupt" to signal the completion.
-> >
-> > It's not about making it more efficient.  It's about not causing
-> > problems for other things going on in the system.
-> >
-> But still I don't see how a completion can help here, unless
-> you can signal the completion from an ISR.
-
-Right, but you can still sleep on a timer instead of busy waiting if you
-need such a long timeout.
+Well, like I said, I'd rather see the CLK_OF_DECLARE stuff be made to
+work on PPC rather than have the driver carry around two binding
+methods.
 
 -Scott
+
+On Thu, 2014-09-25 at 04:47 -0500, Lu Jingchang-B35083 wrote:
+> Hi, Scott and Mike,
+>   
+>   Could you please help review this patch and give an ACK if ok. Thanks.
+> 
+> Best Regards,
+> Jingchang
+> 
+> >-----Original Message-----
+> >From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
+> >Sent: Tuesday, September 23, 2014 2:47 PM
+> >To: mturquette@linaro.org
+> >Cc: Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org; linux-
+> >kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
+> >Jingchang-B35083
+> >Subject: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
+> >CLK_OF_DECLARE support
+> >
+> >The IP is shared by PPC and ARM, this renames it to qoriq for better
+> >represention, and this also adds the CLK_OF_DECLARE support for being
+> >initialized by of_clk_init() on ARM.
+> >
+> >Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+> >---
+> >changes in v4:
+> > remove "corenet" literals omitted in v3 remove.
+> >
+> >changes in v3:
+> > generate the patch with -M -C option
+> >
+> >changes in v2:
+> > rename the driver name to ppc-qoriq.c for shared on PPC and ARM.
+> >
+> > drivers/clk/Kconfig                            |  9 +++++----
+> > drivers/clk/Makefile                           |  2 +-
+> > drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} | 27 +++++++++++++++------
+> >-----
+> > 3 files changed, 22 insertions(+), 16 deletions(-)  rename
+> >drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} (89%)
+> >
+> >diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig index
+> >85131ae..f5f76cb 100644
+> >--- a/drivers/clk/Kconfig
+> >+++ b/drivers/clk/Kconfig
+> >@@ -92,12 +92,13 @@ config COMMON_CLK_AXI_CLKGEN
+> > 	  Support for the Analog Devices axi-clkgen pcore clock generator
+> >for Xilinx
+> > 	  FPGAs. It is commonly used in Analog Devices' reference designs.
+> >
+> >-config CLK_PPC_CORENET
+> >-	bool "Clock driver for PowerPC corenet platforms"
+> >-	depends on PPC_E500MC && OF
+> >+config CLK_QORIQ
+> >+	bool "Clock driver for PowerPC corenet and compatible ARM-based
+> >platforms"
+> >+	depends on (PPC_E500MC || ARM) && OF
+> > 	---help---
+> > 	  This adds the clock driver support for Freescale PowerPC corenet
+> >-	  platforms using common clock framework.
+> >+	  platforms and compatible Freescale ARM based platforms using
+> >common
+> >+	  clock framework.
+> >
+> > config COMMON_CLK_XGENE
+> > 	bool "Clock driver for APM XGene SoC"
+> >diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile index
+> >27c542b..20f42e9 100644
+> >--- a/drivers/clk/Makefile
+> >+++ b/drivers/clk/Makefile
+> >@@ -29,7 +29,7 @@ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
+> > obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+> > obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+> > obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
+> >-obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
+> >+obj-$(CONFIG_CLK_QORIQ)			+= clk-qoriq.o
+> > obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
+> > obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
+> > obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
+> >diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-qoriq.c
+> >similarity index 89% rename from drivers/clk/clk-ppc-corenet.c rename to
+> >drivers/clk/clk-qoriq.c index 8e58edf..cba8abe 100644
+> >--- a/drivers/clk/clk-ppc-corenet.c
+> >+++ b/drivers/clk/clk-qoriq.c
+> >@@ -155,7 +155,7 @@ static void __init core_pll_init(struct device_node
+> >*np)
+> >
+> > 	base = of_iomap(np, 0);
+> > 	if (!base) {
+> >-		pr_err("clk-ppc: iomap error\n");
+> >+		pr_err("clk-qoriq: iomap error\n");
+> > 		return;
+> > 	}
+> >
+> >@@ -252,7 +252,7 @@ static void __init sysclk_init(struct device_node
+> >*node)
+> > 	u32 rate;
+> >
+> > 	if (!np) {
+> >-		pr_err("ppc-clk: could not get parent node\n");
+> >+		pr_err("qoriq-clk: could not get parent node\n");
+> > 		return;
+> > 	}
+> >
+> >@@ -278,30 +278,35 @@ static const struct of_device_id clk_match[]
+> >__initconst = {
+> > 	{}
+> > };
+> >
+> >-static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
+> >+static int __init qoriq_clk_probe(struct platform_device *pdev)
+> > {
+> > 	of_clk_init(clk_match);
+> >
+> > 	return 0;
+> > }
+> >
+> >-static const struct of_device_id ppc_clk_ids[] __initconst = {
+> >+static const struct of_device_id qoriq_clk_ids[] __initconst = {
+> > 	{ .compatible = "fsl,qoriq-clockgen-1.0", },
+> > 	{ .compatible = "fsl,qoriq-clockgen-2.0", },
+> > 	{}
+> > };
+> >
+> >-static struct platform_driver ppc_corenet_clk_driver __initdata = {
+> >+static struct platform_driver qoriq_clk_driver __initdata = {
+> > 	.driver = {
+> >-		.name = "ppc_corenet_clock",
+> >+		.name = "qoriq_clock",
+> > 		.owner = THIS_MODULE,
+> >-		.of_match_table = ppc_clk_ids,
+> >+		.of_match_table = qoriq_clk_ids,
+> > 	},
+> >-	.probe = ppc_corenet_clk_probe,
+> >+	.probe = qoriq_clk_probe,
+> > };
+> >
+> >-static int __init ppc_corenet_clk_init(void)
+> >+static int __init qoriq_clk_init(void)
+> > {
+> >-	return platform_driver_register(&ppc_corenet_clk_driver);
+> >+	return platform_driver_register(&qoriq_clk_driver);
+> > }
+> >-subsys_initcall(ppc_corenet_clk_init);
+> >+subsys_initcall(qoriq_clk_init);
+> >+
+> >+CLK_OF_DECLARE(qoriq_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+> >+core_pll_init); CLK_OF_DECLARE(qoriq_core_pll_v2,
+> >+"fsl,qoriq-core-pll-2.0", core_pll_init);
+> >+CLK_OF_DECLARE(qoriq_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+> >+core_mux_init); CLK_OF_DECLARE(qoriq_core_mux_v2,
+> >+"fsl,qoriq-core-mux-2.0", core_mux_init);
+> >--
+> >1.8.0
+> 
 
 
