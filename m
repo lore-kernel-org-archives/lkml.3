@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaIYHpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:45:32 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:61217 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaIYHpb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:45:31 -0400
+	id S1751937AbaIYHrm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:47:42 -0400
+Received: from ozlabs.org ([103.22.144.67]:36650 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977AbaIYHrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 03:47:41 -0400
+Date: Thu, 25 Sep 2014 17:47:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Peter Feiner <pfeiner@google.com>
+Subject: linux-next: manual merge of the akpm-current tree with the pci tree
+Message-ID: <20140925174730.302842e6@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
-References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
-	<20140922153355.GB4510@pd.tnic>
-	<AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
-	<20140922184049.GB4709@pd.tnic>
-	<3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
-	<20140922192152.GD4709@pd.tnic>
-	<1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
-	<20140922195737.GE4709@pd.tnic>
-	<1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
-	<20140922203336.GF4709@pd.tnic>
-	<1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
-Date: Thu, 25 Sep 2014 09:45:29 +0200
-X-Google-Sender-Auth: F3OkWubPe6QloaCSevnRQmxg1o4
-Message-ID: <CAMuHMdU7VO01_qRGc0TV2K+nJJCu4sm0zbH773_zBWdaxSR1aQ@mail.gmail.com>
-Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Rustad, Mark D" <mark.d.rustad@intel.com>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/fYCfO8lzaTM.Z24wmdhnwWh"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 22, 2014 at 11:21 PM, Jeff Kirsher
-<jeffrey.t.kirsher@intel.com> wrote:
->> > Why grep through 100,000 warnings, when we should be fixing the code to
->> > prevent 100,000 warnings.  Not saying that the MACRO is the best
->> > solution, it is just a solution, in hopes that it spurs discussions like
->> > this on how to properly fix the warnings.  Not a discussion on how to
->> > grep through the warnings and do nothing.
->>
->> There's only one thing I don't understand: why is so bad to grep through
->> the warnings? I mean, sure, fixing them *without* jumping through hoops
->> to do so is the optimal thing. But what's wrong with grepping through
->> them?
->
-> Nothing is wrong with grepping for an error, especially when you know
-> the error your grepping for.  But then again, why grep when it can be
-> fixed to begin with?  The fact that there are over 100,000
-> warnings/errors to begin with is somewhat disconcerting.  It makes me
-> wonder whether it was due to coding laziness.
+--Sig_/fYCfO8lzaTM.Z24wmdhnwWh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Instead of grepping, you can feed the build log to linux-log-summary.
-Or when changing a driver, feed the before and after build logs to
-linux-log-diff. That way you won't miss the single new warning you've
-just introduced.
+Hi Andrew,
 
-https://github.com/geertu/linux-scripts
+Today's linux-next merge of the akpm-current tree got a conflict in
+include/asm-generic/pgtable.h between commit b766eafe6828 ("PCI: Add
+pci_remap_iospace() to map bus I/O resources") from the pci tree and
+commit 4cc2f91f2636 ("mm: softdirty: enable write notifications on VMAs
+after VM_SOFTDIRTY cleared") from the akpm-current tree.
 
-Gr{oetje,eeting}s,
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-                        Geert
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --cc include/asm-generic/pgtable.h
+index 977e545a64c3,f6acf1195182..000000000000
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@@ -249,10 -249,18 +249,22 @@@ static inline int pmd_same(pmd_t pmd_a
+  #define pgprot_writecombine pgprot_noncached
+  #endif
+ =20
+ +#ifndef pgprot_device
+ +#define pgprot_device pgprot_noncached
+ +#endif
+ +
++ #ifndef pgprot_modify
++ #define pgprot_modify pgprot_modify
++ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
++ {
++ 	if (pgprot_val(oldprot) =3D=3D pgprot_val(pgprot_noncached(oldprot)))
++ 		newprot =3D pgprot_noncached(newprot);
++ 	if (pgprot_val(oldprot) =3D=3D pgprot_val(pgprot_writecombine(oldprot)))
++ 		newprot =3D pgprot_writecombine(newprot);
++ 	return newprot;
++ }
++ #endif
++=20
+  /*
+   * When walking page tables, get the address of the next boundary,
+   * or the end address of the range if that comes earlier.  Although no
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--Sig_/fYCfO8lzaTM.Z24wmdhnwWh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUI8iaAAoJEMDTa8Ir7ZwVAcYP/jxS7kTI7EymZz9NvnNWA1W2
+5HKSWWx/ldifffV0JcbGGKkOrP290TfB8Rl/bR5gJKn1nL1v3r5IK8e8OP9NqeQv
+aYL8kP8dhGx1UzdZNAi7vJVMwKfXcGkp6+iRxTKP0tMsTu4dnsIcvriky5ToQLrz
+dlKIcO1BqkGjaY+TWYaIkK3lQJXII1XR30JlFx6OliMVN+KQgr05IZQ8RFrtWkRR
+qZaNIJvp8hS8zPcPxKt+jRUXvbrYIp6TXF562dWXbM4sVTqpdG3n1KmYbVHVvNe4
++kflDaC6sk3qra+uSCjkfAdyJynfInGYSJW3PBn7R0mCFX5aWlfZPMoHIMtqURRT
+26exfhZI+9fKJ7UXsK7/3kAoyJEcyFrgGNMSREZP0coer5+NhXvmbaLO628AQGLh
+7v0MVJNyCGmssSvFrPQIkixBFEBZg001I/wHM+ACZzNqicKGTa05ZZ9KM5mvBg7V
+zBgwV05gVd3wjkD9JwezG7pUK4TwYMB1Dq7rxypi60GiZTdb8BS9O+T7DzP0QuW1
+aOwlgPKCiuaFSDj/8JvvXIuf5C5wbhgTJMMJXNPJgCeRB2ZAzNlpBq+3dQxdaF1+
+ieMANfLiTWvagrs7yWrxx9H9V8Nw3zbG+JEuq9VAF64EAIxcJylb5OHIX3kYTByv
+Wkw5W+GPeVZq69HVKzVD
+=D/w7
+-----END PGP SIGNATURE-----
+
+--Sig_/fYCfO8lzaTM.Z24wmdhnwWh--
