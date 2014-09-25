@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaIYGmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:42:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46664 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978AbaIYGmn (ORCPT
+	id S1751505AbaIYGwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:52:34 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64323 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaIYGwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:42:43 -0400
-Date: Thu, 25 Sep 2014 08:42:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gennady Kuznetsov <kuznetsovg@dev.rtsoft.ru>,
-        Aleksey Makarov <amakarov@dev.rtsoft.ru>
-Subject: Re: Device tree vs hardware configurations
-Message-ID: <20140925064242.GJ4992@pengutronix.de>
-References: <5421B4B0.1020306@dev.rtsoft.ru>
+	Thu, 25 Sep 2014 02:52:33 -0400
+Date: Thu, 25 Sep 2014 08:52:30 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Nikolaus Voss <n.voss@weinmann-emt.de>
+Cc: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: atmel-pwm: fix calculation of prescale value
+Message-ID: <20140925065229.GD12423@ulmo>
+References: <20140924055851.CE51140656@mail.steuer-voss.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x4pBfXISqBoDm8sr"
 Content-Disposition: inline
-In-Reply-To: <5421B4B0.1020306@dev.rtsoft.ru>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:21:34 up 14 days, 23:09, 54 users,  load average: 0.07, 0.06,
- 0.08
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20140924055851.CE51140656@mail.steuer-voss.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nikita,
 
-On Tue, Sep 23, 2014 at 09:58:08PM +0400, Nikita Yushchenko wrote:
-> Hi
-> 
-> I'm currently forward-porting a BSP for imx6-based custom board from
-> pre-devicetree kernel to modern kernel.
-> 
-> In old BSP there was a board setup file, that registered all board's
-> devices. For new BSP, I need to replace that with device tree based
-> solution.
-> 
-> However, old BSP used conditional code to register devices
-> differently based on GPIO inputs and on kernel command line. This
-> approach was used to
-> 
-> - handle board's jumper that switches SPI CS lines: current jumper
-> setting is available over gpio, depending on that old BSP registered
-> chips differently,
-> 
-> - handle different i2c connections on different board revisions:
-> board has 5 i2c busses with quite a few devices connected, these
-> busses are routed to different hardware busses on different board
-> revisions, board revision could be read over gpios.
-> 
-> - handle different possible display connections (lvds vs lcd, 6bit
-> vs 8bit hw interface) based on kernel command line options
-> 
-> - handle different possible camera connections by registered camera
-> differently based on kernel command line option
-> 
-> ... and more,
-> 
-> 
-> Device tree describes hardware unconditionally. I already have to
-> provide 2 dts files for imx6q and imx6dl based setups (both just
-> include a common dtsi) ...  But providing separate dts file for
-> every possible hardware configuration will result into 2^n device
-> trees, which is inconvenient visible regression against old BSP that
-> "just worked" on all hardware configurations.
-> 
-> 
-> Is there a sane way to handle hardware configurations like above in
-> device tree based kernel?
+--x4pBfXISqBoDm8sr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This depends on your definition of sane, but here the options I know of:
+On Tue, Sep 23, 2014 at 03:30:21PM +0200, Nikolaus Voss wrote:
+> The prescale value used for calculating the period was incremented
+> afterwards, thus the resulting prescale value is by one too high.
+> This resulted in a pwm frequency only half as high as requested.
+>=20
+> This patch moves the 64 bit division out of the prescale loop to
+> correct the above issue and make the calculation more efficient.
+>=20
+> Signed-off-by: Nikolaus Voss <n.voss@weinmann-emt.de>
+> ---
+>  drivers/pwm/pwm-atmel.c | 24 +++++++++++-------------
+>  1 file changed, 11 insertions(+), 13 deletions(-)
 
-- Let the bootloader modify the device tree based on the GPIOs. This
-  seems doable in new projects, but not when you want to keep the old
-  bootloader.
+Hi Nikolaus,
 
-- Use device tree overlays in the Kernel which is something Pantelis
-  Antoniou works on. I think the intention here is more to plug a
-  daughter board to a CPU board. I don't know how good this works when
-  you have to manipulate many different places in the device tree.
+Please Cc the linux-pwm@vger.kernel.org mailing list for PWM-related
+patches in the future.
 
-- I heard people working on a shim to place between bootloader and
-  kernel. The shim translates the bootloader information into the
-  device tree. I can't remember who it was though. For going this way
-  I wouldn't rewrite the shim but use barebox instead of course ;)
+Also a couple more comments:
 
-BTW where do the command line options in your setup come from? Are
-they autogenerated from other informations in the bootloader or are
-they entered there by a user?
+In the patch description: "pwm frequency" should be "PWM frequency".
 
-Sascha
+> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+> index 6e700a5..ff17b5d 100644
+> --- a/drivers/pwm/pwm-atmel.c
+> +++ b/drivers/pwm/pwm-atmel.c
+> @@ -102,7 +102,7 @@ static int atmel_pwm_config(struct pwm_chip *chip, st=
+ruct pwm_device *pwm,
+>  			    int duty_ns, int period_ns)
+>  {
+>  	struct atmel_pwm_chip *atmel_pwm =3D to_atmel_pwm_chip(chip);
+> -	unsigned long clk_rate, prd, dty;
+> +	unsigned long prd, dty;
+>  	unsigned long long div;
+>  	unsigned int pres =3D 0;
+>  	u32 val;
+> @@ -113,20 +113,18 @@ static int atmel_pwm_config(struct pwm_chip *chip, =
+struct pwm_device *pwm,
+>  		return -EBUSY;
+>  	}
+> =20
+> -	clk_rate =3D clk_get_rate(atmel_pwm->clk);
+> -	div =3D clk_rate;
+> +	/* Calculate the period cycles and prescale value */
+> +	div =3D (unsigned long long)clk_get_rate(atmel_pwm->clk) * period_ns;
+> +	do_div(div, (int)1e9);
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1e9 should be NSEC_PER_SEC.
+
+> -	/* Calculate the period cycles */
+>  	while (div > PWM_MAX_PRD) {
+> -		div =3D clk_rate / (1 << pres);
+> -		div =3D div * period_ns;
+> -		/* 1/Hz =3D 100000000 ns */
+> -		do_div(div, 1000000000);
+> -
+> -		if (pres++ > PRD_MAX_PRES) {
+> -			dev_err(chip->dev, "pres exceeds the maximum value\n");
+> -			return -EINVAL;
+> -		}
+> +		div >>=3D 1;
+> +		++pres;
+
+Unless you really need the prefix increment behaviour (you don't in this
+case) I prefer using the postfix operator because it is slightly more
+idiomatic.
+
+No need for you to respin the patch, I've fixed up the above when
+applying.
+
+Thierry
+
+--x4pBfXISqBoDm8sr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI7utAAoJEN0jrNd/PrOhM5gP/AxLEF2BEW6MdsikrgHkACXA
+zvwI1QaSOFdDbvRXhncEa0yRCoAdIhq5ttQ6ieHmn+W/u6LkB6Ts/hYHOtUUt0Qm
+Tbbwh6v+wfmlECFBNqqQz9+qWBhFirVqVNWqy51OBIitLRc+qr8jX44VhXXTKpWB
+OOFSw4/BBJkn0kkbZgHHGa5P322zazPnPSizxU2V7iBg7w/r3OgZLiK7gwKA7HpD
+lCKA5/7r9f7IYKRwI6ONDrWMan12J9t41NS7OGzGWzsdWsmKi5e7/jPzAPWyUCkb
+yAwH5Y0tafYSeAuwC3SEit0Nl3vL8b0rbMM9f7EjSqWLt6ZVrulzzZUzAijue1jv
+Ycn4jrs7RvcrA9cz3l3SNRtvtNTRa3Zb+1nyKq+SedsTYBl+JGHgGxP90ErxyVqI
+VrSFsfdnRRNvKKdx68lBnE4IxJ3PnH0mv2vxVZ7hkdSJo4z3QTi8dcNYWize2Ui0
++3cUDMKVgaUJnTNrtgzJ0nHzP4uICAfthhrQdHNu+s24llWEQbqzRA8CXoQ4FicY
+MrQ3DKsAfTTcAYc0XBIb1maN8e8fpQ4zx+FVwtMIsM/YE+A30IyuIsb792kfiDR1
+JN34crjNFz0DKRz+TB7WxvhO5aliAEF9GxLarPyGwR2KAX+vP1XYuHVD8jHO5BQH
+d+joTJjtMiNaYw/YTbO0
+=Af0/
+-----END PGP SIGNATURE-----
+
+--x4pBfXISqBoDm8sr--
