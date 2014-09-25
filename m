@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaIYKOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:14:19 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:50809 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750977AbaIYKOS (ORCPT
+	id S1752274AbaIYKO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:14:29 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37219 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaIYKO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:14:18 -0400
-Message-ID: <1411640056.7866.5.camel@x220>
-Subject: Re: [PATCH] ARM: efm32: drop selecting NO_DMA
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 25 Sep 2014 12:14:16 +0200
-In-Reply-To: <1411585151.19525.29.camel@x220>
-References: <1411585151.19525.29.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Sep 2014 10:14:16.0883 (UTC) FILETIME=[76A80830:01CFD8A9]
-X-RcptDomain: vger.kernel.org
+	Thu, 25 Sep 2014 06:14:27 -0400
+Date: Thu, 25 Sep 2014 11:14:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Kyle McMartin <kyle@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] aarch64: filter $x from kallsyms
+Message-ID: <20140925101417.GG10390@e104818-lin.cambridge.arm.com>
+References: <20140916213718.GR22012@redacted.bos.redhat.com>
+ <87r3z9o91q.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r3z9o91q.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-24 at 20:59 +0200, Paul Bolle wrote:
-> Actually, the only difference I found in the .config file was that after
-> this patch the .config file contained
->     CONFIG_ARCH_EFM32=y
+On Thu, Sep 18, 2014 at 05:18:57AM +0100, Rusty Russell wrote:
+> Kyle McMartin <kyle@redhat.com> writes:
+> > Similar to ARM, AArch64 is generating $x and $d syms... which isn't
+> > terribly helpful when looking at %pF output and the like. Filter those
+> > out in kallsyms, modpost and when looking at module symbols.
+> >
+> > Seems simplest since none of these check EM_ARM anyway, to just add it
+> > to the strchr used, rather than trying to make things overly
+> > complicated.
+> >
+> > initcall_debug improves:
+> > dmesg_before.txt: initcall $x+0x0/0x154 [sg] returned 0 after 26331 usecs
+> > dmesg_after.txt: initcall init_sg+0x0/0x154 [sg] returned 0 after 15461 usecs
+> >
+> > Signed-off-by: Kyle McMartin <kyle@redhat.com>
 > 
-> I have no idea why. Did I botch my test?
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Apparently I did. I retested this patch using next-20140925. Now the
-generated .config before and after applying this patch are identical. So
-all's good: this select really is a nop.
+Thanks. Shall I understand that you are ok for me to take it via the
+arm64 tree (or you'd prefer to merge it via your tree)?
 
-
-Paul Bolle
-
+-- 
+Catalin
