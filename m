@@ -1,122 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaIYQiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:38:13 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:35581 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIYQiK (ORCPT
+	id S1754026AbaIYQim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:38:42 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:60586 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaIYQh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:38:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
-	<20140908185115.GI6758@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
-	<alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
-	<alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu>
-	<20140910083136.GP6758@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu>
-	<541059C9.1040200@oracle.com>
-	<alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu>
-	<20140910143306.GD4783@worktop.ger.corp.intel.com>
-	<alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu>
-	<alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 25 Sep 2014 09:38:08 -0700
-Message-ID: <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-From: Cong Wang <cwang@twopensource.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Sep 2014 12:37:26 -0400
+X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
+From: Stefan Agner <stefan@agner.ch>
+To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
+        kernel@pengutronix.de
+Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com,
+        l.stach@pengutronix.de, stefan@agner.ch
+Subject: [PATCH v3 2/5] pinctrl: imx: add gpio pinmux support for vf610
+Date: Thu, 25 Sep 2014 18:37:06 +0200
+Message-Id: <6fef79bfe3597dfe4fbd09785b45b8762755af8a.1411662961.git.stefan@agner.ch>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1411662961.git.stefan@agner.ch>
+References: <cover.1411662961.git.stefan@agner.ch>
+In-Reply-To: <cover.1411662961.git.stefan@agner.ch>
+References: <cover.1411662961.git.stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 9:59 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
->
-> So I noticed Cong Wang's patch (3577af70a2ce4853d58e57d832e687d739281479)
->         perf: Fix a race condition in perf_remove_from_context()
->
-> and that sounds a lot like the weird fork()/memory-corruption bug that the
-> fuzzer has been triggering.
->
-> So I applied that patch alone on top of the 3.17-rc4 kernel that I could
-> reproducibly reboot... and with the patch I can't trigger the problem
-> anymore.
->
-> Now that just might mean the patch pushed the code around enough so my
-> test doesn't trigger, but there is hope that maybe this fixes things.
+Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
+This is needed since direction configuration is not part of the
+GPIO module in Vybrid.
 
-I read this as it fixes your crash as well?
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ drivers/pinctrl/pinctrl-imx.c | 72 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
->
-> Cong Wang, do you have more info on how you came across this bug?  And how
-> you tracked down the problem?
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index 0d4558b..f22c41e 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -294,10 +294,82 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
+ 	return 0;
+ }
+ 
++static int imx_pmx_gpio_request_enable(struct pinctrl_dev *pctldev,
++			struct pinctrl_gpio_range *range, unsigned offset)
++{
++	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
++	const struct imx_pinctrl_soc_info *info = ipctl->info;
++	const struct imx_pin_reg *pin_reg;
++	struct imx_pin_group *grp;
++	struct imx_pin *imx_pin;
++	unsigned int pin, group;
++	u32 reg;
++
++	/* Currently implementation only for shared mux/conf register */
++	if (!(info->flags & SHARE_MUX_CONF_REG))
++		return -EINVAL;
++
++	pin_reg = &info->pin_regs[offset];
++	if (pin_reg->mux_reg == -1)
++		return -EINVAL;
++
++	/* Find the pinctrl config with GPIO mux mode for the requested pin */
++	for (group = 0; group < info->ngroups; group++) {
++		grp = &info->groups[group];
++		for (pin = 0; pin < grp->npins; pin++) {
++			imx_pin = &grp->pins[pin];
++			if (imx_pin->pin == offset && !imx_pin->mux_mode)
++				goto mux_pin;
++		}
++	}
++
++	return -EINVAL;
++
++mux_pin:
++	reg = readl(ipctl->base + pin_reg->mux_reg);
++	reg &= ~(0x7 << 20);
++	reg |= imx_pin->config;
++	writel(reg, ipctl->base + pin_reg->mux_reg);
++
++	return 0;
++}
++
++static int imx_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
++	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
++{
++	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
++	const struct imx_pinctrl_soc_info *info = ipctl->info;
++	const struct imx_pin_reg *pin_reg;
++	u32 reg;
++
++	/*
++	 * Only Vybrid has the input/output buffer enable flags (IBE/OBE)
++	 * They are part of the shared mux/conf register.
++	 */
++	if (!(info->flags & SHARE_MUX_CONF_REG))
++		return -EINVAL;
++
++	pin_reg = &info->pin_regs[offset];
++	if (pin_reg->mux_reg == -1)
++		return -EINVAL;
++
++	/* IBE always enabled allows us to read the value "on the wire" */
++	reg = readl(ipctl->base + pin_reg->mux_reg);
++	if (input)
++		reg &= ~0x2;
++	else
++		reg |= 0x2;
++	writel(reg, ipctl->base + pin_reg->mux_reg);
++
++	return 0;
++}
++
+ static const struct pinmux_ops imx_pmx_ops = {
+ 	.get_functions_count = imx_pmx_get_funcs_count,
+ 	.get_function_name = imx_pmx_get_func_name,
+ 	.get_function_groups = imx_pmx_get_groups,
++	.gpio_request_enable = imx_pmx_gpio_request_enable,
++	.gpio_set_direction = imx_pmx_gpio_set_direction,
+ 	.enable = imx_pmx_enable,
+ };
+ 
+-- 
+2.1.0
 
-Sure, as I said in the changelog, it is a soft lockup which was triggered on
-dozens of machines here, it is actually pretty straightforward:
-
-
-[5108912.562963] BUG: soft lockup - CPU#7 stuck for 22s! [perf:13856]
-[5108912.563173] Modules linked in: netconsole configfs ipv6 bonding
-dm_multipath video sbs sbshc hed acpi_pad acpi_memhotplug acpi_ipmi
-parport_pc lp parport tcp_diag inet_diag ipmi_si ipmi_devintf
-ipmi_msghandler dell_rbu igb dcdbas shpchp i2c_i801 i2c_core iTCO_wdt
-i7core_edac edac_core iTCO_vendor_support ioatdma dca microcode
-[5108912.563198] CPU 7
-[5108912.563199] Modules linked in: netconsole configfs ipv6 bonding
-dm_multipath video sbs sbshc hed acpi_pad acpi_memhotplug acpi_ipmi
-parport_pc lp parport tcp_diag inet_diag ipmi_si ipmi_devintf
-ipmi_msghandler dell_rbu igb dcdbas shpchp i2c_i801 i2c_core iTCO_wdt
-i7core_edac edac_core iTCO_vendor_support ioatdma dca microcode
-[5108912.563216]
-[5108912.563219] Pid: 13856, comm: perf Not tainted 3.4.78 #1 Dell
-Inc.  C6100           /0D61XP
-[5108912.563222] RIP: 0010:[<ffffffff810d9a6a>]  [<ffffffff810d9a6a>]
-perf_remove_from_context+0x8d/0xb4
-[5108912.563233] RSP: 0018:ffff8809ea39bd48  EFLAGS: 00000202
-[5108912.563235] RAX: 000000000000006d RBX: ffffffff810d6dcc RCX:
-0000000000000000
-[5108912.563237] RDX: ffff88123fc8006d RSI: ffffffff810d6dcc RDI:
-ffff8808f8541c0c
-[5108912.563239] RBP: ffff8809ea39bd88 R08: 0000000000000001 R09:
-0000000000000000
-[5108912.563241] R10: ffff8809abf95610 R11: ffff880a3a6c331c R12:
-0000000000000000
-[5108912.563243] R13: 00000000000000ef R14: 0000000000000001 R15:
-0000000000000000
-[5108912.563245] FS:  0000000000000000(0000) GS:ffff88123fc20000(0000)
-knlGS:0000000000000000
-[5108912.563248] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[5108912.563250] CR2: 00007f692e787180 CR3: 0000000001a0b000 CR4:
-00000000000007e0
-[5108912.563252] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[5108912.563254] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[5108912.563256] Process perf (pid: 13856, threadinfo
-ffff8809ea39a000, task ffff880a2167c470)
-[5108912.563258] Stack:
-[5108912.563260]  ffff880a3a6c32c0 ffff88048c7c3820 ffff8809ea39bd88
-ffff88048c7c3800
-[5108912.563265]  ffff88048c7c3800 ffff8808f8541c00 ffff8808f8541c10
-ffff88091b56c000
-[5108912.563269]  ffff8809ea39bdb8 ffffffff810d9bbe ffff8809ea39bdb8
-ffff880a2167c470
-[5108912.563273] Call Trace:
-[5108912.563278]  [<ffffffff810d9bbe>] perf_event_release_kernel+0x77/0x91
-[5108912.563282]  [<ffffffff810d9c56>] put_event+0x7e/0x86
-[5108912.563285]  [<ffffffff810d9dc0>] perf_release+0x10/0x14
-[5108912.563291]  [<ffffffff8112dfc0>] __fput+0xfe/0x1f6
-[5108912.563294]  [<ffffffff8112e0d2>] fput+0x1a/0x1c
-[5108912.563297]  [<ffffffff8112ad8d>] filp_close+0x72/0x7d
-[5108912.563303]  [<ffffffff8103efbf>] put_files_struct+0x6c/0xc3
-[5108912.563306]  [<ffffffff8103f057>] exit_files+0x41/0x46
-[5108912.563309]  [<ffffffff81040971>] do_exit+0x292/0x3b6
-[5108912.563312]  [<ffffffff81040b12>] do_group_exit+0x7d/0xa5
-[5108912.563315]  [<ffffffff81040b51>] sys_exit_group+0x17/0x1b
-[5108912.563320]  [<ffffffff814c2469>] system_call_fastpath+0x16/0x1b
