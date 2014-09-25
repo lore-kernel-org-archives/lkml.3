@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaIYNwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:52:37 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:62453 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaIYNwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:52:36 -0400
-Message-ID: <54241E7D.3050201@googlemail.com>
-Date: Thu, 25 Sep 2014 15:54:05 +0200
-From: =?windows-1252?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752964AbaIYNy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:54:58 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:35697 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883AbaIYNy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:54:57 -0400
+Date: Thu, 25 Sep 2014 09:54:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] mm: memcontrol: do not iterate uninitialized memcgs
+Message-ID: <20140925135450.GA1822@cmpxchg.org>
+References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+ <20140925024054.GA4888@cmpxchg.org>
+ <20140925114339.GD12090@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Luca Olivetti <luca@ventoso.org>, Fengguang Wu <fengguang.wu@intel.com>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-media@vger.kernel.org,
-        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org, crope@iki.fi
-Subject: Re: [media/dvb_usb_af9005] BUG: unable to handle kernel paging request
- (WAS: [media/em28xx] BUG: unable to handle kernel)
-References: <20140919014124.GA8326@localhost> <541C7D9D.30908@googlemail.com> <541C826D.7060702@googlemail.com> <541C8A26.6050207@ventoso.org> <5421C187.2070407@googlemail.com> <5421E00B.2050404@ventoso.org>
-In-Reply-To: <5421E00B.2050404@ventoso.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925114339.GD12090@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 25, 2014 at 01:43:39PM +0200, Michal Hocko wrote:
+> On Wed 24-09-14 22:40:55, Johannes Weiner wrote:
+> > Argh, buggy css_put() against the root.  Hand grenades, everywhere.
+> > Update:
+> > 
+> > ---
+> > From 9b0b4d72d71cd8acd7aaa58d2006c751decc8739 Mon Sep 17 00:00:00 2001
+> > From: Johannes Weiner <hannes@cmpxchg.org>
+> > Date: Wed, 24 Sep 2014 22:00:20 -0400
+> > Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+> > 
+> > The cgroup iterators yield css objects that have not yet gone through
+> > css_online(), but they are not complete memcgs at this point and so
+> > the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
+> > iteration skip memcgs not yet fully initialized") set out to implement
+> > exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+> > not meet the ordering requirements for memcg, and so we still may see
+> > partially initialized memcgs from the iterators.
+> 
+> I do not see how would this happen. CSS_ONLINE is set after css_online
+> callback returns and mem_cgroup_css_online ends the core initialization
+> with mutex_unlock which should provide sufficient memory ordering
+> requirements
 
-Am 23.09.2014 um 23:03 schrieb Luca Olivetti:
-> El 23/09/14 20:52, Frank Schäfer ha escrit:
->
->>>> This seems to be an ancient bug, which is known at least since 5 1/2 years:
->>>> https://lkml.org/lkml/2009/2/4/350
-> [...]
->>> #if defined(CONFIG_MODULE) || defined(CONFIG_DVB_USB_AF9005_REMOTE)
->> What happens, if CONFIG_MODULES is enabled, but neither module
->> af9005-remote nor any other IR module is available ?
->> Has this ever been tested ?
-> I think I tested at the time and symbol_request returned NULL in that
-> case, however I'm not sure and I cannot find any documentation on how
-> symbol_request is supposed to work in that case.
-
-Ok, thanks.
-I assume noone wants to invest some time into this old driver and covert
-it to todays kernel IR infrastructure as suggested by Antti ? :-)
-Then I'm going to send a patch with the 
-
-#if defined(CONFIG_MODULE) || defined(CONFIG_DVB_USB_AF9005_REMOTE)
-
-approach.
-That's at least better than leaving the bug unfixed.
-
-Regards,
-Frank
-
+But the iterators do not use the mutex?  We are missing the matching
+acquire for the proper ordering.
