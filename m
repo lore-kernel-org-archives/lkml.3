@@ -1,41 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaIYMr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:47:27 -0400
-Received: from fed1rmfepi106.cox.net ([68.230.241.137]:55422 "EHLO
-	fed1rmfepi106.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaIYMr0 (ORCPT
+	id S1752052AbaIYMxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:53:19 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:50650 "EHLO
+	va-smtp01.263.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaIYMxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:47:26 -0400
-X-Greylist: delayed 7254 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 08:47:26 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020208.5423F287.013F,ss=1,re=0.000,fgs=512
-X-CT-Spam: 0
-X-Authority-Analysis: v=2.0 cv=fKfnK+me c=1 sm=1
- a=Cs4UC+p/20uu2XjaYzePpw==:17 a=9cW_t1CCXrUA:10 a=6jLUgyxFnA8A:10
- a=G8Uczd0VNMoA:10 a=qD6Q4uwIDcsA:10 a=IkcTkHD0fZMA:10 a=kviXuzpPAAAA:8
- a=uGK7OSafAAAA:8 a=Khkjbfve71f09gY_FrIA:9 a=QEXdDO2ut3YA:10 a=MsMiqXIr-a4A:10
- a=CcYwRk9YFBoA:10 a=wN2EBPs29c0A:10 a=SDCA71xN_TwA:10
- a=Cs4UC+p/20uu2XjaYzePpw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20140925064631.R3PCQ.530774.imail@fed1rmwml113>
-Date: Thu, 25 Sep 2014 3:46:31 -0700
-From: <fttlt5@cox.net>
-Subject: PARTNERSHIP !
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 25 Sep 2014 08:53:17 -0400
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <0ec6c24f5e5738684fb02596420b536d>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v6 0/3] Add drm driver for Rockchip Socs
+Date: Thu, 25 Sep 2014 20:52:45 +0800
+Message-Id: <1411649565-10309-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
-          Our company located in China is presently searching for a service of representatives agents in America who can help us establish a medium of getting to our customers in USA. contact my e-mail for better understanding.                                                           ncchemicalsint@9y.com 
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-Thanks'
-Ka Ling.
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
+
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
+
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
+
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
+
+Mark yao (3):
+  drm/rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  516 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   61 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  230 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  345 +++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1418 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3175 insertions(+)
+
+-- 
+1.7.9.5
+
