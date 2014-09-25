@@ -1,279 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaIYFxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:53:49 -0400
-Received: from bay004-omc3s24.hotmail.com ([65.54.190.162]:61767 "EHLO
-	BAY004-OMC3S24.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750715AbaIYFxs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:53:48 -0400
-X-TMN: [gUUN3svtMTs/8y6NRvmFjCC6tCkqX83q]
-X-Originating-Email: [dudlx@outlook.com]
-Message-ID: <BAY176-DS18EB4ACEF953C01D570F32BDBE0@phx.gbl>
-From: Dudley Du <dudlx@outlook.com>
-To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Benson Leung" <bleung@google.com>,
-        "Patrik Fimml" <patrikf@google.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <53c7718c.ae67460a.0495.4979@mx.google.com> <20140821182101.GC5854@core.coreip.homeip.net> <53f70235.610e450a.3800.ffff83c7@mx.google.com> <20140924001839.GA16747@core.coreip.homeip.net> <BAY176-DS93497D6BEA95BFE466BC1BDB10@phx.gbl> <20140925004838.GB38891@core.coreip.homeip.net>
-In-Reply-To: <20140925004838.GB38891@core.coreip.homeip.net>
-Subject: RE: [PATCH v4 1/14] input: cyapa: re-architecture driver to support multi-trackpads in one driver
-Date: Thu, 25 Sep 2014 13:53:45 +0800
+	id S1751932AbaIYFzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 01:55:48 -0400
+Received: from mail-bn1bon0133.outbound.protection.outlook.com ([157.56.111.133]:32878
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751160AbaIYFzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 01:55:46 -0400
+Date: Thu, 25 Sep 2014 13:55:03 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <linus.walleij@linaro.org>, <gnurou@gmail.com>, <kernel@pengutronix.de>,
+        <linux-gpio@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <bpringlemeir@nbsps.com>
+Subject: Re: [PATCH v2 3/5] gpio: vf610: add gpiolib/IRQ chip driver for
+ Vybrid
+Message-ID: <20140925055446.GC6405@dragon>
+References: <cover.1411492954.git.stefan@agner.ch>
+ <81b47949f0806a335f380be916ec88f07b31290a.1411492954.git.stefan@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac+hivcvuR33eSuxRWy0UQVIHFPhTwcAzmwAAA+JgJAGeJHAgAADTj1QADAIcAAABrhWkA==
-Content-Language: zh-cn
-X-OriginalArrivalTime: 25 Sep 2014 05:53:48.0852 (UTC) FILETIME=[139FBF40:01CFD885]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <81b47949f0806a335f380be916ec88f07b31290a.1411492954.git.stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [180.108.234.93]
+X-ClientProxiedBy: SINPR01CA006.apcprd01.prod.exchangelabs.com (10.242.48.16)
+ To DM2PR03MB350.namprd03.prod.outlook.com (10.141.54.21)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB350;
+X-Forefront-PRVS: 0345CFD558
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(51704005)(110136001)(66066001)(80022003)(74502003)(101416001)(85852003)(50466002)(105586002)(102836001)(97736003)(107046002)(77982003)(46102003)(97756001)(47776003)(81542003)(90102001)(85306004)(23726002)(74662003)(106356001)(76176999)(77096002)(92566001)(83322001)(83072002)(4396001)(64706001)(575784001)(20776003)(46406003)(19580395003)(31966008)(120916001)(79102003)(42186005)(87976001)(81342003)(83506001)(19580405001)(95666004)(10300001)(99396003)(21056001)(33716001)(54356999)(86362001)(76482002)(92726001)(50986999)(33656002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB350;H:dragon;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
-> owner@vger.kernel.org] On Behalf Of Dmitry Torokhov
-> Sent: Thursday, September 25, 2014 8:49 AM
-> To: Dudley Du
-> Cc: Rafael J. Wysocki; Benson Leung; Patrik Fimml; linux-input@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v4 1/14] input: cyapa: re-architecture driver to support
-> multi-trackpads in one driver
-> 
-> On Wed, Sep 24, 2014 at 03:08:31PM +0800, Dudley Du wrote:
-> > > > > > +	async_schedule(cyapa_detect_async, cyapa);
-> > > > >
-> > > > > I think I already asked this before - why do we need to try and
-> schedule
-> > > async
-> > > > > detect from interrupt handler. In what cases we will fail to
-> initialize
-> > > the
-> > > > > device during normal probing, but then are fine when stray interrupt
-> > > arrives?
-> > > > >
-> > > >
-> > > > 1) Because gen5 TP devices use interrupt to sync the command and
-> response,
-> > > and
-> > > > in detecting, some commands must be sent and executed in attached
-> devices,
-> > > so
-> > > > the interrupt must be usable in detecting.
-> > > > So if do not schedule async detect from interrupt handler, the interrupt
-> > > > handler will be taken, and cannot enter again, which will cause the
-> command
-> > > to
-> > > > the device failed, it will also cause long time detecting.
-> > > > 2) detecting will fail when no device attached or the attached device is
-> not
-> > > > supported gen3 or gen5 TP devices or there is some issue with the device
-> > > > that cannot enter into active working mode or stay in bootloader mode
-> > > > for invalid firmware detected.
-> > > > And it's tested that it's save when stray interrupt arrives in detecting.
-> > >
-> > >
-> > > I am sorry, I have trouble parsing this. I understand that you may need
-> > > interrupt to know when command response is ready, but I do not see how
-> > > kicking asynchronous detect helps there. During probe you can figure out
-> > > if you are talking to a Cypress device and whether it is operable. If it
-> > > is not operable you can try flashing a new firmware and then kick off
-> > > detection again after flash is successful. But I do not see any reason
-> > > in trying to re-detect the device after random interrupt arrives in hopes
-> > > that maybe this time stars will align and we'll be able to work with it.
-> >
-> > Considering two situations:
-> > 1) For some machines, when system get into sleep mode, the power of the
-> trackpad device
-> > will be cut off, and after system resumed, the power to trackpad device is
-> on again.
-> 
-> And cyapa_resume() is responsible for bringing the device back into
-> operational state.
-> 
-> > 2) For the trackpad device itself, if internal error encounter, it will
-> reset itself,
-> > similar result as power off and power on again.
-> > When either of above situation happened, for gen3 Cypress trackpad device,
-> it will get
-> > into bootloader mode (it cannot get into operational mode automatically),
-> and also assert
-> > interrupts to host.
-> > So at this time, cyapa driver must kick off the detection again to determine
-> the real status
-> > of the trackpad device, and command it go to the operational mode.
-> > Otherwise, it will be out of work until reboot.
-> 
-> In this case you won't have cyapa_default_irq_handler installed, right?
-> The specific generation IRQ handler will have to detect this condition
-> and reinitialize the touchpad.
+On Tue, Sep 23, 2014 at 07:37:55PM +0200, Stefan Agner wrote:
+> diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
+> new file mode 100644
+> index 0000000..6649a13
+> --- /dev/null
+> +++ b/drivers/gpio/gpio-vf610.c
+> @@ -0,0 +1,284 @@
+> +/*
+> + * vf610 GPIO support through PORT and GPIO module
+> + *
+> + * Copyright (c) 2014 Toradex AG.
+> + *
+> + * Author: Stefan Agner <stefan@agner.ch>.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version 2
+> + * of the License, or (at your option) any later version.
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/err.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/bitops.h>
+> +#include <linux/gpio.h>
 
-Yes, you are correct.
-The async detection will be removed from cyapa_default_irq_handler().
+You might want to have the headers sort alphabetically.
 
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/module.h>
+> +#include <asm-generic/bug.h>
 
+Why do we need this header?
+
+> +
+> +
+
+One new line is enough.
+
+> +#define VF610_GPIO_PER_PORT		32
+> +
+> +struct vf610_gpio_port {
+> +	struct gpio_chip gc;
+> +	void __iomem *base;
+> +	void __iomem *gpio_base;
+> +	u8 irqc[VF610_GPIO_PER_PORT];
+> +};
+> +
+> +#define GPIO_PDOR		0x00
+> +#define GPIO_PSOR		0x04
+> +#define GPIO_PCOR		0x08
+> +#define GPIO_PTOR		0x0c
+> +#define GPIO_PDIR		0x10
+> +
+> +#define PORT_PCR(n)		(n * 0x4)
+
+s/n/(n)
+
+...
+
+> +static int vf610_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *np = dev->of_node;
+> +	struct vf610_gpio_port *port;
+> +	struct resource *iores;
+> +	struct gpio_chip *gc;
+> +	int irq, ret;
+> +
+> +	port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
+> +	if (!port)
+> +		return -ENOMEM;
+> +
+> +	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	port->base = devm_ioremap_resource(dev, iores);
+> +	if (IS_ERR(port->base))
+> +		return PTR_ERR(port->base);
+> +
+> +	iores = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +	port->gpio_base = devm_ioremap_resource(dev, iores);
+> +	if (IS_ERR(port->gpio_base))
+> +		return PTR_ERR(port->gpio_base);
+> +
+> +	irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+
+Why not platform_get_irq()?
+
+> +	if (irq == NO_IRQ)
+> +		return -ENODEV;
+
+Instead of using NO_IRQ, we should check if irq is a negative value and
+propagate the value as the return, something like:
+
+	if (irq < 0)
+		return irq;
+
+Shawn
+
+> +
+> +	gc = &port->gc;
+> +	gc->of_node = np;
+> +	gc->dev = dev;
+> +	gc->label = "vf610-gpio",
+> +	gc->ngpio = VF610_GPIO_PER_PORT,
+> +	gc->base = of_alias_get_id(np, "gpio") * VF610_GPIO_PER_PORT;
+> +
+> +	gc->request = vf610_gpio_request,
+> +	gc->free = vf610_gpio_free,
+> +	gc->direction_input = vf610_gpio_direction_input,
+> +	gc->get = vf610_gpio_get,
+> +	gc->direction_output = vf610_gpio_direction_output,
+> +	gc->set = vf610_gpio_set,
+> +
+> +	ret = gpiochip_add(gc);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* Clear the interrupt status register for all GPIO's */
+> +	vf610_gpio_writel(~0, port->base + PORT_ISFR);
+> +
+> +	ret = gpiochip_irqchip_add(gc, &vf610_gpio_irq_chip, 0,
+> +				   handle_simple_irq, IRQ_TYPE_NONE);
+> +	if (ret) {
+> +		dev_err(dev, "failed to add irqchip\n");
+> +		gpiochip_remove(gc);
+> +		return ret;
+> +	}
+> +	gpiochip_set_chained_irqchip(gc, &vf610_gpio_irq_chip, irq,
+> +				     vf610_gpio_irq_handler);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver vf610_gpio_driver = {
+> +	.driver		= {
+> +		.name	= "gpio-vf610",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = vf610_gpio_dt_ids,
+> +	},
+> +	.probe		= vf610_gpio_probe,
+> +};
+> +
+> +static int __init gpio_vf610_init(void)
+> +{
+> +	return platform_driver_register(&vf610_gpio_driver);
+> +}
+> +subsys_initcall(gpio_vf610_init);
+> +
+> +MODULE_AUTHOR("Stefan Agner <stefan@agner.ch>");
+> +MODULE_DESCRIPTION("Freescale VF610 GPIO");
+> +MODULE_LICENSE("GPL v2");
+> -- 
+> 2.1.0
 > 
-> ...
-> 
-> > > > > > @@ -898,8 +528,12 @@ static int cyapa_remove(struct i2c_client
-> *client)
-> > > > > >  	struct cyapa *cyapa = i2c_get_clientdata(client);
-> > > > > >
-> > > > >
-> > > > > You schedule detect asynchronously so you need to make sure it is not
-> > > running
-> > > > > (and will not be running) when you try to unbind the driver here.
-> > > >
-> > > > Thanks. I will update it in next release.
-> > > >
-> > > > To avoid this problem, a removed flag is introduced and is also synced
-> by
-> > > the
-> > > > cyapa->state_sync_lock mutex lock. So when this driver is removing, it's
-> > > sure
-> > > > that the detecting asynchronous thread is not running, and if there's
-> any
-> > > event
-> > > > cause the asynchronous thread is entered, it will do nothing and will
-> exit
-> > > immediately.
-> > >
-> > > Peeking at the other version of the patch you do:
-> > >
-> > > cyapa_remove()
-> > > {
-> > > 	...
-> > > 	cyapa->removed = true;
-> > > 	...
-> > > 	kfree(cyapa);
-> > > }
-> > >
-> > > and
-> > >
-> > > void cyapa_detect_async(void *data, async_cookie_t cookie)
-> > > {
-> > > 	...
-> > > 	if (cyapa->removed) {
-> > > 		mutex_unlock(&cyapa->state_sync_lock);
-> > > 		return;
-> > > 	}
-> > > 	...
-> > > }
-> > >
-> > > That's not going to work.
-> > >
-> > > Getting asynchronous behavior by individual driver is hard and I believe
-> > > Luis Rordiguez is working on allowing to do that is the driver core. So
-> > > I would recommend to switch driver to do synchronous probing, at least
-> > > for now, and figure out other kinks first.
-> > >
-> > > Thanks.
-> > >
-> >
-> > The consideration of the thread asynchronous issue is that:
-> > The detection thread has been scheduled, but not run yet, and at the time,
-> > the driver itself has been removed, so when later the detection thread is
-> > triggered to run, the memory of cyapa driver has been freed, and cause error,
-> right?
-> 
-> Right.
-> 
-> >
-> > I have an idea as below, please help review.
-> > Add variable cyapa->detect_thread_actived to trace the number of the threads
-> were scheduled,
-> > and when the driver module is in removing, it will wait all scheduled
-> threads has been run.
-> > That is when a thread is scheduled, cyapa->detect_thread_actived will be
-> increased,
-> > when the thread is executed and finished, the cyapa->detect_thread_actived
-> will be decrreased,
-> > so, when the value of cyapa->detect_thread_actived is 0, it must be no
-> thread scheduled for running.
-> > So when at this time, if the driver module is marked for removed, the
-> remove() thread that waiting
-> > on the cyapa->detect_thread_completed will be issue, and then driver is safe
-> to be removed.
-> > The code is similar as below.
-> >
-> > For each time, before the cyapa_detect_async() function is called or
-> scheduled,
-> > ... {
-> > 	...
-> > 	atomic_inc(&cyapa->detect_thread_actived);
-> > 	async_schedule(cyapa_detect_async, cyapa);
-> > 	...
-> > }
-> >
-> > void cyapa_detect_async(void *data, async_cookie_t cookie)
-> > {
-> > 	...
-> > 	if (cyapa->removed) {
-> > 		mutex_unlock(&cyapa->state_sync_lock);
-> > 		return;
-> > 	}
-> > 	...
-> > 	free_irq(cyapa->irq, cyapa);
-> >
-> > 	/* Wait until all scheduled thread exited. */
-> > 	if (atomic_read(&cyapa->detect_thread_actived)
-> > 		wait_for_completion_timeout(&cyapa->detect_thread_completed,
-> > 					msecs_to_jiffies(4000));
-> > 	...
-> > }
-> >
-> > void cyapa_detect_async(void *data, async_cookie_t cookie)
-> > {
-> > 	struct cyapa *cyapa = (struct cyapa *)data;
-> >
-> > 	mutex_lock(&cyapa->state_sync_lock);
-> > 	if (cyapa->removed) {
-> > 		mutex_unlock(&cyapa->state_sync_lock);
-> > 		if (atomic_dec_and_test(&cyapa->detect_thread_actived)) {
-> > 			/* Now, no thread runing, safe to remove this driver. */
-> > 			complete(&cyapa->detect_thread_completed);
-> > 		}
-> > 		goto return;
-> > 	}
-> >
-> > 	/* Keep synchronized with sys interface process threads. */
-> > 	cyapa_detect(cyapa);
-> >
-> > 	mutex_unlock(&cyapa->state_sync_lock);
-> > 	atomic_dec(&cyapa->detect_thread_actived);
-> > }
-> 
-> It can be made to work, but as I mentioned we are working on bringing
-> asynchronous probing into device core in one form or another so I'd
-> rather not be doing it in the driver at all at this time.
-
-Understood.
-But what should I do for this driver, right now?
-Though synchronous probing could be working anyway, but I do not suggest to use this method in this driver.
-
-For this driver and devices, I have below concerns when using asynchronous probing:
-1) Slow down the system boot time.
-At system start up, it will take much long time for probing, so system start up will
-be slowed down.
-
-2) Polling mode for these device would be lower efficient and unreliable in detecting.
-If using asynchronous detecting when error detected in irq handler, then must use polling mode.
-But use polling mode will cause device easier to get into unstable status,
-Fast polling will consume too much firmware CPU time, and may make it unstable.
-Low polling requires much more time for device detecting.
-And also the data/command read/write in polling mode is not well synchronized between HOST and device,
-it may cause the device data become unreliable.
-
-Thanks.
-
-> 
-> Thanks.
-> 
-> --
-> Dmitry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
