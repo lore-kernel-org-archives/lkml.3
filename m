@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaIYT44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 15:56:56 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:34769 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaIYT4y (ORCPT
+	id S1752114AbaIYT7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:59:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63307 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750793AbaIYT7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 15:56:54 -0400
-Message-ID: <54247372.40803@gmail.com>
-Date: Thu, 25 Sep 2014 12:56:34 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 25 Sep 2014 15:59:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/13] ARM: shmobile: R-Mobile: DT PM domain support
+Date: Thu, 25 Sep 2014 22:19:27 +0200
+Message-ID: <3136347.ncZoJtR6MK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-To: Michael Welling <mwelling@emacinc.com>, linux-kernel@vger.kernel.org
-CC: grant.likely@linaro.org, linus.walleij@linaro.org, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: GPIO registration for external Ethernet PHY oscillator enable/disable
-References: <20140925191722.GA2481@sysresccd>
-In-Reply-To: <20140925191722.GA2481@sysresccd>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 12:17 PM, Michael Welling wrote:
-> Looks like my original message got buried in the mailing list.
+On Thursday, September 25, 2014 06:28:27 PM Geert Uytterhoeven wrote:
+> 	Hi Rafael, Simon, Magnus,
 > 
-> Lets try this again with a few key developers CC'd.
+> This patch series enables DT support for PM domains on Renesas R-Mobile SoCs.
 > 
-> Original Message:
-> I have some questions that span multiple subsystems including
-> gpio/pinctrl, apm, and net subsystems.
+> Currently it's limited to R-Mobile A1 (r8a7740), but given the similarity of
+> the SYSC System-Controller on the various SH-Mobile/R-Mobile SoCs, and the
+> abstraction of PM domains in DT, it should be sufficiently generic to handle
+> other SoCs in the future (e.g. SH-Mobile AP4 (sh7372), SH-Mobile AG5 (sh73a0),
+> R-Mobile APE6 (r8a73a4)).
 > 
-> On some of our system on module designs, we use a GPIO to toggle the
-> enable pin on external oscillators. In particular, we are using a 50Mhz
-> oscillator to drive a clock on a RMII Ethernet PHY.
+> Changes compared to v2 (more detailed changelogs in the individual patches):
+>   - Minor changes to attach/detach callbacks,
+>   - Really add the A4MP and D4 PM domains, as fixes are available (see
+>     dependencies below),
+>   - Scan DT topology to identify special PM domains (CPUs and console),
+>   - Move PM domain power-on/off latencies to a separate patch.
 > 
-> Though I can configure the pin such that the Ethernet interface works we
-> are looking to disable the oscillator during APM sleep but after the PHY
-> is put into a low power mode.
+> Changes compared to v1 (more detailed changelogs in the individual patches):
+>   - Several new patches: PM QoS device latencies in DT, attach/detach
+>     callbacks,
+>   - Run-Time management of the module clocks, making the hack in
+>     drivers/sh/pm_runtime.c obsolete for DT platforms using genpd,
+>   - Addition of PM QoS device latencies, specified from DT,
+>   - Addition of build glue, so this builds and runs without additional
+>     changes, incl. s2ram.
 > 
-> How do I register a GPIO for use in the PHY suspend and resume code?
-
-So, PHY drivers are allowed to provide specialized implementations for
-suspend/resume operations that are called by phy_suspend() and
-phy_resume(), the current Micrel PHY driver uses the generic
-suspend/resume implementation and it is best if we can keep doing that.
-
-> Can it be handled outside of the PHY driver?
-
-I see a few possible options:
-
-- hook a pm_runtime callbacks for your platform, check the device
-pointer to make sure this is the PHY device, and when that is the case,
-toggle the GPIO accordingly
-
-- add an additional "osc_gpio" configuration parameter passed to the
-Ethernet MAC driver (presumably drivers/net/ethernet/cadence/macb.c?)
-and toggle the GPIO before and after the calls to the PHY state machine
-(phy_suspend, phy_resume, phy_start, phy_stop), that might be simpler
-
-- last but not least, make the PHY driver aware of that optional GPIO,
-create customized PHY suspend/resume/config_aneg callbacks
-
-
-> If so how do ensure the appropriate suspend and resume sequencing?
+> This means that functionality-wise, the DT version is now on par with the
+> legacy version ("[PATCH v2 00/11] ARM: shmobile: r8a7740/armadillo800eva legacy
+> PM domain support").
 > 
-> For reference, we are using a Micrel KSZ8081 PHY connected to a
-> AT91SAMA5D35 processor.
+> Dependencies:
+>   - Simon Horman's renesas-devel-20140924-v3.17-rc6,
+>   - Rafael J. Wysocki's linux-pm.git#linux-next,
+>   - Jason Cooper's linux.git#irqchip/for-next.
+>   - "ARM: shmobile: R-Mobile: Store SYSC base address in rmobile_pm_domain"
+>     depends on the legacy version of this series, but if the legacy version
+>     will never be accepted, the conflicts are trivial to resolve (drop changes
+>     to non-existing PM domains),
+>   - Working resume from s2ram depends on:
+>       - "[PATCH/RFC] fbdev: sh_mobile_hdmi: Re-init regs before irq re-enable
+> 	on resume",
+>       - "[PATCH] ARM: hw_breakpoint: Trap undef instruction exceptions on
+> 	wake-up", or an alternative solution.
+>   - Working "no_console_suspend" handling depends on "[PATCH 06/13] ARM:
+>     shmobile: armadillo800eva dts: Add chosen/stdout-path".
 > 
-> Addendum:
-> I ran into another situation where a GPIO enabled oscillator was used.
-> The oscillator in this case drives the master clock for a audio codec.
-> In the old days (before device tree), I could initialize the GPIO in the
-> platform board file. Now with device tree I can setup the pin multipler
-> but the initial state of the GPIO I am not sure how to set.
+> For your convenience, I've also pushed this (incl. its dependencies) to
+> git://git.kernel.org/pub/scm/linux/kernel/git/geert/renesas-drivers.git#rmobile-genpd
 > 
-> Is there a way to directly change the state of a GPIO pin from a
-> devicetree entry?
-> 
+> Rafael: If you accept "PM / Domains: Add genpd attach/detach callbacks", it
+> would be good to get this patch in v3.18-rc1, as it's the only hard dependency
+> on linux-pm.git for the rest of this series. The other parts have relaxed
+> ordering constraints due to the separation of code and DTS.
 
+OK, this one looks good to me, so I can push it for 3.18.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
