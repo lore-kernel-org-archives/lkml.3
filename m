@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaIYOle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:41:34 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41712 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIYOlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:41:32 -0400
-Date: Thu, 25 Sep 2014 16:41:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] EFI urgent fixes
-Message-ID: <20140925144127.GA3828@gmail.com>
-References: <20140925073133.GQ18635@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140925073133.GQ18635@console-pimps.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753465AbaIYOny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:43:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:31554 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752501AbaIYOnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:43:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,597,1406617200"; 
+   d="scan'208";a="578908381"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, johan@kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [PATCH v3 0/3] mfd: viperboard: fix cache line sharing and cleanups
+Date: Thu, 25 Sep 2014 17:43:14 +0300
+Message-Id: <1411656197-26517-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes since v2:
+ 
+ * switch to using devm_ allocation
 
-* Matt Fleming <matt@console-pimps.org> wrote:
+ * remove unused platform_device
 
-> Folks,
-> 
-> Please consider pulling the following fixes.
-> 
-> The first two are releated to the bug report I got from Linus and Josh
-> Boyer, whereby Fedora20 + grub2 systems were no longer booting. Linus
-> reverted the offending commit that broke grub2 boot, but that left us in
-> a state where Macbooks still didn't boot with EFI. This is fixed with
-> the below revert and I'm dropping a noisey boot time efi_printk() based
-> on Josh's request and Linus' OK.
-> 
-> The third patch fixes a 32-bit EFI boot stub bug where garbled text is
-> displayed on the screen if any of the efi_printk() statements run.
-> 
-> The following changes since commit 3eddc69ffeba092d288c386646bfa5ec0fce25fd:
-> 
->   x86 early_ioremap: Increase FIX_BTMAPS_SLOTS to 8 (2014-09-14 15:24:31 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
-> 
-> for you to fetch changes up to 115c6628a59044958c205f8468a1b3ba3d539e61:
-> 
->   x86/efi: Truncate 64-bit values when calling 32-bit OutputString() (2014-09-24 21:56:46 +0100)
-> 
-> ----------------------------------------------------------------
->  * Revert the static library changes from the merge window since they're
->    causing issues for Macbooks and Fedora + Grub2 - Matt Fleming
-> 
->  * Delete the misleading "setup_efi_pci() failed!" message which some
->    people are seeing when booting EFI - Matt Fleming
-> 
->  * Fix printing strings from the 32-bit EFI boot stub by only passing
->    32-bit addresses to the firmware - Matt Fleming
-> 
-> ----------------------------------------------------------------
-> Matt Fleming (3):
->       Revert "efi/x86: efistub: Move shared dependencies to <asm/efi.h>"
->       x86/efi: Delete misleading efi_printk() error message
->       x86/efi: Truncate 64-bit values when calling 32-bit OutputString()
-> 
->  arch/x86/boot/compressed/Makefile |  3 +--
->  arch/x86/boot/compressed/eboot.c  | 44 +++++++++++++++++++++++----------------
->  arch/x86/boot/compressed/eboot.h  | 16 ++++++++++++++
->  arch/x86/include/asm/efi.h        | 24 ---------------------
->  drivers/firmware/efi/Makefile     |  2 +-
->  5 files changed, 44 insertions(+), 45 deletions(-)
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
+Changes since v1:
 
-Pulled, thanks Matt!
+ * split cache sharing fix and cleanups into separate patches
 
-I'll give it some testing and then send it to Linus with other 
-x86 fixes.
 
-Thanks,
+Octavian Purdila (3):
+  mfd: viperboard: allocate I/O buffer separately
+  mfd: viperboard: switch to devm_ allocation
+  mfd: viperboard: remove unused platform_device
 
-	Ingo
+ drivers/mfd/viperboard.c       | 19 +++++++++----------
+ include/linux/mfd/viperboard.h |  3 +--
+ 2 files changed, 10 insertions(+), 12 deletions(-)
+
+-- 
+1.9.1
+
