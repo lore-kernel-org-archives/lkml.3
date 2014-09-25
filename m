@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaIYO5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:57:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60628 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305AbaIYO5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:57:01 -0400
-Date: Thu, 25 Sep 2014 16:56:55 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140925145655.GA28201@nazgul.tnic>
-References: <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
- <20140923200054.GB16467@pd.tnic>
- <20140924145658.GB31678@khazad-dum.debian.net>
- <20140925085158.GF22317@nazgul.tnic>
- <20140925113643.GB10569@khazad-dum.debian.net>
- <20140925121007.GA25334@nazgul.tnic>
- <20140925144025.GA14030@khazad-dum.debian.net>
+	id S1753513AbaIYO5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:57:12 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:64628 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaIYO5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:57:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-arch@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-ia64@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>, x86@kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, sparclinux@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
+Date: Thu, 25 Sep 2014 16:56:53 +0200
+Message-ID: <3399763.VZ83zCGta1@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140924060419.GA20253@ulmo>
+References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com> <20140825112630.GA4163@ulmo.nvidia.com> <20140924060419.GA20253@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140925144025.GA14030@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:cG0nmYsm+/lqYL+5iEOB16olXnCs8D8JsPEWfDbp/Xw
+ zqs/YOw7Hl9NCD0DhRK2PauvTRj16bvHpwhKYaxz/DBr1iUevo
+ VKBIkE9P0vzL2Fu5V1dB2dNpP3CjhI1BRniV4o8KpmLrZ+YQ5z
+ ZDmKmGOKBxVOTuwYkYSIBHo4YHnBjwNbHq2Zvw9MkXSLD3ShTC
+ 3goQXtEyx0XarJEC5hOGqiVft8GOFcZ5v7K05Rv58CAZteN4wQ
+ LvZAA5EJ5Q8QruuiExv5KGs+dPRjXYLWnQns8UboKeCC0H8lIR
+ 5jO2xH2XdGBhTTlKmBbyO6mYI4J3PHn/SKrNLORAWB2BOMgE9W
+ BRxoOKcplIpMlKXAog4k=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:40:25AM -0300, Henrique de Moraes Holschuh wrote:
-> At this point, what alternatives are left?
+On Wednesday 24 September 2014 08:04:21 Thierry Reding wrote:
+> > 
+> > Arnd, do you think this looks good to take for test-driving in
+> > linux-next?
+> 
+> Ping?
+> 
 
-Here's what we could do:
+I've put it all into the asm-generic tree, and Will's patches on top.
+Unless I get complaints, I plan to submit them all for 3.18.
 
-* Install microcode to /lib/firmware/...
-
-* Refuse to update the microcode and tell the user that she needs to reboot.
-
-* Reboot and load the microcode
-
-For that to work though, we'd need to detect the that we're freshly
-booting and only then load the microcode (if we're coming in later,
-we should refuse because something linking to libpthread might've run
-already).
-
-Now, we need to think about how to detect that reliably, if at all
-possible.
-
-The other thing we could do is backport early ucode loading...
-
-Hmm, I'm not crazy about both possibilities though, TBH.
-
--- 
-Regards/Gruss,
-    Boris.
---
+	Arnd
