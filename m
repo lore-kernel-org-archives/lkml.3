@@ -1,150 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaIYUic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:38:32 -0400
-Received: from mga03.intel.com ([134.134.136.65]:20800 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571AbaIYUeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:34:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,599,1406617200"; 
-   d="scan'208";a="608712271"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v11 13/21] ext2: Remove ext2_xip_verify_sb()
-Date: Thu, 25 Sep 2014 16:33:30 -0400
-Message-Id: <1411677218-29146-14-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+	id S1753543AbaIYUio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:38:44 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:59962 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaIYUil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 16:38:41 -0400
+Date: Fri, 26 Sep 2014 00:38:37 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.debian@gmx.de>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
+Message-ID: <20140925203837.GP2227@moon>
+References: <1411141516-1918-1-git-send-email-avagin@openvz.org>
+ <20140924105155.GA24411@quack.suse.cz>
+ <20140924131947.bc083e7f34981bbf73a364f1@linux-foundation.org>
+ <20140925083010.GA3096@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925083010.GA3096@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara pointed out that calling ext2_xip_verify_sb() in ext2_remount()
-doesn't make sense, since changing the XIP option on remount isn't
-allowed.  It also doesn't make sense to re-check whether blocksize is
-supported since it can't change between mounts.
+On Thu, Sep 25, 2014 at 10:30:10AM +0200, Jan Kara wrote:
+> On Wed 24-09-14 13:19:47, Andrew Morton wrote:
+> > On Wed, 24 Sep 2014 12:51:55 +0200 Jan Kara <jack@suse.cz> wrote:
+> > 
+> > >   Hello,
+> > > 
+> > >   Andrew, what do you think about the patch below? Al objected that it
+> > > changes userspace visible behavior some time ago and then he didn't react
+> > > to our explanations...
+> > 
+> > Difficult situation.  There's some really important information missing
+> > from the changelog:
+> > 
+> > - Who cares?  Is there some real application which is hurting from
+> >   the current situation?  If so, who, what, how and why.  If not, then
+> >   why change anything?
+>   I believe Openvz guys hit this in their application but I'll defer to
+> them for more details.
 
-Replace the call to ext2_xip_verify_sb() in ext2_fill_super() with the
-equivalent check and delete the definition.
-
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- fs/ext2/super.c | 33 ++++++++++++---------------------
- fs/ext2/xip.c   | 12 ------------
- fs/ext2/xip.h   |  2 --
- 3 files changed, 12 insertions(+), 35 deletions(-)
-
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index b88edc0..d862031 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -868,9 +868,6 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 		((EXT2_SB(sb)->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ?
- 		 MS_POSIXACL : 0);
- 
--	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
--				    EXT2_MOUNT_XIP if not */
--
- 	if (le32_to_cpu(es->s_rev_level) == EXT2_GOOD_OLD_REV &&
- 	    (EXT2_HAS_COMPAT_FEATURE(sb, ~0U) ||
- 	     EXT2_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
-@@ -900,11 +897,17 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	blocksize = BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
- 
--	if (ext2_use_xip(sb) && blocksize != PAGE_SIZE) {
--		if (!silent)
-+	if (sbi->s_mount_opt & EXT2_MOUNT_XIP) {
-+		if (blocksize != PAGE_SIZE) {
- 			ext2_msg(sb, KERN_ERR,
--				"error: unsupported blocksize for xip");
--		goto failed_mount;
-+					"error: unsupported blocksize for xip");
-+			goto failed_mount;
-+		}
-+		if (!sb->s_bdev->bd_disk->fops->direct_access) {
-+			ext2_msg(sb, KERN_ERR,
-+					"error: device does not support xip");
-+			goto failed_mount;
-+		}
- 	}
- 
- 	/* If the blocksize doesn't match, re-read the thing.. */
-@@ -1249,7 +1252,6 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- {
- 	struct ext2_sb_info * sbi = EXT2_SB(sb);
- 	struct ext2_super_block * es;
--	unsigned long old_mount_opt = sbi->s_mount_opt;
- 	struct ext2_mount_options old_opts;
- 	unsigned long old_sb_flags;
- 	int err;
-@@ -1274,22 +1276,11 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
- 		((sbi->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
- 
--	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
--				    EXT2_MOUNT_XIP if not */
--
--	if ((ext2_use_xip(sb)) && (sb->s_blocksize != PAGE_SIZE)) {
--		ext2_msg(sb, KERN_WARNING,
--			"warning: unsupported blocksize for xip");
--		err = -EINVAL;
--		goto restore_opts;
--	}
--
- 	es = sbi->s_es;
--	if ((sbi->s_mount_opt ^ old_mount_opt) & EXT2_MOUNT_XIP) {
-+	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
- 		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
- 			 "xip flag with busy inodes while remounting");
--		sbi->s_mount_opt &= ~EXT2_MOUNT_XIP;
--		sbi->s_mount_opt |= old_mount_opt & EXT2_MOUNT_XIP;
-+		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
- 	}
- 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
- 		spin_unlock(&sbi->s_lock);
-diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
-index 132d4da..66ca113 100644
---- a/fs/ext2/xip.c
-+++ b/fs/ext2/xip.c
-@@ -13,15 +13,3 @@
- #include "ext2.h"
- #include "xip.h"
- 
--void ext2_xip_verify_sb(struct super_block *sb)
--{
--	struct ext2_sb_info *sbi = EXT2_SB(sb);
--
--	if ((sbi->s_mount_opt & EXT2_MOUNT_XIP) &&
--	    !sb->s_bdev->bd_disk->fops->direct_access) {
--		sbi->s_mount_opt &= (~EXT2_MOUNT_XIP);
--		ext2_msg(sb, KERN_WARNING,
--			     "warning: ignoring xip option - "
--			     "not supported by bdev");
--	}
--}
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index e7b9f0a..87eeb04 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -6,13 +6,11 @@
-  */
- 
- #ifdef CONFIG_EXT2_FS_XIP
--extern void ext2_xip_verify_sb (struct super_block *);
- static inline int ext2_use_xip (struct super_block *sb)
- {
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
- 	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
- }
- #else
--#define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
- #endif
--- 
-2.1.0
-
+Hi, sorry for delay! Indeed we found this weird behaviour while been testing
+the results of restore of deleted files. When criu observes opened descriptor on
+deleted file its contents get written into criu image file which we call "ghost"
+files. On restore we create a temporary ghost file with some unique name. Then
+we restore file descriptors which were opened at the moment of checkpoint:
+we create a hardlink to this ghost file, then open it and this is done for every
+descriptor we need to recover. Then if there were a watch mark on the ghost
+file we restore them as well but at the end we need to do a cleanup and finally
+remove the ghost file itself which cause the problem mentioned in Andrew's changelog
+to appear -- when we remove ghost file inode->n_link becomes 0 thus our restored
+inotify are dropped off by the kernel while here still opened files are floating
+around. I can't say that it's catastrophical but if there a chance to fix it
+on kernel level making events flow more sane, this would be just great, also
+our primary target is to make c/r process transparent to the userspace and
+without the patch i fear we can't reach it.
