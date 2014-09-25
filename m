@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912AbaIYIoo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:44:44 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:57691 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaIYIod (ORCPT
+	id S1753029AbaIYIrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:47:10 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42031 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751160AbaIYIrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:44:33 -0400
-Message-ID: <5423D5E8.1050008@samsung.com>
-Date: Thu, 25 Sep 2014 17:44:24 +0900
+	Thu, 25 Sep 2014 04:47:07 -0400
+Message-ID: <5423D67F.5050203@samsung.com>
+Date: Thu, 25 Sep 2014 17:46:55 +0900
 From: Kukjin Kim <kgene.kim@samsung.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 CC: Kukjin Kim <kgene.kim@samsung.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Thomas Abraham'" <ta.omasab@gmail.com>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        daniel.lezcano@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v3] ARM: dts: add CPU nodes for Exynos4 SoCs
-References: <5230569.XLlNbB5NvF@amdc1032> <018e01cfd885$770dd940$65298bc0$@kernel.org> <20140925081704.GA20841@e102568-lin.cambridge.arm.com> <5423D19B.1040203@samsung.com> <5423D23C.5010204@gmail.com>
-In-Reply-To: <5423D23C.5010204@gmail.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v3 0/1] ARM: EXYNOS: Fix builds with PM_SLEEP=n
+References: <1411568402-24561-1-git-send-email-b.zolnierkie@samsung.com>
+In-Reply-To: <1411568402-24561-1-git-send-email-b.zolnierkie@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/14 17:28, Tomasz Figa wrote:
-> Hi Kukjin,
+On 09/24/14 23:20, Bartlomiej Zolnierkiewicz wrote:
+> Hi,
 >
-> On 25.09.2014 10:26, Kukjin Kim wrote:
->> On 09/25/14 17:17, Lorenzo Pieralisi wrote:
->>> [CC'ed Daniel to make him aware this patch goes through your tree]
->>>
->> Thanks and just note the branch  which is including this change actually
->> v4 is just rebased not v3 will be sent out to arm-soc last tonight or
->> tomorrow.
-
-v3 is correct :) sorry, I confused the version...
-
+> This patch fixes builds with CONFIG_PM_SLEEP config option disabled.
+> It has been runtime tested on Exynos4210 based Origen board.
 >
-> Could you keep this patch in a separate stable branch, so I could pull
-> it as a dependency for Thomas Abraham's cpufreq series?
+> Depends on:
+> - for-next branch of linux-samsung.git kernel tree
+> - [PATCH v7 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with secure
+>    firmware enabled
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg37073.html)
 >
-It's possible, but would be better that DT changes are sent to upstream 
-through samsung/arm-soc tree?...we suffered ugly conflicts between 
-arm-soc and driver before and then we decided DT changes should be 
-handled in arm-soc...Hmm...
+OK, I'll queue this fixup once the AFTR related changes get ack from 
+tegra guy, tegra changes are just trivial though....
 
-- Kukjin
+Thanks,
+Kukjin
+
+> Changes since v2:
+> (http://www.mail-archive.com/linux-samsung-soc%40vger.kernel.org/msg35430.html)
+> - rebased on top of for-next branch of linux-samsung.git kernel tree +
+>    [PATCH v7 0/5] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with secure
+>    firmware enabled
+>    (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg37073.html)
+>
+> Changes since v1:
+> (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg34079.html)
+> - rebased on top of next-20140811
+> - fixed OOPS on the first try to enter cpuidle AFTR mode
+>    (config with CONFIG_PM_SLEEP=n and CONFIG_ARM_EXYNOS_CPUIDLE=y)
+>
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+>
+>
+> Bartlomiej Zolnierkiewicz (1):
+>    ARM: EXYNOS: Fix build with PM_SLEEP=n and ARM_EXYNOS_CPUIDLE=y
+>
+>   arch/arm/mach-exynos/Kconfig   |   5 +
+>   arch/arm/mach-exynos/Makefile  |   5 +-
+>   arch/arm/mach-exynos/common.h  |   4 +
+>   arch/arm/mach-exynos/pm.c      | 338 +-------------------------------------
+>   arch/arm/mach-exynos/suspend.c | 356 +++++++++++++++++++++++++++++++++++++++++
+>   arch/arm/plat-samsung/Makefile |   1 +
+>   6 files changed, 374 insertions(+), 335 deletions(-)
+>   create mode 100644 arch/arm/mach-exynos/suspend.c
+>
+
+-- 
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
