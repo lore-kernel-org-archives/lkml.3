@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaIYIyG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:54:06 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:56572 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaIYIyA (ORCPT
+	id S1753087AbaIYIyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:54:44 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59732 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006AbaIYIyj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:54:00 -0400
-Message-ID: <5423D822.9030001@gmail.com>
-Date: Thu, 25 Sep 2014 16:53:54 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 25 Sep 2014 04:54:39 -0400
+Date: Thu, 25 Sep 2014 09:54:32 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Robert Richter <rrichter@cavium.com>
+Subject: Re: [PATCH v12 09/12] OF: PCI: Add support for parsing PCI host
+ bridge resources from DT
+Message-ID: <20140925085432.GL1994@e106497-lin.cambridge.arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-10-git-send-email-Liviu.Dudau@arm.com>
+ <20140924164304.GF1994@e106497-lin.cambridge.arm.com>
+ <20140924173109.GA20416@google.com>
+ <20140924175330.GI1994@e106497-lin.cambridge.arm.com>
+ <20140924180119.GN16244@arm.com>
 MIME-Version: 1.0
-To: yzhu1 <Yanjun.Zhu@windriver.com>, cjb@laptop.org,
-        LKML <linux-kernel@vger.kernel.org>
-CC: "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>
-Subject: Re: access nand flash and mmc card at the same time on xlp board,
- there will be many io errors and system will hung
-References: <541BF219.4050307@windriver.com>
-In-Reply-To: <541BF219.4050307@windriver.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140924180119.GN16244@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 25 Sep 2014 08:54:33.0488 (UTC) FILETIME=[5387E100:01CFD89E]
+X-MC-Unique: 114092509543602901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The root cause is that: sometimes device can not respond quickly to the 
-request, the timeout mechanism will handle
-this.
-Solution: enlarge the device respond timeout to avoid kernel crash.
+On Wed, Sep 24, 2014 at 07:01:19PM +0100, Will Deacon wrote:
+> On Wed, Sep 24, 2014 at 06:53:31PM +0100, Liviu Dudau wrote:
+> > On Wed, Sep 24, 2014 at 06:31:09PM +0100, Bjorn Helgaas wrote:
+> > > On Wed, Sep 24, 2014 at 05:43:04PM +0100, Liviu Dudau wrote:
+> > > > Provide a function to parse the PCI DT ranges that can be used to
+> > > > create a pci_host_bridge structure together with its associated
+> > > > bus.
+> > > > 
+> > > > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > > Cc: Grant Likely <grant.likely@linaro.org>
+> > > > Cc: Rob Herring <robh+dt@kernel.org>
+> > > > Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > > > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > > > [make io_base parameter optional]
+> > > > Signed-off-by: Robert Richter <rrichter@cavium.com>
+> > > > ---
+> > > > Hi Bjorn,
+> > > > 
+> > > > I have fixed the compilation error that this patch was triggering. I
+> > > > have validated that the patch applies to your pci/host-generic branch
+> > > > as well as to my series.
+> > > 
+> > > I applied this to pci/host-generic along with the following patches and
+> > > pushed the branch, thanks!
+> > 
+> > Thanks again and sorry for lack of thorough testing. I still haven't managed
+> > to get a cross compiler for sparc and as I don't run Ubuntu or debian the
+> > make.cross script doesn't work for me.
+> 
+>   https://www.kernel.org/pub/tools/crosstool/
+> 
+> No libc, but good enough for building the kernel. I've asked for an aarch64
+> compiler there for a while, but it didn't materialise for some reason.
 
-Zhu Yanjun
-On 09/19/2014 05:06 PM, yzhu1 wrote:
-> Hi, Chris
->
-> I run a tests on a xlp208 board. This kernel is 3.17-rc5.
-> The script are as below.
-> -------------Begin-------------------
-> mkfs.ext3 /dev/mmcblk1p1
-> mount /dev/mmcblk1p1 /mnt
-> cd /mnt
-> cp -Rf /root/nand_sd_test /mnt
-> cd /mnt/nand_sd_test
-> -------------End---------------------
->
-> After several minutes, the following errors will appear.
-> Would you like give me some advice about this error?
->
-> Thanks a lot.
-> Zhu Yanjun
->
-> -----------------------------ErrorMessage------------------------------
-> 16777216 bytes (17 MB) copied, 34.5951 s, 485 kB/s
-> mmc1: Timeout waiting for hardware interrupt.
-> mmc1: Timeout waiting for hardware interrupt.
-> mmc1: Timeout waiting for hardware interrupt.
-> mmcblk1: error -145 sending status command, retrying
-> mmc1: Timeout waiting for hardware interrupt.
-> mmcblk1: error -145 sending status command, retrying
-> mmc1: Timeout waiting for hardware interrupt.
-> mmcblk1: error -145 sending status command, aborting
-> end_request: I/O error, dev mmcblk1, sector 3460800
-> Buffer I/O error on device mmcblk1p1, logical block 432598
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460808
-> Buffer I/O error on device mmcblk1p1, logical block 432599
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460816
-> Buffer I/O error on device mmcblk1p1, logical block 432600
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460824
-> Buffer I/O error on device mmcblk1p1, logical block 432601
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460832
-> Buffer I/O error on device mmcblk1p1, logical block 432602
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460840
-> Buffer I/O error on device mmcblk1p1, logical block 432603
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460848
-> Buffer I/O error on device mmcblk1p1, logical block 432604
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460856
-> Buffer I/O error on device mmcblk1p1, logical block 432605
-> lost page write due to I/O error on mmcblk1p1
-> end_request: I/O error, dev mmcblk1, sector 3460864
-> Buffer I/O error on device mmcblk1p1, logical block 432606
-> lost page write due to I/O error on mmcblk1p1
->
-> mmc1: Timeout waiting for hardware interrupt.
-> ------------[ cut here ]------------
-> WARNING: at /linux/drivers/mmc/host/sdhci.c:996 
-> sdhci_send_command+0xd78/0xe68()
-> Modules linked in:
-> CPU: 6 PID: 0 Comm: swapper/6 Not tainted 
-> 3.10.38-ltsi-WR6.0.0.11_standard #1
-> Stack : c0000000f83ff820 ffffffffc02a290c 0000000000000001 
-> 0000000000000e1b
->   ffffffffc0d00000 ffffffffc0e005a0 0000000000000004 0000000000000001
->   c0000000f83ff860 ffffffffc02a270c 000000000000004d ffffffffc0d00000
->   c0000000f83ff880 ffffffffc02a2d7c 0000000000000000 0000000000000000
->   0000000000000000 ffffffffc1050000 ffffffffc104d008 ffffffffc1050000
->   ffffffffc0b62fc0 ffffffffc0cfab37 ffffffffc104d008 c0000000f8217b28
->           0000000000000000 0000000000000006 c0000000f92e2508 
-> c0000000f92e23c0
->   c0000000f83ff900 c0000000f83ff810 c0000000f83ff928 ffffffffc02a008c
->   c0000000f83ff960 ffffffffc02a48c8 c0000000f8217788 ffffffffc0b62fc0
->   0000000000000006 ffffffffc0274c30 0000000000000000 0000000000000000
->   ...
-> Call Trace:
-> [<ffffffffc0274c30>] show_stack+0xd8/0xf8
-> [<ffffffffc02a008c>] warn_slowpath_common+0x8c/0xc8
-> [<ffffffffc0880868>] sdhci_send_command+0xd78/0xe68
-> [<ffffffffc0881380>] sdhci_finish_data+0x180/0x3d0
-> [<ffffffffc08818f0>] sdhci_timeout_timer+0xb0/0x120
-> [<ffffffffc02b45c8>] call_timer_fn+0x58/0x1a0
-> [<ffffffffc02b4a00>] run_timer_softirq+0x1f8/0x2d0
-> [<ffffffffc02aa6a0>] __do_softirq+0x150/0x340
-> [<ffffffffc02aa9f0>] do_softirq+0xb8/0xc0
-> [<ffffffffc02aada4>] irq_exit+0xf4/0x110
-> [<ffffffffc026f160>] ret_from_irq+0x0/0x4
-> [<ffffffffc026f400>] __r4k_wait+0x20/0x40
-> [<ffffffffc02f85a8>] cpu_startup_entry+0x190/0x2f8
-> [<ffffffffc0a33438>] nlm_boot_secondary_cpus+0x44/0x54
-> ---[ end trace 7070d5fae37308f2 ]---
+I'm familiar with crosstool and busybox uses a variant of crosstool-ng, but
+it currently fails with "configure: error: cannot compute suffix of object files: cannot compile"
+on the stage2 of the compilation.
+
+Best regards,
+Liviu
+
+> 
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
