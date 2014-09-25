@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaIYKR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:17:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58056 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaIYKRZ (ORCPT
+	id S1752209AbaIYKVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:21:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60927 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIYKVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:17:25 -0400
-Date: Thu, 25 Sep 2014 12:16:28 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: stable@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH resend 1/2] tty: omap-serial: fix division by zero
-Message-ID: <20140925101628.GB16810@kroah.com>
-References: <20140924080852.GA28215@kroah.com>
- <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
+	Thu, 25 Sep 2014 06:21:38 -0400
+Date: Thu, 25 Sep 2014 12:20:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
+In-Reply-To: <20140925071536.GG12423@ulmo>
+Message-ID: <alpine.DEB.2.10.1409251208420.4604@nanos>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-2-git-send-email-wangyijing@huawei.com> <20140925071536.GG12423@ulmo>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:19:51AM +0200, Frans Klaver wrote:
-> If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-> calculated n values in serial_omap_is_baud_mode16() may become 0. This
-> causes a division by zero when calculating the difference between
-> calculated and desired baud rates. To prevent this, cap the n13 and n16
-> values on 1.
+On Thu, 25 Sep 2014, Thierry Reding wrote:
+
+> On Thu, Sep 25, 2014 at 11:14:11AM +0800, Yijing Wang wrote:
+> > Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
+> > argument.
 > 
-> Division by zero in kernel.
-> [<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
-> [<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
-> [<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
-> [<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
-> [<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
-> [<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
-> [<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
-> [<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
-> [<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
-> [<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
-> [<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
-> [<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
-> [<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+> That's not true. Out of the four drivers that you modify two use the
+> parameter. And the two that don't probably should be using it too.
 > 
-> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-> ---
-> Resend to add stable@vger.kernel.org to CC. As far as I know, this applies to
-> v3.9 and up.
+> 50% is not "rarely". =)
+> 
+> >           We can look up msi_chip pointer by the device pointer
+> > or irq number, so clean up msi_chip argument.
+> 
+> I don't like this particular change. The idea was to keep the API object
+> oriented so that drivers wouldn't have to know where to get the MSI chip
+> from. It also makes it more resilient against code reorganizations since
+> the core code is the only place that needs to know where to get the chip
+> from.
 
-<formletter>
+Right. We have the same thing in the irq_chip callbacks. All of them
+take "struct irq_data", because it's already available in the core
+code and it gives easy access to all information (chip, chipdata ...)
+which is necessary for the callback implementations.
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
+Thanks,
 
-</formletter>
-
-I'll take care of this, but go read that file for your next time...
-
-greg k-h
+	tglx
