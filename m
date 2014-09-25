@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaIYNfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:35:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58192 "EHLO
+	id S1753373AbaIYNf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:35:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58202 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753075AbaIYNfN (ORCPT
+	with ESMTP id S1752857AbaIYNfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:35:13 -0400
-Date: Thu, 25 Sep 2014 15:33:29 +0200
+	Thu, 25 Sep 2014 09:35:23 -0400
+Date: Thu, 25 Sep 2014 15:34:27 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Chen-Yu Tsai <wens@csie.org>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -18,45 +18,65 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         linux-kernel@vger.kernel.org, Shuge <shuge@allwinnertech.com>,
         Meng Zhang <kevin@allwinnertech.com>, ctl@merrii.com,
         Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 3/7] ARM: dts: sunxi: Add Allwinner A80 dtsi
-Message-ID: <20140925133329.GH15315@lukather>
+Subject: Re: [PATCH v2 4/7] ARM: dts: sun9i: Add A80 Optimus Board support
+Message-ID: <20140925133427.GI15315@lukather>
 References: <1411570141-29960-1-git-send-email-wens@csie.org>
- <1411570141-29960-4-git-send-email-wens@csie.org>
+ <1411570141-29960-5-git-send-email-wens@csie.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Xp2nimoPFnvF0aLh"
+	protocol="application/pgp-signature"; boundary="wwX5Nmi7feudBrEr"
 Content-Disposition: inline
-In-Reply-To: <1411570141-29960-4-git-send-email-wens@csie.org>
+In-Reply-To: <1411570141-29960-5-git-send-email-wens@csie.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Xp2nimoPFnvF0aLh
+--wwX5Nmi7feudBrEr
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 24, 2014 at 10:48:57PM +0800, Chen-Yu Tsai wrote:
-> The Allwinner A80 is a new multi-purpose SoC with 4 Cortex-A7 and
-> 4 Cortex-A15 cores in a big.LITTLE architecture, and a 64-core
-> PowerVR G6230 GPU.
+On Wed, Sep 24, 2014 at 10:48:58PM +0800, Chen-Yu Tsai wrote:
+> The A80 Optimus Board is was launched with the Allwinner A80 SoC.
+> It was jointly developed by Allwinner and Merrii.
+>=20
+> This board has a UART port, a JTAG connector, USB host ports, a USB
+> 3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
+> 4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
+> jack, IR receiver, and additional GPIO headers.
+>=20
+> This patch adds only basic support.
 >=20
 > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 > ---
->  arch/arm/boot/dts/sun9i-a80.dtsi | 287 +++++++++++++++++++++++++++++++++=
+>  arch/arm/boot/dts/Makefile              |  2 +
+>  arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++=
 ++++++
->  1 file changed, 287 insertions(+)
->  create mode 100644 arch/arm/boot/dts/sun9i-a80.dtsi
+>  2 files changed, 68 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
 >=20
-> diff --git a/arch/arm/boot/dts/sun9i-a80.dtsi b/arch/arm/boot/dts/sun9i-a=
-80.dtsi
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 2f42b18..098f319 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -424,6 +424,8 @@ dtb-$(CONFIG_MACH_SUN7I) +=3D \
+>  	sun7i-a20-pcduino3.dtb
+>  dtb-$(CONFIG_MACH_SUN8I) +=3D \
+>  	sun8i-a23-ippo-q8h-v5.dtb
+> +dtb-$(CONFIG_MACH_SUN9I) +=3D \
+> +	sun9i-a80-optimus.dtb
+>  dtb-$(CONFIG_ARCH_TEGRA) +=3D tegra20-harmony.dtb \
+>  	tegra20-iris-512.dtb \
+>  	tegra20-medcom-wide.dtb \
+> diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/=
+sun9i-a80-optimus.dts
 > new file mode 100644
-> index 0000000..34a0068
+> index 0000000..f83abab
 > --- /dev/null
-> +++ b/arch/arm/boot/dts/sun9i-a80.dtsi
-> @@ -0,0 +1,287 @@
+> +++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+> @@ -0,0 +1,66 @@
 > +/*
 > + * Copyright 2014 Chen-Yu Tsai
 > + *
@@ -106,132 +126,20 @@ On Wed, Sep 24, 2014 at 10:48:57PM +0800, Chen-Yu Tsai wrote:
 > + *     OTHER DEALINGS IN THE SOFTWARE.
 > + */
 > +
-> +/include/ "skeleton64.dtsi"
+> +/dts-v1/;
+> +/include/ "sun9i-a80.dtsi"
 > +
 > +/ {
-> +	interrupt-parent =3D <&gic>;
+> +	model =3D "Merrii A80 Optimus Board";
+> +	compatible =3D "merrii,a80-optimus", "allwinner,sun9i-a80";
 > +
-> +	aliases {
-> +		serial0 =3D &uart0;
-> +		serial1 =3D &uart1;
-> +		serial2 =3D &uart2;
-> +		serial3 =3D &uart3;
-> +		serial4 =3D &uart4;
-> +		serial5 =3D &uart5;
-> +		serial6 =3D &r_uart;
-> +	};
-> +
-> +	cpu-map {
-> +		cluster0 {
-> +			core0 {
-> +				cpu =3D <&cpu0>;
-> +			};
-> +
-> +			core1 {
-> +				cpu =3D <&cpu1>;
-> +			};
-> +
-> +			core2 {
-> +				cpu =3D <&cpu2>;
-> +			};
-> +
-> +			core3 {
-> +				cpu =3D <&cpu3>;
-> +			};
-> +		};
-> +
-> +		cluster1 {
-> +			core0 {
-> +				cpu =3D <&cpu4>;
-> +			};
-> +
-> +			core1 {
-> +				cpu =3D <&cpu5>;
-> +			};
-> +
-> +			core2 {
-> +				cpu =3D <&cpu6>;
-> +			};
-> +
-> +			core3 {
-> +				cpu =3D <&cpu7>;
-> +			};
-> +		};
+> +	chosen {
+> +		bootargs =3D "earlyprintk console=3DttyS0,115200";
 > +	};
 
-Like you already found out, the topology code doesn't use the cpu-map
-but only relies on the cpu compatible and max frequencies, so you can
-drop this.
+Since you changed the memory node in the DTSI, you should probably add
+one here too, don't you?
 
-> +
-> +	cpus {
-> +		#address-cells =3D <1>;
-> +		#size-cells =3D <0>;
-> +
-> +		cpu0: cpu@0 {
-> +			compatible =3D "arm,cortex-a7";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x0>;
-> +		};
-> +
-> +		cpu1: cpu@1 {
-> +			compatible =3D "arm,cortex-a7";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x1>;
-> +		};
-> +
-> +		cpu2: cpu@2 {
-> +			compatible =3D "arm,cortex-a7";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x2>;
-> +		};
-> +
-> +		cpu3: cpu@3 {
-> +			compatible =3D "arm,cortex-a7";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x3>;
-> +		};
-> +
-> +		cpu4: cpu@100 {
-> +			compatible =3D "arm,cortex-a15";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x100>;
-> +		};
-> +
-> +		cpu5: cpu@101 {
-> +			compatible =3D "arm,cortex-a15";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x101>;
-> +		};
-> +
-> +		cpu6: cpu@102 {
-> +			compatible =3D "arm,cortex-a15";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x102>;
-> +		};
-> +
-> +		cpu7: cpu@103 {
-> +			compatible =3D "arm,cortex-a15";
-> +			device_type =3D "cpu";
-> +			reg =3D <0x103>;
-> +		};
-> +	};
-> +
-> +	memory {
-> +		/* 8GB max. with LPAE */
-> +		reg =3D <0 0x20000000 0x02 0>;
-> +	};
-> +
-> +	clocks {
-> +		#address-cells =3D <1>;
-> +		#size-cells =3D <1>;
-> +		ranges =3D <0 0 0 0x20000000>;
-
-A comment for this ranges would be nice.
-
-I looks fine otherwise.
-
-Thanks!
 Maxime
 
 --=20
@@ -239,26 +147,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---Xp2nimoPFnvF0aLh
+--wwX5Nmi7feudBrEr
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUJBmpAAoJEBx+YmzsjxAghMoP/2lI4eVIVdmT0VCS3N1b47U+
-cIVjuLbkOdYwGnjGwAz+Ikop5pdp0v/HHxqoc8YKiOwBV62da0pI9T6nmLqaHjqR
-3bHCLPjPMv0fD+F0jyll5laUd+fEGdy3GMm9peNW9bF0QxVsYEqpJVw2nrt2rEjY
-gPyl8Babl+9kpEJuR3LOk0bieqG71KCu5W3eFi7Y8LhqafS7fO6NzSHNRFr7yWT/
-R2zfFtCITnr9J7bRKwdDK9CU0/5IPmg8OyXdbFIeH7ytLfD7p+iY3ag/eCO2hO+h
-YD+olRc809DIjCRduv/A8AlD1PIXnYiHTDfGPxNX4Fik/XMa/5T6rp45buVVVmc5
-XSbqUD9NemjjQgrnvUZxhlNWOeoBp0miYYNT/wU6/fFkQ5cYaHdYYSTqYeTSQ9yV
-j7GHeW6odZ7alRN86cm4FdCF4HGfssPgmlQsOBVCdZJVRrkroKGzlegOXGYS2/72
-TgutPqkOkWCCd6v0g79smx5jadBPeXC42QLC7NE4ssXjaN8mUzFKReNyTrLO5oRb
-d4HjTsTNd3UOB+rFnfdxqvLiS4qJntLp0Uxo/opNV+etHiffzr8GYnfaavSrDGfw
-E7XKlhNcvR9ZFK75zkVGyXmukBZN52xitdInORBfMd7qEhxrj8GFGmvmEHQr+Hfr
-XZHoCAdso8wCY8kRQJzU
-=D8Nc
+iQIcBAEBAgAGBQJUJBnjAAoJEBx+YmzsjxAgwNYP/0PUMuhCxiB8HZ3HnqxkRPBS
+KKYkWX29zkWBXHutmNuFodyJKGdXjUEvg4zMTcE3nwjYhgHNqMfzks4LJ7/Vdp8H
+JLPVix+ZrIQbS517YqHbSnCQyyg6WkMjUXWBAufvk6bk5+leuBM7Fe6gBqJfj4es
+8pPY0fe8AlOzELDL5UCdW/3FpsDS+t1G9r3a13Yq8ll2VBSvT9CDoN+9k56uYH7O
+9NCJnASXu9yOi6GLPBje7/vBR4NV/D58FvYNOFSbkb6F5YTXByAQYCnxbKZ+o/Eq
+fKSy7ZqNE7lUIuVZxnjNmW6by+FbiQ1t8v5tHCBIxTXaI8TZ35GKFp+15EnLJAuK
+a/GdGK+8R44HeHjMJqrNMIp62PqtDcJYX5ZnZehRwR5Mk/nrRcCoXW76N+oU4Pjm
+Mw1OdKUMI5md/UHaXS2bFvuKQW9YTq9sj4+kzEfycm8YcnOoaNvIPdNfVHT4x7Ha
+GE+mzizlVnB4/dDwwNvy2oqIRq9FIRLoqfsSsgA1vxEjGsEXop0zRXufVLDu93wT
+TuuHRo/If6ISO/Vvrz47X2SdIdIqbPx3aG86Z5Z8hgbT9/xXmQo0R+ik/gYFvmu/
+RoLpdDdVJ2UJfx/FkIVxDx+0tNWkZUQCcs/lt2ivHrjneJ8HtuegorGHv6AS/0XA
+iknPG1uUW3J1ekdXKAm+
+=FEMt
 -----END PGP SIGNATURE-----
 
---Xp2nimoPFnvF0aLh--
+--wwX5Nmi7feudBrEr--
