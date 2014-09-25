@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaIYHT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:19:27 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:42317 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaIYHTY (ORCPT
+	id S1752311AbaIYHWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:22:20 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:35051 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaIYHWT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:19:24 -0400
-Date: Thu, 25 Sep 2014 09:19:20 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 03/22] MSI: Remove the redundant irq_set_chip_data()
-Message-ID: <20140925071919.GH12423@ulmo>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
+	Thu, 25 Sep 2014 03:22:19 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
+ ARC_BOARD_ML509
+Thread-Topic: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
+ ARC_BOARD_ML509
+Thread-Index: AQHP1xI53r7Pc5BON0ysEi7+Zq+cjg==
+Date: Thu, 25 Sep 2014 07:22:14 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C5DE8E6@IN01WEMBXA.internal.synopsys.com>
+References: <1401874435.14072.17.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230751A6B5C42@IN01WEMBXA.internal.synopsys.com>
+	 <1410512426.31130.11.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230753C5DA1BE@IN01WEMBXA.internal.synopsys.com>
+ <1411465144.20236.21.camel@x220>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mhjHhnbe5PrRcwjY"
-Content-Disposition: inline
-In-Reply-To: <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 23 September 2014 03:09 PM, Paul Bolle wrote:
 
---mhjHhnbe5PrRcwjY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Commit c00bfd974fb0 ("ARC: [arcfpga] Get rid of legacy BVCI latency unit
+support") removed the Kconfig symbol ARC_HAS_BVCI_LAT_UNIT. And that
+symbol's entry was the only place were the symbols ARC_BOARD_ANGEL4 and
+ARC_BOARD_ML509 were used. So ARC_BOARD_ANGEL4 and ARC_BOARD_ML509 can
+be removed too.
 
-On Thu, Sep 25, 2014 at 11:14:13AM +0800, Yijing Wang wrote:
-> Currently, pcie-designware, pcie-rcar, pci-tegra drivers
-> use irq chip_data to save the msi_chip pointer. They
-> already call irq_set_chip_data() in their own MSI irq map
-> functions. So irq_set_chip_data() in arch_setup_msi_irq()
-> is useless.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl><mailto:pebolle@tiscali.nl>
+---
+Done on top of next-20140923. Tested by grepping the tree only.
 
-Again, I think this should be the other way around. If drivers do
-something that's already handled by the core, then the duplicate code
-should be dropped from the drivers.
+Applied to ARC for-next.
 
-Thierry
-
---mhjHhnbe5PrRcwjY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUI8H3AAoJEN0jrNd/PrOhD9gP/irz9NSH3coHma+k59CgfNee
-Eadp8ruJoWHsk+kNc+VP4X8QUfFbawc4Y9GarISl2soj926zV/hj8I7CSKn7im1g
-OEWOG1+IoZY+1142DUhZRfqgw+kPIsHL2nKRK6RJCWhpIxIrh1f7/LcSyrWUbS9r
-7t6FJUljEAZ4oSmW8FDuK4hrK9s53zIKQkvv2zfbOv7sAvnYuJM4r5EteKEkxVqy
-VEwvbqgS5Ccf4PKJKnISrCAV9z4H8kYF2PN0e7+8x9l6WOsdz5yEszOJmoREGMzG
-eCUaBYi7Tl7jAqdQkJfEePdK7BotGIbuffF2j76j1TTgOKp2HEoMlTxLv9SldxMa
-9NoNSP5NzJzSyK6Pawx84xkhKnMd5TWLD7IMcDvfcMIbQ+IZiXDnNjQ9diG3RjhT
-zLyMRZc5MdOfL8ScPzrYYUATbIEFmJdB0rUZ6u9ivHdRsVqZ6pJbRz/C/QPfd92M
-dDXoVvcRDGGgaM66PbfYykArWhGI+hPG4ip3t5CpA2KLqLm9BapvqSc0H6V9y5w8
-nuBHS0pk3mojCR9naMzuOy0nqME7SU9QiOiMMvv6uZztE2y3udRmkZNHX32DSi7l
-6YLq84EA/LyOtPp9jrRH1eKZLty5qyY2mO9Le46GAragc909SMnKpNAWJyV+RLLm
-9fhn8sFnEUFKzDPptCkB
-=WmVy
------END PGP SIGNATURE-----
-
---mhjHhnbe5PrRcwjY--
+Thx Paul,
+-Vineet
