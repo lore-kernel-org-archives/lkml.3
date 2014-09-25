@@ -1,63 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaIYLbt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:31:49 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59543 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751368AbaIYLbq (ORCPT
+	id S1752194AbaIYLgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:36:06 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:38072 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaIYLgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:31:46 -0400
-Message-ID: <5423FD14.9060604@hurleysoftware.com>
-Date: Thu, 25 Sep 2014 07:31:32 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 25 Sep 2014 07:36:03 -0400
+Date: Thu, 25 Sep 2014 14:35:53 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-09-25
+Message-ID: <20140925113553.GA9506@t440s.kiipula.fi>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Frans Klaver <frans.klaver@xsens.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>, tony@atomide.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com> <54129F6C.7040508@linutronix.de> <20140912094010.GE28458@ci00147.xsens-tech.local> <5412C21A.8020203@linutronix.de> <20140912102816.GF28458@ci00147.xsens-tech.local> <541716DC.9020904@linutronix.de> <20140917102812.GA20438@ci00147.xsens-tech.local> <20140921204100.GA10111@linutronix.de> <5421A7F7.3070109@hurleysoftware.com> <20140924075346.GB19565@linutronix.de> <20140925104208.GE19396@linutronix.de>
-In-Reply-To: <20140925104208.GE19396@linutronix.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2oS5YaxWCcQjTEyO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 06:42 AM, Sebastian Andrzej Siewior wrote:
-> * Sebastian Andrzej Siewior | 2014-09-24 09:53:46 [+0200]:
-> 
->> * Peter Hurley | 2014-09-23 13:03:51 [-0400]:
->>
->>> But DMA is cheating if the UART driver's tx_empty() method is saying the
->>> transmitter is empty while TX DMA is still running.
->> This shouldn't be the case. But I will check this once I able to.
-> 
-> I added 
-> 
-> |#define BOTH_EMPTY      (UART_LSR_TEMT | UART_LSR_THRE)
-> |    trace_printk("delay <%d>\n", (lsr & BOTH_EMPTY) == BOTH_EMPTY ? 1 : 0);
-> 
-> in my set_termios() and the trace shows
-> |              vi-949   [000] d...    70.477002: omap8250_restore_regs: delay <0>
-> 
-> so no, it does not wait until TX FIFO is empty. It looks like it uses
-> TCSANOW instead of TCSADRAIN. And since this looks "legal" I will delay
-> it until TX-DMA is complete because it is known to stall the DMA operation.
 
-I just verified that GNU readline6 uses ioctl(TCSETSW, ...) to do the set_termios
-(which is the ioctl that libc should use for tcsetattr(TCSADRAIN)).
+--2oS5YaxWCcQjTEyO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Maybe this userspace is using a readline()-alike that has a bug by not using the
-correct tcsetattr() action?
-Or maybe the glibc-equivalent has the bug, and tcsetattr(TCSADRAIN) is not using
-ioctl(TCSETSW)?
+Hi John,
 
-Regards,
-Peter Hurley
+This 3.18 pull request replaces the one I did on Monday ("bluetooth-next
+2014-09-22", which hasn't been pulled yet). The additions since the last
+request are:
+
+ - SCO connection fix for devices not supporting eSCO
+ - Cleanups regarding the SCO establishment logic
+ - Remove unnecessary return value from logging functions
+ - Header compression fix for 6lowpan
+ - Cleanups to the ieee802154/mrf24j40 driver
+
+Here's a copy from previous request that this one replaces:
+
+"
+Here are some more patches for 3.18. They include various fixes to the
+btusb HCI driver, a fix for LE SMP, as well as adding Jukka to the
+MAINTAINERS file for generic 6LoWPAN (as requested by Alexander Aring).
+
+I've held on to this pull request a bit since we were waiting for a SCO
+related fix to get sorted out first. However, since the merge window is
+getting closer I decided not to wait for it. If we do get the fix sorted
+out there'll probably be a second small pull request later this week.
+"
+
+Please let me know if there are any issues pulling. Thanks.
+
+Johan
+
+---
+The following changes since commit 9a783a139c32a905825ee0aa9597f485ea461f76:
+
+  Bluetooth: Fix re-setting RPA as expired when deferring update (2014-09-12 18:34:25 +0200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 565766b087a6d6ff257f5b79c8ceda0188c9169f:
+
+  Bluetooth: Rename sco_param_wideband table to esco_param_msbc (2014-09-25 10:35:08 +0200)
+
+----------------------------------------------------------------
+Bernhard Thaler (1):
+      Bluetooth: Check for SCO type before setting retransmission effort
+
+Joe Perches (1):
+      Bluetooth: Convert bt_<level> logging functions to return void
+
+Johan Hedberg (5):
+      Bluetooth: btusb: Use GFP_KERNEL in btusb_send_frame()
+      Bluetooth: Fix setting correct security level when initiating SMP
+      Bluetooth: Fix reason code used for rejecting SCO connections
+      Bluetooth: Add retransmission effort into SCO parameter table
+      Bluetooth: Rename sco_param_wideband table to esco_param_msbc
+
+Jukka Rissanen (1):
+      MAINTAINERS: add maintainer for generic 6LoWPAN
+
+Marcel Holtmann (7):
+      Bluetooth: btusb: Separate TX URB allocation and submission
+      Bluetooth: Add BUILD_BUG_ON check for SKB control buffer size
+      Bluetooth: Provide HCI command opcode information to driver
+      Bluetooth: btusb: Fix old coding style issues
+      Bluetooth: btusb: Split fragement receiption into separate functions
+      Bluetooth: btusb: Implement driver internal packet reassembly
+      Bluetooth: Remove exported hci_recv_fragment function
+
+Simon Vincent (1):
+      ieee802154: 6lowpan: ensure header compression does not corrupt ipv6 header
+
+Varka Bhadram (3):
+      mrf24j40: fix Missing a blank line after declarations
+      mrf24j40: remove unnecessary return statement
+      mrf24j40: use pr_* / dev_* instead of printk()
+
+ MAINTAINERS                       |   1 +
+ drivers/bluetooth/btusb.c         | 511 ++++++++++++++++++++++++++----------
+ drivers/net/ieee802154/mrf24j40.c |  19 +-
+ include/net/bluetooth/bluetooth.h |   5 +-
+ include/net/bluetooth/hci.h       |   1 +
+ include/net/bluetooth/hci_core.h  |   1 -
+ net/bluetooth/af_bluetooth.c      |   3 +
+ net/bluetooth/hci_conn.c          |  43 +--
+ net/bluetooth/hci_core.c          |  21 +-
+ net/bluetooth/lib.c               |  14 +-
+ net/bluetooth/smp.c               |   5 +-
+ net/ieee802154/6lowpan_rtnl.c     | 125 ++++++---
+ 12 files changed, 518 insertions(+), 231 deletions(-)
+
+
+--2oS5YaxWCcQjTEyO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUI/4ZAAoJECQj9vv5qNQSio0QAKgB13Yewcyq0ie5QosxhELz
+nAkseFnTgvxpFIJiwkEtCJ5GvHnFDenPskIjPQGy1vOxukklxKqYxoajBwO2yrxK
+eAEwAofP3u+PsAVDrUtKWeYuyQP6DAR35gCvRF1w4MZqpCKBydAMkWMn4qxH8cl7
+UGBwTd72gDCZcNmEPxX72aDEDX1a7AgKhtevvznQv+92JyLtTIXiKvNKgckQNG5q
+01r8QlAXQs2aNZuaZ0tAM7E1m8Q8XzTnG16ABMUmMi+XMSeuCJphHBjjKEJeNDN3
+tXquRS7KbQNxplFG77OO34Iwe5dNYyTslQFaaO5vffrNeztBm83UczcrAPQrdGDZ
++9yDO6J5vLS4kGni+f9tsTVEEx9/oJezBZtdYTi2zKuIZCtjHsUBylYzRelEvUlb
+2JZVXdxrkttRK/jFnYSa+Gr2yGWgQVY1p3FUIGzOCwjG2JKSYNeQfw6ldF9Lk2RG
+AXnAX0Wi/aQkvL5dPPUwEe9/GboPF+hh0QRGwv8Ta8agS4ZytLFuIdLMMTskFrj2
+Bcav3MqWrvg+aFnhkLpzWxw00uCWV/Rak5uah5vNfV87yIqFgjuVaJ/ZvjqvQt52
+6o5BB1Sn5OWPwMeu1pkhfUW+OPHFALiD05t4GskKGPBSkg0kPF/b6ltvZB3+67nM
+uovz3FyEz4A8hfFVr9ez
+=lAtS
+-----END PGP SIGNATURE-----
+
+--2oS5YaxWCcQjTEyO--
