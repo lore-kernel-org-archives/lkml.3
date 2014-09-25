@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaIYLEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:04:53 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:42075 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558AbaIYLEw (ORCPT
+	id S1752581AbaIYLFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:05:17 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51704 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752375AbaIYLFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:04:52 -0400
-Message-ID: <5423F6CF.5050802@mentor.com>
-Date: Thu, 25 Sep 2014 14:04:47 +0300
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 25 Sep 2014 07:05:14 -0400
+X-Sasl-enc: YMSFt8aZgMKCdA7cKuuUA7PsbnY5lHHHPIAxpIqsrULb 1411643113
+Date: Thu, 25 Sep 2014 13:04:19 +0200
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20140925110419.GA31383@kroah.com>
+References: <20140925163036.5f3281eb@canb.auug.org.au>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] genalloc: fix device node resource counter
-References: <1411588260-29825-1-git-send-email-vladimir_zapolskiy@mentor.com> <20140924135831.ec76a8c60294a93e2da3b7af@linux-foundation.org>
-In-Reply-To: <20140924135831.ec76a8c60294a93e2da3b7af@linux-foundation.org>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925163036.5f3281eb@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Thu, Sep 25, 2014 at 04:30:36PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the tty tree, today's linux-next build (arm multi_v7_defconfig)
+> failed like this:
+> 
+> In file included from init/do_mounts.c:15:0:
+> include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+>          unused:62;
+>          ^
+> include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+>          unused_ctrl:55;
+>          ^
+> In file included from init/main.c:28:0:
+> include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+>          unused:62;
+>          ^
+> include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+>          unused_ctrl:55;
+>          ^
+> In file included from include/linux/serial_core.h:29:0,
+>                  from include/linux/serial_s3c.h:236,
+>                  from arch/arm/mach-exynos/exynos.c:15:
+> include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+>          unused:62;
+>          ^
+> include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+>          unused_ctrl:55;
+>          ^
+> In file included from include/linux/serial_core.h:29:0,
+>                  from include/linux/platform_data/serial-omap.h:20,
+>                  from arch/arm/mach-omap2/serial.c:30:
+> include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+>          unused:62;
+>          ^
+> include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+>          unused_ctrl:55;
+>          ^
+> 
+> Caused by commits c545b66c6922 ("tty: Serialize tcflow() with other tty
+> flow control changes") and 99416322dd16 ("tty: Workaround Alpha
+> non-atomic byte storage in tty_struct").  There are still 32 bit
+> architectures out there!  ;-)
 
-On 24.09.2014 23:58, Andrew Morton wrote:
-> On Wed, 24 Sep 2014 22:51:00 +0300 Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com> wrote:
->
->> The change balances a usage counter of np_pool device_node, which is
->> incremented on preceding of_parse_phandle() call.
->>
->> ...
->>
->> --- a/lib/genalloc.c
->> +++ b/lib/genalloc.c
->> @@ -637,6 +637,7 @@ struct gen_pool *of_get_named_gen_pool(struct device_node *np,
->>   	if (!np_pool)
->>   		return NULL;
->>   	pdev = of_find_device_by_node(np_pool);
->> +	of_node_put(np_pool);
->>   	if (!pdev)
->>   		return NULL;
->>   	return dev_get_gen_pool(&pdev->dev);
->
-> Looks good, thanks.
->
-> However...  when fixing a bug, please always describe the end-user
-> visible effects of that bug.  Amongst other things this is to help me
-> and others decide which kernel version(s) need the patch.
->
-> I'm assuming that the effect will be, at worst, a memory leak at the
-> rate of one device_node per hot-unplug event and is hence a very minor
-> thing?
->
+Sorry about that, a fix for this is now in my tree.
 
-yes, you are correct, moreover there are not so many users of 
-of_get_named_gen_pool() in vanilla (I counted 3), however since the 
-change is in ./lib folder, it may be considered as relatively important 
-one. I think it is sufficient to have the change in linux-next only.
-
-With best wishes,
-Vladimir
+greg k-h
