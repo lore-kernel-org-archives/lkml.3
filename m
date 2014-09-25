@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaIYFDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:03:09 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:52029 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaIYFDH (ORCPT
+	id S1751855AbaIYFD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 01:03:58 -0400
+Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:42979 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751574AbaIYFD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:03:07 -0400
-Date: Thu, 25 Sep 2014 07:03:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/20] arch atomic 'cleanup'
-Message-ID: <20140925050301.GC20431@gmail.com>
-References: <20140508135840.956784204@infradead.org>
- <20140924165405.GJ16244@arm.com>
- <20140924180623.GY6758@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924180623.GY6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 25 Sep 2014 01:03:57 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3871:3872:4823:5007:7652:7903:10004:10400:10848:11232:11658:11914:12043:12517:12519:12555:13069:13221:13229:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ocean09_3f5e1fffa2405
+X-Filterd-Recvd-Size: 2725
+Message-ID: <1411621434.4026.9.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Add exception to return then else test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Elshad Mustafayev <elshadimo@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Wed, 24 Sep 2014 22:03:54 -0700
+In-Reply-To: <1411619466.4026.2.camel@joe-AO725>
+References: <E1XX0bN-00032o-0x@feisty.vs19.net>
+	 <1411619466.4026.2.camel@joe-AO725>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add an exception to the return before else warning
+when the line following it is also a return like:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+	if (foo)
+		return bar;
+	else
+		return baz;
 
-> On Wed, Sep 24, 2014 at 05:54:06PM +0100, Will Deacon wrote:
-> > Hi Peter,
+This form of a test then return is at least as readable as
+
+	if (foo)
+		return bar;
+	return baz;
+
+so don't emit a warning on the first form.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+---
+> > Just what makes the replacement easier to follow?
+> > 	if (foo)
+> > 		return bar;
+> > 	else
+> > 		return baz;
+> > is no less idiomatic than
+> > 	if (foo)
+> > 		return bar;
+> > 	return baz;
 > > 
-> > On Thu, May 08, 2014 at 02:58:40PM +0100, Peter Zijlstra wrote:
-> > > This series continues the arch atomic rework started with the smp_mb__
-> > > interface cleanup.
-> > > 
-> > > In this series we (mostly) reduce the atomic implementations by eliminating
-> > > repetition through use of CPP macros.
-> > > 
-> > > A future series will use these macros to implement more atomic ops. With these
-> > > macros we can end up with more atomic ops while the total LoC still shrinks.
-> > > 
-> > > Furthermore, rewrite the asm-generic/atomic implementations to require less and
-> > > provide more.
-> > > 
-> > > This series is compile tested on a number of archs, but only boot tested on
-> > > x86_64.
-> > 
-> > What's the status on this series? I'm currently fleshing out 
-> > an extension to the atomic API that allows more flexible 
-> > acquire/release semantics and it doesn't make sense for me to 
-> > copy-paste a bunch of code when I could build it on top of 
-> > this instead.
+> > Al, really annoyed by how the words "coding style issue" are getting used as
+> > a magic incantation...
 > 
-> Its in tip/locking/arch and I suppose its headed for the next 
-> merge window.
+> I agree.
+> 
+> I'll see about updating checkpatch to avoid warning on it
 
-Correct, there are no known regressions with the tip:locking/arch 
-tree so I plan to send those changes to Linus in the merge 
-window.
+ scripts/checkpatch.pl | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Thanks,
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 74bba23..52a223e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2641,10 +2641,14 @@ sub process {
+ 		next if ($realfile !~ /\.(h|c)$/);
+ 
+ # check indentation of any line with a bare else
++# (but not if it is a multiple line "if (foo) return bar; else return baz;")
+ # if the previous line is a break or return and is indented 1 tab more...
+ 		if ($sline =~ /^\+([\t]+)(?:}[ \t]*)?else(?:[ \t]*{)?\s*$/) {
+ 			my $tabs = length($1) + 1;
+-			if ($prevline =~ /^\+\t{$tabs,$tabs}(?:break|return)\b/) {
++			if ($prevline =~ /^\+\t{$tabs,$tabs}break\b/ ||
++			    ($prevline =~ /^\+\t{$tabs,$tabs}return\b/ &&
++			     defined $lines[$linenr] &&
++			     $lines[$linenr] !~ /^[ \+]\t{$tabs,$tabs}return/)) {
+ 				WARN("UNNECESSARY_ELSE",
+ 				     "else is not generally useful after a break or return\n" . $hereprev);
+ 			}
 
-	Ingo
+
