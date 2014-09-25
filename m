@@ -1,142 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaIYDXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:23:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563AbaIYDXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:23:54 -0400
-Date: Thu, 25 Sep 2014 13:23:39 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ingo Molnar <mingo@kernel.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
-        linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/5] SCHED: add some "wait..on_bit...timeout()"
- interfaces.
-Message-ID: <20140925132339.2629ffaa@notabene.brown>
-In-Reply-To: <20140924070418.GA990@gmail.com>
-References: <20140924012422.4838.29188.stgit@notabene.brown>
-	<20140924012832.4838.59410.stgit@notabene.brown>
-	<20140924070418.GA990@gmail.com>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752584AbaIYDZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:25:09 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:38354 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259AbaIYDZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:25:07 -0400
+Date: Wed, 24 Sep 2014 23:25:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrey Wagin <avagin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: linux-next: cgroup_mount() falls asleep forever
+Message-ID: <20140925032502.GB6903@mtj.dyndns.org>
+References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+ <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
+ <20140924185213.GB7996@ZenIV.linux.org.uk>
+ <20140924192456.GA1233@mtj.dyndns.org>
+ <20140925024719.GJ7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/3F0C5Wh1afvW5ZV7Em7amCB"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925024719.GJ7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/3F0C5Wh1afvW5ZV7Em7amCB
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello, Al.
 
-On Wed, 24 Sep 2014 09:04:18 +0200 Ingo Molnar <mingo@kernel.org> wrote:
+On Thu, Sep 25, 2014 at 03:47:19AM +0100, Al Viro wrote:
+> > Yeah, it's an ugly thing to work around vfs interface not very
+> > conducive for filesystems which conditionally create or reuse
+> > superblocks during mount.  There was a thread explaining what's going
+> > on.  Looking up...
+> > 
+> >   http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
+> 
+> Umm...  I still don't get it.  Could you describe the screnario in which
+> that percpu_ref_tryget_live() would be called and managed to fail?
 
->=20
-> * NeilBrown <neilb@suse.de> wrote:
->=20
-> > @@ -859,6 +860,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned =
-mode, int sync, void *key);
-> > =20
-> >  extern int bit_wait(struct wait_bit_key *);
-> >  extern int bit_wait_io(struct wait_bit_key *);
-> > +extern int bit_wait_timeout(struct wait_bit_key *);
-> > +extern int bit_wait_io_timeout(struct wait_bit_key *);
-> > =20
-> >  /**
-> >   * wait_on_bit - wait for a bit to be cleared
-> > diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-> > index 15cab1a4f84e..380678b3cba4 100644
-> > --- a/kernel/sched/wait.c
-> > +++ b/kernel/sched/wait.c
-> > @@ -343,6 +343,18 @@ int __sched out_of_line_wait_on_bit(void *word, in=
-t bit,
-> >  }
-> >  EXPORT_SYMBOL(out_of_line_wait_on_bit);
-> > =20
-> > +int __sched out_of_line_wait_on_bit_timeout(
-> > +	void *word, int bit, wait_bit_action_f *action,
-> > +	unsigned mode, unsigned long timeout)
-> > +{
-> > +	wait_queue_head_t *wq =3D bit_waitqueue(word, bit);
-> > +	DEFINE_WAIT_BIT(wait, word, bit);
-> > +
-> > +	wait.key.timeout =3D jiffies + timeout;
-> > +	return __wait_on_bit(wq, &wait, action, mode);
-> > +}
-> > +EXPORT_SYMBOL(out_of_line_wait_on_bit_timeout);
-> > +
-> >  int __sched
-> >  __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
-> >  			wait_bit_action_f *action, unsigned mode)
-> > @@ -520,3 +532,27 @@ __sched int bit_wait_io(struct wait_bit_key *word)
-> >  	return 0;
-> >  }
-> >  EXPORT_SYMBOL(bit_wait_io);
-> > +
-> > +__sched int bit_wait_timeout(struct wait_bit_key *word)
-> > +{
-> > +	unsigned long now =3D ACCESS_ONCE(jiffies);
-> > +	if (signal_pending_state(current->state, current))
-> > +		return 1;
-> > +	if (time_after_eq(now, word->timeout))
-> > +		return -EAGAIN;
-> > +	schedule_timeout(word->timeout - now);
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(bit_wait_timeout);
-> > +
-> > +__sched int bit_wait_io_timeout(struct wait_bit_key *word)
-> > +{
-> > +	unsigned long now =3D ACCESS_ONCE(jiffies);
-> > +	if (signal_pending_state(current->state, current))
-> > +		return 1;
-> > +	if (time_after_eq(now, word->timeout))
-> > +		return -EAGAIN;
-> > +	io_schedule_timeout(word->timeout - now);
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL(bit_wait_io_timeout);
->=20
-> New scheduler APIs should be exported via EXPORT_SYMBOL_GPL().
->=20
+That was for the initial fix and Li later added the pinning to fix
+something else.  Let's wait for Li to chime in.  He knows this part
+better.
 
-Fine with me.
+> It smells to me like most of the problems here are simply due to having too
+> many locks and not being able to decide where should they live relative to
+> ->s_umount.  That cgroup_mutex thing feels like something way to coarse...
+> You have it grabbed/dropped in
 
- Trond, can you just edit that into the patch you have, or do you want me to
- re-send?
- Also maybe added Jeff's=20
-    Acked-by: Jeff Layton <jlayton@primarydata.com>
- to the NFS bits.
+cgroup_mutex is the outer-most lock as far as cgroup is concerned and
+not expected to nest under anything which is used by individual
+controllers.  Most of what cgroup core does is low-freq managerial
+things which don't benefit from finer grained locking and the mount
+path is one of few surfaces where it interacts with outside in terms
+of locking, so it's better to keep that path special and everything
+else simpler.
 
-Thanks,
-NeilBrown
+> And that's a single system-wide mutex.  Plus there's a slew of workqueues
+> and really unpleasant abuse of restart_syscall() tossed in for fun - what
+> happens if some joker triggers that ->mount() _not_ from mount(2)?
 
---Sig_/3F0C5Wh1afvW5ZV7Em7amCB
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+For cgroup, mount is the userland-visible init interface.  It gotta be
+called from userland.  It originally had internal retry loop but
+syscall restart is simpler.  Reviving that loop isn't difficult if it
+ever becomes necessary.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> Then there's a global rwsem nesting inside that sucker.  And there's another
 
-iQIVAwUBVCOKuznsnt1WYoG5AQJlnQ//eLcFQi2fKy0WKO5U61vvbWwEX1myaR3j
-kJbbNOxgDWPIwzncSyOIKjWKZGOPZH2lZ0gkt9aDcdPYld8XTaEertxdSflQaR0j
-RZJO/Bx3PTc2hfHe0isBDkIL7wZocvxQe8jFee0rk9blX1ymkAhMb6Q/Vom5Ve8M
-gelRn5nxQV4DYjoV/SyqcTPpE87+lAz+N7dMdFSo0y0zkGXsyBrkOoLKYkExDFIE
-UBN2xOkzPaPKLT8ZZalzJgZGc28q7Cx+AHv22fDKCb9HDlaKc4zWJuOCkUgX9qun
-s/KjeXx/El7xO+OYJDGADBHrS6g6pDnNpXcqGuRDmAsXsthnxkCBiRMuUgoRHMVf
-eNdidRZcMHq99qHJAh48BrxdbjY2wqQcbG0BN4JB7KWzHJy2xhqnzQZM35ra3RqL
-+XkR+UpC/hgHbEABYIHQbzN5Stf5bTc8uqthIMVyKQjHNJJABFrYGz9cblTCzSBX
-cz2BwGQSB+DcFUjPaIiPMPe5bhFGB4eAlWBDhkqrmlbz/osHFjSjvorYrEJ5iarQ
-4MAa7DnsTp0ak7lUI2sDBo5PjJX7mgsXTY0wnjUxLKIQVaIrPWPQ30NsT+TFuikk
-Nrpp7TVu7i+oa1paciJJC2ff/QLHWKkqcLsMj7F2eJ4/6vkeTM+oHI67ViI9wtyj
-W6sNGpRVqqw=
-=5m/y
------END PGP SIGNATURE-----
+The rwsem nests inside cgroup_mutex and exists to allow multiple
+reader accesses to a particular data structure.
 
---Sig_/3F0C5Wh1afvW5ZV7Em7amCB--
+> mutex in fs/kernfs - also a global one.  Are the locking rules documented
+> anywhere?  Lifetime rules, as well...
+
+kernfs one shouldn't interact with anything outside kernfs.  Its
+dependency is terminated within kernfs.
+
+> Frankly, my first inclination here would be to try using sget() instead of
+> scanning the list of roots.  How painful would it be to split the allocation
+> and setup of roots, always allocate a new root and have sget() wait
+> for fs shutdown in progress and decide whether it wants to reuse the existing
+> one.  You can easily tell reuse existing vs. set up a new one from each other -
+> just look at the root associated with the superblock you've got and check
+> if it's the one you've allocated.  Freeing the damn thing if we'd reused
+> an existing one and doing setup otherwise.
+> 
+> I realize that it won't do in such form; your for_each_subsys() loop in there
+> really depends on holding cgroup_mutex all the way through.  But do we really
+> need it there?  Would just skipping the ones that doomed in rebind_subsystems()
+> suffice?
+
+At this point, cgroup core locking is heavily focused on simplicity -
+cgroup_mutex for the whole thing and css_set_rwsem for css_set reader
+accesses.  It works out pretty well for the rest of the code but the
+mount path does get tricky.  We can definitely relax / separate out
+locking on subsys iteration for mount path but if possible I'd prefer
+to pay isolated complexity there instead of spilling it to other
+places.
+
+Anyways, let's wait for Li.  At least nobody reported breakage before
+the recent commit, so we can revert the offending commit for the short
+term.
+
+Thanks.
+
+-- 
+tejun
