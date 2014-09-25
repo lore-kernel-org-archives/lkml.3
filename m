@@ -1,101 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072AbaIYJUM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:20:12 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:59008 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005AbaIYJUG (ORCPT
+	id S1752209AbaIYJWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:22:37 -0400
+Received: from mail-bn1on0130.outbound.protection.outlook.com ([157.56.110.130]:22124
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751122AbaIYJWe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:20:06 -0400
-X-ASG-Debug-ID: 1411636795-0759e70b7317db60002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <stable@vger.kernel.org>, Frans Klaver <frans.klaver@xsens.com>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH resend 1/2] tty: omap-serial: fix division by zero
-Date: Thu, 25 Sep 2014 11:19:51 +0200
-X-ASG-Orig-Subj: [PATCH resend 1/2] tty: omap-serial: fix division by zero
-Message-ID: <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140924080852.GA28215@kroah.com>
-References: <20140924080852.GA28215@kroah.com>
+	Thu, 25 Sep 2014 05:22:34 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Shengchao Guo <Shawn.Guo@freescale.com>
+CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v3] ARM: ls1021a: add gating clocks to IP blocks.
+Thread-Topic: [PATCH v3] ARM: ls1021a: add gating clocks to IP blocks.
+Thread-Index: AQHP1yw1xpt6riX400mCXn9hhSG2j5wRjisAgAAB8dA=
+Date: Thu, 25 Sep 2014 09:22:29 +0000
+Message-ID: <e44a1930e8de43ec8beb6e60fa9c1e9e@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1411476275-9164-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140925085403.GG6405@dragon>
+In-Reply-To: <20140925085403.GG6405@dragon>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB337;
+x-forefront-prvs: 0345CFD558
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(189002)(164054003)(80022003)(76576001)(20776003)(81542003)(74502003)(90102001)(107046002)(86362001)(64706001)(92566001)(79102003)(110136001)(66066001)(46102003)(33646002)(77982003)(77096002)(83072002)(81342003)(74662003)(95666004)(99286002)(83322001)(101416001)(54356999)(108616004)(76176999)(74316001)(50986999)(85306004)(31966008)(4396001)(76482002)(97736003)(10300001)(85852003)(106116001)(105586002)(99396003)(106356001)(87936001)(2656002)(21056001)(120916001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB337;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411636795
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9857
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-calculated n values in serial_omap_is_baud_mode16() may become 0. This
-causes a division by zero when calculating the difference between
-calculated and desired baud rates. To prevent this, cap the n13 and n16
-values on 1.
+Hi,
 
-Division by zero in kernel.
-[<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
-[<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
-[<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
-[<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
-[<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
-[<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
-[<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
-[<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
-[<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
-[<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
-[<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
-[<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
-[<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+[...]
+> > +Required properties:
+> > +- compatible:		Should be "fsl,ls1021a-gate"
+> > +- reg:			Address and length of the register set
+> > +- #clock-cells:		Should be <1>
+> > +
+> > +Optional property:
+> > +- big-endian:		If present the gate clock base registers are
+> > +			implemented in big endian mode, otherwise in
+> > +			little mode.
+> 
+> Do you have a real world example that has the block work in little
+> endian?  Otherwise, I suggest we make big-endian the default and save
+> the property for now.
+> 
+On ls1 it is big-endian, not sure will be little-endian in another version.
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
-Resend to add stable@vger.kernel.org to CC. As far as I know, this applies to
-v3.9 and up.
+Maybe add this if need in the future is better ? if so, I will remove this.
+
+
+
+[...]
+> > +
+> > +	BUG_ON(!clk_data || !clks);
+> > +
+> > +	dcfg_base = of_iomap(np, 0);
+> > +
+> > +	BUG_ON(!dcfg_base);
+> > +
+> > +	if (of_property_read_bool(np, "big-endian"))
+> > +		ls1021a_clk_shift = ls1021a_clk_shift_be;
+> 
+> Suggest to make this default and save the property for now.
+> 
+
+Okay. I will have a look at this.
+
+> > +
+> > +	clks[LS1021A_CLK_PBL_EN] = ls1021a_clk_gate("pbl_en", "dummy",
+> 
+> So the parent of all these gate clocks are "dummy".  Does it mean that
+> the clock tree on LS1021A consists of only gate clocks? No dividers
+> or multiplexers?
+> 
+
+Yes, only gate clocks.
+
+> > +						DCFG_CCSR_DEVDISR1,
+> > +						ls1021a_clk_shift(0));
+> 
+> I think we can ignore the 80 columns warning and put these on one line
+> to make the code a bit easier to read.
+> 
+
+Okay, as you have agreed, I will put these on one line.
+
+
+[...]
+> > +	clks[LS1021A_CLK_I2C1_EN] = ls1021a_clk_gate("i2c1_en", "dummy",
+> > +						DCFG_CCSR_DEVDISR5,
+> > +						ls1021a_clk_shift(29));
+> > +	clks[LS1021A_CLK_LPUART1_EN] = ls1021a_clk_gate("lpuart1_en", "dummy",
+> > +						DCFG_CCSR_DEVDISR5,
+> > +						ls1021a_clk_shift(30));
+> > +	clks[LS1021A_CLK_FLEXTIMER1_EN] = ls1021a_clk_gate("flextimer1_en",
+> > +						"dummy", DCFG_CCSR_DEVDISR5,
+> > +						ls1021a_clk_shift(31));
+> 
+> So "dummy" and ls1021a_clk_shift() are two common things for every
+> single call of ls1021a_clk_gate().  Can we handle them in
+> ls1021a_clk_gate() wrapper, so that we can make these calls a bit
+> shorter?
+> 
+
+There one gate has one parent.
+If the 'big-endian' will as default, I think ls1021a_clk_gate() could be handled
+In ls1021a_clk_gate() wrapper to simplify the code.
+
+> > +
+> > +	for (i = 0; i < LS1021A_CLK_END; i++) {
+> > +		if (IS_ERR(clks[i])) {
+> > +			pr_err("LS1021A clk %d: register failed with %ld\n",
+> > +			       i, PTR_ERR(clks[i]));
+> > +			BUG();
+> > +		}
+> > +	}
+> > +
+> > +	/* Add the clocks to provider list */
+> > +	clk_data->clks = clks;
+> > +	clk_data->clk_num = LS1021A_CLK_END;
+> > +	of_clk_add_provider(np, of_clk_src_onecell_get, clk_data);
+> > +}
+> > +CLK_OF_DECLARE(ls1021a, "fsl,ls1021a-gate", ls1021a_clocks_init);
+> > diff --git a/arch/arm/mach-imx/clk.h b/arch/arm/mach-imx/clk.h
+> > index 4cdf8b6..cfbae8c 100644
+> > --- a/arch/arm/mach-imx/clk.h
+> > +++ b/arch/arm/mach-imx/clk.h
+> > @@ -107,6 +107,14 @@ static inline struct clk *imx_clk_gate_dis(const char
+> *name, const char *parent,
+> >  			shift, CLK_GATE_SET_TO_DISABLE, &imx_ccm_lock);
+> >  }
+> >
+> > +static inline struct clk *ls1021a_clk_gate(const char *name, const char
+> *parent,
+> > +		void __iomem *reg, u8 shift)
+> > +{
+> > +	return clk_register_gate(NULL, name, parent, CLK_SET_RATE_PARENT |
+> 
+> As the parent of the clocks registered by this function is "dummy" from
+> what I see, what is the point of setting flag CLK_SET_RATE_PARENT then?
+> 
+> > +			CLK_IGNORE_UNUSED, reg,	shift,
+> 
+> Why flag CLK_IGNORE_UNUSED?
+> 
+
+As the SoC reference manual all the IP blocks will be enabled when powered up.
+But the Linux OS will disable all the IP blocks' clocks as default without this.
+
+For now, this gate driver will only used for PM support of some IP blocks. For the
+Others needed to be enabled as default.
+
+I'm thinking how about just adding the gates needed, for the others add them later
+When they are needed in the future ?
 
 Thanks,
-Frans
 
- drivers/tty/serial/omap-serial.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d017cec..e454b7c 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -254,8 +254,16 @@ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- {
- 	unsigned int n13 = port->uartclk / (13 * baud);
- 	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
-+	int baudAbsDiff13;
-+	int baudAbsDiff16;
-+
-+	if (n13 == 0)
-+		n13 = 1;
-+	if (n16 == 0)
-+		n16 = 1;
-+
-+	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
-+	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
- 	if (baudAbsDiff13 < 0)
- 		baudAbsDiff13 = -baudAbsDiff13;
- 	if (baudAbsDiff16 < 0)
--- 
-2.1.0
-
+BRs
+Xiubo
