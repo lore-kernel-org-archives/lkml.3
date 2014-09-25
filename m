@@ -1,200 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaIYPsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:48:46 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:47360 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697AbaIYPsn (ORCPT
+	id S1754033AbaIYPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:49:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56519 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578AbaIYPtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:48:43 -0400
+	Thu, 25 Sep 2014 11:49:24 -0400
+Message-ID: <54243978.3030501@canonical.com>
+Date: Thu, 25 Sep 2014 11:49:12 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAHO5Pa2AbW+ndgUBjjB==NnwQjVuvbYaYdW8v0x-CjYYQEr9AA@mail.gmail.com>
-References: <cover.1410810247.git.milosz@adfin.com>
-	<cover.1411594644.git.milosz@adfin.com>
-	<CAHO5Pa2AbW+ndgUBjjB==NnwQjVuvbYaYdW8v0x-CjYYQEr9AA@mail.gmail.com>
-Date: Thu, 25 Sep 2014 11:48:41 -0400
-Message-ID: <CANP1eJHy5QGbSH316h3kAvwW6NFZc7w4g-+17uATwzb=WrGHdg@mail.gmail.com>
-Subject: Re: [RFC v3 0/4] vfs: Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-aio <linux-aio@kvack.org>, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
+ mmio
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com>	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>	<52D01D82.5070202@canonical.com>	<CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>	<54189BCE.2010206@canonical.com> <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:06 AM, Michael Kerrisk
-<mtk.manpages@gmail.com> wrote:
-> Hello Milosz,
+On 09/16/2014 06:27 PM, Yinghai Lu wrote:
+> On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
+>> is similar to the original bug[1] we discussed.
+>>
+>> Just wondering if there have been any additional ideas on realloc since
+>> this was last discussed?
+>>
+>> [0] http://pad.lv/1363313
+>> [1] http://pad.lv/1245938
+> This one looks different, that LSI card support SRIOV, but BIOS does not
+> allocate resource to SRIOV bar.
+> We release old resource and ...reallocate resource to them with two retries.
 >
-> On Wed, Sep 24, 2014 at 11:46 PM, Milosz Tanski <milosz@adfin.com> wrote:
->> This patcheset introduces an ability to perform a non-blocking read from
->> regular files in buffered IO mode. This works by only for those filesystems
->> that have data in the page cache.
->>
->> It does this by introducing new syscalls new syscalls preadv2/pwritev2. These
->> new syscalls behave like the network sendmsg, recvmsg syscalls that accept an
->> extra flag argument (RWF_NONBLOCK).
->>
->> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
->> perform buffered IO operations. They submit the work form another thread
->> that performs network IO and epoll or other threads that perform CPU work. This
->> leads to increased latency for processing, esp. in the case of data that's
->> already cached in the page cache.
->>
->> With the new interface the applications will now be able to fetch the data in
->> their network / cpu bound thread(s) and only defer to a threadpool if it's not
->> there. In our own application (VLDB) we've observed a decrease in latency for
->> "fast" request by avoiding unnecessary queuing and having to swap out current
->> tasks in IO bound work threads.
+> [    0.321983] pci_bus 0000:00: max bus depth: 1 pci_try_num: 2
+> [    0.322010] pci 0000:00:03.0: BAR 15: assigned [mem
+> 0xef800000-0xef8fffff pref]
+> [    0.322025] pci 0000:01:00.0: reg 0x174: [mem 0x00000000-0x00003fff 64bit]
+> [    0.322033] pci 0000:01:00.0: reg 0x17c: [mem 0x00000000-0x0003ffff 64bit]
+> [    0.322040] pci 0000:01:00.0: reg 0x174: [mem 0x00000000-0x00003fff 64bit]
+> [    0.322042] pci 0000:01:00.0: BAR 6: assigned [mem
+> 0xef800000-0xef87ffff pref]
+> [    0.322051] pci 0000:01:00.0: reg 0x17c: [mem 0x00000000-0x0003ffff 64bit]
+> [    0.322053] pci 0000:01:00.0: BAR 9: can't assign mem (size 0x400000)
+> [    0.322061] pci 0000:01:00.0: reg 0x174: [mem 0x00000000-0x00003fff 64bit]
+> [    0.322063] pci 0000:01:00.0: BAR 7: assigned [mem
+> 0xfbd00000-0xfbd3ffff 64bit]
+> [    0.322070] pci 0000:00:03.0: PCI bridge to [bus 01]
+> [    0.322073] pci 0000:00:03.0:   bridge window [io  0xc000-0xcfff]
+> [    0.322077] pci 0000:00:03.0:   bridge window [mem 0xfbd00000-0xfbdfffff]
+> [    0.322080] pci 0000:00:03.0:   bridge window [mem
+> 0xef800000-0xef8fffff pref]
+> [    0.322142] pci_bus 0000:00: No. 2 try to assign unassigned res
+> [    0.322143] release child resource [mem 0xfbd00000-0xfbd3ffff 64bit]
+> [    0.322144] release child resource [mem 0xfbd80000-0xfbdbffff 64bit]
+> [    0.322145] release child resource [mem 0xfbdfc000-0xfbdfffff 64bit]
+> [    0.322147] pci 0000:00:03.0: resource 14 [mem
+> 0xfbd00000-0xfbdfffff] released
+> [    0.322148] pci 0000:00:03.0: PCI bridge to [bus 01]
+> [    0.322156] pci 0000:00:03.0: bridge window [mem
+> 0x00100000-0x001fffff] to [bus 01] add_size 500000
+> [    0.322174] pci 0000:00:03.0: res[14]=[mem 0x00100000-0x001fffff]
+> get_res_add_size add_size 500000
+> [    0.322176] pci 0000:00:03.0: BAR 14: assigned [mem 0xefb00000-0xf00fffff]
+> [    0.322185] pci 0000:01:00.0: reg 0x174: [mem 0xfbd00000-0xfbd03fff 64bit]
+> [    0.322192] pci 0000:01:00.0: reg 0x17c: [mem 0x00000000-0x0003ffff 64bit]
+> [    0.322194] pci 0000:01:00.0: res[9]=[mem
+> 0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 400000
+> [    0.322196] pci 0000:01:00.0: res[7]=[mem
+> 0x00000000-0xffffffffffffffff 64bit] get_res_add_size add_size 40000
+> [    0.322198] pci 0000:01:00.0: BAR 3: assigned [mem
+> 0xefb00000-0xefb3ffff 64bit]
+> [    0.322211] pci 0000:01:00.0: reg 0x17c: [mem 0x00000000-0x0003ffff 64bit]
+> [    0.322212] pci 0000:01:00.0: BAR 9: assigned [mem
+> 0xefb40000-0xeff3ffff 64bit]
+> [    0.322219] pci 0000:01:00.0: BAR 1: assigned [mem
+> 0xeff40000-0xeff43fff 64bit]
+> [    0.322232] pci 0000:01:00.0: reg 0x174: [mem 0xfbd00000-0xfbd03fff 64bit]
+> [    0.322234] pci 0000:01:00.0: BAR 7: assigned [mem
+> 0xeff44000-0xeff83fff 64bit]
+> [    0.322241] pci 0000:00:03.0: PCI bridge to [bus 01]
+> [    0.322244] pci 0000:00:03.0:   bridge window [io  0xc000-0xcfff]
+> [    0.322248] pci 0000:00:03.0:   bridge window [mem 0xefb00000-0xf00fffff]
+> [    0.322251] pci 0000:00:03.0:   bridge window [mem
+> 0xef800000-0xef8fffff 64bit pref]
 >
-> Since this is a change to the user-space API, could you CC future
-> versions of this patch set to linux-api@vgerr.kernel.org please, as
-> per Documentation/SubmitChecklist. See also
-> https://www.kernel.org/doc/man-pages/linux-api-ml.html.
+> So the resource realloc do work as expected. but LSI firmware has some
+> problem again?
+>
+> We may need to add command after the reset the bridge resource.
+>
+> Can you get bootlog with "pci=earlydump"?
+>
+> Thanks
+>
+> Yinghai
+Hi Yinghai,
 
-Will do and sorry about this; also I noted Jan's correction.
-
->
-> Thanks,
->
-> Michael
->
->
->> Version 3 highlights:
->>  - Down to 2 syscalls from 4; can user fp or argument position.
->>  - RWF_NONBLOCK value flag is not the same O_NONBLOCK, per Jeff.
->>
->> Version 2 highlights:
->>  - Put the flags argument into kiocb (less noise), per. Al Viro
->>  - O_DIRECT checking early in the process, per. Jeff Moyer
->>  - Resolved duplicate (c&p) code in syscall code, per. Jeff
->>  - Included perf data in thread cover letter, per. Jeff
->>  - Created a new flag (not O_NONBLOCK) for readv2, perf Jeff
->>
->>
->> Some perf data generated using fio comparing the posix aio engine to a version
->> of the posix AIO engine that attempts to performs "fast" reads before
->> submitting the operations to the queue. This workflow is on ext4 partition on
->> raid0 (test / build-rig.) Simulating our database access patern workload using
->> 16kb read accesses. Our database uses a home-spun posix aio like queue (samba
->> does the same thing.)
->>
->> f1: ~73% rand read over mostly cached data (zipf med-size dataset)
->> f2: ~18% rand read over mostly un-cached data (uniform large-dataset)
->> f3: ~9% seq-read over large dataset
->>
->> before:
->>
->> f1:
->>     bw (KB  /s): min=   11, max= 9088, per=0.56%, avg=969.54, stdev=827.99
->>     lat (msec) : 50=0.01%, 100=1.06%, 250=5.88%, 500=4.08%, 750=12.48%
->>     lat (msec) : 1000=17.27%, 2000=49.86%, >=2000=9.42%
->> f2:
->>     bw (KB  /s): min=    2, max= 1882, per=0.16%, avg=273.28, stdev=220.26
->>     lat (msec) : 250=5.65%, 500=3.31%, 750=15.64%, 1000=24.59%, 2000=46.56%
->>     lat (msec) : >=2000=4.33%
->> f3:
->>     bw (KB  /s): min=    0, max=265568, per=99.95%, avg=174575.10,
->>                  stdev=34526.89
->>     lat (usec) : 2=0.01%, 4=0.01%, 10=0.02%, 20=0.27%, 50=10.82%
->>     lat (usec) : 100=50.34%, 250=5.05%, 500=7.12%, 750=6.60%, 1000=4.55%
->>     lat (msec) : 2=8.73%, 4=3.49%, 10=1.83%, 20=0.89%, 50=0.22%
->>     lat (msec) : 100=0.05%, 250=0.02%, 500=0.01%
->> total:
->>    READ: io=102365MB, aggrb=174669KB/s, minb=240KB/s, maxb=173599KB/s,
->>          mint=600001msec, maxt=600113msec
->>
->> after (with fast read using preadv2 before submit):
->>
->> f1:
->>     bw (KB  /s): min=    3, max=14897, per=1.28%, avg=2276.69, stdev=2930.39
->>     lat (usec) : 2=70.63%, 4=0.01%
->>     lat (msec) : 250=0.20%, 500=2.26%, 750=1.18%, 2000=0.22%, >=2000=25.53%
->> f2:
->>     bw (KB  /s): min=    2, max= 2362, per=0.14%, avg=249.83, stdev=222.00
->>     lat (msec) : 250=6.35%, 500=1.78%, 750=9.29%, 1000=20.49%, 2000=52.18%
->>     lat (msec) : >=2000=9.99%
->> f3:
->>     bw (KB  /s): min=    1, max=245448, per=100.00%, avg=177366.50,
->>                  stdev=35995.60
->>     lat (usec) : 2=64.04%, 4=0.01%, 10=0.01%, 20=0.06%, 50=0.43%
->>     lat (usec) : 100=0.20%, 250=1.27%, 500=2.93%, 750=3.93%, 1000=7.35%
->>     lat (msec) : 2=14.27%, 4=2.88%, 10=1.54%, 20=0.81%, 50=0.22%
->>     lat (msec) : 100=0.05%, 250=0.02%
->> total:
->>    READ: io=103941MB, aggrb=177339KB/s, minb=213KB/s, maxb=176375KB/s,
->>          mint=600020msec, maxt=600178msec
->>
->> Interpreting the results you can see total bandwidth stays the same but overall
->> request latency is decreased in f1 (random, mostly cached) and f3 (sequential)
->> workloads. There is a slight bump in latency for since it's random data that's
->> unlikely to be cached but we're always trying "fast read".
->>
->> In our application we have starting keeping track of "fast read" hits/misses
->> and for files / requests that have a lot hit ratio we don't do "fast reads"
->> mostly getting rid of extra latency in the uncached cases.
->>
->> I've performed other benchmarks and I have no observed any perf regressions in
->> any of the normal (old) code paths.
->>
->>
->> I have co-developed these changes with Christoph Hellwig.
->>
->> Milosz Tanski (4):
->>   vfs: Prepare for adding a new preadv/pwritev with user flags.
->>   vfs: Define new syscalls preadv2,pwritev2
->>   vfs: Export new vector IO syscalls (with flags) to userland
->>   vfs: RWF_NONBLOCK flag for preadv2
->>
->>  arch/x86/syscalls/syscall_32.tbl  |   2 +
->>  arch/x86/syscalls/syscall_64.tbl  |   2 +
->>  drivers/target/target_core_file.c |   6 +-
->>  fs/cifs/file.c                    |   6 ++
->>  fs/nfsd/vfs.c                     |   4 +-
->>  fs/ocfs2/file.c                   |   6 ++
->>  fs/pipe.c                         |   3 +-
->>  fs/read_write.c                   | 121 +++++++++++++++++++++++++++++---------
->>  fs/splice.c                       |   2 +-
->>  fs/xfs/xfs_file.c                 |   4 ++
->>  include/linux/aio.h               |   2 +
->>  include/linux/fs.h                |   7 ++-
->>  include/linux/syscalls.h          |   6 ++
->>  include/uapi/asm-generic/unistd.h |   6 +-
->>  mm/filemap.c                      |  22 ++++++-
->>  mm/shmem.c                        |   4 ++
->>  16 files changed, 163 insertions(+), 40 deletions(-)
->>
->> --
->> 2.1.0
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-aio' in
->> the body to majordomo@kvack.org.  For more info on Linux AIO,
->> see: http://www.kvack.org/aio/
->> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
->
->
->
-> --
-> Michael Kerrisk Linux man-pages maintainer;
-> http://www.kernel.org/doc/man-pages/
-> Author of "The Linux Programming Interface", http://blog.man7.org/
-
-
-
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
-
-p: 646-253-9055
-e: milosz@adfin.com
+The user collected earlydump data, which can be found here:
+https://launchpadlibrarian.net/185141163/dmesg-pci%3Dearlydump
