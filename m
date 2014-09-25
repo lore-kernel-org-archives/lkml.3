@@ -1,102 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaIYUXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:23:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:63513 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaIYUXG (ORCPT
+	id S1751930AbaIYUYY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:24:24 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51260 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750889AbaIYUYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:23:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
-Date: Thu, 25 Sep 2014 22:22:23 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rric@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci" <linux-pci@vger.kernel.org>,
-        Liviu Dudau <liviu.dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        Sunil Goutham <sgoutham@cavium.com>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org> <201409252126.38945.arnd@arndb.de> <CAErSpo5rhL7pLha-yWt7sZUBmAnwA6FkacL+sWXBKkSzsuC7Sg@mail.gmail.com>
-In-Reply-To: <CAErSpo5rhL7pLha-yWt7sZUBmAnwA6FkacL+sWXBKkSzsuC7Sg@mail.gmail.com>
+	Thu, 25 Sep 2014 16:24:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [GIT PULL] cpuidle ARM new material for 3.18
+Date: Thu, 25 Sep 2014 22:44:12 +0200
+Message-ID: <3265300.Xd1zHC1T4i@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5424063E.4020500@linaro.org>
+References: <5424063E.4020500@linaro.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409252222.23825.arnd@arndb.de>
-X-Provags-ID: V02:K0:VIHCfkdrHllkx+aL1Go+EPTAjNzOHG6ZiTaK5OuzXhd
- /Id3I5b54267nqB1D/JFIGPWHAJ8H+oTpMojVS+Twi7opdoHDm
- yCtU5KpG/bY/ZFj6zYhxTJLzdysuX/6L221P2IOFGIttoSscb1
- GAFN213nrc6DJDyCBP+FiNaUyN11ny56mZQtcTe1wMZvzolR1R
- qI1GMlbZ0aWJzB0zVub7HlkNlf8QkJeI4hdxGNrHYj78AKq/IN
- GbWmSocdlwlswgRf2cvTnGmPGkg83eRsc+w9YauQwc0chs5d25
- ZTHXzVBA4QfZRf+s7dBLtLX1Zt/UWNAThFhl4vUuiorXwcL7Wh
- ldGKLx2QKwlEKfR8Qf0Q=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 September 2014, Bjorn Helgaas wrote:
-> OK.  You said "a range that has the nonrelocatable flag set should be
-> used for IORESOURCE_PCI_FIXED mappings."  I thought you meant that the
-> range was a bridge window, and somehow PCI_FIXED BARs should be put in
-> that window.
+On Thursday, September 25, 2014 02:10:38 PM Daniel Lezcano wrote:
 > 
-> But maybe you meant that nonrelocatable ranges should have the
-> IORESOURCE_PCI_FIXED bit set in their struct resources.  That would
-> mean we couldn't move the window, but we could put relocatable BARs
-> inside the window.
+> [resent because of the missing Cc]
 > 
-> What needs to be implemented?  Just the code that would set
-> IORESOURCE_PCI_FIXED for nonrelocatable ranges?
+> Hi Rafael,
+> 
+> this pull request contains the following changes:
+> 
+>   * Lorenzo Pieralisi implemented a framework to initialize the ARM 
+> cpuidle drivers with the DT. As an example, it provided a couple of 
+> drivers using it: arm64 and big little. The former one is a new driver 
+> while the latter is a change. There was also a patch for Exynos allowing 
+> to use this framework but as it depends on a change in Samsung's tree, I 
+> postponed this patch until the change is visible after the merge. The 
+> set of changes depends on some other changes made in the ARM64 tree, for 
+> this reason a shared branch is used. This is why there is a merge from 
+> arm64 in my pull request. I believe we already used this procedure.
+> 
+>   * Kevin Hilman added the compatible string for the exynos 5800 in the DT
 
-It might be more complex than I thought. Let's see what the original
-hack does:
+Pulled, thanks!
 
-+/*
-+ * All PCIe devices in Thunder have fixed resources, shouldn't be reassigned.
-+ * Also claim the device's valid resources to set 'res->parent' hierarchy.
-+ */
-+static void pci_dev_resource_fixup(struct pci_dev *dev)
-+{
-+       struct resource *res;
-+       int resno;
-+
-+       for (resno = 0; resno < PCI_NUM_RESOURCES; resno++)
-+               dev->resource[resno].flags |= IORESOURCE_PCI_FIXED;
-+
-+       for (resno = 0; resno < PCI_BRIDGE_RESOURCES; resno++) {
-+               res = &dev->resource[resno];
-+               if (res->parent || !(res->flags & IORESOURCE_MEM))
-+                       continue;
-+               pci_claim_resource(dev, resno);
-+       }
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CAVIUM, PCI_ANY_ID,
-+                       pci_dev_resource_fixup);
+I'd appreciate earlier pull requests in the future, though.
 
-This actually looks harmful, because it means that any kernel that contains
-the thunder host controller driver will do the above for any device made
-by Cavium, whether it's connected to this bridge or not.
+Rafael
 
-What I think we want instead is to mark any resource whose parent
-resource is IORESOURCE_PCI_FIXED to have the same flag, and mark
-the PCI host controller resources IORESOURCE_PCI_FIXED when the
-nonrelocatable flag is set, and that should all be done in core
-code, not in a driver fixup.
 
-The part that still looks weird is the pci_claim_resource() that
-Sunil mentioned. This is currently done for resources that do not
-have a parent, but AFAICT all PCI device resources should have a
-parent that connects it to the upstream bridge.
+> The following changes since commit 0f33be009b89d2268e94194dc4fd01a7851b6d51:
+> 
+>    Linux 3.17-rc6 (2014-09-21 15:43:02 -0700)
+> 
+> are available in the git repository at:
+> 
+>    https://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.18
+> 
+> for you to fetch changes up to d2e5c871ed8a250f7ee1fe34dd52ed5757363fba:
+> 
+>    drivers: cpuidle: initialize big.LITTLE driver through DT (2014-09-25 
+> 10:52:21 +0200)
+> 
+> ----------------------------------------------------------------
+> Daniel Lezcano (1):
+>        Merge branch 'for-next/cpuidle' of 
+> git://git.kernel.org/.../arm64/linux into cpuidle/3.18
+> 
+> Kevin Hilman (1):
+>        cpuidle: big.LITTLE: add Exynos5800 compatible string
+> 
+> Lorenzo Pieralisi (7):
+>        Documentation: arm: define DT idle states bindings
+>        arm64: kernel: refactor the CPU suspend API for retention states
+>        arm64: kernel: introduce cpu_init_idle CPU operation
+>        arm64: add PSCI CPU_SUSPEND based cpu_suspend support
+>        drivers: cpuidle: implement DT based idle states infrastructure
+>        drivers: cpuidle: CPU idle ARM64 driver
+>        drivers: cpuidle: initialize big.LITTLE driver through DT
+> 
+>   Documentation/devicetree/bindings/arm/cpus.txt     |   8 +
+>   .../devicetree/bindings/arm/idle-states.txt        | 679 
+> +++++++++++++++++++++
+>   Documentation/devicetree/bindings/arm/psci.txt     |  14 +-
+>   arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |  23 +
+>   arch/arm64/include/asm/cpu_ops.h                   |   3 +
+>   arch/arm64/include/asm/cpuidle.h                   |  13 +
+>   arch/arm64/include/asm/suspend.h                   |   1 +
+>   arch/arm64/kernel/Makefile                         |   1 +
+>   arch/arm64/kernel/cpuidle.c                        |  31 +
+>   arch/arm64/kernel/psci.c                           | 104 ++++
+>   arch/arm64/kernel/sleep.S                          |  47 +-
+>   arch/arm64/kernel/suspend.c                        |  48 +-
+>   drivers/cpuidle/Kconfig                            |   8 +
+>   drivers/cpuidle/Kconfig.arm                        |   1 +
+>   drivers/cpuidle/Kconfig.arm64                      |  14 +
+>   drivers/cpuidle/Makefile                           |   5 +
+>   drivers/cpuidle/cpuidle-arm64.c                    | 133 ++++
+>   drivers/cpuidle/cpuidle-big_little.c               |  20 +
+>   drivers/cpuidle/dt_idle_states.c                   | 213 +++++++
+>   drivers/cpuidle/dt_idle_states.h                   |   7 +
+>   20 files changed, 1340 insertions(+), 33 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/arm/idle-states.txt
+>   create mode 100644 arch/arm64/include/asm/cpuidle.h
+>   create mode 100644 arch/arm64/kernel/cpuidle.c
+>   create mode 100644 drivers/cpuidle/Kconfig.arm64
+>   create mode 100644 drivers/cpuidle/cpuidle-arm64.c
+>   create mode 100644 drivers/cpuidle/dt_idle_states.c
+>   create mode 100644 drivers/cpuidle/dt_idle_states.h
+> 
+> 
+> 
 
-	Arnd
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
