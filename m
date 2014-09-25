@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaIYKhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:37:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58282 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaIYKhT (ORCPT
+	id S1752472AbaIYKjO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:39:14 -0400
+Received: from www.linutronix.de ([62.245.132.108]:32800 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaIYKjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:37:19 -0400
-Date: Thu, 25 Sep 2014 12:36:23 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
-Subject: Re: [PATCH v6 0/4] LED triggers for USB host and device
-Message-ID: <20140925103623.GA28291@kroah.com>
-References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
- <1411591401-5874-1-git-send-email-sojka@merica.cz>
- <20140924205936.GC17997@saruman>
- <20140924214155.GA30689@kroah.com>
- <20140924221830.GA27914@saruman>
- <20140924231550.GC27672@saruman>
+	Thu, 25 Sep 2014 06:39:10 -0400
+Date: Thu, 25 Sep 2014 12:38:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yijing Wang <wangyijing@huawei.com>
+cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 06/22] PCI/MSI: Introduce weak arch_find_msi_chip()
+ to find MSI chip
+In-Reply-To: <1411614872-4009-7-git-send-email-wangyijing@huawei.com>
+Message-ID: <alpine.DEB.2.10.1409251220570.4604@nanos>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-7-git-send-email-wangyijing@huawei.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924231550.GC27672@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 06:15:50PM -0500, Felipe Balbi wrote:
-> On Wed, Sep 24, 2014 at 05:18:30PM -0500, Felipe Balbi wrote:
-> > On Wed, Sep 24, 2014 at 11:41:55PM +0200, Greg Kroah-Hartman wrote:
-> > > On Wed, Sep 24, 2014 at 03:59:36PM -0500, Felipe Balbi wrote:
-> > > > On Wed, Sep 24, 2014 at 10:43:17PM +0200, Michal Sojka wrote:
-> > > > > This adds LED triggers for USB host and device. First two patches
-> > > > > refactor UDC drivers as requested by Felipe Balbi, the next renames a
-> > > > > file and the last is the actual implementation of the LED triggers.
-> > > > > 
-> > > > > Changes from v5:
-> > > > > - Refactoring of USB gadget completion split into two patches (Filipe
-> > > > >   Balbi)
-> > > > > - Removed check for non-NULL req->completion (Filipe Balbi)
-> > > > > 
-> > > > > Changes from v4:
-> > > > > - Added performance numbers to the commit message of the last patch
-> > > > >   (greg k-h).
-> > > > > - Replaced BUG_ON with pr_err (Alan Stern, greg k-h).
-> > > > > - Used proper coding style for switch statement (greg k-h).
-> > > > > - Added comment about NULL argument (greg k-h).
-> > > > > - EXPORT_SYMBOL changed to EXPORT_SYMBOL_GPL (greg k-h).
-> > > > > - Both triggers are now registerd even if host or gagdet subsystem
-> > > > >   is not enabled (Bryan Wu, greg k-h).
-> > > > > 
-> > > > > Changes from v3:
-> > > > > - usb_gadget_giveback_request() moved outside of CONFIG_HAS_DMA
-> > > > >   conditioned block.
-> > > > > - Added kernel-doc for usb_gadget_giveback_request() (Felipe Balbi).
-> > > > > - Removed outdated comment (Alan Stern).
-> > > > > - req->complete == NULL is now a bug. Previously, this was ignored
-> > > > >   (Alan Stern).
-> > > > > - File rename moved to a separate commit (greg k-h).
-> > > > > 
-> > > > > Changes from v2:
-> > > > > - Host/gadget triggers merged to a single file in usb/common/ (Felipe
-> > > > >   Balbi).
-> > > > > - UDC drivers refactored so that LED trigger works for all of them.
-> > > > > 
-> > > > > Changes from v1:
-> > > > > - Moved from drivers/leds/ to drivers/usb/.
-> > > > > - Improved Kconfig help.
-> > > > > - Linked with other modules rather than being standalone modules.
-> > > > > 
-> > > > > Michal Sojka (4):
-> > > > >   usb: gadget: Introduce usb_gadget_giveback_request()
-> > > > >   usb: gadget: Refactor request completion
-> > > > >   usb: Rename usb-common.c
-> > > > >   usb: Add LED triggers for USB activity
-> > > > 
-> > > > Greg, how do you want to handle this one as it touched both host and
-> > > > gadget ? I could wait until you apply this series to your usb-next and
-> > > > based my pull request on that. That'll work as long as it doesn't take
-> > > > too long for this to be merged.
-> > > 
-> > > I can just take this now, for 3.18-rc1, you've already sent me your
-> > > patches for that release, so there shouldn't be any conflicts, right?
-> > 
-> > that's better. Can you wait 1 day though ? I can run these through my
-> > build tests.
-> 
-> running my build tests on top of v3.17-rc6 + these 4 patches. I'll
-> report back tomorrow. From a code perspective, though, they look
-> alright.
+On Thu, 25 Sep 2014, Yijing Wang wrote:
 
-Yes, will wait, thanks.
+> Introduce weak arch_find_msi_chip() to find the match msi_chip.
+> Currently, MSI chip associates pci bus to msi_chip. Because in
+> ARM platform, there may be more than one MSI controller in system.
+> Associate pci bus to msi_chip help pci device to find the match
+> msi_chip and setup MSI/MSI-X irq correctly. But in other platform,
+> like in x86. we only need one MSI chip, because all device use
+> the same MSI address/data and irq etc. So it's no need to associate
+> pci bus to MSI chip, just use a arch function, arch_find_msi_chip()
+> to return the MSI chip for simplicity. The default weak
+> arch_find_msi_chip() used in ARM platform, find the MSI chip
+> by pci bus.
 
-greg k-h
+This is really backwards. On one hand you try to get rid of the weak
+arch functions zoo and then you invent new ones for no good
+reason. Why can't x86 store the chip in the pci bus?
+
+Looking deeper, I'm questioning the whole notion of different
+msi_chips. Are this really different MSI controllers with a different
+feature set or are this defacto multiple instances of the same
+controller which just need a different data set?
+
+Thanks,
+
+	tglx
