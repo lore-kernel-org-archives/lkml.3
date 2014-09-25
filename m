@@ -1,101 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaIYMzu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:55:50 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:33065 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaIYMzs (ORCPT
+	id S1752913AbaIYM5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:57:03 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:49295 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaIYM5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:55:48 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <9ec657135aa4c1327bb0c61ca3b1eda3>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v6 2/3] dt-bindings: video: Add for rockchip display subsytem
-Date: Thu, 25 Sep 2014 20:55:07 +0800
-Message-Id: <1411649707-10417-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411649565-10309-1-git-send-email-mark.yao@rock-chips.com>
-References: <1411649565-10309-1-git-send-email-mark.yao@rock-chips.com>
+	Thu, 25 Sep 2014 08:57:00 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8PCs9Km029479, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 0/3] r8152: support setting eee by ethtool
+Date: Thu, 25 Sep 2014 20:53:59 +0800
+Message-ID: <1394712342-15778-46-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add a display subsystem comprise the all display interface nodes.
+Modify some definitions about EEE, and add the support of setting
+the EEE through ethtool.
 
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
----
-Changes in v2:
-- add DRM master device node to list all display nodes that comprise
-  the graphics subsystem.
+Hayes Wang (3):
+  r8152: change the EEE definition
+  r8152: add functions to set EEE
+  r8152: support ethtool eee
 
-Changes in v3: None
+ drivers/net/usb/r8152.c | 246 ++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 209 insertions(+), 37 deletions(-)
 
-Changes in v4: None
-
-Changes in v5: None
-
-Changes in v6: None
-
- .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
-new file mode 100644
-index 0000000..7fff582
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
-@@ -0,0 +1,19 @@
-+Rockchip DRM master device
-+================================
-+
-+The Rockchip DRM master device is a virtual device needed to list all
-+vop devices or other display interface nodes that comprise the
-+graphics subsystem.
-+
-+Required properties:
-+- compatible: Should be "rockchip,display-subsystem"
-+- ports: Should contain a list of phandles pointing to display interface port
-+  of vop devices. vop definitions as defined in
-+  Documentation/devicetree/bindings/video/rockchip-vop.txt
-+
-+example:
-+
-+display-subsystem {
-+	compatible = "rockchip,display-subsystem";
-+	ports = <&vopl_out>, <&vopb_out>;
-+};
 -- 
-1.7.9.5
-
+1.9.3
 
