@@ -1,150 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaIYOXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:23:18 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:51812 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaIYOXQ (ORCPT
+	id S1753401AbaIYOXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:23:53 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:50072 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaIYOXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:23:16 -0400
-Date: Thu, 25 Sep 2014 16:23:12 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: do not iterate uninitialized memcgs
-Message-ID: <20140925142312.GE11080@dhcp22.suse.cz>
-References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
- <20140925025758.GA6903@mtj.dyndns.org>
- <20140925134342.GB22508@cmpxchg.org>
+	Thu, 25 Sep 2014 10:23:49 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
+Date: Thu, 25 Sep 2014 16:23:45 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+References: <201409232206.02819@pali> <201409242021.10107@pali> <542388D7.1010008@intel.com>
+In-Reply-To: <542388D7.1010008@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140925134342.GB22508@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart282337937.isauQXBJ55";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409251623.45636@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25-09-14 09:43:42, Johannes Weiner wrote:
-[...]
-> From 1cd659f42f399adc58522d478f54587c8c4dd5cc Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Wed, 24 Sep 2014 22:00:20 -0400
-> Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
-> 
-> The cgroup iterators yield css objects that have not yet gone through
-> css_online(), but they are not complete memcgs at this point and so
-> the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
-> iteration skip memcgs not yet fully initialized") set out to implement
-> exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
-> not meet the ordering requirements for memcg, and so the iterator may
-> skip over initialized groups, or return partially initialized memcgs.
-> 
-> The cgroup core can not reasonably provide a clear answer on whether
-> the object around the css has been fully initialized, as that depends
-> on controller-specific locking and lifetime rules.  Thus, introduce a
-> memcg-specific flag that is set after the memcg has been initialized
-> in css_online(), and read before mem_cgroup_iter() callers access the
-> memcg members.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: <stable@vger.kernel.org>	[3.12+]
+--nextPart282337937.isauQXBJ55
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I am not an expert (obviously) on memory barriers but from
-Documentation/memory-barriers.txt, my understanding is that
-smp_load_acquire and smp_store_release is exactly what we need here.
-"
-However, after an ACQUIRE on a given variable, all memory accesses
-preceding any prior RELEASE on that same variable are guaranteed to be
-visible.
-"
+On Thursday 25 September 2014 05:15:35 Aaron Lu wrote:
+> Hi Hans,
+>=20
+> Thanks for following up and explaining the situation to Pali.
+>=20
+> On 09/25/2014 02:21 AM, Pali Roh=C3=A1r wrote:
+> > On Wednesday 24 September 2014 16:34:21 Hans de Goede wrote:
+> >> Ok, so the dell-laptop interface is just an obsolete
+> >> wrapper around the i915 opregion code, which shows that
+> >> the right interface to use is the i915 one, which we do if
+> >> you don't specify any kernel commandline parameters, case
+> >> closed.
+> >>=20
+> >> Regards,
+> >>=20
+> >> Hans
+> >=20
+> > Nope, its not closed.
+> >=20
+> > Still i915 interface has problem with setting backlight. It
+> > exports lot of levels which turning display off. Which
+> > breaking exiting applications for configuring display
+> > brightness. This is still big regression as black screen is
+> > not want people want to see.
+> >=20
+> > Driver dell-laptop has exported only few - not thousands
+> > level (which is insane) and only usefull levels (not lot of
+> > levels which turn display off).
+> >=20
+> > So for this reason using i915 backlight interface is not
+> > possible and also Dell (for E6440) set kernel param
+> > acpi_backlight=3Dvendor to use dell_laptop module for
+> > controlling brightness.
+> >=20
+> > On my laptop E6440 is better for using dell-laptop and not
+> > acpi or i915.
+>=20
+> Hi Pali,
+>=20
+> Please test this patch:
+>=20
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Hi! this patch fixing this problem. With acpi_backlight=3Dvendor=20
+dell-laptop will register backlight interface which is working=20
+again. Also userspace application dellLcdBrightness is working=20
+now without problem.
 
-Stable backport would be trickier because ACQUIRE/RELEASE were
-introduced later but smp_mb() should be safe replacement.
+Can you going to send this patch also to stable 3.16 branch? As=20
+it fixing commit 0b9f7d93ca6109048a4eb06332b666b6e29df4fe.
 
-Thanks!
-
-> ---
->  mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
->  1 file changed, 31 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 306b6470784c..23976fd885fd 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -292,6 +292,9 @@ struct mem_cgroup {
->  	/* vmpressure notifications */
->  	struct vmpressure vmpressure;
->  
-> +	/* css_online() has been completed */
-> +	int initialized;
-> +
->  	/*
->  	 * the counter to account for mem+swap usage.
->  	 */
-> @@ -1090,10 +1093,21 @@ skip_node:
->  	 * skipping css reference should be safe.
->  	 */
->  	if (next_css) {
-> -		if ((next_css == &root->css) ||
-> -		    ((next_css->flags & CSS_ONLINE) &&
-> -		     css_tryget_online(next_css)))
-> -			return mem_cgroup_from_css(next_css);
-> +		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
-> +
-> +		if (next_css == &root->css)
-> +			return memcg;
-> +
-> +		if (css_tryget_online(next_css)) {
-> +			/*
-> +			 * Make sure the memcg is initialized:
-> +			 * mem_cgroup_css_online() orders the the
-> +			 * initialization against setting the flag.
-> +			 */
-> +			if (smp_load_acquire(&memcg->initialized))
-> +				return memcg;
-> +			css_put(next_css);
-> +		}
->  
->  		prev_css = next_css;
->  		goto skip_node;
-> @@ -5413,6 +5427,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->  	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
-> +	int ret;
->  
->  	if (css->id > MEM_CGROUP_ID_MAX)
->  		return -ENOSPC;
-> @@ -5449,7 +5464,18 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  	}
->  	mutex_unlock(&memcg_create_mutex);
->  
-> -	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
-> +	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/*
-> +	 * Make sure the memcg is initialized: mem_cgroup_iter()
-> +	 * orders reading memcg->initialized against its callers
-> +	 * reading the memcg members.
-> +	 */
-> +	smp_store_release(&memcg->initialized, 1);
-> +
-> +	return 0;
+> diff --git a/drivers/gpu/drm/i915/intel_opregion.c
+> b/drivers/gpu/drm/i915/intel_opregion.c index
+> ca52ad2ae7d1..15534345bd57 100644
+> --- a/drivers/gpu/drm/i915/intel_opregion.c
+> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+> @@ -396,6 +396,24 @@ int intel_opregion_notify_adapter(struct
+> drm_device *dev, pci_power_t state) return -EINVAL;
 >  }
->  
->  /*
-> -- 
-> 2.1.0
-> 
+>=20
+> +/*
+> + * Some of the Thinkpads' firmware will issue a backlight
+> change operation + * region request unconditionally on AC
+> plug/unplug, this is undesirable and + * should be ignored.
+> Then there is a Dell laptop whose vendor backlight + *
+> interface also makes use of operation region request to
+> change backlight + * level and we have to keep it work. The
+> rule used here is: if the vendor + * backlight interface is
+> not in use and the ACPI backlight interface is + * broken, we
+> ignore the requests; oterwise, we keep processing them. + */
+> +static bool should_ignore_backlight_request(void)
+> +{
+> +	if (acpi_video_backlight_support() &&
+> +	    !acpi_video_verify_backlight_support())
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>  static u32 asle_set_backlight(struct drm_device *dev, u32
+> bclp) {
+>  	struct drm_i915_private *dev_priv =3D dev->dev_private;
+> @@ -404,11 +422,7 @@ static u32 asle_set_backlight(struct
+> drm_device *dev, u32 bclp)
+>=20
+>  	DRM_DEBUG_DRIVER("bclp =3D 0x%08x\n", bclp);
+>=20
+> -	/*
+> -	 * If the acpi_video interface is not supposed to be used,
+> don't -	 * bother processing backlight level change requests
+> from firmware. -	 */
+> -	if (!acpi_video_verify_backlight_support()) {
+> +	if (should_ignore_backlight_request()) {
+>  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
+>  		return 0;
+>  	}
 
--- 
-Michal Hocko
-SUSE Labs
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart282337937.isauQXBJ55
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQkJXEACgkQi/DJPQPkQ1LiowCfSmnMdeKrRqf1YTTj0CglrAOb
+oqQAn1nc2qMmAf6BYqYbL1KQFTkBSD9a
+=MLL4
+-----END PGP SIGNATURE-----
+
+--nextPart282337937.isauQXBJ55--
