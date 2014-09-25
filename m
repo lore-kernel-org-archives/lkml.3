@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaIYLa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:30:28 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:40080 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751514AbaIYLa0 (ORCPT
+	id S1752777AbaIYLbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:31:49 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59543 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751368AbaIYLbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:30:26 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: [PATCH v4] power: reset: use restart_notifier mechanism for msm-poweroff
-Date: Thu, 25 Sep 2014 17:03:51 +0530
-Message-Id: <1411644831-2931-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 25 Sep 2014 07:31:46 -0400
+Message-ID: <5423FD14.9060604@hurleysoftware.com>
+Date: Thu, 25 Sep 2014 07:31:32 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Frans Klaver <frans.klaver@xsens.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com> <54129F6C.7040508@linutronix.de> <20140912094010.GE28458@ci00147.xsens-tech.local> <5412C21A.8020203@linutronix.de> <20140912102816.GF28458@ci00147.xsens-tech.local> <541716DC.9020904@linutronix.de> <20140917102812.GA20438@ci00147.xsens-tech.local> <20140921204100.GA10111@linutronix.de> <5421A7F7.3070109@hurleysoftware.com> <20140924075346.GB19565@linutronix.de> <20140925104208.GE19396@linutronix.de>
+In-Reply-To: <20140925104208.GE19396@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change replaces use of arm_pm_restart with recently introduced
-reset mechanism in Linux kernel called restart_notifier.
+On 09/25/2014 06:42 AM, Sebastian Andrzej Siewior wrote:
+> * Sebastian Andrzej Siewior | 2014-09-24 09:53:46 [+0200]:
+> 
+>> * Peter Hurley | 2014-09-23 13:03:51 [-0400]:
+>>
+>>> But DMA is cheating if the UART driver's tx_empty() method is saying the
+>>> transmitter is empty while TX DMA is still running.
+>> This shouldn't be the case. But I will check this once I able to.
+> 
+> I added 
+> 
+> |#define BOTH_EMPTY      (UART_LSR_TEMT | UART_LSR_THRE)
+> |    trace_printk("delay <%d>\n", (lsr & BOTH_EMPTY) == BOTH_EMPTY ? 1 : 0);
+> 
+> in my set_termios() and the trace shows
+> |              vi-949   [000] d...    70.477002: omap8250_restore_regs: delay <0>
+> 
+> so no, it does not wait until TX FIFO is empty. It looks like it uses
+> TCSANOW instead of TCSADRAIN. And since this looks "legal" I will delay
+> it until TX-DMA is complete because it is known to stall the DMA operation.
 
-Choosing priority 128, which is default priority, as according to 
-documentation, this mechanism is sufficient to restart the entire system.
+I just verified that GNU readline6 uses ioctl(TCSETSW, ...) to do the set_termios
+(which is the ioctl that libc should use for tcsetattr(TCSADRAIN)).
 
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Josh Cartwright <joshc@codeaurora.org>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-pm@vger.kernel.org
+Maybe this userspace is using a readline()-alike that has a bug by not using the
+correct tcsetattr() action?
+Or maybe the glibc-equivalent has the bug, and tcsetattr(TCSADRAIN) is not using
+ioctl(TCSETSW)?
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
-Why reset handler in pinctrl-msm wont collide with reset
-in poweroff-msm.c in this patch:
-
-In case of apq8064, the ps_hold register region is owned by
-pinctrl hence the reset is implemented in pinctrl driver as
-the region is already mapped there.
-Whereas ps_hold register region in apq8074 are moved to its 
-own region. So, for apq8074 there is no need for ps_hold to
-be configured/muxed in pinctrl and Josh's changes wont execute.
-Hence msm-poweroff wil be the default reset as 128 in the 
-default priority.
-
-Tested on Dragonboard APQ8074
-
-Changes since v3:
-- Updated Commit message about default priority chosen and how ps_hold
-  in a and b family are different.
-
-Changes since v2:
-- Removed unwanted header file and added linux/pm.h
-
-Changes since v1:
-- Initialized restart_nb with its declaration
-- Removed return check for register_restart_handler as it always
-  returns 0 as per Guenter's suggestion to Josh's similar patch.
-  This takes care of Guenter's comments on error logs and NULL
-  initialization of restart_nb.notifier_call.
----
- drivers/power/reset/msm-poweroff.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-index 774f9a3..4702efd 100644
---- a/drivers/power/reset/msm-poweroff.c
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -20,21 +20,27 @@
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/reboot.h>
--
--#include <asm/system_misc.h>
-+#include <linux/pm.h>
- 
- static void __iomem *msm_ps_hold;
--
--static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int do_msm_restart(struct notifier_block *nb, unsigned long action,
-+			   void *data)
- {
- 	writel(0, msm_ps_hold);
- 	mdelay(10000);
-+
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block restart_nb = {
-+	.notifier_call = do_msm_restart,
-+	.priority = 128,
-+};
-+
- static void do_msm_poweroff(void)
- {
- 	/* TODO: Add poweroff capability */
--	do_msm_restart(REBOOT_HARD, NULL);
-+	do_msm_restart(&restart_nb, 0, NULL);
- }
- 
- static int msm_restart_probe(struct platform_device *pdev)
-@@ -47,8 +53,10 @@ static int msm_restart_probe(struct platform_device *pdev)
- 	if (IS_ERR(msm_ps_hold))
- 		return PTR_ERR(msm_ps_hold);
- 
-+	register_restart_handler(&restart_nb);
-+
- 	pm_power_off = do_msm_poweroff;
--	arm_pm_restart = do_msm_restart;
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+Regards,
+Peter Hurley
