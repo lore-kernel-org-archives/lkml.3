@@ -1,124 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaIYHeq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:34:46 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:18258 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751533AbaIYHem (ORCPT
+	id S1752722AbaIYHeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:34:44 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56277 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328AbaIYHel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:34:42 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-5.tower-38.messagelabs.com!1411630474!9582486!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.2; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Thu, 25 Sep 2014 09:34:35 +0200
-Date: Thu, 25 Sep 2014 10:26:12 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Bryan Wu <cooloney@gmail.com>,
-        Andreas Werner <andreas.werner@men.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, <lm-sensors@lm-sensors.org>,
-        <wim@iguana.be>, <linux-watchdog@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
-Message-ID: <20140925082611.GA967@awelinux>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <20140924144829.GK32069@lee--X1>
- <20140924154503.GA12403@roeck-us.net>
- <20140924161837.GA7113@lee--X1>
- <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
- <20140924165739.GA31578@roeck-us.net>
- <20140924184143.GC7113@lee--X1>
+	Thu, 25 Sep 2014 03:34:41 -0400
+Date: Thu, 25 Sep 2014 09:34:36 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 12/22] MIPS/Octeon/MSI: Use MSI chip framework to
+ configure MSI/MSI-X irq
+Message-ID: <20140925073435.GJ12423@ulmo>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-13-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwgQ89ZNnFUwFHTC"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140924184143.GC7113@lee--X1>
+In-Reply-To: <1411614872-4009-13-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 07:41:43PM +0100, Lee Jones wrote:
-> On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> 
-> > On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
-> > > On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > > On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> > > >
-> > > >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
-> > > >> > Guenter, Bryan, Wim,
-> > > >> >
-> > > >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-> > > >> >
-> > > >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-> > > >> >
-> > > >> > are available in the git repository at:
-> > > >> >
-> > > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
-> > > >> >
-> > > >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
-> > > >> >
-> > > >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
-> > > >> >
-> > > >> > ----------------------------------------------------------------
-> > > >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
-> > > >> >
-> > > >> I assume you'll push it all through mfd, correct ?
-> > > >
-> > > > The idea is for all the affected Maintainers to pull this branch in to
-> > > > their own trees.  If you guys don't, there will be a good chance of
-> > > > conflict during the merge-window, which will subsequently upset Linus.
-> > > >
-> > > > So in answer to your question; yes I'll be taking this, but so should
-> > > > each of you.
-> > > >
-> > > 
-> > > Thanks for this, man. What am I going to do here? Need I pull in all
-> > > the patches here into my LED tree or just one LED patch? I think if
-> > > you push this for Linus through MFD tree, I don't need to pull it into
-> > > my tree, right?
-> > > 
-> > I did
-> > 
-> > git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
-> > git fetch --tags mfd
-> > git merge mfd-hwmon-leds-watchdog-v3.18
-> > 
-> > in both my hwmon-next and watchdog-next branches. Both are currently building,
-> > and already pushed into to my repository at kernel.org.
-> > 
-> > So, effectively, when I send my pull request to Linus, all patches from
-> > mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
-> > The same will happen when Lee sends his pull request, and Wim, and you. 
-> > I believe that is what Lee is asking for.
-> 
-> That's right.  It's not okay to break this branch up.  If it was, we
-> would have been able to apply our respective components into our own
-> trees from the beginning, but as there are interdependencies, breaking
-> up the branch could have nasty consequences depending on the order in
-> which they land in Mainline.  Most likely bisectability will be
-> broken, which is not allowed.
-> 
 
-Hi,
-please do not forget the MAINTAINERS Patch for this series.
-I have send it last week attached to this series.
+--rwgQ89ZNnFUwFHTC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
+On Thu, Sep 25, 2014 at 11:14:22AM +0800, Yijing Wang wrote:
+[...]
+> diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
+[...]
+> @@ -132,12 +132,12 @@ msi_irq_allocated:
+>  	/* Make sure the search for available interrupts didn't fail */
+>  	if (irq >=3D 64) {
+>  		if (request_private_bits) {
+> -			pr_err("arch_setup_msi_irq: Unable to find %d free interrupts, trying=
+ just one",
+> +			pr_err("octeon_setup_msi_irq: Unable to find %d free interrupts, tryi=
+ng just one",
+>  			       1 << request_private_bits);
 
-Regards
-Andy
+Perhaps while at it make this (and other similar changes in this patch):
 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+	pr_err("%s(): Unable to ...", __func__, ...);
 
+So that it becomes more resilient against this kind of rename?
+
+>  			request_private_bits =3D 0;
+>  			goto try_only_one;
+>  		} else
+> -			panic("arch_setup_msi_irq: Unable to find a free MSI interrupt");
+> +			panic("octeon_setup_msi_irq: Unable to find a free MSI interrupt");
+
+> @@ -210,14 +210,13 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nv=
+ec, int type)
+> =20
+>  	return 0;
+>  }
+> -
+
+This...
+
+> @@ -240,7 +239,7 @@ void arch_teardown_msi_irq(unsigned int irq)
+>  	 */
+>  	number_irqs =3D 0;
+>  	while ((irq0 + number_irqs < 64) &&
+> -	       (msi_multiple_irq_bitmask[index]
+> +		(msi_multiple_irq_bitmask[index]
+
+=2E.. and this seem like unrelated whitespace changes.
+
+>  		& (1ull << (irq0 + number_irqs))))
+>  		number_irqs++;
+>  	number_irqs++;
+> @@ -249,8 +248,8 @@ void arch_teardown_msi_irq(unsigned int irq)
+>  	/* Shift the mask to the correct bit location */
+>  	bitmask <<=3D irq0;
+>  	if ((msi_free_irq_bitmask[index] & bitmask) !=3D bitmask)
+> -		panic("arch_teardown_msi_irq: Attempted to teardown MSI "
+> -		      "interrupt (%d) not in use", irq);
+> +		panic("octeon_teardown_msi_irq: Attempted to teardown MSI "
+> +			"interrupt (%d) not in use", irq);
+
+And the second line here also needlessly changes the indentation.
+
+Thierry
+
+--rwgQ89ZNnFUwFHTC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI8WLAAoJEN0jrNd/PrOhp2MQAK6S7hsneW6O97w/t1chjlGR
+ug1JLAxeP84A0Vj4I6KwfrHjux8rDqoByI5bDhH+ywcRQuf90Dx9+L9QEfWlzkcC
+K1qT+twZDUqVFhCIJtuEtNVJbEXb0NlPK74W/6cUubFdAKbY1+MZe66Z0BZlBl36
+bjxEyTh6uZkemh8PLwP45mJQCTD/d5/lNGDCrgzKgurE1HIHXV1r0FoD9zLJZpfA
+UATpp5rQYfePlynE1mCT+G0QXcfo+zf8kp49jLxeciX5QZYs8DbZ2IwbhG4ov2je
+p8SHV5T+c8D1+Q7UjNbXpDGHz12Ctpby/bLd3+FGsmeIZJbE4o5NcE5pChZfI52v
+Rgl0wLOlswsM2xoSGdhA1x51QEHqFxShBf/+FwbxLA7shNWELd6gRpv9mcYSv6oy
+MgALA5tV5r18NZyBm+SsvwUrgAF7e1ndIU/UYhAH1lIz3CMtqTnZ2AZIpXoJeKLo
+rtzWB2MThJnnZXUpW3Umj3UWoZkcAy6zQSWBGV40hC+t3dkr1US9bOgGIrO6huyy
+qTqNG+A20dRO85W7LoslDg5CO401jS8JRiHbYQW9g+QhHkWLpROgcrCoK1dz+Q2B
+QjaLp2fjuM7wyyYXRLcQo68i7Y9AUv2R+k1fidvlfuWXfvzbeK6x0BHSx8nhBec6
+SU2aBh+SOaTeNEFZjRFv
+=dRXg
+-----END PGP SIGNATURE-----
+
+--rwgQ89ZNnFUwFHTC--
