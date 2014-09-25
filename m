@@ -1,147 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaIYDjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:39:09 -0400
-Received: from mga03.intel.com ([134.134.136.65]:34684 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbaIYDjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:39:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,594,1406617200"; 
-   d="scan'208";a="608235509"
-Message-ID: <54238E13.8040407@linux.intel.com>
-Date: Thu, 25 Sep 2014 11:37:55 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751621AbaIYDpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:45:23 -0400
+Received: from mail-bn1bon0145.outbound.protection.outlook.com ([157.56.111.145]:19841
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751351AbaIYDpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:45:22 -0400
+Date: Wed, 24 Sep 2014 22:40:06 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: German Rivera <German.Rivera@freescale.com>
+CC: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
+        <scottwood@freescale.com>, <agraf@suse.de>,
+        <linuxppc-release@linux.freescale.net>,
+        Erez Nir-RM30794 <nir.erez@freescale.com>
+Subject: Re: [PATCH 1/3 v2] drivers/bus: Added Freescale Management Complex
+ APIs
+Message-ID: <20140924224006.f924cefdd347464519da8190@freescale.com>
+In-Reply-To: <54237CBF.2010706@freescale.com>
+References: <1411166981-3610-1-git-send-email-German.Rivera@freescale.com>
+	<1411166981-3610-2-git-send-email-German.Rivera@freescale.com>
+	<20140923194901.894483bfaef97d13d12c75a5@freescale.com>
+	<54237CBF.2010706@freescale.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: "Joe.C" <srv_yingjoe.chen@mediatek.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        yh.chen@mediatek.com, linux-kernel@vger.kernel.org,
-        srv_heupstream@mediatek.com, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, eddie.huang@mediatek.com,
-        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org,
-        hc.yen@mediatek.com
-Subject: Re: [PATCH] [RFC] Using hierarchy irqdomian to implement MTK intpol.
-References: <1411574696-1881-1-git-send-email-srv_yingjoe.chen@mediatek.com> <1411611417.21763.56.camel@mtksdaap41> <54238645.8090502@linux.intel.com> <20140925031711.GV23926@titan.lakedaemon.net>
-In-Reply-To: <20140925031711.GV23926@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(377454003)(24454002)(479174003)(52314003)(19580395003)(83322001)(107046002)(84676001)(47776003)(120916001)(4396001)(77156001)(110136001)(105606002)(74502003)(104166001)(104016003)(33646002)(50466002)(23676002)(44976005)(20776003)(19580405001)(99396003)(76482002)(50986999)(86362001)(36756003)(6806004)(31966008)(85306004)(97736003)(77982003)(64706001)(21056001)(90102001)(87286001)(92566001)(92726001)(102836001)(79102003)(93916002)(88136002)(106466001)(50226001)(74662003)(76176999)(83072002)(93886004)(80022003)(89996001)(68736004)(81342003)(81542003)(62966002)(85852003)(95666004)(46102003)(10300001)(87936001)(100306002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0734;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0734;
+X-Forefront-PRVS: 0345CFD558
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 24 Sep 2014 21:23:59 -0500
+German Rivera <German.Rivera@freescale.com> wrote:
 
+> On 09/23/2014 07:49 PM, Kim Phillips wrote:
+> > On Fri, 19 Sep 2014 17:49:39 -0500
+> > "J. German Rivera" <German.Rivera@freescale.com> wrote:
+> >
+> >> + * Delay in microseconds between polling iterations while
+> >> + * waiting for MC command completion
+> >> + */
+> >> +#define MC_CMD_COMPLETION_POLLING_INTERVAL_USECS    500	/* 0.5 ms */
+> >> +
+> >> +int __must_check fsl_create_mc_io(struct device *dev,
+> >> +				  phys_addr_t mc_portal_phys_addr,
+> >> +				  uint32_t mc_portal_size,
+> >> +				  uint32_t flags, struct fsl_mc_io **new_mc_io)
+> >> +{
+> >> +	struct fsl_mc_io *mc_io;
+> >> +	void __iomem *mc_portal_virt_addr;
+> >> +	struct resource *res;
+> >> +
+> >> +	mc_io = devm_kzalloc(dev, sizeof(*mc_io), GFP_KERNEL);
+> >> +	if (mc_io == NULL)
+> >> +		return -ENOMEM;
+> >> +
+> >> +	mc_io->dev = dev;
+> >> +	mc_io->flags = flags;
+> >> +	mc_io->portal_phys_addr = mc_portal_phys_addr;
+> >> +	mc_io->portal_size = mc_portal_size;
+> >> +	if (mc_io->flags & FSL_MC_PORTAL_SHARED_BY_INT_HANDLERS)
+> >> +		spin_lock_init(&mc_io->spinlock);
+> >
+> > I'm confused - this patseries doesn't register an interrupt handler,
+> > so this can't be true (or it's premature if it will, in which case
+> > it should be left out for now).
+> >
+> > However, if somehow users of this code register an IRQ handler for
+> > the portal (I don't see any users to tell how they get the IRQ line
+> > either?), then it's up to them to establish mutual exclusion rules
+> > for access, among themselves.  Unless you think they will be calling
+> > mc_send_command from h/w IRQ context, in which case I'd reconsider
+> > that assumption because send_command looks like it'd take too long
+> > to get an answer from the h/w - IRQ handlers should just ack the h/w
+> > IRQ, and notify the scheduler that the driver has work to do (in s/w
+> > IRQ context perhaps).
+> >
+> Although not included in this patch series, there are cases in
+> subsequent patch series, in which mc_send_command() will need to be
+> called from interrupt context.
+> 
+> For example, the dprc_get_irq_status() needs to be called from the DPRC
+> ISR to determine the actual cause of the interrupt. Also, to clear
+> the interrupt the dprc_clear_irq_status() needs to be called from the
+> ISR. Both od these functions call mc_send_command():
 
-On 2014/9/25 11:17, Jason Cooper wrote:
-> On Thu, Sep 25, 2014 at 11:04:37AM +0800, Jiang Liu wrote:
->> Hi Joe,
->> 	Thanks, I will merge them into my next version.
->> Regards!
->> Gerry
->>
->> On 2014/9/25 10:16, Joe.C wrote:
->>>
->>> Jiang,
->>>
->>> Please consider merge the following 2 changes into your next round.
+yet mc_send_command itself has the capability to trigger a h/w IRQ,
+no?  So how is that expected to work, given h/w IRQ handlers run
+with IRQs turned off?
+
+> >> +	else if (mc_io->flags & FSL_MC_PORTAL_SHARED_BY_THREADS)
+> >> +		mutex_init(&mc_io->mutex);
+> >
+> > I'd assume SHARED_BY_THREADS to always be true in linux.
+> >
+> Not, if mc_send_command() is called from interrupt context, as
+> explained above. However, since this patch series does not include
+> any interrupt handlers, we can remove the
+> FSL_MC_PORTAL_SHARED_BY_INT_HANDLERS flag and the associated spinlock,
+> from this patch series.
 > 
-> ummm.  I'm confused.  I'll admit I'm a bit liquored up atm, but it looks
-> like "Joe C." posted a patch 'From: Joe C.', and 'Signed-off-by: Joe C.'.
-> _Then_, Joe C. replied to himself and asked someone *else* to merge the
-> below changes into the originally posted patch.  The real kicker is that
-> someone responded and said they would do it. (?!)
-> 
-> Please tell me the scotch is making this look more fucked up than it
-> really is...
-> 
-> Also, if Joe.C could please fix his mailer and git config to produce a
-> complete, correct name, that would be appreciated.
-Hi Jason,
-	Sorry for the confusion:)
-	We are trying to extend irqdomain to support hierarchy
-irqdomain. The code was originally developed on x86 only, and it's
-still in RFC stage. When Joe trying to use hierarchy irqdomain
-interfaces on ARM, he found some bugs, so hope that I could take
-those bugfixes in next version.
-Regards!
-Gerry
-> 
-> thx,
-> 
-> Jason.
-> 
->>> On Thu, 2014-09-25 at 00:04 +0800, Joe.C wrote:
->>>> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
->>>> index e285f3a..01e852b 100644
->>>> --- a/kernel/irq/irqdomain.c
->>>> +++ b/kernel/irq/irqdomain.c
->>>> @@ -467,7 +467,7 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
->>>>  	struct irq_domain *domain;
->>>>  	irq_hw_number_t hwirq;
->>>>  	unsigned int type = IRQ_TYPE_NONE;
->>>> -	unsigned int virq;
->>>> +	int virq;
->>>>  
->>>>  	domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
->>>>  	if (!domain) {
->>>> @@ -493,8 +493,8 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
->>>>  	else
->>>>  #endif
->>>>  		virq = irq_create_mapping(domain, hwirq);
->>>> -	if (!virq)
->>>> -		return virq;
->>>> +	if (virq <= 0)
->>>> +		return 0;
->>>>  
->>>>  	/* Set type if specified and different than the current one */
->>>>  	if (type != IRQ_TYPE_NONE &&
->>>
->>> irq_of_parse_and_map()/of_irq_to_resource() expect
->>> irq_create_of_mapping() to return 0 when fail. Return error code will
->>> cause of_irq_to_resource crash.
->>>
->>>
->>>> @@ -716,20 +716,20 @@ const struct irq_domain_ops irq_domain_simple_ops = {
->>>>  };
->>>>  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
->>>>  
->>>> -static int irq_domain_alloc_descs(int virq, unsigned int nr_irqs,
->>>> +static int irq_domain_alloc_descs(int virq, unsigned int cnt,
->>>>  				  irq_hw_number_t hwirq, int node)
->>>>  {
->>>>  	unsigned int hint;
->>>>  
->>>>  	if (virq >= 0) {
->>>> -		virq = irq_alloc_descs(virq, virq, nr_irqs, node);
->>>> +		virq = irq_alloc_descs(virq, virq, cnt, node);
->>>>  	} else {
->>>>  		hint = hwirq % nr_irqs;
->>>>  		if (hint == 0)
->>>>  			hint++;
->>>> -		virq = irq_alloc_descs_from(hint, nr_irqs, node);
->>>> +		virq = irq_alloc_descs_from(hint, cnt, node);
->>>>  		if (virq <= 0 && hint > 1)
->>>> -			virq = irq_alloc_descs_from(1, nr_irqs, node);
->>>> +			virq = irq_alloc_descs_from(1, cnt, node);
->>>>  	}
->>>>  
->>>>  	return virq;
->>>
->>> This come from irq_create_mapping(), the original code is using global
->>> nr_irqs. Change to match original behavior.
->>>
->>> Joe.C
->>>
->>>
+> >> +	res = devm_request_mem_region(dev,
+> >> +				      mc_portal_phys_addr,
+> >> +				      mc_portal_size,
+> >> +				      "mc_portal");
+> >> +	if (res == NULL) {
+> >> +		dev_err(dev,
+> >> +			"devm_request_mem_region failed for MC portal %#llx\n",
+> >> +			mc_portal_phys_addr);
+> >> +		return -EBUSY;
+> >> +	}
+> >> +
+> >> +	mc_portal_virt_addr = devm_ioremap_nocache(dev,
+> >> +						   mc_portal_phys_addr,
+> >> +						   mc_portal_size);
+> >> +	if (mc_portal_virt_addr == NULL) {
+> >> +		dev_err(dev,
+> >> +			"devm_ioremap_nocache failed for MC portal %#llx\n",
+> >> +			mc_portal_phys_addr);
+> >> +		return -ENXIO;
+> >> +	}
+> >> +
+> >> +	mc_io->portal_virt_addr = mc_portal_virt_addr;
+> >> +	*new_mc_io = mc_io;
+> >> +	return 0;
+> >> +}
+> >> +EXPORT_SYMBOL_GPL(fsl_create_mc_io);
+> >> +
+> >> +void fsl_destroy_mc_io(struct fsl_mc_io *mc_io)
+> >> +{
+> >> +	if (WARN_ON(mc_io->portal_virt_addr == NULL))
+> >> +		return;
+> >
+> > this is unnecessary - you'll get the stack trace anyway, and users
+> > calling destroy on a not successfully created mc_io object should
+> > not get the luxury of maybe being able to continue after the stack
+> > trace, after possibly leaking memory.
+> Ok, I'ĺl remove this WARN_ON in the v3 respin.
+
+subsequent code will cause a stack trace when dereferencing
+portal_virt_addr anyway, so the if statement isn't needed at all.
+
+> >> +	mc_io->portal_virt_addr = NULL;
+> >> +	devm_kfree(mc_io->dev, mc_io);
+> >
+> > like I said before, there's really no point in clearing something
+> > out right before it's freed.
+> >
+> I disagree. This can help detect cases of double-freeing.
+
+?  freeing NULL does nothing - it just returns - which doesn't help
+detect anything.  What's more, the kernel has a memory debugging
+infrastructure that detects double freeing of the same object.
+
+> >> +int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd)
+> >> +{
+> >> +	enum mc_cmd_status status;
+> >> +	int error;
+> >> +	unsigned long irqsave_flags = 0;
+> >> +	unsigned long jiffies_until_timeout =
+> >> +	    jiffies + MC_CMD_COMPLETION_TIMEOUT_JIFFIES;
+> >> +
+> >> +	/*
+> >> +	 * Acquire lock depending on mc_io flags:
+> >> +	 */
+> >> +	if (mc_io->flags & FSL_MC_PORTAL_SHARED_BY_INT_HANDLERS) {
+> >> +		if (mc_io->flags & FSL_MC_PORTAL_SHARED_BY_THREADS)
+> >> +			spin_lock_irqsave(&mc_io->spinlock, irqsave_flags);
+> >> +		else
+> >> +			spin_lock(&mc_io->spinlock);
+> >> +	} else if (mc_io->flags & FSL_MC_PORTAL_SHARED_BY_THREADS) {
+> >> +		mutex_lock(&mc_io->mutex);
+> >> +	}
+> >
+> > again, I think we need to drop the coming from h/w IRQ context here
+> > (SHARED_BY_INT_HANDLERS); there's no IRQ handlers in this
+> > patchseries, and calling this function from an IRQ handler would be
+> > prohibitively wasteful, guessing by the udelay and timeout values
+> > below.
+> >
+> > Can we just mutex_lock for now, and unconditionally (no
+> > SHARED_BY_THREADS check), to protect from nesting?
+> >
+> I would still prefer to keep the SHARED_BY_THREADS flag, to give option 
+> of not doing any locking, in cases where the portal used in 
+> mc_send_command() is not shared among concurrent callers
+
+how can you guarantee there won't be concurrent callers?  The linux
+kernel is multithreaded.
+
+> What do you mean by nesting in this case?
+
+when a thread gets interrupted by another thread, and/or another
+IRQ: this would cause an unrecoverable race condition.
+
+> >> +	/*
+> >> +	 * Wait for response from the MC hardware:
+> >> +	 */
+> >> +	for (;;) {
+> >> +		status = mc_read_response(mc_io->portal_virt_addr, cmd);
+> >> +		if (status != MC_CMD_STATUS_READY)
+> >> +			break;
+> >> +
+> >> +		/*
+> >> +		 * TODO: When MC command completion interrupts are supported
+> >> +		 * call wait function here instead of udelay()
+> >> +		 */
+> >> +		udelay(MC_CMD_COMPLETION_POLLING_INTERVAL_USECS);
+> >
+> > this pauses any caller for 0.5ms on every successful command
+> > write.  Can the next submission of the patchseries wait until
+> > completion IRQs are indeed supported, since both that and the above
+> > locking needs to be resolved?
+> >
+> No. Interrupt handlers will come in a later patch series as they are
+> not needed for using the basic MC functionality.
+
+meanwhile unnecessarily udelaying kernel threads for .5ms upsets
+basic kernel functionality :)  Would using the kernel's
+wait_for_completion API be a good compromise here?  See
+include/linux/completion.h.
+
+Kim
