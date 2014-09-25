@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaIYIxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:53:42 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58345 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaIYIxe (ORCPT
+	id S1752964AbaIYIyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:54:06 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56572 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaIYIyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:53:34 -0400
-Message-ID: <5423D80B.9060500@6wind.com>
-Date: Thu, 25 Sep 2014 10:53:31 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 25 Sep 2014 04:54:00 -0400
+Message-ID: <5423D822.9030001@gmail.com>
+Date: Thu, 25 Sep 2014 16:53:54 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Cong Wang <cwang@twopensource.com>
-CC: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>	<5422F0F4.6000709@6wind.com> <CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>
-In-Reply-To: <CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>
+To: yzhu1 <Yanjun.Zhu@windriver.com>, cjb@laptop.org,
+        LKML <linux-kernel@vger.kernel.org>
+CC: "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>
+Subject: Re: access nand flash and mmc card at the same time on xlp board,
+ there will be many io errors and system will hung
+References: <541BF219.4050307@windriver.com>
+In-Reply-To: <541BF219.4050307@windriver.com>
 Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 24/09/2014 18:45, Cong Wang a écrit :
-> On Wed, Sep 24, 2014 at 9:27 AM, Nicolas Dichtel
-> <nicolas.dichtel@6wind.com> wrote:
->> Now informations got with 'ip link' are wrong and incomplete:
->>    - the link dev is now tunl0 instead of eth0, because we only got an
->> ifindex
->>      from the kernel without any netns informations.
->
-> This is not new, macvlan has the same problem. This is why I said
-> it is mostly a display problem, maybe just mark the ifindex as -1 or
-> something when it is not in this netns. At least I don't expect the inner
-> netns know anything outside, and I don't think I am the only one using
-> netns in this way.
-I understand your point but there is several use of netns. Netns can be used
-also to instantiate virtual routers. In this case, administrators or daemons
-need to be able to monitor and dump the configuration on all netns
-(particularly beeing able to identify fully x-netns interfaces). We start to
-discuss this in one of the two thread pointed in my cover letter and get the
-conclusion that checking user ns is a good way to know if an id should be
-disclosed or not for a peer netns.
-Can you describe your use case?
+The root cause is that: sometimes device can not respond quickly to the 
+request, the timeout mechanism will handle
+this.
+Solution: enlarge the device respond timeout to avoid kernel crash.
 
+Zhu Yanjun
+On 09/19/2014 05:06 PM, yzhu1 wrote:
+> Hi, Chris
 >
->>    - the encapsulation addresses are not part of this netns but the user
->> doesn't
->>      known that (still because netns info is missing). These IPv4 addresses
->> may
->>      exist into this netns.
+> I run a tests on a xlp208 board. This kernel is 3.17-rc5.
+> The script are as below.
+> -------------Begin-------------------
+> mkfs.ext3 /dev/mmcblk1p1
+> mount /dev/mmcblk1p1 /mnt
+> cd /mnt
+> cp -Rf /root/nand_sd_test /mnt
+> cd /mnt/nand_sd_test
+> -------------End---------------------
 >
-> I don't remember your x-netns code, but we have two choices:
+> After several minutes, the following errors will appear.
+> Would you like give me some advice about this error?
 >
-> 1) Lookup the route of the netns which it is in
+> Thanks a lot.
+> Zhu Yanjun
 >
-> If the address is not available in this netns, it will fail, this is expected
-> since tunnel device is not a pure L2 device. Or maybe just fail
-> early when we move it.
+> -----------------------------ErrorMessage------------------------------
+> 16777216 bytes (17 MB) copied, 34.5951 s, 485 kB/s
+> mmc1: Timeout waiting for hardware interrupt.
+> mmc1: Timeout waiting for hardware interrupt.
+> mmc1: Timeout waiting for hardware interrupt.
+> mmcblk1: error -145 sending status command, retrying
+> mmc1: Timeout waiting for hardware interrupt.
+> mmcblk1: error -145 sending status command, retrying
+> mmc1: Timeout waiting for hardware interrupt.
+> mmcblk1: error -145 sending status command, aborting
+> end_request: I/O error, dev mmcblk1, sector 3460800
+> Buffer I/O error on device mmcblk1p1, logical block 432598
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460808
+> Buffer I/O error on device mmcblk1p1, logical block 432599
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460816
+> Buffer I/O error on device mmcblk1p1, logical block 432600
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460824
+> Buffer I/O error on device mmcblk1p1, logical block 432601
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460832
+> Buffer I/O error on device mmcblk1p1, logical block 432602
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460840
+> Buffer I/O error on device mmcblk1p1, logical block 432603
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460848
+> Buffer I/O error on device mmcblk1p1, logical block 432604
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460856
+> Buffer I/O error on device mmcblk1p1, logical block 432605
+> lost page write due to I/O error on mmcblk1p1
+> end_request: I/O error, dev mmcblk1, sector 3460864
+> Buffer I/O error on device mmcblk1p1, logical block 432606
+> lost page write due to I/O error on mmcblk1p1
 >
-> 2) Lookup the route of the netns where it was created
->
-> Transparent for upper layer, but as you said, the outer address is not
-> available in this netns therefore hard to display. Just hiding this information
-> doesn't seem wrong to me.
-Your assumption here is that all dameons were started before the tunnel was
-created. But this is not true, a daemon may be started later. Another case is
-when a daemon crash: we need to be able to restart it and it should be able to
-recover all needed information.
+> mmc1: Timeout waiting for hardware interrupt.
+> ------------[ cut here ]------------
+> WARNING: at /linux/drivers/mmc/host/sdhci.c:996 
+> sdhci_send_command+0xd78/0xe68()
+> Modules linked in:
+> CPU: 6 PID: 0 Comm: swapper/6 Not tainted 
+> 3.10.38-ltsi-WR6.0.0.11_standard #1
+> Stack : c0000000f83ff820 ffffffffc02a290c 0000000000000001 
+> 0000000000000e1b
+>   ffffffffc0d00000 ffffffffc0e005a0 0000000000000004 0000000000000001
+>   c0000000f83ff860 ffffffffc02a270c 000000000000004d ffffffffc0d00000
+>   c0000000f83ff880 ffffffffc02a2d7c 0000000000000000 0000000000000000
+>   0000000000000000 ffffffffc1050000 ffffffffc104d008 ffffffffc1050000
+>   ffffffffc0b62fc0 ffffffffc0cfab37 ffffffffc104d008 c0000000f8217b28
+>           0000000000000000 0000000000000006 c0000000f92e2508 
+> c0000000f92e23c0
+>   c0000000f83ff900 c0000000f83ff810 c0000000f83ff928 ffffffffc02a008c
+>   c0000000f83ff960 ffffffffc02a48c8 c0000000f8217788 ffffffffc0b62fc0
+>   0000000000000006 ffffffffc0274c30 0000000000000000 0000000000000000
+>   ...
+> Call Trace:
+> [<ffffffffc0274c30>] show_stack+0xd8/0xf8
+> [<ffffffffc02a008c>] warn_slowpath_common+0x8c/0xc8
+> [<ffffffffc0880868>] sdhci_send_command+0xd78/0xe68
+> [<ffffffffc0881380>] sdhci_finish_data+0x180/0x3d0
+> [<ffffffffc08818f0>] sdhci_timeout_timer+0xb0/0x120
+> [<ffffffffc02b45c8>] call_timer_fn+0x58/0x1a0
+> [<ffffffffc02b4a00>] run_timer_softirq+0x1f8/0x2d0
+> [<ffffffffc02aa6a0>] __do_softirq+0x150/0x340
+> [<ffffffffc02aa9f0>] do_softirq+0xb8/0xc0
+> [<ffffffffc02aada4>] irq_exit+0xf4/0x110
+> [<ffffffffc026f160>] ret_from_irq+0x0/0x4
+> [<ffffffffc026f400>] __r4k_wait+0x20/0x40
+> [<ffffffffc02f85a8>] cpu_startup_entry+0x190/0x2f8
+> [<ffffffffc0a33438>] nlm_boot_secondary_cpus+0x44/0x54
+> ---[ end trace 7070d5fae37308f2 ]---
 
->
->
->>    - it's not possible to create the same netdevice with these infos.
->>
->
-> This is expected, because after all you are already in a different netns.
->
-A different netns only means a different network stack, not a different user ns
-or mount ns or PID ns, ...
-If you only play with netns, you may want to monitor all activies in all netns
-(this is already possible) and beeing able to link information between netns
-(this is what I'm trying to solve).
