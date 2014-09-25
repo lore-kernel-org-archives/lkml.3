@@ -1,92 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaIYVAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:00:18 -0400
-Received: from mout.gmx.net ([212.227.17.20]:62859 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307AbaIYVAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:00:16 -0400
-Message-ID: <542481B3.8070300@gmx.de>
-Date: Thu, 25 Sep 2014 22:57:23 +0200
-From: Heinrich Schuchardt <xypron.debian@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752095AbaIYVEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:04:12 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:16601 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaIYVEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 17:04:10 -0400
+X-IronPort-AV: E=Sophos;i="5.04,599,1406617200"; 
+   d="scan'208";a="47009276"
+Message-ID: <54248344.5030308@broadcom.com>
+Date: Thu, 25 Sep 2014 14:04:04 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Yann Droneaud <ydroneaud@opteya.com>
-CC: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, linux-api@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when
- requested in fanotify_init()
-References: <cover.1411562410.git.ydroneaud@opteya.com> <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-In-Reply-To: <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Jonathan Richardson <jonathar@broadcom.com>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Ray Jui <rjui@broadcom.com>
+Subject: Re: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
+References: <Jonathan Richardson <jonathar@broadcom.com> <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
+In-Reply-To: <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:BqyIcHal9lmg/jOrWDJAvXcdqzdFCSfyKphmfvnr2mpayV6Afvh
- VPPV4/bTgjQbFNLe1pmdq/7m87hNKBNbcAaIetRci7KARkzzVLyKqYjjPOVLMPuSaqfpHH9
- hXK9YoviCjTdcLmQTZaP8aB4kndaVGWoquddokR0UQs3ZXwy8XgVnlih2LsCOHIvw9zXQXK
- EDHP6QlWc8KWW5Yet9N2Q==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.09.2014 15:11, Yann Droneaud wrote:
-> According to commit 80af258867648 ('fanotify: groups can specify
-> their f_flags for new fd'), file descriptors created as part of
-> file access notification events inherit flags from the
-> event_f_flags argument passed to syscall fanotify_init(2).
+Hi Matt/Christian (and others),
+
+We would like to move forward in getting our base Cygnus support into 
+the mainline kernel.  From there we will be able to contribute 
+additional drivers.
+
+Is somebody willing to accept this pull request to get this patchset 
+accepted by the open source community?
+
+Regards,
+  Scott
+
+
+On 14-09-23 02:17 PM, Jonathan Richardson wrote:
+> Hi,
 >
-> So while it is legal for userspace to call fanotify_init() with
-> O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
-> silently ignored.
+> This patchset contains initial support for Broadcom's Cygnus SoC based on our
+> iProc architecture. Initial support is minimal and includes just the mach
+> platform code, clock driver, and a basic device tree configuration. Peripheral
+> drivers will be submitted soon, as will device tree configurations for other
+> Cygnus board variants.
 >
-> Indeed event_f_flags are only given to dentry_open(), which only
-> seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
-> O_DIRECT in open_check_o_direct() and O_LARGEFILE in
-> generic_file_open().
-
-I tested on kernel 3.17.0-rc5. I passed O_CLOEXEC in event_f_flags.
-When I called fcnt(event_metadata->fd, F_GETFD) it did not return 
-FD_CLOEXEC. So I can confirm your observation that O_CLOEXEC is not 
-working as expected.
-
-I found this definition
-#define get_unused_fd() get_unused_fd_flags(0)
-
-So essentially when get_unused_fd() is called for a fanotify event 
-O_CLOEXEC is ignored.
-
-This is what your patch fixes.
-
+> Changes from v1:
+>   - Address code review comments as per previous responses.
+>   - Copyright headers updated to remove Broadcom URL.
+>   - mach platform code still contains hard coded adresses. These address are
+>     the same for all Cygnus variants. Could you please provide guidance on where
+>     they should go if you would still like them changed.
 >
-> More, there's no effective check on event_f_flags value that
-> would catch unknown / unsupported values, unlike the one on
-> f_flags argument of the syscall (see FAN_ALL_INIT_FLAGS in
-> include/uapi/linux/fanotify.h).
+> Thanks,
+> Jon
+>
+> Jonathan Richardson (6):
+>    ARM: cygnus: Initial support for Broadcom Cygnus SoC
+>    clk: Clock driver support for Broadcom Cygnus SoC
+>    dt-bindings: Document Broadcom Cygnus SoC and clock driver
+>    ARM: dts: Enable Broadcom Cygnus SoC
+>    ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+>    MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
+>      drivers
+>
+>   Documentation/devicetree/bindings/arm/cygnus.txt   |   12 +
+>   .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
+>   .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
+>   MAINTAINERS                                        |   21 +
+>   arch/arm/boot/dts/Makefile                         |    1 +
+>   arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
+>   arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
+>   arch/arm/configs/bcm_cygnus_defconfig              |  223 ++++
+>   arch/arm/mach-bcm/Kconfig                          |   31 +
+>   arch/arm/mach-bcm/Makefile                         |    3 +
+>   arch/arm/mach-bcm/bcm_cygnus.c                     |  166 +++
+>   drivers/clk/Makefile                               |    1 +
+>   drivers/clk/bcm/Makefile                           |    2 +
+>   drivers/clk/bcm/clk-cygnus.c                       | 1186 ++++++++++++++++++++
+>   drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
+>   15 files changed, 2637 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
+>   create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
+>   create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
+>   create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+>   create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+>   create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
+>   create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+>   create mode 100644 drivers/clk/bcm/clk-cygnus.c
+>   create mode 100644 drivers/clk/bcm/clk-iproc.c
+>
 
-The fanotify_init(2) man page describes which flags are allowable in 
-event_f_flags.
-
-Could you, please, explain why the following code in fanotify_user.c is 
-not to be considered an effective check:
-
-     if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
-         return -EINVAL;
-
-     switch (event_f_flags & O_ACCMODE) {
-     case O_RDONLY:
-     case O_RDWR:
-     case O_WRONLY:
-         break;
-     default:
-         return -EINVAL;
-     }
-
-I CC Jan Kara as he reviewed the code.
-
-Best regards
-
-Heinrich Schuchardt
