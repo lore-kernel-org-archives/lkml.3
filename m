@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaIYNaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:30:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58136 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751650AbaIYNaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:30:13 -0400
-Date: Thu, 25 Sep 2014 15:25:27 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shuge <shuge@allwinnertech.com>,
-        Meng Zhang <kevin@allwinnertech.com>, ctl@merrii.com,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 1/7] ARM: sunxi: Introduce Allwinner A80 support
-Message-ID: <20140925132527.GF15315@lukather>
-References: <1411570141-29960-1-git-send-email-wens@csie.org>
- <1411570141-29960-2-git-send-email-wens@csie.org>
+	id S1753129AbaIYNa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:30:59 -0400
+Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:62603
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751574AbaIYNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:30:57 -0400
+X-Greylist: delayed 1122 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 09:30:56 EDT
+Message-ID: <542410D3.2060507@freescale.com>
+Date: Thu, 25 Sep 2014 15:55:47 +0300
+From: Laurentiu Tudor <b10716@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UBYeLQbK9sqbzZRV"
-Content-Disposition: inline
-In-Reply-To: <1411570141-29960-2-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jingchang Lu <jingchang.lu@freescale.com>, <mturquette@linaro.org>
+CC: <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add CLK_OF_DECLARE
+ support
+References: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
+In-Reply-To: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.88.166.1]
+X-ClientProxiedBy: DB4PR03CA0013.eurprd03.prod.outlook.com (25.160.39.151) To
+ BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB314;
+X-Forefront-PRVS: 0345CFD558
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(24454002)(377454003)(479174003)(189002)(199003)(33656002)(120916001)(47776003)(20776003)(85306004)(92566001)(102836001)(76482002)(50466002)(77096002)(87976001)(101416001)(64706001)(65956001)(46102003)(83072002)(65806001)(85852003)(95666004)(76176999)(23676002)(92726001)(64126003)(80022003)(107046002)(31966008)(77982003)(81342003)(87266999)(4396001)(79102003)(81542003)(74662003)(21056001)(99136001)(83506001)(42186005)(105586002)(66066001)(50986999)(65816999)(54356999)(90102001)(97736003)(74502003)(36756003)(10300001)(99396003)(106356001)(83322001)(80316001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB314;H:[10.171.73.112];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jingchang,
 
---UBYeLQbK9sqbzZRV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/23/2014 09:46 AM, Jingchang Lu wrote:
+> The IP is shared by PPC and ARM, this renames it to qoriq for better
+> represention, and this also adds the CLK_OF_DECLARE support for being
+> initialized by of_clk_init() on ARM.
+> 
 
-On Wed, Sep 24, 2014 at 10:48:55PM +0800, Chen-Yu Tsai wrote:
-> The Allwinner A80 is a new Cortex octo-core A7/A15 big.LITTLE SoC.
-> While it's processor cores and interconnecting bus are new, it
-> re-uses many peripherals found in earlier Allwinner SoCs.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> ---
->  arch/arm/mach-sunxi/Kconfig | 5 +++++
->  arch/arm/mach-sunxi/sunxi.c | 9 +++++++++
->  2 files changed, 14 insertions(+)
->=20
-> diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-> index 1aaa1e1..72f222b 100644
-> --- a/arch/arm/mach-sunxi/Kconfig
-> +++ b/arch/arm/mach-sunxi/Kconfig
-> @@ -42,4 +42,9 @@ config MACH_SUN8I
->  	select MFD_SUN6I_PRCM
->  	select RESET_CONTROLLER
-> =20
-> +config MACH_SUN9I
-> +	bool "Allwinner A80 (sun9i) SoCs support"
+I think you need to also update drivers/cpufreq/Kconfig.powerpc
+to use the renamed config option.
 
-With the new naming scheme, I wonder wether it makes sense to have the
-A80 displayed here and in the machine definition.
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---UBYeLQbK9sqbzZRV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUJBfHAAoJEBx+YmzsjxAgUg4P/1sO1EJqScfXK5bdap15jrX5
-+dD2k7gmYCZRMm6MecHjFF0VOXdixzfGdlt/mn35EHyYFDJYR8i62ideFIWt7CQo
-jyGNGB5GQEZtq+1zUuOPfAAJsbv9h7WBR7+A4F5Peq++lxdr4FiQ/kooKdUmlhHu
-VAZ1+DHspyb5UwyXMMXLGCdsgzBjwAqG8LOLFNxnyJAPVNyZ5eCl0ORMy+zTOW4r
-/hZMG7JlVbhcJfFILHSB+mlYuAkLMCbyhrQ6OmM6AgE6qLrXtYUlt2VEscW1rtBu
-orVLUCd8g2jR6Ze2frCOssbm6vppbByaZGStK7sARrf9uV5Zdj0HIWsIqFx4UmBN
-ATMJ+7hocK4mo1TZvWw/NT3+yNf0e9shxGA2FgF5xJH4r51dHW+2AqZxyFGcpvYR
-JTdjsVeRHoUz3mgOlPmQoQtgyYhQpfXmkJRYtaCNGxHRH3/tgssGDviguoTksSj+
-mI6r2n+cuxyhZoEJhRhDxsCQJi9G79sl6LhGKam4QyQTo+qzPIOd2kmL+rlunJMu
-099emO1TlgP5zrmJgrFt7J81yyKsKWmmFZqe+auNIKTeeX/tFPSWkAuO9KwpDgAE
-/rMv5ByV9O/3bb9BYy0tjXowppIf9WjM6PzVue8i7oXPuWUbibtf7nAPh3vCy2AA
-PyaDDleyvvcUHvK6mHPE
-=syMK
------END PGP SIGNATURE-----
-
---UBYeLQbK9sqbzZRV--
+---
+Best Regards, Laurentiu
