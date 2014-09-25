@@ -1,190 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790AbaIYGj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:39:56 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53124 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaIYGjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:39:53 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, anton@samba.org, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH v3] powerpc/iommu/ddw: Fix endianness
-Date: Thu, 25 Sep 2014 16:39:18 +1000
-Message-Id: <1411627167-22927-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 2.0.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092506-0017-0000-0000-00000040BB43
+	id S1751892AbaIYGmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:42:05 -0400
+Received: from mail-by2on0132.outbound.protection.outlook.com ([207.46.100.132]:9696
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750808AbaIYGmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 02:42:03 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCHv3] dmaengine: fsl-edma: fixup reg offset and hw S/G
+ support in big-endian model
+Thread-Topic: [PATCHv3] dmaengine: fsl-edma: fixup reg offset and hw S/G
+ support in big-endian model
+Thread-Index: AQHP1+C93waah0nh0EOmymprm+VjgZwQHw4AgAFGB0A=
+Date: Thu, 25 Sep 2014 06:42:00 +0000
+Message-ID: <7635751d171a401d88ce70f9adee88bb@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1411550642-12577-1-git-send-email-jingchang.lu@freescale.com>
+ <20140924130510.62d78440@ipc1.ka-ro>
+In-Reply-To: <20140924130510.62d78440@ipc1.ka-ro>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB468;
+x-forefront-prvs: 0345CFD558
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(24454002)(164054003)(377454003)(13464003)(199003)(106116001)(101416001)(108616004)(31966008)(97736003)(106356001)(74316001)(54356999)(83072002)(92566001)(105586002)(66066001)(64706001)(10300001)(95666004)(120916001)(99286002)(110136001)(76576001)(90102001)(19580405001)(81342003)(85852003)(83322001)(33646002)(77982003)(81542003)(87936001)(85306004)(46102003)(20776003)(19580395003)(76176999)(76482002)(107046002)(21056001)(50986999)(86362001)(74502003)(4396001)(80022003)(99396003)(2656002)(74662003)(79102003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB468;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8P6g9ql020931
 
-rtas_call() accepts and returns values in CPU endianness.
-The ddw_query_response and ddw_create_response structs members are
-defined and treated as BE but as they are passed to rtas_call() as
-(u32 *) and they get byteswapped automatically, the data is CPU-endian.
-This fixes ddw_query_response and ddw_create_response definitions and use.
+>-----Original Message-----
+>From: Lothar Wa√ümann [mailto:LW@KARO-electronics.de]
+>Sent: Wednesday, September 24, 2014 7:05 PM
+>To: Lu Jingchang-B35083
+>Cc: vinod.koul@intel.com; linux@arm.linux.org.uk; arnd@arndb.de; linux-
+>kernel@vger.kernel.org; dmaengine@vger.kernel.org; linux-arm-
+>kernel@lists.infradead.org
+>Subject: Re: [PATCHv3] dmaengine: fsl-edma: fixup reg offset and hw S/G
+>support in big-endian model
+>
+>Hi,
+>
+>Jingchang Lu wrote:
+>> The offset of all 8-/16-bit register in big-endian eDMA model are
+>s/register/registers/
+>
+>> swapped in a 32-bit size opposite those in the little-endian model.
+>>
+>> The hardware Scatter/Gather requires the subsequent TCDs in memory to
+>> be auto loaded should retain little endian independent of the register
+>> endian model, the dma engine will do the swap if need.
+>>
+>> This patch also use regular assignment for tcd variables r/w instead
+>> of with io function previously that may not always be true.
+>>
+>> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+>> ---
+>> changes in v3:
+>>  use unsigned long instead of u32 in reg offset swap cast to avoid
+>warning.
+>>
+>> changes in v2:
+>>  simplify register offset swap calculation.
+>>  use regular assignment for tcd variables r/w instead of io function.
+>>
+>>  drivers/dma/fsl-edma.c | 106
+>> ++++++++++++++++++++++++++-----------------------
+>>  1 file changed, 57 insertions(+), 49 deletions(-)
+>>
+>> diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c index
+>> 3c5711d..9ca55ee 100644
+>> --- a/drivers/dma/fsl-edma.c
+>> +++ b/drivers/dma/fsl-edma.c
+>> @@ -177,16 +177,10 @@ struct fsl_edma_engine {
+>>  /*
+>>   * R/W functions for big- or little-endian registers
+>>   * the eDMA controller's endian is independent of the CPU core's endian.
+>> + * for the big-endian IP module, the offset for 8-bit or 16-bit
+>> + register
+>s/for/For/
+>
+>> + * should also be swapped oposite to that in little-endian IP.
+>s/oposite/opposite/
+>
+>[...]
+>> @@ -459,20 +460,27 @@ static void fill_tcd_params(struct fsl_edma_engine
+>*edma,
+>>  	u16 csr = 0;
+>>
+>>  	/*
+>> -	 * eDMA hardware SGs require the TCD parameters stored in memory
+>> -	 * the same endian as the eDMA module so that they can be loaded
+>> -	 * automatically by the engine
+>> +	 * eDMA hardware SGs requires the TCDs to be auto loaded
+>> +	 * in the little endian whenver the register endian model,
+>"in little endian whatever the register endian model"
+>
+>> +	 * So we put the value in little endian in memory, waitting
+>s/waitting/waiting/
+>
+>> +	 * for fsl_set_tcd_params doing the swap.
+>fsl_set_tcd_params()
+>
+>
+>
+>Lothar Wa√ümann
+>--
+Thanks, I will amend them in the next version patch.
 
-of_read_number() is designed to work with device tree cells - it assumes
-the input is big-endian and returns data in CPU-endian. However due
-to the ddw_create_response struct fix, create.addr_hi/lo are already
-CPU-endian so do not byteswap them.
-
-ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
-3 cells which are big-endian as it is a device tree. rtas_call() accepts
-a RTAS token in CPU-endian. This makes use of of_property_read_u32_array
-to byte swap and avoid the need for a number of be32_to_cpu calls.
-
-Cc: stable@vger.kernel.org # v3.13
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Anton Blanchard <anton@samba.org>
-[aik: folded Anton's patch with of_property_read_u32_array]
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
-Changes:
-v3:
-* of_property_read_u32_array() is used for ddw_avail[]
-
-v2:
-* updated commit log
-* fixed definition of ddw_query_response and ddw_create_response
----
- arch/powerpc/platforms/pseries/iommu.c | 51 +++++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
-
-diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index 4642d6a..de1ec54 100644
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -329,16 +329,16 @@ struct direct_window {
- 
- /* Dynamic DMA Window support */
- struct ddw_query_response {
--	__be32 windows_available;
--	__be32 largest_available_block;
--	__be32 page_size;
--	__be32 migration_capable;
-+	u32 windows_available;
-+	u32 largest_available_block;
-+	u32 page_size;
-+	u32 migration_capable;
- };
- 
- struct ddw_create_response {
--	__be32 liobn;
--	__be32 addr_hi;
--	__be32 addr_lo;
-+	u32 liobn;
-+	u32 addr_hi;
-+	u32 addr_lo;
- };
- 
- static LIST_HEAD(direct_window_list);
-@@ -725,16 +725,18 @@ static void remove_ddw(struct device_node *np, bool remove_prop)
- {
- 	struct dynamic_dma_window_prop *dwp;
- 	struct property *win64;
--	const u32 *ddw_avail;
-+	u32 ddw_avail[3];
- 	u64 liobn;
--	int len, ret = 0;
-+	int ret = 0;
-+
-+	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
- 
--	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
- 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
- 	if (!win64)
- 		return;
- 
--	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
-+	if (ret || win64->length < sizeof(*dwp))
- 		goto delprop;
- 
- 	dwp = win64->value;
-@@ -872,8 +874,9 @@ static int create_ddw(struct pci_dev *dev, const u32 *ddw_avail,
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
--				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
-+		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
-+				cfg_addr, BUID_HI(buid), BUID_LO(buid),
-+				page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
- 	dev_info(&dev->dev,
- 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
-@@ -910,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	int page_shift;
- 	u64 dma_addr, max_addr;
- 	struct device_node *dn;
--	const u32 *uninitialized_var(ddw_avail);
-+	u32 ddw_avail[3];
- 	struct direct_window *window;
- 	struct property *win64;
- 	struct dynamic_dma_window_prop *ddwprop;
-@@ -942,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	 * for the given node in that order.
- 	 * the property is actually in the parent, not the PE
- 	 */
--	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
--	if (!ddw_avail || len < 3 * sizeof(u32))
-+	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
-+	if (ret)
- 		goto out_failed;
- 
-        /*
-@@ -966,11 +970,11 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 		dev_dbg(&dev->dev, "no free dynamic windows");
- 		goto out_failed;
- 	}
--	if (be32_to_cpu(query.page_size) & 4) {
-+	if (query.page_size & 4) {
- 		page_shift = 24; /* 16MB */
--	} else if (be32_to_cpu(query.page_size) & 2) {
-+	} else if (query.page_size & 2) {
- 		page_shift = 16; /* 64kB */
--	} else if (be32_to_cpu(query.page_size) & 1) {
-+	} else if (query.page_size & 1) {
- 		page_shift = 12; /* 4kB */
- 	} else {
- 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
-@@ -980,7 +984,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	/* verify the window * number of ptes will map the partition */
- 	/* check largest block * page size > max memory hotplug addr */
- 	max_addr = memory_hotplug_max();
--	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
-+	if (query.largest_available_block < (max_addr >> page_shift)) {
- 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
- 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
- 			  1ULL << page_shift);
-@@ -1006,8 +1010,9 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	if (ret != 0)
- 		goto out_free_prop;
- 
--	ddwprop->liobn = create.liobn;
--	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
-+	ddwprop->liobn = cpu_to_be32(create.liobn);
-+	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
-+			create.addr_lo);
- 	ddwprop->tce_shift = cpu_to_be32(page_shift);
- 	ddwprop->window_shift = cpu_to_be32(len);
- 
-@@ -1039,7 +1044,7 @@ static u64 enable_ddw(struct pci_dev *dev, struct device_node *pdn)
- 	list_add(&window->list, &direct_window_list);
- 	spin_unlock(&direct_window_list_lock);
- 
--	dma_addr = of_read_number(&create.addr_hi, 2);
-+	dma_addr = be64_to_cpu(ddwprop->dma_base);
- 	goto out_unlock;
- 
- out_free_window:
--- 
-2.0.0
-
+Best Regards,
+Jingchang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
