@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317AbaIYUtw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:49:52 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51701 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaIYUtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:49:50 -0400
+	id S1751890AbaIYVAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:00:18 -0400
+Received: from mout.gmx.net ([212.227.17.20]:62859 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaIYVAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 17:00:16 -0400
+Message-ID: <542481B3.8070300@gmx.de>
+Date: Thu, 25 Sep 2014 22:57:23 +0200
+From: Heinrich Schuchardt <xypron.debian@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <201409252222.23825.arnd@arndb.de>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org>
- <201409252126.38945.arnd@arndb.de> <CAErSpo5rhL7pLha-yWt7sZUBmAnwA6FkacL+sWXBKkSzsuC7Sg@mail.gmail.com>
- <201409252222.23825.arnd@arndb.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Sep 2014 14:49:29 -0600
-Message-ID: <CAErSpo6yXoETkXkimW2Lv724D4gn8ENi0U3wM=dFhQVkZJKXKg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rric@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Liviu Dudau <liviu.dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        Sunil Goutham <sgoutham@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+To: Yann Droneaud <ydroneaud@opteya.com>
+CC: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org, linux-api@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when
+ requested in fanotify_init()
+References: <cover.1411562410.git.ydroneaud@opteya.com> <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+In-Reply-To: <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:BqyIcHal9lmg/jOrWDJAvXcdqzdFCSfyKphmfvnr2mpayV6Afvh
+ VPPV4/bTgjQbFNLe1pmdq/7m87hNKBNbcAaIetRci7KARkzzVLyKqYjjPOVLMPuSaqfpHH9
+ hXK9YoviCjTdcLmQTZaP8aB4kndaVGWoquddokR0UQs3ZXwy8XgVnlih2LsCOHIvw9zXQXK
+ EDHP6QlWc8KWW5Yet9N2Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 2:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 25 September 2014, Bjorn Helgaas wrote:
->> OK.  You said "a range that has the nonrelocatable flag set should be
->> used for IORESOURCE_PCI_FIXED mappings."  I thought you meant that the
->> range was a bridge window, and somehow PCI_FIXED BARs should be put in
->> that window.
->>
->> But maybe you meant that nonrelocatable ranges should have the
->> IORESOURCE_PCI_FIXED bit set in their struct resources.  That would
->> mean we couldn't move the window, but we could put relocatable BARs
->> inside the window.
->>
->> What needs to be implemented?  Just the code that would set
->> IORESOURCE_PCI_FIXED for nonrelocatable ranges?
+On 24.09.2014 15:11, Yann Droneaud wrote:
+> According to commit 80af258867648 ('fanotify: groups can specify
+> their f_flags for new fd'), file descriptors created as part of
+> file access notification events inherit flags from the
+> event_f_flags argument passed to syscall fanotify_init(2).
 >
-> It might be more complex than I thought. Let's see what the original
-> hack does:
+> So while it is legal for userspace to call fanotify_init() with
+> O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
+> silently ignored.
 >
-> +/*
-> + * All PCIe devices in Thunder have fixed resources, shouldn't be reassigned.
-> + * Also claim the device's valid resources to set 'res->parent' hierarchy.
-> + */
-> +static void pci_dev_resource_fixup(struct pci_dev *dev)
-> +{
-> +       struct resource *res;
-> +       int resno;
-> +
-> +       for (resno = 0; resno < PCI_NUM_RESOURCES; resno++)
-> +               dev->resource[resno].flags |= IORESOURCE_PCI_FIXED;
-> +
-> +       for (resno = 0; resno < PCI_BRIDGE_RESOURCES; resno++) {
-> +               res = &dev->resource[resno];
-> +               if (res->parent || !(res->flags & IORESOURCE_MEM))
-> +                       continue;
-> +               pci_claim_resource(dev, resno);
-> +       }
-> +}
-> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CAVIUM, PCI_ANY_ID,
-> +                       pci_dev_resource_fixup);
+> Indeed event_f_flags are only given to dentry_open(), which only
+> seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
+> O_DIRECT in open_check_o_direct() and O_LARGEFILE in
+> generic_file_open().
+
+I tested on kernel 3.17.0-rc5. I passed O_CLOEXEC in event_f_flags.
+When I called fcnt(event_metadata->fd, F_GETFD) it did not return 
+FD_CLOEXEC. So I can confirm your observation that O_CLOEXEC is not 
+working as expected.
+
+I found this definition
+#define get_unused_fd() get_unused_fd_flags(0)
+
+So essentially when get_unused_fd() is called for a fanotify event 
+O_CLOEXEC is ignored.
+
+This is what your patch fixes.
+
 >
-> This actually looks harmful, because it means that any kernel that contains
-> the thunder host controller driver will do the above for any device made
-> by Cavium, whether it's connected to this bridge or not.
+> More, there's no effective check on event_f_flags value that
+> would catch unknown / unsupported values, unlike the one on
+> f_flags argument of the syscall (see FAN_ALL_INIT_FLAGS in
+> include/uapi/linux/fanotify.h).
 
-I agree, that looks broken.
+The fanotify_init(2) man page describes which flags are allowable in 
+event_f_flags.
 
-> What I think we want instead is to mark any resource whose parent
-> resource is IORESOURCE_PCI_FIXED to have the same flag, and mark
-> the PCI host controller resources IORESOURCE_PCI_FIXED when the
-> nonrelocatable flag is set, and that should all be done in core
-> code, not in a driver fixup.
+Could you, please, explain why the following code in fanotify_user.c is 
+not to be considered an effective check:
 
-The PCI host controller resources are host bridge windows, right?  I
-don't think it matters whether they have IORESOURCE_PCI_FIXED set,
-because the bridge is not itself a PCI device, and PCI resource
-assignment treats the host bridge windows as fixed.
+     if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
+         return -EINVAL;
 
-That doesn't imply that the PCI device resources *inside* the windows
-need to be fixed, though.  Regular BARs can be moved around inside the
-window.
+     switch (event_f_flags & O_ACCMODE) {
+     case O_RDONLY:
+     case O_RDWR:
+     case O_WRONLY:
+         break;
+     default:
+         return -EINVAL;
+     }
 
-Sunil said "All on-board PCI devices connected to this PCI controller
-have fixed resources..."  That sounds like these on-board PCI devices
-are non-compliant because their BARs don't work per spec.  But that
-doesn't sound right, because we wouldn't be able to size them.
+I CC Jan Kara as he reviewed the code.
 
-> The part that still looks weird is the pci_claim_resource() that
-> Sunil mentioned. This is currently done for resources that do not
-> have a parent, but AFAICT all PCI device resources should have a
-> parent that connects it to the upstream bridge.
+Best regards
 
-Ideally the pci_claim_resource() would be in the core, not in arch
-code, but it's a bit of a hodge-podge right now.
-
-Bjorn
+Heinrich Schuchardt
