@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbaIYMGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:06:39 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60794 "EHLO
+	id S1752782AbaIYMG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:06:58 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60821 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaIYMGh (ORCPT
+	with ESMTP id S1751650AbaIYMG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:06:37 -0400
-Subject: [PATCH 3/5] fuse: wait for end of IO on release
+	Thu, 25 Sep 2014 08:06:57 -0400
+Subject: [PATCH 4/5] fuse: add mount option to disable synchronous release
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, avati@gluster.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 25 Sep 2014 16:06:34 +0400
-Message-ID: <20140925120543.540.48831.stgit@dhcp-10-30-22-200.sw.ru>
+Date: Thu, 25 Sep 2014 16:06:54 +0400
+Message-ID: <20140925120639.540.78889.stgit@dhcp-10-30-22-200.sw.ru>
 In-Reply-To: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
 References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
 User-Agent: StGit/0.16
@@ -24,162 +24,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two types of I/O activity that can be "in progress" at the time
-of fuse_release() execution: asynchronous read-ahead and write-back. The
-patch ensures that they are completed before fuse_release_common sends
-FUSE_RELEASE to userspace.
+Synchronous release ensures that kernel fuse reports to userspace exactly
+last fput(). However, nothing guarantees that last fput() will happen in the
+context of close(2). So userspace applications must be prepared to the
+situation when close(2) returned, but processing of FUSE_RELEASE is not
+completed by fuse daemon yet. To make testing such use cases easier, the
+patch introduces DISABLE_SYNC_RELEASE mount option which effectively mask out
+FOPEN_SYNC_RELEASE flag.
 
-So far as fuse_release() waits for end of async I/O, its callbacks
-(fuse_readpages_end and fuse_writepage_finish) calling fuse_file_put cannot
-be the last holders of fuse file anymore. To emphasize the fact, the patch
-replaces fuse_file_put with __fuse_file_put there.
+Also, the mount option can be used to protect from DoS scenarios with a sync
+release: fusermount can be instrumented to use the option by default for
+unprivileged mounts (allowing system administrator to configure it like
+"user_allow_other").
 
 Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- fs/fuse/file.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 66 insertions(+), 5 deletions(-)
+ fs/fuse/file.c   |    3 ++-
+ fs/fuse/fuse_i.h |    3 +++
+ fs/fuse/inode.c  |    8 ++++++++
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 7723b3f..8713e62 100644
+index 8713e62..c4599c8 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -149,6 +149,17 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
- 	}
- }
+@@ -292,7 +292,8 @@ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
  
-+/*
-+ * Asynchronous callbacks may use it instead of fuse_file_put() because
-+ * we guarantee that they are never last holders of ff. Hitting BUG() below
-+ * will make clear any violation of the guarantee.
-+ */
-+static void __fuse_file_put(struct fuse_file *ff)
-+{
-+	if (atomic_dec_and_test(&ff->count))
-+		BUG();
-+}
-+
- int fuse_do_open(struct fuse_conn *fc, u64 nodeid, struct file *file,
- 		 bool isdir)
+ static bool must_release_synchronously(struct fuse_file *ff)
  {
-@@ -279,6 +290,11 @@ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
- 	req->in.args[0].value = inarg;
+-	return ff->open_flags & FOPEN_SYNC_RELEASE;
++	return ff->open_flags & FOPEN_SYNC_RELEASE &&
++		!(ff->fc->flags & FUSE_DISABLE_SYNC_RELEASE);
  }
  
-+static bool must_release_synchronously(struct fuse_file *ff)
-+{
-+	return ff->open_flags & FOPEN_SYNC_RELEASE;
-+}
-+
  void fuse_release_common(struct file *file, int opcode)
- {
- 	struct fuse_file *ff;
-@@ -302,6 +318,13 @@ void fuse_release_common(struct file *file, int opcode)
- 	req->misc.release.path = file->f_path;
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index e8e47a6..c5e2fca 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -44,6 +44,9 @@
+     doing the mount will be allowed to access the filesystem */
+ #define FUSE_ALLOW_OTHER         (1 << 1)
  
- 	/*
-+	 * No more in-flight asynchronous READ or WRITE requests if
-+	 * fuse file release is synchronous
-+	 */
-+	if (must_release_synchronously(ff))
-+		BUG_ON(atomic_read(&ff->count) != 1);
++/** Disable synchronous release */
++#define FUSE_DISABLE_SYNC_RELEASE (1 << 2)
 +
-+	/*
- 	 * Normally this will send the RELEASE request, however if
- 	 * some asynchronous READ or WRITE requests are outstanding,
- 	 * the sending will be delayed.
-@@ -321,11 +344,34 @@ static int fuse_open(struct inode *inode, struct file *file)
- static int fuse_release(struct inode *inode, struct file *file)
- {
- 	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_file *ff = file->private_data;
+ /** Number of page pointers embedded in fuse_req */
+ #define FUSE_REQ_INLINE_PAGES 1
  
- 	/* see fuse_vma_close() for !writeback_cache case */
- 	if (fc->writeback_cache)
- 		write_inode_now(inode, 1);
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 03246cd..86d47d0 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -463,6 +463,7 @@ enum {
+ 	OPT_ALLOW_OTHER,
+ 	OPT_MAX_READ,
+ 	OPT_BLKSIZE,
++	OPT_DISABLE_SYNC_RELEASE,
+ 	OPT_ERR
+ };
  
-+	if (must_release_synchronously(ff)) {
-+		struct fuse_inode *fi = get_fuse_inode(inode);
+@@ -475,6 +476,7 @@ static const match_table_t tokens = {
+ 	{OPT_ALLOW_OTHER,		"allow_other"},
+ 	{OPT_MAX_READ,			"max_read=%u"},
+ 	{OPT_BLKSIZE,			"blksize=%u"},
++	{OPT_DISABLE_SYNC_RELEASE,	"disable_sync_release"},
+ 	{OPT_ERR,			NULL}
+ };
+ 
+@@ -560,6 +562,10 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
+ 			d->blksize = value;
+ 			break;
+ 
++		case OPT_DISABLE_SYNC_RELEASE:
++			d->flags |= FUSE_DISABLE_SYNC_RELEASE;
++			break;
 +
-+		/*
-+		 * Must remove file from write list. Otherwise it is possible
-+		 * this file will get more writeback from another files
-+		 * rerouted via write_files.
-+		 */
-+		spin_lock(&ff->fc->lock);
-+		list_del_init(&ff->write_entry);
-+		spin_unlock(&ff->fc->lock);
-+
-+		wait_event(fi->page_waitq, atomic_read(&ff->count) == 1);
-+
-+		/*
-+		 * spin_unlock_wait(&ff->fc->lock) would be natural here to
-+		 * wait for threads just released ff to leave their critical
-+		 * sections. But taking spinlock is the first thing
-+		 * fuse_release_common does, so that this is unnecessary.
-+		 */
-+	}
-+
- 	fuse_release_common(file, FUSE_RELEASE);
- 
- 	/* return value is ignored by VFS */
-@@ -823,8 +869,15 @@ static void fuse_readpages_end(struct fuse_conn *fc, struct fuse_req *req)
- 		unlock_page(page);
- 		page_cache_release(page);
- 	}
--	if (req->ff)
--		fuse_file_put(req->ff, false);
-+	if (req->ff) {
-+		if (must_release_synchronously(req->ff)) {
-+			struct fuse_inode *fi = get_fuse_inode(req->inode);
-+
-+			__fuse_file_put(req->ff);
-+			wake_up(&fi->page_waitq);
-+		} else
-+			fuse_file_put(req->ff, false);
-+	}
- }
- 
- struct fuse_fill_data {
-@@ -851,6 +904,7 @@ static void fuse_send_readpages(struct fuse_fill_data *data)
- 	if (fc->async_read) {
- 		req->ff = fuse_file_get(ff);
- 		req->end = fuse_readpages_end;
-+		req->inode = data->inode;
- 		fuse_request_send_background(fc, req);
- 	} else {
- 		fuse_request_send(fc, req);
-@@ -1502,7 +1556,7 @@ static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
- 	for (i = 0; i < req->num_pages; i++)
- 		__free_page(req->pages[i]);
- 
--	if (req->ff)
-+	if (req->ff && !must_release_synchronously(req->ff))
- 		fuse_file_put(req->ff, false);
- }
- 
-@@ -1519,6 +1573,8 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
- 		dec_zone_page_state(req->pages[i], NR_WRITEBACK_TEMP);
- 		bdi_writeout_inc(bdi);
- 	}
-+	if (must_release_synchronously(req->ff))
-+		__fuse_file_put(req->ff);
- 	wake_up(&fi->page_waitq);
- }
- 
-@@ -1659,8 +1715,13 @@ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
- 
- 	ff = __fuse_write_file_get(fc, fi);
- 	err = fuse_flush_times(inode, ff);
--	if (ff)
--		fuse_file_put(ff, 0);
-+	if (ff) {
-+		if (must_release_synchronously(ff)) {
-+			__fuse_file_put(ff);
-+			wake_up(&fi->page_waitq);
-+		} else
-+			fuse_file_put(ff, false);
-+	}
- 
- 	return err;
- }
+ 		default:
+ 			return 0;
+ 		}
+@@ -583,6 +589,8 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
+ 		seq_puts(m, ",default_permissions");
+ 	if (fc->flags & FUSE_ALLOW_OTHER)
+ 		seq_puts(m, ",allow_other");
++	if (fc->flags & FUSE_DISABLE_SYNC_RELEASE)
++		seq_puts(m, ",disable_sync_release");
+ 	if (fc->max_read != ~0)
+ 		seq_printf(m, ",max_read=%u", fc->max_read);
+ 	if (sb->s_bdev && sb->s_blocksize != FUSE_DEFAULT_BLKSIZE)
 
