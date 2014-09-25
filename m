@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbaIYPFB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:05:01 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:50779 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753634AbaIYPE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:04:59 -0400
-Message-ID: <54242F17.5010503@nexus-software.ie>
-Date: Thu, 25 Sep 2014 16:04:55 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753740AbaIYPG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:06:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42133 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075AbaIYPGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 11:06:23 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>
+CC: Geert Uytterhoeven <geert+renesas@glider.be>, <linux-pm@vger.kernel.org>,
+        <ben.dooks@codethink.co.uk>, <laurent.pinchart@ideasonboard.com>,
+        <grant.likely@secretlab.ca>, <ulf.hansson@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [RFC PATCH 0/4]  ARM: keystone: pm: switch to use generic pm domains
+Date: Thu, 25 Sep 2014 18:05:33 +0300
+Message-ID: <1411657537-25238-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Quark: Flush TLB via CR3 not CR4.PGE in setup_arch()
-References: <1411578452-4609-1-git-send-email-pure.logic@nexus-software.ie> <20140925045755.GA20431@gmail.com> <5423E1F7.5010000@nexus-software.ie> <20140925145126.GA4434@gmail.com>
-In-Reply-To: <20140925145126.GA4434@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It talks about:
->
-> +       /*
-> +        * Locate the page directory and flush the TLB.
-> +        * On Quark X1000 rewriting CR3 flushes the TLB no if/else is required
-> +        * to choose between __flush_tlb() and __flush_tlb_all()
-> +        */
->          load_cr3(swapper_pg_dir);
->          __flush_tlb_all();
->
-> But it is completely silent on the real reason for why we don't
-> need a Quark quirk here, which would be something like:
->
-> 	/*
-> 	 * On Quark CPUs we still have the PGE bit set so
-> 	 * __flush_tlb_all() is not yet doing what it says - but
-> 	 * accidentally we have a cr3 flush here which is what is
-> 	 * needed - so there's no need to add a Quark quirk here.
-> 	 */
->
-> Right?
+Hi Santosh, Kevin,
 
-OK.
+This serie is just another try to enable Runtime PM for Keystone 2.
+It switches Keystone 2 PM code to use Generic PM domains
+instead of PM  clock domains because of the lack of DT support
+for the last.
 
-IMO.
 
-If we're adding a comment though the first thing the comment ought to 
-say is what the code does for everybody else - stuff CR3 and flush the 
-TLB, then it should comment on the exception for Quark.
+Keystone 2 PM domain should be specified per device for which
+Runtime PM has to be enabled and handles the list of functional clocks
+to enable/disable device.
 
-/*
-  * Locate the page directory and flush the TLB.
-  *
-  * On Quark CPUs we still have the PGE bit set so
-  * __flush_tlb_all() is not yet doing what it says - but
-  * accidentally we have a cr3 flush here which is what is
-  * needed - so there's no need to add a Quark quirk here.
-  */
+Example:
+ qmss_domain: qmss_pm_controller {
+	compatible = "ti,keystone-pm-controller";
+	clocks = <&chipclk13>;
+	#power-domain-cells = <0>;
+ };
 
-?
+ qmss: qmss@2a40000 {
+	compatible = "ti,keystone-navigator-qmss";
+	...
+	power-domains = <&qmss_domain>;
+
+Thanks for your comments!
+
+PS: patch 1 was reused from [1].
+Patch 4 is added to illustrate Keystone 2 PM doamins configuration in DT.
+
+Based on:
+- "[PATCH v5 00/11] PM / Domains: Generic OF-based support"
+  http://www.spinics.net/lists/devicetree/msg49962.html
+
+Links on related discussion:
+[1] "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+  https://lkml.org/lkml/2014/4/24/1118
+
+[2] "[RFC PATCH 0/2] use named clocks list to register clocks for PM clock domain"
+  https://lkml.org/lkml/2014/6/12/436
+
+[3] "[RFC PATCH 0/3] PM / clock_ops: allow to specify custom pm_clk_notifier callback"
+  https://lkml.org/lkml/2014/7/25/630
+
+
+Geert Uytterhoeven (1):
+  PM / clock_ops: Add pm_clk_add_clk()
+
+Grygorii Strashko (3):
+  ARM: keystone: pm: switch to use generic pm domains
+  ARM: keystone: pm: remove unused clk pm domain code
+  ARM: dts: k2hk-evm: add pm domains for net, qmss and knav_dmas
+
+ .../devicetree/bindings/power/ti,keystone-gpc.txt  |  37 ++++++
+ arch/arm/boot/dts/k2hk-evm.dts                     |  31 +++++
+ arch/arm/mach-keystone/Kconfig                     |   1 +
+ arch/arm/mach-keystone/pm_domain.c                 | 136 +++++++++++++++------
+ drivers/base/power/clock_ops.c                     |  41 +++++--
+ include/linux/pm_clock.h                           |   8 ++
+ 6 files changed, 206 insertions(+), 48 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/ti,keystone-gpc.txt
+
+-- 
+1.9.1
+
