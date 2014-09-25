@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619AbaIYTeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 15:34:20 -0400
-Received: from mblankhorst.nl ([141.105.120.124]:45838 "EHLO mblankhorst.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819AbaIYTeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 15:34:19 -0400
-Message-ID: <54246E32.9070406@canonical.com>
-Date: Thu, 25 Sep 2014 21:34:10 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752089AbaIYTex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:34:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63802 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751537AbaIYTes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 15:34:48 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Wolfram Sang <wsa@the-dreams.de>, Vinod Koul <vinod.koul@intel.com>
+Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        subhransu.s.prusty@intel.com, Alan Stern <stern@rowland.harvard.edu>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Gross <agross@codeaurora.org>, Baruch Siach <baruch@tkos.co.il>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Chew, Chiau Ee" <chiau.ee.chew@intel.com>,
+        Chris Ball <chris@printf.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        David Herrmann <dh.herrmann@gmail.com>, dmaengine@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, "Du, Wenkai" <wenkai.du@intel.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, intel-gfx@lists.freedesktop.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Jani Nikula <jani.nikula@intel.com>, Jingoo Han <jg1.han@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-omap@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Marcin Wojtas <mw@semihalf.com>,
+        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
+        patches@opensource.wolfsonmicro.com,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Shinya Kuribayashi <skuribay@pobox.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH 00/27] add pm_runtime_last_busy_and_autosuspend() helper
+Date: Thu, 25 Sep 2014 21:54:36 +0200
+Message-ID: <32849712.0gtj7BlKY3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140925142758.GB1316@katana>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com> <20140925142201.GD28045@saruman> <20140925142758.GB1316@katana>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>, Mel Gorman <mgorman@suse.de>,
-        Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickens <hughd@google.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: page allocator bug in 3.16?
-References: <54246506.50401@hurleysoftware.com>
-In-Reply-To: <54246506.50401@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On 25-09-14 20:55, Peter Hurley wrote:
-> After several days uptime with a 3.16 kernel (generally running
-> Thunderbird, emacs, kernel builds, several Chrome tabs on multiple
-> desktop workspaces) I've been seeing some really extreme slowdowns.
+On Thursday, September 25, 2014 04:27:58 PM Wolfram Sang wrote:
 > 
-> Mostly the slowdowns are associated with gpu-related tasks, like
-> opening new emacs windows, switching workspaces, laughing at internet
-> gifs, etc. Because this x86_64 desktop is nouveau-based, I didn't pursue
-> it right away -- 3.15 is the first time suspend has worked reliably.
+> --Bn2rw/3z4jIqBvZU
+> Content-Type: text/plain; charset=us-ascii
+> Content-Disposition: inline
+> Content-Transfer-Encoding: quoted-printable
 > 
-> This week I started looking into what the slowdown was and discovered
-> it's happening during dma allocation through swiotlb (the cpus can do
-> intel iommu but I don't use it because it's not the default for most users).
+> On Thu, Sep 25, 2014 at 09:22:01AM -0500, Felipe Balbi wrote:
+> > On Thu, Sep 25, 2014 at 01:27:18PM +0530, Vinod Koul wrote:
+> > > On Wed, Sep 24, 2014 at 03:32:19PM -0500, Felipe Balbi wrote:
+> > > > > > > OK, I guess this is as good as it gets.
+> > > > > > >=20
+> > > > > > > What tree would you like it go through?
+> > > > > >=20
+> > > > > > Do we really need this new helper ? I mean, the very moment when =
+> we
+> > > > > > decide to implement ->runtime_idle() we will need to get rid of t=
+> his
+> > > > > > change. I wonder if it's really valid...
+> > > > >=20
+> > > > > I'm not sure I'm following?  This seems to simply implement what dr=
+> ivers
+> > > > > have been doing already as one function.  Why would it be invalid t=
+> o reduce
+> > > > > code duplication?
+> > > >=20
+> > > > For two reasons:
+> > > >=20
+> > > > 1) the helper has no inteligence whatsoever. It just calls the same
+> > > > functions.
+> > > >=20
+> > > > 2) the duplication will vanish whenever someone implements
+> > > > ->runtime_idle() and have that call pm_runtime_autosuspend() (like PCI
+> > > > and USB buses are doing today). This will just be yet another line th=
+> at
+> > > > needs to change.
+> > > >=20
+> > > > Frankly though, no strong feelings, I just think it's a commit that
+> > > > doesn't bring that any benefits other than looking like one line was
+> > > > removed.
+> > > and yes that is what it tries to do nothing more nothing less. If in fu=
+> ture
+> > > there are no users (today we have quite a few), then we can remove the =
+> dead
+> > > macro, no harm. But that is not the situation today.
+> >=20
+> > as I said, a commit that's bound to be useless. It's not like you're
+> > saving 10 lines of code, it's only one. Replacing two simple lines with
+> > a function which takes <joke> almost as many characters to type </joke>.
+> >=20
+> > IMO, this is pretty useless and I'd rather not see them in the drivers I
+> > maintain, sorry.
 > 
-> I'm still working on a bisection but each step takes 8+ hours to
-> validate and even then I'm no longer sure I still have the 'bad'
-> commit in the bisection. [edit: yup, I started over]
-> 
-> I just discovered a smattering of these in my logs and only on 3.16-rc+ kernels:
-> Sep 25 07:57:59 thor kernel: [28786.001300] alloc_contig_range test_pages_isolated(2bf560, 2bf562) failed
-> 
-> This dual-Xeon box has 10GB and sysrq Show Memory isn't showing heavy
-> fragmentation [1].
-> 
-> Besides Mel's page allocator changes in 3.16, another suspect commit is:
-Maybe related, but I've been seeing page corruption in nouveau as well, with 3.15.9:
+> It is not a NACK from me; yet from a high-level perspective I agree with
+> Felipe.
 
-http://paste.debian.net/122800/
+OK
 
-I think it might be an even older bug because I've been using nouveau on my desktop and it hasn't been stable for the past few releases. I'm also lazy with updating kernel, still do it from time to time.
+I'd rather not merge something that driver people don't want to use.
 
-The lookup and nvapeek warnings/crashes are not important btw, I was testing some nouveau things.
-The linker trap probably is. After the second BUG Xorg was no longer able to recover.
+Vinod?
 
-But this was after various suspend/resume cycles, although I suspect I've hit some corruption on radeon too (on a somewhat more recent kernel) when I fiddle with vgaswitcheroo, ending up with a real massive amount of spam there, etc.
-
-Unfortunately I haven't been able to find out what caused it yet, nor am I sure what debug options I should set in the kernel to debug this.
-
-~Maarten
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
