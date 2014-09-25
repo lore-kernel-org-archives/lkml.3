@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaIYXvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:51:22 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50532 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaIYXvV (ORCPT
+	id S1752921AbaIYXwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:52:55 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37909 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751875AbaIYXwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:51:21 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: brcmstb: Kconfig: drop unneeded symbol selections
-Date: Thu, 25 Sep 2014 16:50:54 -0700
-Message-Id: <1411689054-10289-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 25 Sep 2014 19:52:54 -0400
+Message-ID: <5424AAD0.9010708@hurleysoftware.com>
+Date: Thu, 25 Sep 2014 19:52:48 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+CC: Mel Gorman <mgorman@suse.de>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickens <hughd@google.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: page allocator bug in 3.16?
+References: <54246506.50401@hurleysoftware.com> <20140925143555.1f276007@as>
+In-Reply-To: <20140925143555.1f276007@as>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are either implied or not necessary.
+On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
+> There are six ttm patches queued for 3.16.4:
+> 
+> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
+> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
+> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
+> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
+> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
+> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
----
- arch/arm/mach-bcm/Kconfig | 3 ---
- 1 file changed, 3 deletions(-)
+Thanks for info, Chuck.
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index fc938005ad39..fa9e6134fa72 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -101,10 +101,7 @@ config ARCH_BCM_5301X
- 
- config ARCH_BRCMSTB
- 	bool "Broadcom BCM7XXX based boards" if ARCH_MULTI_V7
--	depends on MMU
- 	select ARM_GIC
--	select MIGHT_HAVE_PCI
--	select HAVE_SMP
- 	select HAVE_ARM_ARCH_TIMER
- 	select BRCMSTB_GISB_ARB
- 	select BRCMSTB_L2_IRQ
--- 
-1.9.1
+Unfortunately, none of these fix TTM dma allocation doing CMA dma allocation,
+which is the root problem.
 
+Regards,
+Peter Hurley
