@@ -1,129 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaIYSaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:30:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9785 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753293AbaIYSat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:30:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,598,1406617200"; 
-   d="scan'208";a="605420502"
-Date: Thu, 25 Sep 2014 11:30:04 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v6 0/2] Initial support for XPowers AXP288 PMIC
-Message-ID: <20140925113004.582367d1@jacob-VirtualBox>
-In-Reply-To: <1411643739-21205-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1411643739-21205-1-git-send-email-jacob.jun.pan@linux.intel.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754041AbaIYSdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:33:01 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60284 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689AbaIYSc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 14:32:59 -0400
+Date: Thu, 25 Sep 2014 11:32:54 -0700
+From: josh@joshtriplett.org
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCHv2] mm: Support compiling out madvise and fadvise
+Message-ID: <20140925183254.GA9575@cloud>
+References: <20140922161109.GA25027@thin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140922161109.GA25027@thin>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee/Jonathan,
+Many embedded systems will not need these syscalls, and omitting them
+saves space.  Add a new EXPERT config option CONFIG_ADVISE_SYSCALLS
+(default y) to support compiling them out.
 
-Can you consider taking this for 3.18 if there are no other issues?
+bloat-o-meter:
+add/remove: 0/3 grow/shrink: 0/0 up/down: 0/-2250 (-2250)
+function                                     old     new   delta
+sys_fadvise64                                 57       -     -57
+sys_fadvise64_64                             691       -    -691
+sys_madvise                                 1502       -   -1502
 
-Thanks,
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
 
-Jacob
+v2: Don't make fadvise depend on CONFIG_MMU.
 
+ init/Kconfig    | 10 ++++++++++
+ kernel/sys_ni.c |  3 +++
+ mm/Makefile     |  8 ++++++--
+ 3 files changed, 19 insertions(+), 2 deletions(-)
 
-On Thu, 25 Sep 2014 04:15:39 -0700
-Jacob Pan <jacob.jun.pan@linux.intel.com> wrote:
+diff --git a/init/Kconfig b/init/Kconfig
+index e84c642..782a65b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1537,6 +1537,16 @@ config AIO
+ 	  by some high performance threaded applications. Disabling
+ 	  this option saves about 7k.
+ 
++config ADVISE_SYSCALLS
++	bool "Enable madvise/fadvise syscalls" if EXPERT
++	default y
++	help
++	  This option enables the madvise and fadvise syscalls, used by
++	  applications to advise the kernel about their future memory or file
++	  usage, improving performance. If building an embedded system where no
++	  applications use these syscalls, you can disable this option to save
++	  space.
++
+ config PCI_QUIRKS
+ 	default y
+ 	bool "Enable PCI quirk workarounds" if EXPERT
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index 391d4dd..d4709d4 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -156,6 +156,9 @@ cond_syscall(sys_process_vm_writev);
+ cond_syscall(compat_sys_process_vm_readv);
+ cond_syscall(compat_sys_process_vm_writev);
+ cond_syscall(sys_uselib);
++cond_syscall(sys_fadvise64);
++cond_syscall(sys_fadvise64_64);
++cond_syscall(sys_madvise);
+ 
+ /* arch-specific weak syscall entries */
+ cond_syscall(sys_pciconfig_read);
+diff --git a/mm/Makefile b/mm/Makefile
+index 632ae77..2ad574d 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ mmu-y			:= nommu.o
+-mmu-$(CONFIG_MMU)	:= fremap.o gup.o highmem.o madvise.o memory.o mincore.o \
++mmu-$(CONFIG_MMU)	:= fremap.o gup.o highmem.o memory.o mincore.o \
+ 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
+ 			   vmalloc.o pagewalk.o pgtable-generic.o
+ 
+@@ -11,7 +11,7 @@ ifdef CONFIG_CROSS_MEMORY_ATTACH
+ mmu-$(CONFIG_MMU)	+= process_vm_access.o
+ endif
+ 
+-obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
++obj-y			:= filemap.o mempool.o oom_kill.o \
+ 			   maccess.o page_alloc.o page-writeback.o \
+ 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+ 			   util.o mmzone.o vmstat.o backing-dev.o \
+@@ -28,6 +28,10 @@ else
+ 	obj-y		+= bootmem.o
+ endif
+ 
++obj-$(CONFIG_ADVISE_SYSCALLS)	+= fadvise.o
++ifdef CONFIG_MMU
++	obj-$(CONFIG_ADVISE_SYSCALLS)	+= madvise.o
++endif
+ obj-$(CONFIG_HAVE_MEMBLOCK) += memblock.o
+ 
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o
+-- 
+2.1.1
 
-> X-Powers AXP288 is a customized PMIC found on some Intel Baytrail-CR
-> platforms. It comes with sub-functions such as USB charging, fuel
-> gauge, ADC, and many LDO and BUCK channels.
-> 
-> By extending the existing AXP20x driver, this patchset adds basic
-> support for AXP288 PMIC with ADC as one MFD cell device driver.
-> 
-> Currently, the PMIC driver in this patchset does not support platform
-> data enumeration. But when ACPI _DSD and unified device properties
-> become available, cell devices with platform data will be added.
-> 
-> This patch does not use intel_soc_pmic core for i2c and regmap
-> handling in that axp288 shares similar programming interface with
-> other X-Power PMICs supported in axp20x.c. Therefore, extending
-> axp20x.c to include axp288 makes more sense.
-> 
-> Changes
->  v6:	- change axp20x_match_device() flow to give more specific
-> error messages.
-> 	- remove unnecessary cast
-> 
->  v5:	- excluded iio documentation patch, already applied to
-> iio.git
->  	- restructured axp288_adc read_raw code to make it more
-> readable
-> 	- renamed adc_enable to adc_set_state and add comment about
-> why adc has to be always on and there is no disable function.
-> 	- axp20x use const as needed for regmap structures
-> 
->  v4:	- removed rename patch, use Kconfig description to list
-> supported devices
->  	- misc clean up in ADC code, use regmap_bulk_read and
-> improve error handling, etc.
-> 	- remove IIO ADC scale, treat raw data as processed since the
-> unit is already in IIO expected milliamps.
-> 
->  v3:	- put all file rename changes in 1/5
->  	- add iio documentation for in_current_raw/scale
-> 	- removed global variables in axp2xx
-> 	- removed pm callbacks from GPADC
-> 	- removed ACPI opregion cell device
-> 	- added scales to ADC current and voltage
-> 	- removed ADC thermal sensor from sysfs, kernel internal use
-> only
-> 
->  v2:
-> 	- use format -M for 1/4
-> 	- minor tweak based on Maxime's review
-> 
-> 
-> Jacob Pan (2):
->   mfd/axp20x: extend axp20x to support axp288 pmic
->   iio/adc: add support for axp288 adc
-> 
->  drivers/iio/adc/Kconfig      |   8 +
->  drivers/iio/adc/Makefile     |   1 +
->  drivers/iio/adc/axp288_adc.c | 253 ++++++++++++++++++++++++++++++
->  drivers/mfd/Kconfig          |   3 +-
->  drivers/mfd/axp20x.c         | 361
-> ++++++++++++++++++++++++++++++++++++-------
-> include/linux/mfd/axp20x.h   |  59 +++++++ 6 files changed, 629
-> insertions(+), 56 deletions(-) create mode 100644
-> drivers/iio/adc/axp288_adc.c
-> 
-
-[Jacob Pan]
