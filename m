@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbaIYTRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 15:17:32 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:62302 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaIYTRa (ORCPT
+	id S1751568AbaIYTTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:19:23 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40334 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaIYTTW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 15:17:30 -0400
-Date: Thu, 25 Sep 2014 14:17:22 -0500
-From: Michael Welling <mwelling@emacinc.com>
-To: linux-kernel@vger.kernel.org
-Cc: mwelling@emacinc.com, f.fainelli@gmail.com, grant.likely@linaro.org,
-        linus.walleij@linaro.org, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org
-Subject: GPIO registration for external Ethernet PHY oscillator enable/disable
-Message-ID: <20140925191722.GA2481@sysresccd>
+	Thu, 25 Sep 2014 15:19:22 -0400
+Message-ID: <54246ACE.1080502@arm.com>
+Date: Thu, 25 Sep 2014 20:19:42 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140923215226.GA29000@sysresccd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>
+Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org> <542303DF.8010606@arm.com> <CAKfTPtB3-M+pXaurDeWkWGNJ3_mU-FN+EnshGE-eg_r41Hppag@mail.gmail.com>
+In-Reply-To: <CAKfTPtB3-M+pXaurDeWkWGNJ3_mU-FN+EnshGE-eg_r41Hppag@mail.gmail.com>
+X-OriginalArrivalTime: 25 Sep 2014 19:19:18.0396 (UTC) FILETIME=[9A46EBC0:01CFD8F5]
+X-MC-Unique: 114092520191904501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like my original message got buried in the mailing list.
+On 25/09/14 09:35, Vincent Guittot wrote:
+> On 24 September 2014 19:48, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>> On 23/09/14 17:08, Vincent Guittot wrote:
+>>
+> 
+> [snip]
+> 
+>>
+>> This review (by PeterZ) during v5 of your patch-set recommended some
+>> renaming (e.g. s/group_has_free_capacity/group_has_capacity and
+>> s/group_out_of_capacity/group_no_capacity as well as reordering of the
+>> parameters which I agree with:
+>>
+>> https://lkml.org/lkml/2014/9/11/706
+> 
+> Ah... you're right, these changes have passed through my seance of renaming
 
-Lets try this again with a few key developers CC'd.
+What about the ordering of the function parameters in
+group_has_capacity, group_is_overloaded and group_type group_classify?
 
-Original Message:
-I have some questions that span multiple subsystems including
-gpio/pinctrl, apm, and net subsystems.
+All the existing *load balance* related functions in fair.c seem to
+follow this (struct lb_env *env, struct sd_lb_stats *sds, struct
+sched_group *group, struct sg_lb_stats *sgs) order.
 
-On some of our system on module designs, we use a GPIO to toggle the
-enable pin on external oscillators. In particular, we are using a 50Mhz
-oscillator to drive a clock on a RMII Ethernet PHY.
+> 
+>>
+>>>
+>>> -/*
+> 
+> [snip]
+> 
+>>> -       if (sgs->group_capacity_factor > sgs->sum_nr_running)
+>>> -               sgs->group_has_free_capacity = 1;
+>>> +       sgs->group_type = group_classify(group, sgs, env);
+>>> +
+>>> +       sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
+>>
+>> In case sgs->group_type is group_overloaded you could set
+>> sgs->group_out_of_capacity to 1 without calling group_is_overloaded again.
+> 
+> I prefer to keep sgs->group_out_of_capacity = group_is_overloaded(sgs,
+> env) and use it in group_classify in case of future changes in the
+> classification order
 
-Though I can configure the pin such that the Ethernet interface works we
-are looking to disable the oscillator during APM sleep but after the PHY
-is put into a low power mode.
+Ok, but than group_is_overloaded is called twice at the end of
+update_sg_lb_stats with exactly the same result. Looks weird in my traces.
 
-How do I register a GPIO for use in the PHY suspend and resume code?
-Can it be handled outside of the PHY driver?
-If so how do ensure the appropriate suspend and resume sequencing?
+> 
+[...]
 
-For reference, we are using a Micrel KSZ8081 PHY connected to a
-AT91SAMA5D35 processor.
 
-Addendum:
-I ran into another situation where a GPIO enabled oscillator was used.
-The oscillator in this case drives the master clock for a audio codec.
-In the old days (before device tree), I could initialize the GPIO in the
-platform board file. Now with device tree I can setup the pin multipler
-but the initial state of the GPIO I am not sure how to set.
-
-Is there a way to directly change the state of a GPIO pin from a
-devicetree entry?
