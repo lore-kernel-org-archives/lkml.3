@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaIYNHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:07:22 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:61912 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaIYNHU (ORCPT
+	id S1753113AbaIYNJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:09:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57754 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806AbaIYNJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:07:20 -0400
-Date: Thu, 25 Sep 2014 15:07:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: lockless page counters
-Message-ID: <20140925130716.GE12090@dhcp22.suse.cz>
-References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
- <20140922144158.GC20398@esperanza>
- <20140922185736.GB6630@cmpxchg.org>
- <20140923110634.GH18526@esperanza>
- <20140923132801.GA14302@cmpxchg.org>
- <20140923152150.GL18526@esperanza>
- <20140923170525.GA28460@cmpxchg.org>
- <20140924141633.GB4558@dhcp22.suse.cz>
- <20140924170017.GB9968@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924170017.GB9968@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 25 Sep 2014 09:09:25 -0400
+Message-ID: <1411650539.5671.4.camel@pengutronix.de>
+Subject: Re: [PATCH 1/9] ARM: dts: vf610: Add system reset controller (SRC)
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        jingchang.lu@freescale.com,
+        Huang Yongcai-B20788 <b20788@freescale.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Date: Thu, 25 Sep 2014 15:08:59 +0200
+In-Reply-To: <45f7af8b2dbe11967bb2ad87826b934c@agner.ch>
+References: <cover.1411404079.git.stefan@agner.ch>
+	 <2ca1cf3732a00512fa19b6118f9fb30aba014deb.1411404079.git.stefan@agner.ch>
+	 <CACRpkdbryJVW9e9N5+f3rWEGZ2YvLPJsvBtNSa9nPJpLVXhm0g@mail.gmail.com>
+	 <45f7af8b2dbe11967bb2ad87826b934c@agner.ch>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 13:00:17, Johannes Weiner wrote:
-> On Wed, Sep 24, 2014 at 04:16:33PM +0200, Michal Hocko wrote:
-> > On Tue 23-09-14 13:05:25, Johannes Weiner wrote:
-> > [...]
-> > >  #include <trace/events/vmscan.h>
-> > >  
-> > > -int page_counter_sub(struct page_counter *counter, unsigned long nr_pages)
-> > > +/**
-> > > + * page_counter_cancel - take pages out of the local counter
-> > > + * @counter: counter
-> > > + * @nr_pages: number of pages to cancel
-> > > + *
-> > > + * Returns whether there are remaining pages in the counter.
-> > > + */
-> > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
-> > >  {
-> > >  	long new;
-> > >  
-> > >  	new = atomic_long_sub_return(nr_pages, &counter->count);
-> > >  
-> > > -	if (WARN_ON(unlikely(new < 0)))
-> > > -		atomic_long_set(&counter->count, 0);
-> > > +	if (WARN_ON_ONCE(unlikely(new < 0)))
-> > > +		atomic_long_add(nr_pages, &counter->count);
-> > >  
-> > >  	return new > 0;
-> > >  }
+Hi Stefan,
+
+Am Mittwoch, den 24.09.2014, 18:41 +0200 schrieb Stefan Agner:
+> Am 2014-09-24 11:16, schrieb Linus Walleij:
+> > On Mon, Sep 22, 2014 at 7:09 PM, Stefan Agner <stefan@agner.ch> wrote:
 > > 
-> > I am not sure I understand this correctly.
+> >> Add device tree property for system reset controller.
+> >>
+> >> Signed-off-by: Stefan Agner <stefan@agner.ch>
 > > 
-> > The original res_counter code has protection against < 0 because it used
-> > unsigned longs and wanted to protect from really disturbing effects of
-> > underflow I guess (this wasn't documented anywhere). But you are using
-> > long so even underflow shouldn't be a big problem so why do we need a
-> > fixup?
+> > Are there already device tree bindings for SRC and GRC?
 > 
-> Immediate issues might be bogus numbers showing up in userspace or
-> endless looping during reparenting.  Negative values are just not
-> defined for that counter, so I want to mitigate exposing them.
-> 
-> It's not completely leak-free, as you can see, but I don't think it'd
-> be worth weighing down the hot path any more than this just to
-> mitigate the unlikely consequences of kernel bug.
-> 
-> > The only way how we can end up < 0 would be a cancel without pairing
-> > charge AFAICS. A charge should always appear before uncharge
-> > because both of them are using atomics which imply memory barriers
-> > (atomic_*_return). So do I understand correctly that your motivation
-> > is to fix up those cancel-without-charge automatically? This would
-> > definitely ask for a fat comment. Or am I missing something?
-> 
-> This function is also used by the uncharge path, so any imbalance in
-> accounting, not just from spurious cancels, is caught that way.
-> 
-> As you said, these are all atomics, so it has nothing to do with
-> memory ordering.  It's simply catching logical underflows.
+> Yes there are used in the i.MX6 world for instance, see imx6qdl.dtsi.
+> The SRC also has quite generic documentation, however, the GPC module
+> currently lacks documentation...
 
-OK, I think we should document this in the changelog and/or in the
-comment. These things are easy to forget...
+A patch that adds GPC binding documentation is part of this i.MX6 power
+domain series:
 
-Thanks!
+http://www.spinics.net/lists/devicetree/msg48454.html
 
--- 
-Michal Hocko
-SUSE Labs
+regards
+Philipp
+
