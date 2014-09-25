@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaIYOud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:50:33 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:40576 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739AbaIYOuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:50:32 -0400
-Date: Thu, 25 Sep 2014 15:48:55 +0100
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-Message-ID: <20140925144855.GB31157@bart.dudau.co.uk>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <20140925074235.GN12423@ulmo>
+	id S1753534AbaIYOvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:51:33 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:40410 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198AbaIYOvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:51:31 -0400
+Date: Thu, 25 Sep 2014 16:51:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Quark: Flush TLB via CR3 not CR4.PGE in setup_arch()
+Message-ID: <20140925145126.GA4434@gmail.com>
+References: <1411578452-4609-1-git-send-email-pure.logic@nexus-software.ie>
+ <20140925045755.GA20431@gmail.com>
+ <5423E1F7.5010000@nexus-software.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140925074235.GN12423@ulmo>
+In-Reply-To: <5423E1F7.5010000@nexus-software.ie>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Sep 25 15:50:30 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,54242bb53116692910159
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 09:42:36AM +0200, Thierry Reding wrote:
-> On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
-> > This series is based Bjorn's pci/msi branch
-> > git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
-> > 
-> > Currently, there are a lot of weak arch functions in MSI code.
-> > Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
-> > This series use MSI chip framework to refactor MSI code across all platforms
-> > to eliminate weak arch functions. Then all MSI irqs will be managed in a 
-> > unified framework. Because this series changed a lot of ARCH MSI code,
-> > so tests in the platforms which MSI code modified are warmly welcomed!
+
+* Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
+
+> >>diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> >>index 41ead8d..1d2396a 100644
+> >>--- a/arch/x86/kernel/setup.c
+> >>+++ b/arch/x86/kernel/setup.c
+> >>@@ -879,7 +879,10 @@ void __init setup_arch(char **cmdline_p)
+> >>  			KERNEL_PGD_PTRS);
+> >>
+> >>  	load_cr3(swapper_pg_dir);
+> >>-	__flush_tlb_all();
+> >>+	if (boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
+> >>+		__flush_tlb();
+> >>+	else
+> >>+		__flush_tlb_all();
+> >
+> >So why not make __flush_tlb_all() Quark-quirk-aware and be done
+> >with it, instead of having to validate every single
+> >__flush_tlb_all() user?
+> >
+> >Quark breaks the x86 'flush all TLBs' semantics - the way to fix
+> >it is to restore those semantics, not to sprinkle the breakage
+> >all around the code ...
 > 
-> Apart from the comments to the individual patches I very much like where
-> this is going. Thanks for taking care of this.
+> Hi Ingo.
 > 
-> Thierry
+> We have made __flush_tlb_all() Quark aware - because the previous patch we
+> applied to arch/x86/kernel/cpu/intel.c
+> 
+> ee1b5b165c0a2f04d2107e634e51f05d0eb107de
+> 
+> +	if (c->x86 == 5 && c->x86_model == 9) {
+> +		pr_info("Disabling PGE capability bit\n");
+> +		setup_clear_cpu_cap(X86_FEATURE_PGE);
+> +	}
+> 
+> will cause cpu_has_pge() to be false and then the flush_tlb_all code will
+> take the path we want __flush_tlb not __flush_tlb_global
+> 
+> static inline void __flush_tlb_all(void)
+> {
+>         if (cpu_has_pge)
+>                 __flush_tlb_global();
+>         else
+>                 __flush_tlb();
+> }
+> 
+> The code in setup_arch runs before the cpu_has_pge bit been clobbered.
 
-I am actually in disagreement with you, Thierry. I don't like the general direction
-of the patches, or at least I don't like the fact that we don't have a portable
-way of setting up the msi_chip without having to rely on weak architectural hooks.
-I'm surprised no one considers the case of a platform having more than one host
-bridge and possibly more than one MSI unit. With the current proposed patchset I
-can't see how that would work.
+So why is the comment in setup_arch() not talking about that?
 
-What I would like to see is a way of creating the pci_host_bridge structure outside
-the pci_create_root_bus(). That would then allow us to pass this sort of platform
-details like associated msi_chip into the host bridge and the child busses will
-have an easy way of finding the information needed by finding the root bus and then
-the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
-everyone and the drivers can remove their kludges that try to work around the
-current limitations.
+> The commit you did 02276a3a677d681f0cd227d7111c71fdbce23832 just adds a
+> comment to setup_arch to indicate the behaviour we are relying on
+> 
+> setup_arch()
+> {
+> 
+> load_cr3(swapper_pg_dir);	/* this will flush the TLB on Quark */
+> __flush_tlb_all();		/*cpu_has_pge() is true at this point*/
+> 
+> ......
+> 
+> /* this is where we latch the cpu cabability bits */
+> early_cpu_init();
+> }
 
-Best regards,
-Liviu
+I've zapped that commit for the time being, because I think that 
+at minimum the comment is misleading - it says nothing about this 
+being an early quirk and that normally __flush_tlb_all() will 
+DTRT.
 
----------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
+It talks about:
 
- One small step
-   for me ...
++       /*
++        * Locate the page directory and flush the TLB.
++        * On Quark X1000 rewriting CR3 flushes the TLB no if/else is required
++        * to choose between __flush_tlb() and __flush_tlb_all()
++        */
+        load_cr3(swapper_pg_dir);
+        __flush_tlb_all();
 
+But it is completely silent on the real reason for why we don't 
+need a Quark quirk here, which would be something like:
+
+	/*
+	 * On Quark CPUs we still have the PGE bit set so 
+	 * __flush_tlb_all() is not yet doing what it says - but 
+	 * accidentally we have a cr3 flush here which is what is 
+	 * needed - so there's no need to add a Quark quirk here.
+	 */
+
+Right?
+
+Thanks,
+
+	Ingo
