@@ -1,80 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaIYRFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:05:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47941 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752533AbaIYRFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:05:04 -0400
-Message-ID: <54244B12.4010700@ti.com>
-Date: Thu, 25 Sep 2014 13:04:18 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753546AbaIYRFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:05:18 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:55471 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaIYRFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 13:05:14 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <sandeep_n@ti.com>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] firmware: add Keystone QMSS PDSP accumulator firmware
- blob
-References: <1411654423-29480-1-git-send-email-santosh.shilimkar@ti.com> <20140925151551.GA18530@kroah.com>
-In-Reply-To: <20140925151551.GA18530@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411562649-28231-6-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com> <1411562649-28231-6-git-send-email-a.ryabinin@samsung.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Thu, 25 Sep 2014 10:04:53 -0700
+Message-ID: <CACT4Y+Z5yCkdc9=R331vYJd-WMdM1zRy+KCEa5cESsjNRe9onA@mail.gmail.com>
+Subject: Re: [PATCH v3 05/13] mm: page_alloc: add kasan hooks on alloc and
+ free paths
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 September 2014 11:15 AM, Greg Kroah-Hartman wrote:
-> On Thu, Sep 25, 2014 at 10:13:43AM -0400, Santosh Shilimkar wrote:
->> From: Sandeep Nair <sandeep_n@ti.com>
->>
->> QMSS(Queue Manager Sub System) uses PDSPs to implement various
->> QM related functions like packet accumulation, QoS or event
->> management.
->>
->> Patch adds firmware blob for the QMSS accumulator
->> functionality.
->>
->> Cc: Michal Marek <mmarek@suse.cz>
->> Cc: Sam Ravnborg <sam@ravnborg.org>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Olof Johansson <olof@lixom.net>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->> I know we are not adding firmware to kernel and the idea is to get them
->> loaded via rootfs. But this firmware is for an infrastructure component
->> which is needed for Keystone.
-> 
-> What does "infrastructure component" mean?
+On Wed, Sep 24, 2014 at 5:44 AM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> Add kernel address sanitizer hooks to mark allocated page's addresses
+> as accessible in corresponding shadow region.
+> Mark freed pages as inaccessible.
 >
-Common SOC components which are used by various subsystems like Networking,
-SRIO, Crypto engines etc.
-
- 
-> What is "Keystone"?
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  include/linux/kasan.h |  6 ++++++
+>  mm/compaction.c       |  2 ++
+>  mm/kasan/kasan.c      | 14 ++++++++++++++
+>  mm/kasan/kasan.h      |  1 +
+>  mm/kasan/report.c     |  7 +++++++
+>  mm/page_alloc.c       |  3 +++
+>  6 files changed, 33 insertions(+)
 >
-Keystone is ARM based SOC architectures with bunch of SOC peripherals.
- 
->> The respective drivers got into the queue
->> and the firmware was dropped from the series to follow the firmware tree.
-> 
-> Did you submit this to the linux-firmware tree?
-> 
-./scripts/get_maintainer.pl didn't give me other list. Which list am
-suppose to submit it to get it to linux-firmware.
-
-> Did the driver that needs this get merged into Linus's tree yet?
+> diff --git a/include/linux/kasan.h b/include/linux/kasan.h
+> index 01c99fe..9714fba 100644
+> --- a/include/linux/kasan.h
+> +++ b/include/linux/kasan.h
+> @@ -30,6 +30,9 @@ static inline void kasan_disable_local(void)
 >
-Its queued now for 3.18.
+>  void kasan_unpoison_shadow(const void *address, size_t size);
+>
+> +void kasan_alloc_pages(struct page *page, unsigned int order);
+> +void kasan_free_pages(struct page *page, unsigned int order);
+> +
+>  #else /* CONFIG_KASAN */
+>
+>  static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+> @@ -37,6 +40,9 @@ static inline void kasan_unpoison_shadow(const void *address, size_t size) {}
+>  static inline void kasan_enable_local(void) {}
+>  static inline void kasan_disable_local(void) {}
+>
+> +static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
+> +static inline void kasan_free_pages(struct page *page, unsigned int order) {}
+> +
+>  #endif /* CONFIG_KASAN */
+>
+>  #endif /* LINUX_KASAN_H */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 92075d5..686b5c2 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/sysfs.h>
+>  #include <linux/balloon_compaction.h>
+>  #include <linux/page-isolation.h>
+> +#include <linux/kasan.h>
+>  #include "internal.h"
+>
+>  #ifdef CONFIG_COMPACTION
+> @@ -59,6 +60,7 @@ static void map_pages(struct list_head *list)
+>         list_for_each_entry(page, list, lru) {
+>                 arch_alloc_page(page, 0);
+>                 kernel_map_pages(page, 1, 1);
+> +               kasan_alloc_pages(page, 0);
+>         }
+>  }
+>
+> diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
+> index 454df8d..7cfc1fe 100644
+> --- a/mm/kasan/kasan.c
+> +++ b/mm/kasan/kasan.c
+> @@ -251,6 +251,20 @@ static __always_inline void check_memory_region(unsigned long addr,
+>         kasan_report_error(&info);
+>  }
+>
+> +void kasan_alloc_pages(struct page *page, unsigned int order)
+> +{
+> +       if (likely(!PageHighMem(page)))
+> +               kasan_unpoison_shadow(page_address(page), PAGE_SIZE << order);
+> +}
+> +
+> +void kasan_free_pages(struct page *page, unsigned int order)
+> +{
+> +       if (likely(!PageHighMem(page)))
+> +               kasan_poison_shadow(page_address(page),
+> +                               PAGE_SIZE << order,
+> +                               KASAN_FREE_PAGE);
+> +}
+> +
+>  void __asan_load1(unsigned long addr)
+>  {
+>         check_memory_region(addr, 1, false);
+> diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
+> index 5895e31..5e61799 100644
+> --- a/mm/kasan/kasan.h
+> +++ b/mm/kasan/kasan.h
+> @@ -6,6 +6,7 @@
+>  #define KASAN_SHADOW_SCALE_SIZE (1UL << KASAN_SHADOW_SCALE_SHIFT)
+>  #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
+>
+> +#define KASAN_FREE_PAGE         0xFF  /* page was freed */
+>  #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
+>
+>  struct access_info {
+> diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+> index bf559fa..f9d4e8d 100644
+> --- a/mm/kasan/report.c
+> +++ b/mm/kasan/report.c
+> @@ -57,6 +57,9 @@ static void print_error_description(struct access_info *info)
+>         case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
+>                 bug_type = "out of bounds access";
+>                 break;
+> +       case KASAN_FREE_PAGE:
+> +               bug_type = "use after free";
+> +               break;
+>         case KASAN_SHADOW_GAP:
+>                 bug_type = "wild memory access";
+>                 break;
+> @@ -75,6 +78,10 @@ static void print_address_description(struct access_info *info)
+>         page = virt_to_head_page((void *)info->access_addr);
+>
+>         switch (shadow_val) {
+> +       case KASAN_FREE_PAGE:
+> +               dump_page(page, "kasan error");
+> +               dump_stack();
+> +               break;
+>         case KASAN_SHADOW_GAP:
+>                 pr_err("No metainfo is available for this access.\n");
+>                 dump_stack();
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ee95d0a..ef3604a 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/page-debug-flags.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/sched/rt.h>
+> +#include <linux/kasan.h>
+>
+>  #include <asm/sections.h>
+>  #include <asm/tlbflush.h>
+> @@ -755,6 +756,7 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
+>
+>         trace_mm_page_free(page, order);
+>         kmemcheck_free_shadow(page, order);
+> +       kasan_free_pages(page, order);
+>
+>         if (PageAnon(page))
+>                 page->mapping = NULL;
+> @@ -941,6 +943,7 @@ static int prep_new_page(struct page *page, unsigned int order, gfp_t gfp_flags)
+>
+>         arch_alloc_page(page, order);
+>         kernel_map_pages(page, 1 << order, 1);
+> +       kasan_alloc_pages(page, order);
+>
+>         if (gfp_flags & __GFP_ZERO)
+>                 prep_zero_page(page, order, gfp_flags);
+> --
+> 2.1.1
+>
 
-regards,
-Santosh
 
- 
-
-
+Looks good to me.
