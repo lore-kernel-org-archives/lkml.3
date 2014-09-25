@@ -1,239 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaIYJpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:45:47 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:23703 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750977AbaIYJpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:45:44 -0400
-X-IronPort-AV: E=Sophos;i="5.04,595,1406563200"; 
-   d="scan'208";a="36458469"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
+	id S1752203AbaIYJrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:47:18 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:57610 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020AbaIYJrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 05:47:14 -0400
+Message-ID: <1411638435.18580.126.camel@iivanov-dev>
+Subject: Re: [PATCH v2] iio: iadc: Qualcomm SPMI PMIC current ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lee Jones <lee.jones@linaro.org>, Philippe Reynes <tremyfr@yahoo.fr>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>
-Subject: RE: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCHv3 1/2] procfs: show hierarchy of pid namespace
-Thread-Index: AQHP2B9fg7fXYJuHqkyMH2KrB37CkZwRL65A
-Date: Thu, 25 Sep 2014 09:45:41 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5C471E@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1411552827-31056-2-git-send-email-chenhanxiao@cn.fujitsu.com>
- <20140924174527.GF10474@mguzik>
-In-Reply-To: <20140924174527.GF10474@mguzik>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Thu, 25 Sep 2014 12:47:15 +0300
+In-Reply-To: <20140924170522.GL5729@leverpostej>
+References: <1411567103-2380-1-git-send-email-iivanov@mm-sol.com>
+	 <20140924145527.GI5729@leverpostej> <1411574442.18580.95.camel@iivanov-dev>
+	 <20140924170522.GL5729@leverpostej>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8P9juWh022022
 
-Hi,
+Hi Mark,
 
-> -----Original Message-----
-> From: Mateusz Guzik [mailto:mguzik@redhat.com]
-> Sent: Thursday, September 25, 2014 1:45 AM
-> On Wed, Sep 24, 2014 at 06:00:26PM +0800, Chen Hanxiao wrote:
-> > +static int
-> > +pidns_list_filter(void)
-> > +{
-> > +	struct pidns_list *pos, *pos_t;
-> > +	struct pid_namespace *ns0, *ns1;
-> > +	struct pid *pid0, *pid1;
-> > +	int flag = 0;
-> > +	int rc;
-> > +
-> > +	/* screen pid with relationship
-> > +	 * in pidns_list, we may add pids like
-> > +	 * ns0   ns1   ns2
-> > +	 * pid1->pid2->pid3
-> > +	 * we should screen pid1, pid2 and keep pid3
-> > +	 */
-> > +	list_for_each_entry(pos, &pidns_list, list) {
-> > +		list_for_each_entry(pos_t, &pidns_list, list) {
+On Wed, 2014-09-24 at 18:05 +0100, Mark Rutland wrote:
+> On Wed, Sep 24, 2014 at 05:00:42PM +0100, Ivan T. Ivanov wrote:
+> > On Wed, 2014-09-24 at 15:55 +0100, Mark Rutland wrote:
+> > > On Wed, Sep 24, 2014 at 02:58:23PM +0100, Ivan T. Ivanov wrote:
+> > > > The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
+> > > > 16 bits resolution and register space inside PMIC accessible across
+> > > > SPMI bus.
+> > > > 
+> > > > The driver registers itself through IIO interface.
+> > > > 
+> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > ---
+> > > > Changes:
+> > > > - Fix Kconfig dependencies
+> > > > - Reword Kconfig help text
+> > > > - Replace IIO_CHAN_INFO_PROCESSED with IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE,
+> > > >   This enable client drivers to use microampers precission, instead miliamps.
+> > > > - Use const array for iio_schan_spec-fiers.
+> > > > - Fix spelling errors and adress review comments.
+> > > > 
+> > > > Previous version:
+> > > > https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg728360.html
+> > > > 
+> > > >  .../devicetree/bindings/iio/adc/qcom,spmi-iadc.txt |  61 ++
+> > > >  drivers/iio/adc/Kconfig                            |  11 +
+> > > >  drivers/iio/adc/Makefile                           |   1 +
+> > > >  drivers/iio/adc/qcom-spmi-iadc.c                   | 691 +++++++++++++++++++++
+> > > >  4 files changed, 764 insertions(+)
+> > > >  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+> > > >  create mode 100644 drivers/iio/adc/qcom-spmi-iadc.c
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+> > > > new file mode 100644
+> > > > index 0000000..06e58b6
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
+> > > > @@ -0,0 +1,61 @@
+> > > > +Qualcomm's SPMI PMIC current ADC
+> > > > +
+> > > > +QPNP PMIC current ADC (IADC) provides interface to clients to read current.
+> > > > +A 16 bit ADC is used for current measurements.
+> > > > +
+> > > > +IADC node:
+> > > > +
+> > > > +- compatible:
+> > > > +    Usage: required
+> > > > +    Value type: <string>
+> > > > +    Definition: Should contain "qcom,spmi-iadc".
+> > > > +
+> > > > +- reg:
+> > > > +    Usage: required
+> > > > +    Value type: <prop-encoded-array>
+> > > > +    Definition: IADC base address and length in the SPMI PMIC register map.
+> > > > +                TRIM_CNST_RDS register address and length(1)
+> > > 
+> > > Are these two register regions? Please make the order explicit somehow
+> > > (either say first/second/third/etc, or use reg-names).
+> > 
+> > Will make order explicit. 
+> > 
+> > > 
+> > > Are they both part of the IADC, or is one part of an external/shared
+> > > component?
+> > 
+> > I think that this is shared component.
 > 
-> In the previous thread I tried to note this will be terribly inefficient
-> to use and adding a list of children to pid_namespace struct would deal
-> with the problem.
+> If it's not a portion of the ADC itself, then that should probably be
+> described as a separate unit, and referred to by phandle. What else is
+> that unit, and what else is said unit used by?
 
-If that, we had to add a children list, maybe another sibling list
-in pid_namespace struct and maintain them.
-That cost too much.
-
-For this feature, I think we'd better not touch pid_namespace struct.
-As we need not to know the hierarchy so frequently,
-I think such kind of inefficient is acceptable.
-
-> 
-> > +			flag = 0;
-> > +			pid0 = pos->pid;
-> > +			pid1 = pos_t->pid;
-> > +			ns0 = pid0->numbers[pid0->level].ns;
-> > +			ns1 = pid1->numbers[pid1->level].ns;
-> > +			if (pos->pid->level < pos_t->pid->level)
-> > +				for (; ns1 != NULL; ns1 = ns1->parent)
-> > +					if (ns0 == ns1) {
-> > +						flag = 1;
-> > +						break;
-> > +					}
-> > +			if (flag == 1)
-> > +				break;
-> > +		}
-> > +
-> > +		if (flag == 0) {
-> > +			rc = pidns_list_add(pos->pid, &pidns_tree);
-> > +			if (rc)
-> > +				goto out;
-> > +		}
-> > +	}
-> > +
-> > +	/* Now all usefull stuff are in pidns_tree, free pidns_list*/
-> > +	free_pidns_list(&pidns_list);
-> > +
-> > +	return 0;
-> > +
-> > +out:
-> > +	free_pidns_list(&pidns_tree);
-> > +	return rc;
-> > +}
-> > +
-> > +/* collect pids in pidns_list,
-> > + * then remove duplicated ones,
-> > + * add the rest to pidns_tree
-> > + */
-> > +static int proc_pidns_list_refresh(void)
-> > +{
-> > +	struct pid *pid;
-> > +	struct task_struct *p;
-> > +	int rc;
-> > +
-> > +	/* collect pid in differet ns */
-> > +	rcu_read_lock();
-> > +	for_each_process(p) {
-> > +		pid = task_pid(p);
-> > +		if (pid && (pid->level > 0)) {
-> > +			rc = pidns_list_add(pid, &pidns_list);
-> > +			if (rc)
-> > +				goto out;
-> > +		}
-> > +	}
-> > +
-> > +	/* screen duplicate pids from list pidns_list
-> > +	* and form a new list pidns_tree
-> > +	*/
-> > +	rc = pidns_list_filter();
-> > +	if (rc)
-> > +		goto out;
-> > +	rcu_read_unlock();
-> > +
-> > +	return 0;
-> > +
-> > +out:
-> > +	free_pidns_list(&pidns_list);
-> > +	rcu_read_unlock();
-> > +	return rc;
-> > +}
-> > +
-> > +static int nslist_proc_show(struct seq_file *m, void *v)
-> > +{
-> > +	struct pidns_list *pos;
-> > +	struct pid_namespace *ns, *curr_ns;
-> > +	struct pid *pid;
-> > +	char pid_buf[32];
-> > +	int i, curr_level;
-> > +	int rc;
-> > +
-> > +	curr_ns = task_active_pid_ns(current);
-> > +
-> > +	mutex_lock(&pidns_list_lock);
-> > +	rc = proc_pidns_list_refresh();
-> > +	if (rc) {
-> > +		mutex_unlock(&pidns_list_lock);
-> > +		return rc;
-> > +	}
-> > +
-> > +	/* print pid namespace hierarchy */
-> > +	list_for_each_entry(pos, &pidns_tree, list) {
-> 
-> What keeps pid_namespace's safe to use? Similarly to previous patch,
-> here we hit a place where the code is not protected with rcu and
-> structures were just plugged into the list.
-> 
-Will fix.
-All list should be protected by rcu lock.
-
-> Recreating the list for each open seems quite unnecessary as well. 
-> 
-> One could work around that by caching generated output and having a
-> generation counter for namespaces to know whether the content is stale.
-> But that still does not seem right.
-> 
-That will bring another issue:
-We had to *keep* that list and update it
-even if we don't open pidns_hierarchy.
-
-This patch try to solve this when open /proc/pidns_hierarchy by:
-a) recreated the list when open
-b) show it in a procfs text file
-c) drop that list
-
-> It looks like in the original thread someone suggested hooking this up
-> under proc as a directory tree which sounds much better to me.
-
-Dir trees provide the same information as proc text files did:
-a symlink name like /proc/PID/ns/pid.
-
-Refresh dir trees needs a lot of codes too.
-So a procfs text file is a better choice.
-
-Thanks,
-- Chen
+Please read below.
 
 > 
-> Just my $0,03.
+> > 
+> > > 
+> > > > +
+> > > > +- interrupts:
+> > > > +    Usage: optional
+> > > > +    Value type: <prop-encoded-array>
+> > > > +    Definition: End of conversion interrupt number. If property is
+> > > > +            missing driver will use polling to detect end of conversion
+> > > > +            completion.
+> > > 
+> > > Driver details shouldn't be in the binding. If the driver can poll,
+> > > that's good, but it should be dropped form this description.
+> > > 
+> > 
+> > Will remove driver details.
+> > 
+> > > Is this the only interrupt?
+> > > 
+> > 
+> > Yes.
+> > 
+> > > What do you mean be "End of conversion interrupt number"? Just describe
+> > > what the interrupt logically is from the PoV of the device -- interrupts
+> > > is a standard property so we don't need to be too explicit about the
+> > > type.
+> > 
+> > Badly worded. Just, "End of conversion interrupt"?
 > 
-> > +		pid = pos->pid;
-> > +		curr_level = -1;
-> > +		ns = pid->numbers[pid->level].ns;
-> > +		/* Check whether a pid has relationship with current ns */
-> > +		for (; ns != NULL; ns = ns->parent)
-> > +			if (ns == curr_ns)
-> > +				curr_level = curr_ns->level;
-> > +
-> > +		if (curr_level == -1)
-> > +			continue;
-> > +
-> > +		for (i = curr_level + 1; i <= pid->level; i++) {
-> > +			ns = pid->numbers[i].ns;
-> > +			/* show PID '1' in specific pid ns */
-> > +			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
-> > +				pid_vnr(find_pid_ns(1, ns)));
-> > +			seq_printf(m, "%s ", pid_buf);
-> > +		}
-> > +
-> > +		seq_putc(m, '\n');
-> > +	}
-> > +
-> > +	free_pidns_list(&pidns_tree);
-> > +	mutex_unlock(&pidns_list_lock);
-> > +
-> > +	return 0;
-> > +}
+> The part I didn't understand was what was meant by "End of conversion",
+> but dropping "number" is certainly better.
+
+It is clear now, right? End of ADC conversion.
+
 > 
-> --
-> Mateusz Guzik
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> > 
+> > > 
+> > > > +
+> > > > +- qcom,rsense:
+> > > > +    Usage: optional
+> > > > +    Value type: <u32>
+> > > > +    Definition: External sense register value in Ohm. Defining this
+> > > > +            propery will instruct ADC to use external ADC sense channel.
+> > > > +            If property is not defined ADC will use internal sense channel.
+> > > 
+> > > The latter two sentences sound like a driver description.
+> > > 
+> > > What exactly is the difference between the internal and external
+> > > channels, and what exactly is the value in the sense register used for?
+> > 
+> > Internal - when using chip build-in resistor
+> > External - when using off-chip resistor
+> 
+> Would it be possible to use the internal channel when you have an
+> external resistor?
+> 
+> If so, does the device have a channel per resistor, or can either
+> resistor be selected and applied to the single channel the device has?
+> 
+
+They are two dedicated channels. Channel zero can only measure current
+over internal resistor (MOSFET). Channel two can only measure current
+over external resistor. This ADC is part of Battery Monitor System
+(BMS), i.e. it is not general purpose ADC. Based on DT files in
+codeaurora repository, only one of the channels is used, probably
+chosen at schematics design time. In practice, on the systems that
+use battery, there is always two resistors, and they are connected
+in sequence, just one of them should be zero. External resistor 
+could be with higher quality, I suppose.
+
+> This might be better worded as "external-registor-ohms".
+
+Ok.
+
+> 
+> > 
+> > > 
+> > > The binding should describe the logical properties of the device rather
+> > > than the specific programming model details.
+> > > 
+> > > > +
+> > > > +- qcom,rds-trim:
+> > > > +    Usage: optional
+> > > > +    Value type: <u32>
+> > > > +    Definition: Calculate internal sense resistor value based TRIM_CNST_RDS,
+> > > > +            IADC RDS and manufacturer.
+> > > > +            0: Read the IADC and SMBB trim register and apply the default
+> > > > +               RSENSE if conditions are met.
+> > > > +            1: Read the IADC, SMBB trim register and manufacturer type and
+> > > > +               apply the default RSENSE if conditions are met.
+> > > > +            2: Read the IADC, SMBB trim register and apply the default RSENSE
+> > > > +               if conditions are met.
+> > > > +            If property is not defined driver will use qcom,rsense value if
+> > > > +            defined or internal sense resistor value trimmed into register.
+> > > 
+> > > Having read this a few times, I still don't understand which I would use
+> > > and when.
+> > > 
+> > > Which conditions need to be met in each of these cases?
+> > > 
+> > > When does the manufacturer need to be taken into account and what does
+> > > it even mean for that to be the case? That sounds very much like a
+> > > driver detail rather than a HW property.
+> > > 
+> > > Cases 0 and 2 seem to be the same, just with s/, / and /. I cannot
+> > > figure out the intended difference between the two.
+> > > 
+> > > The last sentence is very much a driver description.
+> > 
+> > Sorry. I have tried to make it better. Now looking again DT files
+> > in codeaurora tree I see that 0 is used in pm8941, 1 is used in
+> > pm8110 and 2 is used for pm8226. So I will remove this property
+> > and handle this inside driver based on chip version.
+> 
+> Is this only to determine the value of the internal resistor?
+
+No. Ideal value for internal resistor is supposed to be 10Mohms.
+One register(8 bits) hold production time trimmed value, which represent
+difference against ideal value. It looks like some times real resistor
+values is too far from ideal and register can't hold the difference, so 
+some additional hints are needed. In this case value trimmed to
+register into BMS peripheral.
+
+> 
+> If that isn't probable in a standard way across all variations, would an
+> "internal-resistor-ohms" property be sufficient?
+> 
+> > 
+> > > 
+> > > > +
+> > > > +Example:
+> > > > +       /* IADC node */
+> > > > +       pmic_iadc: iadc@3600 {
+> > > > +               compatible = "qcom,spmi-iadc";
+> > > > +               reg = <0x3600 0x100>,
+> > > > +                         <0x12f1 0x1>;
+> > > > +               interrupts = <0x0 0x36 0x0 IRQ_TYPE_EDGE_RISING>;
+> > > > +               qcom,rds-trim = <0>;
+> > > > +       };
+> > > > +
+> > > > +       /* IIO client node */
+> > > > +       bat {
+> > > > +               io-channels = <&pmic_iadc 0>;
+> > > > +               io-channel-names = "iadc";
+> > > > +       };
+> > > 
+> > > Surely you need #iio-cells on the IADC node?
+> > 
+> > Yes, I need to add it.
+> > 
+> > > 
+> > > Given the client seems to pass a specifier value, does this have
+> > > multiple channels, or only a single channel?
+> > 
+> > Driver register only one IIO channel, so #io-channel-cells 
+> > should be <0>.
+> 
+> Ok. Regardless of what the driver does, does the hardware have
+> multi-channel capability?
+
+Strictly speaking, yes. But I don't see how both of them could
+used at the same time in practice.
+
+Regards,
+Ivan
+
