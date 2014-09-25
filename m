@@ -1,176 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaIYM5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:57:38 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:49305 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaIYM5C (ORCPT
+	id S1753241AbaIYM6A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:58:00 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:44768 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170AbaIYM55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:57:02 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8PCs9Kr029479, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 2/3] r8152: add functions to set EEE
-Date: Thu, 25 Sep 2014 20:54:01 +0800
-Message-ID: <1394712342-15778-48-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-46-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-46-Taiwan-albertk@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+	Thu, 25 Sep 2014 08:57:57 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <a5b1a9c0f56cb80fe716cfaf45a547bb>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v6 3/3] dt-bindings: video: Add documentation for rockchip vop
+Date: Thu, 25 Sep 2014 20:57:11 +0800
+Message-Id: <1411649831-10455-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411649565-10309-1-git-send-email-mark.yao@rock-chips.com>
+References: <1411649565-10309-1-git-send-email-mark.yao@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions to enable EEE and set EEE advertisement.
+This adds binding documentation for Rockchip SoC VOP driver.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 ---
- drivers/net/usb/r8152.c | 101 ++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 76 insertions(+), 25 deletions(-)
+Changes in v2:
+- rename "lcdc" to "vop"
+- add vop reset
+- add iommu node
+- add port for display-subsystem
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index d225aa1..887b6a2 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -363,6 +363,7 @@
- #define EEE_NWAY_EN		0x1000
- #define TX_QUIET_EN		0x0200
- #define RX_QUIET_EN		0x0100
-+#define sd_rise_time_mask	0x0070
- #define sd_rise_time(x)		(min(x, 7) << 4)	/* bit 4 ~ 6 */
- #define RG_RXLPI_MSK_HFDUP	0x0008
- #define SDFALLTIME		0x0007	/* bit 0 ~ 2 */
-@@ -375,6 +376,7 @@
- #define RG_EEEPRG_EN		0x0010
- 
- /* OCP_EEE_CONFIG3 */
-+#define fast_snr_mask		0xff80
- #define fast_snr(x)		(min(x, 0x1ff) << 7)	/* bit 7 ~ 15 */
- #define RG_LFS_SEL		0x0060	/* bit 6 ~ 5 */
- #define MSK_PH			0x0006	/* bit 0 ~ 3 */
-@@ -2950,43 +2952,92 @@ static int rtl8152_close(struct net_device *netdev)
- 	return res;
- }
- 
--static void r8152b_enable_eee(struct r8152 *tp)
-+static inline void r8152_mmd_indirect(struct r8152 *tp, u16 dev, u16 reg)
-+{
-+	ocp_reg_write(tp, OCP_EEE_AR, FUN_ADDR | dev);
-+	ocp_reg_write(tp, OCP_EEE_DATA, reg);
-+	ocp_reg_write(tp, OCP_EEE_AR, FUN_DATA | dev);
-+}
+Changes in v3: None
+
+Changes in v4: None
+
+Changes in v5: None
+
+Changes in v6: None
+
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
+
+diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+new file mode 100644
+index 0000000..d15351f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+@@ -0,0 +1,58 @@
++device-tree bindings for rockchip soc display controller (vop)
 +
-+static u16 r8152_mmd_read(struct r8152 *tp, u16 dev, u16 reg)
-+{
-+	u16 data;
++VOP (Visual Output Processor) is the Display Controller for the Rockchip
++series of SoCs which transfers the image data from a video memory
++buffer to an external LCD interface.
 +
-+	r8152_mmd_indirect(tp, dev, reg);
-+	data = ocp_reg_read(tp, OCP_EEE_DATA);
-+	ocp_reg_write(tp, OCP_EEE_AR, 0x0000);
++Required properties:
++- compatible: value should be one of the following
++		"rockchip,rk3288-vop";
 +
-+	return data;
-+}
++- interrupts: should contain a list of all VOP IP block interrupts in the
++		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
++		 format depends on the interrupt controller used.
 +
-+static void r8152_mmd_write(struct r8152 *tp, u16 dev, u16 reg, u16 data)
- {
-+	r8152_mmd_indirect(tp, dev, reg);
-+	ocp_reg_write(tp, OCP_EEE_DATA, data);
-+	ocp_reg_write(tp, OCP_EEE_AR, 0x0000);
-+}
++- clocks: must include clock specifiers corresponding to entries in the
++		clock-names property.
 +
-+static void r8152_eee_en(struct r8152 *tp, bool enable)
-+{
-+	u16 config1, config2, config3;
- 	u32 ocp_data;
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_EEE_CR);
--	ocp_data |= EEE_RX_EN | EEE_TX_EN;
-+	config1 = ocp_reg_read(tp, OCP_EEE_CONFIG1) & ~sd_rise_time_mask;
-+	config2 = ocp_reg_read(tp, OCP_EEE_CONFIG2);
-+	config3 = ocp_reg_read(tp, OCP_EEE_CONFIG3) & ~fast_snr_mask;
++- clock-names: Must contain
++		aclk_vop: for ddr buffer transfer.
++		hclk_vop: for ahb bus to R/W the phy regs.
++		dclk_vop: pixel clock.
 +
-+	if (enable) {
-+		ocp_data |= EEE_RX_EN | EEE_TX_EN;
-+		config1 |= EEE_10_CAP | EEE_NWAY_EN | TX_QUIET_EN | RX_QUIET_EN;
-+		config1 |= sd_rise_time(1);
-+		config2 |= RG_DACQUIET_EN | RG_LDVQUIET_EN;
-+		config3 |= fast_snr(42);
-+	} else {
-+		ocp_data &= ~(EEE_RX_EN | EEE_TX_EN);
-+		config1 &= ~(EEE_10_CAP | EEE_NWAY_EN | TX_QUIET_EN |
-+			     RX_QUIET_EN);
-+		config1 |= sd_rise_time(7);
-+		config2 &= ~(RG_DACQUIET_EN | RG_LDVQUIET_EN);
-+		config3 |= fast_snr(511);
-+	}
++- resets: Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names: Must include the following entries:
++  - axi
++  - ahb
++  - dclk
 +
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_EEE_CR, ocp_data);
--	ocp_reg_write(tp, OCP_EEE_CONFIG1, RG_TXLPI_MSK_HFDUP | RG_MATCLR_EN |
--					   EEE_10_CAP | EEE_NWAY_EN |
--					   TX_QUIET_EN | RX_QUIET_EN |
--					   sd_rise_time(1) | RG_RXLPI_MSK_HFDUP |
--					   SDFALLTIME);
--	ocp_reg_write(tp, OCP_EEE_CONFIG2, RG_LPIHYS_NUM | RG_DACQUIET_EN |
--					   RG_LDVQUIET_EN | RG_CKRSEL |
--					   RG_EEEPRG_EN);
--	ocp_reg_write(tp, OCP_EEE_CONFIG3, fast_snr(42) | RG_LFS_SEL | MSK_PH);
--	ocp_reg_write(tp, OCP_EEE_AR, FUN_ADDR | MDIO_MMD_AN);
--	ocp_reg_write(tp, OCP_EEE_DATA, MDIO_AN_EEE_ADV);
--	ocp_reg_write(tp, OCP_EEE_AR, FUN_DATA | MDIO_MMD_AN);
--	ocp_reg_write(tp, OCP_EEE_DATA, MDIO_EEE_100TX);
--	ocp_reg_write(tp, OCP_EEE_AR, 0x0000);
-+	ocp_reg_write(tp, OCP_EEE_CONFIG1, config1);
-+	ocp_reg_write(tp, OCP_EEE_CONFIG2, config2);
-+	ocp_reg_write(tp, OCP_EEE_CONFIG3, config3);
- }
- 
--static void r8153_enable_eee(struct r8152 *tp)
-+static void r8152b_enable_eee(struct r8152 *tp)
-+{
-+	r8152_eee_en(tp, true);
-+	r8152_mmd_write(tp, MDIO_MMD_AN, MDIO_AN_EEE_ADV, MDIO_EEE_100TX);
-+}
++- iommus: required a iommu node
 +
-+static void r8153_eee_en(struct r8152 *tp, bool enable)
- {
- 	u32 ocp_data;
--	u16 data;
-+	u16 config;
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_EEE_CR);
--	ocp_data |= EEE_RX_EN | EEE_TX_EN;
-+	config = ocp_reg_read(tp, OCP_EEE_CFG);
++- port: A port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt.
 +
-+	if (enable) {
-+		ocp_data |= EEE_RX_EN | EEE_TX_EN;
-+		config |= EEE10_EN;
-+	} else {
-+		ocp_data &= ~(EEE_RX_EN | EEE_TX_EN);
-+		config &= ~EEE10_EN;
-+	}
-+
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_EEE_CR, ocp_data);
--	data = ocp_reg_read(tp, OCP_EEE_CFG);
--	data |= EEE10_EN;
--	ocp_reg_write(tp, OCP_EEE_CFG, data);
--	data = ocp_reg_read(tp, OCP_EEE_ADV);
--	data |= MDIO_EEE_1000T | MDIO_EEE_100TX;
--	ocp_reg_write(tp, OCP_EEE_ADV, data);
-+	ocp_reg_write(tp, OCP_EEE_CFG, config);
-+}
-+
-+static void r8153_enable_eee(struct r8152 *tp)
-+{
-+	r8153_eee_en(tp, true);
-+	ocp_reg_write(tp, OCP_EEE_ADV, MDIO_EEE_1000T | MDIO_EEE_100TX);
- }
- 
- static void r8152b_enable_fc(struct r8152 *tp)
++Example:
++SoC specific DT entry:
++	vopb: vopb@ff930000 {
++		compatible = "rockchip,rk3288-vop";
++		reg = <0xff930000 0x19c>;
++		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
++		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
++		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
++		reset-names = "axi", "ahb", "dclk";
++		iommus = <&vopb_mmu>;
++		vopb_out: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			vopb_out_edp: endpoint@0 {
++				reg = <0>;
++				remote-endpoint=<&edp_in_vopb>;
++			};
++			vopb_out_hdmi: endpoint@1 {
++				reg = <1>;
++				remote-endpoint=<&hdmi_in_vopb>;
++			};
++		};
++	};
 -- 
-1.9.3
+1.7.9.5
+
 
