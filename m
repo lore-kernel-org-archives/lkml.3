@@ -1,114 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaIYDPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:15:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13436 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425AbaIYDPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:15:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,594,1406617200"; 
-   d="scan'208";a="578612142"
-Message-ID: <542388D7.1010008@intel.com>
-Date: Thu, 25 Sep 2014 11:15:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1752425AbaIYDRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:17:50 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46443 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaIYDRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:17:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18edret8R+kqdWU3MAIdaX91dF5KevEP/A=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 021125EBF65
+Date: Wed, 24 Sep 2014 23:17:11 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Joe.C" <srv_yingjoe.chen@mediatek.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        yh.chen@mediatek.com, linux-kernel@vger.kernel.org,
+        srv_heupstream@mediatek.com, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, eddie.huang@mediatek.com,
+        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org,
+        hc.yen@mediatek.com
+Subject: Re: [PATCH] [RFC] Using hierarchy irqdomian to implement MTK
+ intpol.
+Message-ID: <20140925031711.GV23926@titan.lakedaemon.net>
+References: <1411574696-1881-1-git-send-email-srv_yingjoe.chen@mediatek.com>
+ <1411611417.21763.56.camel@mtksdaap41>
+ <54238645.8090502@linux.intel.com>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude
- E6440
-References: <201409232206.02819@pali> <201409241453.46756@pali> <5422D66D.6090903@redhat.com> <201409242021.10107@pali>
-In-Reply-To: <201409242021.10107@pali>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54238645.8090502@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-Thanks for following up and explaining the situation to Pali.
-
-On 09/25/2014 02:21 AM, Pali Rohár wrote:
-> On Wednesday 24 September 2014 16:34:21 Hans de Goede wrote:
->> Ok, so the dell-laptop interface is just an obsolete wrapper
->> around the i915 opregion code, which shows that the right
->> interface to use is the i915 one, which we do if you don't
->> specify any kernel commandline parameters, case closed.
->>
->> Regards,
->>
->> Hans
+On Thu, Sep 25, 2014 at 11:04:37AM +0800, Jiang Liu wrote:
+> Hi Joe,
+> 	Thanks, I will merge them into my next version.
+> Regards!
+> Gerry
 > 
-> Nope, its not closed.
-> 
-> Still i915 interface has problem with setting backlight. It 
-> exports lot of levels which turning display off. Which breaking 
-> exiting applications for configuring display brightness. This is 
-> still big regression as black screen is not want people want to 
-> see.
-> 
-> Driver dell-laptop has exported only few - not thousands level 
-> (which is insane) and only usefull levels (not lot of levels 
-> which turn display off).
-> 
-> So for this reason using i915 backlight interface is not possible 
-> and also Dell (for E6440) set kernel param acpi_backlight=vendor 
-> to use dell_laptop module for controlling brightness.
-> 
-> On my laptop E6440 is better for using dell-laptop and not acpi 
-> or i915.
+> On 2014/9/25 10:16, Joe.C wrote:
+> > 
+> > Jiang,
+> > 
+> > Please consider merge the following 2 changes into your next round.
 
-Hi Pali,
+ummm.  I'm confused.  I'll admit I'm a bit liquored up atm, but it looks
+like "Joe C." posted a patch 'From: Joe C.', and 'Signed-off-by: Joe C.'.
+_Then_, Joe C. replied to himself and asked someone *else* to merge the
+below changes into the originally posted patch.  The real kicker is that
+someone responded and said they would do it. (?!)
 
-Please test this patch:
+Please tell me the scotch is making this look more fucked up than it
+really is...
 
-diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-index ca52ad2ae7d1..15534345bd57 100644
---- a/drivers/gpu/drm/i915/intel_opregion.c
-+++ b/drivers/gpu/drm/i915/intel_opregion.c
-@@ -396,6 +396,24 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
- 	return -EINVAL;
- }
- 
-+/*
-+ * Some of the Thinkpads' firmware will issue a backlight change operation
-+ * region request unconditionally on AC plug/unplug, this is undesirable and
-+ * should be ignored. Then there is a Dell laptop whose vendor backlight
-+ * interface also makes use of operation region request to change backlight
-+ * level and we have to keep it work. The rule used here is: if the vendor
-+ * backlight interface is not in use and the ACPI backlight interface is
-+ * broken, we ignore the requests; oterwise, we keep processing them.
-+ */
-+static bool should_ignore_backlight_request(void)
-+{
-+	if (acpi_video_backlight_support() &&
-+	    !acpi_video_verify_backlight_support())
-+		return true;
-+
-+	return false;
-+}
-+
- static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -404,11 +422,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
- 
- 	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
- 
--	/*
--	 * If the acpi_video interface is not supposed to be used, don't
--	 * bother processing backlight level change requests from firmware.
--	 */
--	if (!acpi_video_verify_backlight_support()) {
-+	if (should_ignore_backlight_request()) {
- 		DRM_DEBUG_KMS("opregion backlight request ignored\n");
- 		return 0;
- 	}
+Also, if Joe.C could please fix his mailer and git config to produce a
+complete, correct name, that would be appreciated.
+
+thx,
+
+Jason.
+
+> > On Thu, 2014-09-25 at 00:04 +0800, Joe.C wrote:
+> >> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> >> index e285f3a..01e852b 100644
+> >> --- a/kernel/irq/irqdomain.c
+> >> +++ b/kernel/irq/irqdomain.c
+> >> @@ -467,7 +467,7 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
+> >>  	struct irq_domain *domain;
+> >>  	irq_hw_number_t hwirq;
+> >>  	unsigned int type = IRQ_TYPE_NONE;
+> >> -	unsigned int virq;
+> >> +	int virq;
+> >>  
+> >>  	domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
+> >>  	if (!domain) {
+> >> @@ -493,8 +493,8 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
+> >>  	else
+> >>  #endif
+> >>  		virq = irq_create_mapping(domain, hwirq);
+> >> -	if (!virq)
+> >> -		return virq;
+> >> +	if (virq <= 0)
+> >> +		return 0;
+> >>  
+> >>  	/* Set type if specified and different than the current one */
+> >>  	if (type != IRQ_TYPE_NONE &&
+> > 
+> > irq_of_parse_and_map()/of_irq_to_resource() expect
+> > irq_create_of_mapping() to return 0 when fail. Return error code will
+> > cause of_irq_to_resource crash.
+> > 
+> > 
+> >> @@ -716,20 +716,20 @@ const struct irq_domain_ops irq_domain_simple_ops = {
+> >>  };
+> >>  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+> >>  
+> >> -static int irq_domain_alloc_descs(int virq, unsigned int nr_irqs,
+> >> +static int irq_domain_alloc_descs(int virq, unsigned int cnt,
+> >>  				  irq_hw_number_t hwirq, int node)
+> >>  {
+> >>  	unsigned int hint;
+> >>  
+> >>  	if (virq >= 0) {
+> >> -		virq = irq_alloc_descs(virq, virq, nr_irqs, node);
+> >> +		virq = irq_alloc_descs(virq, virq, cnt, node);
+> >>  	} else {
+> >>  		hint = hwirq % nr_irqs;
+> >>  		if (hint == 0)
+> >>  			hint++;
+> >> -		virq = irq_alloc_descs_from(hint, nr_irqs, node);
+> >> +		virq = irq_alloc_descs_from(hint, cnt, node);
+> >>  		if (virq <= 0 && hint > 1)
+> >> -			virq = irq_alloc_descs_from(1, nr_irqs, node);
+> >> +			virq = irq_alloc_descs_from(1, cnt, node);
+> >>  	}
+> >>  
+> >>  	return virq;
+> > 
+> > This come from irq_create_mapping(), the original code is using global
+> > nr_irqs. Change to match original behavior.
+> > 
+> > Joe.C
+> > 
+> > 
