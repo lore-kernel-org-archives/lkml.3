@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaIYUfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:35:52 -0400
-Received: from mga03.intel.com ([134.134.136.65]:32967 "EHLO mga03.intel.com"
+	id S1753041AbaIYUeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:34:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45072 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753171AbaIYUe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:34:57 -0400
+	id S1751558AbaIYUee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 16:34:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,599,1406617200"; 
-   d="scan'208";a="579109591"
+   d="scan'208";a="480040066"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: [PATCH v11 21/21] brd: Rename XIP to DAX
-Date: Thu, 25 Sep 2014 16:33:38 -0400
-Message-Id: <1411677218-29146-22-git-send-email-matthew.r.wilcox@intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [PATCH v11 02/21] block: Change direct_access calling convention
+Date: Thu, 25 Sep 2014 16:33:19 -0400
+Message-Id: <1411677218-29146-3-git-send-email-matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
 References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
@@ -24,116 +23,311 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Wilcox <willy@linux.intel.com>
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
 
-Since this is relating to FS_XIP, not KERNEL_XIP, it should be called
-DAX instead of XIP.
+Add a new helper function, bdev_direct_access(), to handle common
+functionality including partition handling, checking the length requested
+is positive, checking for the sector being page-aligned, and checking
+the length of the request does not pass the end of the partition.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- drivers/block/Kconfig | 13 +++++++------
- drivers/block/brd.c   | 14 +++++++-------
- fs/Kconfig            |  4 ++--
- 3 files changed, 16 insertions(+), 15 deletions(-)
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
+ drivers/block/brd.c               | 12 +++++-------
+ drivers/s390/block/dcssblk.c      | 21 +++++++++-----------
+ fs/block_dev.c                    | 40 +++++++++++++++++++++++++++++++++++++++
+ fs/ext2/xip.c                     | 31 +++++++++++++-----------------
+ include/linux/blkdev.h            |  6 ++++--
+ 7 files changed, 84 insertions(+), 58 deletions(-)
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 014a1cf..1b8094d 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -393,14 +393,15 @@ config BLK_DEV_RAM_SIZE
- 	  The default value is 4096 kilobytes. Only change this if you know
- 	  what you are doing.
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b774729 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
  
--config BLK_DEV_XIP
--	bool "Support XIP filesystems on RAM block device"
--	depends on BLK_DEV_RAM
-+config BLK_DEV_RAM_DAX
-+	bool "Support Direct Access (DAX) to RAM block devices"
-+	depends on BLK_DEV_RAM && FS_DAX
- 	default n
- 	help
--	  Support XIP filesystems (such as ext2 with XIP support on) on
--	  top of block ram device. This will slightly enlarge the kernel, and
--	  will prevent RAM block device backing store memory from being
-+	  Support filesystems using DAX to access RAM block devices.  This
-+	  avoids double-buffering data in the page cache before copying it
-+	  to the block device.  Answering Y will slightly enlarge the kernel,
-+	  and will prevent RAM block device backing store memory from being
- 	  allocated from highmem (only a problem for highmem systems).
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
++
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that can be contiguously accessed at that offset.  It may also
++return a negative errno if an error occurs.
  
- config CDROM_PKTCDVD
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index 830edc8..8709b9f 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
+  */
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+-	loff_t offset;
+-
+-	offset = sector;
+-	if (device->bd_part != NULL)
+-		offset += device->bd_part->start_sect;
+-	offset <<= AXON_RAM_SECTOR_SHIFT;
+-	if (offset >= bank->size) {
+-		dev_err(&bank->device->dev, "Access outside of address space\n");
+-		return -ERANGE;
+-	}
++	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
+ 
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return bank->size - offset;
+ }
+ 
+ static const struct block_device_operations axon_ram_devops = {
 diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 78fe510..97c55db 100644
+index 3598110..78fe510 100644
 --- a/drivers/block/brd.c
 +++ b/drivers/block/brd.c
-@@ -97,13 +97,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
- 	 * Must use NOIO because we don't want to recurse back into the
- 	 * block or filesystem layers from page reclaim.
- 	 *
--	 * Cannot support XIP and highmem, because our ->direct_access
--	 * routine for XIP must return memory that is always addressable.
--	 * If XIP was reworked to use pfns and kmap throughout, this
-+	 * Cannot support DAX and highmem, because our ->direct_access
-+	 * routine for DAX must return memory that is always addressable.
-+	 * If DAX was reworked to use pfns and kmap throughout, this
- 	 * restriction might be able to be lifted.
- 	 */
- 	gfp_flags = GFP_NOIO | __GFP_ZERO;
--#ifndef CONFIG_BLK_DEV_XIP
-+#ifndef CONFIG_BLK_DEV_RAM_DAX
- 	gfp_flags |= __GFP_HIGHMEM;
- #endif
- 	page = alloc_page(gfp_flags);
-@@ -369,7 +369,7 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
- 	return err;
+@@ -370,25 +370,23 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
  }
  
--#ifdef CONFIG_BLK_DEV_XIP
-+#ifdef CONFIG_BLK_DEV_RAM_DAX
- static long brd_direct_access(struct block_device *bdev, sector_t sector,
- 			void **kaddr, unsigned long *pfn, long size)
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
  {
-@@ -388,6 +388,8 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
- 	 * file happens to be mapped to the next page of physical RAM */
- 	return PAGE_SIZE;
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
+ 
+ 	if (!brd)
+ 		return -ENODEV;
+-	if (sector & (PAGE_SECTORS-1))
+-		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+-		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+ 		return -ENOSPC;
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/* If size > PAGE_SIZE, we could look to see if the next page in the
++	 * file happens to be mapped to the next page of physical RAM */
++	return PAGE_SIZE;
  }
-+#else
-+#define brd_direct_access NULL
  #endif
  
- static int brd_ioctl(struct block_device *bdev, fmode_t mode,
-@@ -428,9 +430,7 @@ static const struct block_device_operations brd_fops = {
- 	.owner =		THIS_MODULE,
- 	.rw_page =		brd_rw_page,
- 	.ioctl =		brd_ioctl,
--#ifdef CONFIG_BLK_DEV_XIP
- 	.direct_access =	brd_direct_access,
--#endif
- };
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 0f47175..96bc411 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
  
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+ 
+@@ -866,25 +866,22 @@ fail:
+ 	bio_io_error(bio);
+ }
+ 
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
+ 
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
+-	if (secnum % (PAGE_SIZE/512))
+-		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+-		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	dev_sz = dev_info->end - dev_info->start;
++	offset = secnum * 512;
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return dev_sz - offset;
+ }
+ 
+ static void
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 6d72746..ffe0761 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -427,6 +427,46 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
+ }
+ EXPORT_SYMBOL_GPL(bdev_write_page);
+ 
++/**
++ * bdev_direct_access() - Get the address for directly-accessibly memory
++ * @bdev: The device containing the memory
++ * @sector: The offset within the device
++ * @addr: Where to put the address of the memory
++ * @pfn: The Page Frame Number for the memory
++ * @size: The number of bytes requested
++ *
++ * If a block device is made up of directly addressable memory, this function
++ * will tell the caller the PFN and the address of the memory.  The address
++ * may be directly dereferenced within the kernel without the need to call
++ * ioremap(), kmap() or similar.  The PFN is suitable for inserting into
++ * page tables.
++ *
++ * Return: negative errno if an error occurs, otherwise the number of bytes
++ * accessible at this address.
++ */
++long bdev_direct_access(struct block_device *bdev, sector_t sector,
++			void **addr, unsigned long *pfn, long size)
++{
++	long avail;
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++
++	if (size < 0)
++		return size;
++	if (!ops->direct_access)
++		return -EOPNOTSUPP;
++	if ((sector + DIV_ROUND_UP(size, 512)) >
++					part_nr_sects_read(bdev->bd_part))
++		return -ERANGE;
++	sector += get_start_sect(bdev);
++	if (sector % (PAGE_SIZE / 512))
++		return -EINVAL;
++	avail = ops->direct_access(bdev, sector, addr, pfn, size);
++	if (!avail)
++		return -ERANGE;
++	return min(avail, size);
++}
++EXPORT_SYMBOL_GPL(bdev_direct_access);
++
  /*
-diff --git a/fs/Kconfig b/fs/Kconfig
-index a9eb53d..117900f 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -34,7 +34,7 @@ source "fs/btrfs/Kconfig"
- source "fs/nilfs2/Kconfig"
+  * pseudo-fs
+  */
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..bbc5fec 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,12 @@
+ #include "ext2.h"
+ #include "xip.h"
  
- config FS_DAX
--	bool "Direct Access support"
-+	bool "Direct Access (DAX) support"
- 	depends on MMU
- 	help
- 	  Direct Access (DAX) can be used on memory-backed block devices.
-@@ -45,7 +45,7 @@ config FS_DAX
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+-	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
+-
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+ }
  
- 	  If you do not have a block device that is capable of using this,
- 	  or if unsure, say N.  Saying Y will increase the size of the kernel
--	  by about 2kB.
-+	  by about 5kB.
+ static inline int
+@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ {
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
  
- endif # BLOCK
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
+ }
  
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
+ {
+-	int rc;
++	long rc;
+ 	sector_t block;
+ 
+ 	/* first, retrieve the sector number */
+@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 518b465..ac25166 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1615,8 +1615,8 @@ struct block_device_operations {
+ 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access)(struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+@@ -1634,6 +1634,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+ extern int bdev_read_page(struct block_device *, sector_t, struct page *);
+ extern int bdev_write_page(struct block_device *, sector_t, struct page *,
+ 						struct writeback_control *);
++extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
++						unsigned long *pfn, long size);
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
 -- 
 2.1.0
 
