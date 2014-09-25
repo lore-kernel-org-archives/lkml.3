@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaIYHtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:49:53 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:50188 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaIYHtv (ORCPT
+	id S1751985AbaIYHuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:50:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20329 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaIYHuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:49:51 -0400
-Date: Thu, 25 Sep 2014 09:49:48 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Nikolaus Voss <n.voss@weinmann-emt.de>
-Cc: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: atmel-pwm: fix calculation of prescale value
-Message-ID: <20140925074947.GA11843@ulmo>
-References: <20140924055851.CE51140656@mail.steuer-voss.de>
- <20140925065229.GD12423@ulmo>
- <alpine.DEB.2.10.1409250934090.38376@fox.voss.local>
+	Thu, 25 Sep 2014 03:50:51 -0400
+Date: Thu, 25 Sep 2014 10:50:33 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] staging: dgap: use dgap_release_remap() in
+ dgap_cleanup_board()
+Message-ID: <20140925075033.GH5865@mwanda>
+References: <20140923002236.GA20782@devel>
+ <20140924094530.GC5811@mwanda>
+ <CAHb8M2A82yFT9dWqz=Ad_VoPY0c+UF5-VxbBOH-VNUjLnfJ1jA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1409250934090.38376@fox.voss.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAHb8M2A82yFT9dWqz=Ad_VoPY0c+UF5-VxbBOH-VNUjLnfJ1jA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---BXVAT5kNtrzKuDFl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Sep 25, 2014 at 09:47:34AM +0200, Nikolaus Voss wrote:
-> On Thu, 25 Sep 2014, Thierry Reding wrote:
-[...]
-> >>-		}
-> >>+		div >>=3D 1;
-> >>+		++pres;
+On Thu, Sep 25, 2014 at 09:26:47AM +0900, DaeSeok Youn wrote:
+> Hi,
+> 
+> 2014-09-24 18:45 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> > On Tue, Sep 23, 2014 at 09:22:36AM +0900, Daeseok Youn wrote:
+> >>  static void dgap_release_remap(struct board_t *brd)
+> >>  {
+> >> -     release_mem_region(brd->membase, 0x200000);
+> >> -     release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
+> >> -     iounmap(brd->re_map_membase);
+> >> -     iounmap(brd->re_map_port);
+> >> +     if (brd->re_map_membase) {
 > >
-> >Unless you really need the prefix increment behaviour (you don't in this
-> >case) I prefer using the postfix operator because it is slightly more
-> >idiomatic.
->=20
-> ok (as I mostly do C++ programming, I prefer the prefix as it is usually
-> more efficient for user-defined types).
+> > I hate this if conditions.  Let's not complicate dgap_release_remap(),
+> > let's fix the callers instead.  Especially dgap_init_module() is a
+> > totally sucky function with bad unwinding.
+> ok. then,
+>    if (brd->re_map_membase && brd->re_map_port)
+>         dgap_release_remap(brd);
+> 
+> right?
 
-It is? That's intriguing...
+What I'm saying is there should be no if statement because we should
+only call this function after the memory has been remapped so there
+should be no if conditions in this function at all.
 
-Thierry
+The problem is that dgap_init_module() doesn't unwind, it just tries to
+free every variable without considering whether or not it was allocated.
+It's the "One Err" approach to error handling where you just have one
+error label that calls free on every single thing in the world.  It
+*should* look more like this:
 
---BXVAT5kNtrzKuDFl
-Content-Type: application/pgp-signature
+static int dgap_init_module(void)
+{
+        int rc;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+        pr_info("%s, Digi International Part Number %s\n", DG_NAME, DG_PART);
 
-iQIcBAEBAgAGBQJUI8kbAAoJEN0jrNd/PrOhMXcP/2QY/HxsceuEO2SgpfK2q7re
-DhV/p3bi8zamhQnY8LrUHqbv7cWUZ2rZlCkwyMUgn9FabWXZaWNRFczTlrmVj6kH
-2/iNialrQVPEeqTUSdjbEWzw7ZSMpHUch2pI0PBlVRfJBIC+RT9WWyV/U4r/qX8t
-/rmWQmkqc1Fs97/c3j0n3Sczhc/XCBjrBmFx4Wys+lVKqA/QuDlNMhtx0KS0zazy
-ydqTblUB7osShpAUli8sF5phiCn1lLYw/dKhYLOjeKxh83K0QkLiTXlamskjjxmn
-mlSwLtvxICOjp7GHg8FRTBuBRZBaByM7bX5MfG8K8qpBghwx/744Dx6ba6cfv80G
-wGi+Rv1Jl4tw+hMx4RaIgFrmhh3KZDsAanpYyRzFaBUn7ZALCeizKiKXZr3eeRFn
-9AzXwAYM/HpEe+N39IN/EyPRhw5YYqGv6WzRXqisuLY4xNrwDB0latfuXp5d76GT
-1JhhwKsKIW0EdmTpLXRddh5WfDSJN1dz/9R0EUSbP0XHfrbZY2YdRv9kpEO6ydE+
-Lw8HZZ4ekVvyAYZ2Z3f54QyIGGFMJ3MQCzb4H7BCRILV4TQR4YeFYKx8xs6Tjb/R
-POlBDd1Bp1GLI6Xgf8/8qyc8jT8kdcE//3op7LiRn4NF+BxaoShaVlxr6xESYBZp
-W87fikyMUedf4nxgDNY3
-=CdmC
------END PGP SIGNATURE-----
+        rc = dgap_start();
+        if (rc)
+                return rc;
 
---BXVAT5kNtrzKuDFl--
+        rc = pci_register_driver(&dgap_driver);
+        if (rc)
+                goto err_stop;
+
+        rc = dgap_create_driver_sysfiles(&dgap_driver);
+        if (rc)
+                goto err_unregister;
+
+        dgap_driver_state = DRIVER_READY;
+
+        return 0;
+
+err_unregister:   // <- note that the label names reflect where the label
+                  //    is not where the goto is.  dgap_start() uses
+                  //    wrong/confusing label names.
+	pci_unregister_driver(&dgap_driver);
+err_stop:
+	dgap_stop();  // <- mirror image of dgap_start();
+
+        return rc;
+}
+
+dgap_stop() is easy to write because it's based on the error handling
+in dgap_start().
+
+static void dgap_start(void)
+{
+        spin_lock_irqsave(&dgap_poll_lock, lock_flags);
+        dgap_poll_stop = 1;
+        spin_unlock_irqrestore(&dgap_poll_lock, lock_flags);
+
+	del_timer_sync(&dgap_poll_timer);
+
+	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
+        class_destroy(dgap_class);
+        unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
+}
+
+The existing dgap_init_module() "free every single thing in the entire
+universe" approach is buggy because it tries to delete the sysfs files
+before they have been allocated.  This is called a "One Err Bug" because
+having just one error label makes the code too complicated for anyone to
+understand.  You have to add all kinds of if conditions everywhere and
+it's a mess.
+
+regards,
+dan carpenter
+
