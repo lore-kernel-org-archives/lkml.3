@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154AbaIYSKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:10:31 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42420 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaIYSK3 (ORCPT
+	id S1754211AbaIYSKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:10:38 -0400
+Received: from cube.luon.net ([37.72.100.20]:57560 "EHLO cube.luon.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753013AbaIYSKg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:10:29 -0400
-Date: Thu, 25 Sep 2014 11:10:24 -0700
-From: josh@joshtriplett.org
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] rcu: Add sparse check for RCU_INIT_POINTER()
-Message-ID: <20140925181024.GA9360@cloud>
-References: <1411668214-19199-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411668214-19199-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Sep 2014 14:10:36 -0400
+Message-ID: <1411668631.24948.9.camel@luon.net>
+Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
+From: Sjoerd Simons <sjoerd@luon.net>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Date: Thu, 25 Sep 2014 20:10:31 +0200
+In-Reply-To: <20140925164109.GA30382@ulmo>
+References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
+	 <20140925132717.GA13579@dusk.luon.net> <54243931.6050804@wwwdotorg.org>
+	 <20140925164109.GA30382@ulmo>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 02:03:34PM -0400, Pranith Kumar wrote:
-> Add a sparse check when RCU_INIT_POINTER() is used to assign a non __rcu
-> annotated pointer. 
+On Thu, 2014-09-25 at 18:41 +0200, Thierry Reding wrote:
+> On Thu, Sep 25, 2014 at 09:48:01AM -0600, Stephen Warren wrote:
+> > On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
+> > >Playing a bit with todays linux-next on my jetson, it seems this patch is
+> > >still required for enabling the GPU. Is there anything blocking it (firmware
+> > >not available yet in liux-firmware?)
+> > 
+> > I think initially I was waiting for the DRM patch "drm/nouvea: support for
+> > probing platform devices" to be applied, but it looks like that's been
+> > applied already, so only patches 4 and 5 in this series are still
+> > outstanding.
+> > 
+> > Alex, wasn't there also some issue where the VPR register had to be
+> > programmed, and if it wasn't there'd be a hang when the GPU registers were
+> > touched? If we've added code to Nouveau/tegradrm to detect that and avoid
+> > the problem, then I guess we can commit these last two patches for 3.19. A
+> > resend after the 3.18 merge window might help.
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> A patch that programs VPR was merged into U-Boot (though I don't think
+> it's made it into master yet).
 
-Have you checked if this introduces a significant number of new warnings
-in the kernel?
+Assuming you're talking about "ARM: tegra: Disable VPR",that has landed
+in u-boot master and released as part of v2014.10-rc2 [0]
 
-If not:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-
->  include/linux/rcupdate.h | 1 +
->  1 file changed, 1 insertion(+)
+>  I'm not sure we can reasonably check for
+> that in Nouveau, given that the register is somewhere completely
+> unrelated. In fact I think the U-Boot patch was triggered by some
+> discussion about how to solve this and it was decided that it shouldn't
+> be done in the kernel, but U-Boot should set it up.
 > 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index a4a819f..a033d8b 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -1047,6 +1047,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
->   */
->  #define RCU_INIT_POINTER(p, v) \
->  	do { \
-> +		rcu_dereference_sparse(p, __rcu); \
->  		p = RCU_INITIALIZER(v); \
->  	} while (0)
->  
-> -- 
-> 2.1.0
-> 
+> That said, perhaps one solution would be to make U-Boot enable the gk20a
+> device if it's set up the VPR and disable it otherwise?
+
+I guess in that case the vdd-supply should still be added to the dts
+with u-boot toggling the status field of the node?
+
+
+0: http://git.denx.de/?p=u-boot.git;a=commit;h=df3443dfa449ad02bef8ddf6e2c90a6fd9394fc9
+-- 
+Sjoerd Simons <sjoerd@luon.net>
