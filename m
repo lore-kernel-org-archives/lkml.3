@@ -1,139 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaIYF6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:58:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32778 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaIYF6h (ORCPT
+	id S1751636AbaIYGAB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:00:01 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55626 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaIYF76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:58:37 -0400
-X-AuditID: cbfee68f-f791c6d000004834-c3-5423af081ba0
-From: Kukjin Kim <kgene@kernel.org>
-To: "'Nicolas Pitre'" <nicolas.pitre@linaro.org>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
-Cc: "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'David A. Long'" <dave.long@linaro.org>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Vinayak Kale'" <vkale@apm.com>,
-        "'Laura Abbott'" <lauraa@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Mark Brown'" <broonie@kernel.org>
-References: <1411547222-677-1-git-send-email-k.kozlowski@samsung.com>
- <alpine.LFD.2.11.1409240954220.8647@knanqh.ubzr>
-In-reply-to: <alpine.LFD.2.11.1409240954220.8647@knanqh.ubzr>
-Subject: RE: [PATCH v2] ARM: cacheflush: Fix v7_exit_coherency_flush exynos
- build breakage on ARMv6
-Date: Thu, 25 Sep 2014 14:58:31 +0900
-Message-id: <018f01cfd885$bc677320$35365960$@kernel.org>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQH2EfuXvgFYm1dhkjotV9wIbvT5nAHmgOrBm7Wx25A=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t8zI12O9cohBv1bRC02zljPajH14RM2
-	i497FrBZvH5haHG26Q27xfbOGewWmx5fY7W4vGsOm8Xty7wWa4/cZbdYev0ik8WnZ//YLVbt
-	+sNoMe/ZaTaLlx9PsDjwe3xc/4nRY828NYweLc09bB6X+3qZPHbOusvusWlVJ5vHnWt72Dw2
-	L6n36NuyitHj8ya5AK4oLpuU1JzMstQifbsErowXq1oYCy4LVmy+NYOlgXEGXxcjJ4eEgInE
-	9nObmCBsMYkL99azdTFycQgJLGOUaHx3kRmm6Fn/DSaIxHRGidN7D7NDOH8ZJVrXbgJyODjY
-	BJQlGpv0QRqEBbQkFm5pYgGxRQQSJeaemQ1Wzywwk0XizcXt7CAJIYEKicvPjoP1cgrYSpzf
-	EAfRmyqxctkCNhCbRUBV4s6vD2DX8QpYSLQtecoKYQtK/Jh8D2w+M9Cu9TuPM0HY8hKb17yF
-	OlpBYsfZ14wQN1hJNHROgaoXkdj34h0jyD0SAmc4JKYe+sMOsUxA4tvkQywg90gIyEpsOgA1
-	R1Li4IobLBMYJWchWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYyQ
-	lNK/g/HuAetDjAIcjEo8vB7+yiFCrIllxZW5hxhNgS6ayCwlmpwPTFx5JfGGxmZGFqYmpsZG
-	5pZmSuK8C6V+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgrObmTFK5O3nd52ffzXRW33ay
-	NE4MC9bgDNwSGe9a4cCT8HBamdJ5n9Lfc/sj92pXzAg7nzfpW4nBK57CmbmGk5f5vDnHsUN0
-	6rzQ0M/HZRIKpY580GGs7A156uH1+fsSB62LZTEP9nnu+fQ+/u+CF+/imlaHbTh3oF1NmjvN
-	Neea6ab5RVxnlFiKMxINtZiLihMBD1gVtyQDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNKsWRmVeSWpSXmKPExsVy+t9jQV2O9cohBh0n+S02zljPajH14RM2
-	i497FrBZvH5haHG26Q27xfbOGewWmx5fY7W4vGsOm8Xty7wWa4/cZbdYev0ik8WnZ//YLVbt
-	+sNoMe/ZaTaLlx9PsDjwe3xc/4nRY828NYweLc09bB6X+3qZPHbOusvusWlVJ5vHnWt72Dw2
-	L6n36NuyitHj8ya5AK6oBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTc
-	VFslF58AXbfMHKAvlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZL1a1
-	MBZcFqzYfGsGSwPjDL4uRk4OCQETiWf9N5ggbDGJC/fWs3UxcnEICUxnlDi99zA7hPOXUaJ1
-	7SYgh4ODTUBZorFJH6RBWEBLYuGWJhYQW0QgUWLumdlg9cwCM1kk3lzczg6SEBKokLj87DhY
-	L6eArcT5DXEQvakSK5ctYAOxWQRUJe78+gB2BK+AhUTbkqesELagxI/J98DmMwPtWr/zOBOE
-	LS+xec1bZoijFSR2nH3NCHGDlURD5xSoehGJfS/eMU5gFJ6FZNQsJKNmIRk1C0nLAkaWVYyi
-	qQXJBcVJ6bmGesWJucWleel6yfm5mxjBCeuZ1A7GlQ0WhxgFOBiVeHg9/JVDhFgTy4orcw8x
-	SnAwK4nw+qwBCvGmJFZWpRblxxeV5qQWH2I0Bfp0IrOUaHI+MJnmlcQbGpuYGVkamVkYmZib
-	K4nzHmi1DhQSSE8sSc1OTS1ILYLpY+LglGpgNLinc6GK61zFM+eS88Ke0qZ6Ae9kL8i9iH3Y
-	pB5uxPjX7uXSXWZvQ5yOT9/eK6RTvk+kW7dnXXPjMs3Pq+POLxFJqag4wGwnca0lZWfSXM81
-	B09VbV5aOjl97t+zZhaz91z78W7XIdWbO/r3r+sviZllyj9tu5UBg5zo4mDRL1e3Cm1PnPFn
-	oRJLcUaioRZzUXEiAMSDJZluAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 25 Sep 2014 01:59:58 -0400
+Date: Thu, 25 Sep 2014 07:59:55 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: Eduardo Valentin <edubezval@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
+        swarren@wwwdotorg.org, linux-pm@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, juha-matti.tilli@iki.fi
+Subject: Re: [PATCH v5 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+Message-ID: <20140925055953.GA12423@ulmo>
+References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
+ <1408616242-21009-5-git-send-email-mperttunen@nvidia.com>
+ <20140924191829.GA16529@developer>
+ <54231C3D.6040900@kapsi.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <54231C3D.6040900@kapsi.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Pitre wrote:
-> 
-> On Wed, 24 Sep 2014, Krzysztof Kozlowski wrote:
-> 
-> > This fixes build breakage of platsmp.c if ARMv6 was chosen for compile
-> > time options (e.g. by building allmodconfig):
-> >
-> > $ make allmodconfig
-> > $ make
-> >   CC      arch/arm/mach-exynos/platsmp.o
-> > /tmp/ccdQM0Eg.s: Assembler messages:
-> > /tmp/ccdQM0Eg.s:432: Error: selected processor does not support ARM mode `isb '
-> > /tmp/ccdQM0Eg.s:437: Error: selected processor does not support ARM mode `isb '
-> > /tmp/ccdQM0Eg.s:438: Error: selected processor does not support ARM mode `dsb '
-> > make[1]: *** [arch/arm/mach-exynos/platsmp.o] Error 1
-> >
-> > The error was introduced in commit "ARM: EXYNOS: Move code from
-> > hotplug.c to platsmp.c".  Previously code using
-> > v7_exit_coherency_flush() macro was built with '-march=armv7-a' flag but
-> > this flag dissapeared during the movement.
-> >
-> > Fix this by annotating the v7_exit_coherency_flush() asm code with
-> > armv7-a architecture.
-> >
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Reported-by: Mark Brown <broonie@kernel.org>
-> > Link: http://www.spinics.net/lists/linux-samsung-soc/msg36790.html
-> 
-> Acked-by: Nicolas Pitre <nico@linaro.org>
-> 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-For building allmodconfig, this patch fixes the problem.
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Russell,
-Can you please take this?
-
-- Kukjin
-
-> 
+On Wed, Sep 24, 2014 at 10:32:13PM +0300, Mikko Perttunen wrote:
+> On 09/24/2014 10:18 PM, Eduardo Valentin wrote:
 > >
-> > ---
+> >Mikko,
 > >
-> > Changes since v1:
-> > 1. Use armv7-a arch annotation instead replacing isb/dsb with macros.
-> >    Suggsted by Nicolas Pitre.
-> > ---
-> >  arch/arm/include/asm/cacheflush.h | 1 +
-> >  1 file changed, 1 insertion(+)
+> >On Thu, Aug 21, 2014 at 01:17:22PM +0300, Mikko Perttunen wrote:
+> >>...
+> >>+
+> >>+static int enable_tsensor(struct tegra_soctherm *tegra,
+> >>+			  const struct tegra_tsensor *sensor,
+> >>+			  struct tsensor_shared_calibration shared)
+> >>+{
+> >>+	void * __iomem base =3D tegra->regs + sensor->base;
 > >
-> > diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
-> > index 79ecb4f34ffb..10e78d00a0bb 100644
-> > --- a/arch/arm/include/asm/cacheflush.h
-> > +++ b/arch/arm/include/asm/cacheflush.h
-> > @@ -466,6 +466,7 @@ static inline void __sync_cache_range_r(volatile void *p, size_t size)
-> >   */
-> >  #define v7_exit_coherency_flush(level) \
-> >  	asm volatile( \
-> > +	".arch	armv7-a \n\t" \
-> >  	"stmfd	sp!, {fp, ip} \n\t" \
-> >  	"mrc	p15, 0, r0, c1, c0, 0	@ get SCTLR \n\t" \
-> >  	"bic	r0, r0, #"__stringify(CR_C)" \n\t" \
-> > --
-> > 1.9.1
+> >I get sparse complaining about this declaration. For the sake of keeping
+> >a clean static checks, can you please:
+> >-       void * __iomem base =3D tegra->regs + sensor->base;
+> >+       void __iomem * base =3D tegra->regs + sensor->base;
+> >
+>=20
+> Sure.
+>=20
+> >Can you also please check the remaining sparse errors?
+> >   CHECK   drivers/thermal/tegra_soctherm.c
+> >   drivers/thermal/tegra_soctherm.c:260:43: warning: incorrect type in
+> >   initializer (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:260:43:    expected void *[noderef]
+> >   <asn:2>base
+> >   drivers/thermal/tegra_soctherm.c:260:43:    got void [noderef]
+> >   <asn:2>*
+> >   drivers/thermal/tegra_soctherm.c:271:9: warning: incorrect type in
+> >   argument 2 (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:271:9:    expected void volatile
+> >   [noderef] <asn:2>*addr
+> >   drivers/thermal/tegra_soctherm.c:271:9:    got void *
+> >   drivers/thermal/tegra_soctherm.c:279:9: warning: incorrect type in
+> >   argument 2 (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:279:9:    expected void volatile
+> >   [noderef] <asn:2>*addr
+> >   drivers/thermal/tegra_soctherm.c:279:9:    got void *
+> >   drivers/thermal/tegra_soctherm.c:281:9: warning: incorrect type in
+> >   argument 2 (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:281:9:    expected void volatile
+> >   [noderef] <asn:2>*addr
+> >   drivers/thermal/tegra_soctherm.c:281:9:    got void *
+> >   drivers/thermal/tegra_soctherm.c:347:25: warning: incorrect type in
+> >   argument 1 (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:347:25:    expected void const *ptr
+> >   drivers/thermal/tegra_soctherm.c:347:25:    got void [noderef]
+> >   <asn:2>*regs
+> >   drivers/thermal/tegra_soctherm.c:349:37: warning: incorrect type in
+> >   argument 1 (different address spaces)
+> >   drivers/thermal/tegra_soctherm.c:349:37:    expected void const *ptr
+> >   drivers/thermal/tegra_soctherm.c:349:37:    got void [noderef]
+> >   <asn:2>*regs
+> >   drivers/thermal/tegra_soctherm.c:271:9: warning: dereference of
+> >   noderef expression
+> >   drivers/thermal/tegra_soctherm.c:279:9: warning: dereference of
+> >   noderef expression
+> >   drivers/thermal/tegra_soctherm.c:281:9: warning: dereference of
+> >   noderef expression
+> >
+>=20
+> Most of these seem to be caused by the above-mentioned swapping of __iomem
+> and *. The ones on lines 347 and 349 are more peculiar, though. Apparently
+> sparse doesn't like using IS_ERR and PTR_ERR on the void __iomem * pointer
+> returned by devm_ioremap_resource. Looks like this has been discussed bef=
+ore
+> (https://lkml.org/lkml/2013/6/17/216) and sparse should have been patched=
+ to
+> ignore this situation, so I'm not sure why it's complaining about it.
+> Anyway, there shouldn't be any issue here.
 
+If I apply the change suggested by Eduardo above then all of the above
+warnings go away for me. That's with sparse 0.5.0. According to the
+email thread above a patch for this was applied in 0.4.5.
+
+Thierry
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI69ZAAoJEN0jrNd/PrOhxN4P/iNBVWAAxC39mr9zEliC9aXY
+XszUMWP2PUyfXCCzfKQJeD9Nj8cdZ2RJw3vIO2MwXCLDwtntjoSptGVGzseIBCxc
+9zn3XcI25QRe+/0mYNa2fPyEP0JzcqmIAxxB/OEp2sYXWz+/bC+EyUy7pKJGA3Oi
+m82L2IFFFS3dPfsM75cxz94hNOGY9LpQqwIu03NBy60hw+aNhIqnSQbqNbJZFVq8
+s88jVhblclPR5RFscXIQLoZp7cNnAsJ9EEq5/iVbe+PSkq+rfltg2Fa2ae+qUz+X
+BXC1eoDcV+eiua29yrUExI9XYpmQm08fT91ixpx+IuQNmyLtAWHkNyGHjwqLuI99
+SrNqrAmL/2o/LgtwhdsRULc/I21r5+prSsrn8eeb/5ARkET+Zp/FQPb8EC6x+qze
+DEdkpZt3QUPN9i6SJvNli+SHV+P6Eql0qs+DXXMF84WoEb0NfSDA9btxfJomT4Dd
+En1s0wtHI6KivyjSmRZwvpmRvCUFksZAcTOY2t8dr/AtSssIqzZqzeL1n7tVRLhC
+VapenNFowk1ATLbtGwefiRFnzlg6DmbIxapG69/WVKXuJXCn5Cg6A6abyc8pjbkt
+rMptF7O2CB2vTM2y6WXn8OZxwN8EbF75oI0RMIvzXA31x52+nwg8mxvd6QBz+54X
+8Y7PXr0re0m2GovBwlGC
+=Ckmc
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
