@@ -1,140 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaIYIgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:36:22 -0400
-Received: from mga03.intel.com ([134.134.136.65]:61732 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaIYIgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:36:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,595,1406617200"; 
-   d="scan'208";a="608342368"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: peterz@infradead.org, mingo@kernel.org, rafael.j.wysocki@intel.com,
-        toshi.kani@hp.com, akpm@linux-foundation.org, tianyu.lan@intel.com,
-        ktkhai@parallels.com, fabf@skynet.be, laijs@cn.fujitsu.com,
-        srivatsa.bhat@linux.vnet.ibm.com, srivatsa@mit.edu,
-        ego@linux.vnet.ibm.com, viresh.kumar@linaro.org
-Cc: todd.e.brandt@linux.intel.com, tipbot@zytor.com,
-        wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [RFC PATCH V3 1/3] PM/CPU: Parallel enalbing nonboot cpus with resume devices
-Date: Thu, 25 Sep 2014 16:32:03 +0800
-Message-Id: <1411633925-9018-2-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411633925-9018-1-git-send-email-tianyu.lan@intel.com>
-References: <1411633925-9018-1-git-send-email-tianyu.lan@intel.com>
+	id S1752198AbaIYIj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:39:27 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:39260 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaIYIjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 04:39:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140925075033.GH5865@mwanda>
+References: <20140923002236.GA20782@devel>
+	<20140924094530.GC5811@mwanda>
+	<CAHb8M2A82yFT9dWqz=Ad_VoPY0c+UF5-VxbBOH-VNUjLnfJ1jA@mail.gmail.com>
+	<20140925075033.GH5865@mwanda>
+Date: Thu, 25 Sep 2014 17:39:21 +0900
+Message-ID: <CAHb8M2BNu9VNKbosiG5M7wzuyK2=hSxkjp5WQHFMDamOE0YzYg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] staging: dgap: use dgap_release_remap() in dgap_cleanup_board()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the current world, all nonboot cpus are enalbed serially during system
-resume. System resume sequence is that boot cpu enables nonboot cpu one by
-one and then resume devices. Before resuming devices, there are few tasks
-assigned to nonboot cpus after they are brought up. This waste cpu usage.
+2014-09-25 16:50 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Thu, Sep 25, 2014 at 09:26:47AM +0900, DaeSeok Youn wrote:
+>> Hi,
+>>
+>> 2014-09-24 18:45 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>> > On Tue, Sep 23, 2014 at 09:22:36AM +0900, Daeseok Youn wrote:
+>> >>  static void dgap_release_remap(struct board_t *brd)
+>> >>  {
+>> >> -     release_mem_region(brd->membase, 0x200000);
+>> >> -     release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
+>> >> -     iounmap(brd->re_map_membase);
+>> >> -     iounmap(brd->re_map_port);
+>> >> +     if (brd->re_map_membase) {
+>> >
+>> > I hate this if conditions.  Let's not complicate dgap_release_remap(),
+>> > let's fix the callers instead.  Especially dgap_init_module() is a
+>> > totally sucky function with bad unwinding.
+>> ok. then,
+>>    if (brd->re_map_membase && brd->re_map_port)
+>>         dgap_release_remap(brd);
+>>
+>> right?
+>
+> What I'm saying is there should be no if statement because we should
+> only call this function after the memory has been remapped so there
+> should be no if conditions in this function at all.
+OK. I got this. remove "if" statement in dgap_release_remap().
 
-To accelerate S3, this patchset is to allow boot cpu to go forward to
-resume devices after bringing up one nonboot cpu and starting a thread.
-The thread will be in charge of bringing up other frozen cpus. The thread
-will be scheduled to the first online cpu to run . This makes enabling
-cpu2~x parallel with resuming devices.
+>
+> The problem is that dgap_init_module() doesn't unwind, it just tries to
+> free every variable without considering whether or not it was allocated.
+> It's the "One Err" approach to error handling where you just have one
+> error label that calls free on every single thing in the world.  It
+> *should* look more like this:
+>
+> static int dgap_init_module(void)
+> {
+>         int rc;
+>
+>         pr_info("%s, Digi International Part Number %s\n", DG_NAME, DG_PART);
+>
+>         rc = dgap_start();
+>         if (rc)
+>                 return rc;
+>
+>         rc = pci_register_driver(&dgap_driver);
+>         if (rc)
+>                 goto err_stop;
+>
+>         rc = dgap_create_driver_sysfiles(&dgap_driver);
+>         if (rc)
+>                 goto err_unregister;
+>
+>         dgap_driver_state = DRIVER_READY;
+>
+>         return 0;
+>
+> err_unregister:   // <- note that the label names reflect where the label
+>                   //    is not where the goto is.  dgap_start() uses
+>                   //    wrong/confusing label names.
+>         pci_unregister_driver(&dgap_driver);
+> err_stop:
+>         dgap_stop();  // <- mirror image of dgap_start();
+>
+>         return rc;
+> }
+>
+> dgap_stop() is easy to write because it's based on the error handling
+> in dgap_start().
+>
+> static void dgap_start(void)
+> {
+>         spin_lock_irqsave(&dgap_poll_lock, lock_flags);
+>         dgap_poll_stop = 1;
+>         spin_unlock_irqrestore(&dgap_poll_lock, lock_flags);
+>
+>         del_timer_sync(&dgap_poll_timer);
+>
+>         device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
+>         class_destroy(dgap_class);
+>         unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
+> }
+>
+> The existing dgap_init_module() "free every single thing in the entire
+> universe" approach is buggy because it tries to delete the sysfs files
+> before they have been allocated.  This is called a "One Err Bug" because
+> having just one error label makes the code too complicated for anyone to
+> understand.  You have to add all kinds of if conditions everywhere and
+> it's a mess.
+thanks for kind explanation.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- kernel/cpu.c | 67 ++++++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 56 insertions(+), 11 deletions(-)
+I will send patches as your comments.
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 356450f..24c4889 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -572,8 +572,41 @@ void __weak arch_enable_nonboot_cpus_end(void)
- {
- }
- 
-+static int _cpu_up_for_pm(int cpu)
-+{
-+	int error;
-+
-+	trace_suspend_resume(TPS("CPU_ON"), cpu, true);
-+	error = _cpu_up(cpu, 1);
-+	trace_suspend_resume(TPS("CPU_ON"), cpu, false);
-+	if (error) {
-+		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-+		return error;
-+	}
-+
-+	pr_info("CPU%d is up\n", cpu);
-+	return 0;
-+}
-+
-+static int async_enable_nonboot_cpus(void *data)
-+{
-+	int cpu;
-+
-+	arch_enable_nonboot_cpus_begin();
-+
-+	for_each_cpu(cpu, frozen_cpus) {
-+		_cpu_up_for_pm(cpu);
-+	}
-+
-+	arch_enable_nonboot_cpus_end();
-+	cpumask_clear(frozen_cpus);
-+	cpu_maps_update_done();
-+	return 0;
-+}
-+
- void __ref enable_nonboot_cpus(void)
- {
-+	struct task_struct *tsk;
- 	int cpu, error;
- 
- 	/* Allow everyone to use the CPU hotplug again */
-@@ -584,21 +617,33 @@ void __ref enable_nonboot_cpus(void)
- 
- 	pr_info("Enabling non-boot CPUs ...\n");
- 
--	arch_enable_nonboot_cpus_begin();
-+	cpu = cpumask_first(frozen_cpus);
-+	cpumask_clear_cpu(cpu, frozen_cpus);
-+	error = _cpu_up_for_pm(cpu);
-+	if (error) {
-+		pr_err("Failed to bring up first non-boot cpu.\n");
-+		goto fail;
-+	}
- 
--	for_each_cpu(cpu, frozen_cpus) {
--		trace_suspend_resume(TPS("CPU_ON"), cpu, true);
--		error = _cpu_up(cpu, 1);
--		trace_suspend_resume(TPS("CPU_ON"), cpu, false);
--		if (!error) {
--			pr_info("CPU%d is up\n", cpu);
--			continue;
--		}
--		pr_warn("Error taking CPU%d up: %d\n", cpu, error);
-+	tsk = kthread_run(async_enable_nonboot_cpus,
-+			NULL, "async-enable-nonboot-cpus");
-+	if (IS_ERR(tsk)) {
-+		pr_err("Failed to create async enable nonboot cpus thread.\n");
-+		goto fail;
- 	}
-+	return;
- 
-+fail:
-+	/*
-+	 * If fail to bring up the first frozen cpu or
-+	 * start async thread, enable these rest frozen cpus
-+	 * on the boot cpu.
-+	 */
-+	arch_enable_nonboot_cpus_begin();
-+	for_each_cpu(cpu, frozen_cpus) {
-+		_cpu_up_for_pm(cpu);
-+	}
- 	arch_enable_nonboot_cpus_end();
--
- 	cpumask_clear(frozen_cpus);
- out:
- 	cpu_maps_update_done();
--- 
-1.8.4.rc0.1.g8f6a3e5.dirty
-
+regards,
+Daeseok Youn.
+>
+> regards,
+> dan carpenter
+>
