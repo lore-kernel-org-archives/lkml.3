@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053AbaIYJCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:02:12 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:32900 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaIYJCI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:02:08 -0400
-Message-ID: <5423DA0D.9030100@linaro.org>
-Date: Thu, 25 Sep 2014 11:02:05 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752089AbaIYJDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:03:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63296 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977AbaIYJDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 05:03:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,595,1406617200"; 
+   d="scan'208";a="605132545"
+Date: Thu, 25 Sep 2014 12:02:27 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
+        Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH v2] i2c: move acpi code back into the core
+Message-ID: <20140925090227.GE1786@lahna.fi.intel.com>
+References: <1411594591-5048-1-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Kukjin Kim <kgene@kernel.org>
-CC: "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "'Thomas Abraham'" <ta.omasab@gmail.com>
-Subject: Re: [PATCH v3] ARM: dts: add CPU nodes for Exynos4 SoCs
-References: <5230569.XLlNbB5NvF@amdc1032> <018e01cfd885$770dd940$65298bc0$@kernel.org> <20140925081704.GA20841@e102568-lin.cambridge.arm.com>
-In-Reply-To: <20140925081704.GA20841@e102568-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411594591-5048-1-git-send-email-wsa@the-dreams.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 10:17 AM, Lorenzo Pieralisi wrote:
-> [CC'ed Daniel to make him aware this patch goes through your tree]
+On Wed, Sep 24, 2014 at 11:36:31PM +0200, Wolfram Sang wrote:
+> Commit 5d98e61d337c ("I2C/ACPI: Add i2c ACPI operation region support")
+> renamed the i2c-core module. This may cause regressions for
+> distributions, so put the ACPI code back into the core.
+> 
+> Reported-by: Jean Delvare <jdelvare@suse.de>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Thanks for the head up. I was about to send the PR to Rafael.
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-[ ... ]
+One comment though,
 
-> That's great, now my Exynos CPUidle DT patch should be rebased on top
-> of this patch so that thanks to the testing carried out by Bart it can be
-> merged too.
+> Cc: Lan Tianyu <tianyu.lan@intel.com>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> ---
+> +#if defined(CONFIG_ACPI)
+> +struct acpi_i2c_handler_data {
+> +	struct acpi_connection_info info;
+> +	struct i2c_adapter *adapter;
+> +};
+> +
+> +struct gsb_buffer {
+> +	u8	status;
+> +	u8	len;
+> +	union {
+> +		u16	wdata;
+> +		u8	bdata;
+> +		u8	data[0];
+> +	};
+> +} __packed;
 
-Ok, I am getting confused. How can I rebase the latest patch of your 
-series with a patch no yet available in my tree ?
+These two structures should be inside CONFIG_ACPI_I2C_OPREGION because
+they are used in that code. However, this still works fine now as you
+can't select CONFIG_ACPI_I2C_OPREGION without CONFIG_ACPI.
 
-I propose just to drop the last patch and wait for the next merge to 
-reintegrate it into the cpuidle tree. Does it make sense ?
-
-Thanks
-   -- Daniel
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> +
+> +static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
+> +{
+> +	struct i2c_board_info *info = data;
+> +
+> +	if (ares->type == ACPI_RESOURCE_TYPE_SERIAL_BUS) {
+> +		struct acpi_resource_i2c_serialbus *sb;
+> +
+> +		sb = &ares->data.i2c_serial_bus;
+> +		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_I2C) {
+> +			info->addr = sb->slave_address;
+> +			if (sb->access_mode == ACPI_I2C_10BIT_MODE)
+> +				info->flags |= I2C_CLIENT_TEN;
+> +		}
+> +	} else if (info->irq < 0) {
+> +		struct resource r;
+> +
+> +		if (acpi_dev_resource_interrupt(ares, 0, &r))
+> +			info->irq = r.start;
+> +	}
+> +
+> +	/* Tell the ACPI core to skip this resource */
+> +	return 1;
+> +}
