@@ -1,123 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985AbaIYHuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:50:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20329 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaIYHuv (ORCPT
+	id S1752479AbaIYHvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:51:06 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40149 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382AbaIYHvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:50:51 -0400
-Date: Thu, 25 Sep 2014 10:50:33 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: DaeSeok Youn <daeseok.youn@gmail.com>
-Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
-        devel <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] staging: dgap: use dgap_release_remap() in
- dgap_cleanup_board()
-Message-ID: <20140925075033.GH5865@mwanda>
-References: <20140923002236.GA20782@devel>
- <20140924094530.GC5811@mwanda>
- <CAHb8M2A82yFT9dWqz=Ad_VoPY0c+UF5-VxbBOH-VNUjLnfJ1jA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHb8M2A82yFT9dWqz=Ad_VoPY0c+UF5-VxbBOH-VNUjLnfJ1jA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 25 Sep 2014 03:51:03 -0400
+From: Kever Yang <kever.yang@rock-chips.com>
+To: heiko@sntech.de, Mike Turquette <mturquette@linaro.org>
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
+        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Kever Yang <kever.yang@rock-chips.com>, devicetree@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/3] Add clock binding id for rk3288
+Date: Thu, 25 Sep 2014 15:48:44 +0800
+Message-Id: <1411631328-14973-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 09:26:47AM +0900, DaeSeok Youn wrote:
-> Hi,
-> 
-> 2014-09-24 18:45 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> > On Tue, Sep 23, 2014 at 09:22:36AM +0900, Daeseok Youn wrote:
-> >>  static void dgap_release_remap(struct board_t *brd)
-> >>  {
-> >> -     release_mem_region(brd->membase, 0x200000);
-> >> -     release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
-> >> -     iounmap(brd->re_map_membase);
-> >> -     iounmap(brd->re_map_port);
-> >> +     if (brd->re_map_membase) {
-> >
-> > I hate this if conditions.  Let's not complicate dgap_release_remap(),
-> > let's fix the callers instead.  Especially dgap_init_module() is a
-> > totally sucky function with bad unwinding.
-> ok. then,
->    if (brd->re_map_membase && brd->re_map_port)
->         dgap_release_remap(brd);
-> 
-> right?
+This patch add some clock binding id for different modules
+that under development and going to send upstream.
 
-What I'm saying is there should be no if statement because we should
-only call this function after the memory has been remapped so there
-should be no if conditions in this function at all.
+This patch also add the clock node in PD_VIDEO.
 
-The problem is that dgap_init_module() doesn't unwind, it just tries to
-free every variable without considering whether or not it was allocated.
-It's the "One Err" approach to error handling where you just have one
-error label that calls free on every single thing in the world.  It
-*should* look more like this:
+Changes in v3:
+- add a fix factor
+- introduce a virtual node to implement the clock struct
 
-static int dgap_init_module(void)
-{
-        int rc;
+Changes in v2:
+- split into two patches of add clock node in PD_VIDEO and
+  use new defined clock ID
+- split out the patch
 
-        pr_info("%s, Digi International Part Number %s\n", DG_NAME, DG_PART);
+Kever Yang (3):
+  clk: rockchip: add some needed clock binding id for rk3288
+  clk: rockchip: use the clock id for nodes init
+  clk: rockchip: add clock node in PD_VIDEO
 
-        rc = dgap_start();
-        if (rc)
-                return rc;
+ drivers/clk/rockchip/clk-rk3288.c      | 88 +++++++++++++++++++++-------------
+ include/dt-bindings/clock/rk3288-cru.h | 38 ++++++++++++++-
+ 2 files changed, 91 insertions(+), 35 deletions(-)
 
-        rc = pci_register_driver(&dgap_driver);
-        if (rc)
-                goto err_stop;
-
-        rc = dgap_create_driver_sysfiles(&dgap_driver);
-        if (rc)
-                goto err_unregister;
-
-        dgap_driver_state = DRIVER_READY;
-
-        return 0;
-
-err_unregister:   // <- note that the label names reflect where the label
-                  //    is not where the goto is.  dgap_start() uses
-                  //    wrong/confusing label names.
-	pci_unregister_driver(&dgap_driver);
-err_stop:
-	dgap_stop();  // <- mirror image of dgap_start();
-
-        return rc;
-}
-
-dgap_stop() is easy to write because it's based on the error handling
-in dgap_start().
-
-static void dgap_start(void)
-{
-        spin_lock_irqsave(&dgap_poll_lock, lock_flags);
-        dgap_poll_stop = 1;
-        spin_unlock_irqrestore(&dgap_poll_lock, lock_flags);
-
-	del_timer_sync(&dgap_poll_timer);
-
-	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
-        class_destroy(dgap_class);
-        unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
-}
-
-The existing dgap_init_module() "free every single thing in the entire
-universe" approach is buggy because it tries to delete the sysfs files
-before they have been allocated.  This is called a "One Err Bug" because
-having just one error label makes the code too complicated for anyone to
-understand.  You have to add all kinds of if conditions everywhere and
-it's a mess.
-
-regards,
-dan carpenter
+-- 
+1.9.1
 
