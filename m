@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468AbaIYKXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:23:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:54638 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaIYKXt (ORCPT
+	id S1752738AbaIYKY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:24:59 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:51824 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIYKYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:23:49 -0400
-Message-ID: <5423ED2B.8010009@huawei.com>
-Date: Thu, 25 Sep 2014 18:23:39 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 25 Sep 2014 06:24:55 -0400
+X-ASG-Debug-ID: 1411640693-0759e70b731a0d80002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Thu, 25 Sep 2014 12:24:51 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <stable@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH resend 1/2] tty: omap-serial: fix division by zero
+Message-ID: <20140925102451.GF22872@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH resend 1/2] tty: omap-serial: fix division by zero
+References: <20140924080852.GA28215@kroah.com>
+ <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
+ <20140925101628.GB16810@kroah.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Wagin <avagin@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: cgroup_mount() falls asleep forever
-References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com> <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com> <20140924185213.GB7996@ZenIV.linux.org.uk> <20140924192456.GA1233@mtj.dyndns.org> <20140925024719.GJ7996@ZenIV.linux.org.uk> <20140925032502.GB6903@mtj.dyndns.org>
-In-Reply-To: <20140925032502.GB6903@mtj.dyndns.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140925101628.GB16810@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411640693
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9858
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/25 11:25, Tejun Heo wrote:
-> Hello, Al.
+On Thu, Sep 25, 2014 at 12:16:28PM +0200, Greg Kroah-Hartman wrote:
+> On Thu, Sep 25, 2014 at 11:19:51AM +0200, Frans Klaver wrote:
+> > If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
+> > calculated n values in serial_omap_is_baud_mode16() may become 0. This
+> > causes a division by zero when calculating the difference between
+> > calculated and desired baud rates. To prevent this, cap the n13 and n16
+> > values on 1.
+> > 
+> > Division by zero in kernel.
+> > [<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
+> > [<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
+> > [<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
+> > [<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
+> > [<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
+> > [<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
+> > [<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
+> > [<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
+> > [<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
+> > [<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
+> > [<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
+> > [<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
+> > [<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+> > 
+> > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> > ---
+> > Resend to add stable@vger.kernel.org to CC. As far as I know, this applies to
+> > v3.9 and up.
 > 
-> On Thu, Sep 25, 2014 at 03:47:19AM +0100, Al Viro wrote:
->>> Yeah, it's an ugly thing to work around vfs interface not very
->>> conducive for filesystems which conditionally create or reuse
->>> superblocks during mount.  There was a thread explaining what's going
->>> on.  Looking up...
->>>
->>>   http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
->>
->> Umm...  I still don't get it.  Could you describe the screnario in which
->> that percpu_ref_tryget_live() would be called and managed to fail?
+> <formletter>
 > 
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
+> 
+> </formletter>
+> 
+> I'll take care of this, but go read that file for your next time...
 
-See this:
+Ah, right. I'll heed that next time. Thanks for taking care of it.
 
-https://git.kernel.org/cgit/linux/kernel/git/tj/cgroup.git/commit/kernel/cgroup.c?id=3a32bd72d77058d768dbb38183ad517f720dd1bc
-
-Without the above commit, A scenario like this can happen:
-
-1. Thread A has dropped sb refcnt to 0 but hasn't called percpu_ref_kill(). 
-2. At this time Thread B calls cgroup_mount() and percpu_ref_tryget() succeeds.
-3. After a while Thread C calls cgroup_mount(), but percpu_ref_tryget() keeps
-returning failure, because the ref has been killed by percpu_ref_kill().
-
-So I had to use kernfs_pin_sb() to prevent thread B from getting the percpu refcnt.
-
-Any better idea to fix this?
-
-> That was for the initial fix and Li later added the pinning to fix
-> something else.  Let's wait for Li to chime in.  He knows this part
-> better.
-> 
->> It smells to me like most of the problems here are simply due to having too
->> many locks and not being able to decide where should they live relative to
->> ->s_umount.  That cgroup_mutex thing feels like something way to coarse...
->> You have it grabbed/dropped in
-> 
-> cgroup_mutex is the outer-most lock as far as cgroup is concerned and
-> not expected to nest under anything which is used by individual
-> controllers.  Most of what cgroup core does is low-freq managerial
-> things which don't benefit from finer grained locking and the mount
-> path is one of few surfaces where it interacts with outside in terms
-> of locking, so it's better to keep that path special and everything
-> else simpler.
-> 
->> And that's a single system-wide mutex.  Plus there's a slew of workqueues
->> and really unpleasant abuse of restart_syscall() tossed in for fun - what
->> happens if some joker triggers that ->mount() _not_ from mount(2)?
-> 
-> For cgroup, mount is the userland-visible init interface.  It gotta be
-> called from userland.  It originally had internal retry loop but
-> syscall restart is simpler.  Reviving that loop isn't difficult if it
-> ever becomes necessary.
-> 
->> Then there's a global rwsem nesting inside that sucker.  And there's another
-> 
-> The rwsem nests inside cgroup_mutex and exists to allow multiple
-> reader accesses to a particular data structure.
-> 
->> mutex in fs/kernfs - also a global one.  Are the locking rules documented
->> anywhere?  Lifetime rules, as well...
-> 
-> kernfs one shouldn't interact with anything outside kernfs.  Its
-> dependency is terminated within kernfs.
-> 
->> Frankly, my first inclination here would be to try using sget() instead of
->> scanning the list of roots.  How painful would it be to split the allocation
->> and setup of roots, always allocate a new root and have sget() wait
->> for fs shutdown in progress and decide whether it wants to reuse the existing
->> one.  You can easily tell reuse existing vs. set up a new one from each other -
->> just look at the root associated with the superblock you've got and check
->> if it's the one you've allocated.  Freeing the damn thing if we'd reused
->> an existing one and doing setup otherwise.
->>
->> I realize that it won't do in such form; your for_each_subsys() loop in there
->> really depends on holding cgroup_mutex all the way through.  But do we really
->> need it there?  Would just skipping the ones that doomed in rebind_subsystems()
->> suffice?
-> 
-> At this point, cgroup core locking is heavily focused on simplicity -
-> cgroup_mutex for the whole thing and css_set_rwsem for css_set reader
-> accesses.  It works out pretty well for the rest of the code but the
-> mount path does get tricky.  We can definitely relax / separate out
-> locking on subsys iteration for mount path but if possible I'd prefer
-> to pay isolated complexity there instead of spilling it to other
-> places.
-> 
-> Anyways, let's wait for Li.  At least nobody reported breakage before
-> the recent commit, so we can revert the offending commit for the short
-> term.
-> 
-
-That patch is wrong. We have to use both pinned_sb and new_sb, so
-please revert it. :(
-
-I think we need to put some test cases in tools/testing/selftests/, to
-prevent this fragile thing from breaking again.
+Frans
