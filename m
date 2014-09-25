@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaIYXBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:01:49 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:61684 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551AbaIYXBr convert rfc822-to-8bit (ORCPT
+	id S1752591AbaIYXFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:05:41 -0400
+Received: from rgout0205.bt.lon5.cpcloud.co.uk ([65.20.0.204]:43897 "EHLO
+	rgout0205.bt.lon5.cpcloud.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751772AbaIYXFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:01:47 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Rothwell <sfr@canb.auug.org.au>, "Kukjin Kim" <kgene@kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20140924155336.6e64b952@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>
-References: <20140924110836.209bc8e2@canb.auug.org.au>
- <00fb01cfd7a4$45eb4a50$d1c1def0$@kernel.org>
- <20140924155336.6e64b952@canb.auug.org.au>
-Message-ID: <20140925230124.19023.33551@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: linux-next: build failure after merge of the samsung tree
-Date: Thu, 25 Sep 2014 16:01:24 -0700
+	Thu, 25 Sep 2014 19:05:40 -0400
+X-CTCH-RefID: str=0001.0A090204.54249FBB.008A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-Junkmail-Premium-Raw: score=28/50,refid=2.7.2:2014.9.25.135419:17:28.905,ip=31.50.239.172,rules=__HAS_FROM,
+ __PHISH_FROM2, __FRAUD_WEBMAIL_FROM, __TO_MALFORMED_2, __TO_NO_NAME,
+ __MULTIPLE_RCPTS_CC_X2, __SUBJ_ALPHA_END, __HAS_MSGID, __SANE_MSGID,
+ __HAS_X_MAILER, __ANY_URI, __FRAUD_BODY_WEBMAIL, __URI_NO_WWW, __URI_NO_PATH,
+ BODYTEXTP_SIZE_3000_LESS, BODY_SIZE_800_899, __MIME_TEXT_ONLY,
+ RDNS_GENERIC_POOLED, __URI_NS, SXL_IP_DYNAMIC[172.239.50.31.fur], HTML_00_01,
+ HTML_00_10, BODY_SIZE_5000_LESS, RDNS_SUSP_GENERIC, __PHISH_FROM,
+ MULTIPLE_RCPTS, __PHISH_SPEAR_STRUCTURE_1, BODY_SIZE_1000_LESS, RDNS_SUSP,
+ BODY_SIZE_2000_LESS, __FRAUD_WEBMAIL, BODY_SIZE_7000_LESS
+X-CTCH-Spam: Unknown
+From: Mike Roocroft <mike.linux@btinternet.com>
+To: gregkh@linuxfoundation.org
+Cc: swetland@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Mike Roocroft <mike.linux@btinternet.com>
+Subject: [PATCH 2/2] Staging: android: sw_sync: fixed a coding style issues
+Date: Fri, 26 Sep 2014 00:08:22 +0100
+Message-Id: <1411686502-2605-1-git-send-email-mike.linux@btinternet.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Rothwell (2014-09-23 22:53:36)
-> Hi Kukjin,
-> 
-> On Wed, 24 Sep 2014 12:04:36 +0900 Kukjin Kim <kgene@kernel.org> wrote:
-> >
-> > > After merging the samsung tree, today's linux-next build (arm multi_v7_defconfig)
-> > > failed like this:
-> > > 
-> > > arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock/maxim,max77686.h: No such
-> > > file or directory
-> > >  #include <dt-bindings/clock/maxim,max77686.h>
-> > >                                               ^
-> > > 
-> > + Mike
-> > 
-> > Hmm... I think, inclusion of the header file should be included in Mike's clk
-> > tree...What's wrong?
-> 
-> Mike's clk tree is included in linux-next well after your tree ... and
-> does Mike's tree get included in the arm-soc tree like your does?  So,
-> clearly you can't build this tree on its own?
+Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
+---
+ drivers/staging/android/sw_sync.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-I saw in another thread that Kukjin merged the clk tree into his -next
-branch. Is there anything left to do on this one?
+diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
+index a76db3f..863d4b1 100644
+--- a/drivers/staging/android/sw_sync.c
++++ b/drivers/staging/android/sw_sync.c
+@@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
+ 				       char *str, int size)
+ {
+ 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
++
+ 	snprintf(str, size, "%d", pt->value);
+ }
+ 
+@@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
+ static int sw_sync_release(struct inode *inode, struct file *file)
+ {
+ 	struct sw_sync_timeline *obj = file->private_data;
++
+ 	sync_timeline_destroy(&obj->obj);
+ 	return 0;
+ }
+-- 
+2.1.0
 
-Regards,
-Mike
-
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
