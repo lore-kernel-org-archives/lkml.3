@@ -1,94 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaIYCrX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:47:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41837 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259AbaIYCrW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:47:22 -0400
-Date: Thu, 25 Sep 2014 03:47:19 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrey Wagin <avagin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: linux-next: cgroup_mount() falls asleep forever
-Message-ID: <20140925024719.GJ7996@ZenIV.linux.org.uk>
-References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
- <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
- <20140924185213.GB7996@ZenIV.linux.org.uk>
- <20140924192456.GA1233@mtj.dyndns.org>
+	id S1752109AbaIYCrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:47:43 -0400
+Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:45286
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751895AbaIYCrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 22:47:41 -0400
+From: Zhao Qiang <B45475@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <B07421@freescale.com>
+CC: <R63061@freescale.com>, Zhao Qiang <B45475@freescale.com>
+Subject: [PATCH 2/3] qe_common: add qe common functions to qe_common.c
+Date: Thu, 25 Sep 2014 10:47:16 +0800
+Message-ID: <1411613237-2271-1-git-send-email-B45475@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(40224003)(189002)(199003)(48376002)(31966008)(68736004)(87936001)(50466002)(89996001)(19580405001)(93916002)(2201001)(92726001)(99396003)(83322001)(92566001)(10300001)(50986999)(47776003)(6806004)(120916001)(50226001)(19580395003)(44976005)(20776003)(21056001)(84676001)(76482002)(102836001)(77982003)(74662003)(80022003)(81542003)(74502003)(64706001)(46102003)(90102001)(229853001)(36756003)(107046002)(97736003)(62966002)(105606002)(85306004)(104166001)(85852003)(81342003)(95666004)(83072002)(79102003)(88136002)(4396001)(77156001)(104016003)(87286001)(106466001)(2004002)(2101003)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0768;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924192456.GA1233@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0768;
+X-Forefront-PRVS: 0345CFD558
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=qiang.zhao@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1279;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:24:56PM -0400, Tejun Heo wrote:
+qe need to call some common functions, move them into
+public directory, add a new file drivers/soc/qe/qe_common.c
+for them.
 
-> > Lovely...  First of all, that thing is obviously racy - there's nothing
-> > to prevent another mount happening between these two places.  Moreover,
-> > kernfs_mount() calling conventions are really atrocious - pointer to
-> > bool just to indicate that superblock is new?
-> > 
-> > Could somebody explain WTF is the whole construction trying to do?  Not
-> > to mention anything else, what *does* this pinning a superblock protect
-> > from?  Suppose we have a superblock for the same root with non-NULL ns
-> > and _that_ gets killed.  We get hit by the same
-> > 	percpu_ref_kill(&root->cgrp.self.refcnt);
-> > so what's the point of pinned_sb?  Might as well have just bumped the
-> > refcount, superblock or no superblock.  And no, delaying that kernfs_kill_sb()
-> > does you no good whatsoever - again, pinned_sb might have nothing to do with
-> > the superblock we are after.
-> 
-> Yeah, it's an ugly thing to work around vfs interface not very
-> conducive for filesystems which conditionally create or reuse
-> superblocks during mount.  There was a thread explaining what's going
-> on.  Looking up...
-> 
->   http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
+Signed-off-by: Zhao Qiang <B45475@freescale.com>
+---
+ drivers/soc/qe/Makefile    |   2 +-
+ drivers/soc/qe/qe_common.c | 185 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fsl/qe.h     |  52 +++++++++++--
+ 3 files changed, 230 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/soc/qe/qe_common.c
 
-Umm...  I still don't get it.  Could you describe the screnario in which
-that percpu_ref_tryget_live() would be called and managed to fail?
+diff --git a/drivers/soc/qe/Makefile b/drivers/soc/qe/Makefile
+index f1855c1..77f6fd9 100644
+--- a/drivers/soc/qe/Makefile
++++ b/drivers/soc/qe/Makefile
+@@ -1,7 +1,7 @@
+ #
+ # Makefile for the linux ppc-specific parts of QE
+ #
+-obj-$(CONFIG_QUICC_ENGINE)+= qe.o qe_ic.o qe_io.o
++obj-$(CONFIG_QUICC_ENGINE)+= qe.o qe_ic.o qe_io.o qe_common.o
+ 
+ obj-$(CONFIG_UCC)	+= ucc.o
+ obj-$(CONFIG_UCC_SLOW)	+= ucc_slow.o
+diff --git a/drivers/soc/qe/qe_common.c b/drivers/soc/qe/qe_common.c
+new file mode 100644
+index 0000000..ee02ae8
+--- /dev/null
++++ b/drivers/soc/qe/qe_common.c
+@@ -0,0 +1,185 @@
++/*
++ * Common QE code
++ *
++ * Author: Scott Wood <scottwood@freescale.com>
++ *
++ * Copyright 2007-2008,2010 Freescale Semiconductor, Inc.
++ *
++ * Some parts derived from commproc.c/cpm2_common.c, which is:
++ * Copyright (c) 1997 Dan error_act (dmalek@jlc.net)
++ * Copyright (c) 1999-2001 Dan Malek <dan@embeddedalley.com>
++ * Copyright (c) 2000 MontaVista Software, Inc (source@mvista.com)
++ * 2006 (c) MontaVista Software, Inc.
++ * Vitaly Bordug <vbordug@ru.mvista.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/of_device.h>
++#include <linux/spinlock.h>
++#include <linux/export.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/slab.h>
++
++#include <asm/io.h>
++#include <asm/rheap.h>
++#include <linux/fsl/qe.h>
++
++static spinlock_t qe_muram_lock;
++static rh_block_t qe_boot_muram_rh_block[16];
++static rh_info_t qe_muram_info;
++static u8 __iomem *muram_vbase;
++static phys_addr_t muram_pbase;
++
++/* Max address size we deal with */
++#define OF_MAX_ADDR_CELLS	4
++
++int qe_muram_init(void)
++{
++	struct device_node *np;
++	struct resource r;
++	u32 zero[OF_MAX_ADDR_CELLS] = {};
++	resource_size_t max = 0;
++	int i = 0;
++	int ret = 0;
++
++	if (muram_pbase)
++		return 0;
++
++	spin_lock_init(&qe_muram_lock);
++	/* initialize the info header */
++	rh_init(&qe_muram_info, 1,
++	        sizeof(qe_boot_muram_rh_block) /
++	        sizeof(qe_boot_muram_rh_block[0]),
++	        qe_boot_muram_rh_block);
++
++	np = of_find_compatible_node(NULL, NULL, "fsl,qe-muram-data");
++	if (!np) {
++		/* try legacy bindings */
++		np = of_find_node_by_name(NULL, "data-only");
++		if (!np) {
++			printk(KERN_ERR "Cannot find CPM muram data node");
++			ret = -ENODEV;
++			goto out;
++		}
++	}
++
++	muram_pbase = of_translate_address(np, zero);
++	if (muram_pbase == (phys_addr_t)OF_BAD_ADDR) {
++		printk(KERN_ERR "Cannot translate zero through CPM muram node");
++		ret = -ENODEV;
++		goto out;
++	}
++
++	while (of_address_to_resource(np, i++, &r) == 0) {
++		if (r.end > max)
++			max = r.end;
++
++		rh_attach_region(&qe_muram_info, r.start - muram_pbase,
++				 resource_size(&r));
++	}
++
++	muram_vbase = ioremap(muram_pbase, max - muram_pbase + 1);
++	if (!muram_vbase) {
++		printk(KERN_ERR "Cannot map CPM muram");
++		ret = -ENOMEM;
++	}
++
++out:
++	of_node_put(np);
++	return ret;
++}
++
++/**
++ * qe_muram_alloc - allocate the requested size worth of multi-user ram
++ * @size: number of bytes to allocate
++ * @align: requested alignment, in bytes
++ *
++ * This function returns an offset into the muram area.
++ * Use qe_dpram_addr() to get the virtual address of the area.
++ * Use qe_muram_free() to free the allocation.
++ */
++unsigned long qe_muram_alloc(unsigned long size, unsigned long align)
++{
++	unsigned long start;
++	unsigned long flags;
++
++	spin_lock_irqsave(&qe_muram_lock, flags);
++	qe_muram_info.alignment = align;
++	start = rh_alloc(&qe_muram_info, size, "commproc");
++	memset(qe_muram_addr(start), 0, size);
++	spin_unlock_irqrestore(&qe_muram_lock, flags);
++
++	return start;
++}
++EXPORT_SYMBOL(qe_muram_alloc);
++
++/**
++ * qe_muram_free - free a chunk of multi-user ram
++ * @offset: The beginning of the chunk as returned by qe_muram_alloc().
++ */
++int qe_muram_free(unsigned long offset)
++{
++	int ret;
++	unsigned long flags;
++
++	spin_lock_irqsave(&qe_muram_lock, flags);
++	ret = rh_free(&qe_muram_info, offset);
++	spin_unlock_irqrestore(&qe_muram_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(qe_muram_free);
++
++/**
++ * qe_muram_alloc_fixed - reserve a specific region of multi-user ram
++ * @offset: the offset into the muram area to reserve
++ * @size: the number of bytes to reserve
++ *
++ * This function returns "start" on success, -ENOMEM on failure.
++ * Use qe_dpram_addr() to get the virtual address of the area.
++ * Use qe_muram_free() to free the allocation.
++ */
++unsigned long qe_muram_alloc_fixed(unsigned long offset, unsigned long size)
++{
++	unsigned long start;
++	unsigned long flags;
++
++	spin_lock_irqsave(&qe_muram_lock, flags);
++	qe_muram_info.alignment = 1;
++	start = rh_alloc_fixed(&qe_muram_info, offset, size, "commproc");
++	spin_unlock_irqrestore(&qe_muram_lock, flags);
++
++	return start;
++}
++EXPORT_SYMBOL(qe_muram_alloc_fixed);
++
++/**
++ * qe_muram_addr - turn a muram offset into a virtual address
++ * @offset: muram offset to convert
++ */
++void __iomem *qe_muram_addr(unsigned long offset)
++{
++	return muram_vbase + offset;
++}
++EXPORT_SYMBOL(qe_muram_addr);
++
++unsigned long qe_muram_offset(void __iomem *addr)
++{
++	return addr - (void __iomem *)muram_vbase;
++}
++EXPORT_SYMBOL(qe_muram_offset);
++
++/**
++ * qe_muram_dma - turn a muram virtual address into a DMA address
++ * @offset: virtual address from qe_muram_addr() to convert
++ */
++dma_addr_t qe_muram_dma(void __iomem *addr)
++{
++	return muram_pbase + ((u8 __iomem *)addr - muram_vbase);
++}
++EXPORT_SYMBOL(qe_muram_dma);
+diff --git a/include/linux/fsl/qe.h b/include/linux/fsl/qe.h
+index d56b8e0..fab0398 100644
+--- a/include/linux/fsl/qe.h
++++ b/include/linux/fsl/qe.h
+@@ -19,7 +19,8 @@
+ #include <linux/spinlock.h>
+ #include <linux/errno.h>
+ #include <linux/err.h>
+-#include <asm/cpm.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/fsl/immap_qe.h>
+ 
+ #define QE_NUM_OF_SNUM	256	/* There are 256 serial number in QE */
+@@ -188,13 +189,48 @@ static inline int qe_alive_during_sleep(void)
+ #endif
+ }
+ 
+-/* we actually use cpm_muram implementation, define this for convenience */
+-#define qe_muram_init cpm_muram_init
+-#define qe_muram_alloc cpm_muram_alloc
+-#define qe_muram_alloc_fixed cpm_muram_alloc_fixed
+-#define qe_muram_free cpm_muram_free
+-#define qe_muram_addr cpm_muram_addr
+-#define qe_muram_offset cpm_muram_offset
++int qe_muram_init(void);
++
++#if defined(CONFIG_QUICC_ENGINE)
++unsigned long qe_muram_alloc(unsigned long size, unsigned long align);
++int qe_muram_free(unsigned long offset);
++unsigned long qe_muram_alloc_fixed(unsigned long offset, unsigned long size);
++void __iomem *qe_muram_addr(unsigned long offset);
++unsigned long qe_muram_offset(void __iomem *addr);
++dma_addr_t qe_muram_dma(void __iomem *addr);
++#else
++static inline unsigned long qe_muram_alloc(unsigned long size,
++					    unsigned long align)
++{
++	return -ENOSYS;
++}
++
++static inline int qe_muram_free(unsigned long offset)
++{
++	return -ENOSYS;
++}
++
++static inline unsigned long qe_muram_alloc_fixed(unsigned long offset,
++						  unsigned long size)
++{
++	return -ENOSYS;
++}
++
++static inline void __iomem *qe_muram_addr(unsigned long offset)
++{
++	return NULL;
++}
++
++static inline unsigned long qe_muram_offset(void __iomem *addr)
++{
++	return -ENOSYS;
++}
++
++static inline dma_addr_t qe_muram_dma(void __iomem *addr)
++{
++	return 0;
++}
++#endif /* defined(CONFIG_QUICC_ENGINE) */
+ 
+ /* Structure that defines QE firmware binary files.
+  *
+-- 
+2.1.0.27.g96db324
 
-It smells to me like most of the problems here are simply due to having too
-many locks and not being able to decide where should they live relative to
-->s_umount.  That cgroup_mutex thing feels like something way to coarse...
-You have it grabbed/dropped in
-	cgroup_destroy_root(), cgroup_remount(), cgroup_mount(),
-	task_cgroup_path(), cgroup_attach_task_all(), cgroup_rename(),
-	cgroup_rm_cftypes(), cgroup_add_cftypes(), cgroup_transfer_tasks(),
-	cgroupstats_build(),
-	css_release_work_fn() [async, queue_work()],
-	css_killed_work_fn() [async, queue_work()],
-	cgroup_init_subsys(), cgroup_init(), proc_cgroup_show(),
-	proc_cgroupstats_show(), cgroup_release_agent(), __cgroup_procs_write(),
-	cgroup_release_agent_write(), cgroup_subtree_control_write(),
-	cgroup_mkdir(), cgroup_rmdir()
-And that's a single system-wide mutex.  Plus there's a slew of workqueues
-and really unpleasant abuse of restart_syscall() tossed in for fun - what
-happens if some joker triggers that ->mount() _not_ from mount(2)?
-
-Then there's a global rwsem nesting inside that sucker.  And there's another
-mutex in fs/kernfs - also a global one.  Are the locking rules documented
-anywhere?  Lifetime rules, as well...
-
-Frankly, my first inclination here would be to try using sget() instead of
-scanning the list of roots.  How painful would it be to split the allocation
-and setup of roots, always allocate a new root and have sget() wait
-for fs shutdown in progress and decide whether it wants to reuse the existing
-one.  You can easily tell reuse existing vs. set up a new one from each other -
-just look at the root associated with the superblock you've got and check
-if it's the one you've allocated.  Freeing the damn thing if we'd reused
-an existing one and doing setup otherwise.
-
-I realize that it won't do in such form; your for_each_subsys() loop in there
-really depends on holding cgroup_mutex all the way through.  But do we really
-need it there?  Would just skipping the ones that doomed in rebind_subsystems()
-suffice?
-
-Just looking at the size of the damn thing is depressing, TBH - it's quite
-a bit bigger than *anything* in fs/*.c.  And callers are all over the tree ;-/
