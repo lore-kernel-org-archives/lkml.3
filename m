@@ -1,85 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaIYA47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 20:56:59 -0400
-Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:16965
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751232AbaIYA45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 20:56:57 -0400
-Date: Thu, 25 Sep 2014 08:56:43 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <balbi@ti.com>, Antoine Tenart <antoine.tenart@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
-        <jszhang@marvell.com>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140925005641.GA3716@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <2923729.dtX0WmHSV0@wuerfel> <20140924112902.GA23331@peterchendt>
- <2786668.t3YLqX5enD@wuerfel>
+	id S1751742AbaIYBB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 21:01:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49102 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbaIYBB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 21:01:57 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 25 Sep 2014 10:02:29 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 4/5] zram: add swap full hint
+Message-ID: <20140925010229.GA17364@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-5-git-send-email-minchan@kernel.org>
+ <CALZtONB+NBMa8xf8xuAoeYHDoMtS56VLGP-a46LZgpppFyz7ag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <2786668.t3YLqX5enD@wuerfel>
+In-Reply-To: <CALZtONB+NBMa8xf8xuAoeYHDoMtS56VLGP-a46LZgpppFyz7ag@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(54356999)(68736004)(79102003)(4396001)(83322001)(80022003)(106466001)(95666004)(64706001)(33656002)(92726001)(81342003)(46102003)(74662003)(47776003)(6806004)(97756001)(76176999)(85852003)(50986999)(97736003)(105606002)(83506001)(33716001)(74502003)(83072002)(77982003)(81542003)(86362001)(50466002)(85306004)(23726002)(44976005)(93886004)(90102001)(76482002)(92566001)(84676001)(120916001)(20776003)(21056001)(46406003)(10300001)(104016003)(107046002)(102836001)(87936001)(31966008)(99396003)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
-X-Forefront-PRVS: 0345CFD558
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 02:23:38PM +0200, Arnd Bergmann wrote:
-> On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
-> > 
-> > So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
-> > (dwc3, musb, chipidea) you are talking about, right? Except for
-> > creating another platform driver as well as related DT node (optional),
-> > are there any advantages compared to current IP core driver structure?
+On Wed, Sep 24, 2014 at 10:01:03AM -0400, Dan Streetman wrote:
+> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > This patch implement SWAP_FULL handler in zram so that VM can
+> > know whether zram is full or not and use it to stop anonymous
+> > page reclaim.
+> >
+> > How to judge fullness is below,
+> >
+> > fullness = (100 * used space / total space)
+> >
+> > It means the higher fullness is, the slower we reach zram full.
+> > Now, default of fullness is 80 so that it biased more momory
+> > consumption rather than early OOM kill.
+> >
+> > Above logic works only when used space of zram hit over the limit
+> > but zram also pretend to be full once 32 consecutive allocation
+> > fail happens. It's safe guard to prevent system hang caused by
+> > fragment uncertainty.
+> >
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  drivers/block/zram/zram_drv.c | 60 ++++++++++++++++++++++++++++++++++++++++---
+> >  drivers/block/zram/zram_drv.h |  1 +
+> >  2 files changed, 57 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 22a37764c409..649cad9d0b1c 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -43,6 +43,20 @@ static const char *default_compressor = "lzo";
+> >  /* Module params (documentation at end) */
+> >  static unsigned int num_devices = 1;
+> >
+> > +/*
+> > + * If (100 * used_pages / total_pages) >= ZRAM_FULLNESS_PERCENT),
+> > + * we regards it as zram-full. It means that the higher
+> > + * ZRAM_FULLNESS_PERCENT is, the slower we reach zram full.
+> > + */
+> > +#define ZRAM_FULLNESS_PERCENT 80
 > 
-> Having a library module usually requires less code, and is more consistent
-> with other drivers, which helps new developers understand what the
-> driver is doing.
+> As Andrew said, this (or the user-configurable fullness param from the
+> next patch) should have more detail about exactly why it's needed and
+> what it does.  The details of how zram considers itself "full" should
+> be clear, which probably includes explaining zsmalloc fragmentation.
+> It should be also clear this param only matters when limit_pages is
+> set, and this param is only checked when zsmalloc's total size has
+> reached that limit.
 
-Yes, more consistent is a good reason.
+Sure, How about this?
+
+		The fullness file is read/write and specifies how easily
+		zram become full state. Normally, we can think "full"
+		once all of memory is consumed but it's not simple with
+		zram because zsmalloc has some issue by internal design
+		so that write could fail once consumed *page* by zram
+		reaches the mem_limit and zsmalloc cannot have a empty
+		slot for the compressed object's size on fragmenet space
+		although it has more empty slots for other sizes.
+
+		We regard zram as full once consumed *page* reaches the
+		mem_limit and consumed memory until now is higher the value
+		resulted from the knob. So, if you set the value high,
+		you can squeeze more pages into fragment space so you could
+		avoid early OOM while you could see more write-fail warning,
+		overhead to fail-write recovering by VM and reclaim latency.
+		If you set the value low, you can see OOM kill easily
+		even though there are memory space in zram but you could
+		avoid shortcomings mentioned above.
+
+		This knobs is valid ony if you set mem_limit.
+		Currently, initial value is 80% but it could be changed.
+
+I didn't decide how to change it from percent.
+Decimal fraction Jerome mentioned does make sense to me so please ignore
+percent part in above.
 
 > 
-> The most important aspect though is the DT binding: once the structure
-> with separate kernel drivers leaks out into the DT format, you can't
-> easily change the driver any more, e.g. to make a property that was
-> introduced for one glue driver more general so it can get handled by
-> the common part. Having a single node lets us convert to the library
-> model later, so that would be a strong reason to keep the DT binding
-> simple, without child nodes.
-> 
-> Following that logic, it turns into another reason for using the library
-> model to start with, because otherwise the child device does not have
-> any DT properties itself and has to rely on the parent device properties,
-> which somewhat complicates the driver structure.
-> 
+> Also, since the next patch changes it to be used only as a default,
+> shouldn't it be DEFAULT_ZRAM_FULLNESS_PERCENT or similar?
 
-Although it is not a problem for chipidea, chipidea core exports API
-to handle parent's common DT entries. It is a little inconsistent for
-current chipidea core driver, it works as a driver, but exports some
-APIs for other drivers use which is like a library. One more benefit I
-can see is the platform driver can visit the common struct like io
-address if using library, currently, the platform driver isn't suitable
-to visit core driver's struct, since they are two drivers.
+Okay, I will do it in 5/5.
 
-For chipidea, it doesn't has child device DT node, so it can convert to
-core library + platform driver model with moderate effort, I will do
-it at next two versions, thanks.
+> 
+> > +
+> > +/*
+> > + * If zram fails to allocate memory consecutively up to this,
+> > + * we regard it as zram-full. It's safe guard to prevent too
+> > + * many swap write fail due to lack of fragmentation uncertainty.
+> > + */
+> > +#define ALLOC_FAIL_MAX 32
+> > +
+> >  #define ZRAM_ATTR_RO(name)                                             \
+> >  static ssize_t zram_attr_##name##_show(struct device *d,               \
+> >                                 struct device_attribute *attr, char *b) \
+> > @@ -148,6 +162,7 @@ static ssize_t mem_limit_store(struct device *dev,
+> >
+> >         down_write(&zram->init_lock);
+> >         zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
+> > +       atomic_set(&zram->alloc_fail, 0);
+> >         up_write(&zram->init_lock);
+> >
+> >         return len;
+> > @@ -410,6 +425,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+> >         atomic64_sub(zram_get_obj_size(meta, index),
+> >                         &zram->stats.compr_data_size);
+> >         atomic64_dec(&zram->stats.pages_stored);
+> > +       atomic_set(&zram->alloc_fail, 0);
+> >
+> >         meta->table[index].handle = 0;
+> >         zram_set_obj_size(meta, index, 0);
+> > @@ -597,10 +613,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >         }
+> >
+> >         alloced_pages = zs_get_total_pages(meta->mem_pool);
+> > -       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
+> > -               zs_free(meta->mem_pool, handle);
+> > -               ret = -ENOMEM;
+> > -               goto out;
+> > +       if (zram->limit_pages) {
+> > +               if (alloced_pages > zram->limit_pages) {
+> > +                       zs_free(meta->mem_pool, handle);
+> > +                       atomic_inc(&zram->alloc_fail);
+> > +                       ret = -ENOMEM;
+> > +                       goto out;
+> > +               } else {
+> > +                       atomic_set(&zram->alloc_fail, 0);
+> > +               }
+> 
+> So, with zram_full() checking for alloced_pages >= limit_pages, this
+> will need to be changed; the way it is now it prevents that from ever
+> being true.
+> 
+> Instead I believe this check has to be moved to before zs_malloc(), so
+> that alloced_pages > limit_pages is true.
+
+I don't get it why you said "it prevents that from ever being true".
+Now, zram can use up until limit_pages (ie, used memory == zram->limit_pages)
+and trying to get more is failed. so zram_full checks it as
+toal_pages >= zram->limit_pages so what is problem?
+If I miss your point, could you explain more?
+
+> 
+> 
+> >         }
+> >
+> >         update_used_max(zram, alloced_pages);
+> > @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >         down_write(&zram->init_lock);
+> >
+> >         zram->limit_pages = 0;
+> > +       atomic_set(&zram->alloc_fail, 0);
+> >
+> >         if (!init_done(zram)) {
+> >                 up_write(&zram->init_lock);
+> > @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
+> >         return 0;
+> >  }
+> >
+> > +static int zram_full(struct block_device *bdev, void *arg)
+> > +{
+> > +       struct zram *zram;
+> > +       struct zram_meta *meta;
+> > +       unsigned long total_pages, compr_pages;
+> > +
+> > +       zram = bdev->bd_disk->private_data;
+> > +       if (!zram->limit_pages)
+> > +               return 0;
+> > +
+> > +       meta = zram->meta;
+> > +       total_pages = zs_get_total_pages(meta->mem_pool);
+> > +
+> > +       if (total_pages >= zram->limit_pages) {
+> > +
+> > +               compr_pages = atomic64_read(&zram->stats.compr_data_size)
+> > +                                       >> PAGE_SHIFT;
+> > +               if ((100 * compr_pages / total_pages)
+> > +                       >= ZRAM_FULLNESS_PERCENT)
+> > +                       return 1;
+> > +       }
+> > +
+> > +       if (atomic_read(&zram->alloc_fail) > ALLOC_FAIL_MAX)
+> > +               return 1;
+> > +
+> > +       return 0;
+> > +}
+> > +
+> >  static int zram_swap_hint(struct block_device *bdev,
+> >                                 unsigned int hint, void *arg)
+> >  {
+> > @@ -951,6 +1001,8 @@ static int zram_swap_hint(struct block_device *bdev,
+> >
+> >         if (hint == SWAP_FREE)
+> >                 ret = zram_slot_free_notify(bdev, (unsigned long)arg);
+> > +       else if (hint == SWAP_FULL)
+> > +               ret = zram_full(bdev, arg);
+> >
+> >         return ret;
+> >  }
+> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > index c6ee271317f5..fcf3176a9f15 100644
+> > --- a/drivers/block/zram/zram_drv.h
+> > +++ b/drivers/block/zram/zram_drv.h
+> > @@ -113,6 +113,7 @@ struct zram {
+> >         u64 disksize;   /* bytes */
+> >         int max_comp_streams;
+> >         struct zram_stats stats;
+> > +       atomic_t alloc_fail;
+> >         /*
+> >          * the number of pages zram can consume for storing compressed data
+> >          */
+> > --
+> > 2.0.0
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Best Regards,
-Peter Chen
+Kind regards,
+Minchan Kim
