@@ -1,153 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaIYOXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:23:53 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50072 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaIYOXt (ORCPT
+	id S1753119AbaIYO0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:26:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33306 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaIYO0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:23:49 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude E6440
-Date: Thu, 25 Sep 2014 16:23:45 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.13.2; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-References: <201409232206.02819@pali> <201409242021.10107@pali> <542388D7.1010008@intel.com>
-In-Reply-To: <542388D7.1010008@intel.com>
+	Thu, 25 Sep 2014 10:26:02 -0400
+Date: Thu, 25 Sep 2014 10:23:40 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+Message-ID: <20140925142340.GE20089@laptop.dumpdata.com>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart282337937.isauQXBJ55";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409251623.45636@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart282337937.isauQXBJ55
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
+> This series is based Bjorn's pci/msi branch
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
 
-On Thursday 25 September 2014 05:15:35 Aaron Lu wrote:
-> Hi Hans,
->=20
-> Thanks for following up and explaining the situation to Pali.
->=20
-> On 09/25/2014 02:21 AM, Pali Roh=C3=A1r wrote:
-> > On Wednesday 24 September 2014 16:34:21 Hans de Goede wrote:
-> >> Ok, so the dell-laptop interface is just an obsolete
-> >> wrapper around the i915 opregion code, which shows that
-> >> the right interface to use is the i915 one, which we do if
-> >> you don't specify any kernel commandline parameters, case
-> >> closed.
-> >>=20
-> >> Regards,
-> >>=20
-> >> Hans
-> >=20
-> > Nope, its not closed.
-> >=20
-> > Still i915 interface has problem with setting backlight. It
-> > exports lot of levels which turning display off. Which
-> > breaking exiting applications for configuring display
-> > brightness. This is still big regression as black screen is
-> > not want people want to see.
-> >=20
-> > Driver dell-laptop has exported only few - not thousands
-> > level (which is insane) and only usefull levels (not lot of
-> > levels which turn display off).
-> >=20
-> > So for this reason using i915 backlight interface is not
-> > possible and also Dell (for E6440) set kernel param
-> > acpi_backlight=3Dvendor to use dell_laptop module for
-> > controlling brightness.
-> >=20
-> > On my laptop E6440 is better for using dell-laptop and not
-> > acpi or i915.
->=20
-> Hi Pali,
->=20
-> Please test this patch:
->=20
-
-Hi! this patch fixing this problem. With acpi_backlight=3Dvendor=20
-dell-laptop will register backlight interface which is working=20
-again. Also userspace application dellLcdBrightness is working=20
-now without problem.
-
-Can you going to send this patch also to stable 3.16 branch? As=20
-it fixing commit 0b9f7d93ca6109048a4eb06332b666b6e29df4fe.
-
-> diff --git a/drivers/gpu/drm/i915/intel_opregion.c
-> b/drivers/gpu/drm/i915/intel_opregion.c index
-> ca52ad2ae7d1..15534345bd57 100644
-> --- a/drivers/gpu/drm/i915/intel_opregion.c
-> +++ b/drivers/gpu/drm/i915/intel_opregion.c
-> @@ -396,6 +396,24 @@ int intel_opregion_notify_adapter(struct
-> drm_device *dev, pci_power_t state) return -EINVAL;
->  }
->=20
-> +/*
-> + * Some of the Thinkpads' firmware will issue a backlight
-> change operation + * region request unconditionally on AC
-> plug/unplug, this is undesirable and + * should be ignored.
-> Then there is a Dell laptop whose vendor backlight + *
-> interface also makes use of operation region request to
-> change backlight + * level and we have to keep it work. The
-> rule used here is: if the vendor + * backlight interface is
-> not in use and the ACPI backlight interface is + * broken, we
-> ignore the requests; oterwise, we keep processing them. + */
-> +static bool should_ignore_backlight_request(void)
-> +{
-> +	if (acpi_video_backlight_support() &&
-> +	    !acpi_video_verify_backlight_support())
-> +		return true;
-> +
-> +	return false;
-> +}
-> +
->  static u32 asle_set_backlight(struct drm_device *dev, u32
-> bclp) {
->  	struct drm_i915_private *dev_priv =3D dev->dev_private;
-> @@ -404,11 +422,7 @@ static u32 asle_set_backlight(struct
-> drm_device *dev, u32 bclp)
->=20
->  	DRM_DEBUG_DRIVER("bclp =3D 0x%08x\n", bclp);
->=20
-> -	/*
-> -	 * If the acpi_video interface is not supposed to be used,
-> don't -	 * bother processing backlight level change requests
-> from firmware. -	 */
-> -	if (!acpi_video_verify_backlight_support()) {
-> +	if (should_ignore_backlight_request()) {
->  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
->  		return 0;
->  	}
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart282337937.isauQXBJ55
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlQkJXEACgkQi/DJPQPkQ1LiowCfSmnMdeKrRqf1YTTj0CglrAOb
-oqQAn1nc2qMmAf6BYqYbL1KQFTkBSD9a
-=MLL4
------END PGP SIGNATURE-----
-
---nextPart282337937.isauQXBJ55--
+Is there a git tree for these patches?
+> 
+> Currently, there are a lot of weak arch functions in MSI code.
+> Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
+> This series use MSI chip framework to refactor MSI code across all platforms
+> to eliminate weak arch functions. Then all MSI irqs will be managed in a 
+> unified framework. Because this series changed a lot of ARCH MSI code,
+> so tests in the platforms which MSI code modified are warmly welcomed!
+> 
+> v1->v2:
+> Add a patch to make s390 MSI code build happy between patch "x86/xen/MSI: E.."
+> and "s390/MSI: Use MSI..". Fix several typo problems found by Lucas.
+> 
+> RFC->v1: 
+> Updated "[patch 4/21] x86/xen/MSI: Eliminate...", export msi_chip instead
+> of #ifdef to fix MSI bug in xen running in x86. 
+> Rename arch_get_match_msi_chip() to arch_find_msi_chip().
+> Drop use struct device as the msi_chip argument, we will do that
+> later in another patchset.
+> 
+> Yijing Wang (22):
+>   PCI/MSI: Clean up struct msi_chip argument
+>   PCI/MSI: Remove useless bus->msi assignment
+>   MSI: Remove the redundant irq_set_chip_data()
+>   x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
+>   s390/MSI: Use __msi_mask_irq() instead of default_msi_mask_irq()
+>   PCI/MSI: Introduce weak arch_find_msi_chip() to find MSI chip
+>   PCI/MSI: Refactor struct msi_chip to make it become more common
+>   x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   x86/MSI: Remove unused MSI weak arch functions
+>   MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
+>   MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   IA64/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   Sparc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   tile/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>   PCI/MSI: Clean up unused MSI arch functions
+> 
+>  arch/arm/mach-iop13xx/include/mach/pci.h |    2 +
+>  arch/arm/mach-iop13xx/iq81340mc.c        |    1 +
+>  arch/arm/mach-iop13xx/iq81340sc.c        |    1 +
+>  arch/arm/mach-iop13xx/msi.c              |    9 ++-
+>  arch/arm/mach-iop13xx/pci.c              |    6 ++
+>  arch/ia64/kernel/msi_ia64.c              |   18 ++++-
+>  arch/mips/pci/msi-octeon.c               |   35 ++++++----
+>  arch/mips/pci/msi-xlp.c                  |   18 ++++--
+>  arch/mips/pci/pci-xlr.c                  |   15 ++++-
+>  arch/powerpc/kernel/msi.c                |   14 +++-
+>  arch/s390/pci/pci.c                      |   18 ++++-
+>  arch/sparc/kernel/pci.c                  |   14 +++-
+>  arch/tile/kernel/pci_gx.c                |   14 +++-
+>  arch/x86/include/asm/apic.h              |    4 +
+>  arch/x86/include/asm/pci.h               |    4 +-
+>  arch/x86/include/asm/x86_init.h          |    7 --
+>  arch/x86/kernel/apic/io_apic.c           |   16 ++++-
+>  arch/x86/kernel/x86_init.c               |   34 ---------
+>  arch/x86/pci/xen.c                       |   60 +++++++++-------
+>  drivers/iommu/irq_remapping.c            |    9 ++-
+>  drivers/irqchip/irq-armada-370-xp.c      |    8 +--
+>  drivers/pci/host/pci-tegra.c             |    8 ++-
+>  drivers/pci/host/pcie-designware.c       |    4 +-
+>  drivers/pci/host/pcie-rcar.c             |    8 ++-
+>  drivers/pci/msi.c                        |  114 ++++++++++++++----------------
+>  drivers/pci/probe.c                      |    1 -
+>  include/linux/msi.h                      |   26 ++-----
+>  27 files changed, 266 insertions(+), 202 deletions(-)
+> 
