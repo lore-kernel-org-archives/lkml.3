@@ -1,80 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaIYS7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:59:36 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62705 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819AbaIYS7e (ORCPT
+	id S1751783AbaIYTFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:05:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58892 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876AbaIYTFf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:59:34 -0400
-Date: Thu, 25 Sep 2014 20:59:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Quark: Flush TLB via CR3 not CR4.PGE in setup_arch()
-Message-ID: <20140925185929.GA7683@gmail.com>
-References: <1411578452-4609-1-git-send-email-pure.logic@nexus-software.ie>
- <20140925045755.GA20431@gmail.com>
- <5423E1F7.5010000@nexus-software.ie>
- <20140925145126.GA4434@gmail.com>
- <54242F17.5010503@nexus-software.ie>
- <20140925151123.GA4864@gmail.com>
- <20140925164911.GD10814@khazad-dum.debian.net>
- <20140925182814.GA6854@gmail.com>
- <542463F4.7010904@nexus-software.ie>
+	Thu, 25 Sep 2014 15:05:35 -0400
+Message-ID: <54246791.9050101@arm.com>
+Date: Thu, 25 Sep 2014 20:05:53 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542463F4.7010904@nexus-software.ie>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "riel@redhat.com" <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>
+Subject: Re: [PATCH v6 4/6] sched: get CPU's usage statistic
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org>
+X-OriginalArrivalTime: 25 Sep 2014 19:05:30.0261 (UTC) FILETIME=[ACAB8C50:01CFD8F3]
+X-MC-Unique: 114092520053202001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
-
-> >>I'd have mentioned "erratum" there, otherwise people won't understand why
-> >>the PGE bit being set would be a problem in the first place.
-> >>
-> >>Something like:
-> >>
-> >>/*
-> >>  * Locate the page directory and flush the TLB.
-> >>  *
-> >>  * On Quark X1000 CPUs we still have the PGE bit incorrectly set
-> >>  * due to a processor erratum, so __flush_tlb_all() is not yet
-> >>  * doing what it says.  Fortunately we have a cr3 flush here,
-> >>  * which is what is needed in this processor to flush TLBs, so
-> >>  * there's no need to add a Quark X1000 quirk here.
-> >>  */
-> >
-> >Yeah.
-> >
-> >I'd also add the fact that it's an unintended erratum to the
-> >Quark quirk section of early_init_intel() as well.
+On 23/09/14 17:08, Vincent Guittot wrote:
+> Monitor the usage level of each group of each sched_domain level. The usage is
+> the amount of cpu_capacity that is currently used on a CPU or group of CPUs.
+> We use the utilization_load_avg to evaluate the usage level of each group.
 > 
-> OK.
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
 > 
-> How about.
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 2cf153d..4097e3f 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4523,6 +4523,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
+>  	return target;
+>  }
+>  
+> +static int get_cpu_usage(int cpu)
+> +{
+> +	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
+> +	unsigned long capacity = capacity_orig_of(cpu);
+> +
+> +	if (usage >= SCHED_LOAD_SCALE)
+> +		return capacity + 1;
+
+Why you are returning rq->cpu_capacity_orig + 1 (1025) in case
+utilization_load_avg is greater or equal than 1024 and not usage or
+(usage * capacity) >> SCHED_LOAD_SHIFT too?
+
+In case the weight of a sched group is greater than 1, you might loose
+the information that the whole sched group is over-utilized too.
+
+You add up the individual cpu usage values for a group by
+sgs->group_usage += get_cpu_usage(i) in update_sg_lb_stats and later use
+sgs->group_usage in group_is_overloaded to compare it against
+sgs->group_capacity (taking imbalance_pct into consideration).
+
+> +
+> +	return (usage * capacity) >> SCHED_LOAD_SHIFT;
+
+Nit-pick: Since you're multiplying by a capacity value
+(rq->cpu_capacity_orig) you should shift by SCHED_CAPACITY_SHIFT.
+
+Just to make sure: You do this scaling of usage by cpu_capacity_orig
+here only to cater for the fact that cpu_capacity_orig might be uarch
+scaled (by arch_scale_cpu_capacity, !SMT) in update_cpu_capacity while
+utilization_load_avg is currently not.
+We don't even uArch scale on ARM TC2 big.LITTLE platform in mainline
+today due to the missing clock-frequency property in the device tree.
+
+I think it's hard for people to grasp that your patch-set takes uArch
+scaling of capacity into consideration but not frequency scaling of
+capacity (via arch_scale_freq_capacity, not used at the moment).
+
+> +}
+> +
+>  /*
+>   * select_task_rq_fair: Select target runqueue for the waking task in domains
+>   * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
+> @@ -5663,6 +5674,7 @@ struct sg_lb_stats {
+>  	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+>  	unsigned long load_per_task;
+>  	unsigned long group_capacity;
+> +	unsigned long group_usage; /* Total usage of the group */
+>  	unsigned int sum_nr_running; /* Nr tasks running in the group */
+>  	unsigned int group_capacity_factor;
+>  	unsigned int idle_cpus;
+> @@ -6037,6 +6049,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+>  			load = source_load(i, load_idx);
+>  
+>  		sgs->group_load += load;
+> +		sgs->group_usage += get_cpu_usage(i);
+>  		sgs->sum_nr_running += rq->cfs.h_nr_running;
+>  
+>  		if (rq->nr_running > 1)
 > 
-> /*
->   * Locate the page directory and flush the TLB.
->   *
->   * On Quark X1000 CPUs we still have the PGE bit incorrectly set
->   * due to a processor erratum, so __flush_tlb_all() is not yet
->   * doing what it says.  Fortunately we have a cr3 flush here,
->   * which is what is needed in this processor to flush TLBs, so
->   * there's no need to add a Quark X1000 quirk here.
->   *
->   * early_init_intel will unset the X86_FEATURE_PGE flag later
->   * and __flush_tlb_all() will flush via cr3
->   */
 
-Sounds good.
 
-Thanks,
-
-	Ingo
