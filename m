@@ -1,108 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaIYQZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:25:40 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64068 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaIYQZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:25:39 -0400
+	id S1753553AbaIYQ07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:26:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43481 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753094AbaIYQ06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 12:26:58 -0400
+Message-ID: <54244243.3090904@ti.com>
+Date: Thu, 25 Sep 2014 19:26:43 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1410841232-24591-1-git-send-email-martin@martingkelly.com>
-References: <1410841232-24591-1-git-send-email-martin@martingkelly.com>
-Date: Thu, 25 Sep 2014 09:25:37 -0700
-Message-ID: <CAN8CM3zXEL8UFRcJqVN9rq-AY1Mk1_xL0eNdRHZEYRgL8ouh9Q@mail.gmail.com>
-Subject: Re: [PATCH] context_tracking: Fix checkpatch warnings
-From: Martin Kelly <martin@martingkelly.com>
-To: x86@kernel.org
-Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Martin Kelly <martin@martingkelly.com>,
-        Martin Kelly <martkell@amazon.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@karo-electronics.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Subject: Re: [PATCH] gpio: pca953x: Fix warning when HW interrupts are rescheduled
+ by the softirq tasklet
+References: <1410251533-4990-1-git-send-email-LW@KARO-electronics.de>	<CACRpkdbTXtx+EU4Dw1fxeThRUG4s5XvcJnAJ9PJd8i4KKGC65A@mail.gmail.com>	<5421670D.10200@ti.com>	<CACRpkdYCsdMcJY7Y0gK4_zPxiWRFKkzi2TaZUi1Vn7Kp0Cbgzg@mail.gmail.com>	<5422B8F0.9060803@ti.com> <CACRpkdYtjQC_hCiqSB7fidct6CjJ5kMbj0PegW3MEuouBajv+g@mail.gmail.com>
+In-Reply-To: <CACRpkdYtjQC_hCiqSB7fidct6CjJ5kMbj0PegW3MEuouBajv+g@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 9:20 PM, Martin Kelly <martin@martingkelly.com> wrote:
-> checkpatch emits several warnings for context_tracking.c, which are
-> fixed in this patch:
->
-> - No space after "("
-> - Lines longer than 80 characters
->
-> Signed-off-by: Martin Kelly <martkell@amazon.com>
-> ---
->  kernel/context_tracking.c | 40 +++++++++++++++++++++-------------------
->  1 file changed, 21 insertions(+), 19 deletions(-)
->
-> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> index 5664985..bf29065 100644
-> --- a/kernel/context_tracking.c
-> +++ b/kernel/context_tracking.c
-> @@ -54,8 +54,8 @@ void context_tracking_user_enter(void)
->         /*
->          * Repeat the user_enter() check here because some archs may be calling
->          * this from asm and if no CPU needs context tracking, they shouldn't
-> -        * go further. Repeat the check here until they support the inline static
-> -        * key check.
-> +        * go further. Repeat the check here until they support the inline
-> +        * static key check.
->          */
->         if (!context_tracking_is_enabled())
->                 return;
-> @@ -75,31 +75,33 @@ void context_tracking_user_enter(void)
->         WARN_ON_ONCE(!current->mm);
->
->         local_irq_save(flags);
-> -       if ( __this_cpu_read(context_tracking.state) != IN_USER) {
-> +       if (__this_cpu_read(context_tracking.state) != IN_USER) {
->                 if (__this_cpu_read(context_tracking.active)) {
->                         trace_user_enter(0);
->                         /*
-> -                        * At this stage, only low level arch entry code remains and
-> -                        * then we'll run in userspace. We can assume there won't be
-> -                        * any RCU read-side critical section until the next call to
-> -                        * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
-> -                        * on the tick.
-> +                        * At this stage, only low level arch entry code
-> +                        * remains and then we'll run in userspace. We can
-> +                        * assume there won't be any RCU read-side critical
-> +                        * section until the next call to user_exit() or
-> +                        * rcu_irq_enter(). Let's remove RCU's dependency on
-> +                        * the tick.
->                          */
->                         vtime_user_enter(current);
->                         rcu_user_enter();
->                 }
->                 /*
-> -                * Even if context tracking is disabled on this CPU, because it's outside
-> -                * the full dynticks mask for example, we still have to keep track of the
-> -                * context transitions and states to prevent inconsistency on those of
-> -                * other CPUs.
-> -                * If a task triggers an exception in userspace, sleep on the exception
-> -                * handler and then migrate to another CPU, that new CPU must know where
-> -                * the exception returns by the time we call exception_exit().
-> -                * This information can only be provided by the previous CPU when it called
-> -                * exception_enter().
-> -                * OTOH we can spare the calls to vtime and RCU when context_tracking.active
-> -                * is false because we know that CPU is not tickless.
-> +                * Even if context tracking is disabled on this CPU, because
-> +                * it's outside the full dynticks mask for example, we still
-> +                * have to keep track of the context transitions and states to
-> +                * prevent inconsistency on those of other CPUs.  If a task
-> +                * triggers an exception in userspace, sleep on the exception
-> +                * handler and then migrate to another CPU, that new CPU must
-> +                * know where the exception returns by the time we call
-> +                * exception_exit().  This information can only be provided by
-> +                * the previous CPU when it called exception_enter().  OTOH we
-> +                * can spare the calls to vtime and RCU when
-> +                * context_tracking.active is false because we know that CPU is
-> +                * not tickless.
->                  */
->                 __this_cpu_write(context_tracking.state, IN_USER);
->         }
-> --
-> 2.1.0
->
+On 09/25/2014 11:07 AM, Linus Walleij wrote:
+> On Wed, Sep 24, 2014 at 2:28 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+>> On 09/24/2014 02:17 PM, Linus Walleij wrote:
+> 
+>>> So PCA cannot use gpiochip_set_chained_irqchip()?
+>>
+>> Yes. It can't - pca is i2c device.
+> 
+> ? I don't get this statement.
+> 
+> Why does the fact that it is an I2C device matter?
+> We have several devices that are in fact on top of
+> I2C (albeit as MFD cells) like gpio-tc3589x.c.
 
-(ping)
+gpio-tc3589x.c doesn't call gpiochip_set_chained_irqchip()
+
+Chained IRQ handler replaces High level HW IRQ handler
+(in case of ARM+GIC it replaces handle_fasteoi_irq() with custom handler)
+
+The I2C devices require their IRQ handler to be interruptible and
+allow to sleep, so Threaded IRQ handler should be used there.
+
+By the way, gpiochip_set_chained_irqchip() has a blocking check inside:
+	if (gpiochip->can_sleep) {
+		chip_err(gpiochip, "you cannot have chained interrupts on a chip that may sleep\n");
+		return;
+	}
+
+Actually, this issue can occur only with Nested IRQs (not chained). 
+
+> 
+>>> Anyway I feel I should fix this as per above for all
+>>> chips using that function, right?
+>>
+>> Pls note, the gpiochip_irqchip_add() is called before
+>> gpiochip_set_chained_irqchip() in all places now.
+> 
+> Yes, but the .map function isn't called until a client
+> wants to use an IRQ. And that won't happen until after
+> we exit the whole .probe() function.
+
+.map function is called from irq_create_mapping() which,
+in turn, can be called as from irq_domain_add_simple() -
+as result .map will be always called from gpiochip_irqchip_add().
+
+> 
+>> Also seems, we should assume that
+>> gpiochip_set_chained_irqchip() can be called
+>> few times and it could be unsafe to use it for storing parent_irq.
+> 
+> Well it happens in one single driver, and was done by me.
+> Maybe I should either disallow that, as that means we're adding
+> multiple parents (which is what you want, right?) or actually
+> implement it in a way so that multiple parents can be handled
+> by the helpers, by adding the parents to a list or something.
+
+
+Sorry, but It seems the simplest way is to allow drivers to manage
+parent IRQs for the complex cases. So, I vote for custom .map()
+callback, but It could be not too simple to implement it, because
+private driver data need to be passed as parameter to this callback
+somehow.
+
+Of course, final decision is up to you and may be it would be ok
+to fix just simple case (one parent IRQ) in short term perspective. 
+
+=== Simple one - driver need to set parent_irq before adding gpiochip ===
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 8aa84d5..292840b 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -447,8 +447,11 @@ static int gpiochip_irq_map(struct irq_domain *d, unsigned int irq,
+        irq_set_lockdep_class(irq, &gpiochip_irq_lock_class);
+        irq_set_chip_and_handler(irq, chip->irqchip, chip->irq_handler);
+        /* Chips that can sleep need nested thread handlers */
+-       if (chip->can_sleep)
++       if (chip->can_sleep) {
+                irq_set_nested_thread(irq, 1);
++               if (chip->parent_irq)
++                       irq_set_parent(irq, chip->parent_irq);
++       }
+ #ifdef CONFIG_ARM
+        set_irq_flags(irq, IRQF_VALID);
+ #else
+diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
+index 976276a..88486c7 100644
+--- a/include/linux/gpio/driver.h
++++ b/include/linux/gpio/driver.h
+@@ -112,6 +112,7 @@ struct gpio_chip {
+        struct irq_domain       *irqdomain;
+        irq_flow_handler_t      irq_handler;
+        unsigned int            irq_default_type;
++       int                     parent_irq;
+ #endif
+ 
+ #if defined(CONFIG_OF_GPIO)
+
+
+> 
+>> So maybe it would be enough to just adding field for parent_irq
+>> in struct gpio_chip + fix for gpiochip_irq_map() to re-use it
+>> (to fix simple cases :).
+> 
+> Yes for the simple case. But maybe it's better to patch
+> gpiochip_set_chained_irqchip() to handle also the complex
+> case per above?
+
+As I mentioned above gpiochip_set_chained_irqchip() can't be
+used for GPIO chips which set .can_sleep = true.
+
+Regards,
+-grygorii
+
