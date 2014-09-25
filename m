@@ -1,187 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaIYUiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:38:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12662 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752943AbaIYUit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:38:49 -0400
-Date: Thu, 25 Sep 2014 16:38:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Elliott\, Robert \(Server Storage\)" <Elliott@hp.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jens Axboe \<axboe\@kernel.dk\> \(axboe\@kernel.dk\)" 
-	<axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: ftrace function-graph and interprocessor interrupts
-Message-ID: <20140925163843.23b28701@gandalf.local.home>
-In-Reply-To: <87mw9oelje.fsf@tassilo.jf.intel.com>
-References: <94D0CD8314A33A4D9D801C0FE68B402958C9BE4D@G9W0745.americas.hpqcorp.net>
-	<87mw9oelje.fsf@tassilo.jf.intel.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1752457AbaIYUeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:34:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35258 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222AbaIYUeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 16:34:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391698855"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: [PATCH v11 19/21] dax: Add dax_zero_page_range
+Date: Thu, 25 Sep 2014 16:33:36 -0400
+Message-Id: <1411677218-29146-20-git-send-email-matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014 14:49:41 -0700
-Andi Kleen <andi@firstfloor.org> wrote:
+This new function allows us to support hole-punch for DAX files by zeroing
+a partial page, as opposed to the dax_truncate_page() function which can
+only truncate to the end of the page.  Reimplement dax_truncate_page() to
+call dax_zero_page_range().
 
-> "Elliott, Robert (Server Storage)" <Elliott@hp.com> writes:
-> 
-> > The function-graph tracer marks some interrupt handler functions
-> > with ==========>  and <========== labels.
-> 
-> I'm not sure the marking is really that useful. Isn't it always obvious
-> from the function names where an interrupt starts/end?
-> 
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+[ported to 3.13-rc2]
+Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+---
+ Documentation/filesystems/dax.txt |  1 +
+ fs/dax.c                          | 36 +++++++++++++++++++++++++++++++-----
+ include/linux/fs.h                |  7 +++++++
+ 3 files changed, 39 insertions(+), 5 deletions(-)
 
-Note, I find the markings useful, if anything, it makes it easier to
-see when the system was interrupted. Not to mention, if it's broken, we
-need to fix it.
-
-Does, this patch fix it for you?
-
--- Steve
-
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 488273458bfd..bb48ec08edf8 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -50,6 +50,7 @@ struct fgraph_cpu_data {
- 	int		depth;
- 	int		depth_irq;
- 	int		ignore;
-+	int		in_irq;
- 	unsigned long	enter_funcs[FTRACE_RETFUNC_DEPTH];
- };
+diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
+index 635adaa..ebcd97f 100644
+--- a/Documentation/filesystems/dax.txt
++++ b/Documentation/filesystems/dax.txt
+@@ -62,6 +62,7 @@ Filesystem support consists of
+   for fault and page_mkwrite (which should probably call dax_fault() and
+   dax_mkwrite(), passing the appropriate get_block() callback)
+ - calling dax_truncate_page() instead of block_truncate_page() for DAX files
++- calling dax_zero_page_range() instead of zero_user() for DAX files
+ - ensuring that there is sufficient locking between reads, writes,
+   truncates and page faults
  
-@@ -693,16 +694,64 @@ static int print_graph_abs_time(u64 t, struct trace_seq *s)
- 			(unsigned long)t, usecs_rem);
+diff --git a/fs/dax.c b/fs/dax.c
+index 6801be7..91b7561 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -462,13 +462,16 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ EXPORT_SYMBOL_GPL(dax_fault);
+ 
+ /**
+- * dax_truncate_page - handle a partial page being truncated in a DAX file
++ * dax_zero_page_range - zero a range within a page of a DAX file
+  * @inode: The file being truncated
+  * @from: The file offset that is being truncated to
++ * @length: The number of bytes to zero
+  * @get_block: The filesystem method used to translate file offsets to blocks
+  *
+- * Similar to block_truncate_page(), this function can be called by a
+- * filesystem when it is truncating an DAX file to handle the partial page.
++ * This function can be called by a filesystem when it is zeroing part of a
++ * page in a DAX file.  This is intended for hole-punch operations.  If
++ * you are truncating a file, the helper function dax_truncate_page() may be
++ * more convenient.
+  *
+  * We work in terms of PAGE_CACHE_SIZE here for commonality with
+  * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
+@@ -476,17 +479,18 @@ EXPORT_SYMBOL_GPL(dax_fault);
+  * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
+  * since the file might be mmaped.
+  */
+-int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
++							get_block_t get_block)
+ {
+ 	struct buffer_head bh;
+ 	pgoff_t index = from >> PAGE_CACHE_SHIFT;
+ 	unsigned offset = from & (PAGE_CACHE_SIZE-1);
+-	unsigned length = PAGE_CACHE_ALIGN(from) - from;
+ 	int err;
+ 
+ 	/* Block boundary? Nothing to do */
+ 	if (!length)
+ 		return 0;
++	BUG_ON((offset + length) > PAGE_CACHE_SIZE);
+ 
+ 	memset(&bh, 0, sizeof(bh));
+ 	bh.b_size = PAGE_CACHE_SIZE;
+@@ -503,4 +507,26 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(dax_zero_page_range);
++
++/**
++ * dax_truncate_page - handle a partial page being truncated in a DAX file
++ * @inode: The file being truncated
++ * @from: The file offset that is being truncated to
++ * @get_block: The filesystem method used to translate file offsets to blocks
++ *
++ * Similar to block_truncate_page(), this function can be called by a
++ * filesystem when it is truncating an DAX file to handle the partial page.
++ *
++ * We work in terms of PAGE_CACHE_SIZE here for commonality with
++ * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
++ * took care of disposing of the unnecessary blocks.  Even if the filesystem
++ * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
++ * since the file might be mmaped.
++ */
++int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++{
++	unsigned length = PAGE_CACHE_ALIGN(from) - from;
++	return dax_zero_page_range(inode, from, length, get_block);
++}
+ EXPORT_SYMBOL_GPL(dax_truncate_page);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e6b48cc..105d0f0 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2490,6 +2490,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
+ 
+ #ifdef CONFIG_FS_DAX
+ int dax_clear_blocks(struct inode *, sector_t block, long size);
++int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
+ int dax_truncate_page(struct inode *, loff_t from, get_block_t);
+ ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
+ 		loff_t, get_block_t, dio_iodone_t, int flags);
+@@ -2506,6 +2507,12 @@ static inline int dax_truncate_page(struct inode *i, loff_t frm, get_block_t gb)
+ 	return 0;
  }
  
-+enum {
-+	FGRAPH_IRQ_ADDR		= 1,
-+	FGRAPH_IRQ_FLAG		= 2,
-+};
-+
-+static int fgraph_in_irq(struct trace_entry *ent, unsigned long addr)
++static inline int dax_zero_page_range(struct inode *i, loff_t frm,
++						unsigned len, get_block_t gb)
 +{
-+	if ((addr >= (unsigned long)__irqentry_text_start) &&
-+	     (addr < (unsigned long)__irqentry_text_end))
-+		return FGRAPH_IRQ_ADDR;
-+
-+	if (ent->flags & TRACE_FLAG_HARDIRQ)
-+		return FGRAPH_IRQ_FLAG;
-+
 +	return 0;
 +}
 +
- static enum print_line_t
--print_graph_irq(struct trace_iterator *iter, unsigned long addr,
--		enum trace_type type, int cpu, pid_t pid, u32 flags)
-+print_graph_irq(struct trace_iterator *iter, struct trace_entry *ent,
-+		unsigned long addr, enum trace_type type, int cpu,
-+		pid_t pid, u32 flags)
- {
--	int ret;
-+	unsigned int irq_flags = ent->flags;
-+	struct fgraph_data *data = iter->private;
- 	struct trace_seq *s = &iter->seq;
-+	int *cpu_in_irq;
-+	int in_irq;
-+	int ret;
- 
--	if (addr < (unsigned long)__irqentry_text_start ||
--		addr >= (unsigned long)__irqentry_text_end)
--		return TRACE_TYPE_UNHANDLED;
-+	cpu_in_irq = &(per_cpu_ptr(data->cpu_data, cpu)->in_irq);
-+	in_irq = fgraph_in_irq(ent, addr);
-+
-+	/*
-+	 * When testing if we are entering or leaving an IRQ
-+	 * we need to know how we got into this function.
-+	 * Most irqs are within the irqentry text, but not all
-+	 * of them. Those that we detect with the irqentry text
-+	 * we stay in the irq until we hit the return address
-+	 * from the irqentry text.
-+	 * If we flagged being in an interrupt from the hard
-+	 * irq flags, that means the interrupt handler was not
-+	 * within the irqentry text, and we stay in the interrupt
-+	 * until that flag is cleared.
-+	 */
-+	switch (*cpu_in_irq) {
-+	case 0:
-+		if (!in_irq)
-+			return TRACE_TYPE_UNHANDLED;
-+		break;
-+	case FGRAPH_IRQ_ADDR:
-+		if (in_irq != FGRAPH_IRQ_ADDR)
-+			return TRACE_TYPE_UNHANDLED;
-+		break;
-+	case FGRAPH_IRQ_FLAG:
-+		if (in_irq == FGRAPH_IRQ_FLAG)
-+			return TRACE_TYPE_UNHANDLED;
-+		break;
-+	}
- 
- 	if (trace_flags & TRACE_ITER_CONTEXT_INFO) {
- 		/* Absolute time */
-@@ -735,10 +784,19 @@ print_graph_irq(struct trace_iterator *iter, unsigned long addr,
- 	if (ret != TRACE_TYPE_HANDLED)
- 		return ret;
- 
--	if (type == TRACE_GRAPH_ENT)
--		ret = trace_seq_puts(s, "==========>");
--	else
-+	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
-+		ret = print_graph_lat_fmt(s, ent);
-+		if (ret == TRACE_TYPE_PARTIAL_LINE)
-+			return TRACE_TYPE_PARTIAL_LINE;
-+	}
-+
-+	if (*cpu_in_irq) {
- 		ret = trace_seq_puts(s, "<==========");
-+		*cpu_in_irq = 0;
-+	} else {
-+		ret = trace_seq_puts(s, "==========>");
-+		*cpu_in_irq = in_irq;
-+	}
- 
- 	if (!ret)
- 		return TRACE_TYPE_PARTIAL_LINE;
-@@ -968,7 +1026,7 @@ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
- 
- 	if (type) {
- 		/* Interrupt */
--		ret = print_graph_irq(iter, addr, type, cpu, ent->pid, flags);
-+		ret = print_graph_irq(iter, ent, addr, type, cpu, ent->pid, flags);
- 		if (ret == TRACE_TYPE_PARTIAL_LINE)
- 			return TRACE_TYPE_PARTIAL_LINE;
- 	}
-@@ -1047,8 +1105,7 @@ check_irq_entry(struct trace_iterator *iter, u32 flags,
- 	if (*depth_irq >= 0)
- 		return 1;
- 
--	if ((addr < (unsigned long)__irqentry_text_start) ||
--	    (addr >= (unsigned long)__irqentry_text_end))
-+	if (!fgraph_in_irq(iter->ent, addr))
- 		return 0;
- 
- 	/*
-@@ -1226,7 +1283,7 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
- 			return TRACE_TYPE_PARTIAL_LINE;
- 	}
- 
--	ret = print_graph_irq(iter, trace->func, TRACE_GRAPH_RET,
-+	ret = print_graph_irq(iter, ent, trace->func, TRACE_GRAPH_RET,
- 			      cpu, pid, flags);
- 	if (ret == TRACE_TYPE_PARTIAL_LINE)
- 		return TRACE_TYPE_PARTIAL_LINE;
+ static inline ssize_t dax_do_io(int rw, struct kiocb *iocb,
+ 		struct inode *inode, struct iov_iter *iter, loff_t pos,
+ 		get_block_t get_block, dio_iodone_t end_io, int flags)
+-- 
+2.1.0
+
