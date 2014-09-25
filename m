@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaIYHmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:42:42 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:45012 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaIYHmj (ORCPT
+	id S1752968AbaIYHmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:42:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:65464 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaIYHmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:42:39 -0400
-Date: Thu, 25 Sep 2014 09:42:36 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-Message-ID: <20140925074235.GN12423@ulmo>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+	Thu, 25 Sep 2014 03:42:46 -0400
+Date: Thu, 25 Sep 2014 08:42:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Andreas Werner <andreas.werner@men.de>
+Cc: Guenter Roeck <linux@roeck-us.net>, Bryan Wu <cooloney@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
+Message-ID: <20140925074234.GD7113@lee--X1>
+References: <cover.1409161615.git.andreas.werner@men.de>
+ <20140924144829.GK32069@lee--X1>
+ <20140924154503.GA12403@roeck-us.net>
+ <20140924161837.GA7113@lee--X1>
+ <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
+ <20140924165739.GA31578@roeck-us.net>
+ <20140924184143.GC7113@lee--X1>
+ <20140925082611.GA967@awelinux>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O27Gs9jTTFWz3gAR"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140925082611.GA967@awelinux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 25 Sep 2014, Andreas Werner wrote:
+> On Wed, Sep 24, 2014 at 07:41:43PM +0100, Lee Jones wrote:
+> > On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> > 
+> > > On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
+> > > > On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > > > > On Wed, 24 Sep 2014, Guenter Roeck wrote:
+> > > > >
+> > > > >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
+> > > > >> > Guenter, Bryan, Wim,
+> > > > >> >
+> > > > >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+> > > > >> >
+> > > > >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> > > > >> >
+> > > > >> > are available in the git repository at:
+> > > > >> >
+> > > > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
+> > > > >> >
+> > > > >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
+> > > > >> >
+> > > > >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
+> > > > >> >
+> > > > >> > ----------------------------------------------------------------
+> > > > >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
+> > > > >> >
+> > > > >> I assume you'll push it all through mfd, correct ?
+> > > > >
+> > > > > The idea is for all the affected Maintainers to pull this branch in to
+> > > > > their own trees.  If you guys don't, there will be a good chance of
+> > > > > conflict during the merge-window, which will subsequently upset Linus.
+> > > > >
+> > > > > So in answer to your question; yes I'll be taking this, but so should
+> > > > > each of you.
+> > > > >
+> > > > 
+> > > > Thanks for this, man. What am I going to do here? Need I pull in all
+> > > > the patches here into my LED tree or just one LED patch? I think if
+> > > > you push this for Linus through MFD tree, I don't need to pull it into
+> > > > my tree, right?
+> > > > 
+> > > I did
+> > > 
+> > > git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
+> > > git fetch --tags mfd
+> > > git merge mfd-hwmon-leds-watchdog-v3.18
+> > > 
+> > > in both my hwmon-next and watchdog-next branches. Both are currently building,
+> > > and already pushed into to my repository at kernel.org.
+> > > 
+> > > So, effectively, when I send my pull request to Linus, all patches from
+> > > mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
+> > > The same will happen when Lee sends his pull request, and Wim, and you. 
+> > > I believe that is what Lee is asking for.
+> > 
+> > That's right.  It's not okay to break this branch up.  If it was, we
+> > would have been able to apply our respective components into our own
+> > trees from the beginning, but as there are interdependencies, breaking
+> > up the branch could have nasty consequences depending on the order in
+> > which they land in Mainline.  Most likely bisectability will be
+> > broken, which is not allowed.
+> > 
+> 
+> Hi,
+> please do not forget the MAINTAINERS Patch for this series.
+> I have send it last week attached to this series.
 
---O27Gs9jTTFWz3gAR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'll take this through the MFD tree with everyone's Ack.
 
-On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
-> This series is based Bjorn's pci/msi branch
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
->=20
-> Currently, there are a lot of weak arch functions in MSI code.
-> Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in ar=
-m.
-> This series use MSI chip framework to refactor MSI code across all platfo=
-rms
-> to eliminate weak arch functions. Then all MSI irqs will be managed in a=
-=20
-> unified framework. Because this series changed a lot of ARCH MSI code,
-> so tests in the platforms which MSI code modified are warmly welcomed!
-
-Apart from the comments to the individual patches I very much like where
-this is going. Thanks for taking care of this.
-
-Thierry
-
---O27Gs9jTTFWz3gAR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUI8drAAoJEN0jrNd/PrOhRSAQALsX6+rt+ih0Gd1v6P/pa7qN
-OXrKB5iUQqBdwt1YLNoZ55Ojb03D1gWrXOV4DE2Ot+oWcChhDHqOflN7mOfNHLwj
-94ZiLJMuHN97GQPNxto1U+ExV52tdbA8FIUIxXgeIV+PeDB55N/NQjJPXOLsLj/3
-8yDXEOE3ZTdLDCNCFPBO4NFSRSvzTMkl4He0IOcMTDqom0YZfHzLb+pJR0DPNq0n
-gpUb03/YTMlSgjIM9Ltq2wb5AdttZeJ4+MG7k/gyLJjFJr178R1szKz23l7cYZfq
-7TowM+iBQV/g3v5l/TabQOeBQDYqIl/2iSJAxc17ECtoxrW1SqSckRJfTqcPmcPi
-r0vplvHDqRXBrv+NH92zhjSts8N5nPZMjiDdSknrOJwJUFFQku8U/2A/XMX3SRxn
-H+BbOXdut+fvidu7HPtrEqlfUIK9Lvh0l8XfnBoeZdLOnZoQV4wI9NBSH4D4HLpA
-o/H5Cq5xh6o2xQFABJHoFOIdMEz5NoWZ8BPiqQJ5nWn9ErGrBmbKcll6S2rIRqZP
-/UhLXKnd3ju7cQF1kH6gu2zL8l2mWIEISUZWJ1dPsc51Y4164W6olvTZ95BGmLQc
-QunHexGBsu0mVlTLtcfVey5K9+m8zcJQel6KThgh2MSBNt54p6IEuLT4fS3e4mXE
-VE4kNZ+YiwcZhdZXalp+
-=IFC0
------END PGP SIGNATURE-----
-
---O27Gs9jTTFWz3gAR--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
