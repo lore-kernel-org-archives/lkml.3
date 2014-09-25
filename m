@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaIYHPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:15:16 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:44856 "EHLO
-	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750871AbaIYHPN (ORCPT
+	id S1752598AbaIYHPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:15:45 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:60282 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515AbaIYHPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:15:13 -0400
-X-Greylist: delayed 1020 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 03:15:12 EDT
-Date: Thu, 25 Sep 2014 08:58:05 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Bryan Wu <cooloney@gmail.com>,
-        Andreas Werner <andreas.werner@men.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
-        linux-watchdog@vger.kernel.org,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
-Message-ID: <20140925065805.GB6989@spo001.leaseweb.nl>
-References: <cover.1409161615.git.andreas.werner@men.de> <20140924144829.GK32069@lee--X1> <20140924154503.GA12403@roeck-us.net> <20140924161837.GA7113@lee--X1> <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com> <20140924165739.GA31578@roeck-us.net> <20140924184143.GC7113@lee--X1>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 25 Sep 2014 03:15:42 -0400
+Date: Thu, 25 Sep 2014 09:15:38 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
+Message-ID: <20140925071536.GG12423@ulmo>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-2-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EDJsL2R9iCFAt7IV"
 Content-Disposition: inline
-In-Reply-To: <20140924184143.GC7113@lee--X1>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <1411614872-4009-2-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-> On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> 
-> > On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
-> > > On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > > On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> > > >
-> > > >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
-> > > >> > Guenter, Bryan, Wim,
-> > > >> >
-> > > >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-> > > >> >
-> > > >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-> > > >> >
-> > > >> > are available in the git repository at:
-> > > >> >
-> > > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
-> > > >> >
-> > > >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
-> > > >> >
-> > > >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
-> > > >> >
-> > > >> > ----------------------------------------------------------------
-> > > >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
-> > > >> >
-> > > >> I assume you'll push it all through mfd, correct ?
-> > > >
-> > > > The idea is for all the affected Maintainers to pull this branch in to
-> > > > their own trees.  If you guys don't, there will be a good chance of
-> > > > conflict during the merge-window, which will subsequently upset Linus.
-> > > >
-> > > > So in answer to your question; yes I'll be taking this, but so should
-> > > > each of you.
-> > > >
-> > > 
-> > > Thanks for this, man. What am I going to do here? Need I pull in all
-> > > the patches here into my LED tree or just one LED patch? I think if
-> > > you push this for Linus through MFD tree, I don't need to pull it into
-> > > my tree, right?
-> > > 
-> > I did
-> > 
-> > git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
-> > git fetch --tags mfd
-> > git merge mfd-hwmon-leds-watchdog-v3.18
-> > 
-> > in both my hwmon-next and watchdog-next branches. Both are currently building,
-> > and already pushed into to my repository at kernel.org.
-> > 
-> > So, effectively, when I send my pull request to Linus, all patches from
-> > mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
-> > The same will happen when Lee sends his pull request, and Wim, and you. 
-> > I believe that is what Lee is asking for.
-> 
-> That's right.  It's not okay to break this branch up.  If it was, we
-> would have been able to apply our respective components into our own
-> trees from the beginning, but as there are interdependencies, breaking
-> up the branch could have nasty consequences depending on the order in
-> which they land in Mainline.  Most likely bisectability will be
-> broken, which is not allowed.
+--EDJsL2R9iCFAt7IV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Added to linux-watchdog-next.
+On Thu, Sep 25, 2014 at 11:14:11AM +0800, Yijing Wang wrote:
+> Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
+> argument.
 
-Kind regards,
-Wim.
+That's not true. Out of the four drivers that you modify two use the
+parameter. And the two that don't probably should be using it too.
 
+50% is not "rarely". =3D)
+
+>           We can look up msi_chip pointer by the device pointer
+> or irq number, so clean up msi_chip argument.
+
+I don't like this particular change. The idea was to keep the API object
+oriented so that drivers wouldn't have to know where to get the MSI chip
+=66rom. It also makes it more resilient against code reorganizations since
+the core code is the only place that needs to know where to get the chip
+=66rom.
+
+Thierry
+
+--EDJsL2R9iCFAt7IV
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI8EYAAoJEN0jrNd/PrOhKe8P+wRzEsusQS8lMmL8zyqvg5wy
+x0Q4+eSI5aEkUEQz6Mtcld6eIwACphFOHeoDrAFauuxrjVqWslHdYAIAKbYoxG0e
+xV9PJoc5PY24v4vnR5BvWEHxBfzfJ8QmFlDZGRvy3lqTPhTBOzLIbNUMO1gaoH1Q
+MIzSjgl631075wZns41KNNx1TjCaXNeDwjkAyyX4bjJ7SL6ymrsxGo/zhCRCpZSk
+2ks9AFoqFQoIOFeziuAW7WAx8BM9ah1ba5tc3oVZ6LC3JHrvoHZ5KCjITV75Geqb
+dFzQh7Rx0yFdXVmNOX+O6XtFVvb7hNFELV1SAzQQXWl0Hyid6Dp0ZShKLSumNdG8
+WvJFtUil25Prid9JVvpq+PrRGlbOucv0U+wi2cbdrE9/7UwtYoxAHNj/aTXdWwIv
+d6ble8v0UT7l5Sk8QIFMI3VbatPqL/i+Mz8NijIKaMRug9/XmXZIN0Q05JhlbJ2b
+/AWyYKLGAwYMrZcDU2v8CajO/NGUQ9D+mkqcN0NDsxmvP5woL6GC2tQzZABaAipF
+LlbM5T6PfjxRfOvYNAIOJnttoirlQ4UI8CjVEeotPrchQalN7ZESvaHK0z2/Wrv1
+kSvUiqTvOPtRaQn4rIs5MTi7tw5NBsG2MyWfy90WkITpn5vEYrX4JQITTUpa/x9B
+IKT68Y/8ZFK3ksbjHtIe
+=LSxe
+-----END PGP SIGNATURE-----
+
+--EDJsL2R9iCFAt7IV--
