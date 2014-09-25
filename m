@@ -1,159 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaIYSPF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:15:05 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:42184 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbaIYSPC (ORCPT
+	id S1753656AbaIYSTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:19:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57224 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaIYSTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:15:02 -0400
+	Thu, 25 Sep 2014 14:19:12 -0400
+Message-ID: <54245C94.2020708@canonical.com>
+Date: Thu, 25 Sep 2014 14:19:00 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1411498874-9864-7-git-send-email-Liviu.Dudau@arm.com>
-References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
-	<1411498874-9864-7-git-send-email-Liviu.Dudau@arm.com>
-Date: Thu, 25 Sep 2014 11:15:01 -0700
-X-Google-Sender-Auth: KbIRxvxWXoV6ziGSBvz-2xAeejQ
-Message-ID: <CAE9FiQXuJZnj74dwTbKJCQNJ+OdEbjSB0fpwqh92+WZ_XGnrxQ@mail.gmail.com>
-Subject: Re: [PATCH v12 06/12] PCI: Create pci_host_bridge before its
- associated bus in pci_create_root_bus.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
+ mmio
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com>	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>	<52D01D82.5070202@canonical.com>	<CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>	<54189BCE.2010206@canonical.com>	<CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com> <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQWphiORhaVNNVGZXY6eYxLH2QYNbHcLdjzrBD98tMKz0Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 12:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
-> As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
-> the creation order has been changed for no good reason. Revert the order of
-> creation as we are going to depend on the pci_host_bridge structure to retrieve the
-> domain number of the root bus.
+On 09/17/2014 03:46 AM, Yinghai Lu wrote:
+> On Tue, Sep 16, 2014 at 3:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
+>> <joseph.salisbury@canonical.com> wrote:
+>>> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
+>>> is similar to the original bug[1] we discussed.
+>>>
+>>> Just wondering if there have been any additional ideas on realloc since
+>>> this was last discussed?
+>>>
+>>> [0] http://pad.lv/1363313
+>> So the resource realloc do work as expected. but LSI firmware has some
+>> problem again?
+>>
+>> We may need to add command after the reset the bridge resource.
+> Can you try attached patch?
 >
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Acked-by: Grant Likely <grant.likely@linaro.org>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  drivers/pci/probe.c | 32 +++++++++++++++++---------------
->  1 file changed, 17 insertions(+), 15 deletions(-)
+> Thanks
 >
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index e3cf8a2..5ff72ec 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -515,7 +515,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
->         kfree(bridge);
->  }
->
-> -static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-> +static struct pci_host_bridge *pci_alloc_host_bridge(void)
->  {
->         struct pci_host_bridge *bridge;
->
-> @@ -524,7 +524,8 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
->                 return NULL;
->
->         INIT_LIST_HEAD(&bridge->windows);
-> -       bridge->bus = b;
-> +       bridge->dev.release = pci_release_host_bridge_dev;
-> +
->         return bridge;
->  }
->
-> @@ -1761,9 +1762,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->         char bus_addr[64];
->         char *fmt;
->
-> +       bridge = pci_alloc_host_bridge();
-> +       if (!bridge)
-> +               return NULL;
-> +
-> +       bridge->dev.parent = parent;
-> +
->         b = pci_alloc_bus();
->         if (!b)
-> -               return NULL;
-> +               goto err_out;
->
->         b->sysdata = sysdata;
->         b->ops = ops;
-> @@ -1772,26 +1779,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->         if (b2) {
->                 /* If we already got to this bus through a different bridge, ignore it */
->                 dev_dbg(&b2->dev, "bus already known\n");
-> -               goto err_out;
-> +               goto err_bus_out;
->         }
->
-> -       bridge = pci_alloc_host_bridge(b);
-> -       if (!bridge)
-> -               goto err_out;
-> -
-> -       bridge->dev.parent = parent;
-> -       bridge->dev.release = pci_release_host_bridge_dev;
-> +       bridge->bus = b;
->         dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
->         error = pcibios_root_bridge_prepare(bridge);
-> -       if (error) {
-> -               kfree(bridge);
-> +       if (error)
->                 goto err_out;
-> -       }
->
->         error = device_register(&bridge->dev);
->         if (error) {
->                 put_device(&bridge->dev);
-> -               goto err_out;
-> +               goto err_bus_out;
->         }
->         b->bridge = get_device(&bridge->dev);
->         device_enable_async_suspend(b->bridge);
-> @@ -1848,8 +1848,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  class_dev_reg_err:
->         put_device(&bridge->dev);
->         device_unregister(&bridge->dev);
-> -err_out:
-> +err_bus_out:
->         kfree(b);
-> +err_out:
-> +       kfree(bridge);
->         return NULL;
->  }
-
-Hi Bjorn,
-
-Noticed that you put this one into pci/next.
-
-This patch has problem for the class_dev_reg_err path.
-as device_unregister(&bridge->dev) will trigger pci_release_host_bridge_dev.
-So will have double free for bridge or else.
-
-Please drop this patch from pci/next.
-
-Also looks strange that the patch have long CC list, but just omit me
-and Jiang Liu that
-touched those code before.
-
-Thanks
-
-Yinghai
+> Yinghai
+Sorry, this message was marked as SPAM for some reason.  Do you still
+want this patch tested?
