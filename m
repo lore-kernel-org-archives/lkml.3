@@ -1,46 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaIYPOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:14:38 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:62843 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaIYPOh (ORCPT
+	id S1753694AbaIYPPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:15:30 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:59684 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaIYPP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:14:37 -0400
-Date: Thu, 25 Sep 2014 11:14:33 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Zefan Li <lizefan@huawei.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Wagin <avagin@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: cgroup_mount() falls asleep forever
-Message-ID: <20140925151433.GA23044@htj.dyndns.org>
-References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
- <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
- <20140924185213.GB7996@ZenIV.linux.org.uk>
- <20140924192456.GA1233@mtj.dyndns.org>
- <20140925024719.GJ7996@ZenIV.linux.org.uk>
- <20140925032502.GB6903@mtj.dyndns.org>
- <5423ED2B.8010009@huawei.com>
+	Thu, 25 Sep 2014 11:15:29 -0400
+Date: Thu, 25 Sep 2014 15:15:19 +0000
+From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Meelis Roos <mroos@linux.ee>
+Subject: [PATCH v2] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+Message-ID: <20140925151519.GA12225@erable>
+References: <20140924093021.GA7929@erable>
+ <20140924101647.GA4651@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5423ED2B.8010009@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140924101647.GA4651@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 06:23:39PM +0800, Zefan Li wrote:
-> That patch is wrong. We have to use both pinned_sb and new_sb, so
-> please revert it. :(
-> 
-> I think we need to put some test cases in tools/testing/selftests/, to
-> prevent this fragile thing from breaking again.
+Hello,
 
-Can you please send a patch to revert it?  There have been a couple
-changes dependent on it.
+When: 2014-09-24_3@06-16-47 -0400
+Who:  Neil Horman
+What:
+> You do probably want to fixup
+> the changelog to be a bit more clear as to whats going on here.
 
-Thanks.
+Date:   Wed Sep 24 09:22:16 2014 +0000
+
+3c59x: fix bad split of cpu_to_le32(pci_map_single())
+
+In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
+  # 3c59x: Add dma error checking and recovery
+the intent is to split out the mapping from the byte-swapping in order to
+insert a dma_mapping_error() check.
+
+Kinda this semantic patch:
+
+    // See http://coccinelle.lip6.fr/
+    //
+    // Beware, grouik-and-dirty!
+    @@
+    expression DEV, X, Y, Z;
+    @@
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
+
+However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
+
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
+    //                    ^^^^^^^^^^^
+    //                    That mismatches the 3 other changes!
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
+
+Let's remove the leftover cpu_to_le32() for coherency.
+
+v2: Better changelog.
+
+Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
+  # 3c59x: Add dma error checking and recovery
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Meelis Roos <mroos@linux.ee>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+---
+ drivers/net/ethernet/3com/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index 8ca49f04..0a3108b3 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ #else
+-	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
++	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
+ 	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
+ 		goto out_dma_err;
+ 	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
+
+Regards,
+Sylvain "ythier" Hitier
 
 -- 
-tejun
+Business is about being busy, not being rich...
+Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
+There's THE room for ideals in this mechanical place!
