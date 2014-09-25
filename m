@@ -1,82 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaIYVwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:52:12 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:58691 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaIYVwK (ORCPT
+	id S1752428AbaIYV4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:56:21 -0400
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:43643 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIYV4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:52:10 -0400
+	Thu, 25 Sep 2014 17:56:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
-References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
-	<CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
-	<54227F93.7000507@rock-chips.com>
-	<CAD=FV=Uq9AteUcpMvcU5tmyGZbVYWM6PNmevZXSVCkYB8rqSsQ@mail.gmail.com>
-	<5423765B.8000706@rock-chips.com>
-	<CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
-Date: Thu, 25 Sep 2014 14:52:08 -0700
-X-Google-Sender-Auth: coV9_90vM2jG082Hm1Ne72LDR_0
-Message-ID: <CAD=FV=UkAcR8b+T_Dvoy9STDfzyC8QVSawihoHLYyHFJ6bfXxQ@mail.gmail.com>
-Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
- characteristics of SCL
-From: Doug Anderson <dianders@chromium.org>
-To: addy ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
+Date: Thu, 25 Sep 2014 23:56:18 +0200
+X-Google-Sender-Auth: yQ-XDwRLtiLQDMXw8wb1KW8MTgE
+Message-ID: <CAJZ5v0hsuZ-Xhsqvz=1SnL1438nyhiBvd+GTZa16OkWmxz=F2g@mail.gmail.com>
+Subject: [GIT PULL] ACPI and power management fixes for 3.17-rc7
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+Hi Linus,
 
-On Wed, Sep 24, 2014 at 9:36 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Addy,
->
-> On Wed, Sep 24, 2014 at 6:56 PM, addy ke <addy.ke@rock-chips.com> wrote:
->> In my measurement,all paramter but "Data hold time" are match the characteristics of SCL bus line.
->> the measured value is 0.928us("data hold time on RK3X"  ~=  "the low period / 2")
->> but the maximum value described in table is 0.9us
->>
->> About "Data hold time", there are described in I2C specification:
->> - for CBUS compatible masters for I2C-bus deivices
->> - the maximum data hold time has only be met if the device does not stretch the LOW period of the SCL signal.
->>
->> I have tested on RK3288-Pinky board, there are no error.
->> But I don't known whether this paramter will affect i2c communications.
->
-> I'll have to spend more time tomorrow to really understand this, but
-> if changing the code to bias towards slightly longer "high" times
-> instead of "low" times helps fix it then that's fine with me.
+Please pull from
 
-So what you're saying is that you're seeing a case where the clock
-goes low and the data is not valid until .928us.  Is this data that is
-being driven by the master or data that is being driven by the slave?
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.17-rc7
 
-Do you know why the data takes so long to be valid?  Maybe you can
-email me some of the waveforms and I can try to help you debug it.
+to receive ACPI and power management fixes for v3.17-rc7 (or
+for the final v3.17 if there's no -rc7) with top-most commit
+381e63da44301f49be5876d56a5da2434f132dff
+
+ Merge branches 'pm-cpufreq' and 'pm-sleep'
+
+on top of commit 0f33be009b89d2268e94194dc4fd01a7851b6d51
+
+ Linux 3.17-rc6
+
+These are regression fixes (ACPI hotplug, cpufreq, hibernation, ACPI
+LPSS driver), fixes for stuff that never worked correctly (ACPI GPIO
+support in some cases and a wrong sign of an error code in the ACPI
+core in one place), and one blacklist item for ACPI backlight handling.
+
+Specifics:
+
+ - Revert of a recent hibernation core commit that introduced
+   a NULL pointer dereference during resume for at least one user
+   (Rafael J Wysocki).
+
+ - Fix for the ACPI LPSS (Low-Power Subsystem) driver to disable
+   asynchronous PM callback execution for LPSS devices during system
+   suspend/resume (introduced in 3.16) which turns out to break
+   ordering expectations on some systems.  From Fu Zhonghui.
+
+ - cpufreq core fix related to the handling of sysfs nodes during
+   system suspend/resume that has been broken for intel_pstate
+   since 3.15 from Lan Tianyu.
+
+ - Restore the generation of "online" uevents for ACPI container
+   devices that was removed in 3.14, but some user space utilities
+   turn out to need them (Rafael J Wysocki).
+
+ - The cpufreq core fails to release a lock in an error code path
+   after changes made in 3.14.  Fix from Prarit Bhargava.
+
+ - ACPICA and ACPI/GPIO fixes to make the handling of ACPI GPIO
+   operation regions (which means AML using GPIOs) work correctly
+   in all cases from Bob Moore and Srinivas Pandruvada.
+
+ - Fix for a wrong sign of the ACPI core's create_modalias() return
+   value in case of an error from Mika Westerberg.
+
+ - ACPI backlight blacklist entry for ThinkPad X201s from Aaron Lu.
+
+Thanks!
 
 
-In any case it sounds like the the "data hold time" problem is
-unrelated to the clock ratio problem (right?), so maybe you could send
-out patch v2?
+---------------
 
--Doug
+Aaron Lu (1):
+      ACPI / video: disable native backlight for ThinkPad X201s
 
-P.S. I checked the Rockchip TRM and it claims 400kHz maximum i2c.  I
-think that means you can just remove all of the "fast mode plus" and
-"high speed mode" clock rates from your table.
+Bob Moore (1):
+      ACPICA: Update to GPIO region handler interface.
+
+Fu Zhonghui (1):
+      ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
+
+Lan Tianyu (1):
+      cpufreq: fix cpufreq suspend/resume for intel_pstate
+
+Mika Westerberg (1):
+      ACPI / scan: Correct error return value of create_modalias()
+
+Prarit Bhargava (1):
+      cpufreq: release policy->rwsem on error
+
+Rafael J. Wysocki (2):
+      ACPI / hotplug: Generate online uevents for ACPI containers
+      Revert "PM / Hibernate: Iterate over set bits instead of PFNs in
+swsusp_free()"
+
+Srinivas Pandruvada (1):
+      gpio / ACPI: Use pin index and bit length
+
+---------------
+
+ drivers/acpi/acpi_lpss.c       |  1 -
+ drivers/acpi/acpica/aclocal.h  |  1 +
+ drivers/acpi/acpica/acobject.h |  1 +
+ drivers/acpi/acpica/dsfield.c  |  2 ++
+ drivers/acpi/acpica/evregion.c | 47 +++++++++++++++++++----------
+ drivers/acpi/acpica/exfield.c  | 67 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/acpica/exprep.c   |  2 ++
+ drivers/acpi/container.c       |  8 +++++
+ drivers/acpi/scan.c            |  5 +++-
+ drivers/acpi/video.c           |  8 +++++
+ drivers/cpufreq/cpufreq.c      | 10 ++++---
+ drivers/gpio/gpiolib-acpi.c    |  5 +++-
+ include/acpi/acpi_bus.h        |  1 +
+ kernel/power/snapshot.c        | 50 ++++++++++---------------------
+ 14 files changed, 150 insertions(+), 58 deletions(-)
