@@ -1,102 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaIYHAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:00:53 -0400
-Received: from mga14.intel.com ([192.55.52.115]:49183 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaIYHAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:00:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,595,1406617200"; 
-   d="scan'208";a="596576867"
-Date: Thu, 25 Sep 2014 10:00:34 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/6] phy: improved lookup method
-Message-ID: <20140925070034.GA15854@xps8300>
-References: <5411C0B2.3060505@ti.com>
- <20140912140720.GC30816@xps8300>
- <54130729.5010206@ti.com>
- <20140915123508.GA16653@xps8300>
- <20140918102505.GB8567@xps8300>
- <54200A13.6050201@ti.com>
- <20140923105311.GB18814@xps8300>
- <5421536D.4050601@ti.com>
- <20140923114353.GC18814@xps8300>
- <54229276.5050000@ti.com>
+	id S1752389AbaIYHBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:01:23 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:50739 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaIYHBV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 03:01:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54229276.5050000@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Thu, 25 Sep 2014 09:00:41 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: linus.walleij@linaro.org, gnurou@gmail.com, kernel@pengutronix.de,
+        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com
+Subject: Re: [PATCH v2 2/5] pinctrl: imx: add gpio pinmux support for vf610
+In-Reply-To: <20140925024712.GB6405@dragon>
+References: <cover.1411492954.git.stefan@agner.ch>
+ <bb68d2360314158cd8ccb9c6794877c3bb45d72e.1411492954.git.stefan@agner.ch>
+ <20140925024712.GB6405@dragon>
+Message-ID: <1d3735aff5e0961c43d349d673a1c2b2@agner.ch>
+User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>>>>> Assume you have 2 phys in your system..
-> >>>>>>> static struct phy_lookup usb_lookup = {
-> >>>>>>> 	.phy_name	= "phy-usb.0",
-> >>>>>>> 	.dev_id		= "usb.0",
-> >>>>>>> 	.con_id		= "usb",
-> >>>>>>> };
-> >>>>>>>
-> >>>>>>> static struct phy_lookup sata_lookup = {
-> >>>>>>> 	.phy_name	= "sata-usb.1",
-> >>>>>>> 	.dev_id		= "sata.0",
-> >>>>>>> 	.con_id		= "sata",
-> >>>>>>> };
-> >>>>>>>
-> >>>>>>> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
-> >>>>>>> creates the PHY. The phy-core will find a free id (now it will be 0) and then
-> >>>>>>> name the phy as phy-usb.0.
-> >>>>>>> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
-> >>>>>>>
-> >>>>>>> This is an ideal case where the .phy_name in phy_lookup matches.
-> >>>>>>>
-> >>>>>>> Consider if the order is flipped and the user does modprobe phy-sata first. The
-> >>>>>>> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
-> >>>>>
-> >>>>> Actually, I don't think there would be this problem if we used the
-> >>>>> name of the actual device which is the parent of phy devices, right?
-> >>>>
-> >>>> hmm.. but if the parent is a multi-phy phy provider (like pipe3 PHY driver), we
-> >>>> might end up with the same problem.
-> >>>
-> >>> I'm not completely sure what you mean? If you are talking about
-> >>> platforms with multiple instances of a single phy, I don't see how
-> >>> there could ever be a scenario where we did not know the order in
-> >>> which they were enumerated. Can you give an example again?
-> >>
-> >> If a single IP implements multiple PHYs (phy-miphy365x.c in linux-phy next),
-> >> the parent for all the phy devices would be the same.
+Am 2014-09-25 04:47, schrieb Shawn Guo:
+> On Tue, Sep 23, 2014 at 07:37:54PM +0200, Stefan Agner wrote:
+>> Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
+>> This is needed since direction configuration is not part of the
+>> GPIO module in Vybrid.
+>>
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  drivers/pinctrl/pinctrl-imx.c   | 54 +++++++++++++++++++++++++++++++++++++++++
+>>  drivers/pinctrl/pinctrl-imx.h   |  1 +
+>>  drivers/pinctrl/pinctrl-vf610.c |  2 +-
+>>  3 files changed, 56 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+>> index 0d4558b..64d1b59 100644
+>> --- a/drivers/pinctrl/pinctrl-imx.c
+>> +++ b/drivers/pinctrl/pinctrl-imx.c
+>> @@ -294,10 +294,59 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
+>>  	return 0;
+>>  }
+>>
+>> +static int imx_pmx_gpio_request_enable(struct pinctrl_dev *pctldev,
+>> +			struct pinctrl_gpio_range *range, unsigned offset)
+>> +{
+>> +	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
+>> +	const struct imx_pinctrl_soc_info *info = ipctl->info;
+>> +	const struct imx_pin_reg *pin_reg;
+>> +	u32 reg;
+>> +
+>> +	if (!(info->flags & GPIO_CONTROL))
+>> +		return -EINVAL;
+>> +
+>> +	pin_reg = &info->pin_regs[offset];
+>> +	if (pin_reg->mux_reg == -1)
+>> +		return -EINVAL;
+>> +
+>> +	reg = readl(ipctl->base + pin_reg->mux_reg);
+>> +	reg &= ~(0x7 << 20);
+>> +	writel(reg, ipctl->base + pin_reg->mux_reg);
+> 
+> Isn't this setup redundant at all, since imx_pmx_enable() already takes
+> care of setting mux register including GPIO mode?
+> 
 
-Hold on...
+Yes currently this is redundant, when a pinmux is actually applied. What
+is the expected behaviour? Is a explicit pinmux necessary before we can
+use GPIO? If not, maybe it would make more sense to use imx_pmx_enable
+here to write all pinctrl settings?
 
-Let's take a step back here. Where could we actually have a scenario
-where the phy device, the dev_id (consumer) and the con_id would all
-be the same? There can't be such a case.
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int imx_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
+>> +	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
+>> +{
+>> +	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
+>> +	const struct imx_pinctrl_soc_info *info = ipctl->info;
+>> +	const struct imx_pin_reg *pin_reg;
+>> +	u32 reg;
+>> +
+>> +	if (!(info->flags & GPIO_CONTROL))
+>> +		return -EINVAL;
+>> +
+>> +	pin_reg = &info->pin_regs[offset];
+>> +	if (pin_reg->mux_reg == -1)
+>> +		return -EINVAL;
+>> +
+>> +	reg = readl(ipctl->base + pin_reg->mux_reg);
+>> +	if (input)
+>> +		reg &= ~0x2;
+>> +	else
+>> +		reg |= 0x2;
+> 
+> This is all about Output Buffer Enable (OBE) bit.  What about Input
+> Buffer Enable (IBE) bit?  Don't we need to set or clear it as per GPIO
+> direction as well?
+> 
 
-It's not like you could ever have a driver requesting multiple phys
-with the same con_id. You would just get the same phy handle even if
-you used dt.
+The leave the input buffer doesn't hurt, it allows to read back the
+value which is actually "on the wire". If a pin is hard on GND, one can
+actually see that.
 
-        phy1 = phy_get(dev, "phy");
-        ...
-        phy2 = phy_get(dev, "phy");
+>> +	writel(reg, ipctl->base + pin_reg->mux_reg);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>>  static const struct pinmux_ops imx_pmx_ops = {
+>>  	.get_functions_count = imx_pmx_get_funcs_count,
+>>  	.get_function_name = imx_pmx_get_func_name,
+>>  	.get_function_groups = imx_pmx_get_groups,
+>> +	.gpio_request_enable = imx_pmx_gpio_request_enable,
+>> +	.gpio_set_direction = imx_pmx_gpio_set_direction,
+>>  	.enable = imx_pmx_enable,
+>>  };
+>>
+>> @@ -579,6 +628,11 @@ int imx_pinctrl_probe(struct platform_device *pdev,
+>>  		dev_err(&pdev->dev, "wrong pinctrl info\n");
+>>  		return -EINVAL;
+>>  	}
+>> +
+>> +	/* GPIO control functions only intended for shared mux/conf register */
+>> +	if (info->flags & GPIO_CONTROL)
+>> +		BUG_ON(!(info->flags & SHARE_MUX_CONF_REG));
+>> +
+> 
+> If this is always true, why don't we just use flag SHARE_MUX_CONF_REG
+> and save GPIO_CONTROL?  This check doesn't make too much sense to me if
+> we choose to have a new flag for GPIO setup.  IMO, we should probably
+> either drop the GPIO_CONTROL flag or the check.
+> 
 
-And if the drivers requesting those phys are different, your consumers
-are different.
+Well, this is always true because the vf610 driver configures both
+configs. But when somebody accidentally enables GPIO_CONFIG without
+understanding the implications... This was more meant like "don't try to
+use the GPIO_CONTROL just like that, its Vybird specific".
 
-> Isn't making the PHY to be aware of it's user much simpler?
+But I'm ok to remove this runtime check, maybe a comment describing the
+flags is more appropriate..?
 
-No it's not. I'm not going into this again. We have already gone
-through this in the past.
-
-
-Cheers,
-
--- 
-heikki
+> Shawn
+> 
+>>  	info->dev = &pdev->dev;
+>>
+>>  	/* Create state holders etc for this driver */
+>> diff --git a/drivers/pinctrl/pinctrl-imx.h b/drivers/pinctrl/pinctrl-imx.h
+>> index 49e55d3..8f37ca4 100644
+>> --- a/drivers/pinctrl/pinctrl-imx.h
+>> +++ b/drivers/pinctrl/pinctrl-imx.h
+>> @@ -84,6 +84,7 @@ struct imx_pinctrl_soc_info {
+>>  };
+>>
+>>  #define SHARE_MUX_CONF_REG	0x1
+>> +#define GPIO_CONTROL		0x2
+>>
+>>  #define NO_MUX		0x0
+>>  #define NO_PAD		0x0
+>> diff --git a/drivers/pinctrl/pinctrl-vf610.c b/drivers/pinctrl/pinctrl-vf610.c
+>> index b788e15..fdf5661 100644
+>> --- a/drivers/pinctrl/pinctrl-vf610.c
+>> +++ b/drivers/pinctrl/pinctrl-vf610.c
+>> @@ -299,7 +299,7 @@ static const struct pinctrl_pin_desc vf610_pinctrl_pads[] = {
+>>  static struct imx_pinctrl_soc_info vf610_pinctrl_info = {
+>>  	.pins = vf610_pinctrl_pads,
+>>  	.npins = ARRAY_SIZE(vf610_pinctrl_pads),
+>> -	.flags = SHARE_MUX_CONF_REG,
+>> +	.flags = SHARE_MUX_CONF_REG | GPIO_CONTROL,
+>>  };
+>>
+>>  static struct of_device_id vf610_pinctrl_of_match[] = {
+>> --
+>> 2.1.0
+>>
