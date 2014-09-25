@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532AbaIYEcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 00:32:42 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34978 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaIYEcl (ORCPT
+	id S1751271AbaIYEgm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 00:36:42 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:52936 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaIYEgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 00:32:41 -0400
-Message-ID: <54239AE0.5070007@hitachi.com>
-Date: Thu, 25 Sep 2014 13:32:32 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 25 Sep 2014 00:36:39 -0400
 MIME-Version: 1.0
-To: Li Bin <huawei.libin@huawei.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, guohanjun@huawei.com,
-        wangyijing@huawei.com, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] kprobes: Update Documentation/kprobes.txt
-References: <1411612329-32741-1-git-send-email-huawei.libin@huawei.com>
-In-Reply-To: <1411612329-32741-1-git-send-email-huawei.libin@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5423765B.8000706@rock-chips.com>
+References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
+	<CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
+	<54227F93.7000507@rock-chips.com>
+	<CAD=FV=Uq9AteUcpMvcU5tmyGZbVYWM6PNmevZXSVCkYB8rqSsQ@mail.gmail.com>
+	<5423765B.8000706@rock-chips.com>
+Date: Wed, 24 Sep 2014 21:36:38 -0700
+X-Google-Sender-Auth: qt13F5PDPIViaYdPRsMBy9saszU
+Message-ID: <CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
+Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
+ characteristics of SCL
+From: Doug Anderson <dianders@chromium.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/25 11:32), Li Bin wrote:
-> The patch 125e564("Move Kconfig.instrumentation to arch/Kconfig and
-> init/Kconfig") had removed the "Instrumentation Support" menu,
-> and the configurations under this had be moved to "General setup".
-> Update Documentation/kprobes.txt to reflect this change.
-> 
-> Signed-off-by: Li Bin <huawei.libin@huawei.com>
+Addy,
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Wed, Sep 24, 2014 at 6:56 PM, addy ke <addy.ke@rock-chips.com> wrote:
+> In my measurement,all paramter but "Data hold time" are match the characteristics of SCL bus line.
+> the measured value is 0.928us("data hold time on RK3X"  ~=  "the low period / 2")
+> but the maximum value described in table is 0.9us
+>
+> About "Data hold time", there are described in I2C specification:
+> - for CBUS compatible masters for I2C-bus deivices
+> - the maximum data hold time has only be met if the device does not stretch the LOW period of the SCL signal.
+>
+> I have tested on RK3288-Pinky board, there are no error.
+> But I don't known whether this paramter will affect i2c communications.
 
-Thanks!
-
-> ---
->  Documentation/kprobes.txt |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-> index 4bbeca8..ca4a927 100644
-> --- a/Documentation/kprobes.txt
-> +++ b/Documentation/kprobes.txt
-> @@ -304,8 +304,8 @@ architectures:
->  3. Configuring Kprobes
->  
->  When configuring the kernel using make menuconfig/xconfig/oldconfig,
-> -ensure that CONFIG_KPROBES is set to "y".  Under "Instrumentation
-> -Support", look for "Kprobes".
-> +ensure that CONFIG_KPROBES is set to "y". Under "General setup", look
-> +for "Kprobes".
->  
->  So that you can load and unload Kprobes-based instrumentation modules,
->  make sure "Loadable module support" (CONFIG_MODULES) and "Module
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I'll have to spend more time tomorrow to really understand this, but
+if changing the code to bias towards slightly longer "high" times
+instead of "low" times helps fix it then that's fine with me.
