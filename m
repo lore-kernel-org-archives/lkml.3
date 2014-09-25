@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaIYRJa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:09:30 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47002 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752533AbaIYRJ3 (ORCPT
+	id S1753426AbaIYRPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:15:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61561 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752982AbaIYRPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:09:29 -0400
-X-Sasl-enc: yrhrvwIPLtJWNZlsYYr5zszdMMEffToYUA3Vr2xjABeG 1411664968
-Date: Thu, 25 Sep 2014 14:09:16 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Thu, 25 Sep 2014 13:15:40 -0400
+Date: Thu, 25 Sep 2014 18:15:45 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Weston Andros Adamson <dros@primarydata.com>
+Cc: Peng Tao <tao.peng@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs list <linux-nfs@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140925170916.GF10814@khazad-dum.debian.net>
-References: <20140924145658.GB31678@khazad-dum.debian.net>
- <20140925085158.GF22317@nazgul.tnic>
- <20140925113643.GB10569@khazad-dum.debian.net>
- <20140925121007.GA25334@nazgul.tnic>
- <20140925144025.GA14030@khazad-dum.debian.net>
- <20140925145655.GA28201@nazgul.tnic>
- <20140925153006.GB10814@khazad-dum.debian.net>
- <20140925155044.GB28201@nazgul.tnic>
- <20140925164121.GC10814@khazad-dum.debian.net>
- <20140925165740.GE28201@nazgul.tnic>
+Subject: Re: WARNING at fs/nfs/write.c:743 nfs_inode_remove_request with -rc6
+Message-ID: <20140925171545.GR20043@arm.com>
+References: <20140923130352.GK26472@arm.com>
+ <2A327753-3E60-46AC-8220-3FF0FF61F08F@primarydata.com>
+ <20140923135938.GB28608@arm.com>
+ <20140923145356.GD28608@arm.com>
+ <5294BEB2-F20F-4E3E-BFB2-E41806A4F85A@primarydata.com>
+ <FA11FBE3-42E7-46B9-B9DA-FAE368DCE96B@primarydata.com>
+ <F632C770-3E3D-4FC5-BBF3-69BB1CCA8F0D@primarydata.com>
+ <20140923152558.GG28608@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140925165740.GE28201@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140923152558.GG28608@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Borislav Petkov wrote:
-> On Thu, Sep 25, 2014 at 01:41:21PM -0300, Henrique de Moraes Holschuh wrote:
-> > We still need to update x86_capability after a microcode update for the
-> > above to really work in the "install microcode into initramfs" case.
+Hi Andros,
+
+On Tue, Sep 23, 2014 at 04:25:58PM +0100, Will Deacon wrote:
+> On Tue, Sep 23, 2014 at 04:08:36PM +0100, Weston Andros Adamson wrote:
+> > On Sep 23, 2014, at 11:02 AM, Weston Andros Adamson <dros@primarydata.com> wrote:
+> > > Wait a second - the whole point of this extra reference (that the
+> > > WARN_ON_ONCE is related to) is to handle the pass off to commit lists.
+> > > 
+> > > Maybe I’m just doing the wrong thing here with NFSv2!
+> > > 
+> > > More soon.
+> > 
+> > Actually, can you see if this is reproducible with NFSv3?
 > 
-> I think you mean for the kernels without early microcode loading...
+> Just tried that, and I'm unable to trigger the problem with NFSv3.
 
-exactly.
+Any more ideas? I can run with NFSv3 instead, but it's a shame to leave
+v2 broken.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Will
