@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389AbaIYN2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:28:37 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46098 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaIYN2g (ORCPT
+	id S1752882AbaIYNaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:30:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58142 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752262AbaIYNaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:28:36 -0400
-Date: Thu, 25 Sep 2014 14:28:28 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Thomas Shao <huishao@microsoft.com>
-Cc: Olaf Hering <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: Time keeps on slipping... on Hyper-V
-Message-ID: <20140925132055.GA13108@sucs.org>
-References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
- <20140923075610.GA10933@aepfle.de>
- <20140925060745.GA9450@sucs.org>
- <CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
+	Thu, 25 Sep 2014 09:30:13 -0400
+Date: Thu, 25 Sep 2014 15:27:25 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shuge <shuge@allwinnertech.com>,
+        Meng Zhang <kevin@allwinnertech.com>, ctl@merrii.com,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 2/7] ARM: sunxi: Add debug uart used by sun9i
+ (Allwinner A80)
+Message-ID: <20140925132725.GG15315@lukather>
+References: <1411570141-29960-1-git-send-email-wens@csie.org>
+ <1411570141-29960-3-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wQkw7DhpL9hyPo7K"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
+In-Reply-To: <1411570141-29960-3-git-send-email-wens@csie.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 09:40:42AM +0000, Thomas Shao wrote:
-> > > On Tue, Sep 23, Thomas Shao wrote:
-> > >
-> > > with the host clock using host time sample. By default it is
-> > > disabled, because we still recommend user to configure NTP for time
-> >
-> > -----Original Message-----
-> > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> > Sent: Thursday, September 25, 2014 2:08 PM
-> >
-> > You [Microsoft?] do? Can you link to public sources where is this stated
-> 
-> As far as I know, currently the document about time sync in Hyper-V is
-> only for Windows. Below is a doc from MSDN:
-> http://blogs.msdn.com/b/virtual_pc_guy/archive/2010/11/19/time-synchronization-in-hyper-v.aspx
 
-That post is problematic and not quite enough because it doesn't say "we
-recommend you always configure an external time source for a guest" but
-rather gives a more complicated statement saying "because guest time
-drifts we have a time synchronisation service that will sort things out.
-If you happen to be running a domain controller we recommend you
-configure regular synchronisation to an external time source in
-addition". This leads to questions like: if my (Linux) guest's sole
-purpose is to run a web server am I in the domain controller situation
-(domain controllers have to re-serve time so perhaps they are special)?
-It also doesn't cover the "clock drift is so bad ntpd can't correct it"
-issue.
+--wQkw7DhpL9hyPo7K
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Have you seen this document on TechNet -
-http://blogs.technet.com/b/enterprise_admin/archive/2010/04/04/linux-on-hyper-v-timesync.aspx
-"With the new Integration Services, Linux virtual machines can! 
+On Wed, Sep 24, 2014 at 10:48:56PM +0800, Chen-Yu Tsai wrote:
+> The uarts on sun9i are still compatible with the dw_8250, but are
+> located at different addresses.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 
-TimeSync means that you don’t have to hassle with configur[ing]
-network-based time sync for your Linux VMs on Hyper-V…they can get the
-correct time from the host!"
+Queued for 3.19, thanks.
 
-This document gives simpler advice looks quite compelling at first
-glance.
+Maxime
 
-> We are working on the document about Time Sync on Hyper-V to cover
-> both Linux and Windows.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-The sooner you can get such an official document out the better. All
-sources of guest time synchronisation information (including Microsoft
-blogs and non-Microsoft Q&A sites) need updating so they say the same
-(correct!) thing in a clear way.
+--wQkw7DhpL9hyPo7K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-For the meantime can you state what you believe the recommend practice
-is for Linux Hyper-V guests with regards to time synchronisation?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
--- 
-Sitsofe | http://sucs.org/~sits/
+iQIcBAEBAgAGBQJUJBg9AAoJEBx+YmzsjxAg+QEP/AtTa3/QBVwNArQSpRZ6de2Z
+WISnNAU0+diBe07Cqteaj8V0lBs5FzRbItZFEsxXpA4GQ3JUqyFwiv6gBTt4YryB
+QDww+eDeprRwAqpPSCeXepwGow0zXNw5aBu/lWEwWVizJmbUIANINbGx7nqKIoHT
+L907EzI3RteVh4khd4YA0vQjIoQz0oH2ydmZcMoBCegbLcGA7s74YB37XEVRhG0b
+jlds4YwkePOMxvjxjYu6gkQBxez0D55Vfj2TV/27BV7ou3K0GefcPb4oijrUKWBp
+/HNik5OcfuKtmPxzwNTDFbfFhTCBikVvNf7cxsMHSNJeIJ+KYUOLmg1G9G0KS7BU
+dXtBW9aGgeiMWCVO706yXIj8vJyN4wcczyNGRenGWiU//fo6zP74elsWKvw+SXnj
+HPLzK7iAn9q3QZ8M7iB2o3k0KLGS/Qo1/6egAb/CmMwY/cd2VfvNjtYgcZ8EsDeI
+0TR7I2/v20xbdt2l5hGNecpvJuz2fxd6hzv1dE7qbD/HaKRGBcDweoBXXCuq5zsN
+XbkuRr8UKZzCDksj1eQXsOBS78iT36h3ZJhbrBJV40vCMDGKkgng1E7g/alhnQKk
+Re63PrF5n2KO7yXpWKkFkiOqD/TvFt3ymwBQ80x+zKeyBJXjyN3obv+Z8p7Q96IQ
+YbSyhQ62PcN4LE+dEaM5
+=0jW+
+-----END PGP SIGNATURE-----
+
+--wQkw7DhpL9hyPo7K--
