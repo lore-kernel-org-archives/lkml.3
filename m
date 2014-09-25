@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaIYI54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:57:56 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:48189 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaIYI5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:57:53 -0400
-Message-ID: <5423D90A.7090402@codethink.co.uk>
-Date: Thu, 25 Sep 2014 09:57:46 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	id S1752782AbaIYI7q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:59:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21661 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751898AbaIYI7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 04:59:43 -0400
+Date: Thu, 25 Sep 2014 10:58:58 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
+        peterz@infradead.org, eranian@google.com,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v4 01/10] tools/perf: support parsing parameterized events
+Message-ID: <20140925085858.GA20915@krava.brq.redhat.com>
+References: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1411586844-21381-2-git-send-email-sukadev@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Randy Dunlap <rdunlap@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kernel@codethink.co.uk,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [PATCH RESUBMIT 0/2] fs/seq_file: Add seq_open_init()
-References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk> <CAGXu5jJS3Xg+uGm6L+fNau1VBHZpE=EJNRnFZAwwK5fW3B+TjA@mail.gmail.com>
-In-Reply-To: <CAGXu5jJS3Xg+uGm6L+fNau1VBHZpE=EJNRnFZAwwK5fW3B+TjA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411586844-21381-2-git-send-email-sukadev@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 12:27:15PM -0700, Sukadev Bhattiprolu wrote:
+> From: Cody P Schafer <cody@linux.vnet.ibm.com>
+> 
+> Enable event specification like:
+> 
+> 	pmu/event_name,param1=0x1,param2=0x4/
+> 
+> Assuming that
+> 
+> 	/sys/bus/event_source/devices/pmu/events/event_name
+> 
+> Contains something like
+> 
+> 	param2=foo,bar=1,param1=baz
+
+hum, so what happened to the '?' ... AFAIU from out last discussion,
+you wanted to mark terms which are mandatory and user must provide
+values for them.. and I thought the decision was to have following
+alias record:
+
+  $ cat /sys/bus/event_source/devices/pmu/events/event_name
+  param2=?,bar=1,param1=?
+
+while perf would scream if any of param1/2 wasnt filled like for:
+  pmu/event_name,param1=0x1/
 
 
-On 24/09/14 19:06, Kees Cook wrote:
-> On Wed, Sep 24, 2014 at 4:15 AM, Rob Jones <rob.jones@codethink.co.uk> wrote:
->> Series resubmitted due to a typo in an email address.
->>
->> This patch series implements and documents a new interface function for
->> seq_file.
->>
->> The existing set of open functions: seq_open(), seq_open_private() and
->> __seq_open_private() satisfy the majority of use cases however there is
->> one more use case that is also very common that this new function
->> addresses.
->>
->> This case is where the iterator needs information that is available only at
->> the time the seq_file is opened but does not need any space allocated, e.g.
->> access to the inode structure. This type of open occurs, by my best estimate,
->> in well over 40 places.
->>
->> Using the new function saves at least two lines of boilerplate code per
->> instance as well as making the code easier to follow. The additional code
->> in seq_file.c to implement the function is minimal as the first place that
->> code can be removed is within seq_file.c itself.
->>
->> Once this patch is accepted, the instances of boilerplate code can be
->> addressed.
->
-> Would it be possible to write a coccinelle patch for the replacements?
-
-I'm afraid I don't know what that means.
-
->
-> This seems like a good idea. Thanks!
->
-> Acked-by: Kees Cook <keescook@chromium.org>
->
-> -Kees
->
->>
->> The documentation of seq_open() and its variants has been re-worked to try
->> to guide users towards the most appropriate variant for their application.
->>
->> Rob Jones (2):
->>    fs/seq_file: Create new function seq_open_init()
->>    Documentation/filesystem/seq_file: document seq_open_init()
->>
->>   Documentation/filesystems/seq_file.txt |   58 +++++++++++++++++++++-----------
->>   fs/seq_file.c                          |   34 ++++++++++++-------
->>   include/linux/seq_file.h               |    1 +
->>   3 files changed, 62 insertions(+), 31 deletions(-)
->>
->> --
->> 1.7.10.4
->>
->
->
->
-
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+thanks,
+jirka
