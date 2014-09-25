@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaIYJuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:50:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57091 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750977AbaIYJuE (ORCPT
+	id S1752914AbaIYJvO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:51:14 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:39334 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIYJvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:50:04 -0400
-Date: Thu, 25 Sep 2014 11:47:52 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
-        u.kleine-koenig@pengutronix.de,
-        laurent.pinchart+renesas@ideasonboard.com,
-        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
-        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
-        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
-        max.schwarz@online.de, mika.westerberg@linux.intel.com,
-        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
-        chiau.ee.chew@intel.com, christian.ruppert@abilis.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
- support
-Message-ID: <20140925094752.GY15315@lukather>
-References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
- <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
- <20140923190057.GN15315@lukather>
- <20140923195854.GA9921@pathfinder>
+	Thu, 25 Sep 2014 05:51:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sKosZo66cxuwvnFI"
-Content-Disposition: inline
-In-Reply-To: <20140923195854.GA9921@pathfinder>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925093309.GG20043@arm.com>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
+	<1411579056-16966-10-git-send-email-will.deacon@arm.com>
+	<54236A67.90001@uclinux.org>
+	<20140925093309.GG20043@arm.com>
+Date: Thu, 25 Sep 2014 11:51:10 +0200
+X-Google-Sender-Auth: vbdHNkpDkuXCyfWvlTSboGMVM3c
+Message-ID: <CAMuHMdVpCs2RtsdDpdN3tp9_Xa1TzDMM3Z5+pP07B7Y3He2hLA@mail.gmail.com>
+Subject: Re: [PATCH v3 09/17] m68k: io: implement dummy relaxed accessor
+ macros for writes
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Greg Ungerer <gerg@uclinux.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 25, 2014 at 11:33 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> Putting them here means they won't have any multiple include protection
+>> (there is no "#ifndef _IO_H" around them). Doesn't seem to lead to
+>> any problems in practice. Just flagging it...
+>
+> That's easy enough to fix, and actually, we should have __KERNEL__ checks
+> here too. Fixup below.
 
---sKosZo66cxuwvnFI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Why do we need __KERNEL__ checks? <asm/io.h> is not exported.
+BTW, it seems there are many __KERNEL__ checks in arch/*/include/asm/
+we don't need.
 
-Hi David,
+Or do I need more coffee?
 
-On Tue, Sep 23, 2014 at 12:58:54PM -0700, David E. Box wrote:
-> Hi Maxime,
->=20
-> On Tue, Sep 23, 2014 at 09:00:57PM +0200, Maxime Ripard wrote:
-> > Hi David,
-> >=20
-> > On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
-> > > This patch implements an I2C bus sharing mechanism between the host a=
-nd platform
-> > > hardware on select Intel BayTrail SoC platforms using the X-Powers AX=
-P288 PMIC.
-> > >=20
-> > > On these platforms access to the PMIC must be shared with platform ha=
-rdware. The
-> > > hardware unit assumes full control of the I2C bus and the host must r=
-equest
-> > > access through a special semaphore. Hardware control of the bus also =
-makes it
-> > > necessary to disable runtime pm to avoid interfering with hardware tr=
-ansactions.
-> > >=20
-> > > Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-> >=20
-> > Sorry for stepping in like this without really knowing your platform,
-> > but wouldn't using the hwspinlock framework make more sense than
-> > hardcoding your own internal functions here?
->=20
-> I looked into this but didn't see a clear way on our platform to identify=
- the
-> semaphore seperately from doing it in the designware platform driver. The=
- way
-> we can find it now is through evaluating an ACPI _SEM object on every i2c=
- device
-> that gets probed by the dw driver since at probe time we can get the acpi=
- handle.
+Gr{oetje,eeting}s,
 
-And you have no way to turn it around and identify which semaphore is
-associated to which i2c bus?
+                        Geert
 
-If so, there is probably some way to associate a given instance of the
-i2c driver to one semaphore.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> Without this handle however there isn't a clear way of evaluating the _SEM
-> object which would be needed to register a hwspinlock in separate code.
->=20
-> Plus it would still require changes to the designware i2c core, though ad=
-mittedly
-> having a generic hwspinlock pointer added to the struct is cleaner.
-
-Not only cleaner, but that could also be used by other platforms that
-are using this I2C driver (and since it's a designware IP, there must
-be quite a lot) together with hardware locking.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---sKosZo66cxuwvnFI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUI+TIAAoJEBx+YmzsjxAgQ10P/jdaLqFWaiyjWvAKuGmCMa4R
-jrDOkSkE0k59jstPa9zO8KHysPQferECVgJrdj2/gDs1rxzGmgy9wEY1IGFjX18d
-C/CxHLZcoX7WcFg6tjbPKlEDKfjslsomYJIBh6mqJtFo/JN4+V+Q6aqZT284JQ0U
-Ech0QIv88u2jWseOsuiTePaQGUDOP7tvhFY8wcl7tC0OnVtIIt9MkQ8sQIxzp2sJ
-3SSedYugAqicmfRQPAdQ8zpWYscyZdy+wg64s7TxJImhAfcr/GVwH81G5YR3mk74
-gUOeKduZ+FxYtT15NgMghC9HnEruEVV/Cwx+jlH/FzCneOTEeN/4jQbErvZmz44j
-2RiMgop5zMxpWxs4gKXUirsX7SUSncVJJPVnn6cPIOz2+MoXHeUjuZfqbir95/2Q
-fQlB6As+H4f9h03oj7DZnV/zHfMrWFPIaSHuvSjkRIpd7/8hTyMwqkCDAh7ysWtm
-CMhzwbwXCZ6ipdbXilv3LdeJceypwyKJvJLce6ZosPC5GX7HXjuSukpKM6dj5u3U
-+9fu8OPgQ1h3ID2vbKf4jDRBdd2R6tZMtknCQ+5RofE2MgFQKdVFfatmKXSkimhO
-DS+0MRXqiDs74oJQAGcq4KLqDmjf0T1MdtWd/gBFlp+VFS2BRpALKGxEvkn2zITO
-psBlX5jx4f6RQ8FY+2bW
-=rFUM
------END PGP SIGNATURE-----
-
---sKosZo66cxuwvnFI--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
