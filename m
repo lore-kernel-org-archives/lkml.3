@@ -1,51 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaIYCat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:30:49 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:51549 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaIYCas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:30:48 -0400
-From: Peter Foley <pefoley2@pefoley.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Foley <pefoley2@pefoley.com>, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, sudeep.dutt@intel.com, nikhil.rao@intel.com,
-        ashutosh.dixit@intel.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org
-Subject: [PATCH] Make Documenation depend on headers_install
-Date: Wed, 24 Sep 2014 22:30:33 -0400
-Message-Id: <1411612233-23025-1-git-send-email-pefoley2@pefoley.com>
-X-Mailer: git-send-email 2.1.1
+	id S1751855AbaIYCbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:31:31 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:35632 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563AbaIYCba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 22:31:30 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+Date: Wed, 24 Sep 2014 22:31:18 -0400
+Message-Id: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: rdunlap@infradead.org
-Cc: linux-doc@vger.kernel.org
-Cc: sudeep.dutt@intel.com
-Cc: nikhil.rao@intel.com
-Cc: ashutosh.dixit@intel.com
-Cc: akpm@linux-foundation.org
-Cc: gregkh@linuxfoundation.org
-Signed-off-by: Peter Foley <pefoley2@pefoley.com>
----
- Makefile | 2 ++
- 1 file changed, 2 insertions(+)
+The cgroup iterators yield css objects that have not yet gone through
+css_online(), but they are not complete memcgs at this point and so
+the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
+iteration skip memcgs not yet fully initialized") set out to implement
+exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+not meet the ordering requirements for memcg, and so we still may see
+partially initialized memcgs from the iterators.
 
-diff --git a/Makefile b/Makefile
-index 16a4d48..b3cf4f9 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1579,6 +1579,8 @@ endif
- 	$(cmd_crmodverdir)
- 	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
- 	$(build)=$(build-dir)
-+# Make sure the latest headers are built for Documentation
-+Documentation/: headers_install
- %/: prepare scripts FORCE
- 	$(cmd_crmodverdir)
- 	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
+The cgroup core can not reasonably provide a clear answer on whether
+the object around the css has been fully initialized, as that depends
+on controller-specific locking and lifetime rules.  Thus, introduce a
+memcg-specific flag that is set after the memcg has been initialized
+in css_online(), and read before mem_cgroup_iter() callers access the
+memcg members.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: <stable@vger.kernel.org>	[3.12+]
+---
+ mm/memcontrol.c | 35 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 30 insertions(+), 5 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 306b6470784c..71ed15e3a148 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -292,6 +292,9 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
+ 
++	/* css_online() has been completed */
++	bool initialized;
++
+ 	/*
+ 	 * the counter to account for mem+swap usage.
+ 	 */
+@@ -1090,10 +1093,22 @@ skip_node:
+ 	 * skipping css reference should be safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) &&
+-		     css_tryget_online(next_css)))
+-			return mem_cgroup_from_css(next_css);
++		if (next_css == &root->css ||
++		    css_tryget_online(next_css)) {
++			struct mem_cgroup *memcg;
++
++			memcg = mem_cgroup_from_css(next_css);
++			if (memcg->initialized) {
++				/*
++				 * Make sure the caller's accesses to
++				 * the memcg members are issued after
++				 * we see this flag set.
++				 */
++				smp_rmb();
++				return memcg;
++			}
++			css_put(next_css);
++		}
+ 
+ 		prev_css = next_css;
+ 		goto skip_node;
+@@ -5413,6 +5428,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
++	int ret;
+ 
+ 	if (css->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+@@ -5449,7 +5465,16 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	}
+ 	mutex_unlock(&memcg_create_mutex);
+ 
+-	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	if (ret)
++		return ret;
++
++	/* Make sure the initialization is visible before the flag */
++	smp_wmb();
++
++	memcg->initialized = true;
++
++	return 0;
+ }
+ 
+ /*
 -- 
-2.1.1
+2.1.0
 
