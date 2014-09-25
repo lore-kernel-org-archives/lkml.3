@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaIYH54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:57:56 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53491 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaIYH5x (ORCPT
+	id S1752976AbaIYH6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:58:38 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:48547 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaIYH6g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:57:53 -0400
+	Thu, 25 Sep 2014 03:58:36 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
+ ARC_BOARD_ML509
+Thread-Topic: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
+ ARC_BOARD_ML509
+Thread-Index: AQHP1xI53r7Pc5BON0ysEi7+Zq+cjg==
+Date: Thu, 25 Sep 2014 07:58:25 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C5DE9B6@IN01WEMBXA.internal.synopsys.com>
+References: <1401874435.14072.17.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230751A6B5C42@IN01WEMBXA.internal.synopsys.com>
+	 <1410512426.31130.11.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230753C5DA1BE@IN01WEMBXA.internal.synopsys.com>
+ <1411465144.20236.21.camel@x220>
+ <C2D7FE5348E1B147BCA15975FBA230753C5DE8E6@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140924195222.GB5182@n2100.arm.linux.org.uk>
-References: <20140924175302.GB1231@amd>
-	<Pine.LNX.4.44L0.1409241544070.1580-100000@iolanthe.rowland.org>
-	<20140924195222.GB5182@n2100.arm.linux.org.uk>
-Date: Thu, 25 Sep 2014 09:57:52 +0200
-Message-ID: <CAPDyKFqcpTjxVB0VsWPNaAbJ-1HNzmKuCesmr8x=HY1_5mQXTg@mail.gmail.com>
-Subject: Re: [PATCH v7 1/5] PM / Runtime: Add getter for quering the IRQ safe option
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Pavel Machek <pavel@ucw.cz>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 September 2014 21:52, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Sep 24, 2014 at 03:47:17PM -0400, Alan Stern wrote:
->> On Wed, 24 Sep 2014, Pavel Machek wrote:
->>
->> > On Wed 2014-09-24 15:50:08, Krzysztof Kozlowski wrote:
->> > > Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
->> > > PM IRQ safe was set or not.
->> > >
->> > > Various bus drivers implementing runtime PM may use choose to suspend
->> > > differently based on IRQ safeness status of child driver (e.g. do not
->> > > unprepare the clock if IRQ safe is not set).
->> > >
->> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->> > > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
->> >
->> > Are you sure this is good interface?
->> >
->> > "Tell me if another function works this or that way".
->> >
->> > That's certainly not traditional interface, and it seems dangerous to
->> > me. Callbacks now have different semantic requirements based on value
->> > of some flag...
->> >
->> > Would it be possible to have two sets of callbacks, one irq safe and
->> > one not?
->>
->> Or maybe add a flag to the bus-specific device structures, indicating
->> specifically whether or not the clock should be unprepared during a
->> runtime suspend.  Then individual drivers could set this flag or not,
->> independent of the irq-safe setting.
->
-> What you're proposing is _less_ safe, because with your proposal, you
-> now have the possibility that drivers will tell runtime PM that it has
-> IRQ safe callbacks, but the bus code tries to prepare/unprepare the
-> clock, which causes a might-sleep-if warning.
->
-> This is fragile.
+On Thursday 25 September 2014 12:52 PM, Vineet Gupta wrote:
+On Tuesday 23 September 2014 03:09 PM, Paul Bolle wrote:
 
-I agree.
+Commit c00bfd974fb0 ("ARC: [arcfpga] Get rid of legacy BVCI latency unit
+support") removed the Kconfig symbol ARC_HAS_BVCI_LAT_UNIT. And that
+symbol's entry was the only place were the symbols ARC_BOARD_ANGEL4 and
+ARC_BOARD_ML509 were used. So ARC_BOARD_ANGEL4 and ARC_BOARD_ML509 can
+be removed too.
 
-I would also like to feed another argument into this discussion on why
-I like the new API. Currently the generic power domain accesses
-"dev->power.irq_safe" directly.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl><mailto:pebolle@tiscali.nl>
+---
+Done on top of next-20140923. Tested by grepping the tree only.
 
-Kind regards
-Uffe
+Applied to ARC for-next.
+
+Thx Paul,
+-Vineet
+
+I did a grep for ARC_BOARD in arch/arc and it seems we have a few stragglers in def configs.
+I've pruned them and squashed in same commit.
+
+-Vineet
