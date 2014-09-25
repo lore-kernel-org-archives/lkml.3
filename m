@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaIYIZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:25:55 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:52030 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaIYIZx (ORCPT
+	id S1752468AbaIYI0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:26:24 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37175 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaIYI0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:25:53 -0400
+	Thu, 25 Sep 2014 04:26:14 -0400
+Message-ID: <5423D19B.1040203@samsung.com>
+Date: Thu, 25 Sep 2014 17:26:03 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+CC: Kukjin Kim <kgene@kernel.org>,
+        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "'Thomas Abraham'" <ta.omasab@gmail.com>, daniel.lezcano@linaro.org
+Subject: Re: [PATCH v3] ARM: dts: add CPU nodes for Exynos4 SoCs
+References: <5230569.XLlNbB5NvF@amdc1032> <018e01cfd885$770dd940$65298bc0$@kernel.org> <20140925081704.GA20841@e102568-lin.cambridge.arm.com>
+In-Reply-To: <20140925081704.GA20841@e102568-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Thu, 25 Sep 2014 10:25:13 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: kernel@pengutronix.de, festevam@gmail.com, jingchang.lu@freescale.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: vf610: Use ARM Global Timer as clocksource
-In-Reply-To: <20140925075013.GD6405@dragon>
-References: <1410437175-6636-1-git-send-email-stefan@agner.ch>
- <1410437175-6636-2-git-send-email-stefan@agner.ch>
- <20140925075013.GD6405@dragon>
-Message-ID: <7006ad6e519c2ce3eeded54d35c87183@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-09-25 09:50, schrieb Shawn Guo:
-> On Thu, Sep 11, 2014 at 02:06:15PM +0200, Stefan Agner wrote:
->> Use ARM Global Timer as clocksource instead of the PIT timer. This
->> leaves the PIT timer for other users e.g. the secondary Cortex-M4
->> core. Also, the Global Timer has double the precission (running at
->> pheripheral clock compared to IPG clock) and a 64-bit incrementing
->> counter register.
-> 
-> I just think of one thing.  Will this change cause a problem of the low
-> power idle support in case we want to power down ARM core in there?
-> 
+On 09/25/14 17:17, Lorenzo Pieralisi wrote:
+> [CC'ed Daniel to make him aware this patch goes through your tree]
+>
+Thanks and just note the branch  which is including this change actually 
+v4 is just rebased not v3 will be sent out to arm-soc last tonight or 
+tomorrow.
 
-I'm not sure what really happend to the Global Timer when we power down
-the ARM core. We use a clocksoure of different power domain now, so it
-might make a difference in low power modes, but I think it will improve
-things: The PIT timer's clock currently have been clock gated even in
-STOP mode, which does not power down the ARM core. And it would be shut
-down completely in LP-Mode 1-3 which since PIT is part of the big power
-domain 1. 
+- Kukjin
 
-But AFAIK, its not required that the clocksource is running while in low
-power modes. The time should just not jump, and if the timers registers
-are lost during suspend, a proper suspend/resume support need to be
-implemented. 
+> On Thu, Sep 25, 2014 at 06:56:33AM +0100, Kukjin Kim wrote:
+>> Bartlomiej Zolnierkiewicz wrote:
+>>>
+>>> Recent patch by Tomasz Figa ("irqchip: gic: Fix core ID calculation
+>>> when topology is read from DT") fixed GIC driver to filter cluster ID
+>>> from values returned by cpu_logical_map() for SoCs having registers
+>>> mapped without per-CPU banking making it is possible to add CPU nodes
+>>> for Exynos4 SoCs.  In case of Exynos SoCs these CPU nodes are also
+>>> required by future changes adding initialization of cpuidle states in
+>>> Exynos cpuidle driver through DT.
+>>>
+>>> Tested on Origen board (Exynos4210 SoC) and Trats2 (Exynos4412 SoC).
+>>>
+>>> Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
+>>> ---
+>>> Based on for-next branch of linux-samsung.git tree.
+>>>
+>>> v3:
+>>> - refreshed on top of Kukjin's tree
+>>>
+>>> v2:
+>>> - match the unit-address with the reg
+>>>
+>>>   arch/arm/boot/dts/exynos4210.dtsi |   17 +++++++++++++++++
+>>>   arch/arm/boot/dts/exynos4212.dtsi |   17 +++++++++++++++++
+>>>   arch/arm/boot/dts/exynos4412.dtsi |   29 +++++++++++++++++++++++++++++
+>>>   3 files changed, 63 insertions(+)
+>>
+>> Thanks for re-spin and looks good to me.
+>>
+>> Applied.
+>
+> That's great, now my Exynos CPUidle DT patch should be rebased on top
+> of this patch so that thanks to the testing carried out by Bart it can be
+> merged too.
+>
+> Lorenzo
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+-- 
+Thanks.
 
-> 
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->> Theoretically we could remove the PIT driver now. But we could also
->> enable both drivers, but is having two clock source useful for the
->> Kernel at all?
->>
->>  arch/arm/mach-imx/Kconfig | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
->> index 64161aa..adc77180 100644
->> --- a/arch/arm/mach-imx/Kconfig
->> +++ b/arch/arm/mach-imx/Kconfig
->> @@ -656,7 +656,8 @@ config SOC_VF610
->>  	bool "Vybrid Family VF610 support"
->>  	select ARM_GIC
->>  	select PINCTRL_VF610
->> -	select VF_PIT_TIMER
->> +	select ARM_GLOBAL_TIMER
->> +	select CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
->>  	select PL310_ERRATA_769419 if CACHE_L2X0
->>
->>  	help
->> --
->> 2.1.0
->>
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
