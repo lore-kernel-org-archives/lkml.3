@@ -1,43 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaIYNnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:43:35 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54872 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaIYNnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:43:33 -0400
-Message-ID: <54241BFA.5000503@redhat.com>
-Date: Thu, 25 Sep 2014 15:43:22 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753170AbaIYNoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:44:00 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:35688 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090AbaIYNn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:43:59 -0400
+Date: Thu, 25 Sep 2014 09:43:42 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+Message-ID: <20140925134342.GB22508@cmpxchg.org>
+References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+ <20140925025758.GA6903@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable
- and apic access page.
-References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com> <54227EB4.7070608@redhat.com> <5423D015.6090107@cn.fujitsu.com>
-In-Reply-To: <5423D015.6090107@cn.fujitsu.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925025758.GA6903@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/09/2014 10:19, Tang Chen ha scritto:
-> Hi Paolo,
+On Wed, Sep 24, 2014 at 10:57:58PM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> I'd like to help to test the patches.
-> Would you please tell me what is the best way to test this patch-set ?
+> On Wed, Sep 24, 2014 at 10:31:18PM -0400, Johannes Weiner wrote:
+> ..
+> > not meet the ordering requirements for memcg, and so we still may see
+> > partially initialized memcgs from the iterators.
+> 
+> It's mainly the other way around - a fully initialized css may not
+> show up in an iteration, but given that there's no memory ordering or
+> synchronization around the flag, anything can happen.
 
-How did _you_ test the patches?...
+Oh sure, I'm just more worried about leaking invalid memcgs rather
+than temporarily skipping over a fully initialized one.  But I updated
+the changelog to mention both possibilities.
 
-> I think ept page is being used by regular guest.
-> Is adding "-cpu xxx,-x2apic option" able to make sure guest is using
-> apic page ?
+> > +		if (next_css == &root->css ||
+> > +		    css_tryget_online(next_css)) {
+> > +			struct mem_cgroup *memcg;
+> > +
+> > +			memcg = mem_cgroup_from_css(next_css);
+> > +			if (memcg->initialized) {
+> > +				/*
+> > +				 * Make sure the caller's accesses to
+> > +				 * the memcg members are issued after
+> > +				 * we see this flag set.
+> 
+> I usually prefer if the comment points to the exact location that the
+> matching memory barriers live.  Sometimes it's difficult to locate the
+> partner barrier even w/ the functional explanation.
 
-Yes.
+That makes sense, updated.
 
-Paolo
+> > +				 */
+> > +				smp_rmb();
+> > +				return memcg;
+> 
+> In an unlikely event this rmb becomes an issue, a self-pointing
+> pointer which is set/read using smp_store_release() and
+> smp_load_acquire() respectively can do with plain barrier() on the
+> reader side on archs which don't need data dependency barrier
+> (basically everything except alpha).  Not sure whether that'd be more
+> or less readable than this tho.
+
+So as far as I understand memory-barriers.txt we do not even need a
+data dependency here to use store_release and load_acquire:
+
+mem_cgroup_css_online():
+<initialize memcg>
+smp_store_release(&memcg->initialized, 1);
+
+mem_cgroup_iter():
+<look up maybe-initialized memcg>
+if (smp_load_acquire(&memcg->initialized))
+  return memcg;
+
+So while I doubt that the smp_rmb() will become a problem in this
+path, it would be neat to annotate the state flag around which we
+synchronize like this, rather than have an anonymous barrier.
+
+Peter, would you know if this is correct, or whether these primitives
+actually do require a data dependency?
+
+Thanks!
+
+Updated patch:
+
+---
+>From 1cd659f42f399adc58522d478f54587c8c4dd5cc Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Wed, 24 Sep 2014 22:00:20 -0400
+Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+
+The cgroup iterators yield css objects that have not yet gone through
+css_online(), but they are not complete memcgs at this point and so
+the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
+iteration skip memcgs not yet fully initialized") set out to implement
+exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+not meet the ordering requirements for memcg, and so the iterator may
+skip over initialized groups, or return partially initialized memcgs.
+
+The cgroup core can not reasonably provide a clear answer on whether
+the object around the css has been fully initialized, as that depends
+on controller-specific locking and lifetime rules.  Thus, introduce a
+memcg-specific flag that is set after the memcg has been initialized
+in css_online(), and read before mem_cgroup_iter() callers access the
+memcg members.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: <stable@vger.kernel.org>	[3.12+]
+---
+ mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 31 insertions(+), 5 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 306b6470784c..23976fd885fd 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -292,6 +292,9 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
+ 
++	/* css_online() has been completed */
++	int initialized;
++
+ 	/*
+ 	 * the counter to account for mem+swap usage.
+ 	 */
+@@ -1090,10 +1093,21 @@ skip_node:
+ 	 * skipping css reference should be safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) &&
+-		     css_tryget_online(next_css)))
+-			return mem_cgroup_from_css(next_css);
++		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
++
++		if (next_css == &root->css)
++			return memcg;
++
++		if (css_tryget_online(next_css)) {
++			/*
++			 * Make sure the memcg is initialized:
++			 * mem_cgroup_css_online() orders the the
++			 * initialization against setting the flag.
++			 */
++			if (smp_load_acquire(&memcg->initialized))
++				return memcg;
++			css_put(next_css);
++		}
+ 
+ 		prev_css = next_css;
+ 		goto skip_node;
+@@ -5413,6 +5427,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
++	int ret;
+ 
+ 	if (css->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+@@ -5449,7 +5464,18 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+ 	}
+ 	mutex_unlock(&memcg_create_mutex);
+ 
+-	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	if (ret)
++		return ret;
++
++	/*
++	 * Make sure the memcg is initialized: mem_cgroup_iter()
++	 * orders reading memcg->initialized against its callers
++	 * reading the memcg members.
++	 */
++	smp_store_release(&memcg->initialized, 1);
++
++	return 0;
+ }
+ 
+ /*
+-- 
+2.1.0
+
