@@ -1,99 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856AbaIYHb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:31:59 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:40139 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaIYHb4 (ORCPT
+	id S1752375AbaIYHdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:33:42 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:34040 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031AbaIYHdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:31:56 -0400
+	Thu, 25 Sep 2014 03:33:41 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <5423C62B.1030709@smartplayin.com>
+Date: Thu, 25 Sep 2014 13:07:15 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1411514246-6163-1-git-send-email-dianders@chromium.org>
-References: <1411514246-6163-1-git-send-email-dianders@chromium.org>
-Date: Thu, 25 Sep 2014 09:31:55 +0200
-Message-ID: <CACRpkdbQ_21BcaK9T8aTHoDdXQpb-6KKZwcJzJJdBK0ztcG=ww@mail.gmail.com>
-Subject: Re: [RFC PATCH] pwm: Add the concept of an "active" pinctrl
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: edubezval@gmail.com
+CC: linux-kernel@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] thermal: ti-soc-thermal: Switch to using managed resources
+References: <1411149909-13007-1-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1411149909-13007-1-git-send-email-pramod.gurav@smartplayin.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 1:17 AM, Doug Anderson <dianders@chromium.org> wrote:
++Valentin
 
-> There are cases where you really don't want a PWM's pinctrl to take
-> effect until you know that the PWM is driving at the proper rate.  A
-> good example of this is a PWM-controlled regulator, where the boot
-> state of the pin (maybe a pulled down input) could cause a vastly
-> different voltage to take effect than having the pin setup as a PWM
-> but not having the PWM enabled yet.
->
-> Let's add a feature where you can define an "active" pinctrl state.
-> This state (if it exists) will be applied after the PWM has actually
-> been enabled.  If the PWM is ever disabled we'll go back to "default"
-> state.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Friday 19 September 2014 11:35 PM, Pramod Gurav wrote:
+> This change switches to managed resource APIs to allocated resources
+> such as irq, clock. Hence does away with release statements of the
+> same resorces in error lables and remove function.
+> 
+> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 > ---
-> I'm sure Linus W or Thierry or Mark will tell me this is an idiotic
-> idea (or totally the wrong way to do it), but I figured I'd float it
-> out there and maybe someone can tell me something better to do.  ;)
-
-Hey it's not like this is obvious or anything....
-
-The device core will handle three states for you: "default", "sleep", "idle".
-
-What I worry about in this patch is that you redefine the meaning
-of "default" from what it used to be into "sleep", basically, that
-you want the device to come up in a relaxed mode, whereas
-the "default" state is usually defined as "ready to go", i.e. what
-you refer to as "active".
-
-If you choose this approach, it is better to not define the "default"
-state *at all*, just define "active" and "sleep" and/or "idle".
-(The difference between the two latter is basically the same
-semantic as suspend vs runtime suspend.)
-
-We have some helpers in the device core to help getting
-things right.
-
-Inspecting the helper code in drivers/base/pinctrl.c you will find
-that if the "default" state is defined it will be retrieved and
-activated on boot, so you don't have to do this yourself. Then
-if "sleep" and "idle" exist, these will be grabbed and made
-accessible using special helper functions.
-
-I would actually prefer, if it is not causing any trouble, to have
-the same semantics as the core expects, then have the driver
-do something like this in probe():
-
-probe():
-   pinctrl_pm_select_sleep_state(dev);
-
-This means the device will be pushed to "default" before
-it's probed, then set to sleep quickly after that. It requires that
-CONFIG_PM is enabled for the platform, too. (As you can see
-in drivers/base/pinctrl.c)
-
-Then when you want it back into "active", i.e. "default" mode
-use the pinctrl_pm_select_default_state(dev);
-
-I realize that this means that you will end up with a transient
-state where the pins are in "default" mode before probe
-commence. If this is a big problem, yeah, then you have to
-go for custom states. But then the "default" state should not
-be defined at all, instead call them something unique like
-"active" and "relaxed" or so, so you don't overrun states already
-used by the pinctrl core. Then all confusion is gone.
-
-The "default" state was added with the assumption that most
-drivers want their pins to be in "ready to go" mode by default.
-
-Yours,
-Linus Walleij
+>  drivers/thermal/ti-soc-thermal/ti-bandgap.c | 46 ++++++++---------------------
+>  1 file changed, 12 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> index 634b6ce..e068dd5 100644
+> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> @@ -1060,7 +1060,7 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
+>  	int status;
+>  
+>  	/* Request for gpio_86 line */
+> -	status = gpio_request(gpio_nr, "tshut");
+> +	status = devm_gpio_request(&pdev->dev, gpio_nr, "tshut");
+>  	if (status < 0) {
+>  		dev_err(bgp->dev, "Could not request for TSHUT GPIO:%i\n", 86);
+>  		return status;
+> @@ -1071,11 +1071,12 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
+>  		return status;
+>  	}
+>  
+> -	status = request_irq(gpio_to_irq(gpio_nr), ti_bandgap_tshut_irq_handler,
+> -			     IRQF_TRIGGER_RISING, "tshut", NULL);
+> +	status = devm_request_irq(&pdev->dev, gpio_to_irq(gpio_nr),
+> +				  ti_bandgap_tshut_irq_handler,
+> +				  IRQF_TRIGGER_RISING, "tshut", NULL);
+>  	if (status) {
+> -		gpio_free(gpio_nr);
+>  		dev_err(bgp->dev, "request irq failed for TSHUT");
+> +		return status;
+>  	}
+>  
+>  	return 0;
+> @@ -1104,7 +1105,7 @@ static int ti_bandgap_talert_init(struct ti_bandgap *bgp,
+>  		dev_err(&pdev->dev, "get_irq failed\n");
+>  		return bgp->irq;
+>  	}
+> -	ret = request_threaded_irq(bgp->irq, NULL,
+> +	ret = devm_request_threaded_irq(&pdev->dev, bgp->irq, NULL,
+>  				   ti_bandgap_talert_irq_handler,
+>  				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+>  				   "talert", bgp);
+> @@ -1212,21 +1213,17 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> -	bgp->fclock = clk_get(NULL, bgp->conf->fclock_name);
+> -	ret = IS_ERR(bgp->fclock);
+> -	if (ret) {
+> +	bgp->fclock = devm_clk_get(NULL, bgp->conf->fclock_name);
+> +	if (IS_ERR(bgp->fclock)) {
+>  		dev_err(&pdev->dev, "failed to request fclock reference\n");
+> -		ret = PTR_ERR(bgp->fclock);
+> -		goto free_irqs;
+> +		return PTR_ERR(bgp->fclock);
+>  	}
+>  
+> -	bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
+> -	ret = IS_ERR(bgp->div_clk);
+> -	if (ret) {
+> +	bgp->div_clk = devm_clk_get(NULL,  bgp->conf->div_ck_name);
+> +	if (IS_ERR(bgp->div_clk)) {
+>  		dev_err(&pdev->dev,
+>  			"failed to request div_ts_ck clock ref\n");
+> -		ret = PTR_ERR(bgp->div_clk);
+> -		goto free_irqs;
+> +		return PTR_ERR(bgp->div_clk);
+>  	}
+>  
+>  	for (i = 0; i < bgp->conf->sensor_count; i++) {
+> @@ -1251,7 +1248,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>  	    clk_rate <= 0) {
+>  		ret = -ENODEV;
+>  		dev_err(&pdev->dev, "wrong clock rate (%d)\n", clk_rate);
+> -		goto put_clks;
+>  	}
+>  
+>  	ret = clk_set_rate(bgp->div_clk, clk_rate);
+> @@ -1357,14 +1353,6 @@ remove_sensors:
+>  disable_clk:
+>  	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
+>  		clk_disable_unprepare(bgp->fclock);
+> -put_clks:
+> -	clk_put(bgp->fclock);
+> -	clk_put(bgp->div_clk);
+> -free_irqs:
+> -	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+> -		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
+> -		gpio_free(bgp->tshut_gpio);
+> -	}
+>  
+>  	return ret;
+>  }
+> @@ -1388,16 +1376,6 @@ int ti_bandgap_remove(struct platform_device *pdev)
+>  
+>  	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
+>  		clk_disable_unprepare(bgp->fclock);
+> -	clk_put(bgp->fclock);
+> -	clk_put(bgp->div_clk);
+> -
+> -	if (TI_BANDGAP_HAS(bgp, TALERT))
+> -		free_irq(bgp->irq, bgp);
+> -
+> -	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+> -		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
+> -		gpio_free(bgp->tshut_gpio);
+> -	}
+>  
+>  	return 0;
+>  }
+> 
