@@ -1,89 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaIYRQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:16:41 -0400
-Received: from mail-by2on0055.outbound.protection.outlook.com ([207.46.100.55]:48256
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753013AbaIYRQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:16:39 -0400
-Date: Thu, 25 Sep 2014 12:10:34 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: <dinguyen@opensource.altera.com>, <linux@arm.linux.org.uk>,
-        <yvanderv@opensource.altera.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <delicious.quinoa@gmail.com>
-Subject: Re: [PATCH 2/2] socfpga: support suspend to ram
-In-Reply-To: <20140925082506.GC26991@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1409251200490.693@atx-linux-37>
-References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-3-git-send-email-atull@opensource.altera.com> <20140925082506.GC26991@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753758AbaIYRRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:17:34 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:41099 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419AbaIYRRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 13:17:33 -0400
+Date: Thu, 25 Sep 2014 18:16:12 +0100
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+Message-ID: <20140925171612.GC31157@bart.dudau.co.uk>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <20140925074235.GN12423@ulmo>
+ <20140925144855.GB31157@bart.dudau.co.uk>
+ <20140925164937.GB30382@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR08CA0050.namprd08.prod.outlook.com (10.141.200.30) To
- BL2PR03MB308.namprd03.prod.outlook.com (10.141.68.26)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB308;
-X-Forefront-PRVS: 0345CFD558
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(24454002)(51704005)(64706001)(50466002)(53416004)(107046002)(76482002)(15975445006)(83322001)(86362001)(69596002)(81156004)(33716001)(120916001)(86152002)(74502003)(99396003)(92726001)(92566001)(81542003)(79102003)(80022003)(77096002)(87976001)(10300001)(106356001)(46406003)(74662003)(4396001)(81342003)(19580405001)(110136001)(85852003)(77982003)(101416001)(90102001)(31966008)(95666004)(20776003)(42186005)(21056001)(50986999)(85306004)(105586002)(19580395003)(23726002)(66066001)(47776003)(46102003)(83506001)(15202345003)(102836001)(54356999)(76176999)(97736003)(83072002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB308;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140925164937.GB30382@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Sep 25 18:17:31 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,54244e2b3118558215139
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steffen,
-
-On Thu, 25 Sep 2014, Steffen Trumtrar wrote:
-
-> Hi!
-> 
-> On Wed, Sep 24, 2014 at 03:27:29PM -0500, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
+On Thu, Sep 25, 2014 at 06:49:38PM +0200, Thierry Reding wrote:
+> On Thu, Sep 25, 2014 at 03:48:55PM +0100, Liviu Dudau wrote:
+> > On Thu, Sep 25, 2014 at 09:42:36AM +0200, Thierry Reding wrote:
+> > > On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
+> > > > This series is based Bjorn's pci/msi branch
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
+> > > > 
+> > > > Currently, there are a lot of weak arch functions in MSI code.
+> > > > Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
+> > > > This series use MSI chip framework to refactor MSI code across all platforms
+> > > > to eliminate weak arch functions. Then all MSI irqs will be managed in a 
+> > > > unified framework. Because this series changed a lot of ARCH MSI code,
+> > > > so tests in the platforms which MSI code modified are warmly welcomed!
+> > > 
+> > > Apart from the comments to the individual patches I very much like where
+> > > this is going. Thanks for taking care of this.
+> > > 
+> > > Thierry
 > > 
-> > Add code that requests that the sdr controller go into
-> > self-refresh mode.  This code is run from ocram.
-> > 
-> > This patch assumes that u-boot has already configured sdr:
-> >   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
-> >   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
-> >   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
-> > 
-> > How to suspend to ram:
-> >  $ echo enabled > \
-> > /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
-> > 
-> >  $ echo -n mem > /sys/power/state
-> > 
+> > I am actually in disagreement with you, Thierry. I don't like the general direction
+> > of the patches, or at least I don't like the fact that we don't have a portable
+> > way of setting up the msi_chip without having to rely on weak architectural hooks.
 > 
-> (...)
+> Oh, good. That's actually one of the things I said I wasn't happy with
+> either. =)
 > 
-> Never looked into that, so maybe a stupid question:
-> What happens if the bootloader (u-boot or other) didn't configure the sdr?
-> Will it "just" not wake up again?
+> > I'm surprised no one considers the case of a platform having more than one host
+> > bridge and possibly more than one MSI unit. With the current proposed patchset I
+> > can't see how that would work.
+> 
+> The PCI core can already deal with that. An MSI chip can be set per bus
+> and the weak pcibios_add_bus() can be used to set that. Often it might
+> not even be necessary to do it via pcibios_add_bus() if you create the
+> root bus directly, since you can attach the MSI chip at that time.
 
-Waking up won't be the problem.  Linux won't boot.
-
-Alternatively, if this Linux kernel is paired with a version of the
-bootloader that does most of the initializion, but not the settings
-that we want here, I expect there could be issues.
-
-I don't want to duplicate the u-boot sdr configuration code, instead
-I document my assumptions here here.  For future generations who take
-this patch.  If they have a problem with s2r, they will look through
-the git logs and find this helpful note of what their bootloader
-was supposed to do.
-
-Alan
+But I'm thinking that we need to move away from pcibios_add_bus() interface to do
+something that should be generic. You don't need to be called for every bus when all
+you want is just the root bus in order to add the MSI chip. Also, from looking at
+the current patchset, a lot of architectures would set the MSI chip to a global
+variable, which means you don't have an option to choose the MSI chip based on the
+bus.
 
 > 
-> Regards,
-> Steffen
+> > What I would like to see is a way of creating the pci_host_bridge structure outside
+> > the pci_create_root_bus(). That would then allow us to pass this sort of platform
+> > details like associated msi_chip into the host bridge and the child busses will
+> > have an easy way of finding the information needed by finding the root bus and then
+> > the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
+> > everyone and the drivers can remove their kludges that try to work around the
+> > current limitations.
 > 
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> I think both issues are orthogonal. Last time I checked a lot of work
+> was still necessary to unify host bridges enough so that it could be
+> shared across architectures. But perhaps some of that work has
+> happened in the meantime.
+
+Breaking out the host bridge creation from root bus creation is not difficult, just not
+agree upon. That would be the first step in making the generic host brige structure
+useful for sharing, specially if used as a sort of "parent" structure that you can
+wrap with your actual host bridge structure.
+
 > 
+> But like I said, when you create the root bus, you can easily attach the
+> MSI chip to it.
+
+Not if you want to use the generic pci_scan_root_bus() function. One needs to copy the code
+and add their own needed modifications. Which makes it hard to fix bugs and prevents code
+reuse.
+
+Best regards,
+Liviu
+
+> 
+> Thierry
+
+
+
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
+
