@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaIYQWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:22:21 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:48182 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIYQWU (ORCPT
+	id S1753316AbaIYQZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:25:40 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:64068 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbaIYQZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:22:20 -0400
+	Thu, 25 Sep 2014 12:25:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140925142929.GD4140@worktop.programming.kicks-ass.net>
-References: <1411559322-16548-1-git-send-email-eranian@google.com>
-	<20140925092629.GC4140@worktop.programming.kicks-ass.net>
-	<CABPqkBTwjkRbc8BBYWOkGAOsSsiVwsrSENqybSb260vsW9hcJg@mail.gmail.com>
-	<20140925142929.GD4140@worktop.programming.kicks-ass.net>
-Date: Thu, 25 Sep 2014 18:22:19 +0200
-Message-ID: <CABPqkBS-iOCYhPgJH-G8ryAwmt2EF5Mo7n4T0Oncztc5qTePOQ@mail.gmail.com>
-Subject: Re: [PATCH v7 0/6] perf: add ability to sample interrupted machine state
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>
+In-Reply-To: <1410841232-24591-1-git-send-email-martin@martingkelly.com>
+References: <1410841232-24591-1-git-send-email-martin@martingkelly.com>
+Date: Thu, 25 Sep 2014 09:25:37 -0700
+Message-ID: <CAN8CM3zXEL8UFRcJqVN9rq-AY1Mk1_xL0eNdRHZEYRgL8ouh9Q@mail.gmail.com>
+Subject: Re: [PATCH] context_tracking: Fix checkpatch warnings
+From: Martin Kelly <martin@martingkelly.com>
+To: x86@kernel.org
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Martin Kelly <martin@martingkelly.com>,
+        Martin Kelly <martkell@amazon.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 4:29 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Sep 25, 2014 at 12:32:39PM +0200, Stephane Eranian wrote:
->> Peter,
->>
->> On Thu, Sep 25, 2014 at 11:26 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >
->> >
->> > These do indeed appear to compile just fine, thanks!
->> >
->> I posted v7 with the x86_32 fixes and the eflags changes.
->> Is that what you compiled?
+On Mon, Sep 15, 2014 at 9:20 PM, Martin Kelly <martin@martingkelly.com> wrote:
+> checkpatch emits several warnings for context_tracking.c, which are
+> fixed in this patch:
 >
-> Yep, I grabbed the latest. I've not yet tried the x86_32 compile, but I
-> did check the 'offending' patch and it has the #ifdef guard in place so
-> I'll assume it works for now.
+> - No space after "("
+> - Lines longer than 80 characters
+>
+> Signed-off-by: Martin Kelly <martkell@amazon.com>
+> ---
+>  kernel/context_tracking.c | 40 +++++++++++++++++++++-------------------
+>  1 file changed, 21 insertions(+), 19 deletions(-)
+>
+> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> index 5664985..bf29065 100644
+> --- a/kernel/context_tracking.c
+> +++ b/kernel/context_tracking.c
+> @@ -54,8 +54,8 @@ void context_tracking_user_enter(void)
+>         /*
+>          * Repeat the user_enter() check here because some archs may be calling
+>          * this from asm and if no CPU needs context tracking, they shouldn't
+> -        * go further. Repeat the check here until they support the inline static
+> -        * key check.
+> +        * go further. Repeat the check here until they support the inline
+> +        * static key check.
+>          */
+>         if (!context_tracking_is_enabled())
+>                 return;
+> @@ -75,31 +75,33 @@ void context_tracking_user_enter(void)
+>         WARN_ON_ONCE(!current->mm);
+>
+>         local_irq_save(flags);
+> -       if ( __this_cpu_read(context_tracking.state) != IN_USER) {
+> +       if (__this_cpu_read(context_tracking.state) != IN_USER) {
+>                 if (__this_cpu_read(context_tracking.active)) {
+>                         trace_user_enter(0);
+>                         /*
+> -                        * At this stage, only low level arch entry code remains and
+> -                        * then we'll run in userspace. We can assume there won't be
+> -                        * any RCU read-side critical section until the next call to
+> -                        * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
+> -                        * on the tick.
+> +                        * At this stage, only low level arch entry code
+> +                        * remains and then we'll run in userspace. We can
+> +                        * assume there won't be any RCU read-side critical
+> +                        * section until the next call to user_exit() or
+> +                        * rcu_irq_enter(). Let's remove RCU's dependency on
+> +                        * the tick.
+>                          */
+>                         vtime_user_enter(current);
+>                         rcu_user_enter();
+>                 }
+>                 /*
+> -                * Even if context tracking is disabled on this CPU, because it's outside
+> -                * the full dynticks mask for example, we still have to keep track of the
+> -                * context transitions and states to prevent inconsistency on those of
+> -                * other CPUs.
+> -                * If a task triggers an exception in userspace, sleep on the exception
+> -                * handler and then migrate to another CPU, that new CPU must know where
+> -                * the exception returns by the time we call exception_exit().
+> -                * This information can only be provided by the previous CPU when it called
+> -                * exception_enter().
+> -                * OTOH we can spare the calls to vtime and RCU when context_tracking.active
+> -                * is false because we know that CPU is not tickless.
+> +                * Even if context tracking is disabled on this CPU, because
+> +                * it's outside the full dynticks mask for example, we still
+> +                * have to keep track of the context transitions and states to
+> +                * prevent inconsistency on those of other CPUs.  If a task
+> +                * triggers an exception in userspace, sleep on the exception
+> +                * handler and then migrate to another CPU, that new CPU must
+> +                * know where the exception returns by the time we call
+> +                * exception_exit().  This information can only be provided by
+> +                * the previous CPU when it called exception_enter().  OTOH we
+> +                * can spare the calls to vtime and RCU when
+> +                * context_tracking.active is false because we know that CPU is
+> +                * not tickless.
+>                  */
+>                 __this_cpu_write(context_tracking.state, IN_USER);
+>         }
+> --
+> 2.1.0
+>
 
-Yes, I compiled on my 32-bit Atom laptop. It compiles.
+(ping)
