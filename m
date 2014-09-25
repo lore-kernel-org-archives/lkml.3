@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaIYPYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:24:38 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:53018 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859AbaIYPYf (ORCPT
+	id S1753939AbaIYPYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:24:41 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:61347 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859AbaIYPYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:24:35 -0400
+	Thu, 25 Sep 2014 11:24:39 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
         Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v5 07/10] block: remove blk_init_flush() and its pair
-Date: Thu, 25 Sep 2014 23:23:44 +0800
-Message-Id: <1411658627-19754-8-git-send-email-ming.lei@canonical.com>
+Subject: [PATCH v5 08/10] block: flush: avoid to figure out flush queue unnecessarily
+Date: Thu, 25 Sep 2014 23:23:45 +0800
+Message-Id: <1411658627-19754-9-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
 References: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
@@ -21,124 +21,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now mission of the two helpers is over, and just call
-blk_alloc_flush_queue() and blk_free_flush_queue() directly.
+Just figuring out flush queue at the entry of kicking off flush
+machinery and request's completion handler, then pass it through.
 
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- block/blk-core.c  |    5 +++--
- block/blk-flush.c |   19 ++-----------------
- block/blk-mq.c    |    3 ++-
- block/blk-sysfs.c |    2 +-
- block/blk.h       |    4 ++--
- 5 files changed, 10 insertions(+), 23 deletions(-)
+ block/blk-flush.c |   30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index e2a3f0d4..10555fb 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -704,7 +704,8 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
- 	if (!q)
- 		return NULL;
- 
--	if (blk_init_flush(q))
-+	q->fq = blk_alloc_flush_queue(q);
-+	if (!q->fq)
- 		return NULL;
- 
- 	if (blk_init_rl(&q->root_rl, q, GFP_KERNEL))
-@@ -740,7 +741,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
- 	return q;
- 
- fail:
--	blk_exit_flush(q);
-+	blk_free_flush_queue(q->fq);
- 	return NULL;
- }
- EXPORT_SYMBOL(blk_init_allocated_queue);
 diff --git a/block/blk-flush.c b/block/blk-flush.c
-index b01a86d..d66cbf2 100644
+index d66cbf2..9bc5b4f 100644
 --- a/block/blk-flush.c
 +++ b/block/blk-flush.c
-@@ -479,8 +479,7 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
- }
- EXPORT_SYMBOL(blkdev_issue_flush);
+@@ -91,7 +91,8 @@ enum {
+ 	FLUSH_PENDING_TIMEOUT	= 5 * HZ,
+ };
  
--static struct blk_flush_queue *blk_alloc_flush_queue(
--		struct request_queue *q)
-+struct blk_flush_queue *blk_alloc_flush_queue(struct request_queue *q)
+-static bool blk_kick_flush(struct request_queue *q);
++static bool blk_kick_flush(struct request_queue *q,
++			   struct blk_flush_queue *fq);
+ 
+ static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
  {
- 	struct blk_flush_queue *fq;
- 	int rq_sz = sizeof(struct request);
-@@ -511,7 +510,7 @@ static struct blk_flush_queue *blk_alloc_flush_queue(
- 	return NULL;
- }
- 
--static void blk_free_flush_queue(struct blk_flush_queue *fq)
-+void blk_free_flush_queue(struct blk_flush_queue *fq)
+@@ -148,6 +149,7 @@ static bool blk_flush_queue_rq(struct request *rq, bool add_front)
+ /**
+  * blk_flush_complete_seq - complete flush sequence
+  * @rq: FLUSH/FUA request being sequenced
++ * @fq: flush queue
+  * @seq: sequences to complete (mask of %REQ_FSEQ_*, can be zero)
+  * @error: whether an error occurred
+  *
+@@ -160,11 +162,11 @@ static bool blk_flush_queue_rq(struct request *rq, bool add_front)
+  * RETURNS:
+  * %true if requests were added to the dispatch queue, %false otherwise.
+  */
+-static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
+-				   int error)
++static bool blk_flush_complete_seq(struct request *rq,
++				   struct blk_flush_queue *fq,
++				   unsigned int seq, int error)
  {
- 	/* bio based request queue hasn't flush queue */
- 	if (!fq)
-@@ -520,17 +519,3 @@ static void blk_free_flush_queue(struct blk_flush_queue *fq)
- 	kfree(fq->flush_rq);
- 	kfree(fq);
- }
--
--int blk_init_flush(struct request_queue *q)
--{
--	q->fq = blk_alloc_flush_queue(q);
--	if (!q->fq)
--		return -ENOMEM;
--
--	return 0;
--}
--
--void blk_exit_flush(struct request_queue *q)
--{
--	blk_free_flush_queue(q->fq);
--}
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 2b9ab09..64ed7ac 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1862,7 +1862,8 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
+ 	struct request_queue *q = rq->q;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
+ 	struct list_head *pending = &fq->flush_queue[fq->flush_pending_idx];
+ 	bool queued = false, kicked;
  
- 	blk_mq_add_queue_tag_set(set, q);
+@@ -210,7 +212,7 @@ static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
+ 		BUG();
+ 	}
  
--	if (blk_init_flush(q))
-+	q->fq = blk_alloc_flush_queue(q);
-+	if (!q->fq)
- 		goto err_hw_queues;
- 
- 	blk_mq_map_swqueue(q);
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 9490759..718cffc4c 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -517,7 +517,7 @@ static void blk_release_queue(struct kobject *kobj)
- 	if (q->queue_tags)
- 		__blk_queue_free_tags(q);
- 
--	blk_exit_flush(q);
-+	blk_free_flush_queue(q->fq);
- 
- 	if (q->mq_ops)
- 		blk_mq_free_queue(q);
-diff --git a/block/blk.h b/block/blk.h
-index 833c4ac..9eaa6e9 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -39,8 +39,8 @@ static inline void __blk_get_queue(struct request_queue *q)
- 	kobject_get(&q->kobj);
+-	kicked = blk_kick_flush(q);
++	kicked = blk_kick_flush(q, fq);
+ 	return kicked | queued;
  }
  
--int blk_init_flush(struct request_queue *q);
--void blk_exit_flush(struct request_queue *q);
-+struct blk_flush_queue *blk_alloc_flush_queue(struct request_queue *q);
-+void blk_free_flush_queue(struct blk_flush_queue *fq);
+@@ -242,7 +244,7 @@ static void flush_end_io(struct request *flush_rq, int error)
+ 		unsigned int seq = blk_flush_cur_seq(rq);
  
- int blk_init_rl(struct request_list *rl, struct request_queue *q,
- 		gfp_t gfp_mask);
+ 		BUG_ON(seq != REQ_FSEQ_PREFLUSH && seq != REQ_FSEQ_POSTFLUSH);
+-		queued |= blk_flush_complete_seq(rq, seq, error);
++		queued |= blk_flush_complete_seq(rq, fq, seq, error);
+ 	}
+ 
+ 	/*
+@@ -268,6 +270,7 @@ static void flush_end_io(struct request *flush_rq, int error)
+ /**
+  * blk_kick_flush - consider issuing flush request
+  * @q: request_queue being kicked
++ * @fq: flush queue
+  *
+  * Flush related states of @q have changed, consider issuing flush request.
+  * Please read the comment at the top of this file for more info.
+@@ -278,9 +281,8 @@ static void flush_end_io(struct request *flush_rq, int error)
+  * RETURNS:
+  * %true if flush was issued, %false otherwise.
+  */
+-static bool blk_kick_flush(struct request_queue *q)
++static bool blk_kick_flush(struct request_queue *q, struct blk_flush_queue *fq)
+ {
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
+ 	struct list_head *pending = &fq->flush_queue[fq->flush_pending_idx];
+ 	struct request *first_rq =
+ 		list_first_entry(pending, struct request, flush.list);
+@@ -317,12 +319,13 @@ static bool blk_kick_flush(struct request_queue *q)
+ static void flush_data_end_io(struct request *rq, int error)
+ {
+ 	struct request_queue *q = rq->q;
++	struct blk_flush_queue *fq = blk_get_flush_queue(q);
+ 
+ 	/*
+ 	 * After populating an empty queue, kick it to avoid stall.  Read
+ 	 * the comment in flush_end_io().
+ 	 */
+-	if (blk_flush_complete_seq(rq, REQ_FSEQ_DATA, error))
++	if (blk_flush_complete_seq(rq, fq, REQ_FSEQ_DATA, error))
+ 		blk_run_queue_async(q);
+ }
+ 
+@@ -342,7 +345,7 @@ static void mq_flush_data_end_io(struct request *rq, int error)
+ 	 * the comment in flush_end_io().
+ 	 */
+ 	spin_lock_irqsave(&fq->mq_flush_lock, flags);
+-	if (blk_flush_complete_seq(rq, REQ_FSEQ_DATA, error))
++	if (blk_flush_complete_seq(rq, fq, REQ_FSEQ_DATA, error))
+ 		blk_mq_run_hw_queue(hctx, true);
+ 	spin_unlock_irqrestore(&fq->mq_flush_lock, flags);
+ }
+@@ -364,6 +367,7 @@ void blk_insert_flush(struct request *rq)
+ 	struct request_queue *q = rq->q;
+ 	unsigned int fflags = q->flush_flags;	/* may change, cache */
+ 	unsigned int policy = blk_flush_policy(fflags, rq);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q);
+ 
+ 	/*
+ 	 * @policy now records what operations need to be done.  Adjust
+@@ -412,18 +416,16 @@ void blk_insert_flush(struct request *rq)
+ 	rq->cmd_flags |= REQ_FLUSH_SEQ;
+ 	rq->flush.saved_end_io = rq->end_io; /* Usually NULL */
+ 	if (q->mq_ops) {
+-		struct blk_flush_queue *fq = blk_get_flush_queue(q);
+-
+ 		rq->end_io = mq_flush_data_end_io;
+ 
+ 		spin_lock_irq(&fq->mq_flush_lock);
+-		blk_flush_complete_seq(rq, REQ_FSEQ_ACTIONS & ~policy, 0);
++		blk_flush_complete_seq(rq, fq, REQ_FSEQ_ACTIONS & ~policy, 0);
+ 		spin_unlock_irq(&fq->mq_flush_lock);
+ 		return;
+ 	}
+ 	rq->end_io = flush_data_end_io;
+ 
+-	blk_flush_complete_seq(rq, REQ_FSEQ_ACTIONS & ~policy, 0);
++	blk_flush_complete_seq(rq, fq, REQ_FSEQ_ACTIONS & ~policy, 0);
+ }
+ 
+ /**
 -- 
 1.7.9.5
 
