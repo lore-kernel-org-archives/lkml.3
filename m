@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbaIYSKi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:10:38 -0400
-Received: from cube.luon.net ([37.72.100.20]:57560 "EHLO cube.luon.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753013AbaIYSKg convert rfc822-to-8bit (ORCPT
+	id S1753568AbaIYSPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:15:05 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:42184 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbaIYSPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:10:36 -0400
-Message-ID: <1411668631.24948.9.camel@luon.net>
-Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
-From: Sjoerd Simons <sjoerd@luon.net>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Date: Thu, 25 Sep 2014 20:10:31 +0200
-In-Reply-To: <20140925164109.GA30382@ulmo>
-References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
-	 <20140925132717.GA13579@dusk.luon.net> <54243931.6050804@wwwdotorg.org>
-	 <20140925164109.GA30382@ulmo>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
+	Thu, 25 Sep 2014 14:15:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1411498874-9864-7-git-send-email-Liviu.Dudau@arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+	<1411498874-9864-7-git-send-email-Liviu.Dudau@arm.com>
+Date: Thu, 25 Sep 2014 11:15:01 -0700
+X-Google-Sender-Auth: KbIRxvxWXoV6ziGSBvz-2xAeejQ
+Message-ID: <CAE9FiQXuJZnj74dwTbKJCQNJ+OdEbjSB0fpwqh92+WZ_XGnrxQ@mail.gmail.com>
+Subject: Re: [PATCH v12 06/12] PCI: Create pci_host_bridge before its
+ associated bus in pci_create_root_bus.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-25 at 18:41 +0200, Thierry Reding wrote:
-> On Thu, Sep 25, 2014 at 09:48:01AM -0600, Stephen Warren wrote:
-> > On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
-> > >Playing a bit with todays linux-next on my jetson, it seems this patch is
-> > >still required for enabling the GPU. Is there anything blocking it (firmware
-> > >not available yet in liux-firmware?)
-> > 
-> > I think initially I was waiting for the DRM patch "drm/nouvea: support for
-> > probing platform devices" to be applied, but it looks like that's been
-> > applied already, so only patches 4 and 5 in this series are still
-> > outstanding.
-> > 
-> > Alex, wasn't there also some issue where the VPR register had to be
-> > programmed, and if it wasn't there'd be a hang when the GPU registers were
-> > touched? If we've added code to Nouveau/tegradrm to detect that and avoid
-> > the problem, then I guess we can commit these last two patches for 3.19. A
-> > resend after the 3.18 merge window might help.
-> 
-> A patch that programs VPR was merged into U-Boot (though I don't think
-> it's made it into master yet).
+On Tue, Sep 23, 2014 at 12:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Before commit 7b5436635800 the pci_host_bridge was created before the root bus.
+> As that commit has added a needless dependency on the bus for pci_alloc_host_bridge()
+> the creation order has been changed for no good reason. Revert the order of
+> creation as we are going to depend on the pci_host_bridge structure to retrieve the
+> domain number of the root bus.
+>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Acked-by: Grant Likely <grant.likely@linaro.org>
+> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+>  drivers/pci/probe.c | 32 +++++++++++++++++---------------
+>  1 file changed, 17 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index e3cf8a2..5ff72ec 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -515,7 +515,7 @@ static void pci_release_host_bridge_dev(struct device *dev)
+>         kfree(bridge);
+>  }
+>
+> -static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+> +static struct pci_host_bridge *pci_alloc_host_bridge(void)
+>  {
+>         struct pci_host_bridge *bridge;
+>
+> @@ -524,7 +524,8 @@ static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
+>                 return NULL;
+>
+>         INIT_LIST_HEAD(&bridge->windows);
+> -       bridge->bus = b;
+> +       bridge->dev.release = pci_release_host_bridge_dev;
+> +
+>         return bridge;
+>  }
+>
+> @@ -1761,9 +1762,15 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>         char bus_addr[64];
+>         char *fmt;
+>
+> +       bridge = pci_alloc_host_bridge();
+> +       if (!bridge)
+> +               return NULL;
+> +
+> +       bridge->dev.parent = parent;
+> +
+>         b = pci_alloc_bus();
+>         if (!b)
+> -               return NULL;
+> +               goto err_out;
+>
+>         b->sysdata = sysdata;
+>         b->ops = ops;
+> @@ -1772,26 +1779,19 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>         if (b2) {
+>                 /* If we already got to this bus through a different bridge, ignore it */
+>                 dev_dbg(&b2->dev, "bus already known\n");
+> -               goto err_out;
+> +               goto err_bus_out;
+>         }
+>
+> -       bridge = pci_alloc_host_bridge(b);
+> -       if (!bridge)
+> -               goto err_out;
+> -
+> -       bridge->dev.parent = parent;
+> -       bridge->dev.release = pci_release_host_bridge_dev;
+> +       bridge->bus = b;
+>         dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
+>         error = pcibios_root_bridge_prepare(bridge);
+> -       if (error) {
+> -               kfree(bridge);
+> +       if (error)
+>                 goto err_out;
+> -       }
+>
+>         error = device_register(&bridge->dev);
+>         if (error) {
+>                 put_device(&bridge->dev);
+> -               goto err_out;
+> +               goto err_bus_out;
+>         }
+>         b->bridge = get_device(&bridge->dev);
+>         device_enable_async_suspend(b->bridge);
+> @@ -1848,8 +1848,10 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  class_dev_reg_err:
+>         put_device(&bridge->dev);
+>         device_unregister(&bridge->dev);
+> -err_out:
+> +err_bus_out:
+>         kfree(b);
+> +err_out:
+> +       kfree(bridge);
+>         return NULL;
+>  }
 
-Assuming you're talking about "ARM: tegra: Disable VPR",that has landed
-in u-boot master and released as part of v2014.10-rc2 [0]
+Hi Bjorn,
 
->  I'm not sure we can reasonably check for
-> that in Nouveau, given that the register is somewhere completely
-> unrelated. In fact I think the U-Boot patch was triggered by some
-> discussion about how to solve this and it was decided that it shouldn't
-> be done in the kernel, but U-Boot should set it up.
-> 
-> That said, perhaps one solution would be to make U-Boot enable the gk20a
-> device if it's set up the VPR and disable it otherwise?
+Noticed that you put this one into pci/next.
 
-I guess in that case the vdd-supply should still be added to the dts
-with u-boot toggling the status field of the node?
+This patch has problem for the class_dev_reg_err path.
+as device_unregister(&bridge->dev) will trigger pci_release_host_bridge_dev.
+So will have double free for bridge or else.
 
+Please drop this patch from pci/next.
 
-0: http://git.denx.de/?p=u-boot.git;a=commit;h=df3443dfa449ad02bef8ddf6e2c90a6fd9394fc9
--- 
-Sjoerd Simons <sjoerd@luon.net>
+Also looks strange that the patch have long CC list, but just omit me
+and Jiang Liu that
+touched those code before.
+
+Thanks
+
+Yinghai
