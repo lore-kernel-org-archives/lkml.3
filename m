@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbaIYPLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:11:19 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:50285 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160AbaIYPLJ (ORCPT
+	id S1753876AbaIYPLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:11:31 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59733 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaIYPL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:11:09 -0400
+	Thu, 25 Sep 2014 11:11:28 -0400
+Date: Thu, 25 Sep 2014 17:11:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Quark: Flush TLB via CR3 not CR4.PGE in setup_arch()
+Message-ID: <20140925151123.GA4864@gmail.com>
+References: <1411578452-4609-1-git-send-email-pure.logic@nexus-software.ie>
+ <20140925045755.GA20431@gmail.com>
+ <5423E1F7.5010000@nexus-software.ie>
+ <20140925145126.GA4434@gmail.com>
+ <54242F17.5010503@nexus-software.ie>
 MIME-Version: 1.0
-In-Reply-To: <1410513887-17459-1-git-send-email-mark.yao@rock-chips.com>
-References: <1410513887-17459-1-git-send-email-mark.yao@rock-chips.com>
-Date: Thu, 25 Sep 2014 08:11:07 -0700
-X-Google-Sender-Auth: mnePN3bJ0eUEJo1nzhHKmSDkgKA
-Message-ID: <CAD=FV=WafEa_aaFxYjrEbuJ-9CRwwpKzv66jKrg7G3GdxjGfNg@mail.gmail.com>
-Subject: Re: [PATCH] clk: rockchip: rk3288: fix softreset register count
-From: Doug Anderson <dianders@chromium.org>
-To: Mark yao <mark.yao@rock-chips.com>, Mike Turquette <mturquette@linaro.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Eddie Cai <eddie.cai@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        =?UTF-8?B?5p+v6aOe6ZuE?= <kfx@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?6Zer5a2d5Yab?= <yxj@rock-chips.com>,
-        jeff chen <cym@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54242F17.5010503@nexus-software.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Fri, Sep 12, 2014 at 2:24 AM, Mark yao <mark.yao@rock-chips.com> wrote:
-> The rk3288 actually has 12 softresets, so fix the register count.
->
-> Signed-off-by: Mark yao <mark.yao@rock-chips.com>
-> ---
->  drivers/clk/rockchip/clk-rk3288.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+* Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+> >It talks about:
+> >
+> >+       /*
+> >+        * Locate the page directory and flush the TLB.
+> >+        * On Quark X1000 rewriting CR3 flushes the TLB no if/else is required
+> >+        * to choose between __flush_tlb() and __flush_tlb_all()
+> >+        */
+> >         load_cr3(swapper_pg_dir);
+> >         __flush_tlb_all();
+> >
+> >But it is completely silent on the real reason for why we don't
+> >need a Quark quirk here, which would be something like:
+> >
+> >	/*
+> >	 * On Quark CPUs we still have the PGE bit set so
+> >	 * __flush_tlb_all() is not yet doing what it says - but
+> >	 * accidentally we have a cr3 flush here which is what is
+> >	 * needed - so there's no need to add a Quark quirk here.
+> >	 */
+> >
+> >Right?
+> 
+> OK.
+> 
+> IMO.
+> 
+> If we're adding a comment though the first thing the comment ought to say is
+> what the code does for everybody else - stuff CR3 and flush the TLB, then it
+> should comment on the exception for Quark.
+> 
+> /*
+>  * Locate the page directory and flush the TLB.
+>  *
+>  * On Quark CPUs we still have the PGE bit set so
+>  * __flush_tlb_all() is not yet doing what it says - but
+>  * accidentally we have a cr3 flush here which is what is
+>  * needed - so there's no need to add a Quark quirk here.
+>  */
+> 
+> ?
+
+Yeah, fair enough. You can even put the latter in parentheses, to 
+signal that it's all a rare case.
+
+Thanks,
+
+	Ingo
