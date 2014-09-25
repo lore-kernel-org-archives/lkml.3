@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaIYVEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:04:12 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:16601 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaIYVEK (ORCPT
+	id S1752049AbaIYVK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:10:28 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52861 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751577AbaIYVK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:04:10 -0400
-X-IronPort-AV: E=Sophos;i="5.04,599,1406617200"; 
-   d="scan'208";a="47009276"
-Message-ID: <54248344.5030308@broadcom.com>
-Date: Thu, 25 Sep 2014 14:04:04 -0700
-From: Scott Branden <sbranden@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 25 Sep 2014 17:10:27 -0400
+Message-ID: <542484BF.7080908@hurleysoftware.com>
+Date: Thu, 25 Sep 2014 17:10:23 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Jonathan Richardson <jonathar@broadcom.com>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Ray Jui <rjui@broadcom.com>
-Subject: Re: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
-References: <Jonathan Richardson <jonathar@broadcom.com> <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
-In-Reply-To: <1411507057-14771-1-git-send-email-jonathar@broadcom.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: Mel Gorman <mgorman@suse.de>, Shaohua Li <shli@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Hugh Dickens <hughd@google.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: page allocator bug in 3.16?
+References: <54246506.50401@hurleysoftware.com> <CADnq5_OyRMNsc5L1a-BYbmKe94t+pun+nEh3UvFKLmpb2=1ukg@mail.gmail.com>
+In-Reply-To: <CADnq5_OyRMNsc5L1a-BYbmKe94t+pun+nEh3UvFKLmpb2=1ukg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matt/Christian (and others),
+On 09/25/2014 04:33 PM, Alex Deucher wrote:
+> On Thu, Sep 25, 2014 at 2:55 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> After several days uptime with a 3.16 kernel (generally running
+>> Thunderbird, emacs, kernel builds, several Chrome tabs on multiple
+>> desktop workspaces) I've been seeing some really extreme slowdowns.
+>>
+>> Mostly the slowdowns are associated with gpu-related tasks, like
+>> opening new emacs windows, switching workspaces, laughing at internet
+>> gifs, etc. Because this x86_64 desktop is nouveau-based, I didn't pursue
+>> it right away -- 3.15 is the first time suspend has worked reliably.
+>>
+>> This week I started looking into what the slowdown was and discovered
+>> it's happening during dma allocation through swiotlb (the cpus can do
+>> intel iommu but I don't use it because it's not the default for most users).
+>>
+>> I'm still working on a bisection but each step takes 8+ hours to
+>> validate and even then I'm no longer sure I still have the 'bad'
+>> commit in the bisection. [edit: yup, I started over]
+>>
+>> I just discovered a smattering of these in my logs and only on 3.16-rc+ kernels:
+>> Sep 25 07:57:59 thor kernel: [28786.001300] alloc_contig_range test_pages_isolated(2bf560, 2bf562) failed
+>>
+>> This dual-Xeon box has 10GB and sysrq Show Memory isn't showing heavy
+>> fragmentation [1].
+>>
+>> Besides Mel's page allocator changes in 3.16, another suspect commit is:
+>>
+>> commit b13b1d2d8692b437203de7a404c6b809d2cc4d99
+>> Author: Shaohua Li <shli@kernel.org>
+>> Date:   Tue Apr 8 15:58:09 2014 +0800
+>>
+>>     x86/mm: In the PTE swapout page reclaim case clear the accessed bit instead of flushing the TLB
+>>
+>> Specifically, this statement:
+>>
+>>     It could cause incorrect page aging and the (mistaken) reclaim of
+>>     hot pages, but the chance of that should be relatively low.
+>>
+>> I'm wondering if this could cause worse-case behavior with TTM? I'm
+>> testing a revert of this on mainline 3.16-final now, with no results yet.
+>>
+>> Thoughts?
+> 
+> You may also be seeing this:
+> https://lkml.org/lkml/2014/8/8/445
 
-We would like to move forward in getting our base Cygnus support into 
-the mainline kernel.  From there we will be able to contribute 
-additional drivers.
+Thanks Alex. That is indeed the problem.
 
-Is somebody willing to accept this pull request to get this patchset 
-accepted by the open source community?
+Still reading the email thread to find out where the patches
+are that fix this. Although it doesn't make much sense to me
+that nouveau sets up a 1GB GART and then uses TTM which is
+trying to shove all the DMA through a 16MB CMA window
+(which turns out to be the base Ubuntu config).
 
 Regards,
-  Scott
+Peter Hurley
 
-
-On 14-09-23 02:17 PM, Jonathan Richardson wrote:
-> Hi,
->
-> This patchset contains initial support for Broadcom's Cygnus SoC based on our
-> iProc architecture. Initial support is minimal and includes just the mach
-> platform code, clock driver, and a basic device tree configuration. Peripheral
-> drivers will be submitted soon, as will device tree configurations for other
-> Cygnus board variants.
->
-> Changes from v1:
->   - Address code review comments as per previous responses.
->   - Copyright headers updated to remove Broadcom URL.
->   - mach platform code still contains hard coded adresses. These address are
->     the same for all Cygnus variants. Could you please provide guidance on where
->     they should go if you would still like them changed.
->
-> Thanks,
-> Jon
->
-> Jonathan Richardson (6):
->    ARM: cygnus: Initial support for Broadcom Cygnus SoC
->    clk: Clock driver support for Broadcom Cygnus SoC
->    dt-bindings: Document Broadcom Cygnus SoC and clock driver
->    ARM: dts: Enable Broadcom Cygnus SoC
->    ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
->    MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
->      drivers
->
->   Documentation/devicetree/bindings/arm/cygnus.txt   |   12 +
->   .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
->   .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
->   MAINTAINERS                                        |   21 +
->   arch/arm/boot/dts/Makefile                         |    1 +
->   arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
->   arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
->   arch/arm/configs/bcm_cygnus_defconfig              |  223 ++++
->   arch/arm/mach-bcm/Kconfig                          |   31 +
->   arch/arm/mach-bcm/Makefile                         |    3 +
->   arch/arm/mach-bcm/bcm_cygnus.c                     |  166 +++
->   drivers/clk/Makefile                               |    1 +
->   drivers/clk/bcm/Makefile                           |    2 +
->   drivers/clk/bcm/clk-cygnus.c                       | 1186 ++++++++++++++++++++
->   drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
->   15 files changed, 2637 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
->   create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
->   create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
->   create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
->   create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
->   create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
->   create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
->   create mode 100644 drivers/clk/bcm/clk-cygnus.c
->   create mode 100644 drivers/clk/bcm/clk-iproc.c
->
 
