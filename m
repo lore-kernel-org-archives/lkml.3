@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271AbaIYEgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 00:36:42 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:52936 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaIYEgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 00:36:39 -0400
+	id S1751505AbaIYEol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 00:44:41 -0400
+Received: from ozlabs.org ([103.22.144.67]:40883 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876AbaIYEok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 00:44:40 -0400
+Date: Thu, 25 Sep 2014 14:44:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error trying to fetch the devicetree tree
+Message-ID: <20140925144432.1794fdbe@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <5423765B.8000706@rock-chips.com>
-References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
-	<CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
-	<54227F93.7000507@rock-chips.com>
-	<CAD=FV=Uq9AteUcpMvcU5tmyGZbVYWM6PNmevZXSVCkYB8rqSsQ@mail.gmail.com>
-	<5423765B.8000706@rock-chips.com>
-Date: Wed, 24 Sep 2014 21:36:38 -0700
-X-Google-Sender-Auth: qt13F5PDPIViaYdPRsMBy9saszU
-Message-ID: <CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
-Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
- characteristics of SCL
-From: Doug Anderson <dianders@chromium.org>
-To: addy ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/XkaZJIZf6eIZ7Ka7eO8utu7"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+--Sig_/XkaZJIZf6eIZ7Ka7eO8utu7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 24, 2014 at 6:56 PM, addy ke <addy.ke@rock-chips.com> wrote:
-> In my measurement,all paramter but "Data hold time" are match the characteristics of SCL bus line.
-> the measured value is 0.928us("data hold time on RK3X"  ~=  "the low period / 2")
-> but the maximum value described in table is 0.9us
->
-> About "Data hold time", there are described in I2C specification:
-> - for CBUS compatible masters for I2C-bus deivices
-> - the maximum data hold time has only be met if the device does not stretch the LOW period of the SCL signal.
->
-> I have tested on RK3288-Pinky board, there are no error.
-> But I don't known whether this paramter will affect i2c communications.
+Hi Grant,
 
-I'll have to spend more time tomorrow to really understand this, but
-if changing the code to bias towards slightly longer "high" times
-instead of "low" times helps fix it then that's fine with me.
+Fetching the devicetree tree
+(git://git.secretlab.ca/git/linux-2.6#devicetree/next) failes like this:
+
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/XkaZJIZf6eIZ7Ka7eO8utu7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUI521AAoJEMDTa8Ir7ZwVLegP/1/Jwlqu786cTbi4Z6B/BFSJ
+0/ahBe9lVF/+jUpKnLEaHK0QLg4BXBG0sz+1BvXrf0kjvFVPfevDcEDntvwb5Rn6
+xcYp56Zfb/ZfaaCznAE1wcVpbxeDqpf+teS0rqlU8cXWhY6MLxo+X495uqKQ9uvX
+HBJ69Rc2ia/MqEdaMoRR0VRQ++jqjjsLtljQI12BeaWSm3gR+bRubzE6zWtJY9Wk
+srIPVbn7LcHLXeHpkFj7E2HOfmhFaLwrRZOKYtR4+b/G5+/F6wkH8UH9nMMgAkTN
+an1f1MUx7iP3mqX1GebdjwX75y64fX7u38vFBjTDJ5yt6ZTDbrDvPTEqLLW0tRkj
+PjOIYkhN+xEUGorW10MVGP1K1EIHgDGF8aUN8TdpSqnGlQ9K6WslbRGE9Vqd/8cV
+a7SdEeBWv5XIE5U2W3tKYH6wOfFXYUL15jZfvlsRt3zO731jPC4jtEIq9zVfn5hK
+l8EuE8pJJ0t+7eLriy3mORvoAgGsB4SqU358mi2+qNGe4S7kma168r592OQRo+Es
+PxkJ4yeUEGrrSLhLW46yuPWGEBJaaHAwObdHFQx11+ocAawIF1jnnIUuPTNgM4kb
+/RYpavMJUEdMEkRvcaQWeeRp2wyjCj7xNUwkrA4iOuJr8eyl1jlBFLi6zqz+tDS4
+SLUqbRateKsg9B10Xm0+
+=bbjr
+-----END PGP SIGNATURE-----
+
+--Sig_/XkaZJIZf6eIZ7Ka7eO8utu7--
