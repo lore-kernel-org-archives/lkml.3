@@ -1,180 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaIYP2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:28:00 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56523 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753079AbaIYP16 (ORCPT
+	id S1754105AbaIYP2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:28:15 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:58478 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079AbaIYP2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:27:58 -0400
-Date: Thu, 25 Sep 2014 17:27:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: memcontrol: simplify detecting when the
- memory+swap limit is hit
-Message-ID: <20140925152754.GF11080@dhcp22.suse.cz>
-References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
- <1411571338-8178-3-git-send-email-hannes@cmpxchg.org>
+	Thu, 25 Sep 2014 11:28:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411571338-8178-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410522327-23175-1-git-send-email-mark.yao@rock-chips.com>
+References: <1410522327-23175-1-git-send-email-mark.yao@rock-chips.com>
+Date: Thu, 25 Sep 2014 08:27:57 -0700
+X-Google-Sender-Auth: S4zCkVT-UA_hAL6rFgo6VpZvshk
+Message-ID: <CAD=FV=UOHc2xLmSJdJbZTgcvJ7xZXPeGZkGGfCRySeKh6q+nJQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: rk3288: add reset indices for SOFTRST9-11
+From: Doug Anderson <dianders@chromium.org>
+To: Mark yao <mark.yao@rock-chips.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Eddie Cai <eddie.cai@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        =?UTF-8?B?5p+v6aOe6ZuE?= <kfx@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?6Zer5a2d5Yab?= <yxj@rock-chips.com>,
+        jeff chen <cym@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 11:08:57, Johannes Weiner wrote:
-> When attempting to charge pages, we first charge the memory counter
-> and then the memory+swap counter.  If one of the counters is at its
-> limit, we enter reclaim, but if it's the memory+swap counter, reclaim
-> shouldn't swap because that wouldn't change the situation.  However,
-> if the counters have the same limits, we never get to the memory+swap
-> limit.  To know whether reclaim should swap or not, there is a state
-> flag that indicates whether the limits are equal and whether hitting
-> the memory limit implies hitting the memory+swap limit.
-> 
-> Just try the memory+swap counter first.
+Mark,
 
-OK, this makes sense and makes the reclaim code little bit more
-readable (). I would just add that the patch shouldn't have any visible
-effectes because that is not apparent from the description.
-
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+On Fri, Sep 12, 2014 at 4:45 AM, Mark yao <mark.yao@rock-chips.com> wrote:
+> The patch add the rest of the indices of the additional reset
+> registers from the updated TRM.
+>
+> Signed-off-by: Mark yao <mark.yao@rock-chips.com>
 > ---
->  mm/memcontrol.c | 47 +++++++++++++----------------------------------
->  1 file changed, 13 insertions(+), 34 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 1ec22bf380d0..89c920156c2a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -315,9 +315,6 @@ struct mem_cgroup {
->  	/* OOM-Killer disable */
->  	int		oom_kill_disable;
->  
-> -	/* set when res.limit == memsw.limit */
-> -	bool		memsw_is_minimum;
-> -
->  	/* protect arrays of thresholds */
->  	struct mutex thresholds_lock;
->  
-> @@ -1804,8 +1801,6 @@ static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
->  
->  	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
->  		noswap = true;
-> -	if (!(flags & MEM_CGROUP_RECLAIM_SHRINK) && memcg->memsw_is_minimum)
-> -		noswap = true;
->  
->  	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
->  		if (loop)
-> @@ -2543,16 +2538,17 @@ retry:
->  		goto done;
->  
->  	size = batch * PAGE_SIZE;
-> -	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
-> -		if (!do_swap_account)
-> +	if (!do_swap_account ||
-> +	    !res_counter_charge(&memcg->memsw, size, &fail_res)) {
-> +		if (!res_counter_charge(&memcg->res, size, &fail_res))
->  			goto done_restock;
-> -		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
-> -			goto done_restock;
-> -		res_counter_uncharge(&memcg->res, size);
-> +		if (do_swap_account)
-> +			res_counter_uncharge(&memcg->memsw, size);
-> +		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
-> +	} else {
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
->  		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-> -	} else
-> -		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
-> +	}
->  
->  	if (batch > nr_pages) {
->  		batch = nr_pages;
-> @@ -3615,7 +3611,6 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  				unsigned long long val)
->  {
->  	int retry_count;
-> -	u64 memswlimit, memlimit;
->  	int ret = 0;
->  	int children = mem_cgroup_count_children(memcg);
->  	u64 curusage, oldusage;
-> @@ -3642,24 +3637,16 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
->  		 */
->  		mutex_lock(&set_limit_mutex);
-> -		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> -		if (memswlimit < val) {
-> +		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val) {
->  			ret = -EINVAL;
->  			mutex_unlock(&set_limit_mutex);
->  			break;
->  		}
->  
-> -		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> -		if (memlimit < val)
-> +		if (res_counter_read_u64(&memcg->res, RES_LIMIT) < val)
->  			enlarge = 1;
->  
->  		ret = res_counter_set_limit(&memcg->res, val);
-> -		if (!ret) {
-> -			if (memswlimit == val)
-> -				memcg->memsw_is_minimum = true;
-> -			else
-> -				memcg->memsw_is_minimum = false;
-> -		}
->  		mutex_unlock(&set_limit_mutex);
->  
->  		if (!ret)
-> @@ -3684,7 +3671,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  					unsigned long long val)
->  {
->  	int retry_count;
-> -	u64 memlimit, memswlimit, oldusage, curusage;
-> +	u64 oldusage, curusage;
->  	int children = mem_cgroup_count_children(memcg);
->  	int ret = -EBUSY;
->  	int enlarge = 0;
-> @@ -3703,22 +3690,14 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  		 * We have to guarantee memcg->res.limit <= memcg->memsw.limit.
->  		 */
->  		mutex_lock(&set_limit_mutex);
-> -		memlimit = res_counter_read_u64(&memcg->res, RES_LIMIT);
-> -		if (memlimit > val) {
-> +		if (res_counter_read_u64(&memcg->res, RES_LIMIT) > val) {
->  			ret = -EINVAL;
->  			mutex_unlock(&set_limit_mutex);
->  			break;
->  		}
-> -		memswlimit = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-> -		if (memswlimit < val)
-> +		if (res_counter_read_u64(&memcg->memsw, RES_LIMIT) < val)
->  			enlarge = 1;
->  		ret = res_counter_set_limit(&memcg->memsw, val);
-> -		if (!ret) {
-> -			if (memlimit == val)
-> -				memcg->memsw_is_minimum = true;
-> -			else
-> -				memcg->memsw_is_minimum = false;
-> -		}
->  		mutex_unlock(&set_limit_mutex);
->  
->  		if (!ret)
-> -- 
-> 2.1.0
-> 
+>  include/dt-bindings/clock/rk3288-cru.h | 43 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 43 insertions(+)
+>
+> diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
+> index ebcb460..e65d522 100644
+> --- a/include/dt-bindings/clock/rk3288-cru.h
+> +++ b/include/dt-bindings/clock/rk3288-cru.h
+> @@ -276,3 +276,46 @@
+>  #define SRST_USBHOST1_CON      140
+>  #define SRST_USB_ADP           141
+>  #define SRST_ACC_EFUSE         142
+> +
+> +#define SRST_CORESIGHT         144
+> +#define SRST_PD_CORE_AHB_NOC   145
+> +#define SRST_PD_CORE_APB_NOC   146
+> +#define SRST_PD_CORE_MP_AXI    147
+> +#define SRST_GIC               148
+> +#define SRST_LCDC_PWM0         149
+> +#define SRST_LCDC_PWM1         150
+> +#define SRST_VIO0_H2P_BRG      151
+> +#define SRST_VIO1_H2P_BRG      152
+> +#define SRST_RGA_H2P_BRG       153
+> +#define SRST_HEVC              154
+> +#define SRST_TSADC             159
+> +
+> +#define SRST_DDRPHY0           160
+> +#define SRST_DDRPHY0_APB       161
+> +#define SRST_DDRCTRL0          162
+> +#define SRST_DDRCTRL0_APB      163
+> +#define SRST_DDRPHY0_CTRL      164
+> +#define SRST_DDRPHY1           165
+> +#define SRST_DDRPHY1_APB       166
+> +#define SRST_DDRCTRL1          167
+> +#define SRST_DDRCTRL1_APB      168
+> +#define SRST_DDRPHY1_CTRL      169
+> +#define SRST_DDRMSCH0          170
+> +#define SRST_DDRMSCH1          171
 
--- 
-Michal Hocko
-SUSE Labs
+Interestingly 170 and 171 show as Reserved in my TRM...  ...but if
+that's what the reserved bits map to then I have no objection.
+
+> +#define SRST_CRYPTO            174
+> +#define SRST_C2C_HOST          175
+> +
+> +#define SRST_LCDC1_AXI         176
+> +#define SRST_LCDC1_AHB         177
+> +#define SRST_LCDC1_DCLK                178
+> +#define SRST_UART0             179
+> +#define SRST_UART1             180
+> +#define SRST_UART2             181
+> +#define SRST_UART3             182
+> +#define SRST_UART4             183
+> +#define SRST_SIMC              186
+> +#define SRST_PS2C              187
+> +#define SRST_TSP               188
+> +#define SRST_TSP_CLKIN0                189
+> +#define SRST_TSP_CLKIN1                190
+> +#define SRST_TSP_27M           191
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
