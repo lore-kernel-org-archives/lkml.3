@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaIYHzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:55:15 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:52388 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIYHzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:55:12 -0400
-Date: Thu, 25 Sep 2014 09:55:09 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: hachyang@gmail.com
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ryang <ryang@hach.com>, Nikolaus Voss <n.voss@weinmann-emt.de>
-Subject: Re: [PATCH 1/1] PWM-atmel: Fixed a bug which set the pwm clock
- prescaler incorrectly. In the defect code the prescaler was always one more
- than expected value, which resulted in the pwm output with wrong frequency
- and duty cycle.
-Message-ID: <20140925075508.GB11843@ulmo>
-References: <1410384919-41303-1-git-send-email-ryang@hach.com>
+	id S1751496AbaIYHzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:55:33 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:49383 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751746AbaIYHza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 03:55:30 -0400
+Message-ID: <5423CA67.1060308@kapsi.fi>
+Date: Thu, 25 Sep 2014 10:55:19 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
-Content-Disposition: inline
-In-Reply-To: <1410384919-41303-1-git-send-email-ryang@hach.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Eduardo Valentin <edubezval@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
+        swarren@wwwdotorg.org, linux-pm@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, juha-matti.tilli@iki.fi
+Subject: Re: [PATCH v5 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com> <1408616242-21009-5-git-send-email-mperttunen@nvidia.com> <20140924191829.GA16529@developer> <54231C3D.6040900@kapsi.fi> <20140925055953.GA12423@ulmo>
+In-Reply-To: <20140925055953.GA12423@ulmo>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/25/2014 08:59 AM, Thierry Reding wrote:
+> On Wed, Sep 24, 2014 at 10:32:13PM +0300, Mikko Perttunen wrote:
+>> On 09/24/2014 10:18 PM, Eduardo Valentin wrote:
+>>>
+>>> Mikko,
+>>>
+>>> On Thu, Aug 21, 2014 at 01:17:22PM +0300, Mikko Perttunen wrote:
+>>>> ...
+>>>> +
+>>>> +static int enable_tsensor(struct tegra_soctherm *tegra,
+>>>> +			  const struct tegra_tsensor *sensor,
+>>>> +			  struct tsensor_shared_calibration shared)
+>>>> +{
+>>>> +	void * __iomem base = tegra->regs + sensor->base;
+>>>
+>>> I get sparse complaining about this declaration. For the sake of keeping
+>>> a clean static checks, can you please:
+>>> -       void * __iomem base = tegra->regs + sensor->base;
+>>> +       void __iomem * base = tegra->regs + sensor->base;
+>>>
+>>
+>> Sure.
+>>
+>>> Can you also please check the remaining sparse errors?
+>>>    CHECK   drivers/thermal/tegra_soctherm.c
+>>>    drivers/thermal/tegra_soctherm.c:260:43: warning: incorrect type in
+>>>    initializer (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:260:43:    expected void *[noderef]
+>>>    <asn:2>base
+>>>    drivers/thermal/tegra_soctherm.c:260:43:    got void [noderef]
+>>>    <asn:2>*
+>>>    drivers/thermal/tegra_soctherm.c:271:9: warning: incorrect type in
+>>>    argument 2 (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:271:9:    expected void volatile
+>>>    [noderef] <asn:2>*addr
+>>>    drivers/thermal/tegra_soctherm.c:271:9:    got void *
+>>>    drivers/thermal/tegra_soctherm.c:279:9: warning: incorrect type in
+>>>    argument 2 (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:279:9:    expected void volatile
+>>>    [noderef] <asn:2>*addr
+>>>    drivers/thermal/tegra_soctherm.c:279:9:    got void *
+>>>    drivers/thermal/tegra_soctherm.c:281:9: warning: incorrect type in
+>>>    argument 2 (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:281:9:    expected void volatile
+>>>    [noderef] <asn:2>*addr
+>>>    drivers/thermal/tegra_soctherm.c:281:9:    got void *
+>>>    drivers/thermal/tegra_soctherm.c:347:25: warning: incorrect type in
+>>>    argument 1 (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:347:25:    expected void const *ptr
+>>>    drivers/thermal/tegra_soctherm.c:347:25:    got void [noderef]
+>>>    <asn:2>*regs
+>>>    drivers/thermal/tegra_soctherm.c:349:37: warning: incorrect type in
+>>>    argument 1 (different address spaces)
+>>>    drivers/thermal/tegra_soctherm.c:349:37:    expected void const *ptr
+>>>    drivers/thermal/tegra_soctherm.c:349:37:    got void [noderef]
+>>>    <asn:2>*regs
+>>>    drivers/thermal/tegra_soctherm.c:271:9: warning: dereference of
+>>>    noderef expression
+>>>    drivers/thermal/tegra_soctherm.c:279:9: warning: dereference of
+>>>    noderef expression
+>>>    drivers/thermal/tegra_soctherm.c:281:9: warning: dereference of
+>>>    noderef expression
+>>>
+>>
+>> Most of these seem to be caused by the above-mentioned swapping of __iomem
+>> and *. The ones on lines 347 and 349 are more peculiar, though. Apparently
+>> sparse doesn't like using IS_ERR and PTR_ERR on the void __iomem * pointer
+>> returned by devm_ioremap_resource. Looks like this has been discussed before
+>> (https://lkml.org/lkml/2013/6/17/216) and sparse should have been patched to
+>> ignore this situation, so I'm not sure why it's complaining about it.
+>> Anyway, there shouldn't be any issue here.
+>
+> If I apply the change suggested by Eduardo above then all of the above
+> warnings go away for me. That's with sparse 0.5.0. According to the
+> email thread above a patch for this was applied in 0.4.5.
 
---WYTEVAkct0FjGQmd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah, good. I didn't actually run sparse, just checked by eye. Maybe I 
+should have run it.
 
-On Wed, Sep 10, 2014 at 03:35:19PM -0600, hachyang@gmail.com wrote:
-> From: ryang <ryang@hach.com>
->=20
-> Signed-off-by: ryang <ryang@hach.com>
-> ---
->  drivers/pwm/pwm-atmel.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> index 6e700a5..2dca0bf 100644
-> --- a/drivers/pwm/pwm-atmel.c
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -128,7 +128,8 @@ static int atmel_pwm_config(struct pwm_chip *chip, st=
-ruct pwm_device *pwm,
->  			return -EINVAL;
->  		}
->  	}
-> -
-> +	/* Need to reduce the prescaler by 1 */
-> +	pres--;
->  	/* Calculate the duty cycles */
->  	prd =3D div;
->  	div *=3D duty_ns;
-> --=20
-> 1.9.1
+>
+> Thierry
+>
 
-I think this was fixed by a different patch by Nikolaus in a more direct
-way, see: https://lkml.org/lkml/2014/9/24/28
-
-I've pushed that patch to the for-next branch of the PWM tree. Can you
-verify that the issue you were seeing is gone?
-
-Thierry
-
---WYTEVAkct0FjGQmd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUI8pcAAoJEN0jrNd/PrOh+OwQALGSQB07KaYP/0qgVVHzAFbg
-wX++lMeo+XVW4Jp2PEixLLsLK2C3/65btup+nTRDvtOno85xCnrKnyNvs30bUSyW
-xUZggPU9HVG9C1g+ON/Sj9YZbody3AgALlwxi3n/PbFPPWpUsciD1MMVVaCbMgdL
-MAXsAOXvWbXWx/DYpA70QXle63oaffewBV9bdgvJYwgEnjh9bB23yI+ekMHFtnrh
-rVXVzzbH/8/sF8btx+s+sXhGRrXVW8cKS7JulgqdeV9pIAZjn5bPGHXezRgJ9nl8
-E/TnDbjk/kG6w73C/LwflTOoSTy8CBy3tUOErXAHTjPV1vPtnQ4O1w/HFcJRBs/p
-aG+RMWetKrLY2WgJYChRUCD9UcMQ1GHXAjQ/0XShW0GjTBU67J0i1e7jSExkQPp7
-VR79+EqnIKs3x+S1VxvPREUNDpS7uv+S5CS+2rk3HwznEuZL0XBZo4+zHggw/4f8
-k8mkiYnc9s/2mTjygqrep3Z0cl4YCMPr8DZ/6TqEBaCqWqVuUA5V5BHJAaa0W30c
-nPKuLn/1LgeCeOpuy13wX3E01nLjsQZjUK4KLLj6QWmlbiUjCwL6+panHd81an2q
-XD9l0MiZZu1Ik7KouFOSnCy3koOBir9T52bSG4YpNxOZbarenUCKxGmhoUDfAy6s
-L5O4PE5XHn3qeB2tmzP2
-=KDV+
------END PGP SIGNATURE-----
-
---WYTEVAkct0FjGQmd--
