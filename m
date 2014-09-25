@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaIYNJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:09:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40368 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043AbaIYNJf (ORCPT
+	id S1753059AbaIYNLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:11:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33495 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574AbaIYNLn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:09:35 -0400
-Date: Thu, 25 Sep 2014 14:08:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, wei.luo@rock-chips.com
-Message-ID: <20140925130847.GQ27755@sirena.org.uk>
-References: <1411628381-4029-1-git-send-email-addy.ke@rock-chips.com>
+	Thu, 25 Sep 2014 09:11:43 -0400
+Date: Thu, 25 Sep 2014 15:11:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Frans Klaver <frans.klaver@xsens.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140925131137.GG19396@linutronix.de>
+References: <20140912094010.GE28458@ci00147.xsens-tech.local>
+ <5412C21A.8020203@linutronix.de>
+ <20140912102816.GF28458@ci00147.xsens-tech.local>
+ <541716DC.9020904@linutronix.de>
+ <20140917102812.GA20438@ci00147.xsens-tech.local>
+ <20140921204100.GA10111@linutronix.de>
+ <5421A7F7.3070109@hurleysoftware.com>
+ <20140924075346.GB19565@linutronix.de>
+ <20140925104208.GE19396@linutronix.de>
+ <5423FD14.9060604@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rKoHqF+aPLVth8b2"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1411628381-4029-1-git-send-email-addy.ke@rock-chips.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.248.7
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/rockchip: fix bug that cause the failture to read
- data in DMA mode
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <5423FD14.9060604@hurleysoftware.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Peter Hurley | 2014-09-25 07:31:32 [-0400]:
 
---rKoHqF+aPLVth8b2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>I just verified that GNU readline6 uses ioctl(TCSETSW, ...) to do the set_termios
+>(which is the ioctl that libc should use for tcsetattr(TCSADRAIN)).
+>
+>Maybe this userspace is using a readline()-alike that has a bug by not using the
+>correct tcsetattr() action?
 
-On Thu, Sep 25, 2014 at 02:59:41PM +0800, Addy Ke wrote:
-> In my test on RK3288-pinky board, if spi is enabled, it will begin to
-> read data from slave regardless of whether the DMA is ready. So we
-> need prepare DMA before spi is enable.
+set_termios() has an opt argument. While doing ":n" in vi I see two invocations
+with "opt == 8" which stands for TCSETS.
+browsing through vi's code I stumbled upon 
 
-Applied, thanks.
+|static void rawmode(void)
+|{
+…
+|    tcsetattr_stdin_TCSANOW(&term_vi);
+|}
+|int FAST_FUNC tcsetattr_stdin_TCSANOW(const struct termios *tp)
+|{
+|    return tcsetattr(STDIN_FILENO, TCSANOW, tp);
+|}
 
---rKoHqF+aPLVth8b2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+and this is probably what you meant. There is also
+| static void cookmode(void)
+| {
+|     fflush_all();
+|     tcsetattr_stdin_TCSANOW(&term_orig);
+| }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+However I don't see __tty_perform_flush() in kernel invoked.
 
-iQEcBAEBAgAGBQJUJBPfAAoJECTWi3JdVIfQUpcH/jwD1U4mFyYRJ0NxDY7xL/6c
-TVWcpXm9CuQPWc8T4Wy/DP6C7z3NRp536fWn2wgIfV5X87aGlRtdqqZ21aI4tnw5
-NmkRDu1isk1FplzR9eitLArFZFsUaeMFwHS88H2r+3FbvBfOSo1g80p701ebtVUb
-Sso5wMEpuc3pUFIvbVQDmqoOIOS+bJgkYFmqZVPYNHyT7gctj+alznM0PvR28uzp
-h42VF71K/1Kw4BQuMER4inc0z06rchMHmkfQJq4l19mfUDsdmyW7KizQM7eKNSc3
-npDuiSgT3Whonl+NvDoNsSmZLt5GYSNRsZUWbl3RhHHMJRl2tZASLADVj4yoFxQ=
-=x3pf
------END PGP SIGNATURE-----
+>Or maybe the glibc-equivalent has the bug, and tcsetattr(TCSADRAIN) is not using
+>ioctl(TCSETSW)?
 
---rKoHqF+aPLVth8b2--
+libc is "GNU C Library 2.20". 
+
+>Regards,
+>Peter Hurley
+
+Sebastian
