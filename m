@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaIYPri (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:47:38 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45796 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaIYPrh (ORCPT
+	id S1753655AbaIYPsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:48:37 -0400
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:36578 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752600AbaIYPsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:47:37 -0400
-Message-ID: <54243931.6050804@wwwdotorg.org>
-Date: Thu, 25 Sep 2014 09:48:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Sjoerd Simons <sjoerd@luon.net>, Alexandre Courbot <acourbot@nvidia.com>
-CC: Ben Skeggs <bskeggs@redhat.com>, Thierry Reding <thierry.reding@gmail.com>,
-        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gnurou@gmail.com
-Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
-References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com> <20140925132717.GA13579@dusk.luon.net>
-In-Reply-To: <20140925132717.GA13579@dusk.luon.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Thu, 25 Sep 2014 11:48:36 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2911:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3871:3872:3873:3874:4321:4425:5007:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13149:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: paper21_1073af4a2a432
+X-Filterd-Recvd-Size: 1675
+Message-ID: <1411660111.4026.24.camel@joe-AO725>
+Subject: project wide: git config entry for [diff] renames=true
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
+        git <git@vger.kernel.org>
+Date: Thu, 25 Sep 2014 08:48:31 -0700
+In-Reply-To: <20140925150353.GA15325@kroah.com>
+References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
+	 <1411591401-5874-1-git-send-email-sojka@merica.cz>
+	 <1411591401-5874-4-git-send-email-sojka@merica.cz>
+	 <20140925150353.GA15325@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
-> Playing a bit with todays linux-next on my jetson, it seems this patch is
-> still required for enabling the GPU. Is there anything blocking it (firmware
-> not available yet in liux-firmware?)
+On Thu, 2014-09-25 at 17:03 +0200, Greg Kroah-Hartman wrote:
 
-I think initially I was waiting for the DRM patch "drm/nouvea: support 
-for probing platform devices" to be applied, but it looks like that's 
-been applied already, so only patches 4 and 5 in this series are still 
-outstanding.
+> In the future, please generate a git "move" diff, which makes it easier
+> to review, and prove that nothing really changed.  It also helps if the
+> file is a bit different from what you diffed against, which in my case,
+> was true.
 
-Alex, wasn't there also some issue where the VPR register had to be 
-programmed, and if it wasn't there'd be a hang when the GPU registers 
-were touched? If we've added code to Nouveau/tegradrm to detect that and 
-avoid the problem, then I guess we can commit these last two patches for 
-3.19. A resend after the 3.18 merge window might help.
+Maybe it'd be possible to add 
 
-> On Mon, May 19, 2014 at 06:24:10PM +0900, Alexandre Courbot wrote:
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>   arch/arm/boot/dts/tegra124-jetson-tk1.dts | 8 +++++++-
->>   1 file changed, 7 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->> index e31fb61a81d3..15a194d1277f 100644
->> --- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->> +++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
->> @@ -30,6 +30,12 @@
->>   		};
->>   	};
->>
->> +	gpu@0,57000000 {
->> +		status = "okay";
->> +
->> +		vdd-supply = <&vdd_gpu>;
->> +	};
->> +
->>   	pinmux: pinmux@0,70000868 {
->>   		pinctrl-names = "default";
->>   		pinctrl-0 = <&state_default>;
->> @@ -1505,7 +1511,7 @@
->>   					regulator-always-on;
->>   				};
->>
->> -				sd6 {
->> +				vdd_gpu: sd6 {
->>   					regulator-name = "+VDD_GPU_AP";
->>   					regulator-min-microvolt = <650000>;
->>   					regulator-max-microvolt = <1200000>;
->
+[diff]
+	renames = true
+
+to the .git/config file.
+
+but I don't find a mechanism to add anything to the
+.git/config and have it be pulled.
+
+
 
