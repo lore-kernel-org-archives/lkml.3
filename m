@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaIYKGh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:06:37 -0400
-Received: from eddie.linux-mips.org ([148.251.95.138]:51118 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIYKGg (ORCPT
+	id S1752848AbaIYKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:07:25 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:32835 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262AbaIYKHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:06:36 -0400
-X-Greylist: delayed 1129 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 06:06:35 EDT
-Date: Thu, 25 Sep 2014 10:26:12 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: linux-kernel@vger.kernel.org
-Subject: XT-PIC-XT-PIC in /proc/interrupts on x86
-Message-ID: <alpine.LFD.2.11.1409251010080.6148@eddie.linux-mips.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 25 Sep 2014 06:07:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAMuHMdUoh6+gDcZty76HJhcQcJvM5DyBiD4YrZGuAX9e+F32-w@mail.gmail.com>
+References: <1408891857-14258-1-git-send-email-djkurtz@chromium.org> <CAMuHMdUoh6+gDcZty76HJhcQcJvM5DyBiD4YrZGuAX9e+F32-w@mail.gmail.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 25 Sep 2014 18:07:02 +0800
+X-Google-Sender-Auth: BXxvAtgtBxJ1Fv3mIRxFB_9Q77I
+Message-ID: <CAGS+omD055Bk+czk5=SDMRu1g-HGZHBobgasKC9PjF80Ci-czA@mail.gmail.com>
+Subject: Re: [PATCH] drm/exynos/fbdev: set smem_len for fbdev
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Inki Dae <inki.dae@samsung.com>,
+        Siarhei Siamashka <siarhei.siamashka@gmail.com>,
+        =?UTF-8?Q?G=C3=BCnther_Noack?= <me@guenthernoack.de>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 25, 2014 at 5:32 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Sun, Aug 24, 2014 at 4:50 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+>> Commit [0] stopped setting fix.smem_start and fix.smem_len when creating
+>> the fbdev.
+>>
+>> [0] 2f1eab8d8ab59e799f7d51d62410b398607a7bc3
+>>   drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
+>>
+>> However, smem_len is used by some userland applications to calculate the
+>> size for mmap.  In particular, it is used by xf86-video-fbdev:
+>>
+>> http://cgit.freedesktop.org/xorg/xserver/tree/hw/xfree86/fbdevhw/fbdevhw.c?id=xorg-server-1.15.99.903#n571
+>>
+>> So, let's restore setting the smem_len to unbreak things for these users.
+>>
+>> Note: we are still leaving smem_start set to 0.
+>
+> Doesn't this cause a system crash when userspace (e.g. fbtest) writes into
+> the mmap()ed /dev/fb*, as the wrong MMIO region is mapped?
 
- Is there a specific purpose we print "XT-PIC" for twice in 
-/proc/interrupts these days on x86 (and maybe other) systems, e.g.:
+Do you see a crash during testing, or is your question hypothetical?
 
-           CPU0
-  0:     860089    XT-PIC-XT-PIC    timer
-  1:       7165    XT-PIC-XT-PIC    i8042
-  2:          0    XT-PIC-XT-PIC    cascade
-  3:          6    XT-PIC-XT-PIC    serial
-  4:         10    XT-PIC-XT-PIC    serial
-  6:          3    XT-PIC-XT-PIC    floppy
-  8:          0    XT-PIC-XT-PIC    rtc0
- 12:        178    XT-PIC-XT-PIC    eth0
- 14:      37128    XT-PIC-XT-PIC    ide0
- 15:          0    XT-PIC-XT-PIC    ide1
-NMI:          0   Non-maskable interrupts
-ERR:          0
+I don't think there will be one.  exynos's fbev defines its own
+fb_ops.fb_mmap, which uses dma_mmap_attrs() to mmap the fb's gem
+buffer, which was allocated by dma_alloc_attrs().  This bypasses the
+code in drivers/video/fbmem.c:fb_mmap() that references
+fix.smem_start.
 
-?  This looks weird to me and is almost surely an artefact of code we have 
-in `show_interrupts' in kernel/irq/proc.c:
+But, perhaps I am missing something?
 
-	if (desc->irq_data.chip) {
-		if (desc->irq_data.chip->irq_print_chip)
-			desc->irq_data.chip->irq_print_chip(&desc->irq_data, p);
-		else if (desc->irq_data.chip->name)
-			seq_printf(p, " %8s", desc->irq_data.chip->name);
-[...]
-	if (desc->name)
-		seq_printf(p, "-%-8s", desc->name);
+-Dan
 
-with `desc->irq_data.chip->name' and `desc->name' both being "XT-PIC".  
-
- Wouldn't it make sense to set the latter to NULL if it was to be the same 
-as the former?  I'll make a patch to implement it unless I hear a valid 
-argument to the contrary.  It's redundant information after all, and 
-confusing noise IMHO.
-
-  Maciej
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
