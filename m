@@ -1,127 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505AbaIYGwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:52:34 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64323 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaIYGwd (ORCPT
+	id S1751693AbaIYG5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:57:10 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57434 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaIYG5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:52:33 -0400
-Date: Thu, 25 Sep 2014 08:52:30 +0200
+	Thu, 25 Sep 2014 02:57:08 -0400
+Date: Thu, 25 Sep 2014 08:57:05 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Nikolaus Voss <n.voss@weinmann-emt.de>
-Cc: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: atmel-pwm: fix calculation of prescale value
-Message-ID: <20140925065229.GD12423@ulmo>
-References: <20140924055851.CE51140656@mail.steuer-voss.de>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: swarren@wwwdotorg.org, vinod.koul@intel.com, dan.j.williams@intel.com,
+        ldewangan@nvidia.com, dmaengine@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, kiran.padwal21@gmail.com
+Subject: Re: [PATCH 2/5] DMA: Remove .owner field for driver
+Message-ID: <20140925065704.GE12423@ulmo>
+References: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x4pBfXISqBoDm8sr"
+	protocol="application/pgp-signature"; boundary="AjmyJqqohANyBN/e"
 Content-Disposition: inline
-In-Reply-To: <20140924055851.CE51140656@mail.steuer-voss.de>
+In-Reply-To: <1411540764-27571-1-git-send-email-kiran.padwal@smartplayin.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---x4pBfXISqBoDm8sr
+--AjmyJqqohANyBN/e
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Sep 23, 2014 at 03:30:21PM +0200, Nikolaus Voss wrote:
-> The prescale value used for calculating the period was incremented
-> afterwards, thus the resulting prescale value is by one too high.
-> This resulted in a pwm frequency only half as high as requested.
->=20
-> This patch moves the 64 bit division out of the prescale loop to
-> correct the above issue and make the calculation more efficient.
->=20
-> Signed-off-by: Nikolaus Voss <n.voss@weinmann-emt.de>
-> ---
->  drivers/pwm/pwm-atmel.c | 24 +++++++++++-------------
->  1 file changed, 11 insertions(+), 13 deletions(-)
+On Wed, Sep 24, 2014 at 12:09:23PM +0530, Kiran Padwal wrote:
+[...]
+> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+> index 16efa60..a6c0b3f 100644
+> --- a/drivers/dma/tegra20-apb-dma.c
+> +++ b/drivers/dma/tegra20-apb-dma.c
+> @@ -1597,7 +1597,6 @@ static const struct dev_pm_ops tegra_dma_dev_pm_ops = {
+>  static struct platform_driver tegra_dmac_driver = {
+>  	.driver = {
+>  		.name	= "tegra-apbdma",
+> -		.owner = THIS_MODULE,
+>  		.pm	= &tegra_dma_dev_pm_ops,
+>  		.of_match_table = tegra_dma_of_match,
+>  	},
 
-Hi Nikolaus,
+Acked-by: Thierry Reding <treding@nvidia.com>
 
-Please Cc the linux-pwm@vger.kernel.org mailing list for PWM-related
-patches in the future.
-
-Also a couple more comments:
-
-In the patch description: "pwm frequency" should be "PWM frequency".
-
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> index 6e700a5..ff17b5d 100644
-> --- a/drivers/pwm/pwm-atmel.c
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -102,7 +102,7 @@ static int atmel_pwm_config(struct pwm_chip *chip, st=
-ruct pwm_device *pwm,
->  			    int duty_ns, int period_ns)
->  {
->  	struct atmel_pwm_chip *atmel_pwm =3D to_atmel_pwm_chip(chip);
-> -	unsigned long clk_rate, prd, dty;
-> +	unsigned long prd, dty;
->  	unsigned long long div;
->  	unsigned int pres =3D 0;
->  	u32 val;
-> @@ -113,20 +113,18 @@ static int atmel_pwm_config(struct pwm_chip *chip, =
-struct pwm_device *pwm,
->  		return -EBUSY;
->  	}
-> =20
-> -	clk_rate =3D clk_get_rate(atmel_pwm->clk);
-> -	div =3D clk_rate;
-> +	/* Calculate the period cycles and prescale value */
-> +	div =3D (unsigned long long)clk_get_rate(atmel_pwm->clk) * period_ns;
-> +	do_div(div, (int)1e9);
-
-1e9 should be NSEC_PER_SEC.
-
-> -	/* Calculate the period cycles */
->  	while (div > PWM_MAX_PRD) {
-> -		div =3D clk_rate / (1 << pres);
-> -		div =3D div * period_ns;
-> -		/* 1/Hz =3D 100000000 ns */
-> -		do_div(div, 1000000000);
-> -
-> -		if (pres++ > PRD_MAX_PRES) {
-> -			dev_err(chip->dev, "pres exceeds the maximum value\n");
-> -			return -EINVAL;
-> -		}
-> +		div >>=3D 1;
-> +		++pres;
-
-Unless you really need the prefix increment behaviour (you don't in this
-case) I prefer using the postfix operator because it is slightly more
-idiomatic.
-
-No need for you to respin the patch, I've fixed up the above when
-applying.
-
-Thierry
-
---x4pBfXISqBoDm8sr
+--AjmyJqqohANyBN/e
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUI7utAAoJEN0jrNd/PrOhM5gP/AxLEF2BEW6MdsikrgHkACXA
-zvwI1QaSOFdDbvRXhncEa0yRCoAdIhq5ttQ6ieHmn+W/u6LkB6Ts/hYHOtUUt0Qm
-Tbbwh6v+wfmlECFBNqqQz9+qWBhFirVqVNWqy51OBIitLRc+qr8jX44VhXXTKpWB
-OOFSw4/BBJkn0kkbZgHHGa5P322zazPnPSizxU2V7iBg7w/r3OgZLiK7gwKA7HpD
-lCKA5/7r9f7IYKRwI6ONDrWMan12J9t41NS7OGzGWzsdWsmKi5e7/jPzAPWyUCkb
-yAwH5Y0tafYSeAuwC3SEit0Nl3vL8b0rbMM9f7EjSqWLt6ZVrulzzZUzAijue1jv
-Ycn4jrs7RvcrA9cz3l3SNRtvtNTRa3Zb+1nyKq+SedsTYBl+JGHgGxP90ErxyVqI
-VrSFsfdnRRNvKKdx68lBnE4IxJ3PnH0mv2vxVZ7hkdSJo4z3QTi8dcNYWize2Ui0
-+3cUDMKVgaUJnTNrtgzJ0nHzP4uICAfthhrQdHNu+s24llWEQbqzRA8CXoQ4FicY
-MrQ3DKsAfTTcAYc0XBIb1maN8e8fpQ4zx+FVwtMIsM/YE+A30IyuIsb792kfiDR1
-JN34crjNFz0DKRz+TB7WxvhO5aliAEF9GxLarPyGwR2KAX+vP1XYuHVD8jHO5BQH
-d+joTJjtMiNaYw/YTbO0
-=Af0/
+iQIcBAEBAgAGBQJUI7zAAAoJEN0jrNd/PrOhW5kP/1Xj4rhyUhkcJKCBAzEYqiDw
+m0s5PUV2NtnjRvNJcLleu0XG4tgOFaUfy589riDn5rqP2Z7irP4HuubSl4174xWR
+3jJ+UI+KanUFBvpE1uAn70vRU5ElYH08cmtw+qOtPqLOV/n9rUFjelKnu92wgEXI
+ukK6CacAoxdtvh3TIwqNthu1t0l/Q8Ex1ltbXxmk8rZFNa8Dgqm0azcdyCRTsQ+p
+Asi+Yz8dwCf5RgQuOf0M5EuKjgy/b3+NLgY9GGq7HMwy2MDRDE7SVNA8CrOFi3d3
+lbTxBbRZpYjlhPbNTS4DITCaCzU5P/nvN+9eF/IbpBX2HKPqm87P5OM2b3wvwf2o
+l+EdBAePxrb5ovc37/GM/zT4GbC3VXFU2O1YJIPhoQ+dJ83YtArQ//GqRPXbGSZy
+RI6r2Nr8qcXYxpZ6QT63En5QQfmgSyiKysRFbFk1ffk65Lag/e12Ia2ZIwO/8Q+E
+r5Eom29IsYKSJPgDRKj++IOudzbsuGkdmHDyL5y6Nefb/JpGoq8bhJtuyi6BuExO
+mIA7R+P1ELFBS7tfto0h+enqXvdkmfTAnC+tmqIl0SIFHDbjB7icXm3Av3Exoc61
+C6/nWNeYIVHslistwHTt25V9qYdr8Ng+aWf/GRTOn17ZQ78YpbaXj15TJEbXzL8Y
+lEubLCNU/ZvhEuLiU/x2
+=SWTd
 -----END PGP SIGNATURE-----
 
---x4pBfXISqBoDm8sr--
+--AjmyJqqohANyBN/e--
