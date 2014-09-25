@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaIYOky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:40:54 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35089 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753075AbaIYOkj (ORCPT
+	id S1753428AbaIYOle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:41:34 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:41712 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaIYOlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:40:39 -0400
-X-Sasl-enc: +xkv/fUVTRPOZhREnroRN/b7YUb4oVXRxNtOgZURrN+5 1411656037
-Date: Thu, 25 Sep 2014 11:40:25 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
-Message-ID: <20140925144025.GA14030@khazad-dum.debian.net>
-References: <20140919110014.GC29639@khazad-dum.debian.net>
- <20140919112953.GA3256@nazgul.tnic>
- <20140919075415.5149d5f2@as>
- <20140919150042.GC5318@nazgul.tnic>
- <20140919164217.GD17456@khazad-dum.debian.net>
- <20140923200054.GB16467@pd.tnic>
- <20140924145658.GB31678@khazad-dum.debian.net>
- <20140925085158.GF22317@nazgul.tnic>
- <20140925113643.GB10569@khazad-dum.debian.net>
- <20140925121007.GA25334@nazgul.tnic>
+	Thu, 25 Sep 2014 10:41:32 -0400
+Date: Thu, 25 Sep 2014 16:41:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140925144127.GA3828@gmail.com>
+References: <20140925073133.GQ18635@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140925121007.GA25334@nazgul.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925073133.GQ18635@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Borislav Petkov wrote:
-> On Thu, Sep 25, 2014 at 08:36:45AM -0300, Henrique de Moraes Holschuh wrote:
-> > This isn't an useless fix, it will allow systems without early initramfs
-> > support to operate correctly after a microcode update.
+
+* Matt Fleming <matt@console-pimps.org> wrote:
+
+> Folks,
 > 
-> So what do we do if we update the microcode late and some userspace task
-> is using HLE and all of a sudden it segfaults and gets killed due to
-> #UD. I'll forward all those complaint emails to you then, no?
+> Please consider pulling the following fixes.
 > 
-> :-)
+> The first two are releated to the bug report I got from Linus and Josh
+> Boyer, whereby Fedora20 + grub2 systems were no longer booting. Linus
+> reverted the offending commit that broke grub2 boot, but that left us in
+> a state where Macbooks still didn't boot with EFI. This is fixed with
+> the below revert and I'm dropping a noisey boot time efi_printk() based
+> on Josh's request and Linus' OK.
 > 
-> What's saying is, a reboot in this case is maybe the lesser of two evils.
+> The third patch fixes a 32-bit EFI boot stub bug where garbled text is
+> displayed on the screen if any of the efi_printk() statements run.
+> 
+> The following changes since commit 3eddc69ffeba092d288c386646bfa5ec0fce25fd:
+> 
+>   x86 early_ioremap: Increase FIX_BTMAPS_SLOTS to 8 (2014-09-14 15:24:31 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+> 
+> for you to fetch changes up to 115c6628a59044958c205f8468a1b3ba3d539e61:
+> 
+>   x86/efi: Truncate 64-bit values when calling 32-bit OutputString() (2014-09-24 21:56:46 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Revert the static library changes from the merge window since they're
+>    causing issues for Macbooks and Fedora + Grub2 - Matt Fleming
+> 
+>  * Delete the misleading "setup_efi_pci() failed!" message which some
+>    people are seeing when booting EFI - Matt Fleming
+> 
+>  * Fix printing strings from the 32-bit EFI boot stub by only passing
+>    32-bit addresses to the firmware - Matt Fleming
+> 
+> ----------------------------------------------------------------
+> Matt Fleming (3):
+>       Revert "efi/x86: efistub: Move shared dependencies to <asm/efi.h>"
+>       x86/efi: Delete misleading efi_printk() error message
+>       x86/efi: Truncate 64-bit values when calling 32-bit OutputString()
+> 
+>  arch/x86/boot/compressed/Makefile |  3 +--
+>  arch/x86/boot/compressed/eboot.c  | 44 +++++++++++++++++++++++----------------
+>  arch/x86/boot/compressed/eboot.h  | 16 ++++++++++++++
+>  arch/x86/include/asm/efi.h        | 24 ---------------------
+>  drivers/firmware/efi/Makefile     |  2 +-
+>  5 files changed, 44 insertions(+), 45 deletions(-)
+> 
+> -- 
+> Matt Fleming, Intel Open Source Technology Center
 
-In that case we should blacklist to refuse to apply the update, and reboot
-only if the blacklist wasn't good enough and we detect that something really
-important in the cpu feature cpuid bits changed.
+Pulled, thanks Matt!
 
-However, a reboot is even worse than everything linked to libpthread
-segfaulting, as it will also cause data loss for the stuff that didn't get
-SIGILL'd to death.  Meh.
+I'll give it some testing and then send it to Linus with other 
+x86 fixes.
 
-Backporting early initramfs support to 3.0/3.2/3.4 doesn't seem doable, or
-wise.
+Thanks,
 
-At this point, what alternatives are left?
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+	Ingo
