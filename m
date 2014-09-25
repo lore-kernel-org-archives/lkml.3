@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaIYURQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:17:16 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:39215 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaIYURM (ORCPT
+	id S1751742AbaIYUXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:23:08 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:63513 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIYUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:17:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <201409252117.19754.arnd@arndb.de>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
-	<4240583.SJ4jiIW6Zy@wuerfel>
-	<54243395.902@linaro.org>
-	<201409252117.19754.arnd@arndb.de>
-Date: Thu, 25 Sep 2014 22:17:10 +0200
-X-Google-Sender-Auth: eFUaCsMFKN1gRnJXlTzdKOuOG0o
-Message-ID: <CAMuHMdWwOVjnhhqkdDUpfzrNTreNMds_k7svmUFaLPBbWL4BMQ@mail.gmail.com>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+	Thu, 25 Sep 2014 16:23:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree bindings
+Date: Thu, 25 Sep 2014 22:22:23 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sunil Kovvuri <sunil.kovvuri@gmail.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Robert Richter <rric@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        Liviu Dudau <liviu.dudau@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>,
+        Sunil Goutham <sgoutham@cavium.com>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org> <201409252126.38945.arnd@arndb.de> <CAErSpo5rhL7pLha-yWt7sZUBmAnwA6FkacL+sWXBKkSzsuC7Sg@mail.gmail.com>
+In-Reply-To: <CAErSpo5rhL7pLha-yWt7sZUBmAnwA6FkacL+sWXBKkSzsuC7Sg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409252222.23825.arnd@arndb.de>
+X-Provags-ID: V02:K0:VIHCfkdrHllkx+aL1Go+EPTAjNzOHG6ZiTaK5OuzXhd
+ /Id3I5b54267nqB1D/JFIGPWHAJ8H+oTpMojVS+Twi7opdoHDm
+ yCtU5KpG/bY/ZFj6zYhxTJLzdysuX/6L221P2IOFGIttoSscb1
+ GAFN213nrc6DJDyCBP+FiNaUyN11ny56mZQtcTe1wMZvzolR1R
+ qI1GMlbZ0aWJzB0zVub7HlkNlf8QkJeI4hdxGNrHYj78AKq/IN
+ GbWmSocdlwlswgRf2cvTnGmPGkg83eRsc+w9YauQwc0chs5d25
+ ZTHXzVBA4QfZRf+s7dBLtLX1Zt/UWNAThFhl4vUuiorXwcL7Wh
+ ldGKLx2QKwlEKfR8Qf0Q=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Thursday 25 September 2014, Bjorn Helgaas wrote:
+> OK.  You said "a range that has the nonrelocatable flag set should be
+> used for IORESOURCE_PCI_FIXED mappings."  I thought you meant that the
+> range was a bridge window, and somehow PCI_FIXED BARs should be put in
+> that window.
+> 
+> But maybe you meant that nonrelocatable ranges should have the
+> IORESOURCE_PCI_FIXED bit set in their struct resources.  That would
+> mean we couldn't move the window, but we could put relocatable BARs
+> inside the window.
+> 
+> What needs to be implemented?  Just the code that would set
+> IORESOURCE_PCI_FIXED for nonrelocatable ranges?
 
-On Thu, Sep 25, 2014 at 9:17 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 25 September 2014, Daniel Thompson wrote:
->> > +
->> > +#ifndef readq_relaxed
->> > +#define readq_relaxed readq
->> > +#endif
->>
->> Not really sure if it matters but this gives a rather surprising
->> behaviour to #ifdef readq_relaxed given that readq may not be defined.
->
-> It was intentional. I could have written this as
->
-> #if !defined(readq_relaxed) && defined(readq)
->
-> but the effect would be almost the same, and the version I picked looks
-> simpler.
+It might be more complex than I thought. Let's see what the original
+hack does:
 
-However, as soon as a driver has code like
++/*
++ * All PCIe devices in Thunder have fixed resources, shouldn't be reassigned.
++ * Also claim the device's valid resources to set 'res->parent' hierarchy.
++ */
++static void pci_dev_resource_fixup(struct pci_dev *dev)
++{
++       struct resource *res;
++       int resno;
++
++       for (resno = 0; resno < PCI_NUM_RESOURCES; resno++)
++               dev->resource[resno].flags |= IORESOURCE_PCI_FIXED;
++
++       for (resno = 0; resno < PCI_BRIDGE_RESOURCES; resno++) {
++               res = &dev->resource[resno];
++               if (res->parent || !(res->flags & IORESOURCE_MEM))
++                       continue;
++               pci_claim_resource(dev, resno);
++       }
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CAVIUM, PCI_ANY_ID,
++                       pci_dev_resource_fixup);
 
-#ifdef readq_relaxed
-        do something using readq_relaxed
-#else
-...
-#endif
+This actually looks harmful, because it means that any kernel that contains
+the thunder host controller driver will do the above for any device made
+by Cavium, whether it's connected to this bridge or not.
 
-this will fail if readq is not defined.
+What I think we want instead is to mark any resource whose parent
+resource is IORESOURCE_PCI_FIXED to have the same flag, and mark
+the PCI host controller resources IORESOURCE_PCI_FIXED when the
+nonrelocatable flag is set, and that should all be done in core
+code, not in a driver fixup.
 
-Currently no code has such an #ifdef, though.
-There are #ifdefs for checking for the presence of readq.
+The part that still looks weird is the pci_claim_resource() that
+Sunil mentioned. This is currently done for resources that do not
+have a parent, but AFAICT all PCI device resources should have a
+parent that connects it to the upstream bridge.
 
-The same is true for writeq_relaxed.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Arnd
