@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751677AbaIYAKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 20:10:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45088 "EHLO mail.kernel.org"
+	id S1751500AbaIYARh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 20:17:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12740 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaIYAKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 20:10:20 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Tim Bird <tim.bird@sonymobile.com>
-Cc: Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd.bergmann\@linaro.org" <arnd.bergmann@linaro.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: Add initial DTS file for Sony Xperia Z1
-References: <5422DF46.90306@sonymobile.com>
-Date: Wed, 24 Sep 2014 17:10:05 -0700
-In-Reply-To: <5422DF46.90306@sonymobile.com> (Tim Bird's message of "Wed, 24
-	Sep 2014 08:12:06 -0700")
-Message-ID: <7h61gck1b6.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751134AbaIYARg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 20:17:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,592,1406617200"; 
+   d="scan'208";a="604951306"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Topic: [PATCH 0/7] Silence even more W=2 warnings
+Thread-Index: AQHP1B6ZqT8VjyQkzkipcFe03W/rTpwNwlkAgAAZ2ACAABpfgIAABS8AgAAGSQCAAAZEgIAAA7mAgAADVoCAAAa4AIAAFZkAgACwXoCAAJd/AIAAFoIAgAHvRIA=
+Date: Thu, 25 Sep 2014 00:17:33 +0000
+Message-ID: <ACACCEEA-32F7-4296-B562-C83299BDFAD5@intel.com>
+References: <20140922184049.GB4709@pd.tnic>
+ <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+ <20140922192152.GD4709@pd.tnic>
+ <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922195737.GE4709@pd.tnic>
+ <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922203336.GF4709@pd.tnic>
+ <A05C31E6-7AD2-482A-B590-A5ED57D028B3@intel.com>
+ <20140923082209.GB22072@pd.tnic>
+ <029E2CFB-C001-4E16-B1F7-A3FB193E3138@intel.com>
+ <20140923184456.GA16467@pd.tnic>
+In-Reply-To: <20140923184456.GA16467@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.68]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <BCE49CFCCF9B4B4A82A23C069AC13E08@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
+On Sep 23, 2014, at 11:44 AM, Borislav Petkov <bp@alien8.de> wrote:
 
-Tim Bird <tim.bird@sonymobile.com> writes:
+> Again, we should take compiler warnings with a grain of salt and judge
+> them only by the quality of the generated code. IMO.
 
-> This DTS has support for the Sony Xperia Z1 phone (codenamed Honami).
-> This first version of the DTS supports just a serial console.
->
-> changes from v1
->  - removed qcom,msm-id attribute
->  - removed mis-capitalized Qualcomm word
->  - changed dts file name
->  - added board-specific compatible-string
->
-> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+The more I thought about this, the more I think it argues for having some
+diagnostic control macros. Tools such as the compiler can be very thorough -
+that is their strength. The warnings that the compiler emits are things
+that humans should consider. There are times when the human can judge
+that nothing need be done about it, so why not use the macros to indicate
+that that judgement has been made and get it out of the way so more
+potentially interesting issues can be found? How many people need to
+make that judgement over and over? That is clearly a waste of time and
+is why these higher warning levels simply don't get looked at. So lets
+capture that judgement in the code. That judgement would continue to be
+open to reevaluation in any case.
 
-[...]
+The syscall issue is not arising from an include file, but I think
+demonstrates the use nicely and I think is a fine example of a legitimate
+use in a C file.
 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index b8c5cd3..0c2702e 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -343,7 +343,8 @@ dtb-$(CONFIG_ARCH_QCOM) += \
->  	qcom-apq8074-dragonboard.dtb \
->  	qcom-apq8084-mtp.dtb \
->  	qcom-msm8660-surf.dtb \
-> -	qcom-msm8960-cdp.dtb
-> +	qcom-msm8960-cdp.dtb \
-> +	qcom-msm8974-sony-honami-xperia.dtb
+For me, it is about getting more value out of the evaluation that the compiler
+can do. When the output of W=2 is unusable because it is so voluminous - filled
+with things known to not cause problems - why not silence some of major
+sources so that more interesting issues might be seen? By not doing so, W=2
+has close to 0 value because no one looks at it.
 
-This doesn't compile becase the filename added is xperia-honami (not
-honami-xperia)
+I guess I also trust the maintainers to not accept lots of patches that add
+uses of such macros. They have certainly demonstrated that up to this point.
 
-After fixing that up, I was able to test it on my Z1 (Thanks Tim/Bjorn!)
-but found I needed to add in the qcom,msm-id stuff first.  I guess that
-will be remedied with the updated mkbootimg tool, correct?
+:-)
 
-Anyways, after fixing the filename, feel free to add:
+-- 
+Mark Rustad, Networking Division, Intel Corporation
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
-
-Kevin
