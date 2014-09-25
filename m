@@ -1,143 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaIYRRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:17:34 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:41099 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419AbaIYRRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:17:33 -0400
-Date: Thu, 25 Sep 2014 18:16:12 +0100
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-Message-ID: <20140925171612.GC31157@bart.dudau.co.uk>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <20140925074235.GN12423@ulmo>
- <20140925144855.GB31157@bart.dudau.co.uk>
- <20140925164937.GB30382@ulmo>
+	id S1753904AbaIYRSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:18:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48864 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaIYRSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 13:18:37 -0400
+Message-ID: <54244E68.90109@infradead.org>
+Date: Thu, 25 Sep 2014 10:18:32 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+CC: Pranith Kumar <bobby.prani@gmail.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH] Docs: this_cpu_ops: remove redundant add forms
+References: <1411566583-22220-1-git-send-email-mark.rutland@arm.com>
+In-Reply-To: <1411566583-22220-1-git-send-email-mark.rutland@arm.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140925164937.GB30382@ulmo>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Sep 25 18:17:31 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,54244e2b3118558215139
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 06:49:38PM +0200, Thierry Reding wrote:
-> On Thu, Sep 25, 2014 at 03:48:55PM +0100, Liviu Dudau wrote:
-> > On Thu, Sep 25, 2014 at 09:42:36AM +0200, Thierry Reding wrote:
-> > > On Thu, Sep 25, 2014 at 11:14:10AM +0800, Yijing Wang wrote:
-> > > > This series is based Bjorn's pci/msi branch
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
-> > > > 
-> > > > Currently, there are a lot of weak arch functions in MSI code.
-> > > > Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
-> > > > This series use MSI chip framework to refactor MSI code across all platforms
-> > > > to eliminate weak arch functions. Then all MSI irqs will be managed in a 
-> > > > unified framework. Because this series changed a lot of ARCH MSI code,
-> > > > so tests in the platforms which MSI code modified are warmly welcomed!
-> > > 
-> > > Apart from the comments to the individual patches I very much like where
-> > > this is going. Thanks for taking care of this.
-> > > 
-> > > Thierry
-> > 
-> > I am actually in disagreement with you, Thierry. I don't like the general direction
-> > of the patches, or at least I don't like the fact that we don't have a portable
-> > way of setting up the msi_chip without having to rely on weak architectural hooks.
+On 09/24/14 06:49, Mark Rutland wrote:
+> Hi,
 > 
-> Oh, good. That's actually one of the things I said I wasn't happy with
-> either. =)
+> I spotted the below while trying to figure out how to use this_cpu ops,
+> and it left me confused for a short while.
 > 
-> > I'm surprised no one considers the case of a platform having more than one host
-> > bridge and possibly more than one MSI unit. With the current proposed patchset I
-> > can't see how that would work.
+> I guess that this is a refactoring fallout rather than there being a
+> special this_cpu_add variant?
 > 
-> The PCI core can already deal with that. An MSI chip can be set per bus
-> and the weak pcibios_add_bus() can be used to set that. Often it might
-> not even be necessary to do it via pcibios_add_bus() if you create the
-> root bus directly, since you can attach the MSI chip at that time.
-
-But I'm thinking that we need to move away from pcibios_add_bus() interface to do
-something that should be generic. You don't need to be called for every bus when all
-you want is just the root bus in order to add the MSI chip. Also, from looking at
-the current patchset, a lot of architectures would set the MSI chip to a global
-variable, which means you don't have an option to choose the MSI chip based on the
-bus.
-
+> Mark.
 > 
-> > What I would like to see is a way of creating the pci_host_bridge structure outside
-> > the pci_create_root_bus(). That would then allow us to pass this sort of platform
-> > details like associated msi_chip into the host bridge and the child busses will
-> > have an easy way of finding the information needed by finding the root bus and then
-> > the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
-> > everyone and the drivers can remove their kludges that try to work around the
-> > current limitations.
+> ---->8----
+> Commit ac490f4dca94 (Documentation: this_cpu_ops.txt: Update description
+> of this_cpu_ops) added lists of {__,}this_cpu operations, but these have
+> duplicate, parameter-less entries for {__,}this_cpu_add which don't
+> correspond to any implementation. No other operations have such
+> duplicate entries.
 > 
-> I think both issues are orthogonal. Last time I checked a lot of work
-> was still necessary to unify host bridges enough so that it could be
-> shared across architectures. But perhaps some of that work has
-> happened in the meantime.
-
-Breaking out the host bridge creation from root bus creation is not difficult, just not
-agree upon. That would be the first step in making the generic host brige structure
-useful for sharing, specially if used as a sort of "parent" structure that you can
-wrap with your actual host bridge structure.
-
+> Given both are also listed with their full complement of arguments, the
+> empty forms are redundant and can be removed. This patch performs said
+> removal.
 > 
-> But like I said, when you create the root bus, you can easily attach the
-> MSI chip to it.
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Cc: Pranith Kumar <bobby.prani@gmail.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> ---
+>  Documentation/this_cpu_ops.txt | 2 --
+>  1 file changed, 2 deletions(-)
 
-Not if you want to use the generic pci_scan_root_bus() function. One needs to copy the code
-and add their own needed modifications. Which makes it hard to fix bugs and prevents code
-reuse.
 
-Best regards,
-Liviu
+Applied, thanks.
 
+> diff --git a/Documentation/this_cpu_ops.txt b/Documentation/this_cpu_ops.txt
+> index 0ec9957..2cbf719 100644
+> --- a/Documentation/this_cpu_ops.txt
+> +++ b/Documentation/this_cpu_ops.txt
+> @@ -41,7 +41,6 @@ The following this_cpu() operations with implied preemption protection
+>  are defined. These operations can be used without worrying about
+>  preemption and interrupts.
+>  
+> -	this_cpu_add()
+>  	this_cpu_read(pcp)
+>  	this_cpu_write(pcp, val)
+>  	this_cpu_add(pcp, val)
+> @@ -225,7 +224,6 @@ still occur while an operation is in progress and if the interrupt too
+>  modifies the variable, then RMW actions can not be guaranteed to be
+>  safe.
+>  
+> -	__this_cpu_add()
+>  	__this_cpu_read(pcp)
+>  	__this_cpu_write(pcp, val)
+>  	__this_cpu_add(pcp, val)
 > 
-> Thierry
-
 
 
 -- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
-
+~Randy
