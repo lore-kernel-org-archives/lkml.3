@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaIYRui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:50:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34644 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747AbaIYRuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:50:35 -0400
-Date: Thu, 25 Sep 2014 10:50:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rob Jones <rob.jones@codethink.co.uk>
-Cc: rdunlap@infradead.org, viro@zeniv.linux.org.uk, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@codethink.co.uk, keescook@chromium.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: [PATCH RESUBMIT 1/2] fs/seq_file: Create new function
- seq_open_init()
-Message-Id: <20140925105033.ae4684eef16b5a323b9dbdd6@linux-foundation.org>
-In-Reply-To: <5423DBED.4090306@codethink.co.uk>
-References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk>
-	<1411557356-10673-2-git-send-email-rob.jones@codethink.co.uk>
-	<20140924143904.b6f12611013876253d8ac50a@linux-foundation.org>
-	<5423DBED.4090306@codethink.co.uk>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1753937AbaIYRwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:52:39 -0400
+Received: from mga14.intel.com ([192.55.52.115]:22034 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753486AbaIYRwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 13:52:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391625839"
+Date: Thu, 25 Sep 2014 10:52:34 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v5 1/2] mfd/axp20x: extend axp20x to support axp288 pmic
+Message-ID: <20140925105234.65c826c9@jacob-VirtualBox>
+In-Reply-To: <20140925100220.GA15315@lukather>
+References: <1411518027-19907-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1411518027-19907-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	<20140925100220.GA15315@lukather>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014 10:10:05 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
+On Thu, 25 Sep 2014 12:02:20 +0200
+Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
 
-> > A global exported-to-modules interface should be documented, please.
-> > Especially when it has a void* argument.  seq_file.c is patchy - some
-> > of it is documented, some of it uses the read-programmers-mind
-> > approach.
+> It's fine otherwise. Once fixed, you can add my
 > 
-> I have included documentation as the second patch. Would it have been
-> better to include them in a single patch? I didn't do that because
-> seq_file and Documentation have different maintainers. I'm still
-> learning the protocols here.
-
-A single patch would be OK.
-
-Documentation/ is nice, but I don't think people think to look there. 
-Some kerneldoc within the .c would be a good addition.
-
-> > __seq_open_private() has
-> > 	void *private;
-> >
-> > single_open() has
-> > 	void *data
-> >
-> > And now seq_open_init() has
-> > 	void *p
-> >
-> > but these all refer to the same thing.  Can we have a bit of
-> > consistency in the naming please?  I suggest "private", to match
-> > the seq_file field.
-> 
-> A valid point and I can easily make the change but fixing single_open()
-> would mean that the patch is addressing two issues, is that acceptable?
-> Another protocol question, sorry.
-
-I guess switch this patch to use "private" then a second one to fix
-single_open().
-
+> Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+thanks for the review. will fix as suggested except rewriting flow in
+axp20x_match_device() as suggested by Lee Jones.
