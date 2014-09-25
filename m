@@ -1,81 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaIYUfc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 16:35:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40951 "EHLO mail.kernel.org"
+	id S1753346AbaIYUfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 16:35:52 -0400
+Received: from mga03.intel.com ([134.134.136.65]:32967 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbaIYUf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 16:35:26 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lina Iyer <lina.iyer@linaro.org>, ulf.hansson@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        daniel.lezcano@linaro.org
-Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq affinity notification
-References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org>
-	<1409170479-29955-4-git-send-email-lina.iyer@linaro.org>
-	<alpine.DEB.2.10.1408272239190.3323@nanos>
-	<20140902184305.GB91995@ilina-mac.local>
-	<alpine.DEB.2.10.1409022109050.3333@nanos>
-Date: Thu, 25 Sep 2014 13:35:24 -0700
-In-Reply-To: <alpine.DEB.2.10.1409022109050.3333@nanos> (Thomas Gleixner's
-	message of "Tue, 2 Sep 2014 22:56:17 +0200 (CEST)")
-Message-ID: <7htx3vbfqr.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753171AbaIYUe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 16:34:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,599,1406617200"; 
+   d="scan'208";a="579109591"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [PATCH v11 21/21] brd: Rename XIP to DAX
+Date: Thu, 25 Sep 2014 16:33:38 -0400
+Message-Id: <1411677218-29146-22-git-send-email-matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+From: Matthew Wilcox <willy@linux.intel.com>
 
-Thomas Gleixner <tglx@linutronix.de> writes:
+Since this is relating to FS_XIP, not KERNEL_XIP, it should be called
+DAX instead of XIP.
 
-[...]
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ drivers/block/Kconfig | 13 +++++++------
+ drivers/block/brd.c   | 14 +++++++-------
+ fs/Kconfig            |  4 ++--
+ 3 files changed, 16 insertions(+), 15 deletions(-)
 
-> All I can see from your postings so far is:
->
->     1) You want to use the notification for PM QoS
->
->     2) You run into conflicts with the existing notifiers
->
->     3) You want to solve that conflict
->
-> What you are not telling is:
->
->     1) In which way is PM QoS going to use that notifier
->
->     2) How does that conflict with the existing users. And we only
->        have two of them:
->
->        - InfiniPath 7322 chip driver
->
->        - cpu_rmap driver, which is used by
->        	- solarflare NIC driver
-> 		- mellanox mlx4 driver
->	 	- cisco enic driver
->
-> 	So how is that conflicting with your ARM centric PM QoS work?
->
-> 	Please provide proper debug info about such a conflict, if it
-> 	exists at all.
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 014a1cf..1b8094d 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -393,14 +393,15 @@ config BLK_DEV_RAM_SIZE
+ 	  The default value is 4096 kilobytes. Only change this if you know
+ 	  what you are doing.
+ 
+-config BLK_DEV_XIP
+-	bool "Support XIP filesystems on RAM block device"
+-	depends on BLK_DEV_RAM
++config BLK_DEV_RAM_DAX
++	bool "Support Direct Access (DAX) to RAM block devices"
++	depends on BLK_DEV_RAM && FS_DAX
+ 	default n
+ 	help
+-	  Support XIP filesystems (such as ext2 with XIP support on) on
+-	  top of block ram device. This will slightly enlarge the kernel, and
+-	  will prevent RAM block device backing store memory from being
++	  Support filesystems using DAX to access RAM block devices.  This
++	  avoids double-buffering data in the page cache before copying it
++	  to the block device.  Answering Y will slightly enlarge the kernel,
++	  and will prevent RAM block device backing store memory from being
+ 	  allocated from highmem (only a problem for highmem systems).
+ 
+ config CDROM_PKTCDVD
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 78fe510..97c55db 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -97,13 +97,13 @@ static struct page *brd_insert_page(struct brd_device *brd, sector_t sector)
+ 	 * Must use NOIO because we don't want to recurse back into the
+ 	 * block or filesystem layers from page reclaim.
+ 	 *
+-	 * Cannot support XIP and highmem, because our ->direct_access
+-	 * routine for XIP must return memory that is always addressable.
+-	 * If XIP was reworked to use pfns and kmap throughout, this
++	 * Cannot support DAX and highmem, because our ->direct_access
++	 * routine for DAX must return memory that is always addressable.
++	 * If DAX was reworked to use pfns and kmap throughout, this
+ 	 * restriction might be able to be lifted.
+ 	 */
+ 	gfp_flags = GFP_NOIO | __GFP_ZERO;
+-#ifndef CONFIG_BLK_DEV_XIP
++#ifndef CONFIG_BLK_DEV_RAM_DAX
+ 	gfp_flags |= __GFP_HIGHMEM;
+ #endif
+ 	page = alloc_page(gfp_flags);
+@@ -369,7 +369,7 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
+ 	return err;
+ }
+ 
+-#ifdef CONFIG_BLK_DEV_XIP
++#ifdef CONFIG_BLK_DEV_RAM_DAX
+ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+ 			void **kaddr, unsigned long *pfn, long size)
+ {
+@@ -388,6 +388,8 @@ static long brd_direct_access(struct block_device *bdev, sector_t sector,
+ 	 * file happens to be mapped to the next page of physical RAM */
+ 	return PAGE_SIZE;
+ }
++#else
++#define brd_direct_access NULL
+ #endif
+ 
+ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
+@@ -428,9 +430,7 @@ static const struct block_device_operations brd_fops = {
+ 	.owner =		THIS_MODULE,
+ 	.rw_page =		brd_rw_page,
+ 	.ioctl =		brd_ioctl,
+-#ifdef CONFIG_BLK_DEV_XIP
+ 	.direct_access =	brd_direct_access,
+-#endif
+ };
+ 
+ /*
+diff --git a/fs/Kconfig b/fs/Kconfig
+index a9eb53d..117900f 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -34,7 +34,7 @@ source "fs/btrfs/Kconfig"
+ source "fs/nilfs2/Kconfig"
+ 
+ config FS_DAX
+-	bool "Direct Access support"
++	bool "Direct Access (DAX) support"
+ 	depends on MMU
+ 	help
+ 	  Direct Access (DAX) can be used on memory-backed block devices.
+@@ -45,7 +45,7 @@ config FS_DAX
+ 
+ 	  If you do not have a block device that is capable of using this,
+ 	  or if unsure, say N.  Saying Y will increase the size of the kernel
+-	  by about 2kB.
++	  by about 5kB.
+ 
+ endif # BLOCK
+ 
+-- 
+2.1.0
 
-Ignoring any new users of the affinity notifiers for now, aren't the
-existing users you list above conflicting with each other already?
-
-Maybe I'm missing something, or maybe we're just lucky and nobody uses
-them together, but irq_set_affinity_notifier() only allows a single
-notifier to be registered at any given time.  So if you had a system
-with the inifinipath driver and a cpu_rmap user, only the one who's
-lucky enough to be the last to call irq_set_affinity_notifier() will
-ever be notified.
-
-So I think the main question for Lina is: assuming we need more than one
-co-existing driver/subsystem to get IRQ affinity notifiers (and we
-already seem to have them, but are lucky they don't currently co-exist),
-how should the IRQ core be changed to support that?  Is the list
-approach proposed in $SUBJECT path reasonable?
-
-Kevin
