@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaIYG1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:27:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34818 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaIYG1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:27:03 -0400
-Date: Thu, 25 Sep 2014 08:26:48 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, gerg@uclinux.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        ARM Maintainers <arm@kernel.org>, linux-kernel@vger.kernel.org,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [RFC PATCH] ARM: at91: remove no-MMU at91x40 support
-Message-ID: <20140925062648.GJ3755@pengutronix.de>
-References: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1751855AbaIYGap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:30:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:47631 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751328AbaIYGao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 02:30:44 -0400
+Date: Thu, 25 Sep 2014 16:30:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: linux-next: build failure after merge of the tty tree
+Message-ID: <20140925163036.5f3281eb@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411568281-3924-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/.A_wmVP3E71tbhIbrSJIdz7"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nicolas,
+--Sig_/.A_wmVP3E71tbhIbrSJIdz7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 24, 2014 at 04:18:01PM +0200, Nicolas Ferre wrote:
-> As there is currently no-one to take care of this old !MMU target and as its
-> support in recent kernels is a bit rotten, remove this at91x40 support and the
-> board file associated with it (at91eb01).
-> There are modern ARM !MMU in Mainline now so this target is not interesting for
-s/Mainline/mainline/
+Hi Greg,
 
-> building tests anymore. It would be better to start from these modern ARM !MMU
-> platforms to reintroduce at91x40 support if needed.
-This last sentence doesn't sound convincing. at91x40 is an ARM7TDMI
-while the "modern ARM !MMU" targets base on Cortex-M.
+After merging the tty tree, today's linux-next build (arm multi_v7_defconfi=
+g)
+failed like this:
 
-Anyhow, the change is fine, so:
+In file included from init/do_mounts.c:15:0:
+include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+         unused:62;
+         ^
+include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+         unused_ctrl:55;
+         ^
+In file included from init/main.c:28:0:
+include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+         unused:62;
+         ^
+include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+         unused_ctrl:55;
+         ^
+In file included from include/linux/serial_core.h:29:0,
+                 from include/linux/serial_s3c.h:236,
+                 from arch/arm/mach-exynos/exynos.c:15:
+include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+         unused:62;
+         ^
+include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+         unused_ctrl:55;
+         ^
+In file included from include/linux/serial_core.h:29:0,
+                 from include/linux/platform_data/serial-omap.h:20,
+                 from arch/arm/mach-omap2/serial.c:30:
+include/linux/tty.h:267:9: error: width of 'unused' exceeds its type
+         unused:62;
+         ^
+include/linux/tty.h:271:9: error: width of 'unused_ctrl' exceeds its type
+         unused_ctrl:55;
+         ^
 
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Caused by commits c545b66c6922 ("tty: Serialize tcflow() with other tty
+flow control changes") and 99416322dd16 ("tty: Workaround Alpha
+non-atomic byte storage in tty_struct").  There are still 32 bit
+architectures out there!  ;-)
 
-Best regards
-Uwe
+I have used the tty tree from next-20140924 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+--Sig_/.A_wmVP3E71tbhIbrSJIdz7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUI7aRAAoJEMDTa8Ir7ZwV7/cP/0oD7hIp8Q2N59nuKlXW3SAZ
+yAqUVW8B4jkQobUhznBaQK609unUGvn7uykPZPhu+o3GXZ6Wu8WGyrg9+1/CZ82I
+cW0Vw0+M2vmJ62Ina4LPB3vJpzlZ+80RU1to4qkyBxcZlHlKihftubqM+GLzPvKg
+Lgsrxt5HigMgcrzLkGKARC9C9crdVZWb2QDSmof2UVl3SF3/ZLrfXNGfK6+1cCPe
+O4mCmsYUyBEEA3iKyiztskyCZNgg4wy4Mhq7JVQg2GonOpCelPocfgq6BzeBmeNp
+0KA+JxKr4i84lU/STjwfZg/bTLnguGWomYpdgeVttPCzx6Oa8qFwz5nQlUO+Tyof
+7s5nZ+f/9Ma59FUnujqBWzP9YeW/yiBLpNNXatbLdZscQQ+GUHxDUIJwIaGoLOQH
+qXC/gDJJaH0A7BuV4wWsdm760SXJxSaZ0gG8CA4TiLGXbxGbeJnDOYJFk7kHMNwl
+RkxuM2yQd8Mo5yixyRj7pX/nw2OcUKnRsT5uuOzdfE3cQuDJvBFdTbrgTpnER5cr
+u1d5tpxMzRZN9HbfhqWFw07PkDgOoSq88o3p/zy8xEGYfyWLa8J1r6+PtbhDk38L
+XL35yljlawNXtDhyA7OlSLScaYGroLWTQwAn5/VJS58Q+bkVXSvJYlxcxQZK801q
+g7D2lCigwq+OVE6t9Hvu
+=Z+hz
+-----END PGP SIGNATURE-----
+
+--Sig_/.A_wmVP3E71tbhIbrSJIdz7--
