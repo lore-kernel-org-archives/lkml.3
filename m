@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaIYHta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:49:30 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54070 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaIYHt2 (ORCPT
+	id S1752262AbaIYHtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:49:53 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:50188 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603AbaIYHtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:49:28 -0400
-Message-ID: <5423C904.60708@gmail.com>
-Date: Thu, 25 Sep 2014 09:49:24 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 25 Sep 2014 03:49:51 -0400
+Date: Thu, 25 Sep 2014 09:49:48 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Nikolaus Voss <n.voss@weinmann-emt.de>
+Cc: Bo Shen <voice.shen@atmel.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: atmel-pwm: fix calculation of prescale value
+Message-ID: <20140925074947.GA11843@ulmo>
+References: <20140924055851.CE51140656@mail.steuer-voss.de>
+ <20140925065229.GD12423@ulmo>
+ <alpine.DEB.2.10.1409250934090.38376@fox.voss.local>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 0/5] pinctrl: samsung: Data structure clean-up
-References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com> <CACRpkdZCMD4x+wrvTOrrWK-Dy4_rg6bD2xUAA4jtTGTbT1uDag@mail.gmail.com>
-In-Reply-To: <CACRpkdZCMD4x+wrvTOrrWK-Dy4_rg6bD2xUAA4jtTGTbT1uDag@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1409250934090.38376@fox.voss.local>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.09.2014 09:47, Linus Walleij wrote:
-> On Tue, Sep 23, 2014 at 9:05 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> 
->> This series intends to clean up data structures used by pinctrl-samsung driver.
->> More specifically, it separates initial compile time constants from data used
->> at runtime, allowing unused variant data to be dropped and selected structures
->> constified to improve safety.
-> 
-> I like the patch set, tried to apply it but patch 3/5 failed to apply to the
-> devel branch for pinctrl.
-> 
-> Can you rebase this on my "devel" branch, include Marek's Tested-by
-> tag and resend, and I'll take it for v3.18.
 
-Sure. Will do that today evening. Probably clashed with some other
-changes queued in the meantime.
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best regards,
-Tomasz
+On Thu, Sep 25, 2014 at 09:47:34AM +0200, Nikolaus Voss wrote:
+> On Thu, 25 Sep 2014, Thierry Reding wrote:
+[...]
+> >>-		}
+> >>+		div >>=3D 1;
+> >>+		++pres;
+> >
+> >Unless you really need the prefix increment behaviour (you don't in this
+> >case) I prefer using the postfix operator because it is slightly more
+> >idiomatic.
+>=20
+> ok (as I mostly do C++ programming, I prefer the prefix as it is usually
+> more efficient for user-defined types).
+
+It is? That's intriguing...
+
+Thierry
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI8kbAAoJEN0jrNd/PrOhMXcP/2QY/HxsceuEO2SgpfK2q7re
+DhV/p3bi8zamhQnY8LrUHqbv7cWUZ2rZlCkwyMUgn9FabWXZaWNRFczTlrmVj6kH
+2/iNialrQVPEeqTUSdjbEWzw7ZSMpHUch2pI0PBlVRfJBIC+RT9WWyV/U4r/qX8t
+/rmWQmkqc1Fs97/c3j0n3Sczhc/XCBjrBmFx4Wys+lVKqA/QuDlNMhtx0KS0zazy
+ydqTblUB7osShpAUli8sF5phiCn1lLYw/dKhYLOjeKxh83K0QkLiTXlamskjjxmn
+mlSwLtvxICOjp7GHg8FRTBuBRZBaByM7bX5MfG8K8qpBghwx/744Dx6ba6cfv80G
+wGi+Rv1Jl4tw+hMx4RaIgFrmhh3KZDsAanpYyRzFaBUn7ZALCeizKiKXZr3eeRFn
+9AzXwAYM/HpEe+N39IN/EyPRhw5YYqGv6WzRXqisuLY4xNrwDB0latfuXp5d76GT
+1JhhwKsKIW0EdmTpLXRddh5WfDSJN1dz/9R0EUSbP0XHfrbZY2YdRv9kpEO6ydE+
+Lw8HZZ4ekVvyAYZ2Z3f54QyIGGFMJ3MQCzb4H7BCRILV4TQR4YeFYKx8xs6Tjb/R
+POlBDd1Bp1GLI6Xgf8/8qyc8jT8kdcE//3op7LiRn4NF+BxaoShaVlxr6xESYBZp
+W87fikyMUedf4nxgDNY3
+=CdmC
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
