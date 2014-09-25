@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaIYHNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:13:10 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53472 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaIYHNJ (ORCPT
+	id S1752247AbaIYHNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:13:42 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61876 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594AbaIYHNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:13:09 -0400
-Date: Thu, 25 Sep 2014 10:30:06 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Feiner <pfeiner@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] mm: softdirty: keep bit when zapping file pte
-Message-ID: <20140925063006.GN2227@moon>
-References: <1411200187-40896-1-git-send-email-pfeiner@google.com>
- <20140924145927.04e8eb7ba6c1410a797293c7@linux-foundation.org>
+	Thu, 25 Sep 2014 03:13:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924145927.04e8eb7ba6c1410a797293c7@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 25 Sep 2014 09:13:40 +0200
+Message-ID: <CACRpkdY+QryWtpvAWFF_0Ev0rgiJvhOvwkZexsnp5wPY4y0jow@mail.gmail.com>
+Subject: [GIT PULL] GPIO fixes for the v3.17 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 02:59:27PM -0700, Andrew Morton wrote:
-> On Sat, 20 Sep 2014 01:03:07 -0700 Peter Feiner <pfeiner@google.com> wrote:
-> 
-> > Fixes the same bug as b43790eedd31e9535b89bbfa45793919e9504c34 and
-> > 9aed8614af5a05cdaa32a0b78b0f1a424754a958 where the return value of
-> > pte_*mksoft_dirty was being ignored.
-> > 
-> > To be sure that no other pte/pmd "mk" function return values were
-> > being ignored, I annotated the functions in
-> > arch/x86/include/asm/pgtable.h with __must_check and rebuilt.
-> > 
-> 
-> Grumble.
-> 
-> It is useful to identify preceding similar patches but that isn't a
-> good way of describing *this* patch.  What is wrong with the current
-> code, how does the patch fix it.
+Hi Linus,
 
-The userspace effect is that without this patch softdirty mark might be lost
-if file mapped pte get zapped. It should go into @stable series after 3.12.
+here are two last minute GPIO fixes for the v3.17 series, as it happens
+both also set to go into stable.
 
-> 
-> And, particularly, what do you think are the end-user visible effects
-> of the bug?  This info helps people to work out which kernel versions
-> need the fix.
+Please pull them in!
+
+Yours,
+Linus Walleij
+
+The following changes since commit 0f33be009b89d2268e94194dc4fd01a7851b6d51:
+
+  Linux 3.17-rc6 (2014-09-21 15:43:02 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.17-4
+
+for you to fetch changes up to 324b0398781e7afb846378dd2d8a4374faaf236b:
+
+  gpio: Fix potential NULL handler data in chained irqchip handler
+(2014-09-24 09:47:20 +0200)
+
+----------------------------------------------------------------
+Two GPIO fixes:
+- GPIO direction flags where handled wrong in the new
+  descriptor-based API, so direction changes did not always
+  "take".
+- Fix a handler installation race in the generic GPIO
+  irqchip code.
+
+----------------------------------------------------------------
+Adrian Hunter (1):
+      gpio: Fix gpio direction flags not getting set
+
+Jarkko Nikula (1):
+      gpio: Fix potential NULL handler data in chained irqchip handler
+
+ drivers/gpio/gpiolib.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
