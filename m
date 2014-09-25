@@ -1,140 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaIYDRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:17:50 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46443 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaIYDRs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:17:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18edret8R+kqdWU3MAIdaX91dF5KevEP/A=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 021125EBF65
-Date: Wed, 24 Sep 2014 23:17:11 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Joe.C" <srv_yingjoe.chen@mediatek.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        yh.chen@mediatek.com, linux-kernel@vger.kernel.org,
-        srv_heupstream@mediatek.com, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, nathan.chung@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, eddie.huang@mediatek.com,
-        yingjoe.chen@gmail.com, linux-arm-kernel@lists.infradead.org,
-        hc.yen@mediatek.com
-Subject: Re: [PATCH] [RFC] Using hierarchy irqdomian to implement MTK
- intpol.
-Message-ID: <20140925031711.GV23926@titan.lakedaemon.net>
-References: <1411574696-1881-1-git-send-email-srv_yingjoe.chen@mediatek.com>
- <1411611417.21763.56.camel@mtksdaap41>
- <54238645.8090502@linux.intel.com>
+	id S1752854AbaIYDS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:18:28 -0400
+Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:54080
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752464AbaIYDS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:18:26 -0400
+From: Robin Gong <b38343@freescale.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <a.zummo@towertech.it>, <grant.likely@linaro.org>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <LW@KARO-electronics.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v1] rtc: snvs: add poweroff function
+Date: Thu, 25 Sep 2014 10:13:53 +0800
+Message-ID: <1411611233-29919-1-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(50466002)(81342003)(19580395003)(46102003)(50226001)(68736004)(77982003)(21056001)(31966008)(47776003)(81542003)(44976005)(74502003)(83072002)(20776003)(92566001)(83322001)(6806004)(10300001)(90102001)(89996001)(104016003)(87286001)(120916001)(104166001)(36756003)(33646002)(92726001)(106466001)(99396003)(229853001)(87936001)(77156001)(80022003)(107046002)(88136002)(50986999)(64706001)(19580405001)(74662003)(85306004)(102836001)(85852003)(79102003)(48376002)(95666004)(97736003)(84676001)(2201001)(105606002)(76482002)(4396001)(93916002)(62966002)(921003)(1121002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB349;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54238645.8090502@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB349;
+X-Forefront-PRVS: 0345CFD558
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:04:37AM +0800, Jiang Liu wrote:
-> Hi Joe,
-> 	Thanks, I will merge them into my next version.
-> Regards!
-> Gerry
-> 
-> On 2014/9/25 10:16, Joe.C wrote:
-> > 
-> > Jiang,
-> > 
-> > Please consider merge the following 2 changes into your next round.
+On i.mx6 chips, PMIC_ON_REQ can be pulled by snvs LPCR. That can be
+used poweroff system if PMIC_ON_REQ connected with external PMIC or
+power control circuit.Power up again if PMIC_ON_REQ pulled high.
 
-ummm.  I'm confused.  I'll admit I'm a bit liquored up atm, but it looks
-like "Joe C." posted a patch 'From: Joe C.', and 'Signed-off-by: Joe C.'.
-_Then_, Joe C. replied to himself and asked someone *else* to merge the
-below changes into the originally posted patch.  The real kicker is that
-someone responded and said they would do it. (?!)
+Signed-off-by: Robin Gong <b38343@freescale.com>
+---
+ Documentation/devicetree/bindings/crypto/fsl-sec4.txt |  4 ++++
+ drivers/rtc/rtc-snvs.c                                | 18 ++++++++++++++++++
+ 2 files changed, 22 insertions(+)
 
-Please tell me the scotch is making this look more fucked up than it
-really is...
+diff --git a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
+index e402277..00d67f2 100644
+--- a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
++++ b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
+@@ -363,11 +363,15 @@ Secure Non-Volatile Storage (SNVS) Low Power (LP) RTC Node
+       Value type: <prop-encoded-array>
+       Definition: A standard property.  Specifies the physical
+           address and length of the SNVS LP configuration registers.
++  - fsl,poweroff
++      Usage: opertional, recommend if PMIC_ON_REQ connected with external
++	PMIC or power control circuit.
+ 
+ EXAMPLE
+ 	sec_mon_rtc_lp@314000 {
+ 		compatible = "fsl,sec-v4.0-mon-rtc-lp";
+ 		reg = <0x34 0x58>;
++		fsl,poweroff;
+ 	};
+ 
+ =====================================================================
+diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
+index fa384fe..ef32541 100644
+--- a/drivers/rtc/rtc-snvs.c
++++ b/drivers/rtc/rtc-snvs.c
+@@ -29,6 +29,8 @@
+ #define SNVS_LPCR_SRTC_ENV	(1 << 0)
+ #define SNVS_LPCR_LPTA_EN	(1 << 1)
+ #define SNVS_LPCR_LPWUI_EN	(1 << 3)
++#define SNVS_LPCR_DP		(1 << 5)
++#define SNVS_LPCR_TOP		(1 << 6)
+ #define SNVS_LPSR_LPTA		(1 << 0)
+ 
+ #define SNVS_LPPGDR_INIT	0x41736166
+@@ -41,6 +43,8 @@ struct snvs_rtc_data {
+ 	spinlock_t lock;
+ };
+ 
++static void __iomem *snvs_base;
++
+ static u32 rtc_read_lp_counter(void __iomem *ioaddr)
+ {
+ 	u64 read1, read2;
+@@ -241,8 +245,17 @@ static irqreturn_t snvs_rtc_irq_handler(int irq, void *dev_id)
+ 	return events ? IRQ_HANDLED : IRQ_NONE;
+ }
+ 
++static void snvs_poweroff(void)
++{
++	u32 value;
++
++	value = readl(snvs_base + SNVS_LPCR);
++	writel(value | SNVS_LPCR_DP | SNVS_LPCR_TOP, snvs_base + SNVS_LPCR);
++}
++
+ static int snvs_rtc_probe(struct platform_device *pdev)
+ {
++	struct device_node *np = pdev->dev.of_node;
+ 	struct snvs_rtc_data *data;
+ 	struct resource *res;
+ 	int ret;
+@@ -260,6 +273,11 @@ static int snvs_rtc_probe(struct platform_device *pdev)
+ 	if (data->irq < 0)
+ 		return data->irq;
+ 
++	if (np && of_get_property(np, "fsl,poweroff", NULL)) {
++		snvs_base = data->ioaddr;
++		pm_power_off = snvs_poweroff;
++	}
++
+ 	platform_set_drvdata(pdev, data);
+ 
+ 	spin_lock_init(&data->lock);
+-- 
+1.9.1
 
-Also, if Joe.C could please fix his mailer and git config to produce a
-complete, correct name, that would be appreciated.
-
-thx,
-
-Jason.
-
-> > On Thu, 2014-09-25 at 00:04 +0800, Joe.C wrote:
-> >> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> >> index e285f3a..01e852b 100644
-> >> --- a/kernel/irq/irqdomain.c
-> >> +++ b/kernel/irq/irqdomain.c
-> >> @@ -467,7 +467,7 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
-> >>  	struct irq_domain *domain;
-> >>  	irq_hw_number_t hwirq;
-> >>  	unsigned int type = IRQ_TYPE_NONE;
-> >> -	unsigned int virq;
-> >> +	int virq;
-> >>  
-> >>  	domain = irq_data->np ? irq_find_host(irq_data->np) : irq_default_domain;
-> >>  	if (!domain) {
-> >> @@ -493,8 +493,8 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
-> >>  	else
-> >>  #endif
-> >>  		virq = irq_create_mapping(domain, hwirq);
-> >> -	if (!virq)
-> >> -		return virq;
-> >> +	if (virq <= 0)
-> >> +		return 0;
-> >>  
-> >>  	/* Set type if specified and different than the current one */
-> >>  	if (type != IRQ_TYPE_NONE &&
-> > 
-> > irq_of_parse_and_map()/of_irq_to_resource() expect
-> > irq_create_of_mapping() to return 0 when fail. Return error code will
-> > cause of_irq_to_resource crash.
-> > 
-> > 
-> >> @@ -716,20 +716,20 @@ const struct irq_domain_ops irq_domain_simple_ops = {
-> >>  };
-> >>  EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
-> >>  
-> >> -static int irq_domain_alloc_descs(int virq, unsigned int nr_irqs,
-> >> +static int irq_domain_alloc_descs(int virq, unsigned int cnt,
-> >>  				  irq_hw_number_t hwirq, int node)
-> >>  {
-> >>  	unsigned int hint;
-> >>  
-> >>  	if (virq >= 0) {
-> >> -		virq = irq_alloc_descs(virq, virq, nr_irqs, node);
-> >> +		virq = irq_alloc_descs(virq, virq, cnt, node);
-> >>  	} else {
-> >>  		hint = hwirq % nr_irqs;
-> >>  		if (hint == 0)
-> >>  			hint++;
-> >> -		virq = irq_alloc_descs_from(hint, nr_irqs, node);
-> >> +		virq = irq_alloc_descs_from(hint, cnt, node);
-> >>  		if (virq <= 0 && hint > 1)
-> >> -			virq = irq_alloc_descs_from(1, nr_irqs, node);
-> >> +			virq = irq_alloc_descs_from(1, cnt, node);
-> >>  	}
-> >>  
-> >>  	return virq;
-> > 
-> > This come from irq_create_mapping(), the original code is using global
-> > nr_irqs. Change to match original behavior.
-> > 
-> > Joe.C
-> > 
-> > 
