@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaIYKjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:39:48 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56723 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751414AbaIYKjq (ORCPT
+	id S1753055AbaIYKlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:41:20 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57856 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaIYKlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:39:46 -0400
-Date: Thu, 25 Sep 2014 11:38:46 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 01/17] asm-generic: io: implement relaxed accessor
- macros as conditional wrappers
-Message-ID: <20140925103846.GI20043@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <1411579056-16966-2-git-send-email-will.deacon@arm.com>
- <4501051.vdxhyhkTWv@wuerfel>
+	Thu, 25 Sep 2014 06:41:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4501051.vdxhyhkTWv@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140925103011.GA32124@localhost>
+References: <1411158165-25794-1-git-send-email-octavian.purdila@intel.com>
+	<1411158165-25794-2-git-send-email-octavian.purdila@intel.com>
+	<20140924104809.GA16198@localhost>
+	<CAE1zotLu7pN9pC_C+iRwSpMh2iPW5E1CL4RiycLK-jV_FZEfOQ@mail.gmail.com>
+	<20140924135444.GD16198@localhost>
+	<CAE1zot+BqL4=kTJaQYwPxL-19W-+2nomXXrKaogJZRXuvrVE0A@mail.gmail.com>
+	<20140924150749.GG16198@localhost>
+	<CAE1zotLbziKCaXio-LTu0hoz+jjTzqZD=PC3yP3VSn2+f7j62Q@mail.gmail.com>
+	<CAE1zot+NGpLFC2fT5giNdXowhaesOux97e_7N9T6EV1OaWWdtg@mail.gmail.com>
+	<20140925103011.GA32124@localhost>
+Date: Thu, 25 Sep 2014 13:41:16 +0300
+Message-ID: <CAE1zotL2A7Y_xbgCJD2mxiJ=F97GX7PkkB+YTUQjHD6tkDGs-g@mail.gmail.com>
+Subject: Re: [PATCH v5 1/4] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, wsa@the-dreams.de,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:32:00AM +0100, Arnd Bergmann wrote:
-> On Wednesday 24 September 2014 18:17:20 Will Deacon wrote:
-> > {read,write}{b,w,l,q}_relaxed are implemented by some architectures in
-> > order to permit memory-mapped I/O accesses with weaker barrier semantics
-> > than the non-relaxed variants.
-> > 
-> > This patch adds wrappers to asm-generic so that drivers can rely on the
-> > relaxed accessors being available, even if they don't always provide
-> > weaker ordering guarantees. Since some architectures both include
-> > asm-generic/io.h and define some relaxed accessors, the definitions here
-> > are conditional for the time being.
-> > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  include/asm-generic/io.h | 26 ++++++++++++++++++++++++++
-> >  1 file changed, 26 insertions(+)
-> > 
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Thu, Sep 25, 2014 at 1:30 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Thu, Sep 25, 2014 at 01:25:24PM +0300, Octavian Purdila wrote:
+>
+>> Johan, I think we don't really need the spinlock, the disconnect flag
+>> and an atomic counter should work. Do you see any issues with that?
+>
+> No, you need to test and increment atomically so the lock is needed.
+>
+> Consider what could happen if you get a disconnect after testing but
+> before incrementing.
+>
 
-Thanks, Arnd. Do you have other patches queued for asm-generic, or shall I
-take this patch (on its own) via the arm64 tree?
-
-Will
+I am still not seeing the problem. We would continue with the
+increment, we will try to send which will fail and go on the error
+path where we will decrement and wake_up. What am I missing?
