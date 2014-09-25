@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaIYNF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:05:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57975 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751351AbaIYNF0 (ORCPT
+	id S1753195AbaIYNHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:07:22 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:61912 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaIYNHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:05:26 -0400
-Date: Thu, 25 Sep 2014 15:00:12 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: sunxi: Update Allwinner SoC documentation
- (A31/A31s/A23)
-Message-ID: <20140925130012.GD15315@lukather>
-References: <1411571349-30867-1-git-send-email-wens@csie.org>
+	Thu, 25 Sep 2014 09:07:20 -0400
+Date: Thu, 25 Sep 2014 15:07:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: lockless page counters
+Message-ID: <20140925130716.GE12090@dhcp22.suse.cz>
+References: <1411132928-16143-1-git-send-email-hannes@cmpxchg.org>
+ <20140922144158.GC20398@esperanza>
+ <20140922185736.GB6630@cmpxchg.org>
+ <20140923110634.GH18526@esperanza>
+ <20140923132801.GA14302@cmpxchg.org>
+ <20140923152150.GL18526@esperanza>
+ <20140923170525.GA28460@cmpxchg.org>
+ <20140924141633.GB4558@dhcp22.suse.cz>
+ <20140924170017.GB9968@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FSGgxso9lj1d9SFz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411571349-30867-1-git-send-email-wens@csie.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140924170017.GB9968@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 24-09-14 13:00:17, Johannes Weiner wrote:
+> On Wed, Sep 24, 2014 at 04:16:33PM +0200, Michal Hocko wrote:
+> > On Tue 23-09-14 13:05:25, Johannes Weiner wrote:
+> > [...]
+> > >  #include <trace/events/vmscan.h>
+> > >  
+> > > -int page_counter_sub(struct page_counter *counter, unsigned long nr_pages)
+> > > +/**
+> > > + * page_counter_cancel - take pages out of the local counter
+> > > + * @counter: counter
+> > > + * @nr_pages: number of pages to cancel
+> > > + *
+> > > + * Returns whether there are remaining pages in the counter.
+> > > + */
+> > > +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+> > >  {
+> > >  	long new;
+> > >  
+> > >  	new = atomic_long_sub_return(nr_pages, &counter->count);
+> > >  
+> > > -	if (WARN_ON(unlikely(new < 0)))
+> > > -		atomic_long_set(&counter->count, 0);
+> > > +	if (WARN_ON_ONCE(unlikely(new < 0)))
+> > > +		atomic_long_add(nr_pages, &counter->count);
+> > >  
+> > >  	return new > 0;
+> > >  }
+> > 
+> > I am not sure I understand this correctly.
+> > 
+> > The original res_counter code has protection against < 0 because it used
+> > unsigned longs and wanted to protect from really disturbing effects of
+> > underflow I guess (this wasn't documented anywhere). But you are using
+> > long so even underflow shouldn't be a big problem so why do we need a
+> > fixup?
+> 
+> Immediate issues might be bogus numbers showing up in userspace or
+> endless looping during reparenting.  Negative values are just not
+> defined for that counter, so I want to mitigate exposing them.
+> 
+> It's not completely leak-free, as you can see, but I don't think it'd
+> be worth weighing down the hot path any more than this just to
+> mitigate the unlikely consequences of kernel bug.
+> 
+> > The only way how we can end up < 0 would be a cancel without pairing
+> > charge AFAICS. A charge should always appear before uncharge
+> > because both of them are using atomics which imply memory barriers
+> > (atomic_*_return). So do I understand correctly that your motivation
+> > is to fix up those cancel-without-charge automatically? This would
+> > definitely ask for a fat comment. Or am I missing something?
+> 
+> This function is also used by the uncharge path, so any imbalance in
+> accounting, not just from spurious cancels, is caught that way.
+> 
+> As you said, these are all atomics, so it has nothing to do with
+> memory ordering.  It's simply catching logical underflows.
 
---FSGgxso9lj1d9SFz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, I think we should document this in the changelog and/or in the
+comment. These things are easy to forget...
 
-On Wed, Sep 24, 2014 at 11:09:09PM +0800, Chen-Yu Tsai wrote:
-> Lately we have received documentation for A31 and A31s, in addition to
-> A23 documentation which was received earlier but not added.
->=20
-> Add these to the README, and update to reflect that A31 and A23 are
-> supported.
->=20
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Thanks!
 
-Queued for 3.19, thanks!
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---FSGgxso9lj1d9SFz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUJBHcAAoJEBx+YmzsjxAgN7sQAKnKxAK3eYBf6RFLL3fV+m0U
-tz+B6uc89g/YAgxXS6yH10YpBkAKcJc0FofNtJ/XqayUTRTd4NDBcDTJUZDrGO8J
-0akHYB3l/BUYBJBLE/3ZDkQOqrObgTWGT/kajkB/Y10KuqvAh3lXyOxkmmKpu8E6
-quqmjTcxf8AxhEu1ZhG7LEHbByQThZmHkfxqP/IBEmxdyqyQkeRKz/eJ1vxj8RwC
-z0IMvvQs3KmP0MCeYRxBbP+ya01iQrPhSWut16WVEsof2CTV1EskCc4PMmywc0Uv
-3Hv/ipaqMskyOAYYYoBuPdeIT5719jBX+BZjifNnC4JOmBKieRLA/9kOcOTX4dKD
-0lMRQpe2sdVayywHtEzmF4pN+XwsrtaLQHSJJ17PGUF+SdS2B/wk5CZV+Bvb9ndQ
-JhFE5OTfxIrjDhu9o8n6S+Gh76iSP46/vTszA08EDPEQ9Cv/Ot0EL7PnZjrcafqd
-7pF6wcXggHtSxAJ2+iwVOI8vN79uf7Nf0nf5ACXxxEf5A+li0Ot5E5WxbCwQSVZM
-EXaTuL2Yec5lWCseo4pjnrQToni6FXhh8CYu14sWhg1tnzQVJOZVvelUfVkZeANX
-PkHFb9xC9RdCtge7x1NvGeN73x0FR/2JQVOZIu8/+PVfX2+I2AmH6y97w94Wg89T
-g41WbFMa8UkE/SO/1xys
-=rok3
------END PGP SIGNATURE-----
-
---FSGgxso9lj1d9SFz--
+-- 
+Michal Hocko
+SUSE Labs
