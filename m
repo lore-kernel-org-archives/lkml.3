@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaIYJ4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:56:40 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:51894 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaIYJ4j (ORCPT
+	id S1752782AbaIYJ5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:57:07 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:42018 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187AbaIYJ5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:56:39 -0400
-Subject: Re: [PATCH v5 1/2] arcmsr: simplify ioctl data read/write
-From: Ching Huang <ching2048@areca.com.tw>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <5422E7BB.6090108@redhat.com>
-References: <1411551214.4648.51.camel@Centos6.3-64>
-	 <5422E7BB.6090108@redhat.com>
+	Thu, 25 Sep 2014 05:57:05 -0400
+Message-ID: <1411639019.15810.31.camel@marge.simpson.net>
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, ilya.dryomov@inktank.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 25 Sep 2014 11:56:59 +0200
+In-Reply-To: <20140925091556.GB5430@worktop>
+References: <20140924081845.572814794@infradead.org>
+	 <1411633803.15810.12.camel@marge.simpson.net>
+	 <20140925090619.GA5430@worktop> <20140925091556.GB5430@worktop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Sep 2014 17:56:33 +0800
-Message-ID: <1411638993.8266.46.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-24 at 17:48 +0200, Tomas Henzl wrote:
-> On 09/24/2014 11:33 AM, Ching Huang wrote:
-> > From: Ching Huang <ching2048@areca.com.tw>
-> >
-> > This patch is relative to:
-> > http://git.infradead.org/users/hch/scsi-queue.git/tree/drivers-for-3.18:/drivers/scsi/arcmsr
-> >
-> > change in v5:
-> > 1. rename firstindex to getIndex, lastindex to putIndex for readability
-> > 2. define ARCMSR_API_DATA_BUFLEN as 1032
-> > 3. simplify ioctl data read by marcro CIRC_CNT_TO_END and CIRC_CNT
-> >
-> > Signed-off-by: Ching Huang <ching 2048@areca.com.tw>
-> > ---
-> >
-> ...
-> > +		pQbuffer = &acb->wqbuffer[acb->wqbuf_putIndex];
-> > +		cnt2end = ARCMSR_MAX_QBUFFER - acb->wqbuf_putIndex;
-> > +		if (user_len > cnt2end) {
-> > +			memcpy(pQbuffer, ptmpuserbuffer, cnt2end);
-> > +			ptmpuserbuffer += cnt2end;
-> > +			user_len -= cnt2end;
-> > +			acb->wqbuf_putIndex = 0;
-> > +			pQbuffer = acb->wqbuffer;
-> >  		}
-> > +		memcpy(pQbuffer, ptmpuserbuffer, user_len);
-> > +		acb->wqbuf_putIndex += user_len;
-> > +		acb->wqbuf_putIndex %= ARCMSR_MAX_QBUFFER;
-> > +		if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
-> This test^ is most likely useless, it looks like you set the
-> ACB_F_MESSAGE_WQBUFFER_CLEARED every time you have added some data to the buffer
-> and clear it when the buffer gets empty. I think you could get rid of
-> the ACB_F_MESSAGE_WQBUFFER_CLEARED completely. Also the ACB_F_MESSAGE_RQBUFFER_CLEARED doesn't
-> seems to be ever evaluated.
-> I'm not sure with the ACB_F_MESSAGE_WQBUFFER_READED, but that one probably is also
-> a candidate for removal.
-You are right. ACB_F_MESSAGE_WQBUFFER_CLEARED, ACB_F_MESSAGE_RQBUFFER_CLEARED, ACB_F_MESSAGE_WQBUFFER_READED
-are seem useless.
-> ...
-> > @@ -678,15 +679,15 @@ struct AdapterControlBlock
-> >  	unsigned int				uncache_size;
-> >  	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
-> >  	/* data collection buffer for read from 80331 */
-> > -	int32_t				rqbuf_firstindex;
-> > +	int32_t				rqbuf_getIndex;
-> What is the reason for using an exact size int32 (instead of a plain int) here?
-There is not special reason have to int32, int is OK.
-> >  	/* first of read buffer  */
-> > -	int32_t				rqbuf_lastindex;
-> > +	int32_t				rqbuf_putIndex;
-> >  	/* last of read buffer   */
-> >  	uint8_t				wqbuffer[ARCMSR_MAX_QBUFFER];
-> >  	/* data collection buffer for write to 80331  */
-> > -	int32_t				wqbuf_firstindex;
-> > +	int32_t				wqbuf_getIndex;
-> >  	/* first of write buffer */
-> > -	int32_t				wqbuf_lastindex;
-> > +	int32_t				wqbuf_putIndex;
-> >  	/* last of write buffer  */
-> >  	uint8_t				devstate[ARCMSR_MAX_TARGETID][ARCMSR_MAX_TARGETLUN];
-> >  	/* id0 ..... id15, lun0...lun7 */
+On Thu, 2014-09-25 at 11:15 +0200, Peter Zijlstra wrote:
+
+> I suppose just flipping the scheudle() and try_to_freeze() should do the
+> trick. Ugly code that, but then again, I think audit is known for that.
 > 
-> The comments I've added are not directly related to this patch,
-> but you may still address them in a new patch
-> so -
-> Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-> 
-> 
-> 
+> Can you give that a go?
+
+Yeah, seems that fixed that one.
+
+And thanks to my clever ratelimiting, printk() no longer goes gaga as it
+emits this one.. forever.  This boot is gonna take a while too :)
+
+
+[   53.951297] BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
+[   54.044733] in_atomic(): 1, irqs_disabled(): 0, pid: 2676, name: modprobe
+[   54.120213] CPU: 42 PID: 2676 Comm: modprobe Tainted: G            E  3.17.0-default #5
+[   54.212540] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
+[   54.294917]  0000000000000000 ffff880273f83838 ffffffff815b2ff2 ffff880273f83848
+[   54.377182]  ffffffff8108d156 ffff880273f83878 ffffffff8108d1d8 ffff88026e71e600
+[   54.459679]  ffff880273f83898 ffff88026e71e748 ffff88026e71e744 ffff880273f838f8
+[   54.542107] Call Trace:
+[   54.573965]  [<ffffffff815b2ff2>] dump_stack+0x72/0x88
+[   54.635104]  [<ffffffff8108d156>] ___might_sleep+0xd6/0x110
+[   54.700956]  [<ffffffff8108d1d8>] __might_sleep+0x48/0xd0
+[   54.765821]  [<ffffffff8146c1d5>] cpufreq_freq_transition_begin+0x75/0x140
+[   54.842571]  [<ffffffffa0548523>] pcc_cpufreq_target+0x63/0x208 [pcc_cpufreq]
+[   54.923403]  [<ffffffff810dec5f>] ? update_ts_time_stats+0x7f/0xb0
+[   54.996678]  [<ffffffff8146c725>] __cpufreq_driver_target+0x85/0x170
+[   55.067871]  [<ffffffff8146ed98>] od_check_cpu+0xa8/0xb0
+[   55.126035]  [<ffffffff8146f7c0>] dbs_check_cpu+0x180/0x1d0
+[   55.191425]  [<ffffffff8146fbc0>] cpufreq_governor_dbs+0x3b0/0x720
+[   55.259809]  [<ffffffff8146f493>] od_cpufreq_governor_dbs+0x33/0xe0
+[   55.329556]  [<ffffffff81469cb9>] __cpufreq_governor+0xa9/0x210
+[   55.396925]  [<ffffffff8146a892>] cpufreq_set_policy+0x1e2/0x2e0
+[   55.462852]  [<ffffffff8146afac>] cpufreq_init_policy+0x8c/0x110
+[   55.462854]  [<ffffffff8146d270>] ? cpufreq_update_policy+0x1b0/0x1b0
+[   55.462857]  [<ffffffff8146cf96>] __cpufreq_add_dev+0x596/0x6b0
+[   55.462859]  [<ffffffffa054d608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
+[   55.462861]  [<ffffffff8146d0be>] cpufreq_add_dev+0xe/0x10
+[   55.462863]  [<ffffffff8140eef1>] subsys_interface_register+0xc1/0xf0
+[   55.462865]  [<ffffffff8146bcb7>] cpufreq_register_driver+0x117/0x2a0
+[   55.462868]  [<ffffffffa054d65d>] pcc_cpufreq_init+0x55/0x9f8 [pcc_cpufreq]
+[   55.462870]  [<ffffffffa054d608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
+[   55.462873]  [<ffffffff81000298>] do_one_initcall+0xc8/0x1f0
+[   55.462875]  [<ffffffff811a581d>] ? __vunmap+0x9d/0x100
+[   55.462877]  [<ffffffff810e9680>] do_init_module+0x30/0x1b0
+[   55.462878]  [<ffffffff810ebaaa>] load_module+0x67a/0x700
+[   55.462879]  [<ffffffff810e9800>] ? do_init_module+0x1b0/0x1b0
+[   55.462881]  [<ffffffff810ebcdb>] SyS_init_module+0x9b/0xc0
+[   55.462883]  [<ffffffff815b86a9>] system_call_fastpath+0x16/0x1b
+[   55.463467] BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
+[   55.463468] in_atomic(): 1, irqs_disabled(): 0, pid: 2676, name: modprobe
+[   55.463469] CPU: 42 PID: 2676 Comm: modprobe Tainted: G         
+
+
+
+
+
+
+
 
 
