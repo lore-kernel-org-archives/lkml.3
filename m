@@ -1,128 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaIYVWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:22:48 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:57028 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaIYVWq (ORCPT
+	id S1751855AbaIYV2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:28:23 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45815 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaIYV2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:22:46 -0400
-Message-ID: <54248791.9060805@gmail.com>
-Date: Thu, 25 Sep 2014 14:22:25 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 25 Sep 2014 17:28:22 -0400
+Message-ID: <542488F3.4050807@linaro.org>
+Date: Thu, 25 Sep 2014 23:28:19 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Scott Branden <sbranden@broadcom.com>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
-CC: devicetree@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ray Jui <rjui@broadcom.com>
-Subject: Re: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
-References: <Jonathan Richardson <jonathar@broadcom.com> <1411507057-14771-1-git-send-email-jonathar@broadcom.com> <54248344.5030308@broadcom.com>
-In-Reply-To: <54248344.5030308@broadcom.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [GIT PULL] cpuidle ARM new material for 3.18
+References: <5424063E.4020500@linaro.org> <3265300.Xd1zHC1T4i@vostro.rjw.lan>
+In-Reply-To: <3265300.Xd1zHC1T4i@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
+On 09/25/2014 10:44 PM, Rafael J. Wysocki wrote:
+> On Thursday, September 25, 2014 02:10:38 PM Daniel Lezcano wrote:
+>>
+>> [resent because of the missing Cc]
+>>
+>> Hi Rafael,
+>>
+>> this pull request contains the following changes:
+>>
+>>    * Lorenzo Pieralisi implemented a framework to initialize the ARM
+>> cpuidle drivers with the DT. As an example, it provided a couple of
+>> drivers using it: arm64 and big little. The former one is a new driver
+>> while the latter is a change. There was also a patch for Exynos allowing
+>> to use this framework but as it depends on a change in Samsung's tree, I
+>> postponed this patch until the change is visible after the merge. The
+>> set of changes depends on some other changes made in the ARM64 tree, for
+>> this reason a shared branch is used. This is why there is a merge from
+>> arm64 in my pull request. I believe we already used this procedure.
+>>
+>>    * Kevin Hilman added the compatible string for the exynos 5800 in the DT
+>
+> Pulled, thanks!
+>
+> I'd appreciate earlier pull requests in the future, though.
 
-On 09/25/2014 02:04 PM, Scott Branden wrote:
-> Hi Matt/Christian (and others),
-> 
-> We would like to move forward in getting our base Cygnus support into
-> the mainline kernel.  From there we will be able to contribute
-> additional drivers.
-> 
-> Is somebody willing to accept this pull request to get this patchset
-> accepted by the open source community?
+Sure. I am in the hurry for everything in this moment.
 
-I am fine with taking the ARM patches and putting them at
-http://github/brcm/linux.git, with C code in cygnus/board and the Device
-Tree files in cygnus/dt for instance?
+Thanks !
 
-The clock driver patch will have to go through Mike Turquette's tree
-unless he wants to delegate that one.
+   -- Daniel
 
-> 
-> Regards,
->  Scott
-> 
-> 
-> On 14-09-23 02:17 PM, Jonathan Richardson wrote:
->> Hi,
+> Rafael
+>
+>
+>> The following changes since commit 0f33be009b89d2268e94194dc4fd01a7851b6d51:
 >>
->> This patchset contains initial support for Broadcom's Cygnus SoC based
->> on our
->> iProc architecture. Initial support is minimal and includes just the mach
->> platform code, clock driver, and a basic device tree configuration.
->> Peripheral
->> drivers will be submitted soon, as will device tree configurations for
->> other
->> Cygnus board variants.
+>>     Linux 3.17-rc6 (2014-09-21 15:43:02 -0700)
 >>
->> Changes from v1:
->>   - Address code review comments as per previous responses.
->>   - Copyright headers updated to remove Broadcom URL.
->>   - mach platform code still contains hard coded adresses. These
->> address are
->>     the same for all Cygnus variants. Could you please provide
->> guidance on where
->>     they should go if you would still like them changed.
+>> are available in the git repository at:
 >>
->> Thanks,
->> Jon
+>>     https://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.18
 >>
->> Jonathan Richardson (6):
->>    ARM: cygnus: Initial support for Broadcom Cygnus SoC
->>    clk: Clock driver support for Broadcom Cygnus SoC
->>    dt-bindings: Document Broadcom Cygnus SoC and clock driver
->>    ARM: dts: Enable Broadcom Cygnus SoC
->>    ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
->>    MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
->>      drivers
+>> for you to fetch changes up to d2e5c871ed8a250f7ee1fe34dd52ed5757363fba:
 >>
->>   Documentation/devicetree/bindings/arm/cygnus.txt   |   12 +
->>   .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
->>   .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
->>   MAINTAINERS                                        |   21 +
->>   arch/arm/boot/dts/Makefile                         |    1 +
->>   arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
->>   arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
->>   arch/arm/configs/bcm_cygnus_defconfig              |  223 ++++
->>   arch/arm/mach-bcm/Kconfig                          |   31 +
->>   arch/arm/mach-bcm/Makefile                         |    3 +
->>   arch/arm/mach-bcm/bcm_cygnus.c                     |  166 +++
->>   drivers/clk/Makefile                               |    1 +
->>   drivers/clk/bcm/Makefile                           |    2 +
->>   drivers/clk/bcm/clk-cygnus.c                       | 1186
->> ++++++++++++++++++++
->>   drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
->>   15 files changed, 2637 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
->>   create mode 100644
->> Documentation/devicetree/bindings/clock/clk-cygnus.txt
->>   create mode 100644
->> Documentation/devicetree/bindings/clock/clk-iproc.txt
->>   create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
->>   create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
->>   create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
->>   create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
->>   create mode 100644 drivers/clk/bcm/clk-cygnus.c
->>   create mode 100644 drivers/clk/bcm/clk-iproc.c
+>>     drivers: cpuidle: initialize big.LITTLE driver through DT (2014-09-25
+>> 10:52:21 +0200)
 >>
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>> ----------------------------------------------------------------
+>> Daniel Lezcano (1):
+>>         Merge branch 'for-next/cpuidle' of
+>> git://git.kernel.org/.../arm64/linux into cpuidle/3.18
+>>
+>> Kevin Hilman (1):
+>>         cpuidle: big.LITTLE: add Exynos5800 compatible string
+>>
+>> Lorenzo Pieralisi (7):
+>>         Documentation: arm: define DT idle states bindings
+>>         arm64: kernel: refactor the CPU suspend API for retention states
+>>         arm64: kernel: introduce cpu_init_idle CPU operation
+>>         arm64: add PSCI CPU_SUSPEND based cpu_suspend support
+>>         drivers: cpuidle: implement DT based idle states infrastructure
+>>         drivers: cpuidle: CPU idle ARM64 driver
+>>         drivers: cpuidle: initialize big.LITTLE driver through DT
+>>
+>>    Documentation/devicetree/bindings/arm/cpus.txt     |   8 +
+>>    .../devicetree/bindings/arm/idle-states.txt        | 679
+>> +++++++++++++++++++++
+>>    Documentation/devicetree/bindings/arm/psci.txt     |  14 +-
+>>    arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |  23 +
+>>    arch/arm64/include/asm/cpu_ops.h                   |   3 +
+>>    arch/arm64/include/asm/cpuidle.h                   |  13 +
+>>    arch/arm64/include/asm/suspend.h                   |   1 +
+>>    arch/arm64/kernel/Makefile                         |   1 +
+>>    arch/arm64/kernel/cpuidle.c                        |  31 +
+>>    arch/arm64/kernel/psci.c                           | 104 ++++
+>>    arch/arm64/kernel/sleep.S                          |  47 +-
+>>    arch/arm64/kernel/suspend.c                        |  48 +-
+>>    drivers/cpuidle/Kconfig                            |   8 +
+>>    drivers/cpuidle/Kconfig.arm                        |   1 +
+>>    drivers/cpuidle/Kconfig.arm64                      |  14 +
+>>    drivers/cpuidle/Makefile                           |   5 +
+>>    drivers/cpuidle/cpuidle-arm64.c                    | 133 ++++
+>>    drivers/cpuidle/cpuidle-big_little.c               |  20 +
+>>    drivers/cpuidle/dt_idle_states.c                   | 213 +++++++
+>>    drivers/cpuidle/dt_idle_states.h                   |   7 +
+>>    20 files changed, 1340 insertions(+), 33 deletions(-)
+>>    create mode 100644 Documentation/devicetree/bindings/arm/idle-states.txt
+>>    create mode 100644 arch/arm64/include/asm/cpuidle.h
+>>    create mode 100644 arch/arm64/kernel/cpuidle.c
+>>    create mode 100644 drivers/cpuidle/Kconfig.arm64
+>>    create mode 100644 drivers/cpuidle/cpuidle-arm64.c
+>>    create mode 100644 drivers/cpuidle/dt_idle_states.c
+>>    create mode 100644 drivers/cpuidle/dt_idle_states.h
+>>
+>>
+>>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
