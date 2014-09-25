@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaIYXlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:41:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48555 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751875AbaIYXlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:41:52 -0400
-Date: Fri, 26 Sep 2014 01:41:46 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] power: Add simple gpio-restart driver
-Message-ID: <20140925234145.GA2063@earth.universe>
-References: <1409167431-21155-1-git-send-email-davidriley@chromium.org>
- <1409167431-21155-2-git-send-email-davidriley@chromium.org>
- <541BB278.9010701@roeck-us.net>
+	id S1752472AbaIYXrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:47:05 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:54522 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaIYXrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 19:47:03 -0400
+Date: Fri, 26 Sep 2014 01:46:59 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hrtimer deadlock caused by nohz_full
+Message-ID: <20140925234657.GB14870@lerouge>
+References: <20140925141425.GA21702@redhat.com>
+ <alpine.DEB.2.10.1409251630210.4604@nanos>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <541BB278.9010701@roeck-us.net>
+In-Reply-To: <alpine.DEB.2.10.1409251630210.4604@nanos>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 25, 2014 at 04:35:49PM +0200, Thomas Gleixner wrote:
+> On Thu, 25 Sep 2014, Dave Jones wrote:
+> 
+> > Got this on a box that had been fuzzing for 12 hours or so.
+> > There's also some timer stuff going on htere, so cc'ing the usual suspects.
+> 
+> And it's a hrtimer lockup
+>  
+> >  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
+> >  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+> >  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+> >  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
+> >  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+> >  <<EOE>>  <IRQ>  [<ffffffffa1823ac4>] _raw_spin_unlock_irqrestore+0x24/0x70
+> >  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
+> >  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
+> >  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
+> >  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
+> >  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
+> >  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
+> >  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
+> >  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
+> >  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
+> >  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
+> >  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
+> >  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
+> >  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
+> >  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
+> >  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
+> >  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
+> 
+> hrtimer_interrupt
+>   tick_sched_timer
+>     tick_sched_handle
+>       update_process_times
+>         irq_work_run
+> 	  irq_work_run_list
+> 	    nohz_full_kick_work_func
+> 	      __tick_nohz_full_check
+> 	        tick_nohz_restart
+>                   hrtimer_cancel
+> 
+> And that hrtimer_cancel is:
+> 
+> static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+> {
+> 	hrtimer_cancel(&ts->sched_timer);
+> 
+> Now, that's really bad because we are in the timer callback of
+> ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
+> callback to complete.
+> 
+> Frederic !?!?
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
 
-Hi Guenter,
+I was about to make the pull request, the branch is acked by peterz.
+Would you like to pull it? It's all merge window material.
 
-On Thu, Sep 18, 2014 at 09:35:04PM -0700, Guenter Roeck wrote:
-> On 08/27/2014 12:23 PM, David Riley wrote:
-> >This driver registers a restart handler to set a GPIO line high/low
-> >to reset a board based on devicetree bindings.
-> >
-> >Signed-off-by: David Riley <davidriley@chromium.org>
->=20
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	nohz/fixes-v3
 
-Is there an immutable branch available with your restart handler
-stuff, which I can pull into battery-2.6.git?
-
--- Sebastian
-
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUJKg5AAoJENju1/PIO/qa9zUQAJNPtR7q96NaF92VxP9928oY
-gNufxPNDB34jP28DvUR1b4y3+4dzoSvg0nmuEgxxubpWsGEHms73NPkdglwksFyL
-ksS34PNljHaWIHsVGeOaHIJNf6/IjEn0fxzGAZ6Y4UbCPjDC8VZbjImSCrrDzt2p
-o7aRpHDndbjzK3FpfCS9bXdov7duhQ1F8XeCVuzNAH7xu2HtJC7OQxTohguHwBvT
-96CkBpuJqv6DNuxf9Fu+aJWeybcEDihR1cyzaS19S/CH0F6nRKH8+wy2OiAvJ1YP
-gQQLNZza93gX4vX6uISzoWoVbAt2PDJr5RtutNHvycQWfAyUFbRFmGLwG6kHwPOH
-gEnX1eiGezaaGIG2IWkX4fk3gkqadcqi20qM9vJQWtuir3OO69OuzvC//WCVXmHD
-ONrqH3pxoZtOivuMxXm9P39UIrWQHKrjJZWAS7xi3FJ2Oozb3raubtIIE8hhAico
-tg1FwPAlCh1KLqKVcnHlyPQaOC1Nbbi1xT12KD7xMxKWnih4+7NL9i7VUh7Pk8Mu
-L9psUpJKyUh7A2jSZxmqiJ/ILr4Lw3i6R/ku8oqcknIT9Kr0R7CCQmHiF/AXFQ6i
-DYRdkSNE8M10qkIRvZ58FiN6GQJDt4+z+Y62atup2OxKPTpnowUEnUtzsBHApcb4
-p+JPdnBPyGFtI2OeR80j
-=Jfs2
------END PGP SIGNATURE-----
-
---tThc/1wpZn/ma/RB--
+Thanks.
