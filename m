@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaIYHFp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:05:45 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:51848 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaIYHFn (ORCPT
+	id S1752192AbaIYHGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:06:09 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45152 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940AbaIYHGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:05:43 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-ed-5423bec4896e
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Lee Jones <lee.jones@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] power: max14577: Fix circular config SYSFS dependency
-Date: Thu, 25 Sep 2014 09:05:31 +0200
-Message-id: <1411628731-8458-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNJMWRmVeSWpSXmKPExsVy+t/xy7pH9imHGCy/qGYx6cl7ZouJKycz
-	W7x+YWhx/+tRRovLu+awWXzuPcJosXXvVXaL07tLHDg8Gm/cYPPYOesuu8fmFVoem1Z1snnc
-	ubaHzaNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgyNpzcyFrQy1Ox7kkjSwPjFq4uRk4OCQET
-	iY/Nd1ggbDGJC/fWs3UxcnEICSxllLi/9y8ThNPHJLHjWSMTSBWbgLHE5uVLwKpEBHYzSkyY
-	uhysnVmgTqJ79Xx2EFtYwE3i6cJWNhCbRUBV4vWJZawgNi9QfMeeflaIdXISJ49NZp3AyL2A
-	kWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgAfd3BuPSY1SFGAQ5GJR5eD3/lECHWxLLi
-	ytxDjBIczEoivNu2AoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwXtzH6bj9lm6kvNXNqV+4Hh7q
-	Fp98d9+WVe+cywr1bv/wKZ9wY4KZTebeGZ1TClPltiYY+FbmRizVEvlV8tRs9Q/RJ4/ZumKn
-	nLNm5Jq75u++vmMmTIYTGwwOrRCV/sYTpqTtvS6x7bvqr7cPef3Mv/xhrk3tMtNoXBP36lpJ
-	81xTTp37CQ+1lViKMxINtZiLihMBk8bbQv4BAAA=
+	Thu, 25 Sep 2014 03:06:05 -0400
+Date: Thu, 25 Sep 2014 09:06:01 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 02/22] PCI/MSI: Remove useless bus->msi assignment
+Message-ID: <20140925070601.GF12423@ulmo>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-3-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kbCYTQG2MZjuOjyn"
+Content-Disposition: inline
+In-Reply-To: <1411614872-4009-3-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the max14577 charger driver depending on SYSFS instead selecting
-it. This fixes warning on x86_64 with allmodconfig:
 
-scripts/kconfig/conf --allmodconfig Kconfig
-fs/sysfs/Kconfig:1:error: recursive dependency detected!
-fs/sysfs/Kconfig:1:	symbol SYSFS is selected by CHARGER_MAX14577
-drivers/power/Kconfig:327:	symbol CHARGER_MAX14577 depends on POWER_SUPPLY
-drivers/power/Kconfig:1:	symbol POWER_SUPPLY is selected by HID_SONY
-drivers/hid/Kconfig:638:	symbol HID_SONY depends on NEW_LEDS
-drivers/leds/Kconfig:8:	symbol NEW_LEDS is selected by SENSORS_APPLESMC
-drivers/hwmon/Kconfig:299:	symbol SENSORS_APPLESMC depends on HWMON
-drivers/hwmon/Kconfig:5:	symbol HWMON is selected by EEEPC_LAPTOP
-drivers/platform/x86/Kconfig:496:	symbol EEEPC_LAPTOP depends on HOTPLUG_PCI
-drivers/pci/hotplug/Kconfig:5:	symbol HOTPLUG_PCI depends on SYSFS
+--kbCYTQG2MZjuOjyn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/power/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Sep 25, 2014 at 11:14:12AM +0800, Yijing Wang wrote:
+> Currently, PCI drivers will initialize bus->msi in
+> pcibios_add_bus(). pcibios_add_bus() will be called
+> in every pci bus initialization. So the bus->msi
+> assignment in pci_alloc_child_bus() is useless.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 04e1d2fe2201..0108c2af005b 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -327,7 +327,7 @@ config CHARGER_MANAGER
- config CHARGER_MAX14577
- 	tristate "Maxim MAX14577/77836 battery charger driver"
- 	depends on MFD_MAX14577
--	select SYSFS
-+	depends on SYSFS
- 	help
- 	  Say Y to enable support for the battery charger control sysfs and
- 	  platform data of MAX14577/77836 MUICs.
--- 
-1.9.1
+I think this should be the other way around. The default should be to
+inherit bus->msi from the parent. That way drivers don't typically have
+to do it, yet they can still opt to override it if they need to.
 
+For Tegra for example I think it would work if we assigned the MSI chip
+to the root bus (in tegra_pcie_scan_bus()) and then have it propagated
+to child busses in pci_alloc_child_bus() so that tegra_pcie_add_bus()
+can be removed altogether.
+
+Thierry
+
+--kbCYTQG2MZjuOjyn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUI77YAAoJEN0jrNd/PrOhZ/IQAMCSt26z+T6Q8TozfHBY40d1
+VjyfIqF++JMHsJp9JBnJk7W/SdKcW+ClXvgZjtR4hqvTRlYUBPk6Sn3JWpi3RslY
+GHt/y1pNGzk05qLADjlA8CAGVjq0Vspw5WO5SLjzu10gfvcddAX7YKRcWz5vW9uv
+TcG+NFcDyGRaNg+ATkJ8Ep4rVN3eIkh9te9CE/pG5zQAV+NEZkaN4v9hRFubWIPy
+HUXyDu+8aTJ3YUyhrXkbGR23i0lLzcWsqhrcjbbbQj0swxngijMgBbzJU2jJ0rxx
+5CjTbs0mgvqKfsX1WQ3Df61rSN/krlMiZeD66YuMTuWdlzZkGJqpHCDkKdx2rITZ
+o2IXg6faK1OARr8JfubrXil2utfpJkvBJR2fWmH0j37ZkEb249skTCAnb2yroyhJ
+Mz3BmS+nAgPJkQUTTVZigeR+90KASb/WQrFPZhvOPK/ioMy0UyGy6uvNYm4rLXK+
+gWN2TjIaniEFM60xJLFPgsVuf9XXKUZ0REybeTiDM65mofLUSkxtMbK/mrcBdHgF
+kdO+JJ93hN6vnnqpqA/QjKNJebZm0PUjSTZvXIlzBs/v+gOh4bWewATJLbcgll/g
+w85vBMPaceGBcjBIBul927T7Uf+2pLOmJHmM+eCzXSdxAyQ8qx75Su9uWOY3sX3Q
+JDxVrWb34Dj7sIqL36a3
+=f2MC
+-----END PGP SIGNATURE-----
+
+--kbCYTQG2MZjuOjyn--
