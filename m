@@ -1,191 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaIYOOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:14:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53786 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaIYOOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:14:45 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <sandeep_n@ti.com>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH] firmware: add Keystone QMSS PDSP accumulator firmware blob
-Date: Thu, 25 Sep 2014 10:13:43 -0400
-Message-ID: <1411654423-29480-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753117AbaIYOQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:16:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39503 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641AbaIYOQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 10:16:39 -0400
+Date: Thu, 25 Sep 2014 09:15:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Peter Chen <peter.chen@freescale.com>, <balbi@ti.com>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
+        <jszhang@marvell.com>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140925141553.GC28045@saruman>
+Reply-To: <balbi@ti.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <2923729.dtX0WmHSV0@wuerfel>
+ <20140924112902.GA23331@peterchendt>
+ <2786668.t3YLqX5enD@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JWEK1jqKZ6MHAcjA"
+Content-Disposition: inline
+In-Reply-To: <2786668.t3YLqX5enD@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sandeep Nair <sandeep_n@ti.com>
+--JWEK1jqKZ6MHAcjA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-QMSS(Queue Manager Sub System) uses PDSPs to implement various
-QM related functions like packet accumulation, QoS or event
-management.
+On Wed, Sep 24, 2014 at 02:23:38PM +0200, Arnd Bergmann wrote:
+> On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
+> >=20
+> > So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
+> > (dwc3, musb, chipidea) you are talking about, right? Except for
+> > creating another platform driver as well as related DT node (optional),
+> > are there any advantages compared to current IP core driver structure?
+>=20
+> Having a library module usually requires less code, and is more
+> consistent with other drivers, which helps new developers understand
+> what the driver is doing.
 
-Patch adds firmware blob for the QMSS accumulator
-functionality.
+I beg to differ. You end-up having to pass function pointers through
+platform_data to handle differences which could be handled by the core
+IP.
 
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
-I know we are not adding firmware to kernel and the idea is to get them
-loaded via rootfs. But this firmware is for an infrastructure component
-which is needed for Keystone. The respective drivers got into the queue
-and the firmware was dropped from the series to follow the firmware tree.
-relevant discussion is here.
-	http://www.spinics.net/lists/arm-kernel/msg364985.html
+> The most important aspect though is the DT binding: once the structure
+> with separate kernel drivers leaks out into the DT format, you can't
+> easily change the driver any more, e.g. to make a property that was
+> introduced for one glue driver more general so it can get handled by
+> the common part. Having a single node lets us convert to the library
+> model later, so that would be a strong reason to keep the DT binding
+> simple, without child nodes.
+>=20
+> Following that logic, it turns into another reason for using the library
+> model to start with, because otherwise the child device does not have
+> any DT properties itself and has to rely on the parent device properties,
+> which somewhat complicates the driver structure.
 
-I would like to get this merged for 3.18 if firmware folks don't
-have objection to it.
+this is bullcrap. Take a look at
+Documentation/devicetree/bindings/usb/dwc3.txt:
 
- firmware/Makefile                                  |    1 +
- .../keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex |  110 ++++++++++++++++++++
- 2 files changed, 111 insertions(+)
- create mode 100644 firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
+synopsys DWC3 CORE
 
-diff --git a/firmware/Makefile b/firmware/Makefile
-index 0862d34..0183632 100644
---- a/firmware/Makefile
-+++ b/firmware/Makefile
-@@ -29,6 +29,7 @@ endif
- fw-shipped-$(CONFIG_ACENIC) += $(acenic-objs)
- fw-shipped-$(CONFIG_ADAPTEC_STARFIRE) += adaptec/starfire_rx.bin \
- 					 adaptec/starfire_tx.bin
-+fw-shipped-$(CONFIG_ARCH_KEYSTONE) += keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw
- fw-shipped-$(CONFIG_ATARI_DSP56K) += dsp56k/bootstrap.bin
- fw-shipped-$(CONFIG_ATM_AMBASSADOR) += atmsar11.fw
- fw-shipped-$(CONFIG_BNX2X) += bnx2x/bnx2x-e1-6.2.9.0.fw \
-diff --git a/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex b/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
-new file mode 100644
-index 0000000..52a9c61
---- /dev/null
-+++ b/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
-@@ -0,0 +1,110 @@
-+:10000000210003008001300001000008240000E00E
-+:1000100081002280241117E081042280248003E0E3
-+:10002000810022802EFF8B822400FF072400FF27FF
-+:100030002400FF472400FF6724002F2691182A8000
-+:1000400024040082240002C25101E01B24440082E7
-+:10005000240002C25102E01824840082240002C25B
-+:100060005103E01524C40082240002C25104E012AE
-+:1000700024040082240003C25105E00F24440082BE
-+:10008000240003C25106E00C24840082240003C231
-+:100090005107E00924C40082240003C25108E0068D
-+:1000A00024DE008024FEE1C0240018E180E12A80E3
-+:1000B00021002C0024000066244000E0240000E120
-+:1000C0000504E0E080E02A816F00E0FE243000813A
-+:1000D000248001C1240018E080E02A810104E0E0CE
-+:1000E00024000881240100C180E02A811D004646C9
-+:1000F000C91FFF031F1FFFFF1F00464601012626E1
-+:10010000693026022400202693002A88C907284B3C
-+:1001100069802818613008032400036821008C00DE
-+:1001200061200807052008E0D0E08403240004686B
-+:1001300021008C001CE0848421005100CE08E3FCE7
-+:100140001C08E3E310080806090406E0090206E1BA
-+:1001500000E1E0E00140E0E092E02A89117F4646BC
-+:1001600051008D0223016C9E2400016821008C0047
-+:100170006981281E244000E060E08B0324000668AB
-+:1001800021008C00613008032400036821008C00EA
-+:1001900061200807052008E0C8E084032400056802
-+:1001A00021008C001EE0848421006D00D608E3FC51
-+:1001B0001E08E3E32400006C2400008D240000CD21
-+:1001C000D1014C03C9004C021F016C6C090408E00A
-+:1001D000090208E100E1E0E00140E0E082E02A8974
-+:1001E0002400016821008C0069822809240000E0B5
-+:1001F000810022801F1FFFFF81042289248003E0E9
-+:10020000810022802400016821008C006983280479
-+:1002100010E9E9C42400016821008C0069842804E5
-+:1002200010E9E9E52400016821008C00240002683F
-+:100230002400002881002A885100C4022301859EE1
-+:10024000510085022301A19E23013D9E240000064A
-+:10025000110F66E0690FE00323013D9E2100940029
-+:1002600061200604052006E0C8E0843421009D00DA
-+:10027000C806E332117F4646090406E0090206E19A
-+:1002800000E1E0E00140E0F192F12A89D1026C2B1B
-+:1002900001018DE050CBE0200B058BE00902E0E08E
-+:1002A00090E02581D1054C07C88BE10F108B8B8E18
-+:1002B0002300D69E01018DE050CBE0172100B9004C
-+:1002C00010E9E1EF2701EF8E51208E071C8EEFEF32
-+:1002D000008B8E8E2300D69E01018DE06ECBE0FA5E
-+:1002E0002100C500C9074606C9014C05D1004C02D2
-+:1002F000D1016C03108C8CCD1F016C6CC9016C0E8C
-+:100300005100CD04C900460C0501CDCD6900CD0AD0
-+:1003100051008D09010006E16120E1040520E1E1C1
-+:10032000910C23802100CB0091082380D0E1E002D2
-+:1003300023011C9E82F12A894F1F066D511F06045E
-+:1003400001010606673006C321003B001026260681
-+:10035000673006C021003B0010E2E2F0090206E02F
-+:100360000006E0E00906E0E000E0F0F001018DCEDB
-+:1003700004CECBCE5100CE3E110C4C005104001CDB
-+:100380005108002F1904CECE09048EE0010CE0E0E4
-+:1003900090E026925100F2367101CE0C90E0269347
-+:1003A0006900F302240001CE7102CE0890E0269489
-+:1003B0006900F402240002CE7103CE0490E0269579
-+:1003C0006900F502240003CE09028DE1C9044C0244
-+:1003D0000104E1E10902CE00EEE1D01200CE8D8DE4
-+:1003E0001F0746465704CEE221011B001902CECE5C
-+:1003F00009048EE00108E0E090E066925100F31CF1
-+:10040000108E8ED25101CE0490E066946900F50200
-+:10041000240001CE108E8ED409038DE1C9044C0254
-+:100420000108E1E10903CE00EEE1D01200CE8D8D8E
-+:100430001F0746465702CECE21011B001901CECE22
-+:1004400009048EE090E0E6925100F509108E8ED4FA
-+:1004500009048DE1C9044C020110E1E1E0E1F092F0
-+:1004600001018D8D1F0746462100DB00209E000004
-+:1004700010E2E2F6090206E00006E0E00906E0E02C
-+:1004800000E0F6F60B024CE01103E0E00102E0E1CF
-+:10049000C9044C04108D8DE0E100368021012D004F
-+:1004A0002EFF87922400010008E1000008E18DC0C2
-+:1004B000EEC0D61210EAEAF7C9006C0308E1CBE0FF
-+:1004C00000E0F7F701018DE008E1E098249030D8D2
-+:1004D00013F06600270000E00906E0E180E1A8963D
-+:1004E0001F026C6C1EE06666011CE0012C80060198
-+:1004F000209E0000110F6619270119395120392C4F
-+:100500001C391919090639E090E0A896D71EF8FBA6
-+:100510006F0098FA010439E1D0E166091EE16666D0
-+:100520000504F6E10504F7F610E1E1F7240004986C
-+:10053000249030D880E0A89621013E001CE1666638
-+:100540001C396666011C39012C200159090459E047
-+:10055000090259E100E1E0E00140E0F192F12A896D
-+:100560001D026C6C15016C6C2400008D1D016C6CFF
-+:10057000D1014C04C9004C03108C8CCD1F016C6C54
-+:1005800082F12A89010059E0240001E16120E0059F
-+:100590000520E0E008E0E1E18104238121013E0043
-+:1005A00008E0E1E18100238121013E00209E00005E
-+:1005B000109E9EDE010006E16120E1040520E1E1DC
-+:1005C000910C23802101730091082380D6E1E0FA89
-+:1005D000D1026C0C110F66E0690FE00923013D9E0A
-+:1005E000110F66E0570FE0FE090406E0090206E17C
-+:1005F00000E1E0E00140E0E092E02A8923011C9E56
-+:1006000023013D9E110F66E06F00E0FE10DEDE9ECE
-+:10061000209E00000904C4E0010CE0E090E0269276
-+:100620005100F21811F01212F300728811C068E044
-+:100630005100E0035180E00E2101A000D10FEA0239
-+:10064000240000ED240000F1C90EEA021F1FF1F1A1
-+:10065000113F2A2A09048AE00108E0E080E066915F
-+:100660005700EDEDF3006D8821019100113F2A2A1A
-+:1006700009048AE0010CE0E080E026922101850077
-+:10068000209E0000090485E0010CE0E090E0269245
-+:100690005100F20C10F2F2F111F01111F500318855
-+:1006A00011C068E06900E004C91FEA03242008E0E3
-+:1006B000E10020900904C5E0010CE0E080E0269212
-+:0406C000209E000078
-+:00000001FF
--- 
-1.7.9.5
+DWC3- USB3 CONTROLLER
 
+Required properties:
+ - compatible: must be "snps,dwc3"
+ - reg : Address and length of the register set for the device
+ - interrupts: Interrupts used by the dwc3 controller.
+
+Optional properties:
+ - usb-phy : array of phandle for the PHY device.  The first element
+   in the array is expected to be a handle to the USB2/HS PHY and
+   the second element is expected to be a handle to the USB3/SS PHY
+ - phys: from the *Generic PHY* bindings
+ - phy-names: from the *Generic PHY* bindings
+ - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+
+This is usually a subnode to DWC3 glue to which it is connected.
+
+dwc3@4a030000 {
+	compatible =3D "snps,dwc3";
+	reg =3D <0x4a030000 0xcfff>;
+	interrupts =3D <0 92 4>
+	usb-phy =3D <&usb2_phy>, <&usb3,phy>;
+	tx-fifo-resize;
+};
+
+This contains all the attributes it needs to work. In fact, this could
+be used without any glue.
+
+--=20
+balbi
+
+--JWEK1jqKZ6MHAcjA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUJCOZAAoJEIaOsuA1yqREqZAP/A3p0DDhoM/aMv7+JY7L508C
+UVS8LhzA5f60fSR9QxVMrrI5TsmGKCXpGrprQPZeZZgks8YwC6BJjW9EN0p7ykuM
+GyA4MKNCBl7q99tVIgC8EZ59FU4vQcoLxC/U+dIePCyvn9JyarM9tQ5zleiXvGt9
+F88N091tsS+905xQo13Ef1sw5EgFXrFxt4eVeFiEy8jh+Ll/hs2UoYi72CzA+N1h
+CRSPlPhubFz3gzDkyz/9Uv9IXWYd80WUIVzkdOAN9MGiM5x/GSXsFe25DASel9sg
+g1Ayyid2VffUKscGxUVfPRHmm0zxiti2Cj7PAPP9XWS4ZRHvElpO6PAJcKb5Is2B
+5wNY+2qI6UNqyb7ydJOwKUga/XDC2/Ra6LfOTU4xiPIoGgY0LShCw9qAfwDyQ5xB
+gZBir+QGb0MvmPWG07/ckM6oq3adhhLcnQ2bu+/0wR2S/Fk6pbk9RbOYQzj2OuOi
+PwGjwz01z4HlMD+D9y2JReTLYDyMHvjcigmI/yxs8yvlJBIzFgQZDN4RTM9Yv477
+Bl2+wfs/HWGO3jgjcLE7x8AunRNLBup+wCGfV//wHMMKKGesDP2Trfg2ydWnV/VX
+GfQtQgq3MgcXIkEz2bPXJ2Hk0L49xWzINVVl0ULCu+BscxndPTnko5a4Oklgydym
+kZpjHkNs/bSw8ft/nlnw
+=FfiF
+-----END PGP SIGNATURE-----
+
+--JWEK1jqKZ6MHAcjA--
