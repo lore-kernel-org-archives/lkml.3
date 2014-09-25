@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbaIYPQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:16:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32930 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaIYPQr (ORCPT
+	id S1753855AbaIYPRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:17:18 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:36673 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848AbaIYPRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:16:47 -0400
-Date: Thu, 25 Sep 2014 17:15:51 +0200
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        sandeep_n@ti.com, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] firmware: add Keystone QMSS PDSP accumulator firmware
- blob
-Message-ID: <20140925151551.GA18530@kroah.com>
-References: <1411654423-29480-1-git-send-email-santosh.shilimkar@ti.com>
+	Thu, 25 Sep 2014 11:17:16 -0400
+Date: Thu, 25 Sep 2014 15:16:48 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Joe Perches <joe@perches.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, Daniel Mack <daniel@caiaq.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] usb: core: log higher level message on malformed LANGID
+ descriptor
+Message-ID: <alpine.DEB.2.11.1409251515280.1779@localhost.localdomain>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411654423-29480-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 10:13:43AM -0400, Santosh Shilimkar wrote:
-> From: Sandeep Nair <sandeep_n@ti.com>
-> 
-> QMSS(Queue Manager Sub System) uses PDSPs to implement various
-> QM related functions like packet accumulation, QoS or event
-> management.
-> 
-> Patch adds firmware blob for the QMSS accumulator
-> functionality.
-> 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
-> I know we are not adding firmware to kernel and the idea is to get them
-> loaded via rootfs. But this firmware is for an infrastructure component
-> which is needed for Keystone.
+Commit 0cce2eda19923e5e5ccc8b042dec5af87b3ffad0
+     USB: fix LANGID=0 regression
 
-What does "infrastructure component" mean?
+defaults to a langid of 0x0409 if it's not properly implemented by the
+device. Explain with a higher level error message what this means.
 
-What is "Keystone"?
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+---
+  drivers/usb/core/message.c | 4 +---
+  1 file changed, 1 insertion(+), 3 deletions(-)
 
-> The respective drivers got into the queue
-> and the firmware was dropped from the series to follow the firmware tree.
+diff --git a/drivers/usb/core/message.c b/drivers/usb/core/message.c
+index 0c8a7fc..f7b7713 100644
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -770,9 +770,7 @@ static int usb_get_langid(struct usb_device *dev, unsigned char *tbuf)
+  		dev->string_langid = 0x0409;
+  		dev->have_langid = 1;
+  		dev_err(&dev->dev,
+-			"string descriptor 0 malformed (err = %d), "
+-			"defaulting to 0x%04x\n",
+-				err, dev->string_langid);
++			"language id specifier not provided by device, defaulting to English\n");
+  		return 0;
+  	}
 
-Did you submit this to the linux-firmware tree?
+-- 
+2.1.0
 
-Did the driver that needs this get merged into Linus's tree yet?
-
-thanks,
-
-greg k-h
