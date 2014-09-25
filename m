@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaIYNdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:33:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33598 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaIYNdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:33:54 -0400
-Date: Thu, 25 Sep 2014 15:33:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [Patch v6 00/15] Enable support of IOAPIC hotplug on x86
- platforms
-In-Reply-To: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1409251451040.4604@nanos>
-References: <1411549176-30780-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753286AbaIYNeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:34:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41210 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650AbaIYNeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:34:08 -0400
+Message-ID: <542419CB.3090902@suse.cz>
+Date: Thu, 25 Sep 2014 15:34:03 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Behan Webster <behanw@converseincode.com>
+CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
+ clang
+References: <1411500522-11480-1-git-send-email-behanw@converseincode.com> <5422B3EF.4000800@suse.cz> <5423128D.8070708@converseincode.com>
+In-Reply-To: <5423128D.8070708@converseincode.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Sep 2014, Jiang Liu wrote:
+On 2014-09-24 20:50, Behan Webster wrote:
+> On 09/24/14 05:07, Michal Marek wrote:
+>> On 2014-09-23 21:28, behanw@converseincode.com wrote:
+>>> From: Mark Charlebois <charlebm@gmail.com>
+>>>
+>>> Clang will warn about unknown warnings but will not return false
+>> You mean unknown options, right?
+> 2 kinds of options: flags and warnings. clang used to merely warn about 
+> unused/unsupported flags/warnings. It now returns errors for unknown 
+> flags, but not warnings (unless you specify -Werror).
 
-> This patch set enhances IOAPIC core and ACPI drivers to support IOAPIC
-> hotplug on x86 platforms. It's based on latest mainstream kernel at
-> https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> 
-> You may pull it from 
-> https://github.com/jiangliu/linux.git ioapic/hotplug_v6
-> 
-> We have pick up several patches from Yinghai's original IOAPIC hotplug
-> patch set and reimplemented IOAPIC driver as an ACPI driver instead of
-> a PCI driver.
-> 
-> It has been tested on a 4-socket Intel SDV with socket hot-addition
-> capability. Any suggestions are welcomed!
-
-This looks pretty good now.
-
-Though I'd like to have the Acked-bys for the ACPI portion of the
-series from the ACPI maintainers before I queue it up in tip.
-
-So this is going to be 3.19 material as we need some exposure in -next
-and other testing. I would also like to bring the other part of the
-rework (the hierarchical irqdomains) into testing ASAP.
-
-Thanks,
-
-	tglx
+Ah, unknown warning options. Now I understand.
 
 
+> Getting clang to error on unused flags wasn't trivial (this change broke 
+> a lot of builds apparently). Fortunately we weren't the only ones who 
+> wanted it to behave like gcc in this case. I think it's going to be 
+> *much* harder to do the same for warnings. The argument given by 
+> supporters of the current situation is that if a warning isn't 
+> supported, why break the build? *sigh*
 
+I guess the reason to accept unknown warnings opentions is compatibility
+with Makefiles with hardcoded gcc-isms. BTW, GCC at some point started
+to ignore unknown -Wno-* options, for everyone's good of course. That's
+why we ended up with the cc-disable-warning function. If -W* options for
+clang need special care, then it might be a good idea to introduce
+cc-warning with the conditional -Werror for clang. There are not that
+many places where we add warnings, so the patch would be still short.
+That way, the possible silent failure is limited only to warning options
+with clang, which is not such a big deal.
 
+Michal
