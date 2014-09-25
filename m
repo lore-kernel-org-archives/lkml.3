@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaIYW4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 18:56:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46143 "EHLO
+	id S1752913AbaIYW4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 18:56:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46120 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaIYW4m (ORCPT
+	with ESMTP id S1751698AbaIYW4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 18:56:42 -0400
+	Thu, 25 Sep 2014 18:56:40 -0400
 From: Josh Cartwright <joshc@codeaurora.org>
-To: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Guenter Roeck <linux@roeck-us.net>,
+To: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/3] watchdog: qcom: register a restart notifier
-Date: Thu, 25 Sep 2014 17:51:04 -0500
-Message-Id: <1baf370c79a9bd7d57214c732863375374da2e0a.1411684967.git.joshc@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v4 0/3] watchdog: add support for QCOM WDT
+Date: Thu, 25 Sep 2014 17:51:01 -0500
+Message-Id: <cover.1411684967.git.joshc@codeaurora.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411684967.git.joshc@codeaurora.org>
-References: <cover.1411684967.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1411684967.git.joshc@codeaurora.org>
-References: <cover.1411684967.git.joshc@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-resort mechanism for triggering chip reset.  Usually, other restart
-methods (such as PS_HOLD) are preferrable for issuing a more complete
-reset of the chip.  As such, keep the priority of the watchdog notifier
-low.
+This patchset provides support for the Watchdog Timer (WDT) found in the Krait
+Processor Sub-system (KPSS) of the MSM8960, APQ8064, and IPQ8064 chips.
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- drivers/watchdog/qcom-wdt.c | 38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
+This driver is implemented ontop of WATCHDOG_CORE, and therefore its primary
+interface is through userspace.  The implemantion is currently very basic (i.e.
+it doesn't support PRETIMEOUT, even though it could be implemented through the
+WDT's BARK functionality).  It should also be fairly easy to extend this driver
+in the future to support newer chipsets as well.
 
-diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-index 68db322..aa85618 100644
---- a/drivers/watchdog/qcom-wdt.c
-+++ b/drivers/watchdog/qcom-wdt.c
-@@ -11,11 +11,13 @@
-  *
-  */
- #include <linux/clk.h>
-+#include <linux/delay.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/reboot.h>
- #include <linux/watchdog.h>
- 
- #define WDT_RST		0x0
-@@ -26,6 +28,7 @@ struct qcom_wdt {
- 	struct watchdog_device	wdd;
- 	struct clk		*clk;
- 	unsigned long		rate;
-+	struct notifier_block	restart_nb;
- 	void __iomem		*base;
- };
- 
-@@ -84,6 +87,32 @@ static const struct watchdog_info qcom_wdt_info = {
- 	.identity	= KBUILD_MODNAME,
- };
- 
-+static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-+			    void *data)
-+{
-+	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-+	u32 timeout;
-+
-+	/*
-+	 * Trigger watchdog bite:
-+	 *    Setup BITE_TIME to be 128ms, and enable WDT.
-+	 */
-+	timeout = 128 * wdt->rate / 1000;
-+
-+	writel(0, wdt->base + WDT_EN);
-+	writel(1, wdt->base + WDT_RST);
-+	writel(timeout, wdt->base + WDT_BITE_TIME);
-+	writel(1, wdt->base + WDT_EN);
-+
-+	/*
-+	 * Actually make sure the above sequence hits hardware before sleeping.
-+	 */
-+	wmb();
-+
-+	msleep(150);
-+	return NOTIFY_DONE;
-+}
-+
- static int qcom_wdt_probe(struct platform_device *pdev)
- {
- 	struct qcom_wdt *wdt;
-@@ -147,6 +176,14 @@ static int qcom_wdt_probe(struct platform_device *pdev)
- 		goto err_clk_unprepare;
- 	}
- 
-+	/*
-+	 * WDT restart notifier has priority 0 (use as a last resort)
-+	 */
-+	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-+	ret = register_restart_handler(&wdt->restart_nb);
-+	if (ret)
-+		dev_err(&pdev->dev, "failed to setup restart handler\n");
-+
- 	platform_set_drvdata(pdev, wdt);
- 	return 0;
- 
-@@ -159,6 +196,7 @@ static int qcom_wdt_remove(struct platform_device *pdev)
- {
- 	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
- 
-+	unregister_restart_handler(&wdt->restart_nb);
- 	watchdog_unregister_device(&wdt->wdd);
- 	clk_disable_unprepare(wdt->clk);
- 	return 0;
+Patch 3 also extends the driver to also register a restart_notifier, making it
+possible for the WDT to act as a restart mechanism if more favorable mechanisms
+don't work.  This is important for some boards which don't support PS_HOLD,
+like the IPQ8064-based AP148 board.
+
+Changes since v3:
+  - More error code cleanup, resolved nits
+  - Documented 'timeout-sec' property as optional
+
+Changes since v2:
+  - "input clock phandle" -> "input clock" in device tree documentation
+  - Fixup error handling paths during probe()
+  - Use a more sane timeout (128ms), and add msleep()
+  - Add some additional sanitation for clock rates
+
+Changes since v1:
+  - Make use of clock API instead of using a 'clock-frequency' property
+  - Setup default timeout of 30 seconds when one is not specified
+  - Add remove() function to allow for module unloading
+  - Don't acquire/release watchdog lock on restart
+  - Don't bail completely if restart_handler registration fails
+
+
+Josh Cartwright (3):
+  watchdog: qcom: add support for KPSS WDT
+  watchdog: qcom: document device tree bindings
+  watchdog: qcom: register a restart notifier
+
+ .../devicetree/bindings/watchdog/qcom-wdt.txt      |  24 +++
+ drivers/watchdog/Kconfig                           |  13 ++
+ drivers/watchdog/Makefile                          |   1 +
+ drivers/watchdog/qcom-wdt.c                        | 224 +++++++++++++++++++++
+ 4 files changed, 262 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
+ create mode 100644 drivers/watchdog/qcom-wdt.c
+
 -- 
 Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
 hosted by The Linux Foundation
