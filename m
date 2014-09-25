@@ -1,60 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752515AbaIYVrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:47:11 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:42632 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595AbaIYVrI convert rfc822-to-8bit (ORCPT
+	id S1752472AbaIYVud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:50:33 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:60494 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaIYVub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:47:08 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 25 Sep 2014 17:50:31 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Mark yao <mark.yao@rock-chips.com>, heiko@sntech.de
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1410513887-17459-1-git-send-email-mark.yao@rock-chips.com>
-Cc: linux-kernel@vger.kernel.org, djkurtz@chromium.org, dianders@chromium.org,
-        dkl@rock-chips.com, eddie.cai@rock-chips.com, xjq@rock-chips.com,
-        kfx@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yxj@rock-chips.com, cym@rock-chips.com, zhengsq@rock-chips.com,
-        caesar.wang@rock-chips.com, kever.yang@rock-chips.com,
-        "Mark yao" <mark.yao@rock-chips.com>
-References: <1410513887-17459-1-git-send-email-mark.yao@rock-chips.com>
-Message-ID: <20140925214645.19023.94336@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: rockchip: rk3288: fix softreset register count
-Date: Thu, 25 Sep 2014 14:46:45 -0700
+In-Reply-To: <20140925211604.GA4590@redhat.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+	<1410976308-7683-1-git-send-email-andreslc@google.com>
+	<20140925211604.GA4590@redhat.com>
+Date: Thu, 25 Sep 2014 14:50:29 -0700
+Message-ID: <CAJu=L581dk4d5AEPQU=zCU=wC6pu629k+p5KkmvgiS_7+cPUMA@mail.gmail.com>
+Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mark yao (2014-09-12 02:24:46)
-> The rk3288 actually has 12 softresets, so fix the register count.
-> 
-> Signed-off-by: Mark yao <mark.yao@rock-chips.com>
+On Thu, Sep 25, 2014 at 2:16 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Hi Andres,
+>
+> On Wed, Sep 17, 2014 at 10:51:48AM -0700, Andres Lagar-Cavilla wrote:
+>> +     if (!locked) {
+>> +             VM_BUG_ON(npages != -EBUSY);
+>> +
+>
+> Shouldn't this be VM_BUG_ON(npages)?
 
-Applied to clk-next.
+Oh shoot you're right. I was confused by the introduction of -EBUSY in
+the forward port.
 
-Regards,
-Mike
+        if (ret & VM_FAULT_RETRY) {
+                if (nonblocking)
+                        *nonblocking = 0;
+                return -EBUSY;
+        }
 
-> ---
->  drivers/clk/rockchip/clk-rk3288.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-> index 0d8c6c5..2e1d790 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -711,7 +711,7 @@ static void __init rk3288_clk_init(struct device_node *np)
->         rockchip_clk_register_branches(rk3288_clk_branches,
->                                   ARRAY_SIZE(rk3288_clk_branches));
->  
-> -       rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
-> +       rockchip_register_softrst(np, 12, reg_base + RK3288_SOFTRST_CON(0),
->                                   ROCKCHIP_SOFTRST_HIWORD_MASK);
->  }
->  CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
-> -- 
-> 1.9.1
-> 
+(gaaah!!!)
+
+>
+> Alternatively we could patch gup to do:
+>
+>                         case -EHWPOISON:
+> +                       case -EBUSY:
+>                                 return i ? i : ret;
+> -                       case -EBUSY:
+> -                               return i;
+>
+
+No preference. Not a lot of semantics available given that we pass 1
+as the count to gup. Want to cut the patch or I can just shoot one
+right away?
+
+> I need to fix gup_fast slow path to start with FAULT_FLAG_ALLOW_RETRY
+> similarly to what you did to the KVM slow path.
+>
+> gup_fast is called without the mmap_sem (incidentally its whole point
+> is to only disable irqs and not take the locks) so the enabling of
+> FAULT_FLAG_ALLOW_RETRY initial pass inside gup_fast should be all self
+> contained. It shouldn't concern KVM which should be already fine with
+> your patch, but it will allow the userfaultfd to intercept all
+> O_DIRECT gup_fast in addition to KVM with your patch.
+>
+> Eventually get_user_pages should be obsoleted in favor of
+> get_user_pages_locked (or whoever we decide to call it) so the
+> userfaultfd can intercept all kind of gups. gup_locked is same as gup
+> except for one more "locked" parameter at the end, I called the
+> parameter locked instead of nonblocking because it'd be more proper to
+> call "nonblocking" gup the FOLL_NOWAIT kind which is quite the
+> opposite (in fact as the mmap_sem cannot be dropped in the non
+> blocking version).
+>
+
+It's nearly impossible to name it right because 1) it indicates we can
+relinquish 2) it returns whether we still hold the mmap semaphore.
+
+I'd prefer it'd be called mmap_sem_hold, which conveys immediately
+what this is about ("nonblocking" or "locked" could be about a whole
+lot of things)
+
+> ptrace ironically is better off sticking with a NULL locked parameter
+> and to get a sigbus instead of risking hanging on the userfaultfd
+> (which would be safe as it can be killed, but it'd be annoying if
+> erroneously poking into a hole during a gdb session). It's still
+> possible to pass NULL as parameter to get_user_pages_locked to achieve
+> that. So the fact some callers won't block in handle_userfault because
+> FAULT_FLAG_ALLOW_RETRY is not set and the userfault cannot block, may
+> come handy.
+>
+> What I'm trying to solve in this context is that the userfault cannot
+> safely block without FAULT_FLAG_ALLOW_RETRY because we can't allow
+> userland to take the mmap_sem for an unlimited amount of time without
+> requiring special privileges, so if handle_userfault wants to blocks
+> within a gup invocation, it must first release the mmap_sem hence
+> FAULT_FLAG_ALLOW_RETRY is always required at the first attempt for any
+> virtual address.
+
+I can see that. My background for coming into this is very similar: in
+a previous life we had a file system shim that would kick up into
+userspace for servicing VM memory. KVM just wouldn't let the file
+system give up the mmap semaphore. We had /proc readers hanging up all
+over the place while userspace was servicing. Not happy.
+
+With KVM (now) and the standard x86 fault giving you ALLOW_RETRY, what
+stands in your way? Methinks that gup_fast has no slowpath fallback
+that turns on ALLOW_RETRY. What would oppose that being the global
+behavior?
+
+>
+> With regard to the last sentence, there's actually a race with
+> MADV_DONTNEED too, I'd need to change the code to always pass
+> FAULT_FLAG_ALLOW_RETRY (your code also would need to loop and
+> insisting with the __get_user_pages(locked) version to solve it). The
+> KVM ioctl worst case would get an -EFAULT if the race materializes for
+> example. It's non concerning though because that can be solved in
+> userland somehow by separating ballooning and live migration
+> activities.
+
+Well, IIUC every code path that has ALLOW_RETRY dives in the second
+time with FAULT_TRIED or similar. In the common case, you happily
+blaze through the second time, but if someone raced in while all locks
+were given up, one pays the price of the second time being a full
+fault hogging the mmap sem. At some point you need to not keep being
+polite otherwise the task starves. Presumably the risk of an extra
+retry drops steeply every new gup retry. Maybe just try three times is
+good enough. It makes for ugly logic though.
+
+Thanks
+Andres
+
+>
+> Thanks,
+> Andrea
+
+
+
+-- 
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
