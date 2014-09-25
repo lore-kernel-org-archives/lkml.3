@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaIYKu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:50:56 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:48380 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429AbaIYKun (ORCPT
+	id S1751817AbaIYKzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:55:06 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:62566 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaIYKzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:50:43 -0400
-X-Auth-Info: yarcQfa42f+MYDbljXxJV8nwD2ndZQd+jyf6rANL7o4=
-From: Marek Vasut <marex@denx.de>
-To: Yuan Yao <yao.yuan@freescale.com>
-Subject: Re: [PATCH v8 0/2] i2c: imx: add DMA support for freescale i2c driver
-Date: Thu, 25 Sep 2014 12:23:54 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: wsa@the-dreams.de, LW@karo-electronics.de, mark.rutland@arm.com,
-        fugang.duan@freescale.com, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-i2c@vger.kernel.org
-References: <1411632689-31531-1-git-send-email-yao.yuan@freescale.com>
-In-Reply-To: <1411632689-31531-1-git-send-email-yao.yuan@freescale.com>
+	Thu, 25 Sep 2014 06:55:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
+Date: Thu, 25 Sep 2014 12:54:49 +0200
+Message-ID: <11277081.DWgcnnZv54@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ58h4VKrr-wHe6iD+aPB8QU=xLo03kW5k6QDpLW5Et0DGw@mail.gmail.com>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com> <3608975.MxU44B73lk@wuerfel> <CAFiDJ58h4VKrr-wHe6iD+aPB8QU=xLo03kW5k6QDpLW5Et0DGw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409251223.54218.marex@denx.de>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ErImVgkE+8bRydvi64pjDyzOXh3MbkuTXyBT0WXKtEx
+ 4+XfxBDN8KNQSyrcwJNaQk2dlo9gaD4CY7L2WugBg5+7y+5zbd
+ WU+crYrpJOTONcotTTd76/GD8mMAplxdwS9jhCFh89UsW3GJw3
+ GCkdLsNrgt1hIB60gvnjit1wvgydL0izo5O8LvIyuVRMLXZsU8
+ OoM7609thiEIBrDN3U6nEJ648CdHh5jgDedpPM7IWLd372krfI
+ j21dy6LgJ0GdwkpCaA64z4YOXxb4BNNjGD2+naAH9QweGJcWad
+ H2LjJue6GkIJnXUDkEt72YFE603AAuT766dZowAu2KevOX+KgY
+ sY8chsJNJ/ROai7HnucA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 25, 2014 at 10:11:27 AM, Yuan Yao wrote:
-> Changed in v8:
-> - some minor fixes for coding style.
-> - unsetting I2CR_DMAEN immediatelly when failed in DMA mode.
+On Thursday 25 September 2014 16:33:33 Ley Foon Tan wrote:
+> There are 4 patches that touching code outside of arch/nios2,
+> including this patch.
+> Do we have maintainers for common files for patch #15, #27 and #28
+> below? Can't find this info from MAINTAINERS file.
+> It is good if you can take a look this v3 patchset so I can send pull
+> request if no further issue. Thanks!
+> 
+> [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
 
-Brief skim over the patch doesn't show any dangling problems.
+You already have my Ack, which is sufficient here.
 
-Reviewed-by: Marek Vasut <marex@denx.de>
+> [PATCH v3 15/29] Add ELF machine define for Nios2
 
-btw. the U-Boot output is completely irrelevant, it only points out you use 
-outdated version, so please keep only the relevant output. Also, I would 
-recommend you to trim the responses to patches with [...] so one doesn't have to 
-scroll through a wall of old text, but can easily find the relevant portions.
+I'm not maintaining this one, but it looks very obvious, please
+add my Ack as well. I don't think you need to wait for anybody's
+input here.
 
-Best regards,
-Marek Vasut
+> [PATCH v3 27/29] MAINTAINERS: Add nios2 maintainer
+
+This one is fine to go in. You basically own the entry though, so if
+anybody wants to change the text for nios2 later, they should ask
+for your Ack.
+
+> [PATCH v3 28/29] Documentation: Add documentation for Nios2 architecture
+
+Randy Dunlap <rdunlap@infradead.org> is the maintainer listed for
+Documentation, and I see you already have linux-doc@vger.kernel.org
+on Cc here. Please make sure that Randy is on Cc for the documentation
+patches as well. A lot of documentation patches go in without his
+Ack, which I think is fine as long as someone else (i.e. you) is
+responsible for maintaining that documentation later.
+
+	Arnd
