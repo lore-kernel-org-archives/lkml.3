@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaIYSnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:43:21 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55878 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883AbaIYSnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:43:18 -0400
-Date: Thu, 25 Sep 2014 11:43:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] watchdog: qcom: document device tree bindings
-Message-ID: <20140925184314.GC12340@roeck-us.net>
-References: <cover.1411667144.git.joshc@codeaurora.org>
- <f49033de078aff9112fb8fa6fa4331e16998edf2.1411667144.git.joshc@codeaurora.org>
+	id S1752561AbaIYSnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:43:33 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:64496 "EHLO smtp.pobox.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752317AbaIYSna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 14:43:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=veiBmq75pEupTUQNdp6QH/vYDCWLdXKh
+	/SLjjRfmZtZXBMr0ogFinqlaf36JZs5V3CamhmPaSE8cpj3Bh6g52Nmz0a//JTL9
+	MlUPJSrY7ke2FvfRBhdIUTFdl0QzWNydpVBqQRX+qMcPb9LeVmiK5C9hIQlioLav
+	FTw4NJOeARw=
+From: Junio C Hamano <gitster@pobox.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jeff King <peff@peff.net>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
+        git <git@vger.kernel.org>
+Subject: Re: project wide: git config entry for [diff] renames=true
+References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
+	<1411591401-5874-1-git-send-email-sojka@merica.cz>
+	<1411591401-5874-4-git-send-email-sojka@merica.cz>
+	<20140925150353.GA15325@kroah.com>
+	<1411660111.4026.24.camel@joe-AO725> <20140925180005.GA11755@peff.net>
+	<1411668391.3460.2.camel@joe-AO725>
+Date: Thu, 25 Sep 2014 11:43:27 -0700
+In-Reply-To: <1411668391.3460.2.camel@joe-AO725> (Joe Perches's message of
+	"Thu, 25 Sep 2014 11:06:31 -0700")
+Message-ID: <xmqq61gbbkxc.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f49033de078aff9112fb8fa6fa4331e16998edf2.1411667144.git.joshc@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Pobox-Relay-ID: D752EABE-44E3-11E4-98C7-D931C4D60FE0-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:48:52PM -0500, Josh Cartwright wrote:
-> The Qualcomm Krait Processor Sub-system (KPSS) contains one or more
-> instances of the WDT.  Provide documentation on how to describe these in
-> the device tree.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
->  .../devicetree/bindings/watchdog/qcom-wdt.txt      | 22 ++++++++++++++++++++++
->  1 file changed, 22 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt b/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
-> new file mode 100644
-> index 0000000..c75566e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/watchdog/qcom-wdt.txt
-> @@ -0,0 +1,22 @@
-> +Qualcomm Krait Processor Sub-system (KPSS) Watchdog
-> +---------------------------------------------------
-> +
-> +Required properties :
-> +- compatible : shall contain only one of the following:
-> +
-> +			"qcom,kpss-wdt-msm8960"
-> +			"qcom,kpss-wdt-apq8064"
-> +			"qcom,kpss-wdt-ipq8064"
-> +
-> +- reg : shall contain base register location and length
-> +- clocks : shall contain the input clock
-> +- timeout-sec : shall contain the default watchdog timeout in seconds,
-> +                if unset, the default timeout is 30 seconds
+Joe Perches <joe@perches.com> writes:
 
-Hi Josh,
+> On Thu, 2014-09-25 at 14:00 -0400, Jeff King wrote:
+> ...
+>> diff.renames is probably safe, but any config-sharing mechanism would
+>> have to deal with either whitelisting, or providing some mechanism for
+>> the puller to review changes before blindly following them.
+>
+> Another mechanism might be to add a repository
+> top level .gitconfig and add whatever to that.
 
-timeout-sec is optional, not mandatory.
+That could be smaller half of an implementation detail of one of the
+two possibilities Jeff mentioned i.e. "mechanism for the puller to
+review changes before blindly following".  It gives the transfer
+part.  You still need a new mechanism to make that file that is
+tracked in the repository to be used as part of your configuration
+variable set after letting the puller to review and approve.
 
-Thanks,
-Guenter
-
-> +
-> +Example:
-> +	watchdog@208a038 {
-> +		compatible = "qcom,kpss-wdt-ipq8064";
-> +		reg = <0x0208a038 0x40>;
-> +		clocks = <&sleep_clk>;
-> +		timeout-sec = <10>;
-> +	};
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
+A puller who blindly trust the project could use the "include"
+mechanism from your .git/config to include a file with a well-known
+name that is tracked by the project _without_ review or approval.  I
+doubt we would recommend that in an open source setting, though.
