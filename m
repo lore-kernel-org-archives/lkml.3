@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaIYH6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:58:38 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:48547 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaIYH6g convert rfc822-to-8bit (ORCPT
+	id S1751589AbaIYIHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:07:47 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:59402 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaIYIHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:58:36 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
- ARC_BOARD_ML509
-Thread-Topic: [PATCH] ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
- ARC_BOARD_ML509
-Thread-Index: AQHP1xI53r7Pc5BON0ysEi7+Zq+cjg==
-Date: Thu, 25 Sep 2014 07:58:25 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230753C5DE9B6@IN01WEMBXA.internal.synopsys.com>
-References: <1401874435.14072.17.camel@x220>
-	 <C2D7FE5348E1B147BCA15975FBA230751A6B5C42@IN01WEMBXA.internal.synopsys.com>
-	 <1410512426.31130.11.camel@x220>
-	 <C2D7FE5348E1B147BCA15975FBA230753C5DA1BE@IN01WEMBXA.internal.synopsys.com>
- <1411465144.20236.21.camel@x220>
- <C2D7FE5348E1B147BCA15975FBA230753C5DE8E6@IN01WEMBXA.internal.synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 25 Sep 2014 04:07:41 -0400
 MIME-Version: 1.0
+In-Reply-To: <5422B8F0.9060803@ti.com>
+References: <1410251533-4990-1-git-send-email-LW@KARO-electronics.de>
+	<CACRpkdbTXtx+EU4Dw1fxeThRUG4s5XvcJnAJ9PJd8i4KKGC65A@mail.gmail.com>
+	<5421670D.10200@ti.com>
+	<CACRpkdYCsdMcJY7Y0gK4_zPxiWRFKkzi2TaZUi1Vn7Kp0Cbgzg@mail.gmail.com>
+	<5422B8F0.9060803@ti.com>
+Date: Thu, 25 Sep 2014 10:07:40 +0200
+Message-ID: <CACRpkdYtjQC_hCiqSB7fidct6CjJ5kMbj0PegW3MEuouBajv+g@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pca953x: Fix warning when HW interrupts are
+ rescheduled by the softirq tasklet
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: =?UTF-8?Q?Lothar_Wa=C3=9Fmann?= <LW@karo-electronics.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 September 2014 12:52 PM, Vineet Gupta wrote:
-On Tuesday 23 September 2014 03:09 PM, Paul Bolle wrote:
+On Wed, Sep 24, 2014 at 2:28 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> On 09/24/2014 02:17 PM, Linus Walleij wrote:
 
-Commit c00bfd974fb0 ("ARC: [arcfpga] Get rid of legacy BVCI latency unit
-support") removed the Kconfig symbol ARC_HAS_BVCI_LAT_UNIT. And that
-symbol's entry was the only place were the symbols ARC_BOARD_ANGEL4 and
-ARC_BOARD_ML509 were used. So ARC_BOARD_ANGEL4 and ARC_BOARD_ML509 can
-be removed too.
+>> So PCA cannot use gpiochip_set_chained_irqchip()?
+>
+> Yes. It can't - pca is i2c device.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl><mailto:pebolle@tiscali.nl>
----
-Done on top of next-20140923. Tested by grepping the tree only.
+? I don't get this statement.
 
-Applied to ARC for-next.
+Why does the fact that it is an I2C device matter?
+We have several devices that are in fact on top of
+I2C (albeit as MFD cells) like gpio-tc3589x.c.
 
-Thx Paul,
--Vineet
+>> Anyway I feel I should fix this as per above for all
+>> chips using that function, right?
+>
+> Pls note, the gpiochip_irqchip_add() is called before
+> gpiochip_set_chained_irqchip() in all places now.
 
-I did a grep for ARC_BOARD in arch/arc and it seems we have a few stragglers in def configs.
-I've pruned them and squashed in same commit.
+Yes, but the .map function isn't called until a client
+wants to use an IRQ. And that won't happen until after
+we exit the whole .probe() function.
 
--Vineet
+> Also seems, we should assume that
+> gpiochip_set_chained_irqchip() can be called
+> few times and it could be unsafe to use it for storing parent_irq.
+
+Well it happens in one single driver, and was done by me.
+Maybe I should either disallow that, as that means we're adding
+multiple parents (which is what you want, right?) or actually
+implement it in a way so that multiple parents can be handled
+by the helpers, by adding the parents to a list or something.
+
+> So maybe it would be enough to just adding field for parent_irq
+> in struct gpio_chip + fix for gpiochip_irq_map() to re-use it
+> (to fix simple cases :).
+
+Yes for the simple case. But maybe it's better to patch
+gpiochip_set_chained_irqchip() to handle also the complex
+case per above?
+
+Yours,
+Linus Walleij
