@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaIYKPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:15:03 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:46639 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbaIYKPA (ORCPT
+	id S1752942AbaIYKR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:17:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58056 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaIYKRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:15:00 -0400
+	Thu, 25 Sep 2014 06:17:25 -0400
+Date: Thu, 25 Sep 2014 12:16:28 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frans Klaver <frans.klaver@xsens.com>
+Cc: stable@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH resend 1/2] tty: omap-serial: fix division by zero
+Message-ID: <20140925101628.GB16810@kroah.com>
+References: <20140924080852.GA28215@kroah.com>
+ <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGS+omD055Bk+czk5=SDMRu1g-HGZHBobgasKC9PjF80Ci-czA@mail.gmail.com>
-References: <1408891857-14258-1-git-send-email-djkurtz@chromium.org>
-	<CAMuHMdUoh6+gDcZty76HJhcQcJvM5DyBiD4YrZGuAX9e+F32-w@mail.gmail.com>
-	<CAGS+omD055Bk+czk5=SDMRu1g-HGZHBobgasKC9PjF80Ci-czA@mail.gmail.com>
-Date: Thu, 25 Sep 2014 12:14:59 +0200
-X-Google-Sender-Auth: UrmwIg5MMDoK_3FeOHq3ZGjRBSU
-Message-ID: <CAMuHMdVrd0fLEhv+uSfKeJ_skHTSiJbAWqW-Q4WjL1xAvb=YwA@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos/fbdev: set smem_len for fbdev
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Inki Dae <inki.dae@samsung.com>,
-        Siarhei Siamashka <siarhei.siamashka@gmail.com>,
-        =?UTF-8?Q?G=C3=BCnther_Noack?= <me@guenthernoack.de>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411636791-24116-1-git-send-email-frans.klaver@xsens.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:07 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> On Thu, Sep 25, 2014 at 5:32 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Sun, Aug 24, 2014 at 4:50 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
->>> Commit [0] stopped setting fix.smem_start and fix.smem_len when creating
->>> the fbdev.
->>>
->>> [0] 2f1eab8d8ab59e799f7d51d62410b398607a7bc3
->>>   drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
->>>
->>> However, smem_len is used by some userland applications to calculate the
->>> size for mmap.  In particular, it is used by xf86-video-fbdev:
->>>
->>> http://cgit.freedesktop.org/xorg/xserver/tree/hw/xfree86/fbdevhw/fbdevhw.c?id=xorg-server-1.15.99.903#n571
->>>
->>> So, let's restore setting the smem_len to unbreak things for these users.
->>>
->>> Note: we are still leaving smem_start set to 0.
->>
->> Doesn't this cause a system crash when userspace (e.g. fbtest) writes into
->> the mmap()ed /dev/fb*, as the wrong MMIO region is mapped?
->
-> Do you see a crash during testing, or is your question hypothetical?
+On Thu, Sep 25, 2014 at 11:19:51AM +0200, Frans Klaver wrote:
+> If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
+> calculated n values in serial_omap_is_baud_mode16() may become 0. This
+> causes a division by zero when calculating the difference between
+> calculated and desired baud rates. To prevent this, cap the n13 and n16
+> values on 1.
+> 
+> Division by zero in kernel.
+> [<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
+> [<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
+> [<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
+> [<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
+> [<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
+> [<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
+> [<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
+> [<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
+> [<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
+> [<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
+> [<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
+> [<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
+> [<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
+> 
+> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> ---
+> Resend to add stable@vger.kernel.org to CC. As far as I know, this applies to
+> v3.9 and up.
 
-It was hypothetical.
+<formletter>
 
-> I don't think there will be one.  exynos's fbev defines its own
-> fb_ops.fb_mmap, which uses dma_mmap_attrs() to mmap the fb's gem
-> buffer, which was allocated by dma_alloc_attrs().  This bypasses the
-> code in drivers/video/fbmem.c:fb_mmap() that references
-> fix.smem_start.
->
-> But, perhaps I am missing something?
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-Thanks, having your own mapping function explains the lack of crashes.
+</formletter>
 
-Still, some weird software may map /dev/mem instead of /dev/fb0, and
-use fb_fix.smem_start. But that's also unsafe in the context of LPAE.
+I'll take care of this, but go read that file for your next time...
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+greg k-h
