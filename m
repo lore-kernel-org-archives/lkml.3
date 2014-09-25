@@ -1,154 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaIYC50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:57:26 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41596 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaIYCuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:50:52 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2 09/22] x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-Date: Thu, 25 Sep 2014 11:14:19 +0800
-Message-ID: <1411614872-4009-10-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+	id S1753798AbaIYC7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:59:08 -0400
+Received: from ozlabs.org ([103.22.144.67]:45867 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752632AbaIYC7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 22:59:06 -0400
+Date: Thu, 25 Sep 2014 12:58:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Romain Perier <romain.perier@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>
+Subject: linux-next: manual merge of the net-next tree with the arm-soc tree
+Message-ID: <20140925125857.0516ceab@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/l7NdUEnl4WNLJKabrlsjS9D"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI chip framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+--Sig_/l7NdUEnl4WNLJKabrlsjS9D
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Acked-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/pci/xen.c |   46 ++++++++++++++++++++++++++++++----------------
- 1 files changed, 30 insertions(+), 16 deletions(-)
+Hi all,
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 84c2fce..e669ee4 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -376,6 +376,11 @@ static void xen_initdom_restore_msi_irqs(struct pci_dev *dev)
- }
- #endif
- 
-+static void xen_teardown_msi_irq(unsigned int irq)
-+{
-+	xen_destroy_irq(irq);
-+}
-+
- static void xen_teardown_msi_irqs(struct pci_dev *dev)
- {
- 	struct msi_desc *msidesc;
-@@ -385,19 +390,26 @@ static void xen_teardown_msi_irqs(struct pci_dev *dev)
- 		xen_pci_frontend_disable_msix(dev);
- 	else
- 		xen_pci_frontend_disable_msi(dev);
--
--	/* Free the IRQ's and the msidesc using the generic code. */
--	default_teardown_msi_irqs(dev);
--}
--
--static void xen_teardown_msi_irq(unsigned int irq)
--{
--	xen_destroy_irq(irq);
-+	
-+	list_for_each_entry(msidesc, &dev->msi_list, list) {
-+		int i, nvec;
-+		if (msidesc->irq == 0)
-+			continue;
-+		if (msidesc->nvec_used)
-+			nvec = msidesc->nvec_used;
-+		else
-+			nvec = 1 << msidesc->msi_attrib.multiple;
-+		for (i = 0; i < nvec; i++)
-+			xen_teardown_msi_irq(msidesc->irq + i);
-+	}
- }
- 
- void xen_nop_msi_mask(struct irq_data *data)
- {
- }
-+
-+struct msi_chip xen_msi_chip;
-+
- #endif
- 
- int __init pci_xen_init(void)
-@@ -418,9 +430,9 @@ int __init pci_xen_init(void)
- #endif
- 
- #ifdef CONFIG_PCI_MSI
--	x86_msi.setup_msi_irqs = xen_setup_msi_irqs;
--	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
--	x86_msi.teardown_msi_irqs = xen_teardown_msi_irqs;
-+	xen_msi_chip.setup_irqs = xen_setup_msi_irqs;
-+	xen_msi_chip.teardown_irqs = xen_teardown_msi_irqs;
-+	x86_msi_chip = &xen_msi_chip;
- 	msi_chip.irq_mask = xen_nop_msi_mask;
- 	msi_chip.irq_unmask = xen_nop_msi_mask;
- #endif
-@@ -441,8 +453,9 @@ int __init pci_xen_hvm_init(void)
- #endif
- 
- #ifdef CONFIG_PCI_MSI
--	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
--	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
-+	xen_msi_chip.setup_irqs = xen_hvm_setup_msi_irqs;
-+	xen_msi_chip.teardown_irq = xen_teardown_msi_irq;
-+	x86_msi_chip = &xen_msi_chip;
- #endif
- 	return 0;
- }
-@@ -499,9 +512,10 @@ int __init pci_xen_initial_domain(void)
- 	int irq;
- 
- #ifdef CONFIG_PCI_MSI
--	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
--	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
--	x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
-+	xen_msi_chip.setup_irqs = xen_initdom_setup_msi_irqs;
-+	xen_msi_chip.teardown_irq = xen_teardown_msi_irq;
-+	xen_msi_chip.restore_irqs = xen_initdom_restore_msi_irqs;
-+	x86_msi_chip = &xen_msi_chip;
- 	msi_chip.irq_mask = xen_nop_msi_mask;
- 	msi_chip.irq_unmask = xen_nop_msi_mask;
- #endif
--- 
-1.7.1
+Today's linux-next merge of the net-next tree got conflicts in
+arch/arm/boot/dts/rk3188.dtsi and arch/arm/boot/dts/rk3xxx.dtsi between
+commits fd14e6f9b461 ("ARM: dts: rockchip: add dwc2 controllers for
+rk3066 and rk3188") and 4ff4ae1258a9 ("ARM: dts: rockchip: add emmc
+nodes for rk3066 and rk3188") from the arm-soc tree and commit
+18ec91e1947f ("ARM: dts: Add emac nodes to the rk3188 device tree")
+from the net-next tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/boot/dts/rk3188.dtsi
+index 82732f5249b2,7f25bc51f2ee..000000000000
+--- a/arch/arm/boot/dts/rk3188.dtsi
++++ b/arch/arm/boot/dts/rk3188.dtsi
+@@@ -147,27 -147,24 +147,45 @@@
+  			bias-disable;
+  		};
+ =20
+ +		emmc {
+ +			emmc_clk: emmc-clk {
+ +				rockchip,pins =3D <RK_GPIO0 24 RK_FUNC_2 &pcfg_pull_none>;
+ +			};
+ +
+ +			emmc_cmd: emmc-cmd {
+ +				rockchip,pins =3D <RK_GPIO0 26 RK_FUNC_2 &pcfg_pull_up>;
+ +			};
+ +
+ +			emmc_rst: emmc-rst {
+ +				rockchip,pins =3D <RK_GPIO0 27 RK_FUNC_2 &pcfg_pull_none>;
+ +			};
+ +
+ +			/*
+ +			 * The data pins are shared between nandc and emmc and
+ +			 * not accessible through pinctrl. Also they should've
+ +			 * been already set correctly by firmware, as
+ +			 * flash/emmc is the boot-device.
+ +			 */
+ +		};
+ +
++ 		emac {
++ 			emac_xfer: emac-xfer {
++ 				rockchip,pins =3D <RK_GPIO3 16 RK_FUNC_2 &pcfg_pull_none>, /* tx_en */
++ 						<RK_GPIO3 17 RK_FUNC_2 &pcfg_pull_none>, /* txd1 */
++ 						<RK_GPIO3 18 RK_FUNC_2 &pcfg_pull_none>, /* txd0 */
++ 						<RK_GPIO3 19 RK_FUNC_2 &pcfg_pull_none>, /* rxd0 */
++ 						<RK_GPIO3 20 RK_FUNC_2 &pcfg_pull_none>, /* rxd1 */
++ 						<RK_GPIO3 21 RK_FUNC_2 &pcfg_pull_none>, /* mac_clk */
++ 						<RK_GPIO3 22 RK_FUNC_2 &pcfg_pull_none>, /* rx_err */
++ 						<RK_GPIO3 23 RK_FUNC_2 &pcfg_pull_none>; /* crs_dvalid */
++ 			};
++=20
++ 			emac_mdio: emac-mdio {
++ 				rockchip,pins =3D <RK_GPIO3 24 RK_FUNC_2 &pcfg_pull_none>,
++ 						<RK_GPIO3 25 RK_FUNC_2 &pcfg_pull_none>;
++ 			};
++ 		};
++=20
+  		i2c0 {
+  			i2c0_xfer: i2c0-xfer {
+  				rockchip,pins =3D <RK_GPIO1 24 RK_FUNC_1 &pcfg_pull_none>,
+diff --cc arch/arm/boot/dts/rk3xxx.dtsi
+index 7332d12eb565,208b1df6bcb0..000000000000
+--- a/arch/arm/boot/dts/rk3xxx.dtsi
++++ b/arch/arm/boot/dts/rk3xxx.dtsi
+@@@ -134,24 -91,23 +134,41 @@@
+  		status =3D "disabled";
+  	};
+ =20
+ +	usb_otg: usb@10180000 {
+ +		compatible =3D "rockchip,rk3066-usb", "snps,dwc2";
+ +		reg =3D <0x10180000 0x40000>;
+ +		interrupts =3D <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+ +		clocks =3D <&cru HCLK_OTG0>;
+ +		clock-names =3D "otg";
+ +		status =3D "disabled";
+ +	};
+ +
+ +	usb_host: usb@101c0000 {
+ +		compatible =3D "snps,dwc2";
+ +		reg =3D <0x101c0000 0x40000>;
+ +		interrupts =3D <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+ +		clocks =3D <&cru HCLK_OTG1>;
+ +		clock-names =3D "otg";
+ +		status =3D "disabled";
+ +	};
+ +
++ 	emac: ethernet@10204000 {
++ 		compatible =3D "snps,arc-emac";
++ 		reg =3D <0x10204000 0x3c>;
++ 		interrupts =3D <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
++ 		#address-cells =3D <1>;
++ 		#size-cells =3D <0>;
++=20
++ 		rockchip,grf =3D <&grf>;
++=20
++ 		clocks =3D <&cru HCLK_EMAC>, <&cru SCLK_MAC>;
++ 		clock-names =3D "hclk", "macref";
++ 		max-speed =3D <100>;
++ 		phy-mode =3D "rmii";
++=20
++ 		status =3D "disabled";
++ 	};
++=20
+  	mmc0: dwmmc@10214000 {
+  		compatible =3D "rockchip,rk2928-dw-mshc";
+  		reg =3D <0x10214000 0x1000>;
+
+--Sig_/l7NdUEnl4WNLJKabrlsjS9D
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUI4T3AAoJEMDTa8Ir7ZwVSJsP/0990/Y9OVkY8nWp0DopSpbl
+jPsb4jEZC2HgBXRH1Lh6envvWXB9kF9rGYys8vNUubsOQRBamg5UWWT9wDh8NZhY
+V/G615z+07sz7ylRt3CwftuiMEzEEDkgUJclZLHv8Jcpff/Yxjcbsf3utW+cMJM8
++i2Bt9/zMNy+sZ13OXYrgL7r3YvhS890lvgiyss978VyBC8xB6+EjUQHRtJOh1Y3
+kflRVtAbEepzNfbouDKvceXwpegIerowJZmzU+HFWSy2lh/v3h9sxahxmWemBXy1
+uFKClD02Emy488l/zgWdZ6Q2H59yK6DoPygrc01jG/Mm59+6JSmvyKFovyQEMBu8
+EKDAGPnUia0sDAgBO82QsXm2YE5J1Q3j0iN03+at3BAfCjuCEDQiY2BzMH3Hdoio
+X0t3AaYcbzFLdjXZ8OedVw+6h+8snqbULGwSaYZB4G25lgsyljl3CrLjYPgghIyR
+YtH81Irzh1HK80KzIminFPcUF+0iN9ud6UtePAHWaiRpq/7qss3Pow2oVTG0otcQ
+aN7s3ITMD1u7z22CewRocL9n1jS8NUnNjVN3MMdwi7jVsN5s903nTdUyQYLVrk1t
+n8NIZ+fgJ6RWq66+IzgdkPvBwwh7BiFh1TvsrwENeC8h6is7mPjeUpqRs99BA+AB
+Hllu+SueqaOmd/cm148H
+=8A4x
+-----END PGP SIGNATURE-----
+
+--Sig_/l7NdUEnl4WNLJKabrlsjS9D--
