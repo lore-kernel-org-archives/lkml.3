@@ -1,154 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939AbaIYLnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 07:43:45 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43201 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaIYLnn (ORCPT
+	id S1752162AbaIYLpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 07:45:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57646 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750864AbaIYLpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 07:43:43 -0400
-Date: Thu, 25 Sep 2014 13:43:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] mm: memcontrol: do not iterate uninitialized memcgs
-Message-ID: <20140925114339.GD12090@dhcp22.suse.cz>
-References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
- <20140925024054.GA4888@cmpxchg.org>
+	Thu, 25 Sep 2014 07:45:18 -0400
+Date: Thu, 25 Sep 2014 12:44:17 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v3 01/17] asm-generic: io: implement relaxed accessor
+ macros as conditional wrappers
+Message-ID: <20140925114417.GJ20043@arm.com>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
+ <4501051.vdxhyhkTWv@wuerfel>
+ <20140925103846.GI20043@arm.com>
+ <14780144.KRcmhp8YbE@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140925024054.GA4888@cmpxchg.org>
+In-Reply-To: <14780144.KRcmhp8YbE@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 22:40:55, Johannes Weiner wrote:
-> Argh, buggy css_put() against the root.  Hand grenades, everywhere.
-> Update:
+On Thu, Sep 25, 2014 at 11:43:41AM +0100, Arnd Bergmann wrote:
+> On Thursday 25 September 2014 11:38:46 Will Deacon wrote:
+> > On Thu, Sep 25, 2014 at 11:32:00AM +0100, Arnd Bergmann wrote:
+> > > On Wednesday 24 September 2014 18:17:20 Will Deacon wrote:
+> > > > {read,write}{b,w,l,q}_relaxed are implemented by some architectures in
+> > > > order to permit memory-mapped I/O accesses with weaker barrier semantics
+> > > > than the non-relaxed variants.
+> > > > 
+> > > > This patch adds wrappers to asm-generic so that drivers can rely on the
+> > > > relaxed accessors being available, even if they don't always provide
+> > > > weaker ordering guarantees. Since some architectures both include
+> > > > asm-generic/io.h and define some relaxed accessors, the definitions here
+> > > > are conditional for the time being.
+> > > > 
+> > > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > > > ---
+> > > >  include/asm-generic/io.h | 26 ++++++++++++++++++++++++++
+> > > >  1 file changed, 26 insertions(+)
+> > > > 
+> > > 
+> > > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > Thanks, Arnd. Do you have other patches queued for asm-generic, or shall I
+> > take this patch (on its own) via the arm64 tree?
 > 
-> ---
-> From 9b0b4d72d71cd8acd7aaa58d2006c751decc8739 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Wed, 24 Sep 2014 22:00:20 -0400
-> Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
-> 
-> The cgroup iterators yield css objects that have not yet gone through
-> css_online(), but they are not complete memcgs at this point and so
-> the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
-> iteration skip memcgs not yet fully initialized") set out to implement
-> exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
-> not meet the ordering requirements for memcg, and so we still may see
-> partially initialized memcgs from the iterators.
+> I don't have other patches queued up yet, but Thierry has another patch
+> for asm-generic/io.h that I want to merge, so this time I'd prefer to
+> take it through my tree in case there are conflicts.
 
-I do not see how would this happen. CSS_ONLINE is set after css_online
-callback returns and mem_cgroup_css_online ends the core initialization
-with mutex_unlock which should provide sufficient memory ordering
-requirements (kmem is not covered but activate_kmem_mutex kmem.tcp by
-proto_list_mutex). So the worst thing that might happen is that we miss
-an already initialized memcg but that shouldn't matter because such a
-memcg doesn't contain any tasks nor memory. memcg_has_children doesn't
-rely on our iterators so important parts will not miss anything.
+Ok, suits me. I'll drop this from my series when it hits mainline.
 
-So I do not see any bug right now. The flag abuse is another story and I
-do agree we should use proper memcg specific synchronization here as
-explained by Tejun in other email.
-
-> The cgroup core can not reasonably provide a clear answer on whether
-> the object around the css has been fully initialized, as that depends
-> on controller-specific locking and lifetime rules.  Thus, introduce a
-> memcg-specific flag that is set after the memcg has been initialized
-> in css_online(), and read before mem_cgroup_iter() callers access the
-> memcg members.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-With updated changelog
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> Cc: <stable@vger.kernel.org>	[3.12+]
-
-This is not necessary IMO
-
-> ---
->  mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
->  1 file changed, 31 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 306b6470784c..bafdac0f724e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -292,6 +292,9 @@ struct mem_cgroup {
->  	/* vmpressure notifications */
->  	struct vmpressure vmpressure;
->  
-> +	/* css_online() has been completed */
-> +	bool initialized;
-> +
->  	/*
->  	 * the counter to account for mem+swap usage.
->  	 */
-> @@ -1090,10 +1093,23 @@ skip_node:
->  	 * skipping css reference should be safe.
->  	 */
->  	if (next_css) {
-> -		if ((next_css == &root->css) ||
-> -		    ((next_css->flags & CSS_ONLINE) &&
-> -		     css_tryget_online(next_css)))
-> -			return mem_cgroup_from_css(next_css);
-> +		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
-> +
-> +		if (next_css == &root->css)
-> +			return memcg;
-> +
-> +		if (css_tryget_online(next_css)) {
-> +			if (memcg->initialized) {
-> +				/*
-> +				 * Make sure the caller's accesses to
-> +				 * the memcg members are issued after
-> +				 * we see this flag set.
-> +				 */
-> +				smp_rmb();
-> +				return memcg;
-> +			}
-> +			css_put(next_css);
-> +		}
->  
->  		prev_css = next_css;
->  		goto skip_node;
-> @@ -5413,6 +5429,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->  	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
-> +	int ret;
->  
->  	if (css->id > MEM_CGROUP_ID_MAX)
->  		return -ENOSPC;
-> @@ -5449,7 +5466,16 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  	}
->  	mutex_unlock(&memcg_create_mutex);
->  
-> -	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
-> +	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Make sure the initialization is visible before the flag */
-> +	smp_wmb();
-> +
-> +	memcg->initialized = true;
-> +
-> +	return 0;
->  }
->  
->  /*
-> -- 
-> 2.1.0
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Will
