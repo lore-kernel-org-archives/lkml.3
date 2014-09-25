@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaIYIXz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:23:55 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:36668 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaIYIXu (ORCPT
+	id S1752072AbaIYIZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:25:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42792 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaIYIZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:23:50 -0400
-Message-ID: <5423D104.4050809@samsung.com>
-Date: Thu, 25 Sep 2014 17:23:32 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Thu, 25 Sep 2014 04:25:16 -0400
+Date: Thu, 25 Sep 2014 10:25:06 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull@opensource.altera.com
+Cc: dinguyen@opensource.altera.com, linux@arm.linux.org.uk,
+        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, delicious.quinoa@gmail.com
+Subject: Re: [PATCH 2/2] socfpga: support suspend to ram
+Message-ID: <20140925082506.GC26991@pengutronix.de>
+References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com>
+ <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: [PATCH v7 2/5] ARM: add AFTR mode support to firmware do_idle
- method
-References: <1411561488-1739-1-git-send-email-b.zolnierkie@samsung.com> <1411561488-1739-3-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1411561488-1739-3-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:22:07 up 15 days,  1:09, 75 users,  load average: 0,08, 0,12,
+ 0,13
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/14 21:24, Bartlomiej Zolnierkiewicz wrote:
-> On some platforms (i.e. EXYNOS ones) more than one idle mode is
-> available and we need to distinguish them in firmware do_idle method.
->
-> Add mode parameter to do_idle firmware method and AFTR mode support
-> to EXYNOS do_idle implementation.
->
-> This change is a preparation for adding secure firmware support to
-> EXYNOS cpuidle driver.
->
-> This patch shouldn't cause any functionality changes.
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz<b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park<kyungmin.park@samsung.com>
-> ---
-> v7:
-> - fixed build on Tegra
-> - updated summary line
->
->   arch/arm/include/asm/firmware.h        |  2 +-
->   arch/arm/mach-exynos/common.h          |  5 +++++
->   arch/arm/mach-exynos/firmware.c        | 10 ++++++++--
->   arch/arm/mach-tegra/cpuidle-tegra114.c |  2 +-
->   4 files changed, 15 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/arm/include/asm/firmware.h b/arch/arm/include/asm/firmware.h
-> index 5904f59..89aefe1 100644
-> --- a/arch/arm/include/asm/firmware.h
-> +++ b/arch/arm/include/asm/firmware.h
-> @@ -28,7 +28,7 @@ struct firmware_ops {
->   	/*
->   	 * Enters CPU idle mode
->   	 */
-> -	int (*do_idle)(void);
-> +	int (*do_idle)(unsigned long mode);
->   	/*
->   	 * Sets boot address of specified physical CPU
->   	 */
-> diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-> index c218200..2d830df 100644
-> --- a/arch/arm/mach-exynos/common.h
-> +++ b/arch/arm/mach-exynos/common.h
-> @@ -119,6 +119,11 @@ extern void __iomem *sysram_base_addr;
->   extern void __iomem *pmu_base_addr;
->   void exynos_sysram_init(void);
->
-> +enum {
-> +	FW_DO_IDLE_SLEEP,
-> +	FW_DO_IDLE_AFTR,
-> +};
-> +
->   void exynos_firmware_init(void);
->
->   extern u32 exynos_get_eint_wake_mask(void);
-> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-> index f5e626d..e57b7c3 100644
-> --- a/arch/arm/mach-exynos/firmware.c
-> +++ b/arch/arm/mach-exynos/firmware.c
-> @@ -28,9 +28,15 @@
->   #define EXYNOS_BOOT_ADDR	0x8
->   #define EXYNOS_BOOT_FLAG	0xc
->
-> -static int exynos_do_idle(void)
-> +static int exynos_do_idle(unsigned long mode)
->   {
-> -	exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
-> +	switch (mode) {
-> +	case FW_DO_IDLE_AFTR:
-> +		exynos_smc(SMC_CMD_CPU0AFTR, 0, 0, 0);
-> +		break;
-> +	case FW_DO_IDLE_SLEEP:
-> +		exynos_smc(SMC_CMD_SLEEP, 0, 0, 0);
-> +	}
->   	return 0;
->   }
->
-> diff --git a/arch/arm/mach-tegra/cpuidle-tegra114.c b/arch/arm/mach-tegra/cpuidle-tegra114.c
-> index e3ebdce..425b6c8 100644
-> --- a/arch/arm/mach-tegra/cpuidle-tegra114.c
-> +++ b/arch/arm/mach-tegra/cpuidle-tegra114.c
-> @@ -49,7 +49,7 @@ static int tegra114_idle_power_down(struct cpuidle_device *dev,
->   	call_firmware_op(prepare_idle);
->
->   	/* Do suspend by ourselves if the firmware does not implement it */
-> -	if (call_firmware_op(do_idle) == -ENOSYS)
-> +	if (call_firmware_op(do_idle, 0) == -ENOSYS)
->   		cpu_suspend(0, tegra30_sleep_cpu_secondary_finish);
->
->   	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT,&dev->cpu);
+Hi!
 
-+ Thierry(using nvidia.com e-mail address)
+On Wed, Sep 24, 2014 at 03:27:29PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Add code that requests that the sdr controller go into
+> self-refresh mode.  This code is run from ocram.
+> 
+> This patch assumes that u-boot has already configured sdr:
+>   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
+>   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
+>   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
+> 
+> How to suspend to ram:
+>  $ echo enabled > \
+> /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
+> 
+>  $ echo -n mem > /sys/power/state
+> 
 
-Hi Thierry,
+(...)
 
-For supporting AFTR mode in call_firmware_op(do_idle), need to modify 
-tegra stuff as you can see. The functionality will be same with before. 
-Is it OK to you? If you have no objection, I'd like to take this series 
-into samsung tree.
+Never looked into that, so maybe a stupid question:
+What happens if the bootloader (u-boot or other) didn't configure the sdr?
+Will it "just" not wake up again?
 
-Thanks,
-Kukjin
+Regards,
+Steffen
 
-
-
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
