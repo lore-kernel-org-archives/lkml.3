@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaIYNeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:34:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41210 "EHLO mx2.suse.de"
+	id S1753043AbaIYNfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:35:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27962 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650AbaIYNeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:34:08 -0400
-Message-ID: <542419CB.3090902@suse.cz>
-Date: Thu, 25 Sep 2014 15:34:03 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752759AbaIYNfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 09:35:01 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] NFS: Fabricate fscache server index key correctly
+From: David Howells <dhowells@redhat.com>
+To: trond.myklebust@primarydata.com
+Cc: linux-nfs@vger.kernel.org, Steve Dickson <steved@redhat.com>,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        linux-cachefs@redhat.com, james-p@moving-picture.com
+Date: Thu, 25 Sep 2014 14:34:41 +0100
+Message-ID: <20140925133441.2142.25916.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Behan Webster <behanw@converseincode.com>
-CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
- clang
-References: <1411500522-11480-1-git-send-email-behanw@converseincode.com> <5422B3EF.4000800@suse.cz> <5423128D.8070708@converseincode.com>
-In-Reply-To: <5423128D.8070708@converseincode.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-24 20:50, Behan Webster wrote:
-> On 09/24/14 05:07, Michal Marek wrote:
->> On 2014-09-23 21:28, behanw@converseincode.com wrote:
->>> From: Mark Charlebois <charlebm@gmail.com>
->>>
->>> Clang will warn about unknown warnings but will not return false
->> You mean unknown options, right?
-> 2 kinds of options: flags and warnings. clang used to merely warn about 
-> unused/unsupported flags/warnings. It now returns errors for unknown 
-> flags, but not warnings (unless you specify -Werror).
+When fabricating a server index key for fscache, we should clear the index key
+buffer before starting to fill it in, not in the middle.
 
-Ah, unknown warning options. Now I understand.
+Reported-by: James Pearson <james-p@moving-picture.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Steve Dickson <steved@redhat.com>
+---
 
+ fs/nfs/fscache-index.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> Getting clang to error on unused flags wasn't trivial (this change broke 
-> a lot of builds apparently). Fortunately we weren't the only ones who 
-> wanted it to behave like gcc in this case. I think it's going to be 
-> *much* harder to do the same for warnings. The argument given by 
-> supporters of the current situation is that if a warning isn't 
-> supported, why break the build? *sigh*
+diff --git a/fs/nfs/fscache-index.c b/fs/nfs/fscache-index.c
+index 7cf2c4699b08..777b055063f6 100644
+--- a/fs/nfs/fscache-index.c
++++ b/fs/nfs/fscache-index.c
+@@ -74,11 +74,10 @@ static uint16_t nfs_server_get_key(const void *cookie_netfs_data,
+ 	struct nfs_server_key *key = buffer;
+ 	uint16_t len = sizeof(struct nfs_server_key);
+ 
++	memset(key, 0, len);
+ 	key->nfsversion = clp->rpc_ops->version;
+ 	key->family = clp->cl_addr.ss_family;
+ 
+-	memset(key, 0, len);
+-
+ 	switch (clp->cl_addr.ss_family) {
+ 	case AF_INET:
+ 		key->port = sin->sin_port;
 
-I guess the reason to accept unknown warnings opentions is compatibility
-with Makefiles with hardcoded gcc-isms. BTW, GCC at some point started
-to ignore unknown -Wno-* options, for everyone's good of course. That's
-why we ended up with the cc-disable-warning function. If -W* options for
-clang need special care, then it might be a good idea to introduce
-cc-warning with the conditional -Werror for clang. There are not that
-many places where we add warnings, so the patch would be still short.
-That way, the possible silent failure is limited only to warning options
-with clang, which is not such a big deal.
-
-Michal
