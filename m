@@ -1,126 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaIYClC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:41:02 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:35638 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259AbaIYClA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:41:00 -0400
-Date: Wed, 24 Sep 2014 22:40:55 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch v2] mm: memcontrol: do not iterate uninitialized memcgs
-Message-ID: <20140925024054.GA4888@cmpxchg.org>
-References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+	id S1751755AbaIYCrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:47:23 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41837 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259AbaIYCrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 22:47:22 -0400
+Date: Thu, 25 Sep 2014 03:47:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrey Wagin <avagin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: linux-next: cgroup_mount() falls asleep forever
+Message-ID: <20140925024719.GJ7996@ZenIV.linux.org.uk>
+References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
+ <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
+ <20140924185213.GB7996@ZenIV.linux.org.uk>
+ <20140924192456.GA1233@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <20140924192456.GA1233@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh, buggy css_put() against the root.  Hand grenades, everywhere.
-Update:
+On Wed, Sep 24, 2014 at 03:24:56PM -0400, Tejun Heo wrote:
 
----
->From 9b0b4d72d71cd8acd7aaa58d2006c751decc8739 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Wed, 24 Sep 2014 22:00:20 -0400
-Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+> > Lovely...  First of all, that thing is obviously racy - there's nothing
+> > to prevent another mount happening between these two places.  Moreover,
+> > kernfs_mount() calling conventions are really atrocious - pointer to
+> > bool just to indicate that superblock is new?
+> > 
+> > Could somebody explain WTF is the whole construction trying to do?  Not
+> > to mention anything else, what *does* this pinning a superblock protect
+> > from?  Suppose we have a superblock for the same root with non-NULL ns
+> > and _that_ gets killed.  We get hit by the same
+> > 	percpu_ref_kill(&root->cgrp.self.refcnt);
+> > so what's the point of pinned_sb?  Might as well have just bumped the
+> > refcount, superblock or no superblock.  And no, delaying that kernfs_kill_sb()
+> > does you no good whatsoever - again, pinned_sb might have nothing to do with
+> > the superblock we are after.
+> 
+> Yeah, it's an ugly thing to work around vfs interface not very
+> conducive for filesystems which conditionally create or reuse
+> superblocks during mount.  There was a thread explaining what's going
+> on.  Looking up...
+> 
+>   http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
 
-The cgroup iterators yield css objects that have not yet gone through
-css_online(), but they are not complete memcgs at this point and so
-the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
-iteration skip memcgs not yet fully initialized") set out to implement
-exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
-not meet the ordering requirements for memcg, and so we still may see
-partially initialized memcgs from the iterators.
+Umm...  I still don't get it.  Could you describe the screnario in which
+that percpu_ref_tryget_live() would be called and managed to fail?
 
-The cgroup core can not reasonably provide a clear answer on whether
-the object around the css has been fully initialized, as that depends
-on controller-specific locking and lifetime rules.  Thus, introduce a
-memcg-specific flag that is set after the memcg has been initialized
-in css_online(), and read before mem_cgroup_iter() callers access the
-memcg members.
+It smells to me like most of the problems here are simply due to having too
+many locks and not being able to decide where should they live relative to
+->s_umount.  That cgroup_mutex thing feels like something way to coarse...
+You have it grabbed/dropped in
+	cgroup_destroy_root(), cgroup_remount(), cgroup_mount(),
+	task_cgroup_path(), cgroup_attach_task_all(), cgroup_rename(),
+	cgroup_rm_cftypes(), cgroup_add_cftypes(), cgroup_transfer_tasks(),
+	cgroupstats_build(),
+	css_release_work_fn() [async, queue_work()],
+	css_killed_work_fn() [async, queue_work()],
+	cgroup_init_subsys(), cgroup_init(), proc_cgroup_show(),
+	proc_cgroupstats_show(), cgroup_release_agent(), __cgroup_procs_write(),
+	cgroup_release_agent_write(), cgroup_subtree_control_write(),
+	cgroup_mkdir(), cgroup_rmdir()
+And that's a single system-wide mutex.  Plus there's a slew of workqueues
+and really unpleasant abuse of restart_syscall() tossed in for fun - what
+happens if some joker triggers that ->mount() _not_ from mount(2)?
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: <stable@vger.kernel.org>	[3.12+]
----
- mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+Then there's a global rwsem nesting inside that sucker.  And there's another
+mutex in fs/kernfs - also a global one.  Are the locking rules documented
+anywhere?  Lifetime rules, as well...
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 306b6470784c..bafdac0f724e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -292,6 +292,9 @@ struct mem_cgroup {
- 	/* vmpressure notifications */
- 	struct vmpressure vmpressure;
- 
-+	/* css_online() has been completed */
-+	bool initialized;
-+
- 	/*
- 	 * the counter to account for mem+swap usage.
- 	 */
-@@ -1090,10 +1093,23 @@ skip_node:
- 	 * skipping css reference should be safe.
- 	 */
- 	if (next_css) {
--		if ((next_css == &root->css) ||
--		    ((next_css->flags & CSS_ONLINE) &&
--		     css_tryget_online(next_css)))
--			return mem_cgroup_from_css(next_css);
-+		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
-+
-+		if (next_css == &root->css)
-+			return memcg;
-+
-+		if (css_tryget_online(next_css)) {
-+			if (memcg->initialized) {
-+				/*
-+				 * Make sure the caller's accesses to
-+				 * the memcg members are issued after
-+				 * we see this flag set.
-+				 */
-+				smp_rmb();
-+				return memcg;
-+			}
-+			css_put(next_css);
-+		}
- 
- 		prev_css = next_css;
- 		goto skip_node;
-@@ -5413,6 +5429,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
-+	int ret;
- 
- 	if (css->id > MEM_CGROUP_ID_MAX)
- 		return -ENOSPC;
-@@ -5449,7 +5466,16 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	}
- 	mutex_unlock(&memcg_create_mutex);
- 
--	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
-+	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
-+	if (ret)
-+		return ret;
-+
-+	/* Make sure the initialization is visible before the flag */
-+	smp_wmb();
-+
-+	memcg->initialized = true;
-+
-+	return 0;
- }
- 
- /*
--- 
-2.1.0
+Frankly, my first inclination here would be to try using sget() instead of
+scanning the list of roots.  How painful would it be to split the allocation
+and setup of roots, always allocate a new root and have sget() wait
+for fs shutdown in progress and decide whether it wants to reuse the existing
+one.  You can easily tell reuse existing vs. set up a new one from each other -
+just look at the root associated with the superblock you've got and check
+if it's the one you've allocated.  Freeing the damn thing if we'd reused
+an existing one and doing setup otherwise.
 
+I realize that it won't do in such form; your for_each_subsys() loop in there
+really depends on holding cgroup_mutex all the way through.  But do we really
+need it there?  Would just skipping the ones that doomed in rebind_subsystems()
+suffice?
+
+Just looking at the size of the damn thing is depressing, TBH - it's quite
+a bit bigger than *anything* in fs/*.c.  And callers are all over the tree ;-/
