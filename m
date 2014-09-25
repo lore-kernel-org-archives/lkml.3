@@ -1,61 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaIYGHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 02:07:53 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:58405 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaIYGHv (ORCPT
+	id S1751496AbaIYGM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 02:12:58 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57611 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793AbaIYGM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 02:07:51 -0400
-Date: Thu, 25 Sep 2014 07:07:45 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Thomas Shao <huishao@microsoft.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        apw@canonical.com, jasowang@redhat.com, kys@microsoft.com,
-        haiyangz@microsoft.com
-Subject: Re: [PATCH] Drivers: hv: util: Implement Time Synchronization using
- host time sample
-Message-ID: <20140925060745.GA9450@sucs.org>
-References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
- <20140923075610.GA10933@aepfle.de>
+	Thu, 25 Sep 2014 02:12:57 -0400
+X-Original-SENDERIP: 10.177.220.159
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 25 Sep 2014 15:13:31 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 1/4] mm/page_alloc: fix incorrect isolation
+ behavior by rechecking migratetype
+Message-ID: <20140925061331.GA23558@js1304-P5Q-DELUXE>
+References: <1409040498-10148-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1409040498-10148-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <540D6961.8060209@suse.cz>
+ <20140915023106.GD2676@js1304-P5Q-DELUXE>
+ <5422C772.3080700@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140923075610.GA10933@aepfle.de>
+In-Reply-To: <5422C772.3080700@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 09:56:10AM +0200, Olaf Hering wrote:
-> On Tue, Sep 23, Thomas Shao wrote:
+On Wed, Sep 24, 2014 at 03:30:26PM +0200, Vlastimil Babka wrote:
+> On 09/15/2014 04:31 AM, Joonsoo Kim wrote:
+> >On Mon, Sep 08, 2014 at 10:31:29AM +0200, Vlastimil Babka wrote:
+> >>On 08/26/2014 10:08 AM, Joonsoo Kim wrote:
+> >>
+> >>>diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> >>>index f86023b..51e0d13 100644
+> >>>--- a/mm/page_alloc.c
+> >>>+++ b/mm/page_alloc.c
+> >>>@@ -740,9 +740,15 @@ static void free_one_page(struct zone *zone,
+> >>>  	if (nr_scanned)
+> >>>  		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
+> >>>
+> >>>+	if (unlikely(has_isolate_pageblock(zone))) {
+> >>>+		migratetype = get_pfnblock_migratetype(page, pfn);
+> >>>+		if (is_migrate_isolate(migratetype))
+> >>>+			goto skip_counting;
+> >>>+	}
+> >>>+	__mod_zone_freepage_state(zone, 1 << order, migratetype);
+> >>>+
+> >>>+skip_counting:
+> >>
+> >>Here, wouldn't a simple 'else __mod_zone_freepage_state...' look
+> >>better than goto + label? (same for the following 2 patches). Or
+> >>does that generate worse code?
+> >
+> >To remove goto label, we need two __mod_zone_freepage_state() like
+> >as below. On my system, it doesn't generate worse code, but, I am not
+> >sure that this is true if more logic would be added. I think that
+> >goto + label is better.
 > 
-> > In current hyper-v time sync service,it only gets the initial clock time
-> > from the host. It didn't process the following time samples. This change
-> > introduced a module parameter called host_time_sync. If it is set to true,
-> > the guest will periodically sychronize it's time with the host clock using
-> > host time sample. By default it is disabled, because we still recommend
-> > user to configure NTP for time synchronization.
+> Oh right, I missed that. It's a bit subtle, but I don't see a nicer
+> solution right now.
+> 
+> >+	if (unlikely(has_isolate_pageblock(zone))) {
+> >+		migratetype = get_pfnblock_migratetype(page, pfn);
+> >+               if (!is_migrate_isolate(migratetype))
+> >+                       __mod_zone_freepage_state(zone, 1 << order, migratetype);
+> >+       } else {
+> >+               __mod_zone_freepage_state(zone, 1 << order, migratetype);
+> >         }
+> >
+> 
+> Yeah that would be uglier I guess.
+> 
+> >Anyway, What do you think which one is better, either v2 or v3? Still, v3? :)
+> 
+> Yeah v3 is much better than v1 was, and better for backporting than
+> v2. The changelogs also look quite clear. The overhead shouldn't be
+> bad with the per-zone flag guarding get_pfnblock_migratetype.
 
-You [Microsoft?] do? Can you link to public sources where is this stated
-please? I don't see any mention of doing this on
-http://technet.microsoft.com/en-us/library/dn720239.aspx .. The only
-official Microsoft information with respect to Hyper-V guest time
-synchronisation I've seen has been for Windows guests but perhaps I've
-looked in the wrong places.
+Okay. I will go this way. :)
 
-The reason I ask is because regular ntpd is not enough to discipline a
-Linux Hyper-V guest's clock. So much drift can occur under load that
-ntpd can't bring the clock under sync. For now, I've been using Chrony
-which has a higher tolerance for correcting drifting clocks. I'm not the
-only one seeing this either (see http://serverfault.com/a/488528/203726
-and
-http://serverfault.com/questions/523389/linux-clock-loses-10-minutes-every-week
-).
+> 
+> I'm just not sure about patch 4 and potentially leaving unmerged
+> budies behind. How would it look if instead we made sure isolation
+> works on whole MAX_ORDER blocks instead?
+> 
 
-It would be good to something official about this issue as it is painful
-when happens.
+If alloc_contig_range() succeed, and later, free_contig_range() is
+called for free, there would be no leaving unmerged buddies.
+If we fail on alloc_contig_range(), we can get unmerged buddies, but,
+that's rare case and it's not big matter because normally we don't
+want to allocate page with MAXORDER-1. We mostly want to allocate page
+with pageblock_order at maximum. After some split and merging of freepage,
+freepage could be MAXORDER-1 page again so that's not real issue, IMO.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+Thanks.
