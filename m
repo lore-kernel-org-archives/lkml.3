@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaIYCuz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:50:55 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:61829 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaIYCut (ORCPT
+	id S1753665AbaIYCzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:55:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41597 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaIYCux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:50:49 -0400
+	Wed, 24 Sep 2014 22:50:53 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,95 +33,89 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2 07/22] PCI/MSI: Refactor struct msi_chip to make it become more common
-Date: Thu, 25 Sep 2014 11:14:17 +0800
-Message-ID: <1411614872-4009-8-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X in all platforms
+Date: Thu, 25 Sep 2014 11:14:10 +0800
+Message-ID: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.542382FF.00C0,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: f03f4d276105395a2d8ef970737e7cb2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there are a lot of __weak arch functions in MSI code.
-These functions make MSI driver complex. Thierry Reding Introduced
-a new MSI chip framework to configure MSI/MSI-X irq in ARM. Use
-the new MSI chip framework to refactor all other platform MSI
-arch code to eliminate weak arch MSI functions. This patch add
-.restore_irq() and .setup_irqs() to make it become more common.
+This series is based Bjorn's pci/msi branch
+git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Reviewed-by: Lucas Stach <l.stach@pengutronix.de>
----
- drivers/pci/msi.c   |   15 +++++++++++++++
- include/linux/msi.h |    3 +++
- 2 files changed, 18 insertions(+), 0 deletions(-)
+Currently, there are a lot of weak arch functions in MSI code.
+Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
+This series use MSI chip framework to refactor MSI code across all platforms
+to eliminate weak arch functions. Then all MSI irqs will be managed in a 
+unified framework. Because this series changed a lot of ARCH MSI code,
+so tests in the platforms which MSI code modified are warmly welcomed!
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 3acbe65..d10edee 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -64,6 +64,11 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- {
- 	struct msi_desc *entry;
- 	int ret;
-+	struct msi_chip *chip;
-+
-+	chip = arch_find_msi_chip(dev);
-+	if (chip && chip->setup_irqs)
-+		return chip->setup_irqs(dev, nvec, type);
- 
- 	/*
- 	 * If an architecture wants to support multiple MSI, it needs to
-@@ -106,6 +111,11 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- 
- void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
- {
-+	struct msi_chip *chip = arch_find_msi_chip(dev);
-+
-+	if (chip && chip->teardown_irqs)
-+		return chip->teardown_irqs(dev);
-+
- 	return default_teardown_msi_irqs(dev);
- }
- 
-@@ -129,6 +139,11 @@ static void default_restore_msi_irq(struct pci_dev *dev, int irq)
- 
- void __weak arch_restore_msi_irqs(struct pci_dev *dev)
- {
-+	struct msi_chip *chip = arch_find_msi_chip(dev);
-+
-+	if (chip && chip->restore_irqs)
-+		return chip->restore_irqs(dev);
-+
- 	return default_restore_msi_irqs(dev);
- }
- 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 6fdc5c6..4cf1f31 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -69,7 +69,10 @@ struct msi_chip {
- 	struct list_head list;
- 
- 	int (*setup_irq)(struct pci_dev *dev, struct msi_desc *desc);
-+	int (*setup_irqs)(struct pci_dev *dev, int nvec, int type);
- 	void (*teardown_irq)(unsigned int irq);
-+	void (*teardown_irqs)(struct pci_dev *dev);
-+	void (*restore_irqs)(struct pci_dev *dev);
- };
- 
- #endif /* LINUX_MSI_H */
--- 
-1.7.1
+v1->v2:
+Add a patch to make s390 MSI code build happy between patch "x86/xen/MSI: E.."
+and "s390/MSI: Use MSI..". Fix several typo problems found by Lucas.
+
+RFC->v1: 
+Updated "[patch 4/21] x86/xen/MSI: Eliminate...", export msi_chip instead
+of #ifdef to fix MSI bug in xen running in x86. 
+Rename arch_get_match_msi_chip() to arch_find_msi_chip().
+Drop use struct device as the msi_chip argument, we will do that
+later in another patchset.
+
+Yijing Wang (22):
+  PCI/MSI: Clean up struct msi_chip argument
+  PCI/MSI: Remove useless bus->msi assignment
+  MSI: Remove the redundant irq_set_chip_data()
+  x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
+  s390/MSI: Use __msi_mask_irq() instead of default_msi_mask_irq()
+  PCI/MSI: Introduce weak arch_find_msi_chip() to find MSI chip
+  PCI/MSI: Refactor struct msi_chip to make it become more common
+  x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  x86/MSI: Remove unused MSI weak arch functions
+  MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
+  MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  IA64/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  Sparc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  tile/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+  PCI/MSI: Clean up unused MSI arch functions
+
+ arch/arm/mach-iop13xx/include/mach/pci.h |    2 +
+ arch/arm/mach-iop13xx/iq81340mc.c        |    1 +
+ arch/arm/mach-iop13xx/iq81340sc.c        |    1 +
+ arch/arm/mach-iop13xx/msi.c              |    9 ++-
+ arch/arm/mach-iop13xx/pci.c              |    6 ++
+ arch/ia64/kernel/msi_ia64.c              |   18 ++++-
+ arch/mips/pci/msi-octeon.c               |   35 ++++++----
+ arch/mips/pci/msi-xlp.c                  |   18 ++++--
+ arch/mips/pci/pci-xlr.c                  |   15 ++++-
+ arch/powerpc/kernel/msi.c                |   14 +++-
+ arch/s390/pci/pci.c                      |   18 ++++-
+ arch/sparc/kernel/pci.c                  |   14 +++-
+ arch/tile/kernel/pci_gx.c                |   14 +++-
+ arch/x86/include/asm/apic.h              |    4 +
+ arch/x86/include/asm/pci.h               |    4 +-
+ arch/x86/include/asm/x86_init.h          |    7 --
+ arch/x86/kernel/apic/io_apic.c           |   16 ++++-
+ arch/x86/kernel/x86_init.c               |   34 ---------
+ arch/x86/pci/xen.c                       |   60 +++++++++-------
+ drivers/iommu/irq_remapping.c            |    9 ++-
+ drivers/irqchip/irq-armada-370-xp.c      |    8 +--
+ drivers/pci/host/pci-tegra.c             |    8 ++-
+ drivers/pci/host/pcie-designware.c       |    4 +-
+ drivers/pci/host/pcie-rcar.c             |    8 ++-
+ drivers/pci/msi.c                        |  114 ++++++++++++++----------------
+ drivers/pci/probe.c                      |    1 -
+ include/linux/msi.h                      |   26 ++-----
+ 27 files changed, 266 insertions(+), 202 deletions(-)
 
