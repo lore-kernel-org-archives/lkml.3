@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaIYHmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:42:50 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:65464 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaIYHmq (ORCPT
+	id S1751806AbaIYHpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:45:32 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:61217 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaIYHpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:42:46 -0400
-Date: Thu, 25 Sep 2014 08:42:34 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: Guenter Roeck <linux@roeck-us.net>, Bryan Wu <cooloney@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Subject: Re: [PATCH v6 0/4] Introduce MEN 14F021P00 BMC driver series
-Message-ID: <20140925074234.GD7113@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <20140924144829.GK32069@lee--X1>
- <20140924154503.GA12403@roeck-us.net>
- <20140924161837.GA7113@lee--X1>
- <CAK5ve-+79oMf0vD-_gzWLPbvFi4ygd1q9pzTCHzzpsXVkjqP9Q@mail.gmail.com>
- <20140924165739.GA31578@roeck-us.net>
- <20140924184143.GC7113@lee--X1>
- <20140925082611.GA967@awelinux>
+	Thu, 25 Sep 2014 03:45:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140925082611.GA967@awelinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
+References: <1411140580-20909-1-git-send-email-jeffrey.t.kirsher@intel.com>
+	<20140922153355.GB4510@pd.tnic>
+	<AEF1C0F7-239C-436B-97A5-6AFF49FD9359@intel.com>
+	<20140922184049.GB4709@pd.tnic>
+	<3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+	<20140922192152.GD4709@pd.tnic>
+	<1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+	<20140922195737.GE4709@pd.tnic>
+	<1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
+	<20140922203336.GF4709@pd.tnic>
+	<1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
+Date: Thu, 25 Sep 2014 09:45:29 +0200
+X-Google-Sender-Auth: F3OkWubPe6QloaCSevnRQmxg1o4
+Message-ID: <CAMuHMdU7VO01_qRGc0TV2K+nJJCu4sm0zbH773_zBWdaxSR1aQ@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Rustad, Mark D" <mark.d.rustad@intel.com>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Andreas Werner wrote:
-> On Wed, Sep 24, 2014 at 07:41:43PM +0100, Lee Jones wrote:
-> > On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> > 
-> > > On Wed, Sep 24, 2014 at 09:33:32AM -0700, Bryan Wu wrote:
-> > > > On Wed, Sep 24, 2014 at 9:18 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > > > > On Wed, 24 Sep 2014, Guenter Roeck wrote:
-> > > > >
-> > > > >> On Wed, Sep 24, 2014 at 03:48:29PM +0100, Lee Jones wrote:
-> > > > >> > Guenter, Bryan, Wim,
-> > > > >> >
-> > > > >> > The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-> > > > >> >
-> > > > >> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-> > > > >> >
-> > > > >> > are available in the git repository at:
-> > > > >> >
-> > > > >> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-hwmon-leds-watchdog-v3.18
-> > > > >> >
-> > > > >> > for you to fetch changes up to 964356938fcd3c0001a786f55b9f0a0fbe47656a:
-> > > > >> >
-> > > > >> >   hwmon: (menf21bmc) Introduce MEN14F021P00 BMC HWMON driver (2014-09-24 15:36:33 +0100)
-> > > > >> >
-> > > > >> > ----------------------------------------------------------------
-> > > > >> > Immutable branch between MFD, HWMON, LEDs and Watchdog for v3.18
-> > > > >> >
-> > > > >> I assume you'll push it all through mfd, correct ?
-> > > > >
-> > > > > The idea is for all the affected Maintainers to pull this branch in to
-> > > > > their own trees.  If you guys don't, there will be a good chance of
-> > > > > conflict during the merge-window, which will subsequently upset Linus.
-> > > > >
-> > > > > So in answer to your question; yes I'll be taking this, but so should
-> > > > > each of you.
-> > > > >
-> > > > 
-> > > > Thanks for this, man. What am I going to do here? Need I pull in all
-> > > > the patches here into my LED tree or just one LED patch? I think if
-> > > > you push this for Linus through MFD tree, I don't need to pull it into
-> > > > my tree, right?
-> > > > 
-> > > I did
-> > > 
-> > > git remote add mfd git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git
-> > > git fetch --tags mfd
-> > > git merge mfd-hwmon-leds-watchdog-v3.18
-> > > 
-> > > in both my hwmon-next and watchdog-next branches. Both are currently building,
-> > > and already pushed into to my repository at kernel.org.
-> > > 
-> > > So, effectively, when I send my pull request to Linus, all patches from
-> > > mfd-hwmon-leds-watchdog-v3.18 will be included, ie the entire series.
-> > > The same will happen when Lee sends his pull request, and Wim, and you. 
-> > > I believe that is what Lee is asking for.
-> > 
-> > That's right.  It's not okay to break this branch up.  If it was, we
-> > would have been able to apply our respective components into our own
-> > trees from the beginning, but as there are interdependencies, breaking
-> > up the branch could have nasty consequences depending on the order in
-> > which they land in Mainline.  Most likely bisectability will be
-> > broken, which is not allowed.
-> > 
-> 
-> Hi,
-> please do not forget the MAINTAINERS Patch for this series.
-> I have send it last week attached to this series.
+On Mon, Sep 22, 2014 at 11:21 PM, Jeff Kirsher
+<jeffrey.t.kirsher@intel.com> wrote:
+>> > Why grep through 100,000 warnings, when we should be fixing the code to
+>> > prevent 100,000 warnings.  Not saying that the MACRO is the best
+>> > solution, it is just a solution, in hopes that it spurs discussions like
+>> > this on how to properly fix the warnings.  Not a discussion on how to
+>> > grep through the warnings and do nothing.
+>>
+>> There's only one thing I don't understand: why is so bad to grep through
+>> the warnings? I mean, sure, fixing them *without* jumping through hoops
+>> to do so is the optimal thing. But what's wrong with grepping through
+>> them?
+>
+> Nothing is wrong with grepping for an error, especially when you know
+> the error your grepping for.  But then again, why grep when it can be
+> fixed to begin with?  The fact that there are over 100,000
+> warnings/errors to begin with is somewhat disconcerting.  It makes me
+> wonder whether it was due to coding laziness.
 
-I'll take this through the MFD tree with everyone's Ack.
+Instead of grepping, you can feed the build log to linux-log-summary.
+Or when changing a driver, feed the before and after build logs to
+linux-log-diff. That way you won't miss the single new warning you've
+just introduced.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+https://github.com/geertu/linux-scripts
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
