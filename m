@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaIYHvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:51:38 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40308 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbaIYHvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:51:25 -0400
-From: Kever Yang <kever.yang@rock-chips.com>
-To: heiko@sntech.de, Mike Turquette <mturquette@linaro.org>
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
-        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/3] clk: rockchip: add clock node in PD_VIDEO
-Date: Thu, 25 Sep 2014 15:48:47 +0800
-Message-Id: <1411631328-14973-4-git-send-email-kever.yang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411631328-14973-1-git-send-email-kever.yang@rock-chips.com>
-References: <1411631328-14973-1-git-send-email-kever.yang@rock-chips.com>
+	id S1752686AbaIYHvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:51:24 -0400
+Received: from mail-bn1bn0108.outbound.protection.outlook.com ([157.56.110.108]:35452
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752586AbaIYHvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 03:51:20 -0400
+Date: Thu, 25 Sep 2014 15:50:15 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Stefan Agner <stefan@agner.ch>
+CC: <kernel@pengutronix.de>, <festevam@gmail.com>,
+        <jingchang.lu@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: vf610: Use ARM Global Timer as clocksource
+Message-ID: <20140925075013.GD6405@dragon>
+References: <1410437175-6636-1-git-send-email-stefan@agner.ch>
+ <1410437175-6636-2-git-send-email-stefan@agner.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410437175-6636-2-git-send-email-stefan@agner.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [180.108.234.93]
+X-ClientProxiedBy: HKXPR01CA007.apcprd01.prod.exchangelabs.com (10.242.96.17)
+ To BLUPR03MB342.namprd03.prod.outlook.com (10.141.48.13)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB342;
+X-Forefront-PRVS: 0345CFD558
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(51704005)(199003)(83506001)(120916001)(106356001)(107046002)(10300001)(19580405001)(46406003)(19580395003)(66066001)(97756001)(85852003)(83322001)(42186005)(83072002)(81542003)(31966008)(47776003)(20776003)(46102003)(77982003)(80022003)(90102001)(85306004)(74662003)(64706001)(74502003)(79102003)(81342003)(21056001)(95666004)(33656002)(86362001)(97736003)(102836001)(110136001)(99396003)(87976001)(92566001)(92726001)(23726002)(4396001)(33716001)(50466002)(105586002)(101416001)(76482002)(76176999)(50986999)(54356999)(77096002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB342;H:dragon;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add the clock node in PD_VIDEO
+On Thu, Sep 11, 2014 at 02:06:15PM +0200, Stefan Agner wrote:
+> Use ARM Global Timer as clocksource instead of the PIT timer. This
+> leaves the PIT timer for other users e.g. the secondary Cortex-M4
+> core. Also, the Global Timer has double the precission (running at
+> pheripheral clock compared to IPG clock) and a 64-bit incrementing
+> counter register.
 
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
----
+I just think of one thing.  Will this change cause a problem of the low
+power idle support in case we want to power down ARM core in there?
 
-Changes in v3:
-- add a fix factor
-- introduce a virtual node to implement the clock struct
+Shawn
 
-Changes in v2:
-- split out the patch
-
- drivers/clk/rockchip/clk-rk3288.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index dd204cb..d466814 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -296,6 +296,20 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 	COMPOSITE(0, "aclk_vdpu", mux_pll_src_cpll_gpll_usb480m_p, 0,
- 			RK3288_CLKSEL_CON(32), 14, 2, MFLAGS, 8, 5, DFLAGS,
- 			RK3288_CLKGATE_CON(3), 11, GFLAGS),
-+	/*
-+	 * We use aclk_vdpu by default GRF_SOC_CON0[7] setting in system,
-+	 * so we ignore the mux and make clocks nodes as following,
-+	 */
-+	GATE(ACLK_VCODEC, "aclk_vcodec", "aclk_vdpu", 0,
-+		RK3288_CLKGATE_CON(9), 0, GFLAGS),
-+	/*
-+	 * We introduce a virtul node of hclk_vodec_pre_v to split one clock
-+	 * sturct with a gate and a fix divider into two node in software.
-+	 */
-+	GATE(0, "hclk_vcodec_pre_v", "aclk_vdpu", 0,
-+		RK3288_CLKGATE_CON(3), 10, GFLAGS),
-+	GATE(HCLK_VCODEC, "hclk_vcodec", "hclk_vcodec_pre", 0,
-+		RK3288_CLKGATE_CON(9), 1, GFLAGS),
- 
- 	COMPOSITE(0, "aclk_vio0", mux_pll_src_cpll_gpll_usb480m_p, 0,
- 			RK3288_CLKSEL_CON(31), 6, 2, MFLAGS, 0, 5, DFLAGS,
-@@ -711,6 +725,12 @@ static void __init rk3288_clk_init(struct device_node *np)
- 		pr_warn("%s: could not register clock usb480m: %ld\n",
- 			__func__, PTR_ERR(clk));
- 
-+	clk = clk_register_fixed_factor(NULL, "hclk_vcodec_pre",
-+					"hclk_vcodec_pre_v", 0, 1, 4);
-+	if (IS_ERR(clk))
-+		pr_warn("%s: could not register clock hclk_vcodec_pre: %ld\n",
-+			__func__, PTR_ERR(clk));
-+
- 	rockchip_clk_register_plls(rk3288_pll_clks,
- 				   ARRAY_SIZE(rk3288_pll_clks),
- 				   RK3288_GRF_SOC_STATUS);
--- 
-1.9.1
-
+> 
+> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> ---
+> Theoretically we could remove the PIT driver now. But we could also
+> enable both drivers, but is having two clock source useful for the
+> Kernel at all?
+> 
+>  arch/arm/mach-imx/Kconfig | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index 64161aa..adc77180 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -656,7 +656,8 @@ config SOC_VF610
+>  	bool "Vybrid Family VF610 support"
+>  	select ARM_GIC
+>  	select PINCTRL_VF610
+> -	select VF_PIT_TIMER
+> +	select ARM_GLOBAL_TIMER
+> +	select CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
+>  	select PL310_ERRATA_769419 if CACHE_L2X0
+>  
+>  	help
+> -- 
+> 2.1.0
+> 
