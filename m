@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaIYO5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:57:12 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64628 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbaIYO5I (ORCPT
+	id S1753549AbaIYO5r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:57:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60834 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaIYO5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:57:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-arch@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-ia64@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>, x86@kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, sparclinux@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
-Date: Thu, 25 Sep 2014 16:56:53 +0200
-Message-ID: <3399763.VZ83zCGta1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140924060419.GA20253@ulmo>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com> <20140825112630.GA4163@ulmo.nvidia.com> <20140924060419.GA20253@ulmo>
+	Thu, 25 Sep 2014 10:57:46 -0400
+Date: Thu, 25 Sep 2014 16:56:49 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
+Subject: Re: [PATCH v6 0/4] LED triggers for USB host and device
+Message-ID: <20140925145649.GA15010@kroah.com>
+References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
+ <1411591401-5874-1-git-send-email-sojka@merica.cz>
+ <20140924205936.GC17997@saruman>
+ <20140924214155.GA30689@kroah.com>
+ <20140924221830.GA27914@saruman>
+ <20140924231550.GC27672@saruman>
+ <20140925103623.GA28291@kroah.com>
+ <20140925135632.GA28045@saruman>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cG0nmYsm+/lqYL+5iEOB16olXnCs8D8JsPEWfDbp/Xw
- zqs/YOw7Hl9NCD0DhRK2PauvTRj16bvHpwhKYaxz/DBr1iUevo
- VKBIkE9P0vzL2Fu5V1dB2dNpP3CjhI1BRniV4o8KpmLrZ+YQ5z
- ZDmKmGOKBxVOTuwYkYSIBHo4YHnBjwNbHq2Zvw9MkXSLD3ShTC
- 3goQXtEyx0XarJEC5hOGqiVft8GOFcZ5v7K05Rv58CAZteN4wQ
- LvZAA5EJ5Q8QruuiExv5KGs+dPRjXYLWnQns8UboKeCC0H8lIR
- 5jO2xH2XdGBhTTlKmBbyO6mYI4J3PHn/SKrNLORAWB2BOMgE9W
- BRxoOKcplIpMlKXAog4k=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925135632.GA28045@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 September 2014 08:04:21 Thierry Reding wrote:
+On Thu, Sep 25, 2014 at 08:56:32AM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Thu, Sep 25, 2014 at 12:36:23PM +0200, Greg Kroah-Hartman wrote:
+> > On Wed, Sep 24, 2014 at 06:15:50PM -0500, Felipe Balbi wrote:
+> > > On Wed, Sep 24, 2014 at 05:18:30PM -0500, Felipe Balbi wrote:
+> > > > On Wed, Sep 24, 2014 at 11:41:55PM +0200, Greg Kroah-Hartman wrote:
+> > > > > On Wed, Sep 24, 2014 at 03:59:36PM -0500, Felipe Balbi wrote:
+> > > > > > On Wed, Sep 24, 2014 at 10:43:17PM +0200, Michal Sojka wrote:
+> > > > > > > This adds LED triggers for USB host and device. First two patches
+> > > > > > > refactor UDC drivers as requested by Felipe Balbi, the next renames a
+> > > > > > > file and the last is the actual implementation of the LED triggers.
+> > > > > > > 
+> > > > > > > Changes from v5:
+> > > > > > > - Refactoring of USB gadget completion split into two patches (Filipe
+> > > > > > >   Balbi)
+> > > > > > > - Removed check for non-NULL req->completion (Filipe Balbi)
+> > > > > > > 
+> > > > > > > Changes from v4:
+> > > > > > > - Added performance numbers to the commit message of the last patch
+> > > > > > >   (greg k-h).
+> > > > > > > - Replaced BUG_ON with pr_err (Alan Stern, greg k-h).
+> > > > > > > - Used proper coding style for switch statement (greg k-h).
+> > > > > > > - Added comment about NULL argument (greg k-h).
+> > > > > > > - EXPORT_SYMBOL changed to EXPORT_SYMBOL_GPL (greg k-h).
+> > > > > > > - Both triggers are now registerd even if host or gagdet subsystem
+> > > > > > >   is not enabled (Bryan Wu, greg k-h).
+> > > > > > > 
+> > > > > > > Changes from v3:
+> > > > > > > - usb_gadget_giveback_request() moved outside of CONFIG_HAS_DMA
+> > > > > > >   conditioned block.
+> > > > > > > - Added kernel-doc for usb_gadget_giveback_request() (Felipe Balbi).
+> > > > > > > - Removed outdated comment (Alan Stern).
+> > > > > > > - req->complete == NULL is now a bug. Previously, this was ignored
+> > > > > > >   (Alan Stern).
+> > > > > > > - File rename moved to a separate commit (greg k-h).
+> > > > > > > 
+> > > > > > > Changes from v2:
+> > > > > > > - Host/gadget triggers merged to a single file in usb/common/ (Felipe
+> > > > > > >   Balbi).
+> > > > > > > - UDC drivers refactored so that LED trigger works for all of them.
+> > > > > > > 
+> > > > > > > Changes from v1:
+> > > > > > > - Moved from drivers/leds/ to drivers/usb/.
+> > > > > > > - Improved Kconfig help.
+> > > > > > > - Linked with other modules rather than being standalone modules.
+> > > > > > > 
+> > > > > > > Michal Sojka (4):
+> > > > > > >   usb: gadget: Introduce usb_gadget_giveback_request()
+> > > > > > >   usb: gadget: Refactor request completion
+> > > > > > >   usb: Rename usb-common.c
+> > > > > > >   usb: Add LED triggers for USB activity
+> > > > > > 
+> > > > > > Greg, how do you want to handle this one as it touched both host and
+> > > > > > gadget ? I could wait until you apply this series to your usb-next and
+> > > > > > based my pull request on that. That'll work as long as it doesn't take
+> > > > > > too long for this to be merged.
+> > > > > 
+> > > > > I can just take this now, for 3.18-rc1, you've already sent me your
+> > > > > patches for that release, so there shouldn't be any conflicts, right?
+> > > > 
+> > > > that's better. Can you wait 1 day though ? I can run these through my
+> > > > build tests.
+> > > 
+> > > running my build tests on top of v3.17-rc6 + these 4 patches. I'll
+> > > report back tomorrow. From a code perspective, though, they look
+> > > alright.
 > > 
-> > Arnd, do you think this looks good to take for test-driving in
-> > linux-next?
+> > Yes, will wait, thanks.
 > 
-> Ping?
+> nothing interesting on my build tests. I have also tested the series
+> with my AM437x SK and I can see LED blinking with usb-gadget and
+> usb-host triggers.
 > 
+> For the whole series:
+> 
+> Tested-by: Felipe Balbi <balbi@ti.com>
 
-I've put it all into the asm-generic tree, and Will's patches on top.
-Unless I get complaints, I plan to submit them all for 3.18.
+Thanks for testing and letting me know, will queue it up now.
 
-	Arnd
+greg k-h
