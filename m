@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaIYSnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:43:33 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:64496 "EHLO smtp.pobox.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317AbaIYSna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:43:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=veiBmq75pEupTUQNdp6QH/vYDCWLdXKh
-	/SLjjRfmZtZXBMr0ogFinqlaf36JZs5V3CamhmPaSE8cpj3Bh6g52Nmz0a//JTL9
-	MlUPJSrY7ke2FvfRBhdIUTFdl0QzWNydpVBqQRX+qMcPb9LeVmiK5C9hIQlioLav
-	FTw4NJOeARw=
-From: Junio C Hamano <gitster@pobox.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jeff King <peff@peff.net>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
-        git <git@vger.kernel.org>
-Subject: Re: project wide: git config entry for [diff] renames=true
-References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
-	<1411591401-5874-1-git-send-email-sojka@merica.cz>
-	<1411591401-5874-4-git-send-email-sojka@merica.cz>
-	<20140925150353.GA15325@kroah.com>
-	<1411660111.4026.24.camel@joe-AO725> <20140925180005.GA11755@peff.net>
-	<1411668391.3460.2.camel@joe-AO725>
-Date: Thu, 25 Sep 2014 11:43:27 -0700
-In-Reply-To: <1411668391.3460.2.camel@joe-AO725> (Joe Perches's message of
-	"Thu, 25 Sep 2014 11:06:31 -0700")
-Message-ID: <xmqq61gbbkxc.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752757AbaIYSoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:44:15 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:58012 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892AbaIYSoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 14:44:14 -0400
+Date: Thu, 25 Sep 2014 13:44:03 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
+ namespaces
+Message-ID: <20140925184403.GB28101@ubuntu-hedt>
+Mail-Followup-To: "Eric W. Biederman" <ebiederm@xmission.com>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	"Serge E. Hallyn" <serge@hallyn.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Serge Hallyn <serge.hallyn@ubuntu.com>,
+	fuse-devel <fuse-devel@lists.sourceforge.net>,
+	Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+ <20140910123525.GA29064@ubuntu-hedt>
+ <20140910162155.GA7748@mail.hallyn.com>
+ <20140910164212.GA32587@ubuntu-hedt>
+ <20140911181034.GA58733@ubuntu-hedt>
+ <87d2am3r8a.fsf@x220.int.ebiederm.org>
+ <20140924132925.GA48721@ubuntu-hedt>
+ <87y4t9ndw5.fsf@x220.int.ebiederm.org>
+ <CAJfpegs3QNdKMZWmN324OqHFw+e2qwU9kfkQ491==yP_JRrcWw@mail.gmail.com>
+ <87wq8reftb.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Pobox-Relay-ID: D752EABE-44E3-11E4-98C7-D931C4D60FE0-77302942!pb-smtp0.pobox.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wq8reftb.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On Thu, Sep 25, 2014 at 11:05:36AM -0700, Eric W. Biederman wrote:
+> Miklos Szeredi <miklos@szeredi.hu> writes:
+> 
+> > On Wed, Sep 24, 2014 at 7:10 PM, Eric W. Biederman
+> > <ebiederm@xmission.com> wrote:
+> >
+> >
+> >> So in summary I see:
+> >> - Low utility in being able to manipulate files with bad uids.
+> >> - Bad uids are mostly likely malicious action.
+> >> - make_bad_inode is trivial to analyze.
+> >> - No impediments to change if I am wrong.
+> >>
+> >> So unless there is a compelling case, right now I would recommend
+> >> returning -EIO initially.   That allows us to concentrate on the easier
+> >> parts of this and it leaves the changes only in fuse.
+> >
+> > The problem with marking the inode bad is that it will mark it bad for
+> > all instances of this filesystem.  Including ones which are in a
+> > namespace where the UIDs make perfect sense.
+> 
+> There are two cases:
+> app <-> fuse
+> fuse <-> server
+> 
+> I proposed mark_bad_inode for "userspace server -> fuse".
+> Where we have one superblock and one server so and one namespace that
+> they decide to talk in when the filesystem was mounted.
+> 
+> I think bad_inode is a reasonable response when the filesystem server
+> starts spewing non-sense.
+> 
+> > So that really doesn't look like a good solution.
+> >
+> > Doing the check in inode_permission() might be too heavyweight, but
+> > it's still the only one that looks sane.
+> 
+> For the "app <-> fuse" case we already have checks in inode_permision
+> that are kuid based that handle that case.  We use kuids not for
+> performance (although there is a small advatnage) but to much more to
+> keep the logic simple and maintainable.
+> 
+> 
+> For the "app -> fuse" case in .setattr we do need a check to verify
+> that the uid and gid are valid.  However that check was added with
+> the basic user namespace support and fuse current returns -EOVERFLOW
+> when that happens.
 
-> On Thu, 2014-09-25 at 14:00 -0400, Jeff King wrote:
-> ...
->> diff.renames is probably safe, but any config-sharing mechanism would
->> have to deal with either whitelisting, or providing some mechanism for
->> the puller to review changes before blindly following them.
->
-> Another mechanism might be to add a repository
-> top level .gitconfig and add whatever to that.
+Where does this happen? I haven't managed to track it down yet.
 
-That could be smaller half of an implementation detail of one of the
-two possibilities Jeff mentioned i.e. "mechanism for the puller to
-review changes before blindly following".  It gives the transfer
-part.  You still need a new mechanism to make that file that is
-tracked in the repository to be used as part of your configuration
-variable set after letting the puller to review and approve.
+I've also added a check in fuse for this. If a uid/gid passed to
+fuse_setattr doesn't map into the namespace it will return -EINVAL.
+Sounds like maybe it should return -EOVERFLOW instead.
 
-A puller who blindly trust the project could use the "include"
-mechanism from your .git/config to include a file with a well-known
-name that is tracked by the project _without_ review or approval.  I
-doubt we would recommend that in an open source setting, though.
+Thanks,
+Seth
