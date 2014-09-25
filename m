@@ -1,71 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaIYPLF (ORCPT <rfc822;w@1wt.eu>);
+	id S1753610AbaIYPLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:11:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:51196 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaIYPLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Sep 2014 11:11:05 -0400
-Received: from mail-bn1bbn0106.outbound.protection.outlook.com ([157.56.111.106]:40352
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752759AbaIYPLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:11:03 -0400
-Date: Thu, 25 Sep 2014 23:10:14 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <kernel@pengutronix.de>, <festevam@gmail.com>,
-        <jingchang.lu@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: vf610: Use ARM Global Timer as clocksource
-Message-ID: <20140925151012.GI6405@dragon>
-References: <1410437175-6636-1-git-send-email-stefan@agner.ch>
- <1410437175-6636-2-git-send-email-stefan@agner.ch>
- <20140925075013.GD6405@dragon>
- <7006ad6e519c2ce3eeded54d35c87183@agner.ch>
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
+Date: Thu, 25 Sep 2014 17:07:47 +0200
+Message-ID: <3361270.4SkjDs5lox@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140925145538.GN20043@arm.com>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <2811016.mhqlsl6pTS@wuerfel> <20140925145538.GN20043@arm.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <7006ad6e519c2ce3eeded54d35c87183@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [180.108.234.93]
-X-ClientProxiedBy: SIXPR01CA005.apcprd01.prod.exchangelabs.com (10.242.58.15)
- To DM2PR03MB350.namprd03.prod.outlook.com (10.141.54.21)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB350;
-X-Forefront-PRVS: 0345CFD558
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(199003)(51704005)(377424004)(4396001)(31966008)(20776003)(64706001)(46406003)(77096002)(92566001)(83072002)(83322001)(86362001)(76482002)(33716001)(54356999)(92726001)(93886004)(33656002)(50986999)(120916001)(87976001)(81342003)(79102003)(42186005)(95666004)(21056001)(99396003)(83506001)(10300001)(77982003)(46102003)(107046002)(80022003)(74502003)(110136001)(101416001)(66066001)(97736003)(102836001)(85852003)(50466002)(105586002)(23726002)(85306004)(76176999)(74662003)(106356001)(47776003)(97756001)(81542003)(90102001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB350;H:dragon;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+X-Provags-ID: V02:K0:QQ3+Fv4Uaa0r1xyBdlmGBX38ZsbCJZcUb6Lxc4/NveD
+ 6KWXLK8O5U/FxwAKUwjOS7G8B+T7mEP7OutOEi6KODSaml9KBN
+ DeeVc+bGFx1PwVHlx5AEQ9EakNyqslOb2e6lfyO21fDXaAtTDw
+ wKsmU1JPNMol3BK5WibuGVZstFIdWNzKz6bo5xZrcMM20Mpp0k
+ FcURBQd2+PKflQRoM68v2igDdNkqzNnQ0tcUQWIETXOaeR4QQL
+ +Vp19bgqLVs1uv2XNMAYzJdQr4BdMEt10I0TfuKgg7WwNhyr5Q
+ a1yFNv2YgVgxjCQENdKsO2r6VWF+UcC2T00+qSLzhOYAzucJ59
+ Osf8ZXMowhoEA5Hgc3MI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 10:25:13AM +0200, Stefan Agner wrote:
-> Am 2014-09-25 09:50, schrieb Shawn Guo:
-> > On Thu, Sep 11, 2014 at 02:06:15PM +0200, Stefan Agner wrote:
-> >> Use ARM Global Timer as clocksource instead of the PIT timer. This
-> >> leaves the PIT timer for other users e.g. the secondary Cortex-M4
-> >> core. Also, the Global Timer has double the precission (running at
-> >> pheripheral clock compared to IPG clock) and a 64-bit incrementing
-> >> counter register.
+On Thursday 25 September 2014 15:55:38 Will Deacon wrote:
+> On Thu, Sep 25, 2014 at 02:15:10PM +0100, Arnd Bergmann wrote:
+> > On Wednesday 24 September 2014 18:17:19 Will Deacon wrote:
+> > > This is version three of the series I've originally posted here:
+> > > 
+> > >   v1: https://lkml.org/lkml/2014/4/17/269
+> > >   v2: https://lkml.org/lkml/2014/5/22/468
+> > > 
+> > > This is basically just a rebase on top of 3.17-rc6, minus the alpha patch
+> > > (which was merged into mainline).
+> > > 
+> > > I looked at reworking the non-relaxed accessors to imply mmiowb, but it
+> > > quickly got messy as some architectures (e.g. mips) deliberately keep
+> > > mmiowb and readX/writeX separate whilst others (e.g. powerpc) don't trust
+> > > drivers to get mmiowb correct, so add barriers to both. Given that
+> > > arm/arm64/x86 don't care about mmiowb, I've left that as an exercise for
+> > > an architecture that does care.
+> > > 
+> > > In order to get this lot merged, we probably want to merge the asm-generic
+> > > patch (1/17) first, so Acks would be much appreciated on the architecture
+> > > bits.
+> > > 
+> > > As before, I've included the original cover letter below, as that describes
+> > > what I'm trying to do in more detail.
+> > > 
 > > 
-> > I just think of one thing.  Will this change cause a problem of the low
-> > power idle support in case we want to power down ARM core in there?
-> > 
+> > I've now applied the parts of your series that are required to have
+> > every architecture provide all the 'relaxed' accessors to the
+> > asm-generic tree, on top of Thierry's series.
 > 
-> I'm not sure what really happend to the Global Timer when we power down
-> the ARM core. We use a clocksoure of different power domain now, so it
-> might make a difference in low power modes, but I think it will improve
-> things: The PIT timer's clock currently have been clock gated even in
-> STOP mode, which does not power down the ARM core. And it would be shut
-> down completely in LP-Mode 1-3 which since PIT is part of the big power
-> domain 1. 
+> Brill, thanks Arnd! I'll repost what's left during the next cycle, however
+> I think you also need to pick the microblaze patch as it includes
+> <asm-generic/io.h> before defining its relaxed accessors, so I think
+> you'll get a redefinition warning from the preprocessor.
+
+Good point, I'll add that on top then.
+
+> > I had to change your first patch significantly because all the context
+> > changed in his patches. See below for the new version. Thierry, can
+> > you also confirm that this matches up with the intention of your
+> > series? Since that now adds a separate #ifdef for each symbol, I
+> > ended up putting the #ifdef for the relaxed version inside of the
+> > #ifdef for the non-relaxed version, but it could alternatively
+> > be defined outside of it as well.
 > 
-> But AFAIK, its not required that the clocksource is running while in low
-> power modes. The time should just not jump, and if the timers registers
-> are lost during suspend, a proper suspend/resume support need to be
-> implemented. 
+> I think both work, as I can't find any architectures that define the
+> relaxed variants but not the non-relaxed versions.
 
-Sorry, I should be more specific in the first place.  What I'm concerned
-is more about clockevent than clocksource.  If some day we have a
-cpuidle driver for vf610, which powers off ARM core in a deep C-state,
-the clockevent device will be gone as long as system enters the C-state,
-and no timer interrupt can wake up the core from idle state.
+Actually I just made up my mind about that: Architectures are actually
+supposed to provide the non-relaxed versions themselves using inline
+assembly, but they don't need to provide the relaxed version.
 
-Shawn
+The current version doesn't let you do that, so I'll keel the #ifdef
+sections separate. This also means that I won't apply your patch 17:
+we will keep needing the #ifdef to support all three relevant combinations:
+
+a) architectures that provide neither and want to get the defaults
+   from asm-generic
+b) architectures that provide the non-relaxed versions and want tog
+   to get just the relaxed version from asm-generic
+c) architectures that provide both
+
+	Arnd
