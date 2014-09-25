@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaIYARh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 20:17:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12740 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaIYARg convert rfc822-to-8bit (ORCPT
+	id S1751568AbaIYAVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 20:21:52 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:45237 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012AbaIYAVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 20:17:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,592,1406617200"; 
-   d="scan'208";a="604951306"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
-Thread-Topic: [PATCH 0/7] Silence even more W=2 warnings
-Thread-Index: AQHP1B6ZqT8VjyQkzkipcFe03W/rTpwNwlkAgAAZ2ACAABpfgIAABS8AgAAGSQCAAAZEgIAAA7mAgAADVoCAAAa4AIAAFZkAgACwXoCAAJd/AIAAFoIAgAHvRIA=
-Date: Thu, 25 Sep 2014 00:17:33 +0000
-Message-ID: <ACACCEEA-32F7-4296-B562-C83299BDFAD5@intel.com>
-References: <20140922184049.GB4709@pd.tnic>
- <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
- <20140922192152.GD4709@pd.tnic>
- <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
- <20140922195737.GE4709@pd.tnic>
- <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
- <20140922203336.GF4709@pd.tnic>
- <A05C31E6-7AD2-482A-B590-A5ED57D028B3@intel.com>
- <20140923082209.GB22072@pd.tnic>
- <029E2CFB-C001-4E16-B1F7-A3FB193E3138@intel.com>
- <20140923184456.GA16467@pd.tnic>
-In-Reply-To: <20140923184456.GA16467@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.176.68]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <BCE49CFCCF9B4B4A82A23C069AC13E08@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Sep 2014 20:21:50 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140924094229.GB5811@mwanda>
+References: <20140923002208.GA20768@devel>
+	<20140924093648.GA5811@mwanda>
+	<20140924094229.GB5811@mwanda>
+Date: Thu, 25 Sep 2014 09:21:50 +0900
+Message-ID: <CAHb8M2DgE4hi2V-cu9FJRw1BDFP834ERdfTg9UfOYdOpGGqU4w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] staging: dgap: adds missing iounmap for re_map_port
+ in dgap_release_remap()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel <devel@driverdev.osuosl.org>, Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sep 23, 2014, at 11:44 AM, Borislav Petkov <bp@alien8.de> wrote:
+Hi,
 
-> Again, we should take compiler warnings with a grain of salt and judge
-> them only by the quality of the generated code. IMO.
+2014-09-24 18:42 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Wed, Sep 24, 2014 at 12:36:48PM +0300, Dan Carpenter wrote:
+>> On Tue, Sep 23, 2014 at 09:22:08AM +0900, Daeseok Youn wrote:
+>> > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> > ---
+>> >  drivers/staging/dgap/dgap.c |    1 +
+>> >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+>> > index 779d144..637ea8a 100644
+>> > --- a/drivers/staging/dgap/dgap.c
+>> > +++ b/drivers/staging/dgap/dgap.c
+>> > @@ -1026,6 +1026,7 @@ static void dgap_release_remap(struct board_t *brd)
+>> >     release_mem_region(brd->membase, 0x200000);
+>> >     release_mem_region(brd->membase + PCI_IO_OFFSET, 0x200000);
+>> >     iounmap(brd->re_map_membase);
+>> > +   iounmap(brd->re_map_port);
+>>
+>>
+>> I don't think it matters, but at least aesthetically it would be better
+>> to unmap first and then release the regions.  (You can do this in a
+>> different patch).
+Ok. I will make another patch as your comment.
+>>
+>
+> Also dgap_do_remap() unwinds in the wrong order and is sucky.  It should
+> use gotos.
+>
+> Also the name dgap_do_remap() isn't great.  Remap is a verb not a noun
+> so the "_do" isn't needed.  Just dgap_remap() and dgap_release_remap()
+> could be changed to dgap_unmap().
+OK. rename those functions.
 
-The more I thought about this, the more I think it argues for having some
-diagnostic control macros. Tools such as the compiler can be very thorough -
-that is their strength. The warnings that the compiler emits are things
-that humans should consider. There are times when the human can judge
-that nothing need be done about it, so why not use the macros to indicate
-that that judgement has been made and get it out of the way so more
-potentially interesting issues can be found? How many people need to
-make that judgement over and over? That is clearly a waste of time and
-is why these higher warning levels simply don't get looked at. So lets
-capture that judgement in the code. That judgement would continue to be
-open to reevaluation in any case.
+Thanks.
 
-The syscall issue is not arising from an include file, but I think
-demonstrates the use nicely and I think is a fine example of a legitimate
-use in a C file.
-
-For me, it is about getting more value out of the evaluation that the compiler
-can do. When the output of W=2 is unusable because it is so voluminous - filled
-with things known to not cause problems - why not silence some of major
-sources so that more interesting issues might be seen? By not doing so, W=2
-has close to 0 value because no one looks at it.
-
-I guess I also trust the maintainers to not accept lots of patches that add
-uses of such macros. They have certainly demonstrated that up to this point.
-
-:-)
-
--- 
-Mark Rustad, Networking Division, Intel Corporation
-
+regards,
+Daeseok Youn.
+>
+> regards,
+> dan carpenter
+>
