@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437AbaIYMKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 08:10:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51537 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaIYMKl (ORCPT
+	id S1752885AbaIYMLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 08:11:05 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44666 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaIYMLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 08:10:41 -0400
-Message-ID: <5424063E.4020500@linaro.org>
-Date: Thu, 25 Sep 2014 14:10:38 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Thu, 25 Sep 2014 08:11:04 -0400
+Date: Thu, 25 Sep 2014 14:10:51 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: efm32: drop selecting NO_DMA
+Message-ID: <20140925121051.GM3755@pengutronix.de>
+References: <1411585151.19525.29.camel@x220>
+ <1411640056.7866.5.camel@x220>
 MIME-Version: 1.0
-To: "rjw@rjwysocki.net >> Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [GIT PULL] cpuidle ARM new material for 3.18
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411640056.7866.5.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Paul,
 
-[resent because of the missing Cc]
+On Thu, Sep 25, 2014 at 12:14:16PM +0200, Paul Bolle wrote:
+> On Wed, 2014-09-24 at 20:59 +0200, Paul Bolle wrote:
+> > Actually, the only difference I found in the .config file was that after
+> > this patch the .config file contained
+> >     CONFIG_ARCH_EFM32=y
+> > 
+> > I have no idea why. Did I botch my test?
+Looking at the patch that introduced the NO_DMA select I think I just
+copied it from somewhere[1] without questioning it. It seems the symbol
+already didn't exist when efm32 hit mainline in
+6d85e2b0b6bed6ae7070426d5e43174c593e075c.
 
-Hi Rafael,
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-this pull request contains the following changes:
+Best regards
+Uwe
 
-  * Lorenzo Pieralisi implemented a framework to initialize the ARM 
-cpuidle drivers with the DT. As an example, it provided a couple of 
-drivers using it: arm64 and big little. The former one is a new driver 
-while the latter is a change. There was also a patch for Exynos allowing 
-to use this framework but as it depends on a change in Samsung's tree, I 
-postponed this patch until the change is visible after the merge. The 
-set of changes depends on some other changes made in the ARM64 tree, for 
-this reason a shared branch is used. This is why there is a merge from 
-arm64 in my pull request. I believe we already used this procedure.
-
-  * Kevin Hilman added the compatible string for the exynos 5800 in the DT
-
-Thanks !
-
-   -- Daniel
-
-
-The following changes since commit 0f33be009b89d2268e94194dc4fd01a7851b6d51:
-
-   Linux 3.17-rc6 (2014-09-21 15:43:02 -0700)
-
-are available in the git repository at:
-
-   https://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.18
-
-for you to fetch changes up to d2e5c871ed8a250f7ee1fe34dd52ed5757363fba:
-
-   drivers: cpuidle: initialize big.LITTLE driver through DT (2014-09-25 
-10:52:21 +0200)
-
-----------------------------------------------------------------
-Daniel Lezcano (1):
-       Merge branch 'for-next/cpuidle' of 
-git://git.kernel.org/.../arm64/linux into cpuidle/3.18
-
-Kevin Hilman (1):
-       cpuidle: big.LITTLE: add Exynos5800 compatible string
-
-Lorenzo Pieralisi (7):
-       Documentation: arm: define DT idle states bindings
-       arm64: kernel: refactor the CPU suspend API for retention states
-       arm64: kernel: introduce cpu_init_idle CPU operation
-       arm64: add PSCI CPU_SUSPEND based cpu_suspend support
-       drivers: cpuidle: implement DT based idle states infrastructure
-       drivers: cpuidle: CPU idle ARM64 driver
-       drivers: cpuidle: initialize big.LITTLE driver through DT
-
-  Documentation/devicetree/bindings/arm/cpus.txt     |   8 +
-  .../devicetree/bindings/arm/idle-states.txt        | 679 
-+++++++++++++++++++++
-  Documentation/devicetree/bindings/arm/psci.txt     |  14 +-
-  arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |  23 +
-  arch/arm64/include/asm/cpu_ops.h                   |   3 +
-  arch/arm64/include/asm/cpuidle.h                   |  13 +
-  arch/arm64/include/asm/suspend.h                   |   1 +
-  arch/arm64/kernel/Makefile                         |   1 +
-  arch/arm64/kernel/cpuidle.c                        |  31 +
-  arch/arm64/kernel/psci.c                           | 104 ++++
-  arch/arm64/kernel/sleep.S                          |  47 +-
-  arch/arm64/kernel/suspend.c                        |  48 +-
-  drivers/cpuidle/Kconfig                            |   8 +
-  drivers/cpuidle/Kconfig.arm                        |   1 +
-  drivers/cpuidle/Kconfig.arm64                      |  14 +
-  drivers/cpuidle/Makefile                           |   5 +
-  drivers/cpuidle/cpuidle-arm64.c                    | 133 ++++
-  drivers/cpuidle/cpuidle-big_little.c               |  20 +
-  drivers/cpuidle/dt_idle_states.c                   | 213 +++++++
-  drivers/cpuidle/dt_idle_states.h                   |   7 +
-  20 files changed, 1340 insertions(+), 33 deletions(-)
-  create mode 100644 Documentation/devicetree/bindings/arm/idle-states.txt
-  create mode 100644 arch/arm64/include/asm/cpuidle.h
-  create mode 100644 arch/arm64/kernel/cpuidle.c
-  create mode 100644 drivers/cpuidle/Kconfig.arm64
-  create mode 100644 drivers/cpuidle/cpuidle-arm64.c
-  create mode 100644 drivers/cpuidle/dt_idle_states.c
-  create mode 100644 drivers/cpuidle/dt_idle_states.h
-
+[1] probably Catalin's 2.6.33 that introduced v7-M support initially.
 
 -- 
-  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
