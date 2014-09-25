@@ -1,80 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaIYOW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:22:28 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:55680 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaIYOW1 (ORCPT
+	id S1753346AbaIYOXS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:23:18 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:51812 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbaIYOXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:22:27 -0400
+	Thu, 25 Sep 2014 10:23:16 -0400
+Date: Thu, 25 Sep 2014 16:23:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+Message-ID: <20140925142312.GE11080@dhcp22.suse.cz>
+References: <1411612278-4707-1-git-send-email-hannes@cmpxchg.org>
+ <20140925025758.GA6903@mtj.dyndns.org>
+ <20140925134342.GB22508@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <CAH6sp9NzuEvP8zTRFi1bB8B6Xe08tmv7JbHMjQdvC2NSg9RBGw@mail.gmail.com>
-References: <53F878AD.1000408@schreyben.de>
-	<CAH6sp9NzuEvP8zTRFi1bB8B6Xe08tmv7JbHMjQdvC2NSg9RBGw@mail.gmail.com>
-Date: Thu, 25 Sep 2014 16:22:26 +0200
-Message-ID: <CAH6sp9NN1W6VWTuuwRkW2wjhzrXuXf86N6CR67uQKJnShDEvrA@mail.gmail.com>
-Subject: Re: linux-stable: backport usb related commit to 3.10 and 3.12?
-From: Frans Klaver <fransklaver@gmail.com>
-To: Schrey <debian-kernel@schreyben.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925134342.GB22508@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 4:20 PM, Frans Klaver <fransklaver@gmail.com> wrote:
-> On Sat, Aug 23, 2014 at 1:19 PM, Schrey <debian-kernel@schreyben.de> wrote:
->> Greetings.
->>
->> On an administered server, I noticed that there's a constant load
->> around 0.70 when running kernels 3.10 and 3.12, even if
->> the system is doing nothing, and in single user mode.
->> Culprit seems to be the process 'khubd'.
->> No such effect when running kernels 3.4 or 3.14.
->>
->> I reverse bisected linux-stable and found that the following commit
->> fixes it for me, for both kernel 3.10 and 3.12:
->>
->> [08d1dec6f4054e3613f32051d9b149d4203ce0d2] usb:hub set hub->change_bits when
->> over-current happens
->>
->>
->> Could that commit be backported to the stable 3.10 and 3.12 series?
->>
->> (Disclaimer: I'm not a programmer, but I'd be happy to help with any testing
->> involved)
->>
->> Regards
->> Ingmar
->>
->> --------------------------------------------------------------------------
->>
->> $ git diff ac5166bcdb43889a5bd837f5076b78049e1f8bca
->> 08d1dec6f4054e3613f32051d9b149d4203ce0d2
->> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
->> index c1422a0..babba88 100644
->> --- a/drivers/usb/core/hub.c
->> +++ b/drivers/usb/core/hub.c
->> @@ -1147,7 +1147,8 @@ static void hub_activate(struct usb_hub *hub, enum
->> hub_activation_type type)
->>                         /* Tell khubd to disconnect the device or
->>                          * check for a new connection
->>                          */
->> -                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
->> +                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION)
->> ||
->> +                           (portstatus & USB_PORT_STAT_OVERCURRENT))
->>                                 set_bit(port1, hub->change_bits);
->>
->>                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
->>
->
-> I think this could be eligible for backporting. I
+On Thu 25-09-14 09:43:42, Johannes Weiner wrote:
+[...]
+> From 1cd659f42f399adc58522d478f54587c8c4dd5cc Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Wed, 24 Sep 2014 22:00:20 -0400
+> Subject: [patch] mm: memcontrol: do not iterate uninitialized memcgs
+> 
+> The cgroup iterators yield css objects that have not yet gone through
+> css_online(), but they are not complete memcgs at this point and so
+> the memcg iterators should not return them.  d8ad30559715 ("mm/memcg:
+> iteration skip memcgs not yet fully initialized") set out to implement
+> exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+> not meet the ordering requirements for memcg, and so the iterator may
+> skip over initialized groups, or return partially initialized memcgs.
+> 
+> The cgroup core can not reasonably provide a clear answer on whether
+> the object around the css has been fully initialized, as that depends
+> on controller-specific locking and lifetime rules.  Thus, introduce a
+> memcg-specific flag that is set after the memcg has been initialized
+> in css_online(), and read before mem_cgroup_iter() callers access the
+> memcg members.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@vger.kernel.org>	[3.12+]
 
-I was going to say: It seems to tick the boxes in
-Documentation/stable_kernel_rules.txt.
+I am not an expert (obviously) on memory barriers but from
+Documentation/memory-barriers.txt, my understanding is that
+smp_load_acquire and smp_store_release is exactly what we need here.
+"
+However, after an ACQUIRE on a given variable, all memory accesses
+preceding any prior RELEASE on that same variable are guaranteed to be
+visible.
+"
 
-But then gmail thought it would be a good idea to send out the e-mail.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Frans
+Stable backport would be trickier because ACQUIRE/RELEASE were
+introduced later but smp_mb() should be safe replacement.
+
+Thanks!
+
+> ---
+>  mm/memcontrol.c | 36 +++++++++++++++++++++++++++++++-----
+>  1 file changed, 31 insertions(+), 5 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 306b6470784c..23976fd885fd 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -292,6 +292,9 @@ struct mem_cgroup {
+>  	/* vmpressure notifications */
+>  	struct vmpressure vmpressure;
+>  
+> +	/* css_online() has been completed */
+> +	int initialized;
+> +
+>  	/*
+>  	 * the counter to account for mem+swap usage.
+>  	 */
+> @@ -1090,10 +1093,21 @@ skip_node:
+>  	 * skipping css reference should be safe.
+>  	 */
+>  	if (next_css) {
+> -		if ((next_css == &root->css) ||
+> -		    ((next_css->flags & CSS_ONLINE) &&
+> -		     css_tryget_online(next_css)))
+> -			return mem_cgroup_from_css(next_css);
+> +		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
+> +
+> +		if (next_css == &root->css)
+> +			return memcg;
+> +
+> +		if (css_tryget_online(next_css)) {
+> +			/*
+> +			 * Make sure the memcg is initialized:
+> +			 * mem_cgroup_css_online() orders the the
+> +			 * initialization against setting the flag.
+> +			 */
+> +			if (smp_load_acquire(&memcg->initialized))
+> +				return memcg;
+> +			css_put(next_css);
+> +		}
+>  
+>  		prev_css = next_css;
+>  		goto skip_node;
+> @@ -5413,6 +5427,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+>  	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
+> +	int ret;
+>  
+>  	if (css->id > MEM_CGROUP_ID_MAX)
+>  		return -ENOSPC;
+> @@ -5449,7 +5464,18 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+>  	}
+>  	mutex_unlock(&memcg_create_mutex);
+>  
+> -	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
+> +	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/*
+> +	 * Make sure the memcg is initialized: mem_cgroup_iter()
+> +	 * orders reading memcg->initialized against its callers
+> +	 * reading the memcg members.
+> +	 */
+> +	smp_store_release(&memcg->initialized, 1);
+> +
+> +	return 0;
+>  }
+>  
+>  /*
+> -- 
+> 2.1.0
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
