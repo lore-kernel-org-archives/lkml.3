@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaIYWdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 18:33:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44067 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaIYWdS convert rfc822-to-8bit (ORCPT
+	id S1752187AbaIYWpa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 18:45:30 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:35489 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaIYWp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 18:33:18 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [GIT PULL] qcom SoC changes for v3.18 (updated)
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <A9208907-75E3-487C-B1CF-21AF3E3B5841@codeaurora.org>
-Date: Thu, 25 Sep 2014 17:33:15 -0500
-Cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D70B4C77-BA52-4F08-8D85-131E174348DF@codeaurora.org>
-References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org> <A9208907-75E3-487C-B1CF-21AF3E3B5841@codeaurora.org>
-To: arm@kernel.org
-X-Mailer: Apple Mail (2.1878.6)
+	Thu, 25 Sep 2014 18:45:29 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: bcm@fixthebug.org, chris@printf.net, mporter@linaro.org,
+        ulf.hansson@linaro.org
+Cc: behanw@converseincode.com, bcm-kernel-feedback-list@broadcom.com,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [PATCH v3] mmc, sdhci, bcm-kona, LLVMLinux: Remove use of __initconst
+Date: Thu, 25 Sep 2014 15:45:22 -0700
+Message-Id: <1411685122-21867-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <5774775.2EcFmuR4sV@wuerfel>
+References: <5774775.2EcFmuR4sV@wuerfel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The __initconst is in the wrong place, and when moved to the correct place
+it uncovers an error where the variable is used by non-init data structures.
 
-On Sep 22, 2014, at 4:54 PM, Kumar Gala <galak@codeaurora.org> wrote:
+Instead merely make them const and put the const in the right spot.
 
-> [ some how scm-boot.c got dropped, fixed now ]
-> 
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
-> 
-> for you to fetch changes up to 6d42c5c5ce79b20139eec15dc359dfbcda3b3557:
-> 
->  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-22 16:49:13 -0500)
-> 
-> ----------------------------------------------------------------
-> Qualcomm ARM Based SoC Updates for v3.18
-> 
-> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
-> * Various bug fixes and minor feature additions to scm code
-> * Added big-endian support to debug MSM uart
-> 
-> ----------------------------------------------------------------
-> Lina Iyer (2):
->      ARM: qcom: Add SCM warmboot flags for quad core targets.
->      ARM: qcom: Move scm-boot files to drivers/soc and include/soc
-> 
-> Olav Haugan (1):
->      ARM: qcom: scm: Add logging of actual return code from scm call
-> 
-> Stephen Boyd (6):
->      ARM: debug: Update MSM and QCOM DEBUG_LL help
->      ARM: debug: msm: Support big-endian CPUs
->      ARM: qcom: scm: Fix incorrect cache invalidation
->      ARM: qcom: scm: Get cacheline size from CTR
->      ARM: qcom: scm: Move the scm driver to drivers/soc/qcom
->      ARM: qcom: scm: Add atomic SCM APIs
-> 
-> Vikram Mulukutla (1):
->      ARM: qcom: scm: Flush the command buffer only instead of the entire cache
-> 
-> arch/arm/Kconfig.debug                             |   5 +-
-> arch/arm/include/debug/msm.S                       |   6 +
-> arch/arm/mach-qcom/Kconfig                         |   3 -
-> arch/arm/mach-qcom/Makefile                        |   3 -
-> arch/arm/mach-qcom/platsmp.c                       |   2 +-
-> drivers/soc/qcom/Kconfig                           |   2 +
-> drivers/soc/qcom/Makefile                          |   2 +
-> .../arm/mach-qcom => drivers/soc/qcom}/scm-boot.c  |   4 +-
-> {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c     | 131 ++++++++++++++++++---
-> .../arm/mach-qcom => include/soc/qcom}/scm-boot.h  |   2 +
-> {arch/arm/mach-qcom => include/soc/qcom}/scm.h     |   5 +-
-> 11 files changed, 137 insertions(+), 28 deletions(-)
-> rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm-boot.c (95%)
-> rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c (67%)
-> rename {arch/arm/mach-qcom => include/soc/qcom}/scm-boot.h (92%)
-> rename {arch/arm/mach-qcom => include/soc/qcom}/scm.h (80%)
-> — 
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Matt Porter <mporter@linaro.org>
+---
+ drivers/mmc/host/sdhci-bcm-kona.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-ping.
-
-- k
-
+diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+index dd780c3..d085dfe 100644
+--- a/drivers/mmc/host/sdhci-bcm-kona.c
++++ b/drivers/mmc/host/sdhci-bcm-kona.c
+@@ -225,7 +225,7 @@ static struct sdhci_pltfm_data sdhci_pltfm_data_kona = {
+ 		SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+ };
+ 
+-static struct __initconst of_device_id sdhci_bcm_kona_of_match[] = {
++static const struct of_device_id sdhci_bcm_kona_of_match[] = {
+ 	{ .compatible = "brcm,kona-sdhci"},
+ 	{ .compatible = "bcm,kona-sdhci"}, /* deprecated name */
+ 	{}
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.1
 
