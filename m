@@ -1,132 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaIYJeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:34:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55982 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751985AbaIYJeL (ORCPT
+	id S1753179AbaIYJgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:36:00 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37191 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaIYJf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:34:11 -0400
-Date: Thu, 25 Sep 2014 10:33:09 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Greg Ungerer <gerg@uclinux.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 09/17] m68k: io: implement dummy relaxed accessor
- macros for writes
-Message-ID: <20140925093309.GG20043@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <1411579056-16966-10-git-send-email-will.deacon@arm.com>
- <54236A67.90001@uclinux.org>
+	Thu, 25 Sep 2014 05:35:58 -0400
+Date: Thu, 25 Sep 2014 10:35:45 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Robert Richter <robert.richter@caviumnetworks.com>,
+        Robert Richter <rric@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Sunil Goutham <sgoutham@cavium.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] arm64, defconfig: Enable PCI
+Message-ID: <20140925093545.GE10390@e104818-lin.cambridge.arm.com>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org>
+ <20140924162631.GI31556@rric.localhost>
+ <20140924171047.GO15842@e104818-lin.cambridge.arm.com>
+ <3120493.DIoQFCi5Am@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54236A67.90001@uclinux.org>
+In-Reply-To: <3120493.DIoQFCi5Am@wuerfel>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 02:05:43AM +0100, Greg Ungerer wrote:
-> Hi Will
-
-Hi Greg,
-
-Thanks for taking a look.
-
-> On 25/09/14 03:17, Will Deacon wrote:
-> > write{b,w,l}_relaxed are implemented by some architectures in order to
-> > permit memory-mapped I/O accesses with weaker barrier semantics than the
-> > non-relaxed variants.
-> > 
-> > This patch adds dummy macros for the write accessors to m68k, in the
-> > same vein as the dummy definitions for the relaxed read accessors.
-> > Additionally, the existing relaxed read accessors are moved into
-> > asm/io.h, so that they can be used by m68k targets with an MMU.
-> > 
-> > Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >  arch/m68k/include/asm/io.h    | 8 ++++++++
-> >  arch/m68k/include/asm/io_no.h | 4 ----
-> >  2 files changed, 8 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/m68k/include/asm/io.h b/arch/m68k/include/asm/io.h
-> > index c70cc9155003..bccd5a914eb6 100644
-> > --- a/arch/m68k/include/asm/io.h
-> > +++ b/arch/m68k/include/asm/io.h
-> > @@ -3,3 +3,11 @@
-> >  #else
-> >  #include <asm/io_mm.h>
-> >  #endif
-> > +
-> > +#define readb_relaxed(addr)	readb(addr)
-> > +#define readw_relaxed(addr)	readw(addr)
-> > +#define readl_relaxed(addr)	readl(addr)
-> > +
-> > +#define writeb_relaxed(b, addr)	writeb(b, addr)
-> > +#define writew_relaxed(b, addr)	writew(b, addr)
-> > +#define writel_relaxed(b, addr)	writel(b, addr)
+On Wed, Sep 24, 2014 at 07:40:18PM +0100, Arnd Bergmann wrote:
+> On Wednesday 24 September 2014 18:10:48 Catalin Marinas wrote:
+> > On Wed, Sep 24, 2014 at 05:26:31PM +0100, Robert Richter wrote:
+> > > On 24.09.14 18:14:11, Arnd Bergmann wrote:
+> > > > On Wednesday 24 September 2014 17:37:47 Robert Richter wrote:
+> > > > >  config PCI
+> > > > >         bool "PCI support"
+> > > > > +       default y
+> > > > >         help
+> > > > >           This feature enables support for PCIe bus system. If you say Y
+> > > > >           here, the kernel will include drivers and infrastructure code
+> > > > >           to support PCIe bus devices.
+> > > > >  
+> > > > > +config PCI_MSI
+> > > > > +       def_bool PCI
+> > > > > +
+> > > > >  config PCI_DOMAINS
+> > > > >         def_bool PCI
+> > > > 
+> > > > There is already a PCI_MSI symbol in drivers/pci/Kconfig. Just select that
+> > > > from the PCI symbol above rather than defining a second one.
+> > > 
+> > > The intention is not to have a second definition, instead this should
+> > > enable the default value just for arm64. Thus I put it to
+> > > arch/arm64/Kconfig. Otherwise it would be enabled per default on all
+> > > archs.
 > 
-> Putting them here means they won't have any multiple include protection
-> (there is no "#ifndef _IO_H" around them). Doesn't seem to lead to
-> any problems in practice. Just flagging it...
+> I don't think other architectures actually see the PCI symbol that is
+> defined in the arm64 Kconfig file, but I might be wrong.
 
-That's easy enough to fix, and actually, we should have __KERNEL__ checks
-here too. Fixup below.
+Other archs wouldn't see the symbols in arch/arm64/Kconfig.
 
-Will
+> > > We could have used select in config ARM64, but I tried to avoid using
+> > > select due to the dependency issue and instead implement this with
+> > > default-y/depends-on. Doing so it can be manually disabled too.
+> 
+> How about adding a new symbol like
+> 
+> config ARM64_PCI
+> 	def_bool PCI
+> 	select PCI_MSI
 
---->8
+How is this different from just selecting PCI_MSI in config PCI in
+arch/arm64/Kconfig? I don't see what another symbol brings.
 
-diff --git a/arch/m68k/include/asm/io.h b/arch/m68k/include/asm/io.h
-index bccd5a914eb6..ded201916560 100644
---- a/arch/m68k/include/asm/io.h
-+++ b/arch/m68k/include/asm/io.h
-@@ -1,9 +1,14 @@
-+#ifndef _M68K_IO_H
-+#define _M68K_IO_H
-+
- #ifdef __uClinux__
- #include <asm/io_no.h>
- #else
- #include <asm/io_mm.h>
- #endif
- 
-+#ifdef __KERNEL__
-+
- #define readb_relaxed(addr)    readb(addr)
- #define readw_relaxed(addr)    readw(addr)
- #define readl_relaxed(addr)    readl(addr)
-@@ -11,3 +16,6 @@
- #define writeb_relaxed(b, addr)        writeb(b, addr)
- #define writew_relaxed(b, addr)        writew(b, addr)
- #define writel_relaxed(b, addr)        writel(b, addr)
-+
-+#endif /* __KERNEL__ */
-+#endif /* _M68K_IO_H */
+> > It may be better to simply set PCI and PCI_MSI as defaults in defconfig
+> > rather than "default y" and an additional config PCI_MSI entry.
+> 
+> Selecting PCI_MSI unconditionally seems fine to me. We won't have any
+> ARM64 systems that only do classic PCI, and MSI is mandatory for PCIe.
+
+OK then, we can go with a select.
+
+-- 
+Catalin
