@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaIYDUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:20:37 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49910 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaIYDUf (ORCPT
+	id S1753009AbaIYDWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:22:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41893 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbaIYDWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:20:35 -0400
-Message-ID: <542389FB.7010109@hitachi.com>
-Date: Thu, 25 Sep 2014 12:20:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 24 Sep 2014 23:22:17 -0400
+Date: Thu, 25 Sep 2014 04:22:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Elshad Mustafayev <elshadimo@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: acctc.c: Fixed else if not generally userful
+ after a break or return warning.
+Message-ID: <20140925032215.GK7996@ZenIV.linux.org.uk>
+References: <20140925031345.GA5252@emustafa>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-References: <20140923173846.603cb49c@gandalf.local.home> <5422336A.6030304@hitachi.com> <20140924114235.4287f4a1@gandalf.local.home> <20140924115811.6eeeab8c@gandalf.local.home> <54236339.7060506@hitachi.com> <20140924211440.2c170de4@gandalf.local.home>
-In-Reply-To: <20140924211440.2c170de4@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925031345.GA5252@emustafa>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/25 10:14), Steven Rostedt wrote:
-> On Thu, 25 Sep 2014 09:35:05 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Wed, Sep 24, 2014 at 11:13:45PM -0400, Elshad Mustafayev wrote:
+> Fixed a coding style issue.
 > 
->> (2014/09/25 0:58), Steven Rostedt wrote:
->>> On Wed, 24 Sep 2014 11:42:35 -0400
->>> Steven Rostedt <rostedt@goodmis.org> wrote:
->>>
->>>>> I think you'd better use exit_unsupported/exit_xfail to notify
->>>>> that the test target is not configured, or expected to fail.
->>>>
->>>
->>> Are these functions defined anywhere? I don't seem them in your v5
->>> patch set, or in selftests anywhere.
->>
->> Hmm, could you check my 4/4 patch in the series??
->> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg730578.html
+> Signed-off-by: Elshad Mustafayev <elshadimo@gmail.com>
+> ---
+>  kernel/acct.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> Hmm, I somehow missed this. Can you check to make sure my for-next
-> patches are your latest version. I'll pull in 4/4 tomorrow.
+> diff --git a/kernel/acct.c b/kernel/acct.c
+> index b4c667d..ed4cf00 100644
+> --- a/kernel/acct.c
+> +++ b/kernel/acct.c
+> @@ -376,9 +376,8 @@ static comp2_t encode_comp2_t(u64 value)
+>  	if (exp > MAXEXP2) {
+>  		/* Overflow. Return largest representable number instead. */
+>  		return (1ul << (MANTSIZE2+EXPSIZE2-1)) - 1;
+> -	} else {
+> -		return (value & (MAXFRACT2>>1)) | (exp << (MANTSIZE2-1));
+>  	}
+> +	return (value & (MAXFRACT2>>1)) | (exp << (MANTSIZE2-1));
 
-Yeah, I ensured that your for-next patches are the v5. You will be
-able to cleanly apply 4/4 on it :)
+Just what makes the replacement easier to follow?
+	if (foo)
+		return bar;
+	else
+		return baz;
+is no less idiomatic than
+	if (foo)
+		return bar;
+	return baz;
 
-Thank you,
-
-> 
-> Thanks,
-> 
-> -- Steve
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Al, really annoyed by how the words "coding style issue" are getting used as
+a magic incantation...
