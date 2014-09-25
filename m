@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaIYSVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:21:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22561 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386AbaIYSVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:21:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,598,1406617200"; 
-   d="scan'208";a="608650131"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>
-Cc: Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v6 0/2] Initial support for XPowers AXP288 PMIC
-Date: Thu, 25 Sep 2014 04:15:39 -0700
-Message-Id: <1411643739-21205-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753959AbaIYSW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:22:26 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:52374 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013AbaIYSWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 14:22:25 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: riya khanna <riyakhanna1983@gmail.com>
+Cc: LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
+        linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>
+References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
+	<87bnq5vcbl.fsf@x220.int.ebiederm.org>
+	<CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com>
+	<20140924163740.GD3865@ubuntumail>
+	<8738bglxsf.fsf_-_@x220.int.ebiederm.org>
+	<E8CD8839-8FC9-4404-863B-38F36F7D4328@gmail.com>
+	<871tr0hcfo.fsf@x220.int.ebiederm.org>
+	<CALRD3qLYAc+K8e1xYb27ipi4KyGRmTxokPCHN0L_zta=Cy9sCQ@mail.gmail.com>
+Date: Thu, 25 Sep 2014 11:21:50 -0700
+In-Reply-To: <CALRD3qLYAc+K8e1xYb27ipi4KyGRmTxokPCHN0L_zta=Cy9sCQ@mail.gmail.com>
+	(riya khanna's message of "Wed, 24 Sep 2014 19:25:09 -0500")
+Message-ID: <87iokbd0ht.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19mQkf1THBNOKEq6YIcTe45tLwQwSUuKMw=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.4 XM_Superlative01 Best-rated language
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4591]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;riya khanna <riyakhanna1983@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: Using devices in Containers
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X-Powers AXP288 is a customized PMIC found on some Intel Baytrail-CR platforms.
-It comes with sub-functions such as USB charging, fuel gauge, ADC, and many LDO
-and BUCK channels.
+riya khanna <riyakhanna1983@gmail.com> writes:
 
-By extending the existing AXP20x driver, this patchset adds basic support
-for AXP288 PMIC with ADC as one MFD cell device driver.
+> What kind of existing multiplexers could be used? Is there one for fb? We have
+> evdev abstractions for input in place already.
 
-Currently, the PMIC driver in this patchset does not support platform data
-enumeration. But when ACPI _DSD and unified device properties become available,
-cell devices with platform data will be added.
+We have X and Wayland/Weston and pulse audio and doubtless more that I
+am not aware of.
 
-This patch does not use intel_soc_pmic core for i2c and regmap handling in that
-axp288 shares similar programming interface with other X-Power PMICs supported in
-axp20x.c. Therefore, extending axp20x.c to include axp288 makes more sense.
+For video a lot of working is going into compositing and handling
+multiple contexts in the hardware so there may already be support in the
+kernel.
 
-Changes
- v6:	- change axp20x_match_device() flow to give more specific error
- 	  messages.
-	- remove unnecessary cast
+Fundamentally these are all pieces of hardware we allow multiple
+userspace applications access to their information or to modify.
+Therefore there is existing multiplexing somewhere.
 
- v5:	- excluded iio documentation patch, already applied to iio.git
- 	- restructured axp288_adc read_raw code to make it more readable
-	- renamed adc_enable to adc_set_state and add comment about why adc
-	  has to be always on and there is no disable function.
-	- axp20x use const as needed for regmap structures
-
- v4:	- removed rename patch, use Kconfig description to list supported devices
- 	- misc clean up in ADC code, use regmap_bulk_read and improve error
-	  handling, etc.
-	- remove IIO ADC scale, treat raw data as processed since the unit is
-	  already in IIO expected milliamps.
-
- v3:	- put all file rename changes in 1/5
- 	- add iio documentation for in_current_raw/scale
-	- removed global variables in axp2xx
-	- removed pm callbacks from GPADC
-	- removed ACPI opregion cell device
-	- added scales to ADC current and voltage
-	- removed ADC thermal sensor from sysfs, kernel internal use only
-
- v2:
-	- use format -M for 1/4
-	- minor tweak based on Maxime's review
+I won't claim all of the existing multiplexing methods are good and
+should be used as is, but they definitely should be used as a starting
+point.
 
 
-Jacob Pan (2):
-  mfd/axp20x: extend axp20x to support axp288 pmic
-  iio/adc: add support for axp288 adc
+>From another perspective there is how kvm tackles this today.  If you
+really want to emulate the hardware and make it appear that your
+instance of userspace has direct hardware access building upon the
+infrastructure that is used for kvm may be worth exploring.
 
- drivers/iio/adc/Kconfig      |   8 +
- drivers/iio/adc/Makefile     |   1 +
- drivers/iio/adc/axp288_adc.c | 253 ++++++++++++++++++++++++++++++
- drivers/mfd/Kconfig          |   3 +-
- drivers/mfd/axp20x.c         | 361 ++++++++++++++++++++++++++++++++++++-------
- include/linux/mfd/axp20x.h   |  59 +++++++
- 6 files changed, 629 insertions(+), 56 deletions(-)
- create mode 100644 drivers/iio/adc/axp288_adc.c
-
--- 
-1.9.1
+Eric
 
