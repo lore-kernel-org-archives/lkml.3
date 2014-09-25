@@ -1,531 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaIYFUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 01:20:06 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:58028 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaIYFUE (ORCPT
+	id S1751677AbaIYFU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 01:20:26 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:54493 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaIYFUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 01:20:04 -0400
-Message-ID: <5423A5F3.1080407@ozlabs.ru>
-Date: Thu, 25 Sep 2014 15:19:47 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 25 Sep 2014 01:20:23 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2 03/13] powerpc/spapr: vfio: Implement spapr_tce_iommu_ops
-References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>	 <1411441262-11025-4-git-send-email-aik@ozlabs.ru> <1411504921.24563.20.camel@ul30vt.home>
-In-Reply-To: <1411504921.24563.20.camel@ul30vt.home>
-Content-Type: text/plain; charset=koi8-r
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411364719-28064-1-git-send-email-gautam.vivek@samsung.com>
+References: <CAFp+6iGXLKhtGaHm=dFDGCpN38G=w6mX0PuatskBhvcL_HA=Bg@mail.gmail.com>
+	<1411364719-28064-1-git-send-email-gautam.vivek@samsung.com>
+Date: Thu, 25 Sep 2014 10:50:22 +0530
+X-Google-Sender-Auth: SsT40SP-XnGsQcdJgxZrbWqa8TA
+Message-ID: <CAFp+6iE0DGZ722kqFmBSDSzKLJ38=n3yfzx8t8knncjGbuAkyA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/2] usb: host: ehci-exynos: Remove unnecessary usb-phy support
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 06:42 AM, Alex Williamson wrote:
-> On Tue, 2014-09-23 at 13:00 +1000, Alexey Kardashevskiy wrote:
->> Modern IBM POWERPC systems support multiple IOMMU tables per PE
->> so we need a more reliable way (compared to container_of()) to get
->> a PE pointer from the iommu_table struct pointer used in IOMMU functions.
->>
->> At the moment IOMMU group data points to an iommu_table struct. This
->> introduces a spapr_tce_iommu_group struct which keeps an iommu_owner
->> and a spapr_tce_iommu_ops struct. For IODA, iommu_owner is a pointer to
->> the pnv_ioda_pe struct, for others it is still a pointer to
->> the iommu_table struct. The ops structs correspond to the type which
->> iommu_owner points to.
->>
->> This defines a get_table() callback which returns an iommu_table
->> by its number.
->>
->> As the IOMMU group data pointer points to variable type instead of
->> iommu_table, VFIO SPAPR TCE driver is updated to use the new type.
->> This changes the tce_container struct to store iommu_group instead of
->> iommu_table.
->>
->> So, it was:
->> - iommu_table points to iommu_group via iommu_table::it_group;
->> - iommu_group points to iommu_table via iommu_group_get_iommudata();
->>
->> now it is:
->> - iommu_table points to iommu_group via iommu_table::it_group;
->> - iommu_group points to spapr_tce_iommu_group via
->> iommu_group_get_iommudata();
->> - spapr_tce_iommu_group points to either (depending on .get_table()):
->> 	- iommu_table;
->> 	- pnv_ioda_pe;
->>
->> This uses pnv_ioda1_iommu_get_table for both IODA1&2 but IODA2 will
->> have own pnv_ioda2_iommu_get_table soon and pnv_ioda1_iommu_get_table
->> will only be used for IODA1.
->>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->>  arch/powerpc/include/asm/iommu.h            |   6 ++
->>  arch/powerpc/include/asm/tce.h              |  13 +++
->>  arch/powerpc/kernel/iommu.c                 |  35 ++++++-
->>  arch/powerpc/platforms/powernv/pci-ioda.c   |  31 +++++-
->>  arch/powerpc/platforms/powernv/pci-p5ioc2.c |   1 +
->>  arch/powerpc/platforms/powernv/pci.c        |   2 +-
->>  arch/powerpc/platforms/pseries/iommu.c      |  10 +-
->>  drivers/vfio/vfio_iommu_spapr_tce.c         | 148 ++++++++++++++++++++++------
->>  8 files changed, 208 insertions(+), 38 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
->> index 42632c7..84ee339 100644
->> --- a/arch/powerpc/include/asm/iommu.h
->> +++ b/arch/powerpc/include/asm/iommu.h
->> @@ -108,13 +108,19 @@ extern void iommu_free_table(struct iommu_table *tbl, const char *node_name);
->>   */
->>  extern struct iommu_table *iommu_init_table(struct iommu_table * tbl,
->>  					    int nid);
->> +
->> +struct spapr_tce_iommu_ops;
->>  #ifdef CONFIG_IOMMU_API
->>  extern void iommu_register_group(struct iommu_table *tbl,
->> +				 void *iommu_owner,
->> +				 struct spapr_tce_iommu_ops *ops,
->>  				 int pci_domain_number, unsigned long pe_num);
->>  extern int iommu_add_device(struct device *dev);
->>  extern void iommu_del_device(struct device *dev);
->>  #else
->>  static inline void iommu_register_group(struct iommu_table *tbl,
->> +					void *iommu_owner,
->> +					struct spapr_tce_iommu_ops *ops,
->>  					int pci_domain_number,
->>  					unsigned long pe_num)
->>  {
->> diff --git a/arch/powerpc/include/asm/tce.h b/arch/powerpc/include/asm/tce.h
->> index 743f36b..9f159eb 100644
->> --- a/arch/powerpc/include/asm/tce.h
->> +++ b/arch/powerpc/include/asm/tce.h
->> @@ -50,5 +50,18 @@
->>  #define TCE_PCI_READ		0x1		/* read from PCI allowed */
->>  #define TCE_VB_WRITE		0x1		/* write from VB allowed */
->>  
->> +struct spapr_tce_iommu_group;
->> +
->> +struct spapr_tce_iommu_ops {
->> +	struct iommu_table *(*get_table)(
->> +			struct spapr_tce_iommu_group *data,
->> +			int num);
->> +};
->> +
->> +struct spapr_tce_iommu_group {
->> +	void *iommu_owner;
->> +	struct spapr_tce_iommu_ops *ops;
->> +};
->> +
->>  #endif /* __KERNEL__ */
->>  #endif /* _ASM_POWERPC_TCE_H */
->> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
->> index b378f78..1c5dae7 100644
->> --- a/arch/powerpc/kernel/iommu.c
->> +++ b/arch/powerpc/kernel/iommu.c
->> @@ -878,24 +878,53 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
->>   */
->>  static void group_release(void *iommu_data)
->>  {
->> -	struct iommu_table *tbl = iommu_data;
->> -	tbl->it_group = NULL;
->> +	kfree(iommu_data);
->>  }
->>  
->> +static struct iommu_table *spapr_tce_default_get_table(
->> +		struct spapr_tce_iommu_group *data, int num)
->> +{
->> +	struct iommu_table *tbl = data->iommu_owner;
->> +
->> +	switch (num) {
->> +	case 0:
->> +		if (tbl->it_size)
->> +			return tbl;
->> +		/* fallthru */
->> +	default:
->> +		return NULL;
->> +	}
->> +}
->> +
->> +static struct spapr_tce_iommu_ops spapr_tce_default_ops = {
->> +	.get_table = spapr_tce_default_get_table
->> +};
->> +
->>  void iommu_register_group(struct iommu_table *tbl,
->> +		void *iommu_owner, struct spapr_tce_iommu_ops *ops,
->>  		int pci_domain_number, unsigned long pe_num)
->>  {
->>  	struct iommu_group *grp;
->>  	char *name;
->> +	struct spapr_tce_iommu_group *data;
->> +
->> +	data = kzalloc(sizeof(*data), GFP_KERNEL);
->> +	if (!data)
->> +		return;
->> +
->> +	data->iommu_owner = iommu_owner ? iommu_owner : tbl;
->> +	data->ops = ops ? ops : &spapr_tce_default_ops;
->>  
->>  	grp = iommu_group_alloc();
->>  	if (IS_ERR(grp)) {
->>  		pr_warn("powerpc iommu api: cannot create new group, err=%ld\n",
->>  				PTR_ERR(grp));
->> +		kfree(data);
->>  		return;
->>  	}
->> +
->>  	tbl->it_group = grp;
->> -	iommu_group_set_iommudata(grp, tbl, group_release);
->> +	iommu_group_set_iommudata(grp, data, group_release);
->>  	name = kasprintf(GFP_KERNEL, "domain%d-pe%lx",
->>  			pci_domain_number, pe_num);
->>  	if (!name)
->> diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
->> index 136e765..2d32a1c 100644
->> --- a/arch/powerpc/platforms/powernv/pci-ioda.c
->> +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
->> @@ -23,6 +23,7 @@
->>  #include <linux/io.h>
->>  #include <linux/msi.h>
->>  #include <linux/memblock.h>
->> +#include <linux/iommu.h>
->>  
->>  #include <asm/sections.h>
->>  #include <asm/io.h>
->> @@ -988,6 +989,26 @@ static void pnv_pci_ioda2_tce_invalidate(struct pnv_ioda_pe *pe,
->>  	}
->>  }
->>  
->> +static struct iommu_table *pnv_ioda1_iommu_get_table(
->> +		struct spapr_tce_iommu_group *data,
->> +		int num)
->> +{
->> +	struct pnv_ioda_pe *pe = data->iommu_owner;
->> +
->> +	switch (num) {
->> +	case 0:
->> +		if (pe->tce32.table.it_size)
->> +			return &pe->tce32.table;
->> +		/* fallthru */
->> +	default:
->> +		return NULL;
->> +	}
->> +}
->> +
->> +static struct spapr_tce_iommu_ops pnv_pci_ioda1_ops = {
->> +	.get_table = pnv_ioda1_iommu_get_table,
->> +};
->> +
->>  static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
->>  				      struct pnv_ioda_pe *pe, unsigned int base,
->>  				      unsigned int segs)
->> @@ -1067,7 +1088,8 @@ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
->>  				 TCE_PCI_SWINV_PAIR);
->>  	}
->>  	iommu_init_table(tbl, phb->hose->node);
->> -	iommu_register_group(tbl, phb->hose->global_number, pe->pe_number);
->> +	iommu_register_group(tbl, pe, &pnv_pci_ioda1_ops,
->> +			phb->hose->global_number, pe->pe_number);
->>  
->>  	if (pe->pdev)
->>  		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
->> @@ -1137,6 +1159,10 @@ static void pnv_pci_ioda2_setup_bypass_pe(struct pnv_phb *phb,
->>  	pnv_pci_ioda2_set_bypass(&pe->tce32.table, true);
->>  }
->>  
->> +static struct spapr_tce_iommu_ops pnv_pci_ioda2_ops = {
->> +	.get_table = pnv_ioda1_iommu_get_table,
->> +};
->> +
->>  static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
->>  				       struct pnv_ioda_pe *pe)
->>  {
->> @@ -1202,7 +1228,8 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
->>  		tbl->it_type |= (TCE_PCI_SWINV_CREATE | TCE_PCI_SWINV_FREE);
->>  	}
->>  	iommu_init_table(tbl, phb->hose->node);
->> -	iommu_register_group(tbl, phb->hose->global_number, pe->pe_number);
->> +	iommu_register_group(tbl, pe, &pnv_pci_ioda2_ops,
->> +			phb->hose->global_number, pe->pe_number);
->>  
->>  	if (pe->pdev)
->>  		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
->> diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
->> index 94ce348..b79066d 100644
->> --- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
->> +++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
->> @@ -89,6 +89,7 @@ static void pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
->>  	if (phb->p5ioc2.iommu_table.it_map == NULL) {
->>  		iommu_init_table(&phb->p5ioc2.iommu_table, phb->hose->node);
->>  		iommu_register_group(&phb->p5ioc2.iommu_table,
->> +				NULL, NULL,
->>  				pci_domain_nr(phb->hose->bus), phb->opal_id);
->>  	}
->>  
->> diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
->> index 97895d4..6ffac79 100644
->> --- a/arch/powerpc/platforms/powernv/pci.c
->> +++ b/arch/powerpc/platforms/powernv/pci.c
->> @@ -723,7 +723,7 @@ static struct iommu_table *pnv_pci_setup_bml_iommu(struct pci_controller *hose)
->>  	pnv_pci_setup_iommu_table(tbl, __va(be64_to_cpup(basep)),
->>  				  be32_to_cpup(sizep), 0, IOMMU_PAGE_SHIFT_4K);
->>  	iommu_init_table(tbl, hose->node);
->> -	iommu_register_group(tbl, pci_domain_nr(hose->bus), 0);
->> +	iommu_register_group(tbl, NULL, NULL, pci_domain_nr(hose->bus), 0);
->>  
->>  	/* Deal with SW invalidated TCEs when needed (BML way) */
->>  	swinvp = of_get_property(hose->dn, "linux,tce-sw-invalidate-info",
->> diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
->> index 4642d6a..b95f8cf 100644
->> --- a/arch/powerpc/platforms/pseries/iommu.c
->> +++ b/arch/powerpc/platforms/pseries/iommu.c
->> @@ -616,7 +616,7 @@ static void pci_dma_bus_setup_pSeries(struct pci_bus *bus)
->>  
->>  	iommu_table_setparms(pci->phb, dn, tbl);
->>  	pci->iommu_table = iommu_init_table(tbl, pci->phb->node);
->> -	iommu_register_group(tbl, pci_domain_nr(bus), 0);
->> +	iommu_register_group(tbl, NULL, NULL, pci_domain_nr(bus), 0);
->>  
->>  	/* Divide the rest (1.75GB) among the children */
->>  	pci->phb->dma_window_size = 0x80000000ul;
->> @@ -661,7 +661,7 @@ static void pci_dma_bus_setup_pSeriesLP(struct pci_bus *bus)
->>  				   ppci->phb->node);
->>  		iommu_table_setparms_lpar(ppci->phb, pdn, tbl, dma_window);
->>  		ppci->iommu_table = iommu_init_table(tbl, ppci->phb->node);
->> -		iommu_register_group(tbl, pci_domain_nr(bus), 0);
->> +		iommu_register_group(tbl, NULL, NULL, pci_domain_nr(bus), 0);
->>  		pr_debug("  created table: %p\n", ppci->iommu_table);
->>  	}
->>  }
->> @@ -688,7 +688,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
->>  				   phb->node);
->>  		iommu_table_setparms(phb, dn, tbl);
->>  		PCI_DN(dn)->iommu_table = iommu_init_table(tbl, phb->node);
->> -		iommu_register_group(tbl, pci_domain_nr(phb->bus), 0);
->> +		iommu_register_group(tbl, NULL, NULL,
->> +				pci_domain_nr(phb->bus), 0);
->>  		set_iommu_table_base_and_group(&dev->dev,
->>  					       PCI_DN(dn)->iommu_table);
->>  		return;
->> @@ -1105,7 +1106,8 @@ static void pci_dma_dev_setup_pSeriesLP(struct pci_dev *dev)
->>  				   pci->phb->node);
->>  		iommu_table_setparms_lpar(pci->phb, pdn, tbl, dma_window);
->>  		pci->iommu_table = iommu_init_table(tbl, pci->phb->node);
->> -		iommu_register_group(tbl, pci_domain_nr(pci->phb->bus), 0);
->> +		iommu_register_group(tbl, NULL, NULL,
->> +				pci_domain_nr(pci->phb->bus), 0);
->>  		pr_debug("  created table: %p\n", pci->iommu_table);
->>  	} else {
->>  		pr_debug("  found DMA window, table: %p\n", pci->iommu_table);
->> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
->> index 730b4ef..a8adfbd 100644
->> --- a/drivers/vfio/vfio_iommu_spapr_tce.c
->> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
->> @@ -43,17 +43,51 @@ static void tce_iommu_detach_group(void *iommu_data,
->>   */
->>  struct tce_container {
->>  	struct mutex lock;
->> -	struct iommu_table *tbl;
->> +	struct iommu_group *grp;
->> +	long windows_num;
->>  	bool enabled;
->>  };
->>  
->> +static struct iommu_table *spapr_tce_find_table(
->> +		struct tce_container *container,
->> +		struct spapr_tce_iommu_group *data,
->> +		phys_addr_t ioba)
->> +{
->> +	long i;
->> +	struct iommu_table *ret = NULL;
->> +
->> +	mutex_lock(&container->lock);
->> +	for (i = 0; i < container->windows_num; ++i) {
->> +		struct iommu_table *tbl = data->ops->get_table(data, i);
->> +
->> +		if (tbl) {
->> +			unsigned long entry = ioba >> tbl->it_page_shift;
->> +			unsigned long start = tbl->it_offset;
->> +			unsigned long end = start + tbl->it_size;
->> +
->> +			if ((start <= entry) && (entry < end)) {
->> +				ret = tbl;
->> +				break;
->> +			}
->> +		}
->> +	}
->> +	mutex_unlock(&container->lock);
->> +
->> +	return ret;
->> +}
->> +
->>  static int tce_iommu_enable(struct tce_container *container)
->>  {
->>  	int ret = 0;
->>  	unsigned long locked, lock_limit, npages;
->> -	struct iommu_table *tbl = container->tbl;
->> +	struct iommu_table *tbl;
->> +	struct spapr_tce_iommu_group *data;
->>  
->> -	if (!container->tbl)
->> +	if (!container->grp)
->> +		return -ENXIO;
->> +
->> +	data = iommu_group_get_iommudata(container->grp);
->> +	if (!data || !data->iommu_owner || !data->ops->get_table)
->>  		return -ENXIO;
->>  
->>  	if (!current->mm)
->> @@ -80,6 +114,10 @@ static int tce_iommu_enable(struct tce_container *container)
->>  	 * that would effectively kill the guest at random points, much better
->>  	 * enforcing the limit based on the max that the guest can map.
->>  	 */
->> +	tbl = data->ops->get_table(data, 0);
-> 
-> Can we define an enum to avoid sprinkling magic zeros in the code?
-
-Right. Missed it in one of iterations :-/
+Hi Greg,
 
 
->> +	if (!tbl)
->> +		return -ENXIO;
->> +
->>  	down_write(&current->mm->mmap_sem);
->>  	npages = (tbl->it_size << IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
->>  	locked = current->mm->locked_vm + npages;
->> @@ -89,7 +127,6 @@ static int tce_iommu_enable(struct tce_container *container)
->>  				rlimit(RLIMIT_MEMLOCK));
->>  		ret = -ENOMEM;
->>  	} else {
->> -
->>  		current->mm->locked_vm += npages;
->>  		container->enabled = true;
->>  	}
->> @@ -100,16 +137,27 @@ static int tce_iommu_enable(struct tce_container *container)
->>  
->>  static void tce_iommu_disable(struct tce_container *container)
->>  {
->> +	struct spapr_tce_iommu_group *data;
->> +	struct iommu_table *tbl;
->> +
->>  	if (!container->enabled)
->>  		return;
->>  
->>  	container->enabled = false;
->>  
->> -	if (!container->tbl || !current->mm)
->> +	if (!container->grp || !current->mm)
->> +		return;
->> +
->> +	data = iommu_group_get_iommudata(container->grp);
->> +	if (!data || !data->iommu_owner || !data->ops->get_table)
->> +		return;
->> +
->> +	tbl = data->ops->get_table(data, 0);
->> +	if (!tbl)
->>  		return;
->>  
->>  	down_write(&current->mm->mmap_sem);
->> -	current->mm->locked_vm -= (container->tbl->it_size <<
->> +	current->mm->locked_vm -= (tbl->it_size <<
->>  			IOMMU_PAGE_SHIFT_4K) >> PAGE_SHIFT;
->>  	up_write(&current->mm->mmap_sem);
->>  }
->> @@ -129,6 +177,8 @@ static void *tce_iommu_open(unsigned long arg)
->>  
->>  	mutex_init(&container->lock);
->>  
->> +	container->windows_num = 1;
->> +
->>  	return container;
->>  }
->>  
->> @@ -136,11 +186,11 @@ static void tce_iommu_release(void *iommu_data)
->>  {
->>  	struct tce_container *container = iommu_data;
->>  
->> -	WARN_ON(container->tbl && !container->tbl->it_group);
->> +	WARN_ON(container->grp);
->>  	tce_iommu_disable(container);
->>  
->> -	if (container->tbl && container->tbl->it_group)
->> -		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
->> +	if (container->grp)
->> +		tce_iommu_detach_group(iommu_data, container->grp);
->>  
->>  	mutex_destroy(&container->lock);
->>  
->> @@ -169,8 +219,17 @@ static long tce_iommu_ioctl(void *iommu_data,
->>  
->>  	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
->>  		struct vfio_iommu_spapr_tce_info info;
->> -		struct iommu_table *tbl = container->tbl;
->> +		struct iommu_table *tbl;
->> +		struct spapr_tce_iommu_group *data;
->>  
->> +		if (WARN_ON(!container->grp))
->> +			return -ENXIO;
->> +
->> +		data = iommu_group_get_iommudata(container->grp);
->> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
->> +			return -ENXIO;
->> +
->> +		tbl = data->ops->get_table(data, 0);
->>  		if (WARN_ON(!tbl))
->>  			return -ENXIO;
->>  
->> @@ -194,13 +253,16 @@ static long tce_iommu_ioctl(void *iommu_data,
->>  	}
->>  	case VFIO_IOMMU_MAP_DMA: {
->>  		struct vfio_iommu_type1_dma_map param;
->> -		struct iommu_table *tbl = container->tbl;
->> +		struct iommu_table *tbl;
->> +		struct spapr_tce_iommu_group *data;
->>  		unsigned long tce, i;
->>  
->> -		if (!tbl)
->> +		if (WARN_ON(!container->grp))
-> 
-> If a user can get here by their own mistake, return an error and be
-> done, no warning.  If a user can get here via a kernel ordering issue,
-> it's a problem in the design.  Which is it?
+On Mon, Sep 22, 2014 at 11:15 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Now that we have completely moved from older USB-PHY drivers
+> to newer GENERIC-PHY drivers for PHYs available with USB controllers
+> on Exynos series of SoCs, we can remove the support for the same
+> in our host drivers too.
+>
+> We also defer the probe for our host in case we end up getting
+> EPROBE_DEFER error when getting PHYs.
+>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> ---
 
+Did this one got missed for usb-next ?
+I can only see "usb: host: ohci-exynos: Remove unnecessary usb-phy support"
+in the next branch.
 
-I'll remove here and below these WARN's. I just cannot force myself to
-start thinking of malicious userspace which can trigger many of those :)
+Ignore me if you have already taken care of this, and plan to queue it up.
 
-
-> 
->>  			return -ENXIO;
->>  
->> -		BUG_ON(!tbl->it_group);
->> +		data = iommu_group_get_iommudata(container->grp);
->> +		if (WARN_ON(!data || !data->iommu_owner || !data->ops))
->> +			return -ENXIO;
-> 
-> Same
-> 
->>  
->>  		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
->>  
->> @@ -225,6 +287,11 @@ static long tce_iommu_ioctl(void *iommu_data,
->>  		if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
->>  			tce |= TCE_PCI_WRITE;
->>  
->> +		tbl = spapr_tce_find_table(container, data, param.iova);
-> 
-> Why aren't we using ops->find_table() here?
-
-
-I am trying to keep spapr_tce_iommu_ops as simple as possible and now it
-only provides a search-by-window-number callback and the helper to search
-by IOBA uses it.
-
+>
+> Changes since v4:
+>  - returning 'ret' instead of PTR_ERR(phy), since ret is nothing but that only.
+>
+> Changes since v3:
+>  - Addressed review comments by Alan:
+>    -- Skipped renaming 'phy_number' variable,
+>    -- resorted to just adding minimal change required for phy assignment.
+>    -- updated patch description to mention EPROBE_DEFER support.
+>
+>  drivers/usb/host/ehci-exynos.c |   74 +++++++++++-----------------------------
+>  1 file changed, 20 insertions(+), 54 deletions(-)
+>
+> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+> index 2eed9a4..7189f2e 100644
+> --- a/drivers/usb/host/ehci-exynos.c
+> +++ b/drivers/usb/host/ehci-exynos.c
+> @@ -21,11 +21,8 @@
+>  #include <linux/of_gpio.h>
+>  #include <linux/phy/phy.h>
+>  #include <linux/platform_device.h>
+> -#include <linux/usb/phy.h>
+> -#include <linux/usb/samsung_usb_phy.h>
+>  #include <linux/usb.h>
+>  #include <linux/usb/hcd.h>
+> -#include <linux/usb/otg.h>
+>
+>  #include "ehci.h"
+>
+> @@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
+>
+>  struct exynos_ehci_hcd {
+>         struct clk *clk;
+> -       struct usb_phy *phy;
+> -       struct usb_otg *otg;
+> -       struct phy *phy_g[PHY_NUMBER];
+> +       struct phy *phy[PHY_NUMBER];
+>  };
+>
+>  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+> @@ -60,8 +55,9 @@ static int exynos_ehci_get_phy(struct device *dev,
+>         struct device_node *child;
+>         struct phy *phy;
+>         int phy_number;
+> -       int ret = 0;
+> +       int ret;
+>
+> +       /* Get PHYs for the controller */
+>         for_each_available_child_of_node(dev->of_node, child) {
+>                 ret = of_property_read_u32(child, "reg", &phy_number);
+>                 if (ret) {
+> @@ -77,31 +73,21 @@ static int exynos_ehci_get_phy(struct device *dev,
+>                 }
+>
+>                 phy = devm_of_phy_get(dev, child, NULL);
+> +               exynos_ehci->phy[phy_number] = phy;
+>                 of_node_put(child);
+> -               if (IS_ERR(phy))
+> -                       /* Lets fallback to older USB-PHYs */
+> -                       goto usb_phy_old;
+> -               exynos_ehci->phy_g[phy_number] = phy;
+> -               /* Make the older PHYs unavailable */
+> -               exynos_ehci->phy = ERR_PTR(-ENXIO);
+> -       }
+> -
+> -       return 0;
+> -
+> -usb_phy_old:
+> -       exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> -       if (IS_ERR(exynos_ehci->phy)) {
+> -               ret = PTR_ERR(exynos_ehci->phy);
+> -               if (ret != -ENXIO && ret != -ENODEV) {
+> -                       dev_err(dev, "no usb2 phy configured\n");
+> -                       return ret;
+> +               if (IS_ERR(phy)) {
+> +                       ret = PTR_ERR(phy);
+> +                       if (ret == -EPROBE_DEFER) {
+> +                               return ret;
+> +                       } else if (ret != -ENOSYS && ret != -ENODEV) {
+> +                               dev_err(dev,
+> +                                       "Error retrieving usb2 phy: %d\n", ret);
+> +                               return ret;
+> +                       }
+>                 }
+> -               dev_dbg(dev, "Failed to get usb2 phy\n");
+> -       } else {
+> -               exynos_ehci->otg = exynos_ehci->phy->otg;
+>         }
+>
+> -       return ret;
+> +       return 0;
+>  }
+>
+>  static int exynos_ehci_phy_enable(struct device *dev)
+> @@ -111,16 +97,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
+>         int i;
+>         int ret = 0;
+>
+> -       if (!IS_ERR(exynos_ehci->phy))
+> -               return usb_phy_init(exynos_ehci->phy);
+> -
+>         for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+> -               if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -                       ret = phy_power_on(exynos_ehci->phy_g[i]);
+> +               if (!IS_ERR(exynos_ehci->phy[i]))
+> +                       ret = phy_power_on(exynos_ehci->phy[i]);
+>         if (ret)
+>                 for (i--; i >= 0; i--)
+> -                       if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -                               phy_power_off(exynos_ehci->phy_g[i]);
+> +                       if (!IS_ERR(exynos_ehci->phy[i]))
+> +                               phy_power_off(exynos_ehci->phy[i]);
+>
+>         return ret;
+>  }
+> @@ -131,14 +114,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
+>         struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
+>         int i;
+>
+> -       if (!IS_ERR(exynos_ehci->phy)) {
+> -               usb_phy_shutdown(exynos_ehci->phy);
+> -               return;
+> -       }
+> -
+>         for (i = 0; i < PHY_NUMBER; i++)
+> -               if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -                       phy_power_off(exynos_ehci->phy_g[i]);
+> +               if (!IS_ERR(exynos_ehci->phy[i]))
+> +                       phy_power_off(exynos_ehci->phy[i]);
+>  }
+>
+>  static void exynos_setup_vbus_gpio(struct device *dev)
+> @@ -231,9 +209,6 @@ skip_phy:
+>                 goto fail_io;
+>         }
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>         err = exynos_ehci_phy_enable(&pdev->dev);
+>         if (err) {
+>                 dev_err(&pdev->dev, "Failed to enable USB phy\n");
+> @@ -273,9 +248,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+>
+>         usb_remove_hcd(hcd);
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>         exynos_ehci_phy_disable(&pdev->dev);
+>
+>         clk_disable_unprepare(exynos_ehci->clk);
+> @@ -298,9 +270,6 @@ static int exynos_ehci_suspend(struct device *dev)
+>         if (rc)
+>                 return rc;
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>         exynos_ehci_phy_disable(dev);
+>
+>         clk_disable_unprepare(exynos_ehci->clk);
+> @@ -316,9 +285,6 @@ static int exynos_ehci_resume(struct device *dev)
+>
+>         clk_prepare_enable(exynos_ehci->clk);
+>
+> -       if (exynos_ehci->otg)
+> -               exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>         ret = exynos_ehci_phy_enable(dev);
+>         if (ret) {
+>                 dev_err(dev, "Failed to enable USB phy\n");
+> --
+> 1.7.10.4
+>
 
 
 
 -- 
-Alexey
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
