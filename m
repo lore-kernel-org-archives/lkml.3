@@ -1,127 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaIYQim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:38:42 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:60586 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIYQh0 (ORCPT
+	id S1753561AbaIYQlQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:41:16 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54215 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaIYQlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:37:26 -0400
-X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
-From: Stefan Agner <stefan@agner.ch>
-To: linus.walleij@linaro.org, gnurou@gmail.com, shawn.guo@freescale.com,
-        kernel@pengutronix.de
-Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com,
-        l.stach@pengutronix.de, stefan@agner.ch
-Subject: [PATCH v3 2/5] pinctrl: imx: add gpio pinmux support for vf610
-Date: Thu, 25 Sep 2014 18:37:06 +0200
-Message-Id: <6fef79bfe3597dfe4fbd09785b45b8762755af8a.1411662961.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411662961.git.stefan@agner.ch>
-References: <cover.1411662961.git.stefan@agner.ch>
-In-Reply-To: <cover.1411662961.git.stefan@agner.ch>
-References: <cover.1411662961.git.stefan@agner.ch>
+	Thu, 25 Sep 2014 12:41:14 -0400
+Date: Thu, 25 Sep 2014 18:41:11 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Sjoerd Simons <sjoerd@luon.net>, Alexandre Courbot <acourbot@nvidia.com>,
+        Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
+Message-ID: <20140925164109.GA30382@ulmo>
+References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
+ <20140925132717.GA13579@dusk.luon.net>
+ <54243931.6050804@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <54243931.6050804@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pinmux support for GPIO for Vybrid (vf610) IOMUX controller.
-This is needed since direction configuration is not part of the
-GPIO module in Vybrid.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- drivers/pinctrl/pinctrl-imx.c | 72 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-index 0d4558b..f22c41e 100644
---- a/drivers/pinctrl/pinctrl-imx.c
-+++ b/drivers/pinctrl/pinctrl-imx.c
-@@ -294,10 +294,82 @@ static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
- 	return 0;
- }
- 
-+static int imx_pmx_gpio_request_enable(struct pinctrl_dev *pctldev,
-+			struct pinctrl_gpio_range *range, unsigned offset)
-+{
-+	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
-+	const struct imx_pinctrl_soc_info *info = ipctl->info;
-+	const struct imx_pin_reg *pin_reg;
-+	struct imx_pin_group *grp;
-+	struct imx_pin *imx_pin;
-+	unsigned int pin, group;
-+	u32 reg;
-+
-+	/* Currently implementation only for shared mux/conf register */
-+	if (!(info->flags & SHARE_MUX_CONF_REG))
-+		return -EINVAL;
-+
-+	pin_reg = &info->pin_regs[offset];
-+	if (pin_reg->mux_reg == -1)
-+		return -EINVAL;
-+
-+	/* Find the pinctrl config with GPIO mux mode for the requested pin */
-+	for (group = 0; group < info->ngroups; group++) {
-+		grp = &info->groups[group];
-+		for (pin = 0; pin < grp->npins; pin++) {
-+			imx_pin = &grp->pins[pin];
-+			if (imx_pin->pin == offset && !imx_pin->mux_mode)
-+				goto mux_pin;
-+		}
-+	}
-+
-+	return -EINVAL;
-+
-+mux_pin:
-+	reg = readl(ipctl->base + pin_reg->mux_reg);
-+	reg &= ~(0x7 << 20);
-+	reg |= imx_pin->config;
-+	writel(reg, ipctl->base + pin_reg->mux_reg);
-+
-+	return 0;
-+}
-+
-+static int imx_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
-+	   struct pinctrl_gpio_range *range, unsigned offset, bool input)
-+{
-+	struct imx_pinctrl *ipctl = pinctrl_dev_get_drvdata(pctldev);
-+	const struct imx_pinctrl_soc_info *info = ipctl->info;
-+	const struct imx_pin_reg *pin_reg;
-+	u32 reg;
-+
-+	/*
-+	 * Only Vybrid has the input/output buffer enable flags (IBE/OBE)
-+	 * They are part of the shared mux/conf register.
-+	 */
-+	if (!(info->flags & SHARE_MUX_CONF_REG))
-+		return -EINVAL;
-+
-+	pin_reg = &info->pin_regs[offset];
-+	if (pin_reg->mux_reg == -1)
-+		return -EINVAL;
-+
-+	/* IBE always enabled allows us to read the value "on the wire" */
-+	reg = readl(ipctl->base + pin_reg->mux_reg);
-+	if (input)
-+		reg &= ~0x2;
-+	else
-+		reg |= 0x2;
-+	writel(reg, ipctl->base + pin_reg->mux_reg);
-+
-+	return 0;
-+}
-+
- static const struct pinmux_ops imx_pmx_ops = {
- 	.get_functions_count = imx_pmx_get_funcs_count,
- 	.get_function_name = imx_pmx_get_func_name,
- 	.get_function_groups = imx_pmx_get_groups,
-+	.gpio_request_enable = imx_pmx_gpio_request_enable,
-+	.gpio_set_direction = imx_pmx_gpio_set_direction,
- 	.enable = imx_pmx_enable,
- };
- 
--- 
-2.1.0
+On Thu, Sep 25, 2014 at 09:48:01AM -0600, Stephen Warren wrote:
+> On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
+> >Playing a bit with todays linux-next on my jetson, it seems this patch is
+> >still required for enabling the GPU. Is there anything blocking it (firm=
+ware
+> >not available yet in liux-firmware?)
+>=20
+> I think initially I was waiting for the DRM patch "drm/nouvea: support for
+> probing platform devices" to be applied, but it looks like that's been
+> applied already, so only patches 4 and 5 in this series are still
+> outstanding.
+>=20
+> Alex, wasn't there also some issue where the VPR register had to be
+> programmed, and if it wasn't there'd be a hang when the GPU registers were
+> touched? If we've added code to Nouveau/tegradrm to detect that and avoid
+> the problem, then I guess we can commit these last two patches for 3.19. A
+> resend after the 3.18 merge window might help.
 
+A patch that programs VPR was merged into U-Boot (though I don't think
+it's made it into master yet). I'm not sure we can reasonably check for
+that in Nouveau, given that the register is somewhere completely
+unrelated. In fact I think the U-Boot patch was triggered by some
+discussion about how to solve this and it was decided that it shouldn't
+be done in the kernel, but U-Boot should set it up.
+
+That said, perhaps one solution would be to make U-Boot enable the gk20a
+device if it's set up the VPR and disable it otherwise?
+
+Thierry
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUJEWlAAoJEN0jrNd/PrOh3koP/0Jmu1Lr7ZB06FL8uJibYKuI
+zJbW8b0hjOe+0viAtc4/wBoLmUakVFrPvim8590dOrnYxbEV5S3r2gGwXEFbpgtq
+YPLzcanP+wKVL4jIxkfqjFEnu9TL61zCa2Y5tDN+6tmAunCh4VmuzUJSuDKptQM7
+AJBe99PzNDsp6RMhwajqf/n1bJiKOTSlXlJswkPsx6sI7vIPxmF8ZM5gEpVImN03
+tths8uVM8kONLjOnedb85F9RjaEFk2y0DBD4b3BPPh/Coiv9ory3sCrNay7TST/O
+gWP7D6bphV3cKy4jW3ZWyZWd8aHVawfs0TaMjmuXnnOx8rBFla9M93mZrUd6oTkp
+fn440P+2f3xMBiZbiE0AShuFhaee+806rMZ3cT5+VshrRVwE710PrYfuXk6/i6W1
+sKCSGhp8qyeRSim0XpUKqMPqh/yM6WmSciXKbfl/bebRSKgGu4SFR+hpo/aBYkMW
+WU5cQzD4FQe3oMJOHcWgY3/KgYnpvb2HlLIAv2MnyebienbS2LaB/jwiyyGu/ppF
+WbUdzxiID9HmJCTW00ffW7lvzlu5/fiubeHm+LZEpDT3gXd88RWGSe2463bQVLQA
+CNTpd+a7Qo/lt12C3Dj6zLjJC6wb4Pum9oIE+BOVoX2pM6sF5f8neM5GyQ/SRP4K
+V+lXPvKVA8IFb8etC+hM
+=qt6Z
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
