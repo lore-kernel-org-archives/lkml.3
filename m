@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418AbaIYNBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 09:01:24 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:39866 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751351AbaIYNBW (ORCPT
+	id S1752632AbaIYNEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 09:04:05 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40311 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaIYNEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 09:01:22 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] ARM: multi_v7_defconfig: Add Support for QCOM APQ8074 reset
-Date: Thu, 25 Sep 2014 18:34:47 +0530
-Message-Id: <1411650287-15947-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 25 Sep 2014 09:04:02 -0400
+Date: Thu, 25 Sep 2014 14:03:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        linux-spi@vger.kernel.org
+Message-ID: <20140925130335.GK27755@sirena.org.uk>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+ <1411575342-31048-22-git-send-email-vinod.koul@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W2ydbIOJmkm74tJ2"
+Content-Disposition: inline
+In-Reply-To: <1411575342-31048-22-git-send-email-vinod.koul@intel.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.248.7
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 21/27] spi: omap2-mcspi: use
+ pm_runtime_last_busy_and_autosuspend helper
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds support for reset driver for apq8074 based platform.
-With this we should be able to reboot the board from command prompt.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-arm-msm@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- arch/arm/configs/multi_v7_defconfig |    1 +
- 1 file changed, 1 insertion(+)
+--W2ydbIOJmkm74tJ2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 1bf198b..4f78491 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -230,6 +230,7 @@ CONFIG_CHARGER_TPS65090=y
- CONFIG_POWER_RESET_AS3722=y
- CONFIG_POWER_RESET_GPIO=y
- CONFIG_POWER_RESET_SUN6I=y
-+CONFIG_POWER_RESET_MSM=y
- CONFIG_SENSORS_LM90=y
- CONFIG_SENSORS_LM95245=y
- CONFIG_THERMAL=y
--- 
-1.7.9.5
+On Wed, Sep 24, 2014 at 09:45:11PM +0530, Vinod Koul wrote:
+> Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+> coding the same code
 
+Acked-by: Mark Brown <broonie@kernel.org>
+
+though I have to say that the function name is rather spectacularly long
+here.
+
+--W2ydbIOJmkm74tJ2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUJBKmAAoJECTWi3JdVIfQ3JsIAIV5+JNPOGg6gJjmKBjWritA
+ZZWkO6riCpOJdbjmoSxZ3WZVd0ahmlZjboCdsDpzgVgqu/9f2nlMBG/HmcRe12kX
+bSMnh9NWZuRqc2+4xHBq5xKDkS4PNzl/K01IiRuFAHeH5uRL2nN+8b5uWq8oZ1oB
+oOE+ztxw9Ga3WkQ0un3cpt8Rb961Y7AfWdDcz3Aey+Zzs5Z1V+LINDx9bv3QCFfp
+j/rv8rVku8SXZNEnHyeIzK2PlvZVijGNtCrxGyiTL4vRQO1ghdnAABc+eH2PzF+U
+1o9J+GePWUK0PBi0Cbj3ZyJvf4mJoG5gUQflTC6edbEnF5GuQIzBOqihIjR/7+o=
+=weOe
+-----END PGP SIGNATURE-----
+
+--W2ydbIOJmkm74tJ2--
