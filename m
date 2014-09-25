@@ -1,108 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaIYDZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:25:09 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:38354 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259AbaIYDZH (ORCPT
+	id S1752686AbaIYD1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:27:21 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:51905 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIYD1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:25:07 -0400
-Date: Wed, 24 Sep 2014 23:25:02 -0400
+	Wed, 24 Sep 2014 23:27:19 -0400
+Date: Wed, 24 Sep 2014 23:27:16 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrey Wagin <avagin@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: linux-next: cgroup_mount() falls asleep forever
-Message-ID: <20140925032502.GB6903@mtj.dyndns.org>
-References: <CANaxB-ykM+5h4+x5hHK2Z_APpiQLvGvc=2nBR5pGQS=msqp6ZA@mail.gmail.com>
- <CANaxB-zqeJ0mse0J0=aH4uV+yRdgVhmHbAq4Wa8tW-81sNSMJA@mail.gmail.com>
- <20140924185213.GB7996@ZenIV.linux.org.uk>
- <20140924192456.GA1233@mtj.dyndns.org>
- <20140925024719.GJ7996@ZenIV.linux.org.uk>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20140925032716.GC6903@mtj.dyndns.org>
+References: <cover.1411297686.git.agordeev@redhat.com>
+ <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+ <20140924145906.GC2695@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140925024719.GJ7996@ZenIV.linux.org.uk>
+In-Reply-To: <20140924145906.GC2695@agordeev.usersys.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Al.
-
-On Thu, Sep 25, 2014 at 03:47:19AM +0100, Al Viro wrote:
-> > Yeah, it's an ugly thing to work around vfs interface not very
-> > conducive for filesystems which conditionally create or reuse
-> > superblocks during mount.  There was a thread explaining what's going
-> > on.  Looking up...
-> > 
-> >   http://thread.gmane.org/gmane.linux.kernel.containers/27623/focus=10635
+On Wed, Sep 24, 2014 at 03:59:07PM +0100, Alexander Gordeev wrote:
+> On Wed, Sep 24, 2014 at 10:39:13AM -0400, Tejun Heo wrote:
+> > Would it be possible for you compare threaded vs. unthreaded under
+> > relatively heavy load?
 > 
-> Umm...  I still don't get it.  Could you describe the screnario in which
-> that percpu_ref_tryget_live() would be called and managed to fail?
-
-That was for the initial fix and Li later added the pinning to fix
-something else.  Let's wait for Li to chime in.  He knows this part
-better.
-
-> It smells to me like most of the problems here are simply due to having too
-> many locks and not being able to decide where should they live relative to
-> ->s_umount.  That cgroup_mutex thing feels like something way to coarse...
-> You have it grabbed/dropped in
-
-cgroup_mutex is the outer-most lock as far as cgroup is concerned and
-not expected to nest under anything which is used by individual
-controllers.  Most of what cgroup core does is low-freq managerial
-things which don't benefit from finer grained locking and the mount
-path is one of few surfaces where it interacts with outside in terms
-of locking, so it's better to keep that path special and everything
-else simpler.
-
-> And that's a single system-wide mutex.  Plus there's a slew of workqueues
-> and really unpleasant abuse of restart_syscall() tossed in for fun - what
-> happens if some joker triggers that ->mount() _not_ from mount(2)?
-
-For cgroup, mount is the userland-visible init interface.  It gotta be
-called from userland.  It originally had internal retry loop but
-syscall restart is simpler.  Reviving that loop isn't difficult if it
-ever becomes necessary.
-
-> Then there's a global rwsem nesting inside that sucker.  And there's another
-
-The rwsem nests inside cgroup_mutex and exists to allow multiple
-reader accesses to a particular data structure.
-
-> mutex in fs/kernfs - also a global one.  Are the locking rules documented
-> anywhere?  Lifetime rules, as well...
-
-kernfs one shouldn't interact with anything outside kernfs.  Its
-dependency is terminated within kernfs.
-
-> Frankly, my first inclination here would be to try using sget() instead of
-> scanning the list of roots.  How painful would it be to split the allocation
-> and setup of roots, always allocate a new root and have sget() wait
-> for fs shutdown in progress and decide whether it wants to reuse the existing
-> one.  You can easily tell reuse existing vs. set up a new one from each other -
-> just look at the root associated with the superblock you've got and check
-> if it's the one you've allocated.  Freeing the damn thing if we'd reused
-> an existing one and doing setup otherwise.
+> I will try, although not quite soon.
 > 
-> I realize that it won't do in such form; your for_each_subsys() loop in there
-> really depends on holding cgroup_mutex all the way through.  But do we really
-> need it there?  Would just skipping the ones that doomed in rebind_subsystems()
-> suffice?
+> In the meantime I could fix and resend patches 1,2,3 and 6 as
+> they are not related to this topic. Makes sense?
 
-At this point, cgroup core locking is heavily focused on simplicity -
-cgroup_mutex for the whole thing and css_set_rwsem for css_set reader
-accesses.  It works out pretty well for the rest of the code but the
-mount path does get tricky.  We can definitely relax / separate out
-locking on subsys iteration for mount path but if possible I'd prefer
-to pay isolated complexity there instead of spilling it to other
-places.
-
-Anyways, let's wait for Li.  At least nobody reported breakage before
-the recent commit, so we can revert the offending commit for the short
-term.
+Yeap, sure thing.
 
 Thanks.
 
