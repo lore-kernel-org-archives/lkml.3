@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaIYP3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:29:51 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:43881 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIYP3u (ORCPT
+	id S1753894AbaIYPaX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:30:23 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51640 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751981AbaIYPaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:29:50 -0400
+	Thu, 25 Sep 2014 11:30:21 -0400
+X-Sasl-enc: yqcox/Tqhb4LnMwl0cx9nAjFI21hZExQP7qsuPfdznhY 1411659018
+Date: Thu, 25 Sep 2014 12:30:06 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: x86, microcode: BUG: microcode update that changes x86_capability
+Message-ID: <20140925153006.GB10814@khazad-dum.debian.net>
+References: <20140919075415.5149d5f2@as>
+ <20140919150042.GC5318@nazgul.tnic>
+ <20140919164217.GD17456@khazad-dum.debian.net>
+ <20140923200054.GB16467@pd.tnic>
+ <20140924145658.GB31678@khazad-dum.debian.net>
+ <20140925085158.GF22317@nazgul.tnic>
+ <20140925113643.GB10569@khazad-dum.debian.net>
+ <20140925121007.GA25334@nazgul.tnic>
+ <20140925144025.GA14030@khazad-dum.debian.net>
+ <20140925145655.GA28201@nazgul.tnic>
 MIME-Version: 1.0
-In-Reply-To: <20140925150757.GH32124@localhost>
-References: <1411656197-26517-1-git-send-email-octavian.purdila@intel.com>
-	<1411656197-26517-4-git-send-email-octavian.purdila@intel.com>
-	<20140925150757.GH32124@localhost>
-Date: Thu, 25 Sep 2014 18:29:48 +0300
-Message-ID: <CAE1zotLcBNe7M_303qcHa8DQg9B17m516hUN5-CoZ2qweawXuQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] mfd: viperboard: remove unused platform_device
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925145655.GA28201@nazgul.tnic>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 6:07 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Thu, Sep 25, 2014 at 05:43:17PM +0300, Octavian Purdila wrote:
->
-> Where's the commit message body?
->
->> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->> ---
->>  drivers/mfd/viperboard.c       | 1 -
->>  include/linux/mfd/viperboard.h | 1 -
->>  2 files changed, 2 deletions(-)
->>
->> diff --git a/drivers/mfd/viperboard.c b/drivers/mfd/viperboard.c
->> index 57fac1d..1e7c316 100644
->> --- a/drivers/mfd/viperboard.c
->> +++ b/drivers/mfd/viperboard.c
->> @@ -74,7 +74,6 @@ static int vprbrd_probe(struct usb_interface *interface,
->>
->>       /* save our data pointer in this interface device */
->>       usb_set_intfdata(interface, vb);
->> -     dev_set_drvdata(&vb->pdev.dev, vb);
->
-> This looks ok, as the subdrivers are accessing the driver data via the
-> usb-interface (their parent) device.
->
-> You verified that too, right?
+On Thu, 25 Sep 2014, Borislav Petkov wrote:
+> On Thu, Sep 25, 2014 at 11:40:25AM -0300, Henrique de Moraes Holschuh wrote:
+> > At this point, what alternatives are left?
+> 
+> Here's what we could do:
+> 
+> * Install microcode to /lib/firmware/...
+> 
+> * Refuse to update the microcode and tell the user that she needs to reboot.
+> 
+> * Reboot and load the microcode
+> 
+> For that to work though, we'd need to detect the that we're freshly
+> booting and only then load the microcode (if we're coming in later,
+> we should refuse because something linking to libpthread might've run
+> already).
 
-Yes, I checked that the pdev field of struct vpbrd is not used in the
-rest of the drivers.
+Userspace can install the microcode only inside the initramfs, if it wants
+to avoid it being loaded later.  It is not even too difficult to do so.
 
->
->>
->>       /* get version information, major first, minor then */
->>       pipe = usb_rcvctrlpipe(vb->usb_dev, 0);
->> diff --git a/include/linux/mfd/viperboard.h b/include/linux/mfd/viperboard.h
->> index af928d0..afc14ed 100644
->> --- a/include/linux/mfd/viperboard.h
->> +++ b/include/linux/mfd/viperboard.h
->> @@ -104,7 +104,6 @@ struct vprbrd {
->>       struct usb_device *usb_dev; /* the usb device for this device */
->>       struct mutex lock;
->>       u8 *buf;
->> -     struct platform_device pdev;
->>  };
->>
->>  #endif /* __MFD_VIPERBOARD_H__ */
->
-> Still feels like the kind of clean up that should have a Tested-by.
->
+But the kernel currently doesn't have a away to know that happened.
 
-Unfortunately I do not have access to hardware to test.
+We could just add the blacklist _and_ support for x86_capability changes
+that don't touch something the kernel uses, and bypass the blacklist the
+first time userspace writes 2 to the sysfs update trigger.
+
+So, it would be an one-use trapdoor that the initramfs can use to update the
+Haswells at boot.  If someone really wants to use it again, he can rmmod +
+modprobe (no way to do it if the microcode driver is built-in, though).
+
+> The other thing we could do is backport early ucode loading...
+> 
+> Hmm, I'm not crazy about both possibilities though, TBH.
+
+Indeed.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
