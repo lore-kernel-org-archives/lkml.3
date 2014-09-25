@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaIYCzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:55:49 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41597 "EHLO
+	id S1753006AbaIYCzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:55:47 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41595 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaIYCux (ORCPT
+	with ESMTP id S1751645AbaIYCux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Sep 2014 22:50:53 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -33,10 +33,12 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X in all platforms
-Date: Thu, 25 Sep 2014 11:14:10 +0800
-Message-ID: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
+Date: Thu, 25 Sep 2014 11:14:11 +0800
+Message-ID: <1411614872-4009-2-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
@@ -45,77 +47,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is based Bjorn's pci/msi branch
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/msi
+Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
+argument. We can look up msi_chip pointer by the device pointer
+or irq number, so clean up msi_chip argument.
 
-Currently, there are a lot of weak arch functions in MSI code.
-Thierry Reding Introduced MSI chip framework to configure MSI/MSI-X in arm.
-This series use MSI chip framework to refactor MSI code across all platforms
-to eliminate weak arch functions. Then all MSI irqs will be managed in a 
-unified framework. Because this series changed a lot of ARCH MSI code,
-so tests in the platforms which MSI code modified are warmly welcomed!
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+CC: Thierry Reding <thierry.reding@gmail.com>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+---
+ drivers/irqchip/irq-armada-370-xp.c |    8 +++-----
+ drivers/pci/host/pci-tegra.c        |    8 +++++---
+ drivers/pci/host/pcie-designware.c  |    4 ++--
+ drivers/pci/host/pcie-rcar.c        |    8 +++++---
+ drivers/pci/msi.c                   |    4 ++--
+ include/linux/msi.h                 |    5 ++---
+ 6 files changed, 19 insertions(+), 18 deletions(-)
 
-v1->v2:
-Add a patch to make s390 MSI code build happy between patch "x86/xen/MSI: E.."
-and "s390/MSI: Use MSI..". Fix several typo problems found by Lucas.
-
-RFC->v1: 
-Updated "[patch 4/21] x86/xen/MSI: Eliminate...", export msi_chip instead
-of #ifdef to fix MSI bug in xen running in x86. 
-Rename arch_get_match_msi_chip() to arch_find_msi_chip().
-Drop use struct device as the msi_chip argument, we will do that
-later in another patchset.
-
-Yijing Wang (22):
-  PCI/MSI: Clean up struct msi_chip argument
-  PCI/MSI: Remove useless bus->msi assignment
-  MSI: Remove the redundant irq_set_chip_data()
-  x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
-  s390/MSI: Use __msi_mask_irq() instead of default_msi_mask_irq()
-  PCI/MSI: Introduce weak arch_find_msi_chip() to find MSI chip
-  PCI/MSI: Refactor struct msi_chip to make it become more common
-  x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  x86/MSI: Remove unused MSI weak arch functions
-  MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
-  MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  IA64/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  Sparc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  tile/MSI: Use MSI chip framework to configure MSI/MSI-X irq
-  PCI/MSI: Clean up unused MSI arch functions
-
- arch/arm/mach-iop13xx/include/mach/pci.h |    2 +
- arch/arm/mach-iop13xx/iq81340mc.c        |    1 +
- arch/arm/mach-iop13xx/iq81340sc.c        |    1 +
- arch/arm/mach-iop13xx/msi.c              |    9 ++-
- arch/arm/mach-iop13xx/pci.c              |    6 ++
- arch/ia64/kernel/msi_ia64.c              |   18 ++++-
- arch/mips/pci/msi-octeon.c               |   35 ++++++----
- arch/mips/pci/msi-xlp.c                  |   18 ++++--
- arch/mips/pci/pci-xlr.c                  |   15 ++++-
- arch/powerpc/kernel/msi.c                |   14 +++-
- arch/s390/pci/pci.c                      |   18 ++++-
- arch/sparc/kernel/pci.c                  |   14 +++-
- arch/tile/kernel/pci_gx.c                |   14 +++-
- arch/x86/include/asm/apic.h              |    4 +
- arch/x86/include/asm/pci.h               |    4 +-
- arch/x86/include/asm/x86_init.h          |    7 --
- arch/x86/kernel/apic/io_apic.c           |   16 ++++-
- arch/x86/kernel/x86_init.c               |   34 ---------
- arch/x86/pci/xen.c                       |   60 +++++++++-------
- drivers/iommu/irq_remapping.c            |    9 ++-
- drivers/irqchip/irq-armada-370-xp.c      |    8 +--
- drivers/pci/host/pci-tegra.c             |    8 ++-
- drivers/pci/host/pcie-designware.c       |    4 +-
- drivers/pci/host/pcie-rcar.c             |    8 ++-
- drivers/pci/msi.c                        |  114 ++++++++++++++----------------
- drivers/pci/probe.c                      |    1 -
- include/linux/msi.h                      |   26 ++-----
- 27 files changed, 266 insertions(+), 202 deletions(-)
+diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
+index df60eab..3909d06 100644
+--- a/drivers/irqchip/irq-armada-370-xp.c
++++ b/drivers/irqchip/irq-armada-370-xp.c
+@@ -129,9 +129,8 @@ static void armada_370_xp_free_msi(int hwirq)
+ 	mutex_unlock(&msi_used_lock);
+ }
+ 
+-static int armada_370_xp_setup_msi_irq(struct msi_chip *chip,
+-				       struct pci_dev *pdev,
+-				       struct msi_desc *desc)
++static int armada_370_xp_setup_msi_irq(struct pci_dev *pdev, 
++		struct msi_desc *desc)
+ {
+ 	struct msi_msg msg;
+ 	int virq, hwirq;
+@@ -160,8 +159,7 @@ static int armada_370_xp_setup_msi_irq(struct msi_chip *chip,
+ 	return 0;
+ }
+ 
+-static void armada_370_xp_teardown_msi_irq(struct msi_chip *chip,
+-					   unsigned int irq)
++static void armada_370_xp_teardown_msi_irq(unsigned int irq)
+ {
+ 	struct irq_data *d = irq_get_irq_data(irq);
+ 	unsigned long hwirq = d->hwirq;
+diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+index 0fb0fdb..edd4040 100644
+--- a/drivers/pci/host/pci-tegra.c
++++ b/drivers/pci/host/pci-tegra.c
+@@ -1157,9 +1157,10 @@ static irqreturn_t tegra_pcie_msi_irq(int irq, void *data)
+ 	return processed > 0 ? IRQ_HANDLED : IRQ_NONE;
+ }
+ 
+-static int tegra_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
++static int tegra_msi_setup_irq(struct pci_dev *pdev,
+ 			       struct msi_desc *desc)
+ {
++	struct msi_chip *chip = pdev->bus->msi;
+ 	struct tegra_msi *msi = to_tegra_msi(chip);
+ 	struct msi_msg msg;
+ 	unsigned int irq;
+@@ -1185,10 +1186,11 @@ static int tegra_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
+ 	return 0;
+ }
+ 
+-static void tegra_msi_teardown_irq(struct msi_chip *chip, unsigned int irq)
++static void tegra_msi_teardown_irq(unsigned int irq)
+ {
+-	struct tegra_msi *msi = to_tegra_msi(chip);
+ 	struct irq_data *d = irq_get_irq_data(irq);
++	struct msi_chip *chip = irq_get_chip_data(irq);
++	struct tegra_msi *msi = to_tegra_msi(chip);
+ 
+ 	tegra_msi_free(msi, d->hwirq);
+ }
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index fa2fa45..517f1e1 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -342,7 +342,7 @@ static void clear_irq(unsigned int irq)
+ 	msi->msi_attrib.multiple = 0;
+ }
+ 
+-static int dw_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
++static int dw_msi_setup_irq(struct pci_dev *pdev,
+ 			struct msi_desc *desc)
+ {
+ 	int irq, pos, msgvec;
+@@ -383,7 +383,7 @@ static int dw_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
+ 	return 0;
+ }
+ 
+-static void dw_msi_teardown_irq(struct msi_chip *chip, unsigned int irq)
++static void dw_msi_teardown_irq(unsigned int irq)
+ {
+ 	clear_irq(irq);
+ }
+diff --git a/drivers/pci/host/pcie-rcar.c b/drivers/pci/host/pcie-rcar.c
+index 4884ee5..647bc9f 100644
+--- a/drivers/pci/host/pcie-rcar.c
++++ b/drivers/pci/host/pcie-rcar.c
+@@ -615,9 +615,10 @@ static irqreturn_t rcar_pcie_msi_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int rcar_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
++static int rcar_msi_setup_irq(struct pci_dev *pdev,
+ 			      struct msi_desc *desc)
+ {
++	struct msi_chip *chip = pdev->bus->msi;
+ 	struct rcar_msi *msi = to_rcar_msi(chip);
+ 	struct rcar_pcie *pcie = container_of(chip, struct rcar_pcie, msi.chip);
+ 	struct msi_msg msg;
+@@ -645,10 +646,11 @@ static int rcar_msi_setup_irq(struct msi_chip *chip, struct pci_dev *pdev,
+ 	return 0;
+ }
+ 
+-static void rcar_msi_teardown_irq(struct msi_chip *chip, unsigned int irq)
++static void rcar_msi_teardown_irq(unsigned int irq)
+ {
+-	struct rcar_msi *msi = to_rcar_msi(chip);
+ 	struct irq_data *d = irq_get_irq_data(irq);
++	struct msi_chip *chip = irq_get_chip_data(irq);
++	struct rcar_msi *msi = to_rcar_msi(chip);
+ 
+ 	rcar_msi_free(msi, d->hwirq);
+ }
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index aae2fc8..51d7e62 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -37,7 +37,7 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 	if (!chip || !chip->setup_irq)
+ 		return -EINVAL;
+ 
+-	err = chip->setup_irq(chip, dev, desc);
++	err = chip->setup_irq(dev, desc);
+ 	if (err < 0)
+ 		return err;
+ 
+@@ -53,7 +53,7 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+ 	if (!chip || !chip->teardown_irq)
+ 		return;
+ 
+-	chip->teardown_irq(chip, irq);
++	chip->teardown_irq(irq);
+ }
+ 
+ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 36c63cf..45ef8cb 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -68,9 +68,8 @@ struct msi_chip {
+ 	struct device_node *of_node;
+ 	struct list_head list;
+ 
+-	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
+-			 struct msi_desc *desc);
+-	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
++	int (*setup_irq)(struct pci_dev *dev, struct msi_desc *desc);
++	void (*teardown_irq)(unsigned int irq);
+ };
+ 
+ #endif /* LINUX_MSI_H */
+-- 
+1.7.1
 
