@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaIYKel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 06:34:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56637 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750889AbaIYKej (ORCPT
+	id S1752193AbaIYKhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 06:37:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58282 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaIYKhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 06:34:39 -0400
-Date: Thu, 25 Sep 2014 11:33:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 09/17] m68k: io: implement dummy relaxed accessor
- macros for writes
-Message-ID: <20140925103337.GH20043@arm.com>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <1411579056-16966-10-git-send-email-will.deacon@arm.com>
- <54236A67.90001@uclinux.org>
- <20140925093309.GG20043@arm.com>
- <CAMuHMdVpCs2RtsdDpdN3tp9_Xa1TzDMM3Z5+pP07B7Y3He2hLA@mail.gmail.com>
+	Thu, 25 Sep 2014 06:37:19 -0400
+Date: Thu, 25 Sep 2014 12:36:23 +0200
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Michal Sojka <sojka@merica.cz>, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>, Bryan Wu <cooloney@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz
+Subject: Re: [PATCH v6 0/4] LED triggers for USB host and device
+Message-ID: <20140925103623.GA28291@kroah.com>
+References: <Pine.LNX.4.44L0.1409241106100.1580-100000@iolanthe.rowland.org>
+ <1411591401-5874-1-git-send-email-sojka@merica.cz>
+ <20140924205936.GC17997@saruman>
+ <20140924214155.GA30689@kroah.com>
+ <20140924221830.GA27914@saruman>
+ <20140924231550.GC27672@saruman>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdVpCs2RtsdDpdN3tp9_Xa1TzDMM3Z5+pP07B7Y3He2hLA@mail.gmail.com>
+In-Reply-To: <20140924231550.GC27672@saruman>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 10:51:10AM +0100, Geert Uytterhoeven wrote:
-> On Thu, Sep 25, 2014 at 11:33 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >> Putting them here means they won't have any multiple include protection
-> >> (there is no "#ifndef _IO_H" around them). Doesn't seem to lead to
-> >> any problems in practice. Just flagging it...
-> >
-> > That's easy enough to fix, and actually, we should have __KERNEL__ checks
-> > here too. Fixup below.
+On Wed, Sep 24, 2014 at 06:15:50PM -0500, Felipe Balbi wrote:
+> On Wed, Sep 24, 2014 at 05:18:30PM -0500, Felipe Balbi wrote:
+> > On Wed, Sep 24, 2014 at 11:41:55PM +0200, Greg Kroah-Hartman wrote:
+> > > On Wed, Sep 24, 2014 at 03:59:36PM -0500, Felipe Balbi wrote:
+> > > > On Wed, Sep 24, 2014 at 10:43:17PM +0200, Michal Sojka wrote:
+> > > > > This adds LED triggers for USB host and device. First two patches
+> > > > > refactor UDC drivers as requested by Felipe Balbi, the next renames a
+> > > > > file and the last is the actual implementation of the LED triggers.
+> > > > > 
+> > > > > Changes from v5:
+> > > > > - Refactoring of USB gadget completion split into two patches (Filipe
+> > > > >   Balbi)
+> > > > > - Removed check for non-NULL req->completion (Filipe Balbi)
+> > > > > 
+> > > > > Changes from v4:
+> > > > > - Added performance numbers to the commit message of the last patch
+> > > > >   (greg k-h).
+> > > > > - Replaced BUG_ON with pr_err (Alan Stern, greg k-h).
+> > > > > - Used proper coding style for switch statement (greg k-h).
+> > > > > - Added comment about NULL argument (greg k-h).
+> > > > > - EXPORT_SYMBOL changed to EXPORT_SYMBOL_GPL (greg k-h).
+> > > > > - Both triggers are now registerd even if host or gagdet subsystem
+> > > > >   is not enabled (Bryan Wu, greg k-h).
+> > > > > 
+> > > > > Changes from v3:
+> > > > > - usb_gadget_giveback_request() moved outside of CONFIG_HAS_DMA
+> > > > >   conditioned block.
+> > > > > - Added kernel-doc for usb_gadget_giveback_request() (Felipe Balbi).
+> > > > > - Removed outdated comment (Alan Stern).
+> > > > > - req->complete == NULL is now a bug. Previously, this was ignored
+> > > > >   (Alan Stern).
+> > > > > - File rename moved to a separate commit (greg k-h).
+> > > > > 
+> > > > > Changes from v2:
+> > > > > - Host/gadget triggers merged to a single file in usb/common/ (Felipe
+> > > > >   Balbi).
+> > > > > - UDC drivers refactored so that LED trigger works for all of them.
+> > > > > 
+> > > > > Changes from v1:
+> > > > > - Moved from drivers/leds/ to drivers/usb/.
+> > > > > - Improved Kconfig help.
+> > > > > - Linked with other modules rather than being standalone modules.
+> > > > > 
+> > > > > Michal Sojka (4):
+> > > > >   usb: gadget: Introduce usb_gadget_giveback_request()
+> > > > >   usb: gadget: Refactor request completion
+> > > > >   usb: Rename usb-common.c
+> > > > >   usb: Add LED triggers for USB activity
+> > > > 
+> > > > Greg, how do you want to handle this one as it touched both host and
+> > > > gadget ? I could wait until you apply this series to your usb-next and
+> > > > based my pull request on that. That'll work as long as it doesn't take
+> > > > too long for this to be merged.
+> > > 
+> > > I can just take this now, for 3.18-rc1, you've already sent me your
+> > > patches for that release, so there shouldn't be any conflicts, right?
+> > 
+> > that's better. Can you wait 1 day though ? I can run these through my
+> > build tests.
 > 
-> Why do we need __KERNEL__ checks? <asm/io.h> is not exported.
-> BTW, it seems there are many __KERNEL__ checks in arch/*/include/asm/
-> we don't need.
-> 
-> Or do I need more coffee?
+> running my build tests on top of v3.17-rc6 + these 4 patches. I'll
+> report back tomorrow. From a code perspective, though, they look
+> alright.
 
-No, I think you're quite right. I just saw the __KERNEL__ checks in io_no.h
-and io_mm.h -- the latter even has some code outside of the guards:
+Yes, will wait, thanks.
 
-
-#endif /* __KERNEL__ */
-
-#define __ARCH_HAS_NO_PAGE_ZERO_MAPPED		1
-
-/*
- * Convert a physical pointer to a virtual kernel pointer for /dev/mem
- * access
- */
-#define xlate_dev_mem_ptr(p)	__va(p)
-
-/*
- * Convert a virtual cached pointer to an uncached pointer
- */
-#define xlate_dev_kmem_ptr(p)	p
-
-#define ioport_map(port, nr)	((void __iomem *)(port))
-
-#endif /* _IO_H */
-
-
-Will
+greg k-h
