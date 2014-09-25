@@ -1,154 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaIYVud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:50:33 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:60494 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaIYVub (ORCPT
+	id S1752593AbaIYVwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:52:12 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:58691 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaIYVwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:50:31 -0400
+	Thu, 25 Sep 2014 17:52:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140925211604.GA4590@redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<1410976308-7683-1-git-send-email-andreslc@google.com>
-	<20140925211604.GA4590@redhat.com>
-Date: Thu, 25 Sep 2014 14:50:29 -0700
-Message-ID: <CAJu=L581dk4d5AEPQU=zCU=wC6pu629k+p5KkmvgiS_7+cPUMA@mail.gmail.com>
-Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+In-Reply-To: <CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
+References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
+	<CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
+	<54227F93.7000507@rock-chips.com>
+	<CAD=FV=Uq9AteUcpMvcU5tmyGZbVYWM6PNmevZXSVCkYB8rqSsQ@mail.gmail.com>
+	<5423765B.8000706@rock-chips.com>
+	<CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
+Date: Thu, 25 Sep 2014 14:52:08 -0700
+X-Google-Sender-Auth: coV9_90vM2jG082Hm1Ne72LDR_0
+Message-ID: <CAD=FV=UkAcR8b+T_Dvoy9STDfzyC8QVSawihoHLYyHFJ6bfXxQ@mail.gmail.com>
+Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
+ characteristics of SCL
+From: Doug Anderson <dianders@chromium.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 2:16 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> Hi Andres,
+Addy,
+
+On Wed, Sep 24, 2014 at 9:36 PM, Doug Anderson <dianders@chromium.org> wrote:
+> Addy,
 >
-> On Wed, Sep 17, 2014 at 10:51:48AM -0700, Andres Lagar-Cavilla wrote:
->> +     if (!locked) {
->> +             VM_BUG_ON(npages != -EBUSY);
->> +
+> On Wed, Sep 24, 2014 at 6:56 PM, addy ke <addy.ke@rock-chips.com> wrote:
+>> In my measurement,all paramter but "Data hold time" are match the characteristics of SCL bus line.
+>> the measured value is 0.928us("data hold time on RK3X"  ~=  "the low period / 2")
+>> but the maximum value described in table is 0.9us
+>>
+>> About "Data hold time", there are described in I2C specification:
+>> - for CBUS compatible masters for I2C-bus deivices
+>> - the maximum data hold time has only be met if the device does not stretch the LOW period of the SCL signal.
+>>
+>> I have tested on RK3288-Pinky board, there are no error.
+>> But I don't known whether this paramter will affect i2c communications.
 >
-> Shouldn't this be VM_BUG_ON(npages)?
+> I'll have to spend more time tomorrow to really understand this, but
+> if changing the code to bias towards slightly longer "high" times
+> instead of "low" times helps fix it then that's fine with me.
 
-Oh shoot you're right. I was confused by the introduction of -EBUSY in
-the forward port.
+So what you're saying is that you're seeing a case where the clock
+goes low and the data is not valid until .928us.  Is this data that is
+being driven by the master or data that is being driven by the slave?
 
-        if (ret & VM_FAULT_RETRY) {
-                if (nonblocking)
-                        *nonblocking = 0;
-                return -EBUSY;
-        }
-
-(gaaah!!!)
-
->
-> Alternatively we could patch gup to do:
->
->                         case -EHWPOISON:
-> +                       case -EBUSY:
->                                 return i ? i : ret;
-> -                       case -EBUSY:
-> -                               return i;
->
-
-No preference. Not a lot of semantics available given that we pass 1
-as the count to gup. Want to cut the patch or I can just shoot one
-right away?
-
-> I need to fix gup_fast slow path to start with FAULT_FLAG_ALLOW_RETRY
-> similarly to what you did to the KVM slow path.
->
-> gup_fast is called without the mmap_sem (incidentally its whole point
-> is to only disable irqs and not take the locks) so the enabling of
-> FAULT_FLAG_ALLOW_RETRY initial pass inside gup_fast should be all self
-> contained. It shouldn't concern KVM which should be already fine with
-> your patch, but it will allow the userfaultfd to intercept all
-> O_DIRECT gup_fast in addition to KVM with your patch.
->
-> Eventually get_user_pages should be obsoleted in favor of
-> get_user_pages_locked (or whoever we decide to call it) so the
-> userfaultfd can intercept all kind of gups. gup_locked is same as gup
-> except for one more "locked" parameter at the end, I called the
-> parameter locked instead of nonblocking because it'd be more proper to
-> call "nonblocking" gup the FOLL_NOWAIT kind which is quite the
-> opposite (in fact as the mmap_sem cannot be dropped in the non
-> blocking version).
->
-
-It's nearly impossible to name it right because 1) it indicates we can
-relinquish 2) it returns whether we still hold the mmap semaphore.
-
-I'd prefer it'd be called mmap_sem_hold, which conveys immediately
-what this is about ("nonblocking" or "locked" could be about a whole
-lot of things)
-
-> ptrace ironically is better off sticking with a NULL locked parameter
-> and to get a sigbus instead of risking hanging on the userfaultfd
-> (which would be safe as it can be killed, but it'd be annoying if
-> erroneously poking into a hole during a gdb session). It's still
-> possible to pass NULL as parameter to get_user_pages_locked to achieve
-> that. So the fact some callers won't block in handle_userfault because
-> FAULT_FLAG_ALLOW_RETRY is not set and the userfault cannot block, may
-> come handy.
->
-> What I'm trying to solve in this context is that the userfault cannot
-> safely block without FAULT_FLAG_ALLOW_RETRY because we can't allow
-> userland to take the mmap_sem for an unlimited amount of time without
-> requiring special privileges, so if handle_userfault wants to blocks
-> within a gup invocation, it must first release the mmap_sem hence
-> FAULT_FLAG_ALLOW_RETRY is always required at the first attempt for any
-> virtual address.
-
-I can see that. My background for coming into this is very similar: in
-a previous life we had a file system shim that would kick up into
-userspace for servicing VM memory. KVM just wouldn't let the file
-system give up the mmap semaphore. We had /proc readers hanging up all
-over the place while userspace was servicing. Not happy.
-
-With KVM (now) and the standard x86 fault giving you ALLOW_RETRY, what
-stands in your way? Methinks that gup_fast has no slowpath fallback
-that turns on ALLOW_RETRY. What would oppose that being the global
-behavior?
-
->
-> With regard to the last sentence, there's actually a race with
-> MADV_DONTNEED too, I'd need to change the code to always pass
-> FAULT_FLAG_ALLOW_RETRY (your code also would need to loop and
-> insisting with the __get_user_pages(locked) version to solve it). The
-> KVM ioctl worst case would get an -EFAULT if the race materializes for
-> example. It's non concerning though because that can be solved in
-> userland somehow by separating ballooning and live migration
-> activities.
-
-Well, IIUC every code path that has ALLOW_RETRY dives in the second
-time with FAULT_TRIED or similar. In the common case, you happily
-blaze through the second time, but if someone raced in while all locks
-were given up, one pays the price of the second time being a full
-fault hogging the mmap sem. At some point you need to not keep being
-polite otherwise the task starves. Presumably the risk of an extra
-retry drops steeply every new gup retry. Maybe just try three times is
-good enough. It makes for ugly logic though.
-
-Thanks
-Andres
-
->
-> Thanks,
-> Andrea
+Do you know why the data takes so long to be valid?  Maybe you can
+email me some of the waveforms and I can try to help you debug it.
 
 
+In any case it sounds like the the "data hold time" problem is
+unrelated to the clock ratio problem (right?), so maybe you could send
+out patch v2?
 
--- 
-Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
+-Doug
+
+P.S. I checked the Rockchip TRM and it claims 400kHz maximum i2c.  I
+think that means you can just remove all of the "fast mode plus" and
+"high speed mode" clock rates from your table.
