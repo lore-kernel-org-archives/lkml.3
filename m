@@ -1,59 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaIYDWS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 23:22:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41893 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbaIYDWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 23:22:17 -0400
-Date: Thu, 25 Sep 2014 04:22:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Elshad Mustafayev <elshadimo@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: acctc.c: Fixed else if not generally userful
- after a break or return warning.
-Message-ID: <20140925032215.GK7996@ZenIV.linux.org.uk>
-References: <20140925031345.GA5252@emustafa>
+	id S1752814AbaIYDXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 23:23:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53037 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751563AbaIYDXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Sep 2014 23:23:54 -0400
+Date: Thu, 25 Sep 2014 13:23:39 +1000
+From: NeilBrown <neilb@suse.de>
+To: Ingo Molnar <mingo@kernel.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/5] SCHED: add some "wait..on_bit...timeout()"
+ interfaces.
+Message-ID: <20140925132339.2629ffaa@notabene.brown>
+In-Reply-To: <20140924070418.GA990@gmail.com>
+References: <20140924012422.4838.29188.stgit@notabene.brown>
+	<20140924012832.4838.59410.stgit@notabene.brown>
+	<20140924070418.GA990@gmail.com>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140925031345.GA5252@emustafa>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/3F0C5Wh1afvW5ZV7Em7amCB"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 11:13:45PM -0400, Elshad Mustafayev wrote:
-> Fixed a coding style issue.
-> 
-> Signed-off-by: Elshad Mustafayev <elshadimo@gmail.com>
-> ---
->  kernel/acct.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/kernel/acct.c b/kernel/acct.c
-> index b4c667d..ed4cf00 100644
-> --- a/kernel/acct.c
-> +++ b/kernel/acct.c
-> @@ -376,9 +376,8 @@ static comp2_t encode_comp2_t(u64 value)
->  	if (exp > MAXEXP2) {
->  		/* Overflow. Return largest representable number instead. */
->  		return (1ul << (MANTSIZE2+EXPSIZE2-1)) - 1;
-> -	} else {
-> -		return (value & (MAXFRACT2>>1)) | (exp << (MANTSIZE2-1));
->  	}
-> +	return (value & (MAXFRACT2>>1)) | (exp << (MANTSIZE2-1));
+--Sig_/3F0C5Wh1afvW5ZV7Em7amCB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Just what makes the replacement easier to follow?
-	if (foo)
-		return bar;
-	else
-		return baz;
-is no less idiomatic than
-	if (foo)
-		return bar;
-	return baz;
+On Wed, 24 Sep 2014 09:04:18 +0200 Ingo Molnar <mingo@kernel.org> wrote:
 
-Al, really annoyed by how the words "coding style issue" are getting used as
-a magic incantation...
+>=20
+> * NeilBrown <neilb@suse.de> wrote:
+>=20
+> > @@ -859,6 +860,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned =
+mode, int sync, void *key);
+> > =20
+> >  extern int bit_wait(struct wait_bit_key *);
+> >  extern int bit_wait_io(struct wait_bit_key *);
+> > +extern int bit_wait_timeout(struct wait_bit_key *);
+> > +extern int bit_wait_io_timeout(struct wait_bit_key *);
+> > =20
+> >  /**
+> >   * wait_on_bit - wait for a bit to be cleared
+> > diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+> > index 15cab1a4f84e..380678b3cba4 100644
+> > --- a/kernel/sched/wait.c
+> > +++ b/kernel/sched/wait.c
+> > @@ -343,6 +343,18 @@ int __sched out_of_line_wait_on_bit(void *word, in=
+t bit,
+> >  }
+> >  EXPORT_SYMBOL(out_of_line_wait_on_bit);
+> > =20
+> > +int __sched out_of_line_wait_on_bit_timeout(
+> > +	void *word, int bit, wait_bit_action_f *action,
+> > +	unsigned mode, unsigned long timeout)
+> > +{
+> > +	wait_queue_head_t *wq =3D bit_waitqueue(word, bit);
+> > +	DEFINE_WAIT_BIT(wait, word, bit);
+> > +
+> > +	wait.key.timeout =3D jiffies + timeout;
+> > +	return __wait_on_bit(wq, &wait, action, mode);
+> > +}
+> > +EXPORT_SYMBOL(out_of_line_wait_on_bit_timeout);
+> > +
+> >  int __sched
+> >  __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
+> >  			wait_bit_action_f *action, unsigned mode)
+> > @@ -520,3 +532,27 @@ __sched int bit_wait_io(struct wait_bit_key *word)
+> >  	return 0;
+> >  }
+> >  EXPORT_SYMBOL(bit_wait_io);
+> > +
+> > +__sched int bit_wait_timeout(struct wait_bit_key *word)
+> > +{
+> > +	unsigned long now =3D ACCESS_ONCE(jiffies);
+> > +	if (signal_pending_state(current->state, current))
+> > +		return 1;
+> > +	if (time_after_eq(now, word->timeout))
+> > +		return -EAGAIN;
+> > +	schedule_timeout(word->timeout - now);
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(bit_wait_timeout);
+> > +
+> > +__sched int bit_wait_io_timeout(struct wait_bit_key *word)
+> > +{
+> > +	unsigned long now =3D ACCESS_ONCE(jiffies);
+> > +	if (signal_pending_state(current->state, current))
+> > +		return 1;
+> > +	if (time_after_eq(now, word->timeout))
+> > +		return -EAGAIN;
+> > +	io_schedule_timeout(word->timeout - now);
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(bit_wait_io_timeout);
+>=20
+> New scheduler APIs should be exported via EXPORT_SYMBOL_GPL().
+>=20
+
+Fine with me.
+
+ Trond, can you just edit that into the patch you have, or do you want me to
+ re-send?
+ Also maybe added Jeff's=20
+    Acked-by: Jeff Layton <jlayton@primarydata.com>
+ to the NFS bits.
+
+Thanks,
+NeilBrown
+
+--Sig_/3F0C5Wh1afvW5ZV7Em7amCB
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBVCOKuznsnt1WYoG5AQJlnQ//eLcFQi2fKy0WKO5U61vvbWwEX1myaR3j
+kJbbNOxgDWPIwzncSyOIKjWKZGOPZH2lZ0gkt9aDcdPYld8XTaEertxdSflQaR0j
+RZJO/Bx3PTc2hfHe0isBDkIL7wZocvxQe8jFee0rk9blX1ymkAhMb6Q/Vom5Ve8M
+gelRn5nxQV4DYjoV/SyqcTPpE87+lAz+N7dMdFSo0y0zkGXsyBrkOoLKYkExDFIE
+UBN2xOkzPaPKLT8ZZalzJgZGc28q7Cx+AHv22fDKCb9HDlaKc4zWJuOCkUgX9qun
+s/KjeXx/El7xO+OYJDGADBHrS6g6pDnNpXcqGuRDmAsXsthnxkCBiRMuUgoRHMVf
+eNdidRZcMHq99qHJAh48BrxdbjY2wqQcbG0BN4JB7KWzHJy2xhqnzQZM35ra3RqL
++XkR+UpC/hgHbEABYIHQbzN5Stf5bTc8uqthIMVyKQjHNJJABFrYGz9cblTCzSBX
+cz2BwGQSB+DcFUjPaIiPMPe5bhFGB4eAlWBDhkqrmlbz/osHFjSjvorYrEJ5iarQ
+4MAa7DnsTp0ak7lUI2sDBo5PjJX7mgsXTY0wnjUxLKIQVaIrPWPQ30NsT+TFuikk
+Nrpp7TVu7i+oa1paciJJC2ff/QLHWKkqcLsMj7F2eJ4/6vkeTM+oHI67ViI9wtyj
+W6sNGpRVqqw=
+=5m/y
+-----END PGP SIGNATURE-----
+
+--Sig_/3F0C5Wh1afvW5ZV7Em7amCB--
