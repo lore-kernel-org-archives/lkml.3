@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaIYQ2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:28:54 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:33058 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604AbaIYQ2w (ORCPT
+	id S1753929AbaIYQ3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:29:03 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:51793 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827AbaIYQ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:28:52 -0400
-X-Originating-IP: 10.58.1.146
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Thu, 25 Sep 2014 18:28:47 +0200
-From: Oscar Utbult <oscar@oscr.io>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Changed "&" with "and" in
- Documentation/applying-patches.txt.
-In-Reply-To: <CAH6sp9NqiNincavwB9bQ94EvG8ZjvUPLH5u3j04OV2JMz7wTEg@mail.gmail.com>
-References: <1411652495-100852-1-git-send-email-oscar@oscr.io>
- <CAH6sp9NqiNincavwB9bQ94EvG8ZjvUPLH5u3j04OV2JMz7wTEg@mail.gmail.com>
-Message-ID: <e692e73445c591af1bea3ce0a87755c6@oscr.io>
-User-Agent: Roundcube Webmail/0.9.5
+	Thu, 25 Sep 2014 12:28:55 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH v3 07/13] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev() for pm_clk setup
+Date: Thu, 25 Sep 2014 18:28:34 +0200
+Message-Id: <1411662520-22795-8-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-25 16:48, Frans Klaver wrote:
-> On Thu, Sep 25, 2014 at 3:41 PM,  <oscar@oscr.io> wrote:
->> Subject: [PATCH 1/1] Changed "&" with "and" in 
->> Documentation/applying-patches.txt.
-> 
-> Documentation/SubmittingPatches says:
-> 
-> Describe your changes in imperative mood, e.g. "make xyzzy do frotz"
-> instead of "[This patch] makes xyzzy do frotz" or "[I] changed xyzzy
-> to do frotz", as if you are giving orders to the codebase to change
-> its behaviour.
+Use the just introduced genpd attach/detach callbacks to register the
+devices' module clocks, instead of doing it directly, to make it
+DT-proof.
 
-Thank you for your feedback Frans.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+v3:
+  - Update for callback signature changes,
+v2:
+  - New
 
-So for example a better description would have been: "use 'and' instead 
-of '&'"?
+ arch/arm/mach-shmobile/pm-rmobile.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-> 
->> From: Oscar Utbult <oscar@oscr.io>
->> 
->> http://english.stackexchange.com/questions/3127/when-to-use-instead-of-and
-> 
-> It might be that a link is enough, but I would prefer to have an
-> excerpt from that, possibly with the link as reference.
+diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
+index 717e6413d29cb998..ae846dfcd69293f7 100644
+--- a/arch/arm/mach-shmobile/pm-rmobile.c
++++ b/arch/arm/mach-shmobile/pm-rmobile.c
+@@ -101,6 +101,17 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
+ 	return true;
+ }
+ 
++static void rmobile_pd_attach_dev(struct device *dev)
++{
++	if (pm_clk_no_clocks(dev))
++		pm_clk_add(dev, NULL);
++}
++
++static void rmobile_pd_detach_dev(struct device *dev)
++{
++	pm_clk_remove(dev, NULL);
++}
++
+ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+ {
+ 	struct generic_pm_domain *genpd = &rmobile_pd->genpd;
+@@ -112,6 +123,8 @@ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+ 	genpd->dev_ops.active_wakeup	= rmobile_pd_active_wakeup;
+ 	genpd->power_off		= rmobile_pd_power_down;
+ 	genpd->power_on			= rmobile_pd_power_up;
++	genpd->attach_dev		= rmobile_pd_attach_dev;
++	genpd->detach_dev		= rmobile_pd_detach_dev;
+ 	__rmobile_pd_power_up(rmobile_pd, false);
+ }
+ 
+@@ -130,8 +143,6 @@ void rmobile_add_device_to_domain_td(const char *domain_name,
+ 	struct device *dev = &pdev->dev;
+ 
+ 	__pm_genpd_name_add_device(domain_name, dev, td);
+-	if (pm_clk_no_clocks(dev))
+-		pm_clk_add(dev, NULL);
+ }
+ 
+ void rmobile_add_devices_to_domains(struct pm_domain_device data[],
+-- 
+1.9.1
 
-You are right. I will provide one in the future.
-
-Oscar
-
-> 
-> Thanks,
-> Frans
-> 
->> 
->> Signed-off-by: Oscar Utbult <oscar@oscr.io>
->> ---
->>  Documentation/applying-patches.txt | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/Documentation/applying-patches.txt 
->> b/Documentation/applying-patches.txt
->> index a083ba3..77df55b 100644
->> --- a/Documentation/applying-patches.txt
->> +++ b/Documentation/applying-patches.txt
->> @@ -94,7 +94,7 @@ Common errors when patching
->>  ---
->>   When patch applies a patch file it attempts to verify the sanity of 
->> the
->>  file in different ways.
->> -Checking that the file looks like a valid patch file & checking the 
->> code
->> +Checking that the file looks like a valid patch file and checking the 
->> code
->>  around the bits being modified matches the context provided in the 
->> patch are
->>  just two of the basic sanity checks patch does.
->> 
->> --
->> 1.8.0.1
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe 
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
