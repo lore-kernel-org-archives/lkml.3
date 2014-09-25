@@ -1,125 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaIYBCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 21:02:20 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:11267 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751855AbaIYBCS (ORCPT
+	id S1752130AbaIYBFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 21:05:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39540 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaIYBFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 21:02:18 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al0nACVpI1R5LHimPGdsb2JhbABggw6IYq5UBpYThWoEAgGBCBcBBgEBAQE4OIQEAQEEJxMcIxAIAw4KCSUPBSUDBxoTiD3ELgEXGIV6igwHgy6BHQWdIJd0gVUrL4JKAQEB
-Date: Thu, 25 Sep 2014 11:01:26 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v10 09/21] Replace the XIP page fault handler with the
- DAX page fault handler
-Message-ID: <20140925010126.GC4945@dastard>
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
- <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
- <20140903074724.GE20473@dastard>
- <20140910152337.GF27730@localhost.localdomain>
- <20140911030926.GO20518@dastard>
- <20140924154307.GO27730@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924154307.GO27730@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Sep 2014 21:05:10 -0400
+X-AuditID: cbfee68d-f79296d000004278-98-54236a449fe8
+Message-id: <54236A44.2050904@samsung.com>
+Date: Thu, 25 Sep 2014 10:05:08 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 03/27] extcon: arizona: use
+ pm_runtime_last_busy_and_autosuspend helper
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+ <1411575342-31048-4-git-send-email-vinod.koul@intel.com>
+In-reply-to: <1411575342-31048-4-git-send-email-vinod.koul@intel.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsWyRsSkRNclSznE4OQEM4vLu+awWdxuXMFm
+	sfztfzaLNVtXMFq87NvP4sDqsXjPSyaPlxN/s3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJX
+	xvqjN9gLlnBWbH76gqmB8TJ7FyMnh4SAicSB61+ZIGwxiQv31rN1MXJxCAksZZSYs7GfFaZo
+	5pZtUInpjBIvtm1mgXBeM0psWTSJBaSKV0BL4vyGFYwgNouAqsTeY0fAVrABxfe/uMEGYosK
+	hEmsnH4Fql5Q4sfke2C2CFD9lp8dYL3MAn2MEt+mKYDYwgKxEvfbFoBdISRQLzF9xWGwUzkF
+	XCUO9Xxig6jXkdjfOg3KlpfYvOYtM8TV69glzt0LhLhHQOLb5ENAuziA4rISmw5AlUhKHFxx
+	g2UCo9gsJBfNQjJ1FpKpCxiZVzGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmIERtbpf896dzDe
+	PmB9iFGAg1GJh/eDj3KIEGtiWXFl7iFGU6ArJjJLiSbnA+M3ryTe0NjMyMLUxNTYyNzSTEmc
+	V1HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxon7Dn1sZ403s/iW8/xlsojYl/uG/A84
+	Z9qflD/l1fmrqrLjVJmL54ybbUf5VhQYxjjI9OdeeT/lr+0+vUxH/516/6tPezMI+k99/OTp
+	pQeZ2SeFDir8X7fNUjh2P7eKT//zR3ue9M3wna+q2inff2CripjHJOfce3yh0i+fVcyIUtDc
+	f2J6tRJLcUaioRZzUXEiAMU4LP2nAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jQV2XLOUQg/4b+haXd81hs7jduILN
+	Yvnb/2wWa7auYLR42befxYHVY/Gel0weLyf+ZvPo27KK0ePzJrkAlqgGRpuM1MSU1CKF1Lzk
+	/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoMVKCmWJOaVAoYDE4mIlfTtM
+	E0JD3HQtYBojdH1DguB6jAzQQMIaxoz1R2+wFyzhrNj89AVTA+Nl9i5GTg4JAROJmVu2sUHY
+	YhIX7q0Hsrk4hASmM0q82LaZBcJ5zSixZdEkFpAqXgEtifMbVjCC2CwCqhJ7jx0Bm8QGFN//
+	4gbYJFGBMImV069A1QtK/Jh8D8wWAarf8rMDrJdZoI9R4ts0BRBbWCBW4n7bAlYQW0igXmL6
+	isNMIDangKvEoZ5PbBD1OhL7W6dB2fISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0tSC5oDgp
+	PddQrzgxt7g0L10vOT93EyM4cp9J7WBc2WBxiFGAg1GJh9fDXzlEiDWxrLgy9xCjBAezkgiv
+	hgNQiDclsbIqtSg/vqg0J7X4EKMpMAQmMkuJJucDk0peSbyhsYmZkaWRuaGFkbG5kjjvgVbr
+	QCGB9MSS1OzU1ILUIpg+Jg5OqQZG1b8yjQ4z1ykVnvj5p/RjGOsyy5KLK/uN9jw7uNI6YpeM
+	pUKlvsy3mHvpcvcjTcIazk+Z6fnJQLWVa9FxFkEpZ/M/M87aCJW9Zu6/NudvyL3vIaICux7n
+	30qb3L85MtHihozPHO9S80g3u545l45Jm1jYOh9V07s7cfp2b7d/3t3vzi29c7RRiaU4I9FQ
+	i7moOBEADi2gq/ICAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 11:43:07AM -0400, Matthew Wilcox wrote:
-> On Thu, Sep 11, 2014 at 01:09:26PM +1000, Dave Chinner wrote:
-> > On Wed, Sep 10, 2014 at 11:23:37AM -0400, Matthew Wilcox wrote:
-> > > On Wed, Sep 03, 2014 at 05:47:24PM +1000, Dave Chinner wrote:
-> > > > > +	error = get_block(inode, block, &bh, 0);
-> > > > > +	if (!error && (bh.b_size < PAGE_SIZE))
-> > > > > +		error = -EIO;
-> > > > > +	if (error)
-> > > > > +		goto unlock_page;
-> > > > 
-> > > > page fault into unwritten region, returns buffer_unwritten(bh) ==
-> > > > true. Hence buffer_written(bh) is false, and we take this branch:
-> > > > 
-> > > > > +	if (!buffer_written(&bh) && !vmf->cow_page) {
-> > > > > +		if (vmf->flags & FAULT_FLAG_WRITE) {
-> > > > > +			error = get_block(inode, block, &bh, 1);
-> > > > 
-> > > > Exactly what are you expecting to happen here? We don't do
-> > > > allocation because there are already unwritten blocks over this
-> > > > extent, and so bh will be unchanged when returning. i.e. it will
-> > > > still be mapping an unwritten extent.
-> > > 
-> > > I was expecting calling get_block() on an unwritten extent to convert it
-> > > to a written extent.  Your suggestion below of using b_end_io() to do that
-> > > is a better idea.
-> > > 
-> > > So this should be:
-> > > 
-> > > 	if (!buffer_mapped(&bh) && !vmf->cow_page) {
-> > > 
-> > > ... right?
-> > 
-> > Yes, that is the conclusion I reached as well. ;)
+On 09/25/2014 01:14 AM, Vinod Koul wrote:
+> Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+> coding the same code
 > 
-> Now I know why I was expecting get_block() on an unwritten extent to
-> convert it to a written extent.  That's the way ext4 behaves!
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index ba51588..7774e80 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -323,8 +323,7 @@ static void arizona_stop_mic(struct arizona_extcon_info *info)
+>  
+>  	if (change) {
+>  		regulator_disable(info->micvdd);
+> -		pm_runtime_mark_last_busy(info->dev);
+> -		pm_runtime_put_autosuspend(info->dev);
+> +		pm_runtime_last_busy_and_autosuspend(info->dev);
+>  	}
+>  }
+>  
+> @@ -1077,8 +1076,7 @@ out:
+>  
+>  	mutex_unlock(&info->lock);
+>  
+> -	pm_runtime_mark_last_busy(info->dev);
+> -	pm_runtime_put_autosuspend(info->dev);
+> +	pm_runtime_last_busy_and_autosuspend(info->dev);
+>  
+>  	return IRQ_HANDLED;
+>  }
+> 
 
-That seems wrong. Unwritten extent conversion should only occur
-on IO completion...
+Looks good to me about this patch.
 
-> 
-> [  236.660772] got bh ffffffffa06e3bd0 1000
-> [  236.660814] got bh for write ffffffffa06e3bd0 60
-> [  236.660821] calling end_io ffffffffa06e3bd0 60
-> 
-> (1000 is BH_Unwritten, 60 is BH_Mapped | BH_New)
-> 
-> The code producing this output:
-> 
->         error = get_block(inode, block, &bh, 0);
-> printk("got bh %p %lx\n", bh.b_end_io, bh.b_state);
->         if (!error && (bh.b_size < PAGE_SIZE))
->                 error = -EIO;
->         if (error)
->                 goto unlock_page;
-> 
->         if (!buffer_mapped(&bh) && !vmf->cow_page) {
->                 if (vmf->flags & FAULT_FLAG_WRITE) {
->                         error = get_block(inode, block, &bh, 1);
-> printk("got bh for write %p %lx\n", bh.b_end_io, bh.b_state);
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-%pF will do symbol decoding for you ;)
+Thanks,
+Chanwoo Choi
 
-> 
-> # xfs_io -f -c "truncate 20k" -c "fiemap -v" -c "falloc 0 20k" -c "fiemap -v" -c "mmap -w 0 20k" -c "fiemap -v" -c "mwrite 4k 4k" -c "fiemap -v" /mnt/ram0/b
-> /mnt/ram0/b:
-> /mnt/ram0/b:
->  EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
->    0: [0..39]:         263176..263215      40 0x801
-> /mnt/ram0/b:
->  EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
->    0: [0..39]:         263176..263215      40 0x801
-> /mnt/ram0/b:
->  EXT: FILE-OFFSET      BLOCK-RANGE      TOTAL FLAGS
->    0: [0..39]:         263176..263215      40   0x1
-> 
-> Actually, this looks wrong ... ext4 should only have converted one block
-> of the extent to written, not all of it.  I think that means ext4 is
-> exposing stale data :-(  I'll keep digging.
-
-Check to see if ext4 has zeroed the entire extent - it does some
-convoluted "hole filling" in certain siutations where it extends the
-range of allocation operations by writing zeros around the range that
-it was asked to allocate.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
