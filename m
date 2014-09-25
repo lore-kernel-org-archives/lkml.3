@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaIYQbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:31:43 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:53765 "EHLO
+	id S1753664AbaIYQbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:31:42 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:53788 "EHLO
 	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684AbaIYQ2x (ORCPT
+	with ESMTP id S1753711AbaIYQ2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Sep 2014 12:28:53 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -17,9 +17,9 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
         linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v3 02/13] PM / Domains: Add DT bindings for power-on/off latencies
-Date: Thu, 25 Sep 2014 18:28:29 +0200
-Message-Id: <1411662520-22795-3-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH v3 11/13] drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
+Date: Thu, 25 Sep 2014 18:28:38 +0200
+Message-Id: <1411662520-22795-12-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
 References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
@@ -27,44 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PM domain power on/off-latencies are properties of the hardware.
-In legacy code, they're specified from platform code.
-On DT platforms, their values should come from DT.
+If the default PM domain using PM_CLK is used for PM runtime, the real PM
+domain(s) cannot be registered from DT later.
+
+Hence do not enable it when running a multi-platform kernel with genpd
+support on an r8a7740. The R-Mobile PM domain driver will take care of
+PM runtime management of the module clocks.
+
+The default PM domain is still needed for:
+  - platforms without genpd support,
+  - the legacy (non-DT) case, where genpd may take over later, except
+    for the C5 "always on" PM domain.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Acked-by: Kevin Hilman <khilman@linaro.org>
 ---
 v3:
-  - No changes
+  - Reword
 v2:
-  - Add Acked-by
+  - New
 
- Documentation/devicetree/bindings/power/power_domain.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/sh/pm_runtime.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
-index 98c16672ab5f49e0..7bc421d84367d636 100644
---- a/Documentation/devicetree/bindings/power/power_domain.txt
-+++ b/Documentation/devicetree/bindings/power/power_domain.txt
-@@ -19,12 +19,18 @@ Required properties:
-    providing multiple PM domains (e.g. power controllers), but can be any value
-    as specified by device tree binding documentation of particular provider.
- 
-+Optional properties:
-+ - power-on-latency: Power-on latency of the PM domain, in ns,
-+ - power-off-latency: Power-off latency of the PM domain, in ns.
-+
- Example:
- 
- 	power: power-controller@12340000 {
- 		compatible = "foo,power-controller";
- 		reg = <0x12340000 0x1000>;
- 		#power-domain-cells = <1>;
-+		power-on-latency = <250000>;
-+		power-off-latency = <250000>;
- 	};
- 
- The node above defines a power controller that is a PM domain provider and
+diff --git a/drivers/sh/pm_runtime.c b/drivers/sh/pm_runtime.c
+index fe2c2d595f599b2f..85cc89fd3e7d7cb7 100644
+--- a/drivers/sh/pm_runtime.c
++++ b/drivers/sh/pm_runtime.c
+@@ -81,7 +81,9 @@ static int __init sh_pm_runtime_init(void)
+ 		if (!of_machine_is_compatible("renesas,emev2") &&
+ 		    !of_machine_is_compatible("renesas,r7s72100") &&
+ 		    !of_machine_is_compatible("renesas,r8a73a4") &&
++#ifndef CONFIG_PM_GENERIC_DOMAINS_OF
+ 		    !of_machine_is_compatible("renesas,r8a7740") &&
++#endif
+ 		    !of_machine_is_compatible("renesas,r8a7778") &&
+ 		    !of_machine_is_compatible("renesas,r8a7779") &&
+ 		    !of_machine_is_compatible("renesas,r8a7790") &&
 -- 
 1.9.1
 
