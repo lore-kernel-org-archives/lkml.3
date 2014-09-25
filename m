@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaIYHAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:00:39 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:24224 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaIYHAi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:00:38 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d5-5423bd93d59c
-Message-id: <1411628434.16755.3.camel@AMDC1943>
-Subject: Re: linux-next: build warning after merge of the battery tree
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Sebastian Reichel <sre@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Date: Thu, 25 Sep 2014 09:00:34 +0200
-In-reply-to: <20140925142206.5ebea1eb@canb.auug.org.au>
-References: <20140925142206.5ebea1eb@canb.auug.org.au>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xq7qT9yqHGDzcqmhx/+tRRovLu+aw
-	WRxc2MZosXXvVXaL07tLHFg9Gm/cYPPYtKqTzePOtT1sHp83yQWwRHHZpKTmZJalFunbJXBl
-	zHt1nLngGmfF5f4VzA2Mczm6GDk5JARMJE7O/ssKYYtJXLi3ng3EFhJYyigx8Sl/FyMXkP2Z
-	UeL9rtNMIAleAX2JFaensHcxcnAIC7hJLN0UDBJmEzCW2Lx8CRtIWERAW+LAbwGQVmaBFkaJ
-	mdcPMYLUsAioSlz52MMCYnMKmEt829vLBLHLTKJ351Uwm1lAXWLSvEXMIHMkBJQlGvvdILYK
-	SvyYfI8FokReYvOat8wTGAVmIemYhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNz
-	NzFCAvjrDsalx6wOMQpwMCrx8Hr4K4cIsSaWFVfmHmKU4GBWEuHdthUoxJuSWFmVWpQfX1Sa
-	k1p8iJGJg1OqgfGEV1X/+x/aRTauEeHrmufb/q97/+iokjob475+v32vbihctmyM7uhwnqOh
-	zbqtuZwh/Zsv07yfYU07os4pGjgfux8iuPGk8mO99zucluzxkj6r0djJ7CnwNqJbc3ZshfrT
-	6Icn5jyTkrL3WvenuE3E9efklVKLF0t3uRTf+1rAd2LrP5OXXkosxRmJhlrMRcWJAFOFJaU+	AgAA
+	id S1752209AbaIYHAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:00:53 -0400
+Received: from mga14.intel.com ([192.55.52.115]:49183 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751568AbaIYHAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 03:00:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,595,1406617200"; 
+   d="scan'208";a="596576867"
+Date: Thu, 25 Sep 2014 10:00:34 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/6] phy: improved lookup method
+Message-ID: <20140925070034.GA15854@xps8300>
+References: <5411C0B2.3060505@ti.com>
+ <20140912140720.GC30816@xps8300>
+ <54130729.5010206@ti.com>
+ <20140915123508.GA16653@xps8300>
+ <20140918102505.GB8567@xps8300>
+ <54200A13.6050201@ti.com>
+ <20140923105311.GB18814@xps8300>
+ <5421536D.4050601@ti.com>
+ <20140923114353.GC18814@xps8300>
+ <54229276.5050000@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54229276.5050000@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-09-25 at 14:22 +1000, Stephen Rothwell wrote:
-> Hi Sebastian,
-> 
-> After merging the battery tree, today's linux-next build (powerpc
-> ppc64_defconfig and x86_64 allmodconfig) produced this warning:
-> 
-> fs/sysfs/Kconfig:1:error: recursive dependency detected!
-> fs/sysfs/Kconfig:1:	symbol SYSFS is selected by CHARGER_MAX14577
-> drivers/power/Kconfig:327:	symbol CHARGER_MAX14577 depends on POWER_SUPPLY
-> drivers/power/Kconfig:1:	symbol POWER_SUPPLY is selected by HID_SONY
-> drivers/hid/Kconfig:649:	symbol HID_SONY depends on NEW_LEDS
-> drivers/leds/Kconfig:8:	symbol NEW_LEDS is selected by SENSORS_APPLESMC
-> drivers/hwmon/Kconfig:299:	symbol SENSORS_APPLESMC depends on HWMON
-> drivers/hwmon/Kconfig:5:	symbol HWMON is selected by EEEPC_LAPTOP
-> drivers/platform/x86/Kconfig:496:	symbol EEEPC_LAPTOP depends on HOTPLUG_PCI
-> drivers/pci/hotplug/Kconfig:5:	symbol HOTPLUG_PCI depends on SYSFS
-> 
-> Caused by commit e30110e9c96f ("charger: max14577: Configure
-> battery-dependent settings from DTS and sysfs").  Consider depending on
-> SYSFS instead of selecting it ... or maybe making your driver work even
-> without it.
+> >>>>>>> Assume you have 2 phys in your system..
+> >>>>>>> static struct phy_lookup usb_lookup = {
+> >>>>>>> 	.phy_name	= "phy-usb.0",
+> >>>>>>> 	.dev_id		= "usb.0",
+> >>>>>>> 	.con_id		= "usb",
+> >>>>>>> };
+> >>>>>>>
+> >>>>>>> static struct phy_lookup sata_lookup = {
+> >>>>>>> 	.phy_name	= "sata-usb.1",
+> >>>>>>> 	.dev_id		= "sata.0",
+> >>>>>>> 	.con_id		= "sata",
+> >>>>>>> };
+> >>>>>>>
+> >>>>>>> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
+> >>>>>>> creates the PHY. The phy-core will find a free id (now it will be 0) and then
+> >>>>>>> name the phy as phy-usb.0.
+> >>>>>>> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
+> >>>>>>>
+> >>>>>>> This is an ideal case where the .phy_name in phy_lookup matches.
+> >>>>>>>
+> >>>>>>> Consider if the order is flipped and the user does modprobe phy-sata first. The
+> >>>>>>> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
+> >>>>>
+> >>>>> Actually, I don't think there would be this problem if we used the
+> >>>>> name of the actual device which is the parent of phy devices, right?
+> >>>>
+> >>>> hmm.. but if the parent is a multi-phy phy provider (like pipe3 PHY driver), we
+> >>>> might end up with the same problem.
+> >>>
+> >>> I'm not completely sure what you mean? If you are talking about
+> >>> platforms with multiple instances of a single phy, I don't see how
+> >>> there could ever be a scenario where we did not know the order in
+> >>> which they were enumerated. Can you give an example again?
+> >>
+> >> If a single IP implements multiple PHYs (phy-miphy365x.c in linux-phy next),
+> >> the parent for all the phy devices would be the same.
 
-I'll send a patch changing to "depends on".
+Hold on...
 
-Best regards,
-Krzysztof
+Let's take a step back here. Where could we actually have a scenario
+where the phy device, the dev_id (consumer) and the con_id would all
+be the same? There can't be such a case.
 
+It's not like you could ever have a driver requesting multiple phys
+with the same con_id. You would just get the same phy handle even if
+you used dt.
+
+        phy1 = phy_get(dev, "phy");
+        ...
+        phy2 = phy_get(dev, "phy");
+
+And if the drivers requesting those phys are different, your consumers
+are different.
+
+> Isn't making the PHY to be aware of it's user much simpler?
+
+No it's not. I'm not going into this again. We have already gone
+through this in the past.
+
+
+Cheers,
+
+-- 
+heikki
