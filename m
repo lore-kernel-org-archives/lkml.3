@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaIYH2R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 03:28:17 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53276 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaIYH2O (ORCPT
+	id S1752537AbaIYH3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 03:29:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55206 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaIYH3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 03:28:14 -0400
+	Thu, 25 Sep 2014 03:29:18 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-88-5423c44c0b3b
+From: Chao Yu <chao2.yu@samsung.com>
+To: neilb@suse.de
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] md: avoid potential long delay under pers_lock
+Date: Thu, 25 Sep 2014 15:28:34 +0800
+Message-id: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-0b-5423c40ba3ac
-Content-transfer-encoding: 8BIT
-Message-id: <1411630089.8568.7.camel@AMDC1943>
-Subject: Re: [PATCH v7 1/5] PM / Runtime: Add getter for quering the IRQ safe
- option
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Thu, 25 Sep 2014 09:28:09 +0200
-In-reply-to: <20140924175302.GB1231@amd>
-References: <1411566612-32277-1-git-send-email-k.kozlowski@samsung.com>
- <1411566612-32277-2-git-send-email-k.kozlowski@samsung.com>
- <20140924175302.GB1231@amd>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t/xq7rcR5RDDJq3iFpsnLGe1WL61AuM
-	Fqun/mW1OPBnB6PF2aY37BZLJs9ntZg1ZS+TxcK2JSwWl3fNYbP43HuE0eL2ZV6LtUfuslu8
-	exlhcffUUTaLt3ems1icOX2J1WLC7wtsFsfXhlu87NvP4iDs0dLcw+axeYWWx+I9L5k87lzb
-	w+ax5M0hVo8tV9tZPGbf/cHo0bdlFaPHitXf2T0+b5Lz2Pv5N0sAdxSXTUpqTmZZapG+XQJX
-	xsHtPxgLNvBU3L24mamB8RtnFyMnh4SAicT9jqOMELaYxIV769m6GLk4hASWMkqcf9rCBpLg
-	FRCU+DH5HksXIwcHs4C8xJFL2SBhZgF1iUnzFjGD2EICnxklbjdqQ5TrSbzfs44VxBYWCJM4
-	0nQSbAybgLHE5uVLwGwRoDFb+1Ywg+xiFtjJKjFh6T8WkASLgKrE2c6brCC7OAU0JJq+REDc
-	s5hR4nLXN7AbJASUJRr73SYwCsxCct0shOtmIbluASPzKkbR1NLkguKk9FxDveLE3OLSvHS9
-	5PzcTYyQaPyyg3HxMatDjAIcjEo8vB7+yiFCrIllxZW5hxglOJiVRHi3bQUK8aYkVlalFuXH
-	F5XmpBYfYmTi4JRqYFx4zIGPRf7P4x8KPbHyWZ/+3z/KxPDnDOfiHOnv92J273crf/jG9csL
-	hdgzvCmbdn1fXx7tpi54mjVYc1ve15VBJy6Lux/U1Pliu8c343LpdAeTS+H/43/pspxdeVFq
-	4+xf6ofq/NxWhKavPhMa9PKr2yK2YlV/kVWpfqknJvtt2X8gXLK444ISS3FGoqEWc1FxIgDO
-	/LlRpAIAAA==
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/Yjg7yxSdseIg7Ti2xgbm7gW8TXQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jAV2fI8ohBtc/61hc3jWHzaJ9/i5G
+	i73zG1gcmD02n672+LxJLoApissmJTUnsyy1SN8ugStj1fn7bAUHOSqanhxhbmBsZO9i5OSQ
+	EDCRWP1mEiOELSZx4d56ti5GLg4hgUWMEg/evIRyfgA5x86xglSxCahILO/4zwRiiwgISix9
+	/JUZxGYWsJG482AaSxcjB4ewgL3Ejus6IGEWAVWJp38usoDYvAKWEgsnT2CHsAUlfky+xwLR
+	qiWxfudxJghbXmLzmrfMEAcpSOw4+5oRYpWeRN/OO1A14hIbj9ximcAoMAvJqFlIRs1CMmoW
+	kpYFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYKD9pnUDsaVDRaHGAU4GJV4eD38lUOE
+	WBPLiitzDzFKcDArifBu2woU4k1JrKxKLcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1
+	ILUIJsvEwSnVwLjDWq0u2cfj6YdZN5TWiulv1Z7w8qh1vZntDCXz7Ftle1sO7nsSsL5r1Yyc
+	e99TvLc8WTxjYbTDnBMtaq8Ksl80dgde8b9QuORVvI2jcN/9stQV0y+wTPptMG/++dqT1ldM
+	k/yjIrn3GlcuYeiOCVF60ZC34Xi9v5xE9sLJDI97NmW732xa3KnEUpyRaKjFXFScCAA5KeeU
+	VgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-09-24 at 19:53 +0200, Pavel Machek wrote:
-> On Wed 2014-09-24 15:50:08, Krzysztof Kozlowski wrote:
-> > Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
-> > PM IRQ safe was set or not.
-> > 
-> > Various bus drivers implementing runtime PM may use choose to suspend
-> > differently based on IRQ safeness status of child driver (e.g. do not
-> > unprepare the clock if IRQ safe is not set).
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> Are you sure this is good interface?
-> 
-> "Tell me if another function works this or that way".
-> 
-> That's certainly not traditional interface, and it seems dangerous to
-> me. Callbacks now have different semantic requirements based on value
-> of some flag...
+printk may cause long time lapse if value of printk_delay in sysctl is
+configured large by user. If register_md_personality takes long time to print in
+spinlock pers_lock, we may encounter high CPU usage rate when there are other
+pers_lock competitors who may be blocked to spin.
+We can avoid this condition by moving printk out of coverage of pers_lock
+spinlock.
 
-Yes... but to me that semantic change looks similar to the PM runtime
-code which behaves differently when the flag is set. Some PM runtime
-functions might sleep or might not... depending on the flag.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ drivers/md/md.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Would it be possible to have two sets of callbacks, one irq safe and
-> one not?
-
-That would require changing the callbacks during probe of each driver.
-It is possible - I'm fine with that. However we still would need some
-kind of interface for selecting the callbacks according to irq safe
-status - something like pm_runtime_is_irq_safe():
-
-static int amba_probe(struct device *dev)
-{
-...
-	if (pm_runtime_is_irq_safe())
-		dev->driver->pm = &amba_pm_irq_safe;
-	else
-		dev->driver->pm = &amba_pm;
-
-Best regards,
-Krzysztof
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index e02de05..5fcf215 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops = {
+ 
+ int register_md_personality(struct md_personality *p)
+ {
++	printk(KERN_INFO "md: %s personality registered for level %d\n",
++						p->name, p->level);
+ 	spin_lock(&pers_lock);
+ 	list_add_tail(&p->list, &pers_list);
+-	printk(KERN_INFO "md: %s personality registered for level %d\n", p->name, p->level);
+ 	spin_unlock(&pers_lock);
+ 	return 0;
+ }
+-- 
+2.0.1.474.g72c7794
 
 
