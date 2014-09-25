@@ -1,186 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaIYOf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 10:35:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40259 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574AbaIYOf0 (ORCPT
+	id S1753301AbaIYOf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 10:35:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33915 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914AbaIYOfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 10:35:26 -0400
-Date: Thu, 25 Sep 2014 10:33:46 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 04/22] x86/xen/MSI: Eliminate arch_msix_mask_irq() and
- arch_msi_mask_irq()
-Message-ID: <20140925143346.GF20089@laptop.dumpdata.com>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <1411614872-4009-5-git-send-email-wangyijing@huawei.com>
+	Thu, 25 Sep 2014 10:35:55 -0400
+Date: Thu, 25 Sep 2014 16:35:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: linux-mm@kvack.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hrtimer deadlock caused by nohz_full
+In-Reply-To: <20140925141425.GA21702@redhat.com>
+Message-ID: <alpine.DEB.2.10.1409251630210.4604@nanos>
+References: <20140925141425.GA21702@redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411614872-4009-5-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:14:14AM +0800, Yijing Wang wrote:
-> Commit 0e4ccb150 added two __weak arch functions arch_msix_mask_irq()
-> and arch_msi_mask_irq() to fix a bug found when running xen in x86.
-> Introduced these two funcntions make MSI code complex. And mask/unmask
+On Thu, 25 Sep 2014, Dave Jones wrote:
 
-"These two functions made the MSI code more complex."
-> is the irq actions related to interrupt controller, should not use
-> weak arch functions to override mask/unmask interfaces. This patch
+> Got this on a box that had been fuzzing for 12 hours or so.
+> There's also some timer stuff going on htere, so cc'ing the usual suspects.
 
-I am bit baffled of what you are saying.
-> reverted commit 0e4ccb150 and export struct irq_chip msi_chip, modify
-> msi_chip->irq_mask/irq_unmask() in xen init functions to fix this
-> bug for simplicity. Also this is preparation for using struct
-> msi_chip instead of weak arch MSI functions in all platforms.
-> Keep default_msi_mask_irq() and default_msix_mask_irq() in
-> linux/msi.h to make s390 MSI code compile happy, they wiil be removed
+And it's a hrtimer lockup
+ 
+>  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
+>  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+>  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+>  [<ffffffffa10f95f8>] ? hrtimer_try_to_cancel+0x58/0x1f0
+>  [<ffffffffa10d103d>] ? lock_release+0x1d/0x300
+>  <<EOE>>  <IRQ>  [<ffffffffa1823ac4>] _raw_spin_unlock_irqrestore+0x24/0x70
+>  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
+>  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
+>  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
+>  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
+>  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
+>  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
+>  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
+>  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
+>  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
+>  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
+>  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
+>  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
+>  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
+>  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
+>  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
+>  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
 
-s/wiil/will.
+hrtimer_interrupt
+  tick_sched_timer
+    tick_sched_handle
+      update_process_times
+        irq_work_run
+	  irq_work_run_list
+	    nohz_full_kick_work_func
+	      __tick_nohz_full_check
+	        tick_nohz_restart
+                  hrtimer_cancel
 
-> in the later patch.
-> 
-> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+And that hrtimer_cancel is:
 
-I don't even remember testing it - I guess I did the earlier version.
+static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+{
+	hrtimer_cancel(&ts->sched_timer);
 
-So a couple of questions since I've totally forgotten about this:
+Now, that's really bad because we are in the timer callback of
+ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
+callback to complete.
 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 50f67a3..5f8f3af 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -162,7 +162,7 @@ static inline __attribute_const__ u32 msi_mask(unsigned x)
->   * reliably as devices without an INTx disable bit will then generate a
->   * level IRQ which will never be cleared.
->   */
-> -u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
-> +u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->  {
->  	u32 mask_bits = desc->masked;
->  
-> @@ -176,14 +176,9 @@ u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->  	return mask_bits;
->  }
->  
-> -__weak u32 arch_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
-> -{
-> -	return default_msi_mask_irq(desc, mask, flag);
-> -}
-> -
->  static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->  {
-> -	desc->masked = arch_msi_mask_irq(desc, mask, flag);
-> +	desc->masked = __msi_mask_irq(desc, mask, flag);
->  }
->  
->  /*
-> @@ -193,7 +188,7 @@ static void msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag)
->   * file.  This saves a few milliseconds when initialising devices with lots
->   * of MSI-X interrupts.
->   */
-> -u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
-> +u32 __msix_mask_irq(struct msi_desc *desc, u32 flag)
->  {
->  	u32 mask_bits = desc->masked;
->  	unsigned offset = desc->msi_attrib.entry_nr * PCI_MSIX_ENTRY_SIZE +
-> @@ -206,14 +201,9 @@ u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag)
->  	return mask_bits;
->  }
->  
-> -__weak u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
-> -{
-> -	return default_msix_mask_irq(desc, flag);
-> -}
-> -
->  static void msix_mask_irq(struct msi_desc *desc, u32 flag)
->  {
-> -	desc->masked = arch_msix_mask_irq(desc, flag);
-> +	desc->masked = __msix_mask_irq(desc, flag);
->  }
->  
->  static void msi_set_mask_bit(struct irq_data *data, u32 flag)
-> @@ -852,7 +842,7 @@ void pci_msi_shutdown(struct pci_dev *dev)
->  	/* Return the device with MSI unmasked as initial states */
->  	mask = msi_mask(desc->msi_attrib.multi_cap);
->  	/* Keep cached state to be restored */
-> -	arch_msi_mask_irq(desc, mask, ~mask);
-> +	__msi_mask_irq(desc, mask, ~mask);
+Frederic !?!?
 
-If I am reading this right, it will call the old 'default_msi_mask_irq'
-which is exactly what we don't want to do under Xen. We want to call
-the NOP code.
->  
->  	/* Restore dev->irq to its default pin-assertion irq */
->  	dev->irq = desc->msi_attrib.default_irq;
-> @@ -950,7 +940,7 @@ void pci_msix_shutdown(struct pci_dev *dev)
->  	/* Return the device with MSI-X masked as initial states */
->  	list_for_each_entry(entry, &dev->msi_list, list) {
->  		/* Keep cached states to be restored */
-> -		arch_msix_mask_irq(entry, 1);
-> +		__msix_mask_irq(entry, 1);
+Thanks,
 
-Ditto here.
-
-Looking more at this code I have to retract my Reviewed-by and Tested-by
-on the whole series.
-
-Is it possible to get a git tree for this please?
-
->  	}
->  
->  	msix_clear_and_set_ctrl(dev, PCI_MSIX_FLAGS_ENABLE, 0);
-> diff --git a/include/linux/msi.h b/include/linux/msi.h
-> index 45ef8cb..cc46a62 100644
-> --- a/include/linux/msi.h
-> +++ b/include/linux/msi.h
-> @@ -19,6 +19,8 @@ void read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
->  void get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
->  void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
->  void write_msi_msg(unsigned int irq, struct msi_msg *msg);
-> +u32 __msix_mask_irq(struct msi_desc *desc, u32 flag);
-> +u32 __msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
->  
->  struct msi_desc {
->  	struct {
-> @@ -59,8 +61,8 @@ void arch_restore_msi_irqs(struct pci_dev *dev);
->  
->  void default_teardown_msi_irqs(struct pci_dev *dev);
->  void default_restore_msi_irqs(struct pci_dev *dev);
-> -u32 default_msi_mask_irq(struct msi_desc *desc, u32 mask, u32 flag);
-> -u32 default_msix_mask_irq(struct msi_desc *desc, u32 flag);
-> +#define default_msi_mask_irq	__msi_mask_irq
-> +#define default_msix_mask_irq	__msix_mask_irq
->  
->  struct msi_chip {
->  	struct module *owner;
-> -- 
-> 1.7.1
-> 
+	tglx
