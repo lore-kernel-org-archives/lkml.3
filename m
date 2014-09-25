@@ -1,275 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaIYJrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:47:18 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:57610 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020AbaIYJrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:47:14 -0400
-Message-ID: <1411638435.18580.126.camel@iivanov-dev>
-Subject: Re: [PATCH v2] iio: iadc: Qualcomm SPMI PMIC current ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lee Jones <lee.jones@linaro.org>, Philippe Reynes <tremyfr@yahoo.fr>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1752488AbaIYJsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:48:04 -0400
+Received: from mail-by2on0104.outbound.protection.outlook.com ([207.46.100.104]:43712
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752277AbaIYJsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 05:48:01 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: "mturquette@linaro.org" <mturquette@linaro.org>,
+        Scott Wood <scottwood@freescale.com>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Thu, 25 Sep 2014 12:47:15 +0300
-In-Reply-To: <20140924170522.GL5729@leverpostej>
-References: <1411567103-2380-1-git-send-email-iivanov@mm-sol.com>
-	 <20140924145527.GI5729@leverpostej> <1411574442.18580.95.camel@iivanov-dev>
-	 <20140924170522.GL5729@leverpostej>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: RE: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
+ CLK_OF_DECLARE support
+Thread-Topic: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
+ CLK_OF_DECLARE support
+Thread-Index: AQHP1wGYMBQEa9GSl0OI/HOhX0hHNpwRlvDQ
+Date: Thu, 25 Sep 2014 09:47:59 +0000
+Message-ID: <d4a375f40b544cf1ae78ac82dc20569c@BL2PR03MB467.namprd03.prod.outlook.com>
+References: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
+In-Reply-To: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB466;
+x-forefront-prvs: 0345CFD558
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(189002)(199003)(31966008)(85306004)(2501002)(80022003)(108616004)(106116001)(101416001)(54356999)(64706001)(76176999)(50986999)(19580395003)(19580405001)(20776003)(99396003)(83322001)(83072002)(106356001)(90102001)(107046002)(76482002)(86362001)(21056001)(99286002)(76576001)(2656002)(4396001)(97736003)(81542003)(105586002)(87936001)(33646002)(74502003)(95666004)(46102003)(77982003)(66066001)(79102003)(74316001)(120916001)(81342003)(74662003)(10300001)(92566001)(85852003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB466;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8P9mAN0022033
 
-Hi Mark,
+Hi, Scott and Mike,
+  
+  Could you please help review this patch and give an ACK if ok. Thanks.
 
-On Wed, 2014-09-24 at 18:05 +0100, Mark Rutland wrote:
-> On Wed, Sep 24, 2014 at 05:00:42PM +0100, Ivan T. Ivanov wrote:
-> > On Wed, 2014-09-24 at 15:55 +0100, Mark Rutland wrote:
-> > > On Wed, Sep 24, 2014 at 02:58:23PM +0100, Ivan T. Ivanov wrote:
-> > > > The current ADC is peripheral of Qualcomm SPMI PMIC chips. It has
-> > > > 16 bits resolution and register space inside PMIC accessible across
-> > > > SPMI bus.
-> > > > 
-> > > > The driver registers itself through IIO interface.
-> > > > 
-> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > > ---
-> > > > Changes:
-> > > > - Fix Kconfig dependencies
-> > > > - Reword Kconfig help text
-> > > > - Replace IIO_CHAN_INFO_PROCESSED with IIO_CHAN_INFO_RAW and IIO_CHAN_INFO_SCALE,
-> > > >   This enable client drivers to use microampers precission, instead miliamps.
-> > > > - Use const array for iio_schan_spec-fiers.
-> > > > - Fix spelling errors and adress review comments.
-> > > > 
-> > > > Previous version:
-> > > > https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg728360.html
-> > > > 
-> > > >  .../devicetree/bindings/iio/adc/qcom,spmi-iadc.txt |  61 ++
-> > > >  drivers/iio/adc/Kconfig                            |  11 +
-> > > >  drivers/iio/adc/Makefile                           |   1 +
-> > > >  drivers/iio/adc/qcom-spmi-iadc.c                   | 691 +++++++++++++++++++++
-> > > >  4 files changed, 764 insertions(+)
-> > > >  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > > >  create mode 100644 drivers/iio/adc/qcom-spmi-iadc.c
-> > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > > > new file mode 100644
-> > > > index 0000000..06e58b6
-> > > > --- /dev/null
-> > > > +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-iadc.txt
-> > > > @@ -0,0 +1,61 @@
-> > > > +Qualcomm's SPMI PMIC current ADC
-> > > > +
-> > > > +QPNP PMIC current ADC (IADC) provides interface to clients to read current.
-> > > > +A 16 bit ADC is used for current measurements.
-> > > > +
-> > > > +IADC node:
-> > > > +
-> > > > +- compatible:
-> > > > +    Usage: required
-> > > > +    Value type: <string>
-> > > > +    Definition: Should contain "qcom,spmi-iadc".
-> > > > +
-> > > > +- reg:
-> > > > +    Usage: required
-> > > > +    Value type: <prop-encoded-array>
-> > > > +    Definition: IADC base address and length in the SPMI PMIC register map.
-> > > > +                TRIM_CNST_RDS register address and length(1)
-> > > 
-> > > Are these two register regions? Please make the order explicit somehow
-> > > (either say first/second/third/etc, or use reg-names).
-> > 
-> > Will make order explicit. 
-> > 
-> > > 
-> > > Are they both part of the IADC, or is one part of an external/shared
-> > > component?
-> > 
-> > I think that this is shared component.
-> 
-> If it's not a portion of the ADC itself, then that should probably be
-> described as a separate unit, and referred to by phandle. What else is
-> that unit, and what else is said unit used by?
+Best Regards,
+Jingchang
 
-Please read below.
+>-----Original Message-----
+>From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
+>Sent: Tuesday, September 23, 2014 2:47 PM
+>To: mturquette@linaro.org
+>Cc: Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org; linux-
+>kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
+>Jingchang-B35083
+>Subject: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
+>CLK_OF_DECLARE support
+>
+>The IP is shared by PPC and ARM, this renames it to qoriq for better
+>represention, and this also adds the CLK_OF_DECLARE support for being
+>initialized by of_clk_init() on ARM.
+>
+>Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+>---
+>changes in v4:
+> remove "corenet" literals omitted in v3 remove.
+>
+>changes in v3:
+> generate the patch with -M -C option
+>
+>changes in v2:
+> rename the driver name to ppc-qoriq.c for shared on PPC and ARM.
+>
+> drivers/clk/Kconfig                            |  9 +++++----
+> drivers/clk/Makefile                           |  2 +-
+> drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} | 27 +++++++++++++++------
+>-----
+> 3 files changed, 22 insertions(+), 16 deletions(-)  rename
+>drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} (89%)
+>
+>diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig index
+>85131ae..f5f76cb 100644
+>--- a/drivers/clk/Kconfig
+>+++ b/drivers/clk/Kconfig
+>@@ -92,12 +92,13 @@ config COMMON_CLK_AXI_CLKGEN
+> 	  Support for the Analog Devices axi-clkgen pcore clock generator
+>for Xilinx
+> 	  FPGAs. It is commonly used in Analog Devices' reference designs.
+>
+>-config CLK_PPC_CORENET
+>-	bool "Clock driver for PowerPC corenet platforms"
+>-	depends on PPC_E500MC && OF
+>+config CLK_QORIQ
+>+	bool "Clock driver for PowerPC corenet and compatible ARM-based
+>platforms"
+>+	depends on (PPC_E500MC || ARM) && OF
+> 	---help---
+> 	  This adds the clock driver support for Freescale PowerPC corenet
+>-	  platforms using common clock framework.
+>+	  platforms and compatible Freescale ARM based platforms using
+>common
+>+	  clock framework.
+>
+> config COMMON_CLK_XGENE
+> 	bool "Clock driver for APM XGene SoC"
+>diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile index
+>27c542b..20f42e9 100644
+>--- a/drivers/clk/Makefile
+>+++ b/drivers/clk/Makefile
+>@@ -29,7 +29,7 @@ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
+> obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+> obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+> obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
+>-obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
+>+obj-$(CONFIG_CLK_QORIQ)			+= clk-qoriq.o
+> obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
+> obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
+> obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
+>diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-qoriq.c
+>similarity index 89% rename from drivers/clk/clk-ppc-corenet.c rename to
+>drivers/clk/clk-qoriq.c index 8e58edf..cba8abe 100644
+>--- a/drivers/clk/clk-ppc-corenet.c
+>+++ b/drivers/clk/clk-qoriq.c
+>@@ -155,7 +155,7 @@ static void __init core_pll_init(struct device_node
+>*np)
+>
+> 	base = of_iomap(np, 0);
+> 	if (!base) {
+>-		pr_err("clk-ppc: iomap error\n");
+>+		pr_err("clk-qoriq: iomap error\n");
+> 		return;
+> 	}
+>
+>@@ -252,7 +252,7 @@ static void __init sysclk_init(struct device_node
+>*node)
+> 	u32 rate;
+>
+> 	if (!np) {
+>-		pr_err("ppc-clk: could not get parent node\n");
+>+		pr_err("qoriq-clk: could not get parent node\n");
+> 		return;
+> 	}
+>
+>@@ -278,30 +278,35 @@ static const struct of_device_id clk_match[]
+>__initconst = {
+> 	{}
+> };
+>
+>-static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
+>+static int __init qoriq_clk_probe(struct platform_device *pdev)
+> {
+> 	of_clk_init(clk_match);
+>
+> 	return 0;
+> }
+>
+>-static const struct of_device_id ppc_clk_ids[] __initconst = {
+>+static const struct of_device_id qoriq_clk_ids[] __initconst = {
+> 	{ .compatible = "fsl,qoriq-clockgen-1.0", },
+> 	{ .compatible = "fsl,qoriq-clockgen-2.0", },
+> 	{}
+> };
+>
+>-static struct platform_driver ppc_corenet_clk_driver __initdata = {
+>+static struct platform_driver qoriq_clk_driver __initdata = {
+> 	.driver = {
+>-		.name = "ppc_corenet_clock",
+>+		.name = "qoriq_clock",
+> 		.owner = THIS_MODULE,
+>-		.of_match_table = ppc_clk_ids,
+>+		.of_match_table = qoriq_clk_ids,
+> 	},
+>-	.probe = ppc_corenet_clk_probe,
+>+	.probe = qoriq_clk_probe,
+> };
+>
+>-static int __init ppc_corenet_clk_init(void)
+>+static int __init qoriq_clk_init(void)
+> {
+>-	return platform_driver_register(&ppc_corenet_clk_driver);
+>+	return platform_driver_register(&qoriq_clk_driver);
+> }
+>-subsys_initcall(ppc_corenet_clk_init);
+>+subsys_initcall(qoriq_clk_init);
+>+
+>+CLK_OF_DECLARE(qoriq_core_pll_v1, "fsl,qoriq-core-pll-1.0",
+>+core_pll_init); CLK_OF_DECLARE(qoriq_core_pll_v2,
+>+"fsl,qoriq-core-pll-2.0", core_pll_init);
+>+CLK_OF_DECLARE(qoriq_core_mux_v1, "fsl,qoriq-core-mux-1.0",
+>+core_mux_init); CLK_OF_DECLARE(qoriq_core_mux_v2,
+>+"fsl,qoriq-core-mux-2.0", core_mux_init);
+>--
+>1.8.0
 
-> 
-> > 
-> > > 
-> > > > +
-> > > > +- interrupts:
-> > > > +    Usage: optional
-> > > > +    Value type: <prop-encoded-array>
-> > > > +    Definition: End of conversion interrupt number. If property is
-> > > > +            missing driver will use polling to detect end of conversion
-> > > > +            completion.
-> > > 
-> > > Driver details shouldn't be in the binding. If the driver can poll,
-> > > that's good, but it should be dropped form this description.
-> > > 
-> > 
-> > Will remove driver details.
-> > 
-> > > Is this the only interrupt?
-> > > 
-> > 
-> > Yes.
-> > 
-> > > What do you mean be "End of conversion interrupt number"? Just describe
-> > > what the interrupt logically is from the PoV of the device -- interrupts
-> > > is a standard property so we don't need to be too explicit about the
-> > > type.
-> > 
-> > Badly worded. Just, "End of conversion interrupt"?
-> 
-> The part I didn't understand was what was meant by "End of conversion",
-> but dropping "number" is certainly better.
-
-It is clear now, right? End of ADC conversion.
-
-> 
-> > 
-> > > 
-> > > > +
-> > > > +- qcom,rsense:
-> > > > +    Usage: optional
-> > > > +    Value type: <u32>
-> > > > +    Definition: External sense register value in Ohm. Defining this
-> > > > +            propery will instruct ADC to use external ADC sense channel.
-> > > > +            If property is not defined ADC will use internal sense channel.
-> > > 
-> > > The latter two sentences sound like a driver description.
-> > > 
-> > > What exactly is the difference between the internal and external
-> > > channels, and what exactly is the value in the sense register used for?
-> > 
-> > Internal - when using chip build-in resistor
-> > External - when using off-chip resistor
-> 
-> Would it be possible to use the internal channel when you have an
-> external resistor?
-> 
-> If so, does the device have a channel per resistor, or can either
-> resistor be selected and applied to the single channel the device has?
-> 
-
-They are two dedicated channels. Channel zero can only measure current
-over internal resistor (MOSFET). Channel two can only measure current
-over external resistor. This ADC is part of Battery Monitor System
-(BMS), i.e. it is not general purpose ADC. Based on DT files in
-codeaurora repository, only one of the channels is used, probably
-chosen at schematics design time. In practice, on the systems that
-use battery, there is always two resistors, and they are connected
-in sequence, just one of them should be zero. External resistor 
-could be with higher quality, I suppose.
-
-> This might be better worded as "external-registor-ohms".
-
-Ok.
-
-> 
-> > 
-> > > 
-> > > The binding should describe the logical properties of the device rather
-> > > than the specific programming model details.
-> > > 
-> > > > +
-> > > > +- qcom,rds-trim:
-> > > > +    Usage: optional
-> > > > +    Value type: <u32>
-> > > > +    Definition: Calculate internal sense resistor value based TRIM_CNST_RDS,
-> > > > +            IADC RDS and manufacturer.
-> > > > +            0: Read the IADC and SMBB trim register and apply the default
-> > > > +               RSENSE if conditions are met.
-> > > > +            1: Read the IADC, SMBB trim register and manufacturer type and
-> > > > +               apply the default RSENSE if conditions are met.
-> > > > +            2: Read the IADC, SMBB trim register and apply the default RSENSE
-> > > > +               if conditions are met.
-> > > > +            If property is not defined driver will use qcom,rsense value if
-> > > > +            defined or internal sense resistor value trimmed into register.
-> > > 
-> > > Having read this a few times, I still don't understand which I would use
-> > > and when.
-> > > 
-> > > Which conditions need to be met in each of these cases?
-> > > 
-> > > When does the manufacturer need to be taken into account and what does
-> > > it even mean for that to be the case? That sounds very much like a
-> > > driver detail rather than a HW property.
-> > > 
-> > > Cases 0 and 2 seem to be the same, just with s/, / and /. I cannot
-> > > figure out the intended difference between the two.
-> > > 
-> > > The last sentence is very much a driver description.
-> > 
-> > Sorry. I have tried to make it better. Now looking again DT files
-> > in codeaurora tree I see that 0 is used in pm8941, 1 is used in
-> > pm8110 and 2 is used for pm8226. So I will remove this property
-> > and handle this inside driver based on chip version.
-> 
-> Is this only to determine the value of the internal resistor?
-
-No. Ideal value for internal resistor is supposed to be 10Mohms.
-One register(8 bits) hold production time trimmed value, which represent
-difference against ideal value. It looks like some times real resistor
-values is too far from ideal and register can't hold the difference, so 
-some additional hints are needed. In this case value trimmed to
-register into BMS peripheral.
-
-> 
-> If that isn't probable in a standard way across all variations, would an
-> "internal-resistor-ohms" property be sufficient?
-> 
-> > 
-> > > 
-> > > > +
-> > > > +Example:
-> > > > +       /* IADC node */
-> > > > +       pmic_iadc: iadc@3600 {
-> > > > +               compatible = "qcom,spmi-iadc";
-> > > > +               reg = <0x3600 0x100>,
-> > > > +                         <0x12f1 0x1>;
-> > > > +               interrupts = <0x0 0x36 0x0 IRQ_TYPE_EDGE_RISING>;
-> > > > +               qcom,rds-trim = <0>;
-> > > > +       };
-> > > > +
-> > > > +       /* IIO client node */
-> > > > +       bat {
-> > > > +               io-channels = <&pmic_iadc 0>;
-> > > > +               io-channel-names = "iadc";
-> > > > +       };
-> > > 
-> > > Surely you need #iio-cells on the IADC node?
-> > 
-> > Yes, I need to add it.
-> > 
-> > > 
-> > > Given the client seems to pass a specifier value, does this have
-> > > multiple channels, or only a single channel?
-> > 
-> > Driver register only one IIO channel, so #io-channel-cells 
-> > should be <0>.
-> 
-> Ok. Regardless of what the driver does, does the hardware have
-> multi-channel capability?
-
-Strictly speaking, yes. But I don't see how both of them could
-used at the same time in practice.
-
-Regards,
-Ivan
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
