@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaIYVK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:10:28 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52861 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751577AbaIYVK1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:10:27 -0400
-Message-ID: <542484BF.7080908@hurleysoftware.com>
-Date: Thu, 25 Sep 2014 17:10:23 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Alex Deucher <alexdeucher@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Hugh Dickens <hughd@google.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>,
+	id S1751895AbaIYVQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:16:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30746 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577AbaIYVQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 17:16:53 -0400
+Date: Thu, 25 Sep 2014 23:16:04 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andres Lagar-Cavilla <andreslc@google.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: page allocator bug in 3.16?
-References: <54246506.50401@hurleysoftware.com> <CADnq5_OyRMNsc5L1a-BYbmKe94t+pun+nEh3UvFKLmpb2=1ukg@mail.gmail.com>
-In-Reply-To: <CADnq5_OyRMNsc5L1a-BYbmKe94t+pun+nEh3UvFKLmpb2=1ukg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+Subject: Re: [PATCH v2] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140925211604.GA4590@redhat.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <1410976308-7683-1-git-send-email-andreslc@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410976308-7683-1-git-send-email-andreslc@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 04:33 PM, Alex Deucher wrote:
-> On Thu, Sep 25, 2014 at 2:55 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> After several days uptime with a 3.16 kernel (generally running
->> Thunderbird, emacs, kernel builds, several Chrome tabs on multiple
->> desktop workspaces) I've been seeing some really extreme slowdowns.
->>
->> Mostly the slowdowns are associated with gpu-related tasks, like
->> opening new emacs windows, switching workspaces, laughing at internet
->> gifs, etc. Because this x86_64 desktop is nouveau-based, I didn't pursue
->> it right away -- 3.15 is the first time suspend has worked reliably.
->>
->> This week I started looking into what the slowdown was and discovered
->> it's happening during dma allocation through swiotlb (the cpus can do
->> intel iommu but I don't use it because it's not the default for most users).
->>
->> I'm still working on a bisection but each step takes 8+ hours to
->> validate and even then I'm no longer sure I still have the 'bad'
->> commit in the bisection. [edit: yup, I started over]
->>
->> I just discovered a smattering of these in my logs and only on 3.16-rc+ kernels:
->> Sep 25 07:57:59 thor kernel: [28786.001300] alloc_contig_range test_pages_isolated(2bf560, 2bf562) failed
->>
->> This dual-Xeon box has 10GB and sysrq Show Memory isn't showing heavy
->> fragmentation [1].
->>
->> Besides Mel's page allocator changes in 3.16, another suspect commit is:
->>
->> commit b13b1d2d8692b437203de7a404c6b809d2cc4d99
->> Author: Shaohua Li <shli@kernel.org>
->> Date:   Tue Apr 8 15:58:09 2014 +0800
->>
->>     x86/mm: In the PTE swapout page reclaim case clear the accessed bit instead of flushing the TLB
->>
->> Specifically, this statement:
->>
->>     It could cause incorrect page aging and the (mistaken) reclaim of
->>     hot pages, but the chance of that should be relatively low.
->>
->> I'm wondering if this could cause worse-case behavior with TTM? I'm
->> testing a revert of this on mainline 3.16-final now, with no results yet.
->>
->> Thoughts?
-> 
-> You may also be seeing this:
-> https://lkml.org/lkml/2014/8/8/445
+Hi Andres,
 
-Thanks Alex. That is indeed the problem.
+On Wed, Sep 17, 2014 at 10:51:48AM -0700, Andres Lagar-Cavilla wrote:
+> +	if (!locked) {
+> +		VM_BUG_ON(npages != -EBUSY);
+> +
 
-Still reading the email thread to find out where the patches
-are that fix this. Although it doesn't make much sense to me
-that nouveau sets up a 1GB GART and then uses TTM which is
-trying to shove all the DMA through a 16MB CMA window
-(which turns out to be the base Ubuntu config).
+Shouldn't this be VM_BUG_ON(npages)?
 
-Regards,
-Peter Hurley
+Alternatively we could patch gup to do:
 
+			case -EHWPOISON:
++			case -EBUSY:
+				return i ? i : ret;
+-			case -EBUSY:
+-				return i;
 
+I need to fix gup_fast slow path to start with FAULT_FLAG_ALLOW_RETRY
+similarly to what you did to the KVM slow path.
+
+gup_fast is called without the mmap_sem (incidentally its whole point
+is to only disable irqs and not take the locks) so the enabling of
+FAULT_FLAG_ALLOW_RETRY initial pass inside gup_fast should be all self
+contained. It shouldn't concern KVM which should be already fine with
+your patch, but it will allow the userfaultfd to intercept all
+O_DIRECT gup_fast in addition to KVM with your patch.
+
+Eventually get_user_pages should be obsoleted in favor of
+get_user_pages_locked (or whoever we decide to call it) so the
+userfaultfd can intercept all kind of gups. gup_locked is same as gup
+except for one more "locked" parameter at the end, I called the
+parameter locked instead of nonblocking because it'd be more proper to
+call "nonblocking" gup the FOLL_NOWAIT kind which is quite the
+opposite (in fact as the mmap_sem cannot be dropped in the non
+blocking version).
+
+ptrace ironically is better off sticking with a NULL locked parameter
+and to get a sigbus instead of risking hanging on the userfaultfd
+(which would be safe as it can be killed, but it'd be annoying if
+erroneously poking into a hole during a gdb session). It's still
+possible to pass NULL as parameter to get_user_pages_locked to achieve
+that. So the fact some callers won't block in handle_userfault because
+FAULT_FLAG_ALLOW_RETRY is not set and the userfault cannot block, may
+come handy.
+
+What I'm trying to solve in this context is that the userfault cannot
+safely block without FAULT_FLAG_ALLOW_RETRY because we can't allow
+userland to take the mmap_sem for an unlimited amount of time without
+requiring special privileges, so if handle_userfault wants to blocks
+within a gup invocation, it must first release the mmap_sem hence
+FAULT_FLAG_ALLOW_RETRY is always required at the first attempt for any
+virtual address.
+
+With regard to the last sentence, there's actually a race with
+MADV_DONTNEED too, I'd need to change the code to always pass
+FAULT_FLAG_ALLOW_RETRY (your code also would need to loop and
+insisting with the __get_user_pages(locked) version to solve it). The
+KVM ioctl worst case would get an -EFAULT if the race materializes for
+example. It's non concerning though because that can be solved in
+userland somehow by separating ballooning and live migration
+activities.
+
+Thanks,
+Andrea
