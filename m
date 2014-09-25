@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaIYR34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 13:29:56 -0400
-Received: from 8bytes.org ([81.169.241.247]:59556 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751937AbaIYR3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 13:29:55 -0400
-Date: Thu, 25 Sep 2014 19:29:52 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Su, Friendy" <Friendy.Su@sony.com.cn>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] iommu/amd: set iommu for early mapped ioapic/hpet
-Message-ID: <20140925172952.GF8306@8bytes.org>
-References: <053191AD6E9023439BF3970DE870051856D1EF3AC5@APSHAXMS02.ap.sony.com>
- <20140905135320.GP28786@8bytes.org>
- <053191AD6E9023439BF3970DE870051856D274B417@APSHAXMS02.ap.sony.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <053191AD6E9023439BF3970DE870051856D274B417@APSHAXMS02.ap.sony.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753518AbaIYRfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 13:35:17 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:55362 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751937AbaIYRfP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 13:35:15 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq4OAJlRJFRXQwLc/2dsb2JhbABggw6BKrYtAQEBAQEBBQFyAZsRgQYXAXuEMS8jgRo3iEIBsVCPe4YSigwdhDUFnSOVVoNlOy+CSgEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org,
+        Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH 1/1 linux-next] btrfs: fix shadow warning on cmp
+Date: Thu, 25 Sep 2014 19:35:02 +0200
+Message-Id: <1411666502-14395-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+cmp was declared twice in btrfs_compare_trees resulting in a shadow
+warning. This patch renames second internal variable.
 
-On Tue, Sep 09, 2014 at 04:34:52PM +0800, Su, Friendy wrote:
-> > The problem you describe here should also be fixed by this (simpler)
-> > patch. Can you test this please?
-> 
-> The running result of this patch is correct.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+Compiled but untested.
 
-Okay, fine, thanks for testing. I queued this patch up for the next
-merge window.
+ fs/btrfs/ctree.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-
-	Joerg
+diff --git a/fs/btrfs/ctree.c b/fs/btrfs/ctree.c
+index 39021bf..8d0703c 100644
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -5522,18 +5522,18 @@ int btrfs_compare_trees(struct btrfs_root *left_root,
+ 					goto out;
+ 				advance_right = ADVANCE;
+ 			} else {
+-				enum btrfs_compare_tree_result cmp;
++				enum btrfs_compare_tree_result result;
+ 
+ 				WARN_ON(!extent_buffer_uptodate(left_path->nodes[0]));
+ 				ret = tree_compare_item(left_root, left_path,
+ 						right_path, tmp_buf);
+ 				if (ret)
+-					cmp = BTRFS_COMPARE_TREE_CHANGED;
++					result = BTRFS_COMPARE_TREE_CHANGED;
+ 				else
+-					cmp = BTRFS_COMPARE_TREE_SAME;
++					result = BTRFS_COMPARE_TREE_SAME;
+ 				ret = changed_cb(left_root, right_root,
+ 						 left_path, right_path,
+-						 &left_key, cmp, ctx);
++						 &left_key, result, ctx);
+ 				if (ret < 0)
+ 					goto out;
+ 				advance_left = ADVANCE;
+-- 
+1.9.3
 
