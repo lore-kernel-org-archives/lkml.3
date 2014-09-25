@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaIYPYO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 11:24:14 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:55621 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558AbaIYPYM (ORCPT
+	id S1753718AbaIYPYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 11:24:19 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47046 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753559AbaIYPYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 11:24:12 -0400
+	Thu, 25 Sep 2014 11:24:16 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
         Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v5 02/10] blk-mq: allocate flush_rq in blk_mq_init_flush()
-Date: Thu, 25 Sep 2014 23:23:39 +0800
-Message-Id: <1411658627-19754-3-git-send-email-ming.lei@canonical.com>
+Subject: [PATCH v5 03/10] block: introduce blk_init_flush and its pair
+Date: Thu, 25 Sep 2014 23:23:40 +0800
+Message-Id: <1411658627-19754-4-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
 References: <1411658627-19754-1-git-send-email-ming.lei@canonical.com>
@@ -21,92 +21,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is reasonable to allocate flush req in blk_mq_init_flush().
+These two temporary functions are introduced for holding flush
+initialization and de-initialization, so that we can
+introduce 'flush queue' easier in the following patch. And
+once 'flush queue' and its allocation/free functions are ready,
+they will be removed for sake of code readability.
 
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- block/blk-flush.c |   11 ++++++++++-
- block/blk-mq.c    |   16 ++++++----------
- block/blk-mq.h    |    2 +-
- 3 files changed, 17 insertions(+), 12 deletions(-)
+ block/blk-core.c  |    5 ++---
+ block/blk-flush.c |   19 ++++++++++++++++++-
+ block/blk-mq.c    |    2 +-
+ block/blk-mq.h    |    1 -
+ block/blk-sysfs.c |    4 ++--
+ block/blk.h       |    3 +++
+ 6 files changed, 26 insertions(+), 8 deletions(-)
 
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 5bd9a04..215490a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -705,8 +705,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	if (!q)
+ 		return NULL;
+ 
+-	q->flush_rq = kzalloc(sizeof(struct request), GFP_KERNEL);
+-	if (!q->flush_rq)
++	if (blk_init_flush(q))
+ 		return NULL;
+ 
+ 	if (blk_init_rl(&q->root_rl, q, GFP_KERNEL))
+@@ -742,7 +741,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	return q;
+ 
+ fail:
+-	kfree(q->flush_rq);
++	blk_exit_flush(q);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL(blk_init_allocated_queue);
 diff --git a/block/blk-flush.c b/block/blk-flush.c
-index c8e2576..55028a7 100644
+index 55028a7..c72ab32 100644
 --- a/block/blk-flush.c
 +++ b/block/blk-flush.c
-@@ -472,7 +472,16 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
+@@ -472,7 +472,7 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
  }
  EXPORT_SYMBOL(blkdev_issue_flush);
  
--void blk_mq_init_flush(struct request_queue *q)
-+int blk_mq_init_flush(struct request_queue *q)
+-int blk_mq_init_flush(struct request_queue *q)
++static int blk_mq_init_flush(struct request_queue *q)
  {
-+	struct blk_mq_tag_set *set = q->tag_set;
+ 	struct blk_mq_tag_set *set = q->tag_set;
+ 
+@@ -485,3 +485,20 @@ int blk_mq_init_flush(struct request_queue *q)
+ 		return -ENOMEM;
+ 	return 0;
+ }
 +
- 	spin_lock_init(&q->mq_flush_lock);
++int blk_init_flush(struct request_queue *q)
++{
++	if (q->mq_ops)
++		return blk_mq_init_flush(q);
 +
-+	q->flush_rq = kzalloc(round_up(sizeof(struct request) +
-+				set->cmd_size, cache_line_size()),
-+				GFP_KERNEL);
++	q->flush_rq = kzalloc(sizeof(struct request), GFP_KERNEL);
 +	if (!q->flush_rq)
 +		return -ENOMEM;
++
 +	return 0;
- }
++}
++
++void blk_exit_flush(struct request_queue *q)
++{
++	kfree(q->flush_rq);
++}
 diff --git a/block/blk-mq.c b/block/blk-mq.c
-index d8c7f90..80c2cd2 100644
+index 80c2cd2..5acdec4 100644
 --- a/block/blk-mq.c
 +++ b/block/blk-mq.c
-@@ -1849,17 +1849,10 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
- 	if (set->ops->complete)
- 		blk_queue_softirq_done(q, set->ops->complete);
- 
--	blk_mq_init_flush(q);
- 	blk_mq_init_cpu_queues(q, set->nr_hw_queues);
- 
--	q->flush_rq = kzalloc(round_up(sizeof(struct request) +
--				set->cmd_size, cache_line_size()),
--				GFP_KERNEL);
--	if (!q->flush_rq)
--		goto err_hw;
--
- 	if (blk_mq_init_hw_queues(q, set))
--		goto err_flush_rq;
-+		goto err_hw;
- 
- 	mutex_lock(&all_q_mutex);
- 	list_add_tail(&q->all_q_node, &all_q_list);
-@@ -1867,12 +1860,15 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
+@@ -1860,7 +1860,7 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
  
  	blk_mq_add_queue_tag_set(set, q);
  
-+	if (blk_mq_init_flush(q))
-+		goto err_hw_queues;
-+
+-	if (blk_mq_init_flush(q))
++	if (blk_init_flush(q))
+ 		goto err_hw_queues;
+ 
  	blk_mq_map_swqueue(q);
- 
- 	return q;
- 
--err_flush_rq:
--	kfree(q->flush_rq);
-+err_hw_queues:
-+	blk_mq_exit_hw_queues(q, set, set->nr_hw_queues);
- err_hw:
- 	blk_cleanup_queue(q);
- err_hctxs:
 diff --git a/block/blk-mq.h b/block/blk-mq.h
-index a3c613a..ecac69c 100644
+index ecac69c..d567d52 100644
 --- a/block/blk-mq.h
 +++ b/block/blk-mq.h
-@@ -27,7 +27,7 @@ struct blk_mq_ctx {
+@@ -27,7 +27,6 @@ struct blk_mq_ctx {
  
  void __blk_mq_complete_request(struct request *rq);
  void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async);
--void blk_mq_init_flush(struct request_queue *q);
-+int blk_mq_init_flush(struct request_queue *q);
+-int blk_mq_init_flush(struct request_queue *q);
  void blk_mq_freeze_queue(struct request_queue *q);
  void blk_mq_free_queue(struct request_queue *q);
  void blk_mq_clone_flush_request(struct request *flush_rq,
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 17f5c84..9490759 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -517,11 +517,11 @@ static void blk_release_queue(struct kobject *kobj)
+ 	if (q->queue_tags)
+ 		__blk_queue_free_tags(q);
+ 
++	blk_exit_flush(q);
++
+ 	if (q->mq_ops)
+ 		blk_mq_free_queue(q);
+ 
+-	kfree(q->flush_rq);
+-
+ 	blk_trace_shutdown(q);
+ 
+ 	bdi_destroy(&q->backing_dev_info);
+diff --git a/block/blk.h b/block/blk.h
+index e515a28..c6fa3d4 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -22,6 +22,9 @@ static inline void __blk_get_queue(struct request_queue *q)
+ 	kobject_get(&q->kobj);
+ }
+ 
++int blk_init_flush(struct request_queue *q);
++void blk_exit_flush(struct request_queue *q);
++
+ int blk_init_rl(struct request_list *rl, struct request_queue *q,
+ 		gfp_t gfp_mask);
+ void blk_exit_rl(struct request_list *rl);
 -- 
 1.7.9.5
 
