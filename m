@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaIYJgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:36:17 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41794 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaIYJgN convert rfc822-to-8bit (ORCPT
+	id S1752792AbaIYJf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:35:57 -0400
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:37826 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751719AbaIYJfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:36:13 -0400
-Date: Thu, 25 Sep 2014 10:36:05 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Kukjin Kim <kgene@kernel.org>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "'Thomas Abraham'" <ta.omasab@gmail.com>
-Subject: Re: [PATCH v3] ARM: dts: add CPU nodes for Exynos4 SoCs
-Message-ID: <20140925093605.GA23853@e102568-lin.cambridge.arm.com>
-References: <5230569.XLlNbB5NvF@amdc1032>
- <018e01cfd885$770dd940$65298bc0$@kernel.org>
- <20140925081704.GA20841@e102568-lin.cambridge.arm.com>
- <5423DA0D.9030100@linaro.org>
+	Thu, 25 Sep 2014 05:35:55 -0400
+Message-ID: <5423E1F7.5010000@nexus-software.ie>
+Date: Thu, 25 Sep 2014 10:35:51 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <5423DA0D.9030100@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 25 Sep 2014 09:36:09.0597 (UTC) FILETIME=[2353E2D0:01CFD8A4]
-X-MC-Unique: 114092510361000501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Ingo Molnar <mingo@kernel.org>
+CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Quark: Flush TLB via CR3 not CR4.PGE in setup_arch()
+References: <1411578452-4609-1-git-send-email-pure.logic@nexus-software.ie> <20140925045755.GA20431@gmail.com>
+In-Reply-To: <20140925045755.GA20431@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 10:02:05AM +0100, Daniel Lezcano wrote:
-> On 09/25/2014 10:17 AM, Lorenzo Pieralisi wrote:
-> > [CC'ed Daniel to make him aware this patch goes through your tree]
-> 
-> Thanks for the head up. I was about to send the PR to Rafael.
-> 
-> [ ... ]
-> 
-> > That's great, now my Exynos CPUidle DT patch should be rebased on top
-> > of this patch so that thanks to the testing carried out by Bart it can be
-> > merged too.
-> 
-> Ok, I am getting confused. How can I rebase the latest patch of your 
-> series with a patch no yet available in my tree ?
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index 41ead8d..1d2396a 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -879,7 +879,10 @@ void __init setup_arch(char **cmdline_p)
+>>   			KERNEL_PGD_PTRS);
+>>
+>>   	load_cr3(swapper_pg_dir);
+>> -	__flush_tlb_all();
+>> +	if (boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
+>> +		__flush_tlb();
+>> +	else
+>> +		__flush_tlb_all();
+>
+> So why not make __flush_tlb_all() Quark-quirk-aware and be done
+> with it, instead of having to validate every single
+> __flush_tlb_all() user?
+>
+> Quark breaks the x86 'flush all TLBs' semantics - the way to fix
+> it is to restore those semantics, not to sprinkle the breakage
+> all around the code ...
 
-I just wanted to say that the Exynos CPUidle DT patch depends on this
-patch, that is now going through Samsung tree, to make sure we are on
-the same page and prevent issues, it was not clear, sorry.
+Hi Ingo.
 
-> I propose just to drop the last patch and wait for the next merge to 
-> reintegrate it into the cpuidle tree. Does it make sense ?
+We have made __flush_tlb_all() Quark aware - because the previous patch 
+we applied to arch/x86/kernel/cpu/intel.c
 
-I agree, drop the Exynos CPUidle DT patch, we will reintegrate it in the
-CPUidle tree when the merge window closes and dependencies are sorted out.
+ee1b5b165c0a2f04d2107e634e51f05d0eb107de
 
-Thanks a lot,
-Lorenzo
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
++	}
 
+will cause cpu_has_pge() to be false and then the flush_tlb_all code 
+will take the path we want __flush_tlb not __flush_tlb_global
+
+static inline void __flush_tlb_all(void)
+{
+         if (cpu_has_pge)
+                 __flush_tlb_global();
+         else
+                 __flush_tlb();
+}
+
+The code in setup_arch runs before the cpu_has_pge bit been clobbered.
+
+The commit you did 02276a3a677d681f0cd227d7111c71fdbce23832 just adds a 
+comment to setup_arch to indicate the behaviour we are relying on
+
+setup_arch()
+{
+
+load_cr3(swapper_pg_dir);	/* this will flush the TLB on Quark */
+__flush_tlb_all();		/*cpu_has_pge() is true at this point*/
+
+......
+
+/* this is where we latch the cpu cabability bits */
+early_cpu_init();
+}
+
+--
+BOD
