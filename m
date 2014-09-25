@@ -1,58 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaIYSEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:04:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57165 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaIYSEn (ORCPT
+	id S1753973AbaIYSGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:06:05 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:46538 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293AbaIYSGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:04:43 -0400
-Message-ID: <5424592F.5070801@canonical.com>
-Date: Thu, 25 Sep 2014 14:04:31 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 25 Sep 2014 14:06:02 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
+	<20140910123525.GA29064@ubuntu-hedt>
+	<20140910162155.GA7748@mail.hallyn.com>
+	<20140910164212.GA32587@ubuntu-hedt>
+	<20140911181034.GA58733@ubuntu-hedt>
+	<87d2am3r8a.fsf@x220.int.ebiederm.org>
+	<20140924132925.GA48721@ubuntu-hedt>
+	<87y4t9ndw5.fsf@x220.int.ebiederm.org>
+	<CAJfpegs3QNdKMZWmN324OqHFw+e2qwU9kfkQ491==yP_JRrcWw@mail.gmail.com>
+Date: Thu, 25 Sep 2014 11:05:36 -0700
+In-Reply-To: <CAJfpegs3QNdKMZWmN324OqHFw+e2qwU9kfkQ491==yP_JRrcWw@mail.gmail.com>
+	(Miklos Szeredi's message of "Thu, 25 Sep 2014 17:04:04 +0200")
+Message-ID: <87wq8reftb.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org> <1386546869-31900-3-git-send-email-yinghai@kernel.org> <CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com> <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com> <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com> <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com> <52A8BAC5.70006@canonical.com> <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com> <52D01D82.5070202@canonical.com> <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com> <54189BCE.2010206@canonical.com> <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com> <54243978.3030501@canonical.com> <CAErSpo7unezE4hRYDUsHbmAV+dxgaMFqBOU=svpUEFKieG=omA@mail.gmail.com>
-In-Reply-To: <CAErSpo7unezE4hRYDUsHbmAV+dxgaMFqBOU=svpUEFKieG=omA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19SadiGJxFI5bF4DHpEsq/4tqDY2zVfwJA=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.4 XM_Superlative01 Best-rated language
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4924]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Miklos Szeredi <miklos@szeredi.hu>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user namespaces
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 12:04 PM, Bjorn Helgaas wrote:
-> On Thu, Sep 25, 2014 at 9:49 AM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 09/16/2014 06:27 PM, Yinghai Lu wrote:
->>> On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
->>> <joseph.salisbury@canonical.com> wrote:
->>>> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
->>>> is similar to the original bug[1] we discussed.
->>>>
->>>> Just wondering if there have been any additional ideas on realloc since
->>>> this was last discussed?
->>>>
->>>> [0] http://pad.lv/1363313
->>>> [1] http://pad.lv/1245938
-> As a side-note, this looks like a regression and I should have given
-> it more attention, but I don't track all the vendor bug databases.  If
-> you open a kernel.bug bugzilla and mark it as a regression, I *do*
-> track that regularly.  For regressions, it's helpful if you can attach
-> dmesg logs from working and non-working kernels that are as close
-> together as possible.  It'd be ideal if those were upstream kernels,
-> but I doubt you apply any patches that would be relevant, so I think
-> logs from Ubuntu kernels would be enough.
+Miklos Szeredi <miklos@szeredi.hu> writes:
+
+> On Wed, Sep 24, 2014 at 7:10 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
 >
-> Bjorn
+>
+>> So in summary I see:
+>> - Low utility in being able to manipulate files with bad uids.
+>> - Bad uids are mostly likely malicious action.
+>> - make_bad_inode is trivial to analyze.
+>> - No impediments to change if I am wrong.
+>>
+>> So unless there is a compelling case, right now I would recommend
+>> returning -EIO initially.   That allows us to concentrate on the easier
+>> parts of this and it leaves the changes only in fuse.
+>
+> The problem with marking the inode bad is that it will mark it bad for
+> all instances of this filesystem.  Including ones which are in a
+> namespace where the UIDs make perfect sense.
 
-Thanks, Bjorn.  I'll open a bugzilla bug and ask the bug reporters for
-the requested dmesg data.  Thanks again for the feedback.
+There are two cases:
+app <-> fuse
+fuse <-> server
 
-Joe
+I proposed mark_bad_inode for "userspace server -> fuse".
+Where we have one superblock and one server so and one namespace that
+they decide to talk in when the filesystem was mounted.
+
+I think bad_inode is a reasonable response when the filesystem server
+starts spewing non-sense.
+
+> So that really doesn't look like a good solution.
+>
+> Doing the check in inode_permission() might be too heavyweight, but
+> it's still the only one that looks sane.
+
+For the "app <-> fuse" case we already have checks in inode_permision
+that are kuid based that handle that case.  We use kuids not for
+performance (although there is a small advatnage) but to much more to
+keep the logic simple and maintainable.
+
+
+For the "app -> fuse" case in .setattr we do need a check to verify
+that the uid and gid are valid.  However that check was added with
+the basic user namespace support and fuse current returns -EOVERFLOW
+when that happens.
+
+Eric
