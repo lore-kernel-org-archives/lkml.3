@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921AbaIYXwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:52:55 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37909 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751875AbaIYXwy (ORCPT
+	id S1753096AbaIYXx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 19:53:27 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62294 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015AbaIYXxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:52:54 -0400
-Message-ID: <5424AAD0.9010708@hurleysoftware.com>
-Date: Thu, 25 Sep 2014 19:52:48 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 25 Sep 2014 19:53:25 -0400
+Date: Thu, 25 Sep 2014 16:53:22 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] of: correct of_console_check()'s return value
+Message-ID: <20140925235322.GW1193@ld-irv-0074>
+References: <1409767603-3290-1-git-send-email-computersforpeace@gmail.com>
+ <20140908104238.C7B3DC40AB2@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, Shaohua Li <shli@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickens <hughd@google.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: page allocator bug in 3.16?
-References: <54246506.50401@hurleysoftware.com> <20140925143555.1f276007@as>
-In-Reply-To: <20140925143555.1f276007@as>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140908104238.C7B3DC40AB2@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
-> There are six ttm patches queued for 3.16.4:
+Hi Grant,
+
+On Mon, Sep 08, 2014 at 11:42:38AM +0100, Grant Likely wrote:
+> On Wed,  3 Sep 2014 11:06:43 -0700, Brian Norris <computersforpeace@gmail.com> wrote:
+> > The comments above of_console_check() say that it will return TRUE if it
+> > registers a preferred console, but add_preferred_console() uses a
+> > 0-equals-success convention, so ths leaves of_console_check() with an
+> > inconsistent policy for its return values.
+> > 
+> > Fortunately, nobody was actually checking the return value of
+> > of_console_check(), so this isn't significant at the moment.
+> > 
+> > But let's match the comments, so we're doing what we say.
+> > 
+> > Fixes: 3482f2c52b77 ('of: Create of_console_check() for selecting a console specified in /chosen')
+> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+> > Cc: Grant Likely <grant.likely@linaro.org>
 > 
-> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
-> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
-> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
-> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
-> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
-> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
+> Good catch. Applied, thanks.
 
-Thanks for info, Chuck.
-
-Unfortunately, none of these fix TTM dma allocation doing CMA dma allocation,
-which is the root problem.
+Applied to what? I don't see it in linux-next.
 
 Regards,
-Peter Hurley
+Brian
