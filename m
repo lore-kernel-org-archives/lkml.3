@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaIYTFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 15:05:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58892 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaIYTFf convert rfc822-to-8bit (ORCPT
+	id S1752130AbaIYTGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 15:06:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56629 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaIYTG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 15:05:35 -0400
-Message-ID: <54246791.9050101@arm.com>
-Date: Thu, 25 Sep 2014 20:05:53 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 25 Sep 2014 15:06:29 -0400
+Date: Thu, 25 Sep 2014 14:00:54 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] watchdog: qcom: add support for KPSS WDT
+Message-ID: <20140925190054.GJ868@joshc.qualcomm.com>
+References: <cover.1411667144.git.joshc@codeaurora.org>
+ <ae171484ae036b331f06814251872c7602a54996.1411667144.git.joshc@codeaurora.org>
+ <20140925183857.GA12340@roeck-us.net>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "riel@redhat.com" <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Subject: Re: [PATCH v6 4/6] sched: get CPU's usage statistic
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org>
-X-OriginalArrivalTime: 25 Sep 2014 19:05:30.0261 (UTC) FILETIME=[ACAB8C50:01CFD8F3]
-X-MC-Unique: 114092520053202001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140925183857.GA12340@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/09/14 17:08, Vincent Guittot wrote:
-> Monitor the usage level of each group of each sched_domain level. The usage is
-> the amount of cpu_capacity that is currently used on a CPU or group of CPUs.
-> We use the utilization_load_avg to evaluate the usage level of each group.
+On Thu, Sep 25, 2014 at 11:38:57AM -0700, Guenter Roeck wrote:
+> On Thu, Sep 25, 2014 at 12:48:51PM -0500, Josh Cartwright wrote:
+> > Add a driver for the watchdog timer block found in the Krait Processor
+> > Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
+> > 
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 > 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  kernel/sched/fair.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
+> Hi Josh,
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 2cf153d..4097e3f 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4523,6 +4523,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
->  	return target;
->  }
->  
-> +static int get_cpu_usage(int cpu)
-> +{
-> +	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
-> +	unsigned long capacity = capacity_orig_of(cpu);
-> +
-> +	if (usage >= SCHED_LOAD_SCALE)
-> +		return capacity + 1;
+> just a couple of minor comments this time (yes, I know,
+> I am being difficult ;-).
 
-Why you are returning rq->cpu_capacity_orig + 1 (1025) in case
-utilization_load_avg is greater or equal than 1024 and not usage or
-(usage * capacity) >> SCHED_LOAD_SHIFT too?
+Difficult, maybe, but at least someone's taking a look!  Thanks, again.
 
-In case the weight of a sched group is greater than 1, you might loose
-the information that the whole sched group is over-utilized too.
-
-You add up the individual cpu usage values for a group by
-sgs->group_usage += get_cpu_usage(i) in update_sg_lb_stats and later use
-sgs->group_usage in group_is_overloaded to compare it against
-sgs->group_capacity (taking imbalance_pct into consideration).
-
-> +
-> +	return (usage * capacity) >> SCHED_LOAD_SHIFT;
-
-Nit-pick: Since you're multiplying by a capacity value
-(rq->cpu_capacity_orig) you should shift by SCHED_CAPACITY_SHIFT.
-
-Just to make sure: You do this scaling of usage by cpu_capacity_orig
-here only to cater for the fact that cpu_capacity_orig might be uarch
-scaled (by arch_scale_cpu_capacity, !SMT) in update_cpu_capacity while
-utilization_load_avg is currently not.
-We don't even uArch scale on ARM TC2 big.LITTLE platform in mainline
-today due to the missing clock-frequency property in the device tree.
-
-I think it's hard for people to grasp that your patch-set takes uArch
-scaling of capacity into consideration but not frequency scaling of
-capacity (via arch_scale_freq_capacity, not used at the moment).
-
-> +}
-> +
->  /*
->   * select_task_rq_fair: Select target runqueue for the waking task in domains
->   * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
-> @@ -5663,6 +5674,7 @@ struct sg_lb_stats {
->  	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
->  	unsigned long load_per_task;
->  	unsigned long group_capacity;
-> +	unsigned long group_usage; /* Total usage of the group */
->  	unsigned int sum_nr_running; /* Nr tasks running in the group */
->  	unsigned int group_capacity_factor;
->  	unsigned int idle_cpus;
-> @@ -6037,6 +6049,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
->  			load = source_load(i, load_idx);
->  
->  		sgs->group_load += load;
-> +		sgs->group_usage += get_cpu_usage(i);
->  		sgs->sum_nr_running += rq->cfs.h_nr_running;
->  
->  		if (rq->nr_running > 1)
+[..]
+> > +++ b/drivers/watchdog/qcom-wdt.c
+[..]
+> > +static int qcom_wdt_probe(struct platform_device *pdev)
+> > +{
+> > +	struct qcom_wdt *wdt;
+> > +	struct resource *res;
+> > +	int ret;
+> > +
+> > +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+> > +	if (!wdt)
+> > +		return -ENOMEM;
+> > +
+> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +	wdt->base = devm_ioremap_resource(&pdev->dev, res);
+> > +	if (IS_ERR(wdt->base)) {
+> > +		ret = PTR_ERR(wdt->base);
+> > +		goto err_out;
 > 
+> This is really unnecessary. Just return PTR_ERR((wdt->base) as you did before.
+> No need to make the code more complicated than necessary.
+> 
+> Basic rule is: If you can return immediately, do it. Otherwise use goto
+> and have a single error handler.
+> 
+> > +	}
+> > +
+> > +	wdt->clk = devm_clk_get(&pdev->dev, NULL);
+> > +	if (IS_ERR(wdt->clk)) {
+> > +		ret = PTR_ERR(wdt->clk);
+> > +		goto err_out;
+> 
+> Same here.
+> 
+> > +	}
+> > +
+> > +	ret = clk_prepare_enable(wdt->clk);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "failed to setup clock\n");
+> > +		goto err_out;
+> 
+> and here.
 
+Okay, I can fix these up.
 
+  Josh
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
