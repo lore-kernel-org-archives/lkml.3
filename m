@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245AbaIYI5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 04:57:31 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:36144 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaIYI51 (ORCPT
+	id S1753286AbaIYI54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 04:57:56 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:48189 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaIYI5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 04:57:27 -0400
-Message-ID: <5423D8F3.104@gmail.com>
-Date: Thu, 25 Sep 2014 10:57:23 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 25 Sep 2014 04:57:53 -0400
+Message-ID: <5423D90A.7090402@codethink.co.uk>
+Date: Thu, 25 Sep 2014 09:57:46 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Thomas Abraham'" <ta.omasab@gmail.com>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        daniel.lezcano@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v3] ARM: dts: add CPU nodes for Exynos4 SoCs
-References: <5230569.XLlNbB5NvF@amdc1032> <018e01cfd885$770dd940$65298bc0$@kernel.org> <20140925081704.GA20841@e102568-lin.cambridge.arm.com> <5423D19B.1040203@samsung.com> <5423D23C.5010204@gmail.com> <5423D5E8.1050008@samsung.com>
-In-Reply-To: <5423D5E8.1050008@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Kees Cook <keescook@chromium.org>
+CC: Randy Dunlap <rdunlap@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kernel@codethink.co.uk,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [PATCH RESUBMIT 0/2] fs/seq_file: Add seq_open_init()
+References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk> <CAGXu5jJS3Xg+uGm6L+fNau1VBHZpE=EJNRnFZAwwK5fW3B+TjA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJS3Xg+uGm6L+fNau1VBHZpE=EJNRnFZAwwK5fW3B+TjA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 25.09.2014 10:44, Kukjin Kim wrote:
-> On 09/25/14 17:28, Tomasz Figa wrote:
->> Hi Kukjin,
+On 24/09/14 19:06, Kees Cook wrote:
+> On Wed, Sep 24, 2014 at 4:15 AM, Rob Jones <rob.jones@codethink.co.uk> wrote:
+>> Series resubmitted due to a typo in an email address.
 >>
->> On 25.09.2014 10:26, Kukjin Kim wrote:
->>> On 09/25/14 17:17, Lorenzo Pieralisi wrote:
->>>> [CC'ed Daniel to make him aware this patch goes through your tree]
->>>>
->>> Thanks and just note the branch  which is including this change actually
->>> v4 is just rebased not v3 will be sent out to arm-soc last tonight or
->>> tomorrow.
-> 
-> v3 is correct :) sorry, I confused the version...
-> 
+>> This patch series implements and documents a new interface function for
+>> seq_file.
 >>
->> Could you keep this patch in a separate stable branch, so I could pull
->> it as a dependency for Thomas Abraham's cpufreq series?
+>> The existing set of open functions: seq_open(), seq_open_private() and
+>> __seq_open_private() satisfy the majority of use cases however there is
+>> one more use case that is also very common that this new function
+>> addresses.
 >>
-> It's possible, but would be better that DT changes are sent to upstream
-> through samsung/arm-soc tree?...we suffered ugly conflicts between
-> arm-soc and driver before and then we decided DT changes should be
-> handled in arm-soc...Hmm...
+>> This case is where the iterator needs information that is available only at
+>> the time the seq_file is opened but does not need any space allocated, e.g.
+>> access to the inode structure. This type of open occurs, by my best estimate,
+>> in well over 40 places.
+>>
+>> Using the new function saves at least two lines of boilerplate code per
+>> instance as well as making the code easier to follow. The additional code
+>> in seq_file.c to implement the function is minimal as the first place that
+>> code can be removed is within seq_file.c itself.
+>>
+>> Once this patch is accepted, the instances of boilerplate code can be
+>> addressed.
+>
+> Would it be possible to write a coccinelle patch for the replacements?
 
-The only other option I can see is splitting the series and sending
-mach/dts patches through arm-soc and clock/cpufreq patches through clock
-tree. This would break cpufreq support in both trees, until they both
-hit Linus's tree. If this is not a problem, then I can proceed this way.
+I'm afraid I don't know what that means.
 
-Please correct me if I'm missing something.
+>
+> This seems like a good idea. Thanks!
+>
+> Acked-by: Kees Cook <keescook@chromium.org>
+>
+> -Kees
+>
+>>
+>> The documentation of seq_open() and its variants has been re-worked to try
+>> to guide users towards the most appropriate variant for their application.
+>>
+>> Rob Jones (2):
+>>    fs/seq_file: Create new function seq_open_init()
+>>    Documentation/filesystem/seq_file: document seq_open_init()
+>>
+>>   Documentation/filesystems/seq_file.txt |   58 +++++++++++++++++++++-----------
+>>   fs/seq_file.c                          |   34 ++++++++++++-------
+>>   include/linux/seq_file.h               |    1 +
+>>   3 files changed, 62 insertions(+), 31 deletions(-)
+>>
+>> --
+>> 1.7.10.4
+>>
+>
+>
+>
 
-Best regards,
-Tomasz
+-- 
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
