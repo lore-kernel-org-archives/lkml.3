@@ -1,198 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaIYJsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 05:48:04 -0400
-Received: from mail-by2on0104.outbound.protection.outlook.com ([207.46.100.104]:43712
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752277AbaIYJsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 05:48:01 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: "mturquette@linaro.org" <mturquette@linaro.org>,
-        Scott Wood <scottwood@freescale.com>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>
-Subject: RE: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
- CLK_OF_DECLARE support
-Thread-Topic: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
- CLK_OF_DECLARE support
-Thread-Index: AQHP1wGYMBQEa9GSl0OI/HOhX0hHNpwRlvDQ
-Date: Thu, 25 Sep 2014 09:47:59 +0000
-Message-ID: <d4a375f40b544cf1ae78ac82dc20569c@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
-In-Reply-To: <1411454806-8214-1-git-send-email-jingchang.lu@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB466;
-x-forefront-prvs: 0345CFD558
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(189002)(199003)(31966008)(85306004)(2501002)(80022003)(108616004)(106116001)(101416001)(54356999)(64706001)(76176999)(50986999)(19580395003)(19580405001)(20776003)(99396003)(83322001)(83072002)(106356001)(90102001)(107046002)(76482002)(86362001)(21056001)(99286002)(76576001)(2656002)(4396001)(97736003)(81542003)(105586002)(87936001)(33646002)(74502003)(95666004)(46102003)(77982003)(66066001)(79102003)(74316001)(120916001)(81342003)(74662003)(10300001)(92566001)(85852003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB466;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1752739AbaIYJso (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 05:48:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56680 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072AbaIYJsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 05:48:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,595,1406617200"; 
+   d="scan'208";a="608372010"
+Message-ID: <5423E40B.8010302@intel.com>
+Date: Thu, 25 Sep 2014 17:44:43 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: lenb@kernel.org, mika.westerberg@linux.intel.com, wsa@the-dreams.de,
+        robert.moore@intel.com, lv.zheng@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [RFC PATCH] ACPI: Add _DEP(Operation Region Dependencies) support
+ to fix battery issue on the Asus T100TA
+References: <1411456003-29541-1-git-send-email-tianyu.lan@intel.com> <5595235.8OhLbSk3cf@vostro.rjw.lan>
+In-Reply-To: <5595235.8OhLbSk3cf@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8P9mAN0022033
 
-Hi, Scott and Mike,
-  
-  Could you please help review this patch and give an ACK if ok. Thanks.
+On 2014å¹´09æœˆ25æ—¥ 06:27, Rafael J. Wysocki wrote:
+> On Tuesday, September 23, 2014 03:06:43 PM Lan Tianyu wrote:
+>> ACPI 5.0 introduces _DEP to designate device objects that OSPM should
+>> assign a higher priority in start ordering due to future operation region
+>> accesses.
+>>
+>> On Asus T100TA, ACPI battery info are read from a I2C slave device via
+>> I2C operation region. Before I2C operation region handler is installed,
+>> battery _STA always returns 0. There is a _DEP method of designating
+>> start order under battery device node.
+>>
+>> This patch is to implement _DEP feature to fix battery issue on the Asus T100TA.
+>> Introducing acpi_bus_dep_device_list and adding dep_present flags in the struct
+>> acpi_device. During ACPI namespace scan, all devices with _DEP support will be put
+>> into the new list and those devices' dep_present flag will be set. Driver's probe()
+>> should return EPROBE_DEFER when find dep_present is set. When I2C operation
+>> region handler is installed, check all devices on the new list. Remove the one from
+>> list if _DEP condition is met and clear its dep_present flag and do acpi_bus_attch()
+>> for the device in order to resolve battery _STA issue on the Asus T100TA.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> This is going in the right direction in my view, but isn't there just yet.
+> 
+> Details below.
 
-Best Regards,
-Jingchang
+Thanks for review.
 
->-----Original Message-----
->From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
->Sent: Tuesday, September 23, 2014 2:47 PM
->To: mturquette@linaro.org
->Cc: Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org; linux-
->kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
->Jingchang-B35083
->Subject: [PATCHv4] clk: ppc-corenet: rename to ppc-qoriq and add
->CLK_OF_DECLARE support
->
->The IP is shared by PPC and ARM, this renames it to qoriq for better
->represention, and this also adds the CLK_OF_DECLARE support for being
->initialized by of_clk_init() on ARM.
->
->Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
->---
->changes in v4:
-> remove "corenet" literals omitted in v3 remove.
->
->changes in v3:
-> generate the patch with -M -C option
->
->changes in v2:
-> rename the driver name to ppc-qoriq.c for shared on PPC and ARM.
->
-> drivers/clk/Kconfig                            |  9 +++++----
-> drivers/clk/Makefile                           |  2 +-
-> drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} | 27 +++++++++++++++------
->-----
-> 3 files changed, 22 insertions(+), 16 deletions(-)  rename
->drivers/clk/{clk-ppc-corenet.c => clk-qoriq.c} (89%)
->
->diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig index
->85131ae..f5f76cb 100644
->--- a/drivers/clk/Kconfig
->+++ b/drivers/clk/Kconfig
->@@ -92,12 +92,13 @@ config COMMON_CLK_AXI_CLKGEN
-> 	  Support for the Analog Devices axi-clkgen pcore clock generator
->for Xilinx
-> 	  FPGAs. It is commonly used in Analog Devices' reference designs.
->
->-config CLK_PPC_CORENET
->-	bool "Clock driver for PowerPC corenet platforms"
->-	depends on PPC_E500MC && OF
->+config CLK_QORIQ
->+	bool "Clock driver for PowerPC corenet and compatible ARM-based
->platforms"
->+	depends on (PPC_E500MC || ARM) && OF
-> 	---help---
-> 	  This adds the clock driver support for Freescale PowerPC corenet
->-	  platforms using common clock framework.
->+	  platforms and compatible Freescale ARM based platforms using
->common
->+	  clock framework.
->
-> config COMMON_CLK_XGENE
-> 	bool "Clock driver for APM XGene SoC"
->diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile index
->27c542b..20f42e9 100644
->--- a/drivers/clk/Makefile
->+++ b/drivers/clk/Makefile
->@@ -29,7 +29,7 @@ obj-$(CONFIG_ARCH_MOXART)		+= clk-moxart.o
-> obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
-> obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
-> obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
->-obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
->+obj-$(CONFIG_CLK_QORIQ)			+= clk-qoriq.o
-> obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
-> obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
-> obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
->diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-qoriq.c
->similarity index 89% rename from drivers/clk/clk-ppc-corenet.c rename to
->drivers/clk/clk-qoriq.c index 8e58edf..cba8abe 100644
->--- a/drivers/clk/clk-ppc-corenet.c
->+++ b/drivers/clk/clk-qoriq.c
->@@ -155,7 +155,7 @@ static void __init core_pll_init(struct device_node
->*np)
->
-> 	base = of_iomap(np, 0);
-> 	if (!base) {
->-		pr_err("clk-ppc: iomap error\n");
->+		pr_err("clk-qoriq: iomap error\n");
-> 		return;
-> 	}
->
->@@ -252,7 +252,7 @@ static void __init sysclk_init(struct device_node
->*node)
-> 	u32 rate;
->
-> 	if (!np) {
->-		pr_err("ppc-clk: could not get parent node\n");
->+		pr_err("qoriq-clk: could not get parent node\n");
-> 		return;
-> 	}
->
->@@ -278,30 +278,35 @@ static const struct of_device_id clk_match[]
->__initconst = {
-> 	{}
-> };
->
->-static int __init ppc_corenet_clk_probe(struct platform_device *pdev)
->+static int __init qoriq_clk_probe(struct platform_device *pdev)
-> {
-> 	of_clk_init(clk_match);
->
-> 	return 0;
-> }
->
->-static const struct of_device_id ppc_clk_ids[] __initconst = {
->+static const struct of_device_id qoriq_clk_ids[] __initconst = {
-> 	{ .compatible = "fsl,qoriq-clockgen-1.0", },
-> 	{ .compatible = "fsl,qoriq-clockgen-2.0", },
-> 	{}
-> };
->
->-static struct platform_driver ppc_corenet_clk_driver __initdata = {
->+static struct platform_driver qoriq_clk_driver __initdata = {
-> 	.driver = {
->-		.name = "ppc_corenet_clock",
->+		.name = "qoriq_clock",
-> 		.owner = THIS_MODULE,
->-		.of_match_table = ppc_clk_ids,
->+		.of_match_table = qoriq_clk_ids,
-> 	},
->-	.probe = ppc_corenet_clk_probe,
->+	.probe = qoriq_clk_probe,
-> };
->
->-static int __init ppc_corenet_clk_init(void)
->+static int __init qoriq_clk_init(void)
-> {
->-	return platform_driver_register(&ppc_corenet_clk_driver);
->+	return platform_driver_register(&qoriq_clk_driver);
-> }
->-subsys_initcall(ppc_corenet_clk_init);
->+subsys_initcall(qoriq_clk_init);
->+
->+CLK_OF_DECLARE(qoriq_core_pll_v1, "fsl,qoriq-core-pll-1.0",
->+core_pll_init); CLK_OF_DECLARE(qoriq_core_pll_v2,
->+"fsl,qoriq-core-pll-2.0", core_pll_init);
->+CLK_OF_DECLARE(qoriq_core_mux_v1, "fsl,qoriq-core-mux-1.0",
->+core_mux_init); CLK_OF_DECLARE(qoriq_core_mux_v2,
->+"fsl,qoriq-core-mux-2.0", core_mux_init);
->--
->1.8.0
+> 
+>> ---
+>>  drivers/acpi/battery.c  |  4 +++
+>>  drivers/acpi/scan.c     | 84 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/i2c/i2c-acpi.c  |  1 +
+>>  include/acpi/acpi_bus.h |  2 ++
+>>  include/linux/acpi.h    |  3 ++
+>>  5 files changed, 94 insertions(+)
+>>
+>> diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+>> index 1c162e7..c0a68ce 100644
+>> --- a/drivers/acpi/battery.c
+>> +++ b/drivers/acpi/battery.c
+>> @@ -1194,6 +1194,10 @@ static int acpi_battery_add(struct acpi_device *device)
+>>  
+>>  	if (!device)
+>>  		return -EINVAL;
+>> +
+>> +	if (device->dep_present)
+> 
+> device->flags.dep_present would be better.  Or even call the flag dep_unmet.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Ok. Will update.
+
+> 
+>> +		return -EPROBE_DEFER;
+>> +
+>>  	battery = kzalloc(sizeof(struct acpi_battery), GFP_KERNEL);
+>>  	if (!battery)
+>>  		return -ENOMEM;
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index 3bf7764..a26dbb3 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -36,6 +36,7 @@ bool acpi_force_hot_remove;
+>>  
+>>  static const char *dummy_hid = "device";
+>>  
+>> +static LIST_HEAD(acpi_bus_dep_device_list);
+>>  static LIST_HEAD(acpi_bus_id_list);
+>>  static DEFINE_MUTEX(acpi_scan_lock);
+>>  static LIST_HEAD(acpi_scan_handlers_list);
+>> @@ -43,6 +44,11 @@ DEFINE_MUTEX(acpi_device_lock);
+>>  LIST_HEAD(acpi_wakeup_device_list);
+>>  static DEFINE_MUTEX(acpi_hp_context_lock);
+>>  
+>> +struct acpi_dep_data {
+>> +	struct list_head node;
+>> +	struct acpi_device *adev;
+>> +};
+>> +
+>>  struct acpi_device_bus_id{
+>>  	char bus_id[15];
+>>  	unsigned int instance_no;
+>> @@ -2048,6 +2054,32 @@ static void acpi_scan_init_hotplug(struct acpi_device *adev)
+>>  	}
+>>  }
+>>  
+>> +static void acpi_device_dep_initialize(struct acpi_device * adev)
+>> +{
+>> +	struct acpi_dep_data *dep;
+>> +	acpi_status status;
+>> +
+>> +	if (!acpi_has_method(adev->handle, "_DEP"))
+>> +		return;
+>> +
+>> +	status = acpi_evaluate_reference(adev->handle, "_DEP", NULL,
+>> +					&adev->dep_devices);
+>> +	if (ACPI_FAILURE(status)) {
+>> +		dev_err(&adev->dev, "Fail to evaluate _DEP.\n");
+> 
+> "Failed"
+> 
+>> +		return;
+>> +	}
+>> +
+>> +	dep = kzalloc(sizeof(struct acpi_dep_data), GFP_KERNEL);
+>> +	if (!dep) {
+>> +		dev_err(&adev->dev, "Memory allocation error.\n");
+> 
+> "Not enough memory for _DEP list entry\n"
+> 
+>> +		return;
+>> +	}
+>> +
+>> +	dep->adev = adev;
+>> +	adev->dep_present = true;
+>> +	list_add_tail(&dep->node , &acpi_bus_dep_device_list);
+>> +}
+>> +
+>>  static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+>>  				      void *not_used, void **return_value)
+>>  {
+>> @@ -2074,6 +2106,7 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
+>>  		return AE_CTRL_DEPTH;
+>>  
+>>  	acpi_scan_init_hotplug(device);
+>> +	acpi_device_dep_initialize(device);
+>>  
+>>   out:
+>>  	if (!*return_value)
+>> @@ -2191,6 +2224,57 @@ static void acpi_bus_attach(struct acpi_device *device)
+>>  		acpi_bus_attach(child);
+>>  }
+>>  
+>> +static int acpi_device_dep_check(struct acpi_device *adev)
+>> +{
+>> +	struct acpi_device *dep_adev;
+>> +	struct acpi_device_physical_node *pn;
+>> +	int i;
+>> +
+>> +	for (i = 0; i < adev->dep_devices.count; i++) {
+>> +		dep_adev = acpi_bus_get_acpi_device(
+>> +				adev->dep_devices.handles[i]);
+>> +
+>> +		if (!dep_adev)
+>> +			return -ENODEV;
+>> +
+>> +		/* Check acpi device driver probing */
+>> +		if (dep_adev->dev.driver)
+>> +			continue;
+> 
+> This check isn't sufficient, because _DEP is supposed to be about operation
+> regions being present, not about drivers being present.  Same for the driver
+> check below.
+> 
+> I wouldn't bother to check drivers in this stub implementation. ->
+
+Sounds like we need to check whether the dependent device node has been
+attached with operation region handler and this needs ACPICA to expose
+such function, right?
+
+> 
+>> +
+>> +		if (!dep_adev->physical_node_count)
+>> +			return -ENODEV;
+>> +
+>> +		/* Check physcial device node driver probing */
+>> +		mutex_lock(&dep_adev->physical_node_lock);
+>> +		list_for_each_entry(pn, &dep_adev->physical_node_list, node) {
+>> +			if (pn->dev->driver) {
+>> +				mutex_unlock(&dep_adev->physical_node_lock);
+>> +				continue;
+>> +			}
+>> +		}
+>> +		mutex_unlock(&dep_adev->physical_node_lock);
+>> +		return -EFAULT;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +int acpi_walk_dep_device_list(void)
+> 
+> -> I'd pass the operation region device to that (and I'd call the function
+> differently, but that's a detail).  Then, I'd just clear flags.dep_unmet
+> for all devices having that operation region device in their dep_devices
+> (and drop their entries from the list).  It wouldn't cover the case when
+> one device depends on two operation regions at the same time (in a meaningful
+> way), but should be sufficient to address the battery problem at hand. 
+> 
+
+This requires the dependent devices have a list to record devices which
+depends on them, right? Create such lists during ACPI namespace scan.
+
+
+>> +{
+>> +	struct acpi_dep_data *dep, *tmp;
+>> +
+>> +	list_for_each_entry_safe(dep, tmp, &acpi_bus_dep_device_list, node) {
+>> +		if (!acpi_device_dep_check(dep->adev)) {
+>> +			dep->adev->dep_present = false;
+>> +			acpi_bus_attach(dep->adev);
+>> +			list_del(&dep->node);
+>> +			kfree(dep);
+>> +		}
+>> +	}
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(acpi_walk_dep_device_list);
+>> +
+>>  /**
+>>   * acpi_bus_scan - Add ACPI device node objects in a given namespace scope.
+>>   * @handle: Root of the namespace scope to scan.
+>> diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
+>> index 0dbc18c..fdc8dc8 100644
+>> --- a/drivers/i2c/i2c-acpi.c
+>> +++ b/drivers/i2c/i2c-acpi.c
+>> @@ -339,6 +339,7 @@ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
+>>  		return -ENOMEM;
+>>  	}
+>>  
+>> +	acpi_walk_dep_device_list();
+>>  	return 0;
+>>  }
+>>  
+>> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+>> index c1c9de1..c1e7055 100644
+>> --- a/include/acpi/acpi_bus.h
+>> +++ b/include/acpi/acpi_bus.h
+>> @@ -357,7 +357,9 @@ struct acpi_device {
+>>  	struct acpi_hotplug_context *hp;
+>>  	struct acpi_driver *driver;
+>>  	void *driver_data;
+>> +	bool dep_present;
+>>  	struct device dev;
+>> +	struct acpi_handle_list dep_devices;
+>>  	unsigned int physical_node_count;
+>>  	struct list_head physical_node_list;
+>>  	struct mutex physical_node_lock;
+>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+>> index 807cbc4..c9a504b 100644
+>> --- a/include/linux/acpi.h
+>> +++ b/include/linux/acpi.h
+>> @@ -431,6 +431,7 @@ static inline bool acpi_driver_match_device(struct device *dev,
+>>  
+>>  int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
+>>  int acpi_device_modalias(struct device *, char *, int);
+>> +int acpi_walk_dep_device_list(void);
+>>  
+>>  #define ACPI_PTR(_ptr)	(_ptr)
+>>  
+>> @@ -449,6 +450,8 @@ static inline const char *acpi_dev_name(struct acpi_device *adev)
+>>  
+>>  static inline void acpi_early_init(void) { }
+>>  
+>> +static inline int acpi_walk_dep_device_list(void) { }
+>> +
+>>  static inline int early_acpi_boot_init(void)
+>>  {
+>>  	return 0;
+>>
+> 
+
+
+-- 
+Best regards
+Tianyu Lan
