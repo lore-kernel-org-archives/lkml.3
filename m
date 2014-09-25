@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaIYSKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 14:10:10 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:57076 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926AbaIYSKI (ORCPT
+	id S1754154AbaIYSKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 14:10:31 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42420 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbaIYSK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 14:10:08 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: riya khanna <riyakhanna1983@gmail.com>
-Cc: LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Tejun Heo <tj@kernel.org>, Seth Forshee <seth.forshee@canonical.com>,
-        linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>
-References: <CALRD3qKmpzJCRszkG_S9Z3XgoTGWVMFd7FqeJh+W-9pZqPVhCg@mail.gmail.com>
-	<87bnq5vcbl.fsf@x220.int.ebiederm.org>
-	<CALRD3qKPJHmmY2DSNNfNKzmLihDLm9fgBQprCXNMHVOArV4iuw@mail.gmail.com>
-	<20140924163740.GD3865@ubuntumail>
-	<8738bglxsf.fsf_-_@x220.int.ebiederm.org>
-	<E8CD8839-8FC9-4404-863B-38F36F7D4328@gmail.com>
-	<871tr0hcfo.fsf@x220.int.ebiederm.org>
-	<CALRD3qLYAc+K8e1xYb27ipi4KyGRmTxokPCHN0L_zta=Cy9sCQ@mail.gmail.com>
-	<CALRD3qKU5gOi5K53ysOgF9Re+MjMLfcTYEK_3gq3ns2HNLkUFw@mail.gmail.com>
-Date: Thu, 25 Sep 2014 11:09:43 -0700
-In-Reply-To: <CALRD3qKU5gOi5K53ysOgF9Re+MjMLfcTYEK_3gq3ns2HNLkUFw@mail.gmail.com>
-	(riya khanna's message of "Thu, 25 Sep 2014 10:40:10 -0500")
-Message-ID: <87eguzefmg.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 25 Sep 2014 14:10:29 -0400
+Date: Thu, 25 Sep 2014 11:10:24 -0700
+From: josh@joshtriplett.org
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "open list:READ-COPY UPDATE..." <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] rcu: Add sparse check for RCU_INIT_POINTER()
+Message-ID: <20140925181024.GA9360@cloud>
+References: <1411668214-19199-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19mGWPDtkQlowU1HwNt1vAQtsxB7cz18AA=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.4 XM_Superlative01 Best-rated language
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3249]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;riya khanna <riyakhanna1983@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: Using devices in Containers
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411668214-19199-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-riya khanna <riyakhanna1983@gmail.com> writes:
+On Thu, Sep 25, 2014 at 02:03:34PM -0400, Pranith Kumar wrote:
+> Add a sparse check when RCU_INIT_POINTER() is used to assign a non __rcu
+> annotated pointer. 
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-> Is there a plan or work-in-progress to add namespace tags to other
-> classes in sysfs similar to net? Does it make sense to add namespace
-> tags to kobjects?
+Have you checked if this introduces a significant number of new warnings
+in the kernel?
 
-Currently the a general nack from gregkh on such work.
+If not:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Given that sysfs is almost never a fast path I suspect it makes most
-sense to filter sysfs in some way (aka bind mounts or fuse) and present
-the results to the container.
-
-At the point this is something that we are using a lot and have
-demonstrated the usefulness of it and it appears a kernel level
-solution would be better it would be worth reopening the disucssion.
-
-Eric
+>  include/linux/rcupdate.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index a4a819f..a033d8b 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -1047,6 +1047,7 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+>   */
+>  #define RCU_INIT_POINTER(p, v) \
+>  	do { \
+> +		rcu_dereference_sparse(p, __rcu); \
+>  		p = RCU_INITIALIZER(v); \
+>  	} while (0)
+>  
+> -- 
+> 2.1.0
+> 
