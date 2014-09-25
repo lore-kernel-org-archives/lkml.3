@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaIYVgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 17:36:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42994 "EHLO mail.kernel.org"
+	id S1752178AbaIYVlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 17:41:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885AbaIYVgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 17:36:04 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC v2 05/12] PM / Domains: Add helper variable np = dev->of_node
-References: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
-	<1410893339-6361-6-git-send-email-geert+renesas@glider.be>
-Date: Thu, 25 Sep 2014 14:36:01 -0700
-In-Reply-To: <1410893339-6361-6-git-send-email-geert+renesas@glider.be> (Geert
-	Uytterhoeven's message of "Tue, 16 Sep 2014 20:48:52 +0200")
-Message-ID: <7hwq8r9yda.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751805AbaIYVlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 17:41:11 -0400
+Message-ID: <1411681130.25340.101.camel@deneb.redhat.com>
+Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
+ runtime enabled
+From: Mark Salter <msalter@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Young <dyoung@redhat.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
+        rtc-linux@googlegroups.com
+Date: Thu, 25 Sep 2014 17:38:50 -0400
+In-Reply-To: <20140925211855.GS18635@console-pimps.org>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+	 <1408007953-15151-1-git-send-email-dyoung@redhat.com>
+	 <1411403609.25340.55.camel@deneb.redhat.com>
+	 <20140925211855.GS18635@console-pimps.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert+renesas@glider.be> writes:
+On Thu, 2014-09-25 at 22:18 +0100, Matt Fleming wrote:
+> On Mon, 22 Sep, at 12:33:29PM, Mark Salter wrote:
+> > 
+> > Is this still needed after commit da167ad7638759:
+> > 
+> >   rtc: ia64: allow other architectures to use EFI RTC
+> 
+> Umm... we should really look at disabling this for x86, since the EFI
+> time functions don't work on a bunch of machines I've got here.
+> 
+> And it looks like someone enabled this driver and triggered an oops on
+> their 32-bit EFI tablet,
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id=84241#c21
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Previously, it depended on IA64. If it's not worth the trouble for
+x86 then I'd say have it depend on !X86 also. Newer EFI-supporting
+architectures are unlikely to have the same legacy issues as x86
+so I don't think it'll end up being an ever growing list.
 
-Maybe a short changelog answering "why?" (just a cleanup), and saying
-there are no functional changes.
 
-Otherwise,
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
-
-Kevin
