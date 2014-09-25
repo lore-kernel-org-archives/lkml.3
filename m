@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaIYQFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 12:05:10 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:34782 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaIYQFH (ORCPT
+	id S1753570AbaIYQJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 12:09:19 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49019 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361AbaIYQJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 12:05:07 -0400
+	Thu, 25 Sep 2014 12:09:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <54243978.3030501@canonical.com>
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>
- <1386546869-31900-3-git-send-email-yinghai@kernel.org> <CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>
- <CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>
- <CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>
- <CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>
- <52A8BAC5.70006@canonical.com> <CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>
- <52D01D82.5070202@canonical.com> <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
- <54189BCE.2010206@canonical.com> <CAE9FiQX1pfciTcuF3_eggQLCn=LvTSLTT0UZxTb+z_RaLHwgJQ@mail.gmail.com>
- <54243978.3030501@canonical.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Sep 2014 10:04:44 -0600
-Message-ID: <CAErSpo7unezE4hRYDUsHbmAV+dxgaMFqBOU=svpUEFKieG=omA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit mmio
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
+In-Reply-To: <5423D90A.7090402@codethink.co.uk>
+References: <1411557356-10673-1-git-send-email-rob.jones@codethink.co.uk>
+	<CAGXu5jJS3Xg+uGm6L+fNau1VBHZpE=EJNRnFZAwwK5fW3B+TjA@mail.gmail.com>
+	<5423D90A.7090402@codethink.co.uk>
+Date: Thu, 25 Sep 2014 09:09:14 -0700
+X-Google-Sender-Auth: NZKufRIBqxjO_R7Gz32bCxkNsuo
+Message-ID: <CAGXu5j+tv6_kJy7HNTsCa_kB4Q+8khS1TpWWiRwTM7QeMWF9Zg@mail.gmail.com>
+Subject: Re: [PATCH RESUBMIT 0/2] fs/seq_file: Add seq_open_init()
+From: Kees Cook <keescook@chromium.org>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kernel@codethink.co.uk,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 9:49 AM, Joseph Salisbury
-<joseph.salisbury@canonical.com> wrote:
-> On 09/16/2014 06:27 PM, Yinghai Lu wrote:
->> On Tue, Sep 16, 2014 at 1:21 PM, Joseph Salisbury
->> <joseph.salisbury@canonical.com> wrote:
->>> A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
->>> is similar to the original bug[1] we discussed.
+On Thu, Sep 25, 2014 at 1:57 AM, Rob Jones <rob.jones@codethink.co.uk> wrote:
+>
+>
+> On 24/09/14 19:06, Kees Cook wrote:
+>>
+>> On Wed, Sep 24, 2014 at 4:15 AM, Rob Jones <rob.jones@codethink.co.uk>
+>> wrote:
 >>>
->>> Just wondering if there have been any additional ideas on realloc since
->>> this was last discussed?
+>>> Series resubmitted due to a typo in an email address.
 >>>
->>> [0] http://pad.lv/1363313
->>> [1] http://pad.lv/1245938
+>>> This patch series implements and documents a new interface function for
+>>> seq_file.
+>>>
+>>> The existing set of open functions: seq_open(), seq_open_private() and
+>>> __seq_open_private() satisfy the majority of use cases however there is
+>>> one more use case that is also very common that this new function
+>>> addresses.
+>>>
+>>> This case is where the iterator needs information that is available only
+>>> at
+>>> the time the seq_file is opened but does not need any space allocated,
+>>> e.g.
+>>> access to the inode structure. This type of open occurs, by my best
+>>> estimate,
+>>> in well over 40 places.
+>>>
+>>> Using the new function saves at least two lines of boilerplate code per
+>>> instance as well as making the code easier to follow. The additional code
+>>> in seq_file.c to implement the function is minimal as the first place
+>>> that
+>>> code can be removed is within seq_file.c itself.
+>>>
+>>> Once this patch is accepted, the instances of boilerplate code can be
+>>> addressed.
+>>
+>>
+>> Would it be possible to write a coccinelle patch for the replacements?
+>
+>
+> I'm afraid I don't know what that means.
 
-As a side-note, this looks like a regression and I should have given
-it more attention, but I don't track all the vendor bug databases.  If
-you open a kernel.bug bugzilla and mark it as a regression, I *do*
-track that regularly.  For regressions, it's helpful if you can attach
-dmesg logs from working and non-working kernels that are as close
-together as possible.  It'd be ideal if those were upstream kernels,
-but I doubt you apply any patches that would be relevant, so I think
-logs from Ubuntu kernels would be enough.
+It's a very flexible tool that should be able to find all the places
+where this pattern is being used, and you can replace it with the new
+function call:
 
-Bjorn
+http://lwn.net/Articles/315686/
+
+-Kees
+
+
+-- 
+Kees Cook
+Chrome OS Security
