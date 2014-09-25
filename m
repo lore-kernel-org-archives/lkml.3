@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaIYCyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Sep 2014 22:54:31 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:41649 "EHLO
+	id S1753484AbaIYCy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Sep 2014 22:54:27 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41652 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311AbaIYCuz (ORCPT
+	with ESMTP id S1752277AbaIYCu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Sep 2014 22:50:55 -0400
+	Wed, 24 Sep 2014 22:50:56 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
@@ -33,9 +33,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2 13/22] MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
-Date: Thu, 25 Sep 2014 11:14:23 +0800
-Message-ID: <1411614872-4009-14-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v2 12/22] MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+Date: Thu, 25 Sep 2014 11:14:22 +0800
+Message-ID: <1411614872-4009-13-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
 References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
@@ -47,38 +47,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 465665f78a7 ("mips: Kill pointless destroy_irq()") removed
-the destroy_irq(). So remove the leftover one in xlp_setup_msix()
-to fix build error.
-
-arch/mips/pci/msi-xlp.c: In function 'xlp_setup_msix':
-arch/mips/pci/msi-xlp.c:447:3: error: implicit declaration of function 'destroy_irq'..
-cc1: some warnings being treated as errors
-make[1]: *** [arch/mips/pci/msi-xlp.o] Error 1
-make: *** [arch/mips/pci/] Error 2
+Use MSI chip framework instead of arch MSI functions to configure
+MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/mips/pci/msi-xlp.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ arch/mips/pci/msi-octeon.c |   35 ++++++++++++++++++++++-------------
+ 1 files changed, 22 insertions(+), 13 deletions(-)
 
-diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
-index fa374fe..e469dc7 100644
---- a/arch/mips/pci/msi-xlp.c
-+++ b/arch/mips/pci/msi-xlp.c
-@@ -443,10 +443,8 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
- 	msg.data = 0xc00 | msixvec;
+diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
+index 63bbe07..14f2d16 100644
+--- a/arch/mips/pci/msi-octeon.c
++++ b/arch/mips/pci/msi-octeon.c
+@@ -57,7 +57,7 @@ static int msi_irq_size;
+  *
+  * Returns 0 on success.
+  */
+-int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
++static int octeon_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ {
+ 	struct msi_msg msg;
+ 	u16 control;
+@@ -132,12 +132,12 @@ msi_irq_allocated:
+ 	/* Make sure the search for available interrupts didn't fail */
+ 	if (irq >= 64) {
+ 		if (request_private_bits) {
+-			pr_err("arch_setup_msi_irq: Unable to find %d free interrupts, trying just one",
++			pr_err("octeon_setup_msi_irq: Unable to find %d free interrupts, trying just one",
+ 			       1 << request_private_bits);
+ 			request_private_bits = 0;
+ 			goto try_only_one;
+ 		} else
+-			panic("arch_setup_msi_irq: Unable to find a free MSI interrupt");
++			panic("octeon_setup_msi_irq: Unable to find a free MSI interrupt");
+ 	}
  
- 	ret = irq_set_msi_desc(xirq, desc);
--	if (ret < 0) {
--		destroy_irq(xirq);
-+	if (ret < 0) 
- 		return ret;
--	}
+ 	/* MSI interrupts start at logical IRQ OCTEON_IRQ_MSI_BIT0 */
+@@ -168,7 +168,7 @@ msi_irq_allocated:
+ 		msg.address_hi = (0 + CVMX_SLI_PCIE_MSI_RCV) >> 32;
+ 		break;
+ 	default:
+-		panic("arch_setup_msi_irq: Invalid octeon_dma_bar_type");
++		panic("octeon_setup_msi_irq: Invalid octeon_dma_bar_type");
+ 	}
+ 	msg.data = irq - OCTEON_IRQ_MSI_BIT0;
  
- 	write_msi_msg(xirq, &msg);
+@@ -182,7 +182,7 @@ msi_irq_allocated:
  	return 0;
+ }
+ 
+-int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++static int octeon_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ {
+ 	struct msi_desc *entry;
+ 	int ret;
+@@ -201,7 +201,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		return 1;
+ 
+ 	list_for_each_entry(entry, &dev->msi_list, list) {
+-		ret = arch_setup_msi_irq(dev, entry);
++		ret = octeon_setup_msi_irq(dev, entry);
+ 		if (ret < 0)
+ 			return ret;
+ 		if (ret > 0)
+@@ -210,14 +210,13 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 
+ 	return 0;
+ }
+-
+ /**
+  * Called when a device no longer needs its MSI interrupts. All
+  * MSI interrupts for the device are freed.
+  *
+  * @irq:    The devices first irq number. There may be multple in sequence.
+  */
+-void arch_teardown_msi_irq(unsigned int irq)
++static void octeon_teardown_msi_irq(unsigned int irq)
+ {
+ 	int number_irqs;
+ 	u64 bitmask;
+@@ -226,8 +225,8 @@ void arch_teardown_msi_irq(unsigned int irq)
+ 
+ 	if ((irq < OCTEON_IRQ_MSI_BIT0)
+ 		|| (irq > msi_irq_size + OCTEON_IRQ_MSI_BIT0))
+-		panic("arch_teardown_msi_irq: Attempted to teardown illegal "
+-		      "MSI interrupt (%d)", irq);
++		panic("octeon_teardown_msi_irq: Attempted to teardown illegal "
++			"MSI interrupt (%d)", irq);
+ 
+ 	irq -= OCTEON_IRQ_MSI_BIT0;
+ 	index = irq / 64;
+@@ -240,7 +239,7 @@ void arch_teardown_msi_irq(unsigned int irq)
+ 	 */
+ 	number_irqs = 0;
+ 	while ((irq0 + number_irqs < 64) &&
+-	       (msi_multiple_irq_bitmask[index]
++		(msi_multiple_irq_bitmask[index]
+ 		& (1ull << (irq0 + number_irqs))))
+ 		number_irqs++;
+ 	number_irqs++;
+@@ -249,8 +248,8 @@ void arch_teardown_msi_irq(unsigned int irq)
+ 	/* Shift the mask to the correct bit location */
+ 	bitmask <<= irq0;
+ 	if ((msi_free_irq_bitmask[index] & bitmask) != bitmask)
+-		panic("arch_teardown_msi_irq: Attempted to teardown MSI "
+-		      "interrupt (%d) not in use", irq);
++		panic("octeon_teardown_msi_irq: Attempted to teardown MSI "
++			"interrupt (%d) not in use", irq);
+ 
+ 	/* Checks are done, update the in use bitmask */
+ 	spin_lock(&msi_free_irq_bitmask_lock);
+@@ -259,6 +258,16 @@ void arch_teardown_msi_irq(unsigned int irq)
+ 	spin_unlock(&msi_free_irq_bitmask_lock);
+ }
+ 
++static struct msi_chip octeon_msi_chip = {
++	.setup_irqs = octeon_setup_msi_irqs,
++	.teardown_irq = octeon_teardown_msi_irq,
++};
++
++struct msi_chip *arch_find_msi_chip(struct pci_dev *dev)
++{
++	return &octeon_msi_chip;
++}
++
+ static DEFINE_RAW_SPINLOCK(octeon_irq_msi_lock);
+ 
+ static u64 msi_rcv_reg[4];
 -- 
 1.7.1
 
