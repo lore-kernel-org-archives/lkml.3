@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaIZJUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:20:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57005 "EHLO
+	id S1754094AbaIZJUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:20:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57020 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124AbaIZJUU (ORCPT
+	with ESMTP id S1753876AbaIZJUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:20:20 -0400
-Date: Fri, 26 Sep 2014 02:19:16 -0700
+	Fri, 26 Sep 2014 05:20:32 -0400
+Date: Fri, 26 Sep 2014 02:19:52 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-y2sca7z3wicvvy40a50lozwm@git.kernel.org>
+Message-ID: <tip-a4fslwspov0bs69nj825hqpq@git.kernel.org>
 Cc: eranian@google.com, acme@redhat.com, mingo@kernel.org, jolsa@kernel.org,
         peterz@infradead.org, efault@gmx.de, jolsa@redhat.com,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
@@ -24,8 +24,8 @@ Reply-To: mingo@kernel.org, acme@redhat.com, eranian@google.com,
         adrian.hunter@intel.com
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf evlist:
-  Introduce perf_evlist__filter_pollfd method
-Git-Commit-ID: 1ddec7f0d0ab5b71cf2cc5a782441c20e7afbcfb
+  Monitor POLLERR and POLLHUP events too
+Git-Commit-ID: 8179672c2f7b9c41a7ef3e8c907d214fa92ed614
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,24 +38,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ddec7f0d0ab5b71cf2cc5a782441c20e7afbcfb
-Gitweb:     http://git.kernel.org/tip/1ddec7f0d0ab5b71cf2cc5a782441c20e7afbcfb
+Commit-ID:  8179672c2f7b9c41a7ef3e8c907d214fa92ed614
+Gitweb:     http://git.kernel.org/tip/8179672c2f7b9c41a7ef3e8c907d214fa92ed614
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 12 Aug 2014 23:04:11 -0300
+AuthorDate: Wed, 13 Aug 2014 11:26:21 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 25 Sep 2014 16:46:53 -0300
+CommitDate: Thu, 25 Sep 2014 16:46:54 -0300
 
-perf evlist: Introduce perf_evlist__filter_pollfd method
+perf evlist: Monitor POLLERR and POLLHUP events too
 
-To remove all entries in evlist->pollfd[] that have revents matching at
-least one of the bits in the specified mask.
+We want to know when the fd went away, like when a monitored thread
+exits.
 
-It'll adjust evlist->nr_fds to the number of unfiltered fds and will
-return this value, as a convenience and to avoid requiring direct access
-to internal state of perf_evlist objects.
+If we do not monitor such events, then the tools will wait forever on
+events from a vanished thread, like when running:
 
-This will be used after polling the evlist fds so that we remove fds
-that were closed by the kernel.
+ $ sleep 5s &
+ $ perf record -p `pidof sleep`
+
+This builds upon the kernel patch by Jiri Olsa that actually makes a
+poll on those file descriptors to return POLLHUP.
+
+It is also needed to change the tools to use
+perf_evlist__filter_pollfd() to check if there are remainings fds to
+monitor or if all are gone, in which case they will exit the
+poll/mmap/read loop.
 
 Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -68,55 +75,22 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-y2sca7z3wicvvy40a50lozwm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-a4fslwspov0bs69nj825hqpq@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 21 +++++++++++++++++++++
- tools/perf/util/evlist.h |  2 ++
- 2 files changed, 23 insertions(+)
+ tools/perf/util/evlist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index a3e28b4..023bc38 100644
+index 023bc38..502cd11 100644
 --- a/tools/perf/util/evlist.c
 +++ b/tools/perf/util/evlist.c
-@@ -428,6 +428,27 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+@@ -424,7 +424,7 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+ {
+ 	fcntl(fd, F_SETFL, O_NONBLOCK);
+ 	evlist->pollfd[evlist->nr_fds].fd = fd;
+-	evlist->pollfd[evlist->nr_fds].events = POLLIN;
++	evlist->pollfd[evlist->nr_fds].events = POLLIN | POLLERR | POLLHUP;
  	evlist->nr_fds++;
  }
  
-+int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
-+{
-+	int fd, nr_fds = 0;
-+
-+	if (evlist->nr_fds == 0)
-+		return 0;
-+
-+	for (fd = 0; fd < evlist->nr_fds; ++fd) {
-+		if (evlist->pollfd[fd].revents & revents_and_mask)
-+			continue;
-+
-+		if (fd != nr_fds)
-+			evlist->pollfd[nr_fds] = evlist->pollfd[fd];
-+
-+		++nr_fds;
-+	}
-+
-+	evlist->nr_fds = nr_fds;
-+	return nr_fds;
-+}
-+
- static void perf_evlist__id_hash(struct perf_evlist *evlist,
- 				 struct perf_evsel *evsel,
- 				 int cpu, int thread, u64 id)
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 106de53..1082420 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -84,6 +84,8 @@ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 
- void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
- 
-+int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask);
-+
- struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
- 
- struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
