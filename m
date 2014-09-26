@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955AbaIZTfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:35:05 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:43027 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703AbaIZTfD (ORCPT
+	id S1030181AbaIZTfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:35:21 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:57320 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978AbaIZTfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:35:03 -0400
+	Fri, 26 Sep 2014 15:35:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Subject: [PATCH] mmc: atmel-mci: fix mismatched section on atmci_cleanup_slot
+Date: Fri, 26 Sep 2014 21:34:58 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org
+References: <1411467606-13041-1-git-send-email-pramod.gurav@smartplayin.com> <1411467606-13041-2-git-send-email-pramod.gurav@smartplayin.com>
+In-Reply-To: <1411467606-13041-2-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 12:34:39 -0700
-Message-ID: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
-Subject: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF syscall,
- verifier, testsuite)
-To: David Miller <davem@davemloft.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409262134.58457.arnd@arndb.de>
+X-Provags-ID: V02:K0:nlHdPn/4DEhtRaswddCjD9Np6/9jhdg0nJXlQdDs+hE
+ 0obbUbSihe5YZn0Cz3O1Va8CH49TPnW+c/+YP3Mbl3DlLsVn5R
+ fKUSls9kfop1lE3eVoM5L28e1MO1nq/yZoEqKwzcEsgTUo8Zm9
+ UG/Le9mMh/xGS23+HpT6vqFGF+BpEG4y7omhaSqnTE1RUVr9VP
+ diV9mQ4H58Zh0sBfXRGU2uCfKDF1t4WAgWmImVLaILIhz0MEAh
+ +RTF/lOccg2L5iPiM6StLZIvimtplSjS9v04gs4Gnug2lgSozz
+ nBA75mVMyKswoAKe0byV0R5D2M95X9caOwOo7ibxiKaiRn6e0h
+ DJwGvy4iYkhSTk9+X7Ik=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 12:06 PM, David Miller <davem@davemloft.net> wrote:
-> From: Alexei Starovoitov <ast@plumgrid.com>
-> Date: Fri, 26 Sep 2014 00:16:56 -0700
->
->> v14 -> v15:
->> - got rid of macros with hidden control flow (suggested by David)
->>   replaced macro with explicit goto or return and simplified
->>   where possible (affected patches #9 and #10)
->> - rebased, retested
->
-> Series applied to net-next, thanks.
+As of 528bc7808f4e ("mmc: atmel-mci: Release mmc resources on failure in probe"),
+the atmci_probe() function calls atmci_cleanup_slot in the failure path.
 
-Hi all-
+This causes a new warning whenever the driver is built:
 
-I read through the verifier.  Sorry this email is a little bit late.
-Here are some thoughts, in no particular order.
+WARNING: drivers/mmc/host/built-in.o(.init.text+0xa04): Section mismatch in reference from the function atmci_probe() to the function .exit.text:atmci_cleanup_slot()
+The function __init atmci_probe() references
+a function __exit atmci_cleanup_slot().
 
-Programs should IMO have feature flags.  One such feature would be
-"can use pointers as integers", for example.
+Gcc correctly warns about this function getting dropped in the link stage
+for the built-in case, which would cause undefined behavior when this error
+path is hit. The solution is to simply drop the __exit annotation.
 
-UNKNOWN_VALUE is IMO a crappy type.  I think that it should renamed to
-INTEGER and that a bunch of the things that generate it should be
-errors.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 528bc7808f4e ("mmc: atmel-mci: Release mmc resources on failure in probe")
 
-ALU ops like adding two pointers should IMO be failures.  I don't
-think that they should result in UNKNOWN_VALUE.
-
-I don't like PTR_TO_MAP_VALUE as a type.  I think that there should
-instead be "pointer to (const?) buffer of N bytes".
-
-ARG_PTR_TO_MAP_KEY is odd.  Why do we care what a function does with a
-key?  It just needs to be a big enough buffer, right?
-
-All of the stack spill stuff seems overcomplicated.  Can you just
-disallow unaligned stack access?  Right off the bat, that will delete
-a bunch of code and cut down runtime memory use by nearly a factor of
-eight.
-
-Also, there are no calls to functions written eBPF, right?  If so, why
-not just give each stack slot a *fixed* type for the lifetime of the
-program?  That would be a huge time complexity win, not to mention
-being more comprehensible.  When function calls get added, they'll
-need a whole pile of new infrastructure anyway.
-
-check_call is a mess.  I predict that it will be unmaintainable.
-
-check_ld_abs is messy, IMO.  Can't there be a real type "pointer to
-object of type [type]", where skb would be a type?  Then you could use
-the normal function call logic for skb pointers instead of hardcoded
-crud.
-
-You're doing a depth-first search.  I don't like it.  You need complex
-pruning logic to avoid exponential behavior, and it's not obvious to
-me that pathological programs that cause exponential blowups in the
-verifier don't exist.  Wouldn't it make more sense to do a
-breadth-first search instead and to give each reg/stack slot a
-definite type at each point in the control flow?  You'd need a
-function to find the intersection of two types, but I think that would
-be preferable to the current code that tests whether one type is a
-subset of another.
-
-At some point someone will want loops, and that will open a huge can
-of worms involving explicit typing or type inference.  It might pay to
-add some kind of stack slot (and maybe even register slot) type
-declarations now to get things ready for that.
-
-NB: If this code is actually invoked in net-next when loading a
-filter, please don't push to Linus until there's a convincing argument
-that the verifier has acceptable asymptotic complexity.
-
---Andy
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 772ef5b0e4d5..974626087732 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -2244,7 +2244,7 @@ static int __init atmci_init_slot(struct atmel_mci *host,
+ 	return 0;
+ }
+ 
+-static void __exit atmci_cleanup_slot(struct atmel_mci_slot *slot,
++static void atmci_cleanup_slot(struct atmel_mci_slot *slot,
+ 		unsigned int id)
+ {
+ 	/* Debugfs stuff is cleaned up by mmc core */
