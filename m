@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaIZI5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:57:07 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42632 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753716AbaIZIzw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754414AbaIZIzw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 04:55:52 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:46799 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753959AbaIZIzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:55:49 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,11 +21,10 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v3 5/8] phy: miphy28lp: Add SSC support for SATA
-Date: Fri, 26 Sep 2014 10:54:14 +0200
-Message-Id: <1411721657-9924-6-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH v3 4/8] ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
+Date: Fri, 26 Sep 2014 10:54:13 +0200
+Message-Id: <1411721657-9924-5-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -35,95 +34,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch to tune on/off the ssc on miphy sata setup.
-User can now enable ssc via dt blob, it is useful to reduce
-effects of EMI.
+The MiPHY28lp is a Generic PHY which can serve various SATA, PCIe or
+USB3 devices. The two first ports can be use for either; both SATA, both
+PCIe or one of each in any configuration.
+The Third port is only for USB3.
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- .../devicetree/bindings/phy/phy-miphy28lp.txt      |  1 +
- drivers/phy/phy-miphy28lp.c                        | 34 ++++++++++++++++++++++
- 2 files changed, 35 insertions(+)
+ arch/arm/boot/dts/stih407-b2120.dts | 11 +++++++
+ arch/arm/boot/dts/stih407.dtsi      | 65 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 76 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-index 1ad4433..daa8310 100644
---- a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-+++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
-@@ -39,6 +39,7 @@ Optional properties (port (child) node):
- 			  register.
- - st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
- 			  line).
-+- st,scc-on		: enable ssc to reduce effects of EMI (only for sata or PCIe).
- 
- example:
- 
-diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
-index 1a468d1..7285543 100644
---- a/drivers/phy/phy-miphy28lp.c
-+++ b/drivers/phy/phy-miphy28lp.c
-@@ -200,6 +200,7 @@ struct miphy28lp_phy {
- 	bool osc_force_ext;
- 	bool osc_rdy;
- 	bool px_rx_pol_inv;
-+	bool ssc;
- 
- 	struct reset_control *miphy_rst;
- 
-@@ -550,6 +551,34 @@ static inline void miphy28_usb3_miphy_reset(struct miphy28lp_phy *miphy_phy)
- 	writeb_relaxed(0x00, base + MIPHY_CONF);
- }
- 
-+static void miphy_sata_tune_ssc(struct miphy28lp_phy *miphy_phy)
-+{
-+	u8 val;
+diff --git a/arch/arm/boot/dts/stih407-b2120.dts b/arch/arm/boot/dts/stih407-b2120.dts
+index fe69f92..d0837fb 100644
+--- a/arch/arm/boot/dts/stih407-b2120.dts
++++ b/arch/arm/boot/dts/stih407-b2120.dts
+@@ -74,5 +74,16 @@
+ 			st,i2c-min-scl-pulse-width-us = <0>;
+ 			st,i2c-min-sda-pulse-width-us = <5>;
+ 		};
 +
-+	/* Compensate Tx impedance to avoid out of range values */
-+	/*
-+	 * Enable the SSC on PLL for all banks
-+	 * SSC Modulation @ 31 KHz and 4000 ppm modulation amp
-+	 */
-+	val = readb_relaxed(miphy_phy->base + MIPHY_BOUNDARY_2);
-+	val |= SSC_EN_SW;
-+	writeb_relaxed(val, miphy_phy->base + MIPHY_BOUNDARY_2);
++		miphy28lp_phy: miphy28lp@9b22000 {
 +
-+	val = readb_relaxed(miphy_phy->base + MIPHY_BOUNDARY_SEL);
-+	val |= SSC_SEL;
-+	writeb_relaxed(val, miphy_phy->base + MIPHY_BOUNDARY_SEL);
++			phy_port0: port@9b22000 {
++				st,osc-rdy;
++			};
 +
-+	for (val = 0; val < 3; val++) {
-+		writeb_relaxed(val, miphy_phy->base + MIPHY_CONF);
-+		writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
-+		writeb_relaxed(0x6c, miphy_phy->base + MIPHY_PLL_SBR_3);
-+		writeb_relaxed(0x81, miphy_phy->base + MIPHY_PLL_SBR_4);
-+		writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
-+		writeb_relaxed(0x02, miphy_phy->base + MIPHY_PLL_SBR_1);
-+		writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
-+	}
-+}
-+
- static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
- {
- 	void __iomem *base = miphy_phy->base;
-@@ -585,6 +614,9 @@ static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
- 		writeb_relaxed(val, miphy_phy->base + MIPHY_CONTROL);
- 	}
++			phy_port1: port@9b2a000 {
++				st,osc-force-ext;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index 4f9024f..b8cc9a3 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -259,5 +259,70 @@
  
-+	if (miphy_phy->ssc)
-+		miphy_sata_tune_ssc(miphy_phy);
+ 			status = "disabled";
+ 		};
 +
- 	return 0;
- }
- 
-@@ -1051,6 +1083,8 @@ static int miphy28lp_of_probe(struct device_node *np,
- 	miphy_phy->px_rx_pol_inv =
- 		of_property_read_bool(np, "st,px_rx_pol_inv");
- 
-+	miphy_phy->ssc = of_property_read_bool(np, "st,ssc-on");
++		miphy28lp_phy: miphy28lp@9b22000 {
++			compatible = "st,miphy28lp-phy";
++			st,syscfg = <&syscfg_core>;
++			#address-cells	= <1>;
++			#size-cells	= <1>;
++			ranges;
 +
- 	of_property_read_u32(np, "st,sata-gen", &miphy_phy->sata_gen);
- 	if (!miphy_phy->sata_gen)
- 		miphy_phy->sata_gen = SATA_GEN1;
++			phy_port0: port@9b22000 {
++				reg = <0x9b22000 0xff>,
++				      <0x9b09000 0xff>,
++				      <0x9b04000 0xff>,
++				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
++				      <0x818 0x4>, /* sysctrl MiPHY status*/
++				      <0xe0  0x4>, /* sysctrl PCIe */
++				      <0xec  0x4>; /* sysctrl SATA */
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
++			};
++
++			phy_port1: port@9b2a000 {
++				reg = <0x9b2a000 0xff>,
++				      <0x9b19000 0xff>,
++				      <0x9b14000 0xff>,
++				      <0x118 0x4>,
++				      <0x81c 0x4>,
++				      <0xe4  0x4>,
++				      <0xf0  0x4>;
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
++			};
++
++			phy_port2: port@8f95000 {
++				reg = <0x8f95000 0xff>,
++				      <0x8f90000 0xff>,
++				      <0x11c 0x4>,
++				      <0x820 0x4>;
++				reg-names = "pipew",
++				    "usb3-up",
++				    "miphy-ctrl-glue",
++				    "miphy-status-glue";
++				#phy-cells = <1>;
++
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
++			};
++		};
+ 	};
+ };
 -- 
 1.9.1
 
