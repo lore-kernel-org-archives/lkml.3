@@ -1,225 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140AbaIZU3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:29:20 -0400
-Received: from mail-bn1bon0058.outbound.protection.outlook.com ([157.56.111.58]:31648
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755234AbaIZU3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:29:19 -0400
-Date: Fri, 26 Sep 2014 15:23:07 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Dinh Nguyen <dinguyen@opensource.altera.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH 2/2] socfpga: support suspend to ram
-In-Reply-To: <54257E8C.8000102@opensource.altera.com>
-Message-ID: <alpine.DEB.2.02.1409261519320.1444@atx-linux-37>
-References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-3-git-send-email-atull@opensource.altera.com> <54257E8C.8000102@opensource.altera.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755983AbaIZUdx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:33:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754259AbaIZUdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:33:51 -0400
+Date: Fri, 26 Sep 2014 16:33:26 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Peter Feiner <pfeiner@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] mm: softdirty: unmapped addresses between VMAs are
+ clean
+Message-ID: <20140926203326.GA12422@nhori.bos.redhat.com>
+References: <1410391486-9106-1-git-send-email-pfeiner@google.com>
+ <1410806438-7496-1-git-send-email-pfeiner@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY2PR04CA060.namprd04.prod.outlook.com (10.141.249.178) To
- BL2PR03MB306.namprd03.prod.outlook.com (10.141.68.14)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB306;
-X-Forefront-PRVS: 03468CBA43
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(51704005)(199003)(24454002)(377454003)(479174003)(85852003)(66066001)(76482002)(90102001)(95666004)(46406003)(106356001)(53416004)(86152002)(74502003)(50466002)(21056001)(50986999)(19580395003)(47776003)(15202345003)(101416001)(80022003)(54356999)(4396001)(81542003)(86362001)(83322001)(97736003)(64706001)(33716001)(69596002)(15975445006)(20776003)(92726001)(83506001)(19580405001)(77096002)(107046002)(85306004)(77982003)(83072002)(120916001)(81342003)(92566001)(87976001)(31966008)(99396003)(10300001)(23726002)(105586002)(46102003)(81156004)(102836001)(42186005)(110136001)(74662003)(76176999)(79102003)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB306;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410806438-7496-1-git-send-email-pfeiner@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Dinh Nguyen wrote:
-
-> On 09/24/2014 03:27 PM, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Add code that requests that the sdr controller go into
-> > self-refresh mode.  This code is run from ocram.
-> > 
-> > This patch assumes that u-boot has already configured sdr:
-> >   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
-> >   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
-> >   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
-> > 
-> > How to suspend to ram:
-> >  $ echo enabled > \
-> > /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
-> > 
-> >  $ echo -n mem > /sys/power/state
-> > 
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > ---
-> >  arch/arm/mach-socfpga/Makefile       |    1 +
-> >  arch/arm/mach-socfpga/core.h         |    4 +
-> >  arch/arm/mach-socfpga/pm.c           |  141 ++++++++++++++++++++++++++++++++
-> >  arch/arm/mach-socfpga/self-refresh.S |  148 ++++++++++++++++++++++++++++++++++
-> >  arch/arm/mach-socfpga/socfpga.c      |   10 +++
-> >  5 files changed, 304 insertions(+)
-> >  create mode 100644 arch/arm/mach-socfpga/pm.c
-> >  create mode 100644 arch/arm/mach-socfpga/self-refresh.S
-> > 
-> > diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
-> > index 6dd7a93..0591927 100644
-> > --- a/arch/arm/mach-socfpga/Makefile
-> > +++ b/arch/arm/mach-socfpga/Makefile
-> > @@ -4,3 +4,4 @@
-> >  
-> >  obj-y					:= socfpga.o
-> >  obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
-> > +obj-$(CONFIG_SUSPEND)	+= pm.o self-refresh.o
-> > diff --git a/arch/arm/mach-socfpga/core.h b/arch/arm/mach-socfpga/core.h
-> > index c4a0929..cc1a2fb 100644
-> > --- a/arch/arm/mach-socfpga/core.h
-> > +++ b/arch/arm/mach-socfpga/core.h
-> > @@ -38,6 +38,7 @@ extern void socfpga_sysmgr_init(void);
-> >  
-> >  extern void __iomem *sys_manager_base_addr;
-> >  extern void __iomem *rst_manager_base_addr;
-> > +extern void __iomem *sdr_ctl_base_addr;
-> >  
-> >  extern struct smp_operations socfpga_smp_ops;
-> >  extern char secondary_trampoline, secondary_trampoline_end;
-> > @@ -46,4 +47,7 @@ extern unsigned long cpu1start_addr;
-> >  
-> >  #define SOCFPGA_SCU_VIRT_BASE   0xfffec000
-> >  
-> > +u32 socfpga_sdram_self_refresh(u32 sdr_base, u32 scu_base);
-> > +extern unsigned int socfpga_sdram_self_refresh_sz;
-> > +
-> >  #endif
-> > diff --git a/arch/arm/mach-socfpga/pm.c b/arch/arm/mach-socfpga/pm.c
-> > new file mode 100644
-> > index 0000000..02c3719
-> > --- /dev/null
-> > +++ b/arch/arm/mach-socfpga/pm.c
-> > @@ -0,0 +1,141 @@
-> > +/*
-> > + *  arch/arm/mach-socfpga/pm.c
-> > + *
-> > + * Copyright (C) 2014 Altera Corporation. All rights reserved.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify it
-> > + * under the terms and conditions of the GNU General Public License,
-> > + * version 2, as published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope it will be useful, but WITHOUT
-> > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> > + * more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License along with
-> > + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> > + */
-> > +
-> > +#include <linux/bitops.h>
-> > +#include <linux/init.h>
-> > +#include <linux/io.h>
-> > +#include <linux/of_platform.h>
-> > +#include <linux/suspend.h>
-> > +#include <asm/suspend.h>
-> > +#include <asm/fncpy.h>
-> > +#include "core.h"
-> > +
-> > +/* Pointer to function copied to ocram */
-> > +static u32 (*socfpga_sdram_self_refresh_in_ocram)(u32 sdr_base, u32 scu_base);
-> > +
-> > +/* Round up a pointer address to fix aligment for fncpy() */
-> > +static void *fncpy_align(void *ptr)
-> > +{
-> > +	u32 value = (u32)ptr;
-> > +
-> > +	if ((value & (FNCPY_ALIGN - 1)) != 0)
-> > +		value = ((value & ~(FNCPY_ALIGN - 1)) + FNCPY_ALIGN);
-> > +
-> > +	return (void *)value;
-> > +}
-> > +
-> > +static void *socfpga_init_ocram_exec(void)
-> > +{
-> > +	struct device_node *np;
-> > +	const __be32 *prop;
-> > +	u32 ocram_hwaddr, len;
-> > +	void __iomem  *iomem_exec_ocram;
-> > +	size_t size;
-> > +
-> > +	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
-> > +	if (!np) {
-> > +		pr_err("SOCFPGA: Unable to find mmio-sram in dtb\n");
-> > +		return 0;
-> > +	}
-> > +
-> > +	/* Determine the OCRAM address and size */
-> > +	prop = of_get_property(np, "reg", &size);
-> > +	ocram_hwaddr = be32_to_cpup(prop++);
-> > +	len = be32_to_cpup(prop);
-> > +
-> > +	if (!prop || size < sizeof(*prop)) {
-> > +		pr_err("SOCFPGA: Unable to find OCRAM mapping in dtb\n");
-> > +		return 0;
-> > +	}
-> > +
-> > +	iomem_exec_ocram = __arm_ioremap_exec(ocram_hwaddr, len, 0);
+On Mon, Sep 15, 2014 at 11:40:38AM -0700, Peter Feiner wrote:
+> If a /proc/pid/pagemap read spans a [VMA, an unmapped region, then a
+> VM_SOFTDIRTY VMA], the virtual pages in the unmapped region are reported
+> as softdirty. Here's a program to demonstrate the bug:
 > 
-> The call to __arm_ioremap_exec can fail. Also, this doesn't seem right,
-> what if a good chunk of OCRAM has been used by some other driver in the
-> system? From what I've seen, OCRAM should be using the generic allocator
-> framework.
-
-Good catch.  I will check for this faiure in v2.  Also, yes, use the generic
-allocator framework.
-
+> int main() {
+> 	const uint64_t PAGEMAP_SOFTDIRTY = 1ul << 55;
+> 	uint64_t pme[3];
+> 	int fd = open("/proc/self/pagemap", O_RDONLY);;
+> 	char *m = mmap(NULL, 3 * getpagesize(), PROT_READ,
+> 	               MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+> 	munmap(m + getpagesize(), getpagesize());
+> 	pread(fd, pme, 24, (unsigned long) m / getpagesize() * 8);
+> 	assert(pme[0] & PAGEMAP_SOFTDIRTY);    /* passes */
+> 	assert(!(pme[1] & PAGEMAP_SOFTDIRTY)); /* fails */
+> 	assert(pme[2] & PAGEMAP_SOFTDIRTY);    /* passes */
+> 	return 0;
+> }
 > 
-> > +
-> > +	/* Fix alignment to work with fncpy */
-> > +	iomem_exec_ocram = fncpy_align(iomem_exec_ocram);
-> > +
-> > +	return iomem_exec_ocram;
-> > +}
-> > +
-> > +static int socfpga_setup_ocram_self_refresh(void)
-> > +{
-> > +	void *ocram_addr;
-> > +
-> > +	/* Configure ocram and make it executable */
-> > +	ocram_addr = socfpga_init_ocram_exec();
-> > +	WARN(!ocram_addr, "Unable to initialize ocram for pm");
-> > +	if (!ocram_addr)
-> > +		return -EFAULT;
-> > +
-> > +	/* Copy the code that puts DDR in self refresh to ocram */
-> > +	socfpga_sdram_self_refresh_in_ocram =
-> > +		(void *)fncpy((void *)ocram_addr,
-> > +		      &socfpga_sdram_self_refresh,
-> > +		      socfpga_sdram_self_refresh_sz);
-> > +
-> > +	WARN(!socfpga_sdram_self_refresh_in_ocram,
-> > +	     "could not copy function to ocram");
-> > +	if (!socfpga_sdram_self_refresh_in_ocram)
-> > +		return -EFAULT;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int socfpga_pm_suspend(unsigned long arg)
-> > +{
-> > +	u32 ret;
-> > +
-> > +	ret = socfpga_sdram_self_refresh_in_ocram((u32)sdr_ctl_base_addr,
-> > +						  (u32)socfpga_scu_base_addr);
+> (Note that all pages in new VMAs are softdirty until cleared).
 > 
-> What if sdr_ctl_base_addr is not valid?
-
-I will check for NULL in v2.
-
-Alan
-
+> Tested:
+> 	Used the program given above. I'm going to include this code in
+> 	a selftest in the future.
 > 
-> BR,
-> Dinh
+> Signed-off-by: Peter Feiner <pfeiner@google.com>
+
+I triggered the BUG_ON(is_vm_hugetlb_page(vma)) introduced by this patch,
+when I simply read /proc/pid/pagemap of the process using hugetlb.
+This BUG_ON looks right itself, but find_vma() can find vmas beyond
+the pmd boundary, so checking the overrun is necessary.
+
+Could you test and merge the following change?
+
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Fri, 26 Sep 2014 15:57:39 -0400
+Subject: [PATCH] pagemap: prevent pagemap_pte_range() from overrunning
+
+When the vm_end address of the last vma just before vma(VM_HUGETLB)
+is not aligned to PMD boundary, the while loop in pagemap_pte_range()
+gets vma(VM_HUGETLB) and triggers BUG_ON(is_vm_hugetlb_page(vma)).
+This patch fixes it by checking the overrun.
+
+Fixes: 62c98294410d ("mm: softdirty: unmapped addresses between VMAs are clean")
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 5674675adeae..f2b15da32a7f 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1083,7 +1083,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 				return err;
+ 		}
+ 
+-		if (!vma)
++		if (!vma || vma->vm_start >= end)
+ 			break;
+ 		/*
+ 		 * We can't possibly be in a hugetlb VMA. In general,
+-- 
+1.9.3
+
+Thanks,
+Naoya Horiguchi
+
+
+> ---
 > 
+> v1 -> v2:
+> 	Restructured patch to make logic more clear.
+> ---
+>  fs/proc/task_mmu.c | 61 +++++++++++++++++++++++++++++++++++-------------------
+>  1 file changed, 40 insertions(+), 21 deletions(-)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index dfc791c..2abf37b 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -1020,7 +1020,6 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	spinlock_t *ptl;
+>  	pte_t *pte;
+>  	int err = 0;
+> -	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+>  
+>  	/* find the first VMA at or above 'addr' */
+>  	vma = find_vma(walk->mm, addr);
+> @@ -1034,6 +1033,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  
+>  		for (; addr != end; addr += PAGE_SIZE) {
+>  			unsigned long offset;
+> +			pagemap_entry_t pme;
+>  
+>  			offset = (addr & ~PAGEMAP_WALK_MASK) >>
+>  					PAGE_SHIFT;
+> @@ -1048,32 +1048,51 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  
+>  	if (pmd_trans_unstable(pmd))
+>  		return 0;
+> -	for (; addr != end; addr += PAGE_SIZE) {
+> -		int flags2;
+> -
+> -		/* check to see if we've left 'vma' behind
+> -		 * and need a new, higher one */
+> -		if (vma && (addr >= vma->vm_end)) {
+> -			vma = find_vma(walk->mm, addr);
+> -			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
+> -				flags2 = __PM_SOFT_DIRTY;
+> -			else
+> -				flags2 = 0;
+> -			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
+> +
+> +	while (1) {
+> +		/* End of address space hole, which we mark as non-present. */
+> +		unsigned long hole_end;
+> +
+> +		if (vma)
+> +			hole_end = min(end, vma->vm_start);
+> +		else
+> +			hole_end = end;
+> +
+> +		for (; addr < hole_end; addr += PAGE_SIZE) {
+> +			pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+> +
+> +			err = add_to_pagemap(addr, &pme, pm);
+> +			if (err)
+> +				return err;
+>  		}
+>  
+> -		/* check that 'vma' actually covers this address,
+> -		 * and that it isn't a huge page vma */
+> -		if (vma && (vma->vm_start <= addr) &&
+> -		    !is_vm_hugetlb_page(vma)) {
+> +		if (!vma)
+> +			break;
+> +		/*
+> +		 * We can't possibly be in a hugetlb VMA. In general,
+> +		 * for a mm_walk with a pmd_entry and a hugetlb_entry,
+> +		 * the pmd_entry can only be called on addresses in a
+> +		 * hugetlb if the walk starts in a non-hugetlb VMA and
+> +		 * spans a hugepage VMA. Since pagemap_read walks are
+> +		 * PMD-sized and PMD-aligned, this will never be true.
+> +		 */
+> +		BUG_ON(is_vm_hugetlb_page(vma));
+> +
+> +		/* Addresses in the VMA. */
+> +		for (; addr < min(end, vma->vm_end); addr += PAGE_SIZE) {
+> +			pagemap_entry_t pme;
+>  			pte = pte_offset_map(pmd, addr);
+>  			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
+> -			/* unmap before userspace copy */
+>  			pte_unmap(pte);
+> +			err = add_to_pagemap(addr, &pme, pm);
+> +			if (err)
+> +				return err;
+>  		}
+> -		err = add_to_pagemap(addr, &pme, pm);
+> -		if (err)
+> -			return err;
+> +
+> +		if (addr == end)
+> +			break;
+> +
+> +		vma = find_vma(walk->mm, addr);
+>  	}
+>  
+>  	cond_resched();
+> -- 
+> 2.1.0.rc2.206.gedb03e5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
