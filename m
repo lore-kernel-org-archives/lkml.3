@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaIZKGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:06:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
+	id S1755828AbaIZKLS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:11:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984AbaIZJq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:29 -0400
+	id S1754976AbaIZJq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:28 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
-        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 103/142] xfs: don't zero partial page cache pages during O_DIRECT writes
-Date: Fri, 26 Sep 2014 11:45:14 +0200
-Message-Id: <e00641c38e767943d0cc426063e0f562d6b259cc.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 090/142] mnt: Add tests for unprivileged remount cases that have found to be faulty
+Date: Fri, 26 Sep 2014 11:45:01 +0200
+Message-Id: <4194b9700ce41ff2f7031aa0c6108c2539028ab5.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,64 +22,323 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Mason <clm@fb.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 85e584da3212140ee80fd047f9058bbee0bc00d5 upstream.
+commit db181ce011e3c033328608299cd6fac06ea50130 upstream.
 
-xfs is using truncate_pagecache_range to invalidate the page cache
-during DIO reads.  This is different from the other filesystems who
-only invalidate pages during DIO writes.
+Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
+read-only bind mount read-only in a user namespace the
+MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
+to the remount a read-only mount read-write.
 
-truncate_pagecache_range is meant to be used when we are freeing the
-underlying data structs from disk, so it will zero any partial
-ranges in the page.  This means a DIO read can zero out part of the
-page cache page, and it is possible the page will stay in cache.
+Upon review of the code in remount it was discovered that the code allowed
+nosuid, noexec, and nodev to be cleared.  It was also discovered that
+the code was allowing the per mount atime flags to be changed.
 
-buffered reads will find an up to date page with zeros instead of
-the data actually on disk.
+The first naive patch to fix these issues contained the flaw that using
+default atime settings when remounting a filesystem could be disallowed.
 
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
+To avoid this problems in the future add tests to ensure unprivileged
+remounts are succeeding and failing at the appropriate times.
 
-[dchinner: catch error and warn if it fails. Comment.]
-
-Signed-off-by: Chris Mason <clm@fb.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/xfs/xfs_file.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ tools/testing/selftests/Makefile                   |   1 +
+ tools/testing/selftests/mount/Makefile             |  17 ++
+ .../selftests/mount/unprivileged-remount-test.c    | 242 +++++++++++++++++++++
+ 3 files changed, 260 insertions(+)
+ create mode 100644 tools/testing/selftests/mount/Makefile
+ create mode 100644 tools/testing/selftests/mount/unprivileged-remount-test.c
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 3e0fccf54ed5..d56b136e68fe 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -299,7 +299,16 @@ xfs_file_aio_read(
- 				xfs_rw_iunlock(ip, XFS_IOLOCK_EXCL);
- 				return ret;
- 			}
--			truncate_pagecache_range(VFS_I(ip), pos, -1);
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 9f3eae290900..2d9ab9417289 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -4,6 +4,7 @@ TARGETS += efivarfs
+ TARGETS += kcmp
+ TARGETS += memory-hotplug
+ TARGETS += mqueue
++TARGETS += mount
+ TARGETS += net
+ TARGETS += ptrace
+ TARGETS += timers
+diff --git a/tools/testing/selftests/mount/Makefile b/tools/testing/selftests/mount/Makefile
+new file mode 100644
+index 000000000000..337d853c2b72
+--- /dev/null
++++ b/tools/testing/selftests/mount/Makefile
+@@ -0,0 +1,17 @@
++# Makefile for mount selftests.
 +
-+			/*
-+			 * Invalidate whole pages. This can return an error if
-+			 * we fail to invalidate a page, but this should never
-+			 * happen on XFS. Warn if it does fail.
-+			 */
-+			ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+			WARN_ON_ONCE(ret);
-+			ret = 0;
- 		}
- 		xfs_rw_ilock_demote(ip, XFS_IOLOCK_EXCL);
- 	}
++all: unprivileged-remount-test
++
++unprivileged-remount-test: unprivileged-remount-test.c
++	gcc -Wall -O2 unprivileged-remount-test.c -o unprivileged-remount-test
++
++# Allow specific tests to be selected.
++test_unprivileged_remount: unprivileged-remount-test
++	@if [ -f /proc/self/uid_map ] ; then ./unprivileged-remount-test ; fi
++
++run_tests: all test_unprivileged_remount
++
++clean:
++	rm -f unprivileged-remount-test
++
++.PHONY: all test_unprivileged_remount
+diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
+new file mode 100644
+index 000000000000..1b3ff2fda4d0
+--- /dev/null
++++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
+@@ -0,0 +1,242 @@
++#define _GNU_SOURCE
++#include <sched.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/mount.h>
++#include <sys/wait.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <grp.h>
++#include <stdbool.h>
++#include <stdarg.h>
++
++#ifndef CLONE_NEWNS
++# define CLONE_NEWNS 0x00020000
++#endif
++#ifndef CLONE_NEWUTS
++# define CLONE_NEWUTS 0x04000000
++#endif
++#ifndef CLONE_NEWIPC
++# define CLONE_NEWIPC 0x08000000
++#endif
++#ifndef CLONE_NEWNET
++# define CLONE_NEWNET 0x40000000
++#endif
++#ifndef CLONE_NEWUSER
++# define CLONE_NEWUSER 0x10000000
++#endif
++#ifndef CLONE_NEWPID
++# define CLONE_NEWPID 0x20000000
++#endif
++
++#ifndef MS_RELATIME
++#define MS_RELATIME (1 << 21)
++#endif
++#ifndef MS_STRICTATIME
++#define MS_STRICTATIME (1 << 24)
++#endif
++
++static void die(char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	vfprintf(stderr, fmt, ap);
++	va_end(ap);
++	exit(EXIT_FAILURE);
++}
++
++static void write_file(char *filename, char *fmt, ...)
++{
++	char buf[4096];
++	int fd;
++	ssize_t written;
++	int buf_len;
++	va_list ap;
++
++	va_start(ap, fmt);
++	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
++	va_end(ap);
++	if (buf_len < 0) {
++		die("vsnprintf failed: %s\n",
++		    strerror(errno));
++	}
++	if (buf_len >= sizeof(buf)) {
++		die("vsnprintf output truncated\n");
++	}
++
++	fd = open(filename, O_WRONLY);
++	if (fd < 0) {
++		die("open of %s failed: %s\n",
++		    filename, strerror(errno));
++	}
++	written = write(fd, buf, buf_len);
++	if (written != buf_len) {
++		if (written >= 0) {
++			die("short write to %s\n", filename);
++		} else {
++			die("write to %s failed: %s\n",
++				filename, strerror(errno));
++		}
++	}
++	if (close(fd) != 0) {
++		die("close of %s failed: %s\n",
++			filename, strerror(errno));
++	}
++}
++
++static void create_and_enter_userns(void)
++{
++	uid_t uid;
++	gid_t gid;
++
++	uid = getuid();
++	gid = getgid();
++
++	if (unshare(CLONE_NEWUSER) !=0) {
++		die("unshare(CLONE_NEWUSER) failed: %s\n",
++			strerror(errno));
++	}
++
++	write_file("/proc/self/uid_map", "0 %d 1", uid);
++	write_file("/proc/self/gid_map", "0 %d 1", gid);
++
++	if (setgroups(0, NULL) != 0) {
++		die("setgroups failed: %s\n",
++			strerror(errno));
++	}
++	if (setgid(0) != 0) {
++		die ("setgid(0) failed %s\n",
++			strerror(errno));
++	}
++	if (setuid(0) != 0) {
++		die("setuid(0) failed %s\n",
++			strerror(errno));
++	}
++}
++
++static
++bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
++{
++	pid_t child;
++
++	child = fork();
++	if (child == -1) {
++		die("fork failed: %s\n",
++			strerror(errno));
++	}
++	if (child != 0) { /* parent */
++		pid_t pid;
++		int status;
++		pid = waitpid(child, &status, 0);
++		if (pid == -1) {
++			die("waitpid failed: %s\n",
++				strerror(errno));
++		}
++		if (pid != child) {
++			die("waited for %d got %d\n",
++				child, pid);
++		}
++		if (!WIFEXITED(status)) {
++			die("child did not terminate cleanly\n");
++		}
++		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
++	}
++
++	create_and_enter_userns();
++	if (unshare(CLONE_NEWNS) != 0) {
++		die("unshare(CLONE_NEWNS) failed: %s\n",
++			strerror(errno));
++	}
++
++	if (mount("testing", "/tmp", "ramfs", mount_flags, NULL) != 0) {
++		die("mount of /tmp failed: %s\n",
++			strerror(errno));
++	}
++
++	create_and_enter_userns();
++
++	if (unshare(CLONE_NEWNS) != 0) {
++		die("unshare(CLONE_NEWNS) failed: %s\n",
++			strerror(errno));
++	}
++
++	if (mount("/tmp", "/tmp", "none",
++		  MS_REMOUNT | MS_BIND | remount_flags, NULL) != 0) {
++		/* system("cat /proc/self/mounts"); */
++		die("remount of /tmp failed: %s\n",
++		    strerror(errno));
++	}
++
++	if (mount("/tmp", "/tmp", "none",
++		  MS_REMOUNT | MS_BIND | invalid_flags, NULL) == 0) {
++		/* system("cat /proc/self/mounts"); */
++		die("remount of /tmp with invalid flags "
++		    "succeeded unexpectedly\n");
++	}
++	exit(EXIT_SUCCESS);
++}
++
++static bool test_unpriv_remount_simple(int mount_flags)
++{
++	return test_unpriv_remount(mount_flags, mount_flags, 0);
++}
++
++static bool test_unpriv_remount_atime(int mount_flags, int invalid_flags)
++{
++	return test_unpriv_remount(mount_flags, mount_flags, invalid_flags);
++}
++
++int main(int argc, char **argv)
++{
++	if (!test_unpriv_remount_simple(MS_RDONLY|MS_NODEV)) {
++		die("MS_RDONLY malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NODEV)) {
++		die("MS_NODEV malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NOSUID|MS_NODEV)) {
++		die("MS_NOSUID malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NOEXEC|MS_NODEV)) {
++		die("MS_NOEXEC malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_STRICTATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODEV,
++				       MS_STRICTATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_STRICTATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount(MS_STRICTATIME|MS_NODEV, MS_NODEV,
++				 MS_NOATIME|MS_NODEV))
++	{
++		die("Default atime malfunctions\n");
++	}
++	return EXIT_SUCCESS;
++}
 -- 
 2.1.0
 
