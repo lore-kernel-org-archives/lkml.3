@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaIZJ1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:27:50 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64725 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548AbaIZJ1s (ORCPT
+	id S1754050AbaIZJ3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:29:30 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49528 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaIZJ32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:27:48 -0400
-Message-ID: <54253195.5040003@linaro.org>
-Date: Fri, 26 Sep 2014 10:27:49 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 26 Sep 2014 05:29:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
+Date: Fri, 26 Sep 2014 11:28:38 +0200
+Message-ID: <2497501.Mvb1tbCjLR@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140926084019.GJ5182@n2100.arm.linux.org.uk>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <201409252117.19754.arnd@arndb.de> <20140926084019.GJ5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Carlo Caione <carlo@caione.org>,
-        =?UTF-8?B?S3J6eXN6dG9mIEhhxYJhc2E=?= <khalasa@piap.pl>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-References: <20140926112344.3ee87d2f@canb.auug.org.au> <20140926081804.GH5182@n2100.arm.linux.org.uk>
-In-Reply-To: <20140926081804.GH5182@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7wYnyCyRH2k48ac7AhSPP5s4tNVVDdawi02hbsj7egi
+ IRNsNwFRZUMUEVYxBBBj6NFA0BsZSRR3ssnNU9cwXjPlHdTDX4
+ n1/ymsqAl1662vHdXmBX5mfDSZgfvFJ3DiUPzE0ZXWByRoDTi+
+ aE8O6nkS0ZZAZlkIDzLYNc8ukp7WEp4i4RLd8M7TmbK6uUFG3M
+ eZX9h67cyVlVR/5Rb2vlqds5CB0DKaMpIWMhUM3TlARNxEpl84
+ Eq1swAdQAe7g5hlIzHBotnRQDSR5ytQdpmj7+uU0Fe96APuMHx
+ RQg/VtNlz66mVhsJBu4JnVk5BfGjLJ4c7RYDGqeKS4WQzwvoPt
+ 3/WnJd5DrxIbkvxBcTI4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 09:18, Russell King - ARM Linux wrote:
-> On Fri, Sep 26, 2014 at 11:23:44AM +1000, Stephen Rothwell wrote:
->> Hi all,
->>
->> Today's linux-next merge of the arm-soc tree got a conflict in
->> arch/arm/Kconfig.debug between commits 0889a9e35bd3 ("ARM: 8142/1:
->> ks8695: Migrate debug_ll macros to shared directory"), e38c399ca584
->> ("ARM: 8144/2: netx: Migrate DEBUG_LL macros to shared directory"),
->> 6741cacfa3f1 ("ARM: 8145/1: sa1100: Migrate DEBUG_LL macros to shared
->> directory") and debf843bf7ee ("ARM: 8146/1: Seperate DEBUG_UART_PHYS
->> from DEBUG_LL on EP93XX") from the arm tree and commits d8a00916b303
->> ("ARM: meson: debug: add debug UART for earlyprintk support"),
->> b125170a39ea ("CNS3xxx: Fix debug UART") and b51312bebfa4 ("ARM:
->> BCM63XX: add low-level UART debug support") from the arm-soc tree.
->>
->> I fixed it up (hopefully - see below) and can carry the fix as
->> necessary (no action is required).
->>
->> You may be able to clean some of this up by using intermediate config
->> symbols that are selected by the low level symbols and depended upon by
->> the higher level config symbols.
+On Friday 26 September 2014 09:40:19 Russell King - ARM Linux wrote:
 > 
-> Actually, I'll drop the patch set I have.  I didn't spot this earlier,
-> but people seem to have a hard time sorting stuff numerically:
-> 
->         default 0xffd82340 if ARCH_IOP13XX
-> +       default 0xfffb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-> +       default 0xfffb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-> +       default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
->         default 0xfff36000 if DEBUG_HIGHBANK_UART
+> How would a 32-bit architecture know whether it should read the least
+> significant 32-bit or the most significant 32-bit part of the 64-bit
+> register first.  What would be right for one driver may not ben correct
+> for another.  Hence, this decision should only be made by the driver
+> wanting the accessor, and not having the accessor symbol defined should
+> be the trigger for the driver to handle the problem themselves.
 
-Oops. This is disappointing from my point-of-view but there's no one to
-blame but me.
+Some 32-bit architectures can trigger 64-bit bus cycles using well
+defined accesses using register pairs. Meta seems to fit into this
+category:
 
-I have fixed this in my tree and will requeue for 3.19.
+static inline u64 __raw_readq(const volatile void __iomem *addr)
+{
+       u64 ret;
+       asm volatile("GETL %0,%t0,[%1]"
+                    : "=da" (ret)
+                    : "da" (addr)
+                    : "memory");
+       return ret;
+}
 
+Most other architectures I think cannot do this however, and would
+turn the access into two separate bus cycles, which in addition to
+the problem you mentioned could also result in side-effects from
+doing an access at the wrong offset, so we definitely can't rely
+on having these functions.
 
-> It also looks like the same is true for arm-soc:
-> 
->> @@@ -1174,9 -1133,7 +1213,10 @@@
->>   	default 0x50008000 if DEBUG_S3C24XX_UART && (DEBUG_S3C_UART2 || \
->>   				DEBUG_S3C2410_UART2)
->>   	default 0x7c0003f8 if FOOTBRIDGE
->>  +	default 0x80010000 if DEBUG_SA1100_UART1
->>  +	default 0x80030000 if DEBUG_SA1100_UART2
->>  +	default 0x80050000 if DEBUG_SA1100_UART3
->> + 	default 0x78000000 if DEBUG_CNS3XXX
-> 
-> Last time I checked, 0x78000000 comes before 0x7c0003f8.
-> 
-
+	Arnd
