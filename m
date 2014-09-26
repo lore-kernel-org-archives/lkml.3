@@ -1,80 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaIZWmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 18:42:20 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:59746 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565AbaIZWmS (ORCPT
+	id S1756086AbaIZWsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 18:48:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42735 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763AbaIZWr6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 18:42:18 -0400
+	Fri, 26 Sep 2014 18:47:58 -0400
+Date: Fri, 26 Sep 2014 23:47:52 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v12 08/12] PCI: OF: Introduce helper function for
+ retrieving PCI domain numbers
+Message-ID: <20140926224752.GB22030@e106497-lin.cambridge.arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-9-git-send-email-Liviu.Dudau@arm.com>
+ <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
+ <20140926212052.GA6030@borg.dudau.co.uk>
+ <CAL_JsqKJ6bfPuOofo4grVm3qW_WOpUzcS1juZvHxZdFyyF_19A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzQF+3uWFWmj5nSdYoJfo0W2F0wkvoyc4pP--EH3O_jYA@mail.gmail.com>
-References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
- <CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
- <CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
- <CAMEtUux-WFOGABTrWW=BGUstE=Zz6agXTGCGrRJtNXDfRmx-5A@mail.gmail.com>
- <CALCETrVLtJOYkHwsmwueZ7jsSgrNED564W+m4FmMZJZL-836mg@mail.gmail.com>
- <CAMEtUuxq7oNmDAHZ+1t4Vd-QhW6SV7eoM_juxXGEDJBF3Nfu6A@mail.gmail.com>
- <CALCETrWcmZVmRZARM_s9S-zZ4Xm_TcxRrzJWGwL0O9ySmVgr5A@mail.gmail.com> <CAMEtUuzQF+3uWFWmj5nSdYoJfo0W2F0wkvoyc4pP--EH3O_jYA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 15:41:56 -0700
-Message-ID: <CALCETrUP=LE2QNzYL8LCukeuWeumOn0bm0eqYscc7GJqq45oYA@mail.gmail.com>
-Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
- syscall, verifier, testsuite)
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAL_JsqKJ6bfPuOofo4grVm3qW_WOpUzcS1juZvHxZdFyyF_19A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 26 Sep 2014 22:47:54.0094 (UTC) FILETIME=[E8A0A0E0:01CFD9DB]
+X-MC-Unique: 114092623475500301
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 3:26 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Sep 26, 2014 at 3:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Sep 26, 2014 at 3:03 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> On Fri, Sep 26, 2014 at 2:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>
->>>> Can't you just disallow the 1-byte write to the stack?
->>>
->>> of course not.
->>> That would be extremely limiting to users.
->>> Can you actually see yourself living with stack that only
->>> allows 8-byte writes/reads?
->>> The stack usage will increase a lot, since all char/short
->>> stack variables will become 8-byte...
->>
->> How about requiring that sub-8-byte stack accesses only be to integer slots?
->
-> you mean to reject the sub-8-byte write early if it's going
-> into space where pointers were stored?
-> That will limit stack reuse.
-> gcc/llvm generate code where the same stack location
-> is used by different variables during life of the function.
-> So if I reject the write early, it will break otherwise valid
-> programs.
+On Fri, Sep 26, 2014 at 10:53:26PM +0100, Rob Herring wrote:
+> On Fri, Sep 26, 2014 at 4:20 PM,  <liviu@dudau.co.uk> wrote:
+> > On Fri, Sep 26, 2014 at 01:20:39PM -0500, Rob Herring wrote:
+> >> On Tue, Sep 23, 2014 at 2:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> >> > Add pci_get_new_domain_nr() to allocate a new domain number
+> >> > and of_get_pci_domain_nr() to retrieve the PCI domain number
+> >> > of a given device from DT. Host bridge drivers or architecture
+> >> > specific code can choose to implement their PCI domain number
+> >> > policy using these two functions.
+> >> >
+> >> > Using of_get_pci_domain_nr() guarantees a stable PCI domain
+> >> > number on every boot provided that all host bridge controllers
+> >> > are assigned a number in the device tree using "linux,pci-domain"
+> >> > property. Mix use of pci_get_new_domain_nr() and of_get_pci_domain_nr()
+> >> > is not recommended as it can lead to potentially conflicting
+> >> > domain numbers being assigned to root busses behind different
+> >> > host bridges.
+> >> >
+> >> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> >> > Cc: Arnd Bergmann <arnd@arndb.de>
+> >> > Cc: Grant Likely <grant.likely@linaro.org>
+> >> > Cc: Rob Herring <robh+dt@kernel.org>
+> >> > Cc: Catalin Marinas <catalin.marinas@arm.com>
+> >> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> >>
+> >> Looks pretty good, but a couple of comments that can be addressed as
+> >> follow-up patches.
+> >>
+> >> > ---
+> >> >  drivers/of/of_pci.c    | 25 +++++++++++++++++++++++++
+> >> >  drivers/pci/pci.c      |  9 +++++++++
+> >> >  include/linux/of_pci.h |  7 +++++++
+> >> >  include/linux/pci.h    |  3 +++
+> >> >  4 files changed, 44 insertions(+)
+> >> >
+> >> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> >> > index 8481996..82d172f 100644
+> >> > --- a/drivers/of/of_pci.c
+> >> > +++ b/drivers/of/of_pci.c
+> >> > @@ -89,6 +89,31 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
+> >> >  }
+> >> >  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
+> >> >
+> >> > +/**
+> >> > + * This function will try to obtain the host bridge domain number by
+> >> > + * finding a property called "linux,pci-domain" of the given device node.
+> >> > + *
+> >> > + * @node: device tree node with the domain information
+> >> > + *
+> >> > + * Returns the associated domain number from DT in the range [0-0xffff], or
+> >> > + * a negative value if the required property is not found.
+> >> > + */
+> >> > +int of_get_pci_domain_nr(struct device_node *node)
+> >> > +{
+> >> > +       const __be32 *value;
+> >> > +       int len;
+> >> > +       u16 domain;
+> >> > +
+> >> > +       value = of_get_property(node, "linux,pci-domain", &len);
+> >>
+> >> This needs to be documented.
+> >
+> > I would say needs agreed on *and* documented.
+> 
+> I thought Bjorn already applied the series. Who's agreement are you
+> waiting for specifically.
 
-I think that a sub-8-byte write to an integer slot should leave it as
-an integer and a sub-8-byte write to a non-integer slot should turn
-that slot into an integer (if conversions to integer are permitted) or
-be rejected otherwise.  gcc/llvm could emit an 8-byte write first, as
-needed, to make this valid.
+Looks like he only applied about 60% of the series.
 
-Alternatively, an integer stack slot could have a bitmask indicating
-which bytes are valid.
+I'm not waiting on anyones specifig agreement, just general agreement.
+Jason Gunthrope have initially suggested using pci-domain alias which
+you don't like, now I'm using "linux,pci-domain" property which you've
+ACKed, I wonder if I need to give people more time to catch up to the
+fact?
 
---Andy
+> 
+> >>
+> >> > +       if (!value || len < sizeof(*value))
+> >> > +               return -EINVAL;
+> >> > +
+> >> > +       domain = (u16)be32_to_cpup(value);
+> >>
+> >> of_property_read_u32 would not work here?
+> >
+> > It should, I guess, but I want to limit the domain number range to 16 bits.
+> 
+> Okay, but it would still be fewer lines to use of_property_read_u32
+> and then cast it. You could use the u16 variant and make the property
+> be defined to be 16-bit in the documentation.
+
+True. Will do.
+
+Best regards,
+Liviu
+
+> 
+> Rob
+> 
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
