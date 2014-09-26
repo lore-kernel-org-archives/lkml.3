@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230AbaIZKjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:39:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39354 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672AbaIZKjT (ORCPT
+	id S1756587AbaIZKkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:40:11 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:63147 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaIZKkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:39:19 -0400
-Date: Fri, 26 Sep 2014 12:38:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yijing Wang <wangyijing@huawei.com>
-cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 06/22] PCI/MSI: Introduce weak arch_find_msi_chip()
- to find MSI chip
-In-Reply-To: <5424D30A.6040900@huawei.com>
-Message-ID: <alpine.DEB.2.11.1409261236160.4567@nanos>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-7-git-send-email-wangyijing@huawei.com> <alpine.DEB.2.10.1409251220570.4604@nanos> <5424D30A.6040900@huawei.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 26 Sep 2014 06:40:09 -0400
+Date: Fri, 26 Sep 2014 05:40:05 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Mel Gorman <mgorman@suse.de>,
+        Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        "Maarten Lankhorst" <maarten.lankhorst@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickens <hughd@google.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: page allocator bug in 3.16?
+Message-ID: <20140926054005.5c7985c0@as>
+In-Reply-To: <542512AD.9070304@vmware.com>
+References: <54246506.50401@hurleysoftware.com>
+	<20140925143555.1f276007@as>
+	<5424AAD0.9010708@hurleysoftware.com>
+	<542512AD.9070304@vmware.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Yijing Wang wrote:
-> On 2014/9/25 18:38, Thomas Gleixner wrote:
-> > On Thu, 25 Sep 2014, Yijing Wang wrote:
-> > 
-> >> Introduce weak arch_find_msi_chip() to find the match msi_chip.
-> >> Currently, MSI chip associates pci bus to msi_chip. Because in
-> >> ARM platform, there may be more than one MSI controller in system.
-> >> Associate pci bus to msi_chip help pci device to find the match
-> >> msi_chip and setup MSI/MSI-X irq correctly. But in other platform,
-> >> like in x86. we only need one MSI chip, because all device use
-> >> the same MSI address/data and irq etc. So it's no need to associate
-> >> pci bus to MSI chip, just use a arch function, arch_find_msi_chip()
-> >> to return the MSI chip for simplicity. The default weak
-> >> arch_find_msi_chip() used in ARM platform, find the MSI chip
-> >> by pci bus.
-> > 
-> > This is really backwards. On one hand you try to get rid of the weak
-> > arch functions zoo and then you invent new ones for no good
-> > reason. Why can't x86 store the chip in the pci bus?
-> > 
-> > Looking deeper, I'm questioning the whole notion of different
-> > msi_chips. Are this really different MSI controllers with a different
-> > feature set or are this defacto multiple instances of the same
-> > controller which just need a different data set?
+On Fri, 26 Sep 2014 09:15:57 +0200
+Thomas Hellstrom <thellstrom@vmware.com> wrote:
+
+> On 09/26/2014 01:52 AM, Peter Hurley wrote:
+> > On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
+> >> There are six ttm patches queued for 3.16.4:
+> >>
+> >> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
+> >> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
+> >> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
+> >> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
+> >> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
+> >> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
+> > Thanks for info, Chuck.
+> >
+> > Unfortunately, none of these fix TTM dma allocation doing CMA dma allocation,
+> > which is the root problem.
+> >
+> > Regards,
+> > Peter Hurley
 > 
-> MSI chip in this series is to setup MSI irq, including IRQ allocation, Map,
-> compose MSI msg ..., in different platform, many arch specific MSI irq details in it.
-> It's difficult to extract the common data and code.
+> The problem is not really in TTM but in CMA, There was a guy offering to
+> fix this in the CMA code but I guess he didn't probably because he
+> didn't receive any feedback.
 > 
-> I have a plan to rework MSI related irq_chips in kernel, PCI and Non-PCI, currently,
-> HPET, DMAR and PCI have their own irq_chip and MSI related functions, write_msi_msg(),
-> mask_msi_irq(), etc... I want to extract the common data set for that, so we can
-> remove lots of unnecessary MSI code.
 
-That makes sense. Can you please make sure that this does not conflict
-with the ongoing work Jiang is doing in the x86 irq area with
-hierarchical irqdomains to distangle layered levels like MSI from the
-underlying vector/irqremap mechanics.
-
-Thanks,
-
-	tglx
+Yeah, the "solution" to this problem seems to be "don't enable CMA on
+x86". Maybe it should even be disabled in the config system.
