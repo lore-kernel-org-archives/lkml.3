@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149AbaIZOAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:00:21 -0400
-Received: from mga03.intel.com ([134.134.136.65]:20373 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754676AbaIZOAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:00:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="609109450"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFT v2 03/24] x86, irq: Save destination CPU ID in irq_cfg
-Date: Fri, 26 Sep 2014 22:02:04 +0800
-Message-Id: <1411740145-30626-4-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1755280AbaIZOAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:00:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42861 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755169AbaIZOAa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:00:30 -0400
+Message-ID: <54257178.8010900@arm.com>
+Date: Fri, 26 Sep 2014 15:00:24 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>
+Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org> <542303DF.8010606@arm.com> <CAKfTPtB3-M+pXaurDeWkWGNJ3_mU-FN+EnshGE-eg_r41Hppag@mail.gmail.com> <54246ACE.1080502@arm.com> <CAKfTPtAHP_U=C4s6MO-zcJkaEwJB_0VuZ=D6JnTYTeEt_EtBXQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtAHP_U=C4s6MO-zcJkaEwJB_0VuZ=D6JnTYTeEt_EtBXQ@mail.gmail.com>
+X-OriginalArrivalTime: 26 Sep 2014 14:00:24.0717 (UTC) FILETIME=[3820F3D0:01CFD992]
+X-MC-Unique: 114092615002702401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cache destination CPU APIC ID into struct irq_cfg when assigning vector
-for interrupt. Upper layer just needs to read the cached APIC ID instead
-of calling apic->cpu_mask_to_apicid_and(), it helps to hide APIC driver
-details from IOAPIC/HPET/MSI drivers..
+On 26/09/14 13:39, Vincent Guittot wrote:
+> On 25 September 2014 21:19, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>> On 25/09/14 09:35, Vincent Guittot wrote:
+> 
+> [snip]
+> 
+>>>>
+>>>> In case sgs->group_type is group_overloaded you could set
+>>>> sgs->group_out_of_capacity to 1 without calling group_is_overloaded again.
+>>>
+>>> I prefer to keep sgs->group_out_of_capacity = group_is_overloaded(sgs,
+>>> env) and use it in group_classify in case of future changes in the
+>>> classification order
+>>
+>> Ok, but than group_is_overloaded is called twice at the end of
+>> update_sg_lb_stats with exactly the same result. Looks weird in my traces.
+> 
+> sorry i don't catch your point.
+> group_is_overloaded() is called once for group_out_of_capacity which
+> is then used in group_classify so it should be called only once
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/hw_irq.h |    1 +
- arch/x86/kernel/apic/vector.c |    6 ++++++
- 2 files changed, 7 insertions(+)
+You're right, I made a mistake in my local setup while replacing this
+patch with the new version. Problem doesn't exist any more.
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 7624fffc2822..3d51d74d6c01 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -116,6 +116,7 @@ struct irq_data;
- struct irq_cfg {
- 	cpumask_var_t		domain;
- 	cpumask_var_t		old_domain;
-+	unsigned int		dest_apicid;
- 	u8			vector;
- 	u8			move_in_progress : 1;
- #ifdef CONFIG_IRQ_REMAP
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 7562cb15b3bd..5d3fd8f840db 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -188,6 +188,12 @@ next:
- 	}
- 	free_cpumask_var(tmp_mask);
- 
-+	if (!err) {
-+		/* cache destination APIC IDs into cfg->dest_apicid */
-+		err = apic->cpu_mask_to_apicid_and(mask, cfg->domain,
-+						   &cfg->dest_apicid);
-+	}
-+
- 	return err;
- }
- 
--- 
-1.7.10.4
+> 
+>>
+>>>
+>> [...]
+>>
+>>
+> 
+
 
