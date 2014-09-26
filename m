@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670AbaIZHBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:01:12 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39987 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaIZHBL (ORCPT
+	id S1753781AbaIZHCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:02:10 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:58945 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123AbaIZHCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:01:11 -0400
-Message-ID: <54250F35.8060306@linaro.org>
-Date: Fri, 26 Sep 2014 09:01:09 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 26 Sep 2014 03:02:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com,
+        alexandre.belloni@free-electrons.com, p.zabel@pengutronix.de,
+        jszhang@marvell.com, sebastian.hesselbarth@gmail.com
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Date: Fri, 26 Sep 2014 09:01:49 +0200
+Message-ID: <202048167.dt5r3yRThs@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140926002339.GB3026@peterchendt>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <3696520.MDUrkdjfGZ@wuerfel> <20140926002339.GB3026@peterchendt>
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, shawn.guo@freescale.com,
-        kernel@pengutronix.de, tglx@linutronix.de
-CC: festevam@gmail.com, jingchang.lu@freescale.com, bpringlemeir@nbsps.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] ARM: vf610: Fix/add clocksource
-References: <1411575610-20895-1-git-send-email-stefan@agner.ch>
-In-Reply-To: <1411575610-20895-1-git-send-email-stefan@agner.ch>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:PhV22PjMDaelHrSAhOe7SIhIWHiBNSUqqrrCQvZarzF
+ KVXx6N/LRMditS4eRP0VeWKIsxHgZN0qn60r2uA1hUp1QQ1Fhs
+ p1ApjG/QBHekFb8TYUJeqBCyIvkxcAKj/w47fpQMTzDe4kbHYt
+ Mobxx0I7tRHFZwUIfxnH7kpMes4SgotxoSj3QRJh2EE1QxrPye
+ MNLiIeA0tdUKoTL4Dvh8VG+f/5I6I1bac5oFBwhCqxODLBkwx7
+ H1XBr8E67KbfkzrsLAR1ab1gOSJ+eEquO6DMSmAdp8VfWhqmUC
+ KGWZteF3jZVTLPqPbVG47N7PNKzrCWNIPguN74VCk2kTMQVskR
+ Bt9OeonIhsJq6/TjN64E=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 06:20 PM, Stefan Agner wrote:
-> This patchset came out of need for a clocksource which supports shutdown.
-> In the first version I proposed to just replace the current clocksource
-> with the ARM Global Timer and even proposed to remove the PIT clocksource
-> driver. But Bill Pringlemeir brought up a reasonable point why we should
-> keep the PIT clocksource.
->
-> Since we need shutdown support for suspend/resume, I added another patch
-> which fixes shutdown functionality for the PIT driver. Now it's possible
-> to use suspend/resume functionality with each of the two clocksources.
->
-> Changes in v2:
-> - Added shutdown support for PIT clocksource (and hence clocksource
->    maintainers as receipient).
-> - Create Kconfig entries which allow to choose between the two
->    clocksources
-> - Clarified commit message
-> - Renamed device tree node to "timer"
->
+On Friday 26 September 2014 08:23:40 Peter Chen wrote:
+> In current chipidea structure, the parent (glue layer) driver will not be
+> used for dma, udc/host driver uses dma mask from child (core layer), at core
+> layer we will do:
+> 
+> 
+>         pdev->dev.dma_mask = dev->dma_mask; /* this device is parent */
+>         dma_set_coherent_mask(&pdev->dev, dev->coherent_dma_mask);
+> 
+> Would you suggestion us a suitable way? Or it is ok we use just Antoine's way that
+> call dma_coerce_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32)) at parent
+> driver no matter dt or non-dt? Thanks.
 
-Hi Stefan,
+dma_coerce_mask_and_coherent is not ok, it will force a dma mask that is
+unrelated to the actual requirements of the hardware.
 
-I will take the patch 1/3 and let the other patches to be acked-by or 
-picked in another tree.
+I think the best way would be to never use the child device pointer for
+DMA operations, just use a pointer to the parent device and make the
+child dev->dma_mask pointer NULL to ensure all DMA operations fail.
 
-Thanks
-   -- Daniel
-
-> Stefan Agner (3):
->    clocksource: vf_pit_timer: Support shutdown mode
->    ARM: dts: vf610: Add ARM Global Timer
->    ARM: vf610: Add ARM Global Timer clocksource option
->
->   arch/arm/boot/dts/vf610.dtsi       |  8 ++++++++
->   arch/arm/mach-imx/Kconfig          | 19 ++++++++++++++++++-
->   drivers/clocksource/vf_pit_timer.c |  5 +++++
->   3 files changed, 31 insertions(+), 1 deletion(-)
->
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+	Arnd
