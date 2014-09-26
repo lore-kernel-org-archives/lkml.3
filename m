@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaIZUX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:23:28 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47959 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047AbaIZUX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:23:27 -0400
-Date: Fri, 26 Sep 2014 21:23:22 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mikhail Efremov <sem@altlinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Sage Weil <sage@inktank.com>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20140926202322.GA11829@ZenIV.linux.org.uk>
-References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
- <20140924185521.GC7996@ZenIV.linux.org.uk>
- <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
- <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
+	id S1756249AbaIZUXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:23:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53053 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755047AbaIZUXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:23:31 -0400
+Date: Fri, 26 Sep 2014 22:23:24 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: David Riley <davidriley@chromium.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Marc Carino <marc.ceeeee@gmail.com>, Anders Berg <anders.berg@lsi.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jamie Lentin <jm@lentin.co.uk>, Doug Anderson <dianders@chromium.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] power: Add simple gpio-restart driver
+Message-ID: <20140926202323.GA27687@earth.universe>
+References: <1409167431-21155-1-git-send-email-davidriley@chromium.org>
+ <1409167431-21155-2-git-send-email-davidriley@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
 Content-Disposition: inline
-In-Reply-To: <20140925044601.GL7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409167431-21155-2-git-send-email-davidriley@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 05:46:01AM +0100, Al Viro wrote:
 
-> I really wonder if it's possible to get d_rehash() hitting the victim of
-> (non-exchange) __d_move().  _Then_ this patch (as well as the historical
-> behaviour it restores, all way back to 2.5, if not 2.3) would, indeed,
-> be buggy.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-More fun: what's going on in ceph_handle_notrace_create()?  AFAICS, this
-        struct dentry *result = ceph_lookup(dir, dentry, 0);
+Hi,
 
-        if (result && !IS_ERR(result)) {
-                /*
-                 * We created the item, then did a lookup, and found
-                 * it was already linked to another inode we already
-                 * had in our cache (and thus got spliced).  Link our
-                 * dentry to that inode, but don't hash it, just in  
-                 * case the VFS wants to dereference it.
-                 */
-                BUG_ON(!result->d_inode);
-                d_instantiate(dentry, result->d_inode);
-                return 0;
-        }
-is bogus.  What will happen if server goes nuts and that existing alias picked
-by lookup turns out to be a directory?  And while we are at it, what's to
-prevent a leak if we ever hit that codepath, directory or no directory?
-Sage?
+On Wed, Aug 27, 2014 at 12:23:51PM -0700, David Riley wrote:
+> This driver registers a restart handler to set a GPIO line high/low
+> to reset a board based on devicetree bindings.
+
+http://git.infradead.org/battery-2.6.git/commit/371bb20d6927f204ef5a7887ecddb06b2501c0d9
+
+-- Sebastian
+
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUJcs7AAoJENju1/PIO/qaay0P/1J8596X5x4Mk64OACKaA01R
+zBm0FeLq4kqyGL5/mMAYQUTia2EtwPgx85ErTHH0LpkDZo/C2VLUxZQuDJXDinLK
+3rh/IwB+86VsT8C88Vr+H1dhpJD/mjRXmU1sWJF2B4wtRAKQmKqG2zjOZ2RdcFTr
+dwHvVatqgbf/K20LhRHJUvNQFZ9FwwCig5BeqnA/Buv4i0a3/11HdhOFhErqWNOW
+fGX/RNWTTfplQyagtlKIDlEWgy5IVhIpyATuc4/7qmZwNwheBYnYJHcmY2KegVfF
+FmC8xXD5VD98ywDDedCFG34fpz2N8boJMLmqH3C9HdAWu+upNJNSkrv9WIb7mYy3
+OOV3u9bIxip95CRUNQLjTRjd/TyJABH3hVv8NOgetGHpnmWzZzBmA0LkdfZOTW00
+DmHzEA+K5erQ8dJ6LFlDTm9xOgoT0++7trNwAMqVRMY8DkbgfJUJqpmwePD52CiO
+Of4WLY/lpuJYe5ryqIj26Yyz9kbsCT3oFP5mRT2d0sud7ehhcLoGIRMdAlXIcVD5
+uM+iNzvhBb9wqJJMiw8R6j0T2n8gnHBvyyut/JOUvgOUHiVbq8Z5q5tv7qhdjNxP
+SZwmVnTWGK5hwMjfA4NX8zFWTg9og64PLstHnIcn2RP3OTnL5m2Y2WM3365yZlzR
+KeGcqGvUU3yXsrWwAC8+
+=aOB6
+-----END PGP SIGNATURE-----
+
+--d6Gm4EdcadzBjdND--
