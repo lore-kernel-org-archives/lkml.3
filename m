@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaIZIoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:44:19 -0400
-Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:51791 "EHLO
-	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754128AbaIZIoP (ORCPT
+	id S1754278AbaIZIpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:45:55 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:60089 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738AbaIZIpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:44:15 -0400
-Message-ID: <54252756.6000001@nexus-software.ie>
-Date: Fri, 26 Sep 2014 09:44:06 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 26 Sep 2014 04:45:51 -0400
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>,
-        Ong Boon Leong <boon.leong.ong@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] x86, setup: add __flush_tlb() for Intel Quark X1000
-References: <1411705827-2522-1-git-send-email-boon.leong.ong@intel.com> <1411705827-2522-2-git-send-email-boon.leong.ong@intel.com> <5424FA7C.6020303@intel.com>
-In-Reply-To: <5424FA7C.6020303@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411662520-22795-8-git-send-email-geert+renesas@glider.be>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+	<1411662520-22795-8-git-send-email-geert+renesas@glider.be>
+Date: Fri, 26 Sep 2014 10:45:50 +0200
+Message-ID: <CAPDyKFrWKOENKxF1JBrtwYfQNTVjsQPqws3UTfGXy_4Uqog+pg@mail.gmail.com>
+Subject: Re: [PATCH v3 07/13] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev()
+ for pm_clk setup
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 06:32, Dave Hansen wrote:
-> I'd just say:
+On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+> Use the just introduced genpd attach/detach callbacks to register the
+> devices' module clocks, instead of doing it directly, to make it
+> DT-proof.
 >
-> Quark X1000 wrongly advertises PGE.  Work around this with an
-> unconditional full flush using a CR3 write instead of CR4.PGE:
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Hi Dave.
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-In another thread with Ingo Molnar and Henrique de Moraes Holschuh the 
-following text was proposed.
-
-+	/*
-+	 * Locate the page directory and flush the TLB.
-+	 *
-+	 * On Quark X1000 CPUs we still have the PGE bit incorrectly set
-+	 * due to a processor erratum, so __flush_tlb_all() is not yet
-+	 * doing what it says.  Fortunately we have a cr3 flush here,
-+	 * which is what is needed in this processor to flush TLBs, so
-+	 * there's no need to add a Quark X1000 quirk here.
-+	 *
-+	 * early_init_intel will unset the X86_FEATURE_PGE flag later
-+	 * and __flush_tlb_all() will flush via cr3
-+	 */
-
-Path submitted as "[PATCH] x86: Quark: Comment setup_arch for TLB/PGE 
-bugfix"
-
-Does that work for you ?
-
---
-BOD
+> ---
+> v3:
+>   - Update for callback signature changes,
+> v2:
+>   - New
+>
+>  arch/arm/mach-shmobile/pm-rmobile.c | 15 +++++++++++++--
+>  1 file changed, 13 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
+> index 717e6413d29cb998..ae846dfcd69293f7 100644
+> --- a/arch/arm/mach-shmobile/pm-rmobile.c
+> +++ b/arch/arm/mach-shmobile/pm-rmobile.c
+> @@ -101,6 +101,17 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
+>         return true;
+>  }
+>
+> +static void rmobile_pd_attach_dev(struct device *dev)
+> +{
+> +       if (pm_clk_no_clocks(dev))
+> +               pm_clk_add(dev, NULL);
+> +}
+> +
+> +static void rmobile_pd_detach_dev(struct device *dev)
+> +{
+> +       pm_clk_remove(dev, NULL);
+> +}
+> +
+>  static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+>  {
+>         struct generic_pm_domain *genpd = &rmobile_pd->genpd;
+> @@ -112,6 +123,8 @@ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+>         genpd->dev_ops.active_wakeup    = rmobile_pd_active_wakeup;
+>         genpd->power_off                = rmobile_pd_power_down;
+>         genpd->power_on                 = rmobile_pd_power_up;
+> +       genpd->attach_dev               = rmobile_pd_attach_dev;
+> +       genpd->detach_dev               = rmobile_pd_detach_dev;
+>         __rmobile_pd_power_up(rmobile_pd, false);
+>  }
+>
+> @@ -130,8 +143,6 @@ void rmobile_add_device_to_domain_td(const char *domain_name,
+>         struct device *dev = &pdev->dev;
+>
+>         __pm_genpd_name_add_device(domain_name, dev, td);
+> -       if (pm_clk_no_clocks(dev))
+> -               pm_clk_add(dev, NULL);
+>  }
+>
+>  void rmobile_add_devices_to_domains(struct pm_domain_device data[],
+> --
+> 1.9.1
+>
