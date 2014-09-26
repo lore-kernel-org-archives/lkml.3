@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbaIZKXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:23:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33029 "EHLO mx2.suse.de"
+	id S1756173AbaIZKYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:24:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754856AbaIZJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:13 -0400
+	id S1754838AbaIZJqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:12 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Holger Paradies <retabell@gmx.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 018/142] staging/rtl8188eu: add 0df6:0076 Sitecom Europe B.V.
-Date: Fri, 26 Sep 2014 11:43:49 +0200
-Message-Id: <09357cf4c4696205fe6c8e8131fa7c6c3241cfc1.1411724723.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Praveen Diwakar <praveen.diwakar@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 075/142] ASoC: wm_adsp: Add missing MODULE_LICENSE
+Date: Fri, 26 Sep 2014 11:44:46 +0200
+Message-Id: <465da614d4f6787d8e733f9771556220302431ed.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,37 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Holger Paradies <retabell@gmx.de>
+From: Praveen Diwakar <praveen.diwakar@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8626d524ef08f10fccc0c41e5f75aef8235edf47 upstream.
+commit 0a37c6efec4a2fdc2563c5a8faa472b814deee80 upstream.
 
-The stick is not recognized.
-This dongle uses r8188eu but usb-id is missing.
-3.16.0
+Since MODULE_LICENSE is missing the module load fails,
+so add this for module.
 
-Signed-off-by: Holger Paradies <retabell@gmx.de>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Praveen Diwakar <praveen.diwakar@intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/staging/rtl8188eu/os_dep/usb_intf.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm_adsp.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 85f692ddd992..899c91bd1ad1 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -56,6 +56,7 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
-+	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
- 	{}	/* Terminating entry */
- };
- 
+diff --git a/sound/soc/codecs/wm_adsp.c b/sound/soc/codecs/wm_adsp.c
+index 0d5de6003849..61e871bf63dd 100644
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1694,3 +1694,5 @@ int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(wm_adsp2_init);
++
++MODULE_LICENSE("GPL v2");
 -- 
 2.1.0
 
