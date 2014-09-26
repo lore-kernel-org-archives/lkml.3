@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833AbaIZR36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:29:58 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:35796 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080AbaIZR34 (ORCPT
+	id S1755940AbaIZRaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:30:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54891 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755835AbaIZRaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:29:56 -0400
+	Fri, 26 Sep 2014 13:30:06 -0400
+Message-ID: <5425A296.3090900@infradead.org>
+Date: Fri, 26 Sep 2014 10:29:58 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <54259BD4.8090508@oracle.com> <CACT4Y+Y0fzbs4DPt3n30R33cYqXEZ8E86tzCfzL6RUE9f+-r=w@mail.gmail.com>
- <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Fri, 26 Sep 2014 10:29:34 -0700
-Message-ID: <CACT4Y+bptO341KQAQMSzUVV22KsjuomdTeDip=HaHJ3+1kvraQ@mail.gmail.com>
-Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory debugger.
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: akpm@linux-foundation.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, mhocko@suse.cz,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: mmotm 2014-09-25-16-28 uploaded (media/platform/vivid)
+References: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
+In-Reply-To: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:22 AM, Andrey Ryabinin
-<ryabinin.a.a@gmail.com> wrote:
-> 2014-09-26 21:07 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
->> On Fri, Sep 26, 2014 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>> On 09/24/2014 08:43 AM, Andrey Ryabinin wrote:
->>>> Hi.
->>>>
->>>> This is a third iteration of kerenel address sanitizer (KASan).
->>>>
->>>> KASan is a runtime memory debugger designed to find use-after-free
->>>> and out-of-bounds bugs.
->>>>
->>>> Currently KASAN supported only for x86_64 architecture and requires kernel
->>>> to be build with SLUB allocator.
->>>> KASAN uses compile-time instrumentation for checking every memory access, therefore you
->>>> will need a fresh GCC >= v5.0.0.
->>>
->>> Hi Andrey,
->>>
->>> I tried this patchset, with the latest gcc, and I'm seeing the following:
->>>
->>> arch/x86/kernel/head.o: In function `_GLOBAL__sub_I_00099_0_reserve_ebda_region':
->>> /home/sasha/linux-next/arch/x86/kernel/head.c:71: undefined reference to `__asan_init_v4'
->>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0___ksymtab_system_state':
->>> /home/sasha/linux-next/init/main.c:1034: undefined reference to `__asan_init_v4'
->>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_init_uts_ns':
->>> /home/sasha/linux-next/init/version.c:50: undefined reference to `__asan_init_v4'
->>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_root_mountflags':
->>> /home/sasha/linux-next/init/do_mounts.c:638: undefined reference to `__asan_init_v4'
->>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_rd_prompt':
->>> /home/sasha/linux-next/init/do_mounts_rd.c:361: undefined reference to `__asan_init_v4'
->>> init/built-in.o:/home/sasha/linux-next/init/do_mounts_md.c:312: more undefined references to `__asan_init_v4' follow
->>>
->>>
->>> What am I missing?
->>
->>
->> Emission of __asan_init_vx needs to be disabled when
->> -fsanitize=kernel-address. Our kernel does not boot with them at all.
->> It probably hits some limit for something that can be increased. But I
->> don't want to investigate what that limit is, as __asan_init is not
->> needed for kasan at all.
->>
->
-> __asan_init_vx maybe not needed for kernel, but we still need somehow
-> to identify
-> compiler's asan version (e.g. for globals).
-> We could add some define to GCC or just something like this in kernel:
-> #if __GNUC__ == 5
-> #define ASAN_V4
-> ....
+On 09/25/14 16:28, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2014-09-25-16-28 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
+> mmotm-readme.txt says
+> 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
 
 
-This looks good to me.
-The versioning won't work the same way it works for clang/compiler-rt
-and gcc/libgcc. Because clang/compiler-rt are both part of the same
-repo and always versioned simultaneously. While kernel and gcc are
-versioned independently, so once you bump API version you break all
-users who use old gcc.
+on i386, when CONFIG_FB is not enabled:
 
-So in kernel we will need to support all API versions, and the
-following looks like a much simpler way to identify current API
-version:
-> #if __GNUC__ == 5
-> #define ASAN_V4
 
-Note that in user-space asan the other important purpose of
-__asan_init is to trigger asan runtime initialization as early as
-possible. This is not needed for kernel.
+ERROR: "cfb_fillrect" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "cfb_imageblit" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "fb_alloc_cmap" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "register_framebuffer" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "fb_dealloc_cmap" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "cfb_copyarea" [drivers/media/platform/vivid/vivid.ko] undefined!
+ERROR: "unregister_framebuffer" [drivers/media/platform/vivid/vivid.ko] undefined!
+
+
+I guess that VIDEO_VIVID should depend on FB.
+
+-- 
+~Randy
