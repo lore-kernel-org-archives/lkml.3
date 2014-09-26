@@ -1,189 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172AbaIZPCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:02:50 -0400
-Received: from mga14.intel.com ([192.55.52.115]:47901 "EHLO mga14.intel.com"
+	id S1756251AbaIZPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:02:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60085 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755393AbaIZO4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:56:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597292163"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	id S1755393AbaIZPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:02:55 -0400
+Date: Fri, 26 Sep 2014 11:01:57 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [RFC v1 09/28] x86, irq: Kill x86_io_apic_ops.set_affinity and related interfaces
-Date: Fri, 26 Sep 2014 22:57:39 +0800
-Message-Id: <1411743478-31435-10-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
+        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: linux-next: manual merge of the tip tree with the audit tree
+Message-ID: <20140926150157.GU1992@madcap2.tricolour.ca>
+References: <20140924153857.191a97a4@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924153857.191a97a4@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there is no user of x86_io_apic_ops.set_affinity anymore, so kill
-it.
+On 14/09/24, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the tip tree got a conflict in
+> arch/x86/kernel/entry_64.S between commit b4f0d3755c5e ("audit: x86:
+> drop arch from __audit_syscall_entry() interface") from the audit tree
+> and commit 1dcf74f6edfc ("x86_64, entry: Use split-phase
+> syscall_trace_enter for 64-bit syscalls") from the tip tree.
+> 
+> I fixed it up (probably incorrectly - I removed the auditsys section
+> as that is what the latter did) and can carry the fix as necessary (no
+> action is required).
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/io_apic.h  |    4 ----
- arch/x86/include/asm/x86_init.h |    3 ---
- arch/x86/kernel/apic/io_apic.c  |   25 +------------------------
- arch/x86/kernel/x86_init.c      |    1 -
- drivers/iommu/irq_remapping.c   |   16 ----------------
- 5 files changed, 1 insertion(+), 48 deletions(-)
+The fix looks fine to me.  The auditsys section was no longer needed
+since it was taken care of via the phase1 and phase2 calls.  It was the
+part in ptrace.c that was important (it would not have compiled) and you
+updated that fine to remove the arch arg.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index f9f316b2ec1e..e82f78f0c04d 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -223,9 +223,6 @@ extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
- extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_disable_io_apic(void);
--extern int native_ioapic_set_affinity(struct irq_data *,
--				      const struct cpumask *,
--				      bool);
- 
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
- {
-@@ -287,7 +284,6 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
--#define native_ioapic_set_affinity	NULL
- #define native_eoi_ioapic_pin		NULL
- #endif
- 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 7de44a329028..2637e8fb978d 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -194,9 +194,6 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
--	int		(*set_affinity)(struct irq_data *data,
--					const struct cpumask *mask,
--					bool force);
- 	void		(*eoi_ioapic_pin)(int apic, int pin, int vector);
- };
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e3628c3b6b07..3f4c2cc2772b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1810,29 +1810,6 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
- 	}
- }
- 
--int native_ioapic_set_affinity(struct irq_data *data,
--			       const struct cpumask *mask,
--			       bool force)
--{
--	unsigned int dest, irq = data->irq;
--	unsigned long flags;
--	int ret;
--
--	if (!config_enabled(CONFIG_SMP))
--		return -EPERM;
--
--	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	ret = apic_set_affinity(data, mask, &dest);
--	if (!ret) {
--		/* Only the high 8 bits are valid. */
--		dest = SET_APIC_LOGICAL_ID(dest);
--		__target_IO_APIC_irq(irq, dest, irqd_cfg(data));
--		ret = IRQ_SET_MASK_OK_NOCOPY;
--	}
--	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--	return ret;
--}
--
- atomic_t irq_mis_count;
- 
- #ifdef CONFIG_GENERIC_PENDING_IRQ
-@@ -2710,7 +2687,7 @@ void __init setup_ioapic_dest(void)
- 		else
- 			mask = apic->target_cpus();
- 
--		x86_io_apic_ops.set_affinity(idata, mask, false);
-+		irq_set_affinity(irq, mask);
- 	}
- 
- }
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 77d0ea3dd1ea..377b22008280 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -154,6 +154,5 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
--	.set_affinity		= native_ioapic_set_affinity,
- 	.eoi_ioapic_pin		= native_eoi_ioapic_pin,
- };
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 0486a123c29b..116796c194d2 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -25,10 +25,6 @@ int no_x2apic_optout;
- 
- static struct irq_remap_ops *remap_ops;
- 
--static int set_remapped_irq_affinity(struct irq_data *data,
--				     const struct cpumask *mask,
--				     bool force);
--
- static bool irq_remapped(struct irq_cfg *cfg)
- {
- 	return (cfg->remapped == 1);
-@@ -61,7 +57,6 @@ static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
- static void __init irq_remapping_modify_x86_ops(void)
- {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
--	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
- 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
- }
- 
-@@ -176,16 +171,6 @@ int __init irq_remap_enable_fault_handling(void)
- 	return remap_ops->enable_faulting();
- }
- 
--static int set_remapped_irq_affinity(struct irq_data *data,
--				     const struct cpumask *mask, bool force)
--{
--	if (!config_enabled(CONFIG_SMP) || !remap_ops ||
--	    !remap_ops->set_affinity)
--		return 0;
--
--	return remap_ops->set_affinity(data, mask, force);
--}
--
- void free_remapped_irq(int irq)
- {
- 	struct irq_cfg *cfg = irq_cfg(irq);
-@@ -237,7 +222,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
- 	chip->irq_print_chip = ir_print_prefix;
- 	chip->irq_ack = ir_ack_apic_edge;
- 	chip->irq_eoi = ir_ack_apic_level;
--	chip->irq_set_affinity = x86_io_apic_ops.set_affinity;
- }
- 
- bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
--- 
-1.7.10.4
+Thanks, Stephen.
 
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
