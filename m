@@ -1,186 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaIZIcs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:32:48 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43242 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbaIZIco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:32:44 -0400
+	id S1753785AbaIZIe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:34:59 -0400
+Received: from ozlabs.org ([103.22.144.67]:55835 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753067AbaIZIe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:34:57 -0400
+Date: Fri, 26 Sep 2014 18:34:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Brian King <brking@linux.vnet.ibm.com>, Christoph Hellwig <hch@lst.de>,
+        Xiong <wenxiong@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the scsi tree
+Message-ID: <20140926183450.7474b448@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-5-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-5-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:32:43 +0200
-Message-ID: <CAPDyKFo7QruMXivxXoxkZD8DkFdcZCacH=g0rxH=TEH_nJtJpw@mail.gmail.com>
-Subject: Re: [PATCH v3 04/13] PM / Domains: Add DT bindings for the R-Mobile
- System Controller
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/joMs45Ou72vs73aQ97zfpqG"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> The Renesas R-Mobile System Controller provides a.o. power management
-> support, following the generic PM domain bindings in
-> Documentation/devicetree/bindings/power/power_domain.txt.
->
-> For now this supports the R-Mobile A1 (r8a7740) only, but it should be
-> sufficiently generic to handle other members of the SH-Mobile/R-Mobile
-> family in the future.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
-> v3:
->   - Reword,
-> v2:
->   - Fix copy-and-paste s/#address-cells/#size-cells/,
->   - Add optional PM QoS device latencies.
->
->  .../bindings/power/renesas,sysc-rmobile.txt        | 111 +++++++++++++++++++++
->  1 file changed, 111 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
->
-> diff --git a/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
-> new file mode 100644
-> index 0000000000000000..0b1e56d6ed1ab9a2
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power/renesas,sysc-rmobile.txt
-> @@ -0,0 +1,111 @@
-> +DT bindings for the Renesas R-Mobile System Controller
-> +
-> +== System Controller Node ==
-> +
-> +The R-Mobile System Controller provides the following functions:
-> +  - Boot mode management,
-> +  - Reset generation,
-> +  - Power management.
-> +
-> +Required properties:
-> +- compatible: Should be "renesas,sysc-<soctype>", "renesas,sysc-rmobile" as
-> +             fallback.
-> +             Examples with soctypes are:
-> +               - "renesas,sysc-r8a7740" (R-Mobile A1)
-> +- reg: Two address start and address range blocks for the device:
-> +         - The first block refers to the normally accessible registers,
-> +         - the second block refers to the registers protected by the HPB
-> +          semaphore.
-> +
-> +Optional nodes:
-> +- pm-domains: This node contains a hierarchy of PM domain nodes, which should
-> +  match the Power Area Hierarchy in the Power Domain Specifications section of
-> +  the device's datasheet.
-> +
-> +
-> +== PM Domain Nodes ==
-> +
-> +Each of the PM domain nodes represents a PM domain, as documented by the
-> +generic PM domain bindings in
-> +Documentation/devicetree/bindings/power/power_domain.txt.
-> +
-> +The nodes should be named by the real power area names, and thus their names
-> +should be unique.
-> +
-> +Required properties:
-> +  - #power-domain-cells: Must be 0.
-> +
-> +Optional properties:
-> +- reg: If the PM domain is not always-on, this property must contain the bit
-> +       index number for the corresponding power area in the various Power
-> +       Control and Status Registers. The parent's node must contain the
-> +       following two properties:
-> +        - #address-cells: Must be 1,
-> +        - #size-cells: Must be 0.
-> +       If the PM domain is always-on, this property must be omitted.
-> +- power-on-latency: Power-on latency of the PM domain, in ns,
-> +- power-off-latency: Power-off latency of the PM domain, in ns.
-> +
-> +
-> +Example:
-> +
-> +This shows a subset of the r8a7740 PM domain hierarchy, containing the
-> +C5 "always-on" domain, 2 of its subdomains (A4S and A4SU), and the A3SP domain,
-> +which is a subdomain of A4S.
-> +
-> +       sysc: system-controller@e6180000 {
-> +               compatible = "renesas,sysc-r8a7740", "renesas,sysc-rmobile";
-> +               reg = <0xe6180000 8000>, <0xe6188000 8000>;
-> +
-> +               pm-domains {
-> +                       pd_c5: c5 {
-> +                               #address-cells = <1>;
-> +                               #size-cells = <0>;
-> +                               #power-domain-cells = <0>;
-> +
-> +                               pd_a4s: a4s@10 {
-> +                                       reg = <10>;
-> +                                       #address-cells = <1>;
-> +                                       #size-cells = <0>;
-> +                                       #power-domain-cells = <0>;
-> +                                       power-on-latency = <250000>;
-> +                                       power-off-latency = <250000>;
-> +
-> +                                       pd_a3sp: a3sp@11 {
-> +                                               reg = <11>;
-> +                                               #power-domain-cells = <0>;
-> +                                               power-on-latency = <250000>;
-> +                                               power-off-latency = <250000>;
-> +                                       };
-> +                               };
-> +
-> +                               pd_a4su: a4su@20 {
-> +                                       reg = <20>;
-> +                                       #power-domain-cells = <0>;
-> +                                       power-on-latency = <250000>;
-> +                                       power-off-latency = <250000>;
-> +                               };
-> +                       };
-> +               };
-> +       };
-> +
-> +
-> +== PM Domain Consumers ==
-> +
-> +Hardware blocks belonging to a PM domain should contain a "power-domains"
-> +property that is a phandle pointing to the corresponding PM domain node,
-> +and optional PM QoS device latencies:
-> +
-> +Example:
-> +
-> +       tpu: pwm@e6600000 {
-> +               compatible = "renesas,tpu-r8a7740", "renesas,tpu";
-> +               reg = <0xe6600000 0x100>;
-> +               clocks = <&mstp3_clks R8A7740_CLK_TPU0>;
-> +               power-domains = <&pd_a3sp>;
-> +               stop-latency = <250000>;
-> +               start-latency = <250000>;
-> +               save-state-latency = <250000>;
-> +               restore-state-latency = <250000>;
+--Sig_/joMs45Ou72vs73aQ97zfpqG
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-As per comment for the previous patch, I think you should remove these
-latencies.
+Hi James,
 
-> +               #pwm-cells = <3>;
-> +       };
-> --
-> 1.9.1
->
+After merging the scsi tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-When you fixed the above you may add my reviewed by tag for this patch.
+drivers/scsi/ipr.c: In function 'ipr_handle_log_data':
+drivers/scsi/ipr.c:2468:15: error: 'IPR_IOASC_HW_CMD_FAILED' undeclared (fi=
+rst use in this function)
+  if (ioasc =3D=3D IPR_IOASC_HW_CMD_FAILED &&
+               ^
 
-Kind regards
-Uffe
+Caused by commit 3185ea63907c ("ipr: don't log error messages when
+applications issues illegal requests").  Someone typoed that name in
+ipr.h ...
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/joMs45Ou72vs73aQ97zfpqG
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUJSUvAAoJEMDTa8Ir7ZwV9wUQAJd8wlrNB1LxEtx59qmVMM17
+fpqAD7ORJhVlThmWtHIX9flrWBUntVFr5kPvoLdk7iupKMm8a3cDhYqO2Wxl53gE
+wlf/OJt4HEnMinAf5QD/2s54ZTy3oMWpmai2+XYg1XXQTfVmCUqU96hr7giyJ644
+OUwKGHOTFxMAuxo8l+kssb0BNIa9lXx/trC+z6F8th4wWGwvyvCpOomg3tNipzfj
+FxBYjlaie0JSy6aBXiQaNY7iy6dImWqvna/xPqoi7JBaslBmNDwqiDlj2ISvRG2n
+/dIbVK5dNiDEYPYX5YAtuf2dqk0gjDSHARtptrJ1K1Y8Ei4mh5Oda5+lE7NKIu3f
+cZLCPVFSsNpL91RPWLxBNTlrhEWcLQ/AdFQn0N9h3P9RDRwT92ucNjKZOMzylP7z
+X73V01wG/OTtKBs7gN+Gspj2ApnaALiW8bYA0qdG6TIdSaYBez+uJ5B6bj1O8HBg
+hIxfPht6UWU/8K5xNu32PGYozfg0bqRwuYd2zqkFnd1Wylw3U8ZvtJIDHZ6pSpfS
+Cq3EFXRPtttn2rwCj5PZyBfu64peqfqRBaDZbJ7bw9HFUioEkhUbIOlBOvDFKgJi
+j2KftFhOQmiJnhkhqD+DRSS4n4sqHxNlznKIcITx0IJpU3Sx5O3B83InlFniZuV0
+kwg+MQkHsKNYpRXqMQBQ
+=eYHy
+-----END PGP SIGNATURE-----
+
+--Sig_/joMs45Ou72vs73aQ97zfpqG--
