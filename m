@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308AbaIZKNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:13:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32933 "EHLO mx2.suse.de"
+	id S1753725AbaIZKOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:14:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32892 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928AbaIZJqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:25 -0400
+	id S1754922AbaIZJqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
-        Yuri Tikhonov <yur@emcraft.com>,
-        Dan Williams <dan.j.williams@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 094/142] md/raid6: avoid data corruption during recovery of double-degraded RAID6
-Date: Fri, 26 Sep 2014 11:45:05 +0200
-Message-Id: <edb42d7292c2fe60a01163e15193e1657bdd2a10.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 097/142] RDMA/iwcm: Use a default listen backlog if needed
+Date: Fri, 26 Sep 2014 11:45:08 +0200
+Message-Id: <904c6df509830db3e20429523963084b355a3a49.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,54 +22,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Steve Wise <swise@opengridcomputing.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9c4bdf697c39805078392d5ddbbba5ae5680e0dd upstream.
+commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
 
-During recovery of a double-degraded RAID6 it is possible for
-some blocks not to be recovered properly, leading to corruption.
+If the user creates a listening cm_id with backlog of 0 the IWCM ends
+up not allowing any connection requests at all.  The correct behavior
+is for the IWCM to pick a default value if the user backlog parameter
+is zero.
 
-If a write happens to one block in a stripe that would be written to a
-missing device, and at the same time that stripe is recovering data
-to the other missing device, then that recovered data may not be written.
+Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
+iwarp support without this fix.
 
-This patch skips, in the double-degraded case, an optimisation that is
-only safe for single-degraded arrays.
-
-Bug was introduced in 2.6.32 and fix is suitable for any kernel since
-then.  In an older kernel with separate handle_stripe5() and
-handle_stripe6() functions the patch must change handle_stripe6().
-
-Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
-Cc: Yuri Tikhonov <yur@emcraft.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-Tested-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/md/raid5.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/infiniband/core/iwcm.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 3ecfb063ec0b..42510e40c23c 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3672,6 +3672,8 @@ static void handle_stripe(struct stripe_head *sh)
- 				set_bit(R5_Wantwrite, &dev->flags);
- 				if (prexor)
- 					continue;
-+				if (s.failed > 1)
-+					continue;
- 				if (!test_bit(R5_Insync, &dev->flags) ||
- 				    ((i == sh->pd_idx || i == sh->qd_idx)  &&
- 				     s.failed == 0))
+diff --git a/drivers/infiniband/core/iwcm.c b/drivers/infiniband/core/iwcm.c
+index c47c2034ca71..4293e89bbbdd 100644
+--- a/drivers/infiniband/core/iwcm.c
++++ b/drivers/infiniband/core/iwcm.c
+@@ -46,6 +46,7 @@
+ #include <linux/completion.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/sysctl.h>
+ 
+ #include <rdma/iw_cm.h>
+ #include <rdma/ib_addr.h>
+@@ -65,6 +66,20 @@ struct iwcm_work {
+ 	struct list_head free_list;
+ };
+ 
++static unsigned int default_backlog = 256;
++
++static struct ctl_table_header *iwcm_ctl_table_hdr;
++static struct ctl_table iwcm_ctl_table[] = {
++	{
++		.procname	= "default_backlog",
++		.data		= &default_backlog,
++		.maxlen		= sizeof(default_backlog),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{ }
++};
++
+ /*
+  * The following services provide a mechanism for pre-allocating iwcm_work
+  * elements.  The design pre-allocates them  based on the cm_id type:
+@@ -419,6 +434,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id, int backlog)
+ 
+ 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
+ 
++	if (!backlog)
++		backlog = default_backlog;
++
+ 	ret = alloc_work_entries(cm_id_priv, backlog);
+ 	if (ret)
+ 		return ret;
+@@ -1024,11 +1042,20 @@ static int __init iw_cm_init(void)
+ 	if (!iwcm_wq)
+ 		return -ENOMEM;
+ 
++	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
++						 iwcm_ctl_table);
++	if (!iwcm_ctl_table_hdr) {
++		pr_err("iw_cm: couldn't register sysctl paths\n");
++		destroy_workqueue(iwcm_wq);
++		return -ENOMEM;
++	}
++
+ 	return 0;
+ }
+ 
+ static void __exit iw_cm_cleanup(void)
+ {
++	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
+ 	destroy_workqueue(iwcm_wq);
+ }
+ 
 -- 
 2.1.0
 
