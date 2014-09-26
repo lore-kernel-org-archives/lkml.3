@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343AbaIZVNx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:13:53 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56301 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247AbaIZVNv convert rfc822-to-8bit (ORCPT
+	id S1756138AbaIZVTk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:19:40 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64667 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755752AbaIZVTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:13:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 RESEND 1/3] ARM: EXYNOS: Move code from hotplug.c to platsmp.c
-Date: Fri, 26 Sep 2014 23:13:26 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-References: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 26 Sep 2014 17:19:38 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Eric Caruso <ejcaruso@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dmitry Torokhov <dtor@google.com>,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@google.com>
+Subject: Re: irq mask swapping during suspend/resume
+Date: Fri, 26 Sep 2014 23:39:28 +0200
+Message-ID: <14556491.5ApW8OU2l5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAA9CXT0p+J2aHE0uLcHdaX5xurV-==5h_bCg--NWxRMwO2b0tA@mail.gmail.com>
+References: <CAA9CXT07f01KW4UeoPPy4k1NM6qfxdtsOQXXSPjTKx7mG_v7Rw@mail.gmail.com> <2213339.XxHo9Gxm0z@vostro.rjw.lan> <CAA9CXT0p+J2aHE0uLcHdaX5xurV-==5h_bCg--NWxRMwO2b0tA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201409262313.26272.arnd@arndb.de>
-X-Provags-ID: V02:K0:aJZa48mhF97M9Za5wrlf0/PR2Hl0ToimrNwOFQNwWNw
- VAf1bLBlj/7POJ7JFG+mIGIqNTgoXR0JbfdjSJA+WyhIht9+Xx
- VFrFyDUa5mDcADaqMjm79Ama4dGMdSYVHevTEUbMSwSC9WRWdA
- lU86hVBpEh7+0mPVJr494+sBuD72nFAXX12DYmiJ5s7VlhbdeZ
- hPvNYl047Js644cHi3Z8FFcGLS4dkOXvGwa/5boheoqqDzCuXS
- arJEoIgp05VpMLIc0+d34FKcjiVuH8j26YoeeefKbwOgoj02/D
- BYDPyKyXRa81Xg/bx2lVDvBiShFbekTbUHHDWSDIpeIcAxzrij
- Y2b49zwHAP6f+ab/cVUE=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 September 2014, Krzysztof Kozlowski wrote:
-> The commit only moves code around with one additional observable change:
-> the hotplug.c was compiled with custom CFLAGS (-march=armv7-a). These
-> CFLAGS are not necessary any more.
+On Friday, September 26, 2014 09:58:39 AM Eric Caruso wrote:
+> I was putting together a prototype for this, and ran into a design
+> issue. It's not obvious how to get from the struct wakeup_source to
+> places where we hold all of the relevant device information or irq
+> information. If we were to walk the list of wakeup source objects,
+> where would we actually get the irq information to call
+> enable_irq_wake()?
+> 
+> Does this just require a bunch of extra plumbing we don't have right
+> now, and this is what you meant by changes to wakeup_source_create()
+> and friends?
 
-This turns out to be wrong, and your change broke 'allmodconfig' builds
-in linux-next. Please apply this patch on top.
+Yes, that's it.
 
-	Arnd
+But at least some drivers call enable_irq_wake() today, so it should just
+work for devices handled by them.  That may not be all devices you want,
+though.
 
-8<----------
->From 4ba6bf8806caec386e35930314dbad071284c837 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Fri, 26 Sep 2014 23:09:38 +0200
-Subject: [PATCH] ARM: EXYNOS: fix build error in platsmp.c
+And BTW, there is a problem with the approach I was talking about which is
+the sysfs interface for enabling wakeup, so we actually need to put wakeup
+IRQ information into struct dev_pm_info and point to that from the
+associated wakeup source object.  It still should be doable though.
 
-/tmp/ccYeWL3V.s: Assembler messages:
-/tmp/ccYeWL3V.s:659: Error: selected processor does not support ARM mode `isb '
-/tmp/ccYeWL3V.s:664: Error: selected processor does not support ARM mode `isb '
-/tmp/ccYeWL3V.s:665: Error: selected processor does not support ARM mode `dsb '
-make[3]: *** [arch/arm/mach-exynos/platsmp.o] Error 1
+> On Sat, Sep 20, 2014 at 5:48 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Thursday, September 18, 2014 01:32:06 PM Thomas Gleixner wrote:
+> >> On Wed, 17 Sep 2014, Dmitry Torokhov wrote:
+> >> > Hi Thomas,
+> >> >
+> >> > On Wednesday, September 17, 2014 12:05:42 PM Thomas Gleixner wrote:
+> >> > > On Tue, 16 Sep 2014, Eric Caruso wrote:
+> >> > > > We would like to be able to set different irq masks for triggers during
+> >> > > > normal operation and for waking up the system. For example, while a laptop
+> >> > > > is awake, closing the lid and opening the lid should both fire an
+> >> > > > interrupt, but when the system is asleep, we would like to stay asleep
+> >> > > > when
+> >> > > > closing the lid.
+> >> > > >
+> >> > > > We are thinking about stashing the irq mask used specifically for waking
+> >> > > > the system up in the irq_desc struct, and then swapping it during
+> >> > > > enable_irq_wake and disable_irq_wake calls. Devices that do not specify a
+> >> > > > different wake mask will use their normal trigger mask for both
+> >> > > > situations.
+> >> > > >
+> >> > > > Is this acceptable?
+> >> > >
+> >> > > Not really. Why should irq_desc provide storage for random
+> >> > > configurations and bind them to some random system state?
+> >> > >
+> >> > > What's wrong with calling
+> >> > >
+> >> > >        irq_set_type(irq, B);
+> >> > >        enable_irq_wake(irq);
+> >> > >
+> >> > >        disable_irq_wake(irq);
+> >> > >        irq_set_type(irq, A);
+> >> >
+> >> > The desire is to avoid doing it in [every] driver but rather have it done
+> >> > centrally by device/PM core. It does not have to be irq_desc though,
+> >> > maybe you can suggest a better place for it (aside of the individual driver
+> >> > code that is)?
+> >>
+> >> Well, if it should be done by the device/pm core then you want to
+> >> store that information in the device related data structure.
+> >>
+> >> struct dev_pm_info might be the right place for it, but that's up to
+> >> Rafael.
+> >>
+> >> So driver would set
+> >>
+> >>    dev->power.update_wakeirq_type = true;
+> >>    dev->power.irq_type_normal = IRQ_TYPE_EDGE_BOTH;
+> >>    dev->power.irq_type_sleep = IRQ_TYPE_EDGE_LOW;
+> >>
+> >> And the dev/PM core can issue the calls on suspend/resume.
+> >
+> > So I'd rather put that into the struct wakeup_source pointed to by
+> > the wakeup pointer in struct dev_pm_info.  That would give us a mapping
+> > between wakeup source objects and wakeup interrupts and which would make
+> > a fair amount of sense in my view.
+> >
+> > Then, we could simply walk the list of wakeup source objects before
+> > suspend_device_irqs() and call enable_irq_wake() etc. for all of the
+> > interrupts in question without drivers having to worry about that.
+> > We also could save the current IRQ type for them at that point and
+> > restore it during resume.
+> >
+> > Of course, that would require some changes to wakeup_source_create()
+> > and friends, but is probably worth doing.
+> >
+> > Still, before we start making those changes, here's a bunch of questions
+> > to answer:
+> >
+> > (1) Say a wakeup interrupt is shared between two drivers and one of them
+> >     asks for a different "IRQ type for sleep" than the other one.  How are
+> >     we going to resolve such conflicts?
+> >
+> > (2) Can platforms place restrictions on the IRQ type to be used with a given
+> >     line?  If so, how do we handle situations in which the requested
+> >     "IRQ type for sleep" is different from what the given line can use?
+> >     Do we need to resolve that at the struct wakeup_source creation time or
+> >     can we do that later (during suspend?) and how?
+> >
+> > Rafael
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: 17342534e1d932 ("ARM: EXYNOS: Move code from hotplug.c to platsmp.c")
-
-diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-index 4e49d4efb264..64324bf5edb4 100644
---- a/arch/arm/mach-exynos/Makefile
-+++ b/arch/arm/mach-exynos/Makefile
-@@ -21,6 +21,7 @@ obj-$(CONFIG_PM_SLEEP)		+= suspend.o
- obj-$(CONFIG_PM_GENERIC_DOMAINS) += pm_domains.o
- 
- obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
-+CFLAGS_platsmp.o		:= -march=armv7-a
- 
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
