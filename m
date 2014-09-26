@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaIZOBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:01:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13617 "EHLO mga09.intel.com"
+	id S1755443AbaIZOB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:01:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41353 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755397AbaIZOB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:01:29 -0400
+	id S1755341AbaIZOBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:01:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="609110067"
+   d="scan'208";a="609110020"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFT v2 12/24] iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
-Date: Fri, 26 Sep 2014 22:02:13 +0800
-Message-Id: <1411740145-30626-13-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFT v2 10/24] x86: irq_remapping: Introduce new interfaces to support hierarchy irqdomain
+Date: Fri, 26 Sep 2014 22:02:11 +0800
+Message-Id: <1411740145-30626-11-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,471 +35,347 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance Intel interrupt remapping driver to support hierarchy irqdomain,
-it will simplify the code eventually. It also implements intel_ir_chip
-to support stacked irq_chip.
+Introduce new interfaces for interrupt remapping drivers to support
+hierarchy irqdomain:
+1) irq_remapping_get_ir_irq_domain(): get irqdomain associated with an
+   interrupt remapping unit. IOAPIC/HPET drivers use this interface to
+   get parent interrupt remapping irqdomain.
+2) irq_remapping_get_irq_domain(): get irqdomain for an IRQ allocation.
+   This is mainly used to support MSI irqdomain. We must build one MSI
+   irqdomain for each interrupt remapping unit. MSI driver calls this
+   interface to get MSI irqdomain associated with an IR irqdomain which
+   manages the PCI devices.
+3) irq_remapping_get_ioapic_entry(): get IOAPIC entry content rewritten
+   by the interrupt remapping driver for remapped IOAPIC interrupt.
+4) irq_remapping_get_msi_entry(): get MSI/HPET entry content rewritten
+   by the interrupt remapping driver for remapped MSI/HPET interrupt.
+
+Architecture specific needs to implement two hooks:
+1) arch_get_ir_parent_domain(): get parent irqdomain for IR irqdomain,
+   which is x86_vector_domain on x86 platforms.
+2) arch_create_msi_irq_domain(): create an MSI irqdomain associated with
+   the interrupt remapping unit.
+
+We also add follwing callbacks into struct irq_remap_ops:
+	struct irq_domain *(*get_ir_irq_domain)(struct irq_alloc_info *);
+	struct irq_domain *(*get_irq_domain)(struct irq_alloc_info *);
+	int (*get_ioapic_entry)(struct irq_data *,
+				struct IR_IO_APIC_route_entry *);
+	int (*get_msi_entry)(struct irq_data *, struct msi_msg *);
+
+Once all clients of IR have been converted to new hierarchy irqdomain
+interfaces, we will:
+1) Remove set_ioapic_entry, set_affinity, free_irq, compose_msi_msg,
+   msi_alloc_irq, msi_setup_irq, setup_hpet_msi from struct remap_osp
+2) Kill setup_ioapic_remapped_entry, free_remapped_irq,
+   compose_remapped_msi_msg, setup_hpet_msi_remapped, setup_remapped_irq.
+3) Simplify x86_io_apic_ops and x86_msi.
+
+We could achieve a much more clear architecture with all these changes
+applied.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel_irq_remapping.c |  357 +++++++++++++++++++++++++++++++++--
- include/linux/intel-iommu.h         |    4 +
- 2 files changed, 343 insertions(+), 18 deletions(-)
+ arch/x86/include/asm/hw_irq.h        |   36 +++++++++++++++-
+ arch/x86/include/asm/irq_remapping.h |   73 +++++++++++++++++++++++++++++++
+ drivers/iommu/irq_remapping.c        |   78 +++++++++++++++++++++++++++++++++-
+ drivers/iommu/irq_remapping.h        |   17 ++++++++
+ 4 files changed, 202 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 0c679369e08a..166a73a3b551 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -8,6 +8,7 @@
- #include <linux/irq.h>
- #include <linux/intel-iommu.h>
- #include <linux/acpi.h>
-+#include <linux/irqdomain.h>
- #include <asm/io_apic.h>
- #include <asm/smp.h>
- #include <asm/cpu.h>
-@@ -31,12 +32,22 @@ struct hpet_scope {
- 	unsigned int devfn;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 1300702adb1e..545460d470bd 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -113,9 +113,43 @@ struct irq_2_irte {
+ #ifdef	CONFIG_X86_LOCAL_APIC
+ struct irq_data;
+ struct irq_domain;
++struct pci_dev;
++struct msi_desc;
++
++enum irq_alloc_type {
++	X86_IRQ_ALLOC_TYPE_IOAPIC = 1,
++	X86_IRQ_ALLOC_TYPE_HPET,
++	X86_IRQ_ALLOC_TYPE_MSI,
++	X86_IRQ_ALLOC_TYPE_MSIX,
++};
+ 
+ struct irq_alloc_info {
+-	const struct cpumask *mask;	/* CPU mask for vector allocation */
++	const struct cpumask	*mask;	/* CPU mask for vector allocation */
++	enum irq_alloc_type	type;
++	union {
++		int		unused;
++#ifdef	CONFIG_HPET_TIMER
++		struct {
++			int		hpet_id;
++			int		hpet_index;
++			void		*hpet_data;
++		};
++#endif
++#ifdef	CONFIG_PCI_MSI
++		struct {
++			struct pci_dev	*msi_dev;
++			struct msi_desc *msi_desc;
++		};
++#endif
++#ifdef	CONFIG_X86_IO_APIC
++		struct {
++			int		ioapic_id;
++			int		ioapic_pin;
++			u32		ioapic_trigger : 1;
++			u32		ioapic_polarity : 1;
++		};
++#endif
++	};
  };
  
-+struct intel_ir_data {
-+	struct irq_2_iommu			irq_2_iommu;
-+	struct irte				irte_entry;
-+	union {
-+		struct msi_msg			msi_entry;
-+		struct IR_IO_APIC_route_entry	ioapic_entry;
-+	};
-+};
+ struct irq_cfg {
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index 230dde9b695e..3653d10268cf 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -22,6 +22,7 @@
+ #ifndef __X86_IRQ_REMAPPING_H
+ #define __X86_IRQ_REMAPPING_H
+ 
++#include <linux/irqdomain.h>
+ #include <asm/io_apic.h>
+ 
+ struct IO_APIC_route_entry;
+@@ -30,6 +31,7 @@ struct irq_chip;
+ struct msi_msg;
+ struct pci_dev;
+ struct irq_cfg;
++struct irq_alloc_info;
+ 
+ #ifdef CONFIG_IRQ_REMAP
+ 
+@@ -58,6 +60,42 @@ extern bool setup_remapped_irq(int irq,
+ 
+ void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+ 
++extern struct irq_domain *irq_remapping_get_ir_irq_domain(
++				struct irq_alloc_info *info);
++extern struct irq_domain *irq_remapping_get_irq_domain(
++				struct irq_alloc_info *info);
++extern int irq_remapping_get_ioapic_entry(struct irq_data *irq_data,
++					  struct IR_IO_APIC_route_entry *entry);
++extern int irq_remapping_get_msi_entry(struct irq_data *irq_data,
++				       struct msi_msg *entry);
++extern void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p);
 +
- #define IR_X2APIC_MODE(mode) (mode ? (1 << 11) : 0)
- #define IRTE_DEST(dest) ((x2apic_mode) ? dest : dest << 8)
- 
- static struct ioapic_scope ir_ioapic[MAX_IO_APICS];
- static struct hpet_scope ir_hpet[MAX_HPET_TBS];
- static int ir_ioapic_num, ir_hpet_num;
-+static struct irq_domain_ops intel_ir_domain_ops;
- 
- /*
-  * Lock ordering:
-@@ -263,7 +274,7 @@ static int free_irte(int irq)
- 	unsigned long flags;
- 	int rc;
- 
--	if (!irq_iommu)
-+	if (!irq_iommu || irq_iommu->iommu == NULL)
- 		return -1;
- 
- 	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
-@@ -481,36 +492,48 @@ static int intel_setup_irq_remapping(struct intel_iommu *iommu, int mode)
- 	struct page *pages;
- 	unsigned long *bitmap;
- 
--	ir_table = iommu->ir_table = kzalloc(sizeof(struct ir_table),
--					     GFP_ATOMIC);
--
--	if (!iommu->ir_table)
-+	ir_table = kzalloc(sizeof(struct ir_table), GFP_ATOMIC);
-+	if (!ir_table)
- 		return -ENOMEM;
- 
- 	pages = alloc_pages_node(iommu->node, GFP_ATOMIC | __GFP_ZERO,
- 				 INTR_REMAP_PAGE_ORDER);
--
- 	if (!pages) {
- 		pr_err("IR%d: failed to allocate pages of order %d\n",
- 		       iommu->seq_id, INTR_REMAP_PAGE_ORDER);
--		kfree(iommu->ir_table);
--		return -ENOMEM;
-+		goto out_free_table;
- 	}
- 
- 	bitmap = kcalloc(BITS_TO_LONGS(INTR_REMAP_TABLE_ENTRIES),
- 			 sizeof(long), GFP_ATOMIC);
- 	if (bitmap == NULL) {
- 		pr_err("IR%d: failed to allocate bitmap\n", iommu->seq_id);
--		__free_pages(pages, INTR_REMAP_PAGE_ORDER);
--		kfree(ir_table);
--		return -ENOMEM;
-+		goto out_free_pages;
-+	}
-+
-+	iommu->ir_domain = irq_domain_add_linear(NULL, INTR_REMAP_TABLE_ENTRIES,
-+						 &intel_ir_domain_ops, iommu);
-+	if (!iommu->ir_domain) {
-+		pr_err("IR%d: failed to allocate irqdomain\n", iommu->seq_id);
-+		goto out_free_bitmap;
- 	}
-+	iommu->ir_domain->parent = arch_get_ir_parent_domain();
-+	iommu->ir_msi_domain = arch_create_msi_irq_domain(iommu->ir_domain);
- 
- 	ir_table->base = page_address(pages);
- 	ir_table->bitmap = bitmap;
--
-+	iommu->ir_table = ir_table;
- 	iommu_set_irq_remapping(iommu, mode);
-+
- 	return 0;
-+
-+out_free_bitmap:
-+	kfree(bitmap);
-+out_free_pages:
-+	__free_pages(pages, INTR_REMAP_PAGE_ORDER);
-+out_free_table:
-+	kfree(ir_table);
-+	return -ENOMEM;
- }
- 
- /*
-@@ -1014,12 +1037,6 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	struct irte irte;
- 	int err;
- 
--	if (!config_enabled(CONFIG_SMP))
--		return -EINVAL;
--
--	if (!cpumask_intersects(mask, cpu_online_mask))
--		return -EINVAL;
--
- 	if (get_irte(irq, &irte))
- 		return -EBUSY;
- 
-@@ -1157,6 +1174,72 @@ static int intel_setup_hpet_msi(unsigned int irq, unsigned int id)
- 	return ret;
- }
- 
-+static struct irq_domain *intel_get_ir_irq_domain(struct irq_alloc_info *info)
++/*
++ * Create MSI/MSIx irqdomain for interrupt remapping device, use @parent as
++ * parent irqdomain.
++ */
++static inline struct irq_domain *
++arch_create_msi_irq_domain(struct irq_domain *parent)
 +{
-+	struct intel_iommu *iommu = NULL;
-+
-+	if (!info)
-+		return NULL;
-+
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_IOAPIC:
-+		iommu = map_ioapic_to_ir(info->ioapic_id);
-+		break;
-+	case X86_IRQ_ALLOC_TYPE_HPET:
-+		iommu = map_hpet_to_ir(info->hpet_id);
-+		break;
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		iommu = map_dev_to_ir(info->msi_dev);
-+		break;
-+	default:
-+		BUG_ON(1);
-+		break;
-+	}
-+
-+	return iommu ? iommu->ir_domain : NULL;
-+}
-+
-+static struct irq_domain *intel_get_irq_domain(struct irq_alloc_info *info)
-+{
-+	struct intel_iommu *iommu;
-+
-+	if (!info)
-+		return NULL;
-+
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		iommu = map_dev_to_ir(info->msi_dev);
-+		if (iommu)
-+			return iommu->ir_msi_domain;
-+		break;
-+	default:
-+		break;
-+	}
-+
 +	return NULL;
 +}
 +
-+static int intel_get_ioapic_entry(struct irq_data *irq_data,
-+				  struct IR_IO_APIC_route_entry *entry)
++/* Get parent irqdomain for interrupt remapping irqdomain */
++static inline struct irq_domain *arch_get_ir_parent_domain(void)
 +{
-+	struct intel_ir_data *ir_data = irq_data->chip_data;
-+
-+	*entry = ir_data->ioapic_entry;
-+
-+	return 0;
++	return x86_vector_domain;
 +}
 +
-+static int intel_get_msi_entry(struct irq_data *irq_data, struct msi_msg *msg)
++static inline void irq_remapping_domain_set_remapped(struct irq_domain *domain)
 +{
-+	struct intel_ir_data *ir_data = irq_data->chip_data;
-+
-+	*msg = ir_data->msi_entry;
-+
-+	return 0;
++	domain->flags |= IRQ_DOMAIN_FLAG_ARCH1;
 +}
 +
- struct irq_remap_ops intel_irq_remap_ops = {
- 	.supported		= intel_irq_remapping_supported,
- 	.prepare		= dmar_table_init,
-@@ -1171,4 +1254,242 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.msi_alloc_irq		= intel_msi_alloc_irq,
- 	.msi_setup_irq		= intel_msi_setup_irq,
- 	.setup_hpet_msi		= intel_setup_hpet_msi,
-+	.get_ir_irq_domain	= intel_get_ir_irq_domain,
-+	.get_irq_domain		= intel_get_irq_domain,
-+	.get_ioapic_entry	= intel_get_ioapic_entry,
-+	.get_msi_entry		= intel_get_msi_entry,
-+};
++static inline bool irq_remapping_domain_is_remapped(struct irq_domain *domain)
++{
++	return domain->flags & IRQ_DOMAIN_FLAG_ARCH1;
++}
 +
-+/*
-+ * Migrate the IO-APIC irq in the presence of intr-remapping.
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+ static inline void setup_irq_remapping_ops(void) { }
+@@ -101,6 +139,41 @@ static inline bool setup_remapped_irq(int irq,
+ {
+ 	return false;
+ }
++
++static inline struct irq_domain *
++irq_remapping_get_ir_irq_domain(struct irq_alloc_info *info)
++{
++	return NULL;
++}
++
++static inline struct irq_domain *
++irq_remapping_get_irq_domain(struct irq_alloc_info *info)
++{
++	return NULL;
++}
++
++static inline int irq_remapping_get_ioapic_entry(struct irq_data *irq_data,
++				struct IR_IO_APIC_route_entry *entry)
++{
++	return -ENOSYS;
++}
++
++static inline int irq_remapping_get_msi_entry(struct irq_data *irq_data,
++					      struct msi_msg *entry)
++{
++	return -ENOSYS;
++}
++
++static inline void irq_remapping_domain_set_remapped(struct irq_domain *domain)
++{
++}
++
++static inline bool irq_remapping_domain_is_remapped(struct irq_domain *domain)
++{
++	return false;
++}
++
++#define	irq_remapping_print_chip	NULL
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+ extern int dmar_alloc_hwirq(void);
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 7dd893ee70be..7ac44a464be0 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -370,7 +370,7 @@ void panic_if_irq_remap(const char *msg)
+ 		panic(msg);
+ }
+ 
+-static void ir_ack_apic_edge(struct irq_data *data)
++void ir_ack_apic_edge(struct irq_data *data)
+ {
+ 	ack_APIC_irq();
+ }
+@@ -381,6 +381,19 @@ static void ir_ack_apic_level(struct irq_data *data)
+ 	eoi_ioapic_irq(data->irq, irqd_cfg(data));
+ }
+ 
++void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p)
++{
++	/*
++	 * Assume interrupt is remapped if the parent irqdomain isn't the
++	 * vector domain, which is true for MSI, HPET and IOAPIC on x86
++	 * platforms.
++	 */
++	if (data->domain && data->domain->parent != arch_get_ir_parent_domain())
++		seq_printf(p, " IR-%s", data->chip->name);
++	else
++		seq_printf(p, " %s", data->chip->name);
++}
++
+ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
+ {
+ 	seq_printf(p, " IR-%s", data->chip->name);
+@@ -402,3 +415,66 @@ bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+ 	irq_remap_modify_chip_defaults(chip);
+ 	return true;
+ }
++
++/**
++ * irq_remapping_get_ir_irq_domain - Get the irqdomain associated the IOMMU
++ *				     device serving @info
++ * @info: interrupt allocation information, used to find the IOMMU device
 + *
-+ * For both level and edge triggered, irq migration is a simple atomic
-+ * update(of vector and cpu destination) of IRTE and flush the hardware cache.
-+ *
-+ * For level triggered, we eliminate the io-apic RTE modification (with the
-+ * updated vector information), by using a virtual vector (io-apic pin number).
-+ * Real vector that is used for interrupting cpu will be coming from
-+ * the interrupt-remapping table entry.
-+ *
-+ * As the migration is a simple atomic update of IRTE, the same mechanism
-+ * is used to migrate MSI irq's in the presence of interrupt-remapping.
++ * It's used to get parent irqdomain for HPET and IOAPIC domains.
++ * Returns pointer to IRQ domain, or NULL on failure.
 + */
-+static int
-+intel_ir_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+		      bool force)
++struct irq_domain *
++irq_remapping_get_ir_irq_domain(struct irq_alloc_info *info)
 +{
-+	struct intel_ir_data *ir_data = data->chip_data;
-+	struct irte *irte = &ir_data->irte_entry;
-+	struct irq_cfg *cfg = irqd_cfg(data);
-+	struct irq_data *parent = data->parent_data;
-+	int ret;
++	if (!remap_ops || !remap_ops->get_ir_irq_domain)
++		return NULL;
 +
-+	ret = parent->chip->irq_set_affinity(parent, mask, force);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * Atomically updates the IRTE with the new destination, vector
-+	 * and flushes the interrupt entry cache.
-+	 */
-+	irte->vector = cfg->vector;
-+	irte->dest_id = IRTE_DEST(cfg->dest_apicid);
-+	modify_irte(&ir_data->irq_2_iommu, irte);
-+
-+	/*
-+	 * After this point, all the interrupts will start arriving
-+	 * at the new destination. So, time to cleanup the previous
-+	 * vector allocation.
-+	 */
-+	if (cfg->move_in_progress)
-+		send_cleanup_vector(cfg);
-+
-+	return ret;
++	return remap_ops->get_ir_irq_domain(info);
 +}
 +
-+static struct irq_chip intel_ir_chip = {
-+	.irq_ack = ir_ack_apic_edge,
-+	.irq_set_affinity = intel_ir_set_affinity,
-+};
-+
-+static void intel_irq_remapping_prepare_irte(struct intel_ir_data *data,
-+					     struct irq_cfg *irq_cfg,
-+					     struct irq_alloc_info *info,
-+					     int index, int sub_handle)
++/**
++ * irq_remapping_get_irq_domain - Get the irqdomain serving the MSI interrupt
++ * @info: interrupt allocation information, used to find the IOMMU device
++ *
++ * It's used to get irqdomain for MSI/MSIx interrupt allocation.
++ * Returns pointer to IRQ domain, or NULL on failure.
++ */
++struct irq_domain *
++irq_remapping_get_irq_domain(struct irq_alloc_info *info)
 +{
-+	struct irte *irte = &data->irte_entry;
-+	struct IR_IO_APIC_route_entry *entry = &data->ioapic_entry;
-+	struct msi_msg *msg = &data->msi_entry;
++	if (!remap_ops || !remap_ops->get_irq_domain)
++		return NULL;
 +
-+	prepare_irte(irte, irq_cfg->vector, irq_cfg->dest_apicid);
-+	switch (info->type) {
-+	case X86_IRQ_ALLOC_TYPE_IOAPIC:
-+		/* Set source-id of interrupt request */
-+		set_ioapic_sid(irte, info->ioapic_id);
-+		apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: Set IRTE entry (P:%d FPD:%d Dst_Mode:%d Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X Avail:%X Vector:%02X Dest:%08X SID:%04X SQ:%X SVT:%X)\n",
-+			info->ioapic_id, irte->present, irte->fpd,
-+			irte->dst_mode, irte->redir_hint,
-+			irte->trigger_mode, irte->dlvry_mode,
-+			irte->avail, irte->vector, irte->dest_id,
-+			irte->sid, irte->sq, irte->svt);
-+
-+		memset(entry, 0, sizeof(*entry));
-+		entry->index2	= (index >> 15) & 0x1;
-+		entry->zero	= 0;
-+		entry->format	= 1;
-+		entry->index	= (index & 0x7fff);
-+		/*
-+		 * IO-APIC RTE will be configured with virtual vector.
-+		 * irq handler will do the explicit EOI to the io-apic.
-+		 */
-+		entry->vector	= info->ioapic_pin;
-+		entry->mask	= 0;			/* enable IRQ */
-+		entry->trigger	= info->ioapic_trigger;
-+		entry->polarity	= info->ioapic_polarity;
-+		if (info->ioapic_trigger)
-+			entry->mask = 1; /* Mask level triggered irqs. */
-+		break;
-+
-+	case X86_IRQ_ALLOC_TYPE_HPET:
-+	case X86_IRQ_ALLOC_TYPE_MSI:
-+	case X86_IRQ_ALLOC_TYPE_MSIX:
-+		if (info->type == X86_IRQ_ALLOC_TYPE_HPET)
-+			set_hpet_sid(irte, info->hpet_id);
-+		else
-+			set_msi_sid(irte, info->msi_dev);
-+
-+		msg->address_hi = MSI_ADDR_BASE_HI;
-+		msg->data = sub_handle;
-+		msg->address_lo = MSI_ADDR_BASE_LO | MSI_ADDR_IR_EXT_INT |
-+				  MSI_ADDR_IR_SHV |
-+				  MSI_ADDR_IR_INDEX1(index) |
-+				  MSI_ADDR_IR_INDEX2(index);
-+		break;
-+
-+	default:
-+		BUG_ON(1);
-+		break;
-+	}
++	return remap_ops->get_irq_domain(info);
 +}
 +
-+static void intel_free_irq_resources(struct irq_domain *domain,
-+				     unsigned int virq, unsigned int nr_irqs)
++/**
++ * irq_remapping_get_ioapic_entry - Get IOAPIC entry content rewritten by
++ *				    interrupt remapping driver
++ * @irq_data: irq_data associated with interrupt remapping irqdomain
++ * @entry: host returned data
++ *
++ * Caller must make sure that the interrupt is remapped.
++ * Return 0 on success, otherwise return error code
++ */
++int irq_remapping_get_ioapic_entry(struct irq_data *irq_data,
++				   struct IR_IO_APIC_route_entry *entry)
 +{
-+	struct irq_data *irq_data;
-+	struct intel_ir_data *data;
-+	struct irq_2_iommu *irq_iommu;
-+	unsigned long flags;
-+	int i;
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq_data = irq_domain_get_irq_data(domain, virq  + i);
-+		if (irq_data && irq_data->chip_data) {
-+			data = irq_data->chip_data;
-+			irq_iommu = &data->irq_2_iommu;
-+			raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
-+			clear_entries(irq_iommu);
-+			raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-+			irq_domain_reset_irq_data(irq_data);
-+			kfree(data);
-+		}
-+	}
++	return remap_ops->get_ioapic_entry(irq_data, entry);
 +}
 +
-+static int intel_irq_remapping_alloc(struct irq_domain *domain,
-+				     unsigned int virq, unsigned int nr_irqs,
-+				     void *arg)
++/**
++ * irq_remapping_get_ioapic_entry - Get MSI data rewritten by interrupt
++ *				    remapping driver
++ * @irq_data: irq_data associated with interrupt remapping irqdomain
++ * @entry: host returned data
++ *
++ * Caller must make sure that the interrupt is remapped.
++ * Return 0 on success, otherwise return error code
++ */
++int irq_remapping_get_msi_entry(struct irq_data *irq_data,
++				struct msi_msg *entry)
 +{
-+	struct intel_iommu *iommu = domain->host_data;
-+	struct irq_alloc_info *info = arg;
-+	struct intel_ir_data *data;
-+	struct irq_data *irq_data;
-+	struct irq_cfg *irq_cfg;
-+	int i, ret, index;
-+
-+	if (!info || !iommu)
-+		return -EINVAL;
-+	if (nr_irqs > 1 && info->type != X86_IRQ_ALLOC_TYPE_MSI &&
-+	    info->type != X86_IRQ_ALLOC_TYPE_MSIX)
-+		return -EINVAL;
-+
-+	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = -ENOMEM;
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		goto out_free_parent;
-+
-+	down_read(&dmar_global_lock);
-+	index = alloc_irte(iommu, virq, &data->irq_2_iommu, nr_irqs);
-+	up_read(&dmar_global_lock);
-+	if (index < 0) {
-+		pr_warn("Failed to allocate IRTE\n");
-+		kfree(data);
-+		goto out_free_parent;
-+	}
-+
-+	for (i = 0; i < nr_irqs; i++) {
-+		irq_data = irq_domain_get_irq_data(domain, virq + i);
-+		irq_cfg = irqd_cfg(irq_data);
-+		if (!irq_data || !irq_cfg) {
-+			ret = -EINVAL;
-+			goto out_free_data;
-+		}
-+
-+		if (i > 0) {
-+			data = kzalloc(sizeof(*data), GFP_KERNEL);
-+			if (!data)
-+				goto out_free_data;
-+		}
-+		irq_data->hwirq = (index << 16) + i;
-+		irq_data->chip_data = data;
-+		irq_data->chip = &intel_ir_chip;
-+		intel_irq_remapping_prepare_irte(data, irq_cfg, info, index, i);
-+		irq_set_status_flags(virq + i, IRQ_MOVE_PCNTXT);
-+	}
-+	return 0;
-+
-+out_free_data:
-+	intel_free_irq_resources(domain, virq, i);
-+out_free_parent:
-+	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
-+	return ret;
++	return remap_ops->get_msi_entry(irq_data, entry);
 +}
-+
-+static void intel_irq_remapping_free(struct irq_domain *domain,
-+				     unsigned int virq, unsigned int nr_irqs)
-+{
-+	intel_free_irq_resources(domain, virq, nr_irqs);
-+	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
-+}
-+
-+static int intel_irq_remapping_activate(struct irq_domain *domain,
-+					struct irq_data *irq_data)
-+{
-+	struct intel_ir_data *data = irq_data->chip_data;
-+
-+	modify_irte(&data->irq_2_iommu, &data->irte_entry);
-+
-+	return 0;
-+}
-+
-+static int intel_irq_remapping_deactivate(struct irq_domain *domain,
-+					  struct irq_data *irq_data)
-+{
-+	struct intel_ir_data *data = irq_data->chip_data;
-+	struct irte entry;
-+
-+	memset(&entry, 0, sizeof(entry));
-+	modify_irte(&data->irq_2_iommu, &entry);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops intel_ir_domain_ops = {
-+	.alloc = intel_irq_remapping_alloc,
-+	.free = intel_irq_remapping_free,
-+	.activate = intel_irq_remapping_activate,
-+	.deactivate = intel_irq_remapping_deactivate,
- };
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index a65208a8fe18..ecaf3a937845 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -286,6 +286,8 @@ struct q_inval {
- 
- #define INTR_REMAP_TABLE_ENTRIES	65536
- 
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index 90c4dae5a46b..6e46074f06d0 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -30,6 +30,8 @@ struct irq_data;
+ struct cpumask;
+ struct pci_dev;
+ struct msi_msg;
 +struct irq_domain;
-+
- struct ir_table {
- 	struct irte *base;
- 	unsigned long *bitmap;
-@@ -335,6 +337,8 @@ struct intel_iommu {
++struct irq_alloc_info;
  
- #ifdef CONFIG_IRQ_REMAP
- 	struct ir_table *ir_table;	/* Interrupt remapping info */
-+	struct irq_domain *ir_domain;
-+	struct irq_domain *ir_msi_domain;
- #endif
- 	struct device	*iommu_dev; /* IOMMU-sysfs device */
- 	int		node;
+ extern int disable_irq_remap;
+ extern int irq_remap_broken;
+@@ -81,11 +83,26 @@ struct irq_remap_ops {
+ 
+ 	/* Setup interrupt remapping for an HPET MSI */
+ 	int (*setup_hpet_msi)(unsigned int, unsigned int);
++
++	/* Get the irqdomain associated the IOMMU device */
++	struct irq_domain *(*get_ir_irq_domain)(struct irq_alloc_info *);
++
++	/* Get the MSI irqdomain associated with the IOMMU device */
++	struct irq_domain *(*get_irq_domain)(struct irq_alloc_info *);
++
++	/* Get IOAPIC entry content rewritten by interrupt remapping driver */
++	int (*get_ioapic_entry)(struct irq_data *,
++				struct IR_IO_APIC_route_entry *);
++
++	/*  Get MSI data rewritten by interrupt remapping driver */
++	int (*get_msi_entry)(struct irq_data *, struct msi_msg *);
+ };
+ 
+ extern struct irq_remap_ops intel_irq_remap_ops;
+ extern struct irq_remap_ops amd_iommu_irq_ops;
+ 
++extern void ir_ack_apic_edge(struct irq_data *data);
++
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+ #define irq_remapping_enabled 0
 -- 
 1.7.10.4
 
