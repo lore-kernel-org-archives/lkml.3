@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220AbaIZXIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 19:08:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819AbaIZXIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 19:08:04 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] PCI: Intel 10G NIC ACS quirks
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Williamson <alex.williamson@redhat.com>,
-        John Ronciak <john.ronciak@intel.com>
-Date: Fri, 26 Sep 2014 17:07:59 -0600
-Message-ID: <20140926230717.17458.59969.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S1756117AbaIZXNw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 19:13:52 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:49989 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828AbaIZXNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 19:13:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrUP=LE2QNzYL8LCukeuWeumOn0bm0eqYscc7GJqq45oYA@mail.gmail.com>
+References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+	<CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
+	<CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
+	<CAMEtUux-WFOGABTrWW=BGUstE=Zz6agXTGCGrRJtNXDfRmx-5A@mail.gmail.com>
+	<CALCETrVLtJOYkHwsmwueZ7jsSgrNED564W+m4FmMZJZL-836mg@mail.gmail.com>
+	<CAMEtUuxq7oNmDAHZ+1t4Vd-QhW6SV7eoM_juxXGEDJBF3Nfu6A@mail.gmail.com>
+	<CALCETrWcmZVmRZARM_s9S-zZ4Xm_TcxRrzJWGwL0O9ySmVgr5A@mail.gmail.com>
+	<CAMEtUuzQF+3uWFWmj5nSdYoJfo0W2F0wkvoyc4pP--EH3O_jYA@mail.gmail.com>
+	<CALCETrUP=LE2QNzYL8LCukeuWeumOn0bm0eqYscc7GJqq45oYA@mail.gmail.com>
+Date: Fri, 26 Sep 2014 16:13:47 -0700
+Message-ID: <CAMEtUuw4-7GyjGUC4yfCCyQTVZAiG-Fxa5gRdj-UA1BJ2V381A@mail.gmail.com>
+Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
+ syscall, verifier, testsuite)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel has verified there is no peer-to-peer between functions for the
-below selection of 82598, 82599, and X520 10G NICs.  These NICs lack
-an ACS capability, so we're not able to determine this isolation
-without the help of quirks.  Generalize the Solarflare quirk and add
-these.
+On Fri, Sep 26, 2014 at 3:41 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Sep 26, 2014 at 3:26 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Fri, Sep 26, 2014 at 3:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Fri, Sep 26, 2014 at 3:03 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>> On Fri, Sep 26, 2014 at 2:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>>
+>>>>> Can't you just disallow the 1-byte write to the stack?
+>>>>
+>>>> of course not.
+>>>> That would be extremely limiting to users.
+>>>> Can you actually see yourself living with stack that only
+>>>> allows 8-byte writes/reads?
+>>>> The stack usage will increase a lot, since all char/short
+>>>> stack variables will become 8-byte...
+>>>
+>>> How about requiring that sub-8-byte stack accesses only be to integer slots?
+>>
+>> you mean to reject the sub-8-byte write early if it's going
+>> into space where pointers were stored?
+>> That will limit stack reuse.
+>> gcc/llvm generate code where the same stack location
+>> is used by different variables during life of the function.
+>> So if I reject the write early, it will break otherwise valid
+>> programs.
+>
+> I think that a sub-8-byte write to an integer slot should leave it as
+> an integer and a sub-8-byte write to a non-integer slot should turn
+> that slot into an integer (if conversions to integer are permitted) or
+> be rejected otherwise.  gcc/llvm could emit an 8-byte write first, as
+> needed, to make this valid.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: John Ronciak <john.ronciak@intel.com>
----
+I don't think the above will work.
 
- drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
+> Alternatively, an integer stack slot could have a bitmask indicating
+> which bytes are valid.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 95239e0..b6c6500 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3635,14 +3635,16 @@ static int pci_quirk_intel_pch_acs(struct pci_dev *dev, u16 acs_flags)
- 	return acs_flags & ~flags ? 0 : 1;
- }
- 
--static int pci_quirk_solarflare_acs(struct pci_dev *dev, u16 acs_flags)
-+static int pci_quirk_mf_endpoint_acs(struct pci_dev *dev, u16 acs_flags)
- {
- 	/*
- 	 * SV, TB, and UF are not relevant to multifunction endpoints.
- 	 *
--	 * Solarflare indicates that peer-to-peer between functions is not
--	 * possible, therefore RR, CR, and DT are not implemented.  Mask
--	 * these out as if they were clear in the ACS capabilities register.
-+	 * Multifunction devices are only required to implement RR, CR, and DT
-+	 * in their ACS capability if they support peer-to-peer transactions.
-+	 * Devices matching this quirk have been verified by the vendor to not
-+	 * perform peer-to-peer with other functions, allowing us to mask out
-+	 * these bits as if they were unimplemented in the ACS capability.
- 	 */
- 	acs_flags &= ~(PCI_ACS_SV | PCI_ACS_TB | PCI_ACS_RR |
- 		       PCI_ACS_CR | PCI_ACS_UF | PCI_ACS_DT);
-@@ -3661,8 +3663,28 @@ static const struct pci_dev_acs_enabled {
- 	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
- 	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
- 	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
--	{ PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_solarflare_acs },
--	{ PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_solarflare_acs },
-+	{ PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10C6, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10DB, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10DD, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10E1, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10F1, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10F7, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10F8, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10F9, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10FA, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10FB, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x10FC, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x1507, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x1514, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x151C, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x1529, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x152A, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x154D, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x154F, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x1551, pci_quirk_mf_endpoint_acs },
-+	{ PCI_VENDOR_ID_INTEL, 0x1558, pci_quirk_mf_endpoint_acs },
- 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
- 	{ 0 }
- };
+but this one might. Let me think about it more.
+Note verifier, as it stands, is using 12Kbyte of temporary
+memory to track stack with byte granularity.
+(it's freed as soon as verifier finishes)
+This bitmask optimization, best case, will reduce it to 1.5Kbyte
+at the cost of extra complexity. I'll play with this idea to
+see whether this trade off is actually worth doing.
+Also note that there are indirect stack reads
+(see check_func_arg() -> check_stack_boundary())
+used to verify that N bytes were initialized in stack
+before calling into helper function.
+Also in the future I was planning to allow
+indirect stack write, so that helper function can
+store stuff into program stack. This indirect accesses
+are crossing 8-byte boundaries, so would need special
+care with bitmask optimization.
+We need to carefully weight all pros and cons.
+imo this memory usage during verification is not a big deal,
+but of course we should not waste it. I'll see what can be done.
 
+In any case, we're talking about incremental improvements
+on top of current stuff, right?
