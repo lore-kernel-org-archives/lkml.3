@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbaIZAsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:48:36 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56191 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaIZAsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:48:35 -0400
-Message-ID: <5424B7DF.4040006@converseincode.com>
-Date: Thu, 25 Sep 2014 17:48:31 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753186AbaIZAs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:48:59 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10849 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752738AbaIZAs6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 20:48:58 -0400
+Date: Thu, 25 Sep 2014 17:49:09 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Josh Cartwright <joshc@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v2] pinctrl: qcom: use restart_notifier mechanism for
+ ps_hold
+Message-ID: <20140926004908.GC28481@sonymobile.com>
+References: <1411505993-8414-1-git-send-email-joshc@codeaurora.org>
+ <CACRpkdauNieUTSAR=PGsvrXOrPNsBgyCPC9Ot=ZDXctfSdEp8w@mail.gmail.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: ak@linux.intel.com, yamada.m@jp.panasonic.com, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] kbuild, LLVMLinux: Add -Werror to cc-option to support
- clang
-References: <1411500522-11480-1-git-send-email-behanw@converseincode.com> <5422B3EF.4000800@suse.cz> <5423128D.8070708@converseincode.com> <542419CB.3090902@suse.cz>
-In-Reply-To: <542419CB.3090902@suse.cz>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdauNieUTSAR=PGsvrXOrPNsBgyCPC9Ot=ZDXctfSdEp8w@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/14 06:34, Michal Marek wrote:
-> On 2014-09-24 20:50, Behan Webster wrote:
->> Getting clang to error on unused flags wasn't trivial (this change broke
->> a lot of builds apparently). Fortunately we weren't the only ones who
->> wanted it to behave like gcc in this case. I think it's going to be
->> *much* harder to do the same for warnings. The argument given by
->> supporters of the current situation is that if a warning isn't
->> supported, why break the build? *sigh*
-> I guess the reason to accept unknown warnings opentions is compatibility
-> with Makefiles with hardcoded gcc-isms. BTW, GCC at some point started
-> to ignore unknown -Wno-* options, for everyone's good of course. That's
-> why we ended up with the cc-disable-warning function. If -W* options for
-> clang need special care, then it might be a good idea to introduce
-> cc-warning with the conditional -Werror for clang. There are not that
-> many places where we add warnings, so the patch would be still short.
-> That way, the possible silent failure is limited only to warning options
-> with clang, which is not such a big deal.
-I'll try this approach.
+On Thu 25 Sep 00:41 PDT 2014, Linus Walleij wrote:
 
-Thanks,
+> On Tue, Sep 23, 2014 at 10:59 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+> 
+> > By converting to the restart_notifier mechanism for restart, we allow
+> > for other mechanisms, like the watchdog, to be used for restart in the
+> > case where PS_HOLD has failed to reset the chip.
+> >
+> > Since this mechanism may be one of several mechanisms registered, change
+> > the post-ps_hold write timeout to be a more reasonable 1 second instead
+> > of 10 seconds.
+> >
+> > Choose priority 128, as according to documentation, this mechanism "is
+> > sufficient to restart the entire system".
+> >
+> > Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
+> > Cc: Guenter Roeck <linux@roeck-us.net>
+> > Tested-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > ---
+> >
+> > Changes since v1:
+> >   - Simplified conditional notifier block registration
+> >   - Reduced wait time to 1s, which I've found to be sufficient on an IFC6410
+> >     board.
+> 
+> Björn, are you OK with this patch?
+> 
 
-Behan
+Indeed, this is better than overriding arm_pm_restart.
 
--- 
-Behan Webster
-behanw@converseincode.com
+Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
+Regards,
+Bjorn
