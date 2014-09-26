@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaIZJaF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:30:05 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38733 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaIZJaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:30:03 -0400
-Date: Fri, 26 Sep 2014 11:29:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kevin Hilman <khilman@kernel.org>
-cc: Lina Iyer <lina.iyer@linaro.org>, ulf.hansson@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        daniel.lezcano@linaro.org
-Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq
- affinity notification
-In-Reply-To: <7htx3vbfqr.fsf@deeprootsystems.com>
-Message-ID: <alpine.DEB.2.11.1409261129220.4567@nanos>
-References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org> <1409170479-29955-4-git-send-email-lina.iyer@linaro.org> <alpine.DEB.2.10.1408272239190.3323@nanos> <20140902184305.GB91995@ilina-mac.local> <alpine.DEB.2.10.1409022109050.3333@nanos>
- <7htx3vbfqr.fsf@deeprootsystems.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753724AbaIZJdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:33:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32201 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753093AbaIZJdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:33:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391931365"
+From: Weike Chen <alvin.chen@intel.com>
+To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>, Alvin Chen <alvin.chen@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH] SPI: spi-pxa2xx: Add support for Intel Quark X1000 SPI controller
+Date: Fri, 26 Sep 2014 10:25:48 -0700
+Message-Id: <1411752349-31490-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Kevin Hilman wrote:
-> Maybe I'm missing something, or maybe we're just lucky and nobody uses
-> them together, but irq_set_affinity_notifier() only allows a single
-> notifier to be registered at any given time.  So if you had a system
+Hi,
+Intel Quark X1000 consists of two SPI controllers which can be PCI enumerated.
+SPI-PXA2XX PCI layer doesn't support it. Thus, we add support for Intel Quark
+X1000 SPI as well.
 
-A single notifier per irq .....
+Weike Chen (1):
+  SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+
+ drivers/spi/spi-pxa2xx-pci.c |    8 ++
+ drivers/spi/spi-pxa2xx.c     |  251 +++++++++++++++++++++++++++++++++++-------
+ drivers/spi/spi-pxa2xx.h     |    8 +-
+ include/linux/pxa2xx_ssp.h   |   21 ++++
+ 4 files changed, 249 insertions(+), 39 deletions(-)
+
+-- 
+1.7.9.5
+
