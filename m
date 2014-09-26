@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbaIZJyD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:54:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32950 "EHLO mx2.suse.de"
+	id S1755295AbaIZJyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:54:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755145AbaIZJqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:49 -0400
+	id S1755130AbaIZJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 136/142] libata: widen Crucial M550 blacklist matching
-Date: Fri, 26 Sep 2014 11:45:47 +0200
-Message-Id: <61ee2622648853cd3b2d36f9972773ec37b3c71a.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Arjun Sreedharan <arjun024@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 137/142] pata_scc: propagate return value of scc_wait_after_reset
+Date: Fri, 26 Sep 2014 11:45:48 +0200
+Message-Id: <6cd2641b22e6dd70ae3fded86aa42128c84c3afc.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,40 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Arjun Sreedharan <arjun024@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2a13772a144d2956a7fedd18685921d0a9b8b783 upstream.
+commit 4dc7c76cd500fa78c64adfda4b070b870a2b993c upstream.
 
-Crucial M550 may cause data corruption on queued trims and is
-blacklisted.  The pattern used for it fails to match 1TB one as the
-capacity section will be four chars instead of three.  Widen the
-pattern.
+scc_bus_softreset not necessarily should return zero.
+Propagate the error code.
 
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Charles Reiss <woggling@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81071
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/ata/libata-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/pata_scc.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 0d9a2f674819..5d0bc51bafea 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4227,7 +4227,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT*M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+diff --git a/drivers/ata/pata_scc.c b/drivers/ata/pata_scc.c
+index f35f15f4d83e..f7badaa39eb6 100644
+--- a/drivers/ata/pata_scc.c
++++ b/drivers/ata/pata_scc.c
+@@ -586,7 +586,7 @@ static int scc_wait_after_reset(struct ata_link *link, unsigned int devmask,
+  *	Note: Original code is ata_bus_softreset().
+  */
  
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
+-static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
++static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+                                       unsigned long deadline)
+ {
+ 	struct ata_ioports *ioaddr = &ap->ioaddr;
+@@ -600,9 +600,7 @@ static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+ 	udelay(20);
+ 	out_be32(ioaddr->ctl_addr, ap->ctl);
+ 
+-	scc_wait_after_reset(&ap->link, devmask, deadline);
+-
+-	return 0;
++	return scc_wait_after_reset(&ap->link, devmask, deadline);
+ }
+ 
+ /**
+@@ -619,7 +617,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
+ {
+ 	struct ata_port *ap = link->ap;
+ 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
+-	unsigned int devmask = 0, err_mask;
++	unsigned int devmask = 0;
++	int rc;
+ 	u8 err;
+ 
+ 	DPRINTK("ENTER\n");
+@@ -635,9 +634,9 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
+ 
+ 	/* issue bus reset */
+ 	DPRINTK("about to softreset, devmask=%x\n", devmask);
+-	err_mask = scc_bus_softreset(ap, devmask, deadline);
+-	if (err_mask) {
+-		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
++	rc = scc_bus_softreset(ap, devmask, deadline);
++	if (rc) {
++		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
+ 		return -EIO;
+ 	}
+ 
 -- 
 2.1.0
 
