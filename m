@@ -1,90 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643AbaIZD3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:29:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:55688 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253AbaIZD3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:29:10 -0400
-Date: Fri, 26 Sep 2014 13:29:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>, Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: linux-next: manual merge of the pci tree with the asm-generic tree
-Message-ID: <20140926132902.603fb9f8@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753330AbaIZDmu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:42:50 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:52559 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaIZDms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 23:42:48 -0400
+Message-ID: <5424E09F.50701@huawei.com>
+Date: Fri, 26 Sep 2014 11:42:23 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/ow5xe+EKyE8fo+vUZAtbux3"; protocol="application/pgp-signature"
+To: Thierry Reding <thierry.reding@gmail.com>, Liviu Dudau <liviu@dudau.co.uk>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <20140925074235.GN12423@ulmo> <20140925144855.GB31157@bart.dudau.co.uk> <20140925164937.GB30382@ulmo>
+In-Reply-To: <20140925164937.GB30382@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ow5xe+EKyE8fo+vUZAtbux3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+>> I am actually in disagreement with you, Thierry. I don't like the general direction
+>> of the patches, or at least I don't like the fact that we don't have a portable
+>> way of setting up the msi_chip without having to rely on weak architectural hooks.
+> 
+> Oh, good. That's actually one of the things I said I wasn't happy with
+> either. =)
 
-Hi Bjorn,
+Hm, I decide to drop weak arch_find_msi_chip(), no one likes it.
+Let's find a better solution :)
 
-Today's linux-next merge of the pci tree got a conflict in
-include/asm-generic/io.h between commit 4005bfe0aa45
-("asm-generic/io.h: Implement generic {read,write}s*()") from the
-asm-generic tree and commit 3aad9c969c09 ("asm-generic/io.h: Fix
-ioport_map() for !CONFIG_GENERIC_IOMAP") from the pci tree.
+> 
+>> I'm surprised no one considers the case of a platform having more than one host
+>> bridge and possibly more than one MSI unit. With the current proposed patchset I
+>> can't see how that would work.
+> 
+> The PCI core can already deal with that. An MSI chip can be set per bus
+> and the weak pcibios_add_bus() can be used to set that. Often it might
+> not even be necessary to do it via pcibios_add_bus() if you create the
+> root bus directly, since you can attach the MSI chip at that time.
 
-I fixed it up (the only difference is that the latter castes the result
-to void __iomem * - see below) and can carry the fix as necessary (no
-action is required).
+Yes, PCI hostbridge driver find the matched msi chip during its initialization,
+and assign the msi chip to PCI bus in pcibios_add_bus().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>> What I would like to see is a way of creating the pci_host_bridge structure outside
+>> the pci_create_root_bus(). That would then allow us to pass this sort of platform
+>> details like associated msi_chip into the host bridge and the child busses will
+>> have an easy way of finding the information needed by finding the root bus and then
+>> the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
+>> everyone and the drivers can remove their kludges that try to work around the
+>> current limitations.
 
-diff --cc include/asm-generic/io.h
-index 3e976be3bdd4,2e2161b0c795..000000000000
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@@ -756,16 -329,11 +756,16 @@@ static inline void iounmap(void __iome
- =20
-  #ifdef CONFIG_HAS_IOPORT_MAP
-  #ifndef CONFIG_GENERIC_IOMAP
- +#ifndef ioport_map
- +#define ioport_map ioport_map
-  static inline void __iomem *ioport_map(unsigned long port, unsigned int n=
-r)
-  {
-- 	return PCI_IOBASE + (port & IO_SPACE_LIMIT);
-+ 	return (void __iomem *)(PCI_IOBASE + (port & IO_SPACE_LIMIT));
-  }
- +#endif
- =20
- +#ifndef ioport_unmap
- +#define ioport_unmap ioport_unmap
-  static inline void ioport_unmap(void __iomem *p)
-  {
-  }
+So I think maybe save msi chip in PCI arch sysdata is a good candidate.
 
---Sig_/ow5xe+EKyE8fo+vUZAtbux3
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> 
+> I think both issues are orthogonal. Last time I checked a lot of work
+> was still necessary to unify host bridges enough so that it could be
+> shared across architectures. But perhaps some of that work has
+> happened in the meantime.
+> 
+> But like I said, when you create the root bus, you can easily attach the
+> MSI chip to it.
+> 
+> Thierry
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUJN2DAAoJEMDTa8Ir7ZwV9vgP/3BnKrDma9zJlMeUR3Celdgw
-6nO4CvZeQhM9GktOJA4gXGcIj0aq1x1fYNoEOcNO5BBzoNPqw6/4Btj845tarBWX
-624IBKQNdvIc4kYWlsHso/ylMS1ItpTZnnvmstamhmfFlgterDYBBosA/DYC+v8I
-UK0vA0HFA2CdbNF6B1FNHF6VkZdUgiZq/eb4VhIb+ANlF08VY2N73f/x2gLjxiAy
-qe/9NUzzkXtWcr+HKvFXlwsaz+VE6W60dyTnUADnqcO6YdClSQAg9Lovuohp2Ocv
-DiESfCt2DAfrX3Csdx7VbPKdGhd7aQCMOcz8ry8a4mOGgqDL/FAf0oyuDrTcJ6jQ
-ECfWb6H/ZMjrycKDDZrHVcJQgUVC4oajY9s+iNS6uTGc3s87xSCZfTRiM6XBVC3p
-EKl5fC8p/7RmABlE2gz3HBJ2jDNwwvQbrN73upRi549d6SD4jWSNNBGY9yvTj1AF
-Ct0LWN2/ibf2kSKeMHIeRCLpX16u0YcYzpHHu0XwXVtYNb+Y/934j5fkN3pkv9vF
-HZ9eME6WFkCVWQF7x9ooNH5VICu5JUiQJAdkoC3fnWQnW2B5qaWNxF1weSKpIazd
-amYW4LP+T97P/SHZBEQC/QdZBxzohRQsbPz+IEGA/n+6AeLqte6w83oJFxjRjxHg
-gtnLhI47NHphAcRkEgLw
-=HTA/
------END PGP SIGNATURE-----
+-- 
+Thanks!
+Yijing
 
---Sig_/ow5xe+EKyE8fo+vUZAtbux3--
