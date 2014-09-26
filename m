@@ -1,81 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaIZPOe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:14:34 -0400
-Received: from mail-bn1on0147.outbound.protection.outlook.com ([157.56.110.147]:30448
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1755337AbaIZPPV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:15:21 -0400
+Received: from mail-bl2on0056.outbound.protection.outlook.com ([65.55.169.56]:50784
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754191AbaIZPOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:14:32 -0400
-X-Greylist: delayed 9797 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Sep 2014 11:14:32 EDT
-From: Thomas Shao <huishao@microsoft.com>
-To: Mike Surcouf <mps.surcouf.lkml@gmail.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        Olaf Hering <olaf@aepfle.de>, Robo Bot <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Drivers: hv: util: Implement Time Synchronization using
- host time sample
-Thread-Topic: [PATCH] Drivers: hv: util: Implement Time Synchronization
- using host time sample
-Thread-Index: AQHP2XESGfKWnzoNvEy532a+Bg3JTpwTTgaAgAAIEqCAAAy5AIAADGuAgAAUy7A=
-Date: Fri, 26 Sep 2014 15:13:24 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD84014154098BC7@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1411725736-49225-1-git-send-email-huishao@microsoft.com>
-	<CAL7Bo8HoYU1mbUbw-k0ufj7n8D=Z_hLtf268gKeyACcnZHH5rw@mail.gmail.com>
-	<CD2CABCB2C0A0D4682C5F8AD8401415409846D@HKXPRD3002MB006.064d.mgd.msft.net>
-	<CAL7Bo8G_7cOYxbtPR=JDxE8VJShbzs2+2Y=F9OOABgFZr=m29A@mail.gmail.com>
- <CAL7Bo8EocBnW28r-QtYU7AvSTyQNdMm39ns5WyM2++rbnJKxrg@mail.gmail.com>
-In-Reply-To: <CAL7Bo8EocBnW28r-QtYU7AvSTyQNdMm39ns5WyM2++rbnJKxrg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [114.91.240.4]
-Content-Type: text/plain; charset="utf-8"
+	id S1754412AbaIZPPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:15:19 -0400
+X-Greylist: delayed 917 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Sep 2014 11:15:18 EDT
+Message-ID: <54257E8C.8000102@opensource.altera.com>
+Date: Fri, 26 Sep 2014 09:56:12 -0500
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(377454003)(199003)(51704005)(189002)(13464003)(31966008)(4396001)(33656002)(76482002)(85306004)(23676002)(50986999)(54356999)(106116001)(93886004)(76176999)(50466002)(26826002)(16796002)(87936001)(106466001)(86146001)(120916001)(83322001)(55846006)(83072002)(44976005)(84676001)(21056001)(99396003)(2656002)(10300001)(19580405001)(81156004)(6806004)(97736003)(92566001)(64706001)(92726001)(86612001)(66066001)(107046002)(47776003)(20776003)(86362001)(85852003)(81542003)(90102001)(80022003)(79102003)(69596002)(74662003)(77096002)(95666004)(19580395003)(77982003)(74502003)(68736004)(81342003)(46102003)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB274;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+To: <atull@opensource.altera.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 2/2] socfpga: support suspend to ram
+References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
+In-Reply-To: <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0050.namprd02.prod.outlook.com (10.141.56.50) To
+ BY1PR0301MB1192.namprd03.prod.outlook.com (25.160.195.150)
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB274;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
 X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6049001)(6009001)(51704005)(377454003)(479174003)(189002)(24454002)(22564002)(199003)(83322001)(54356999)(31966008)(87266999)(33656002)(92726001)(47776003)(120916001)(79102003)(101416001)(81342003)(50986999)(19580395003)(50466002)(85852003)(65816999)(15975445006)(76482002)(42186005)(23746002)(86362001)(4396001)(15202345003)(64126003)(92566001)(83506001)(76176999)(74502003)(20776003)(102836001)(46102003)(74662003)(65956001)(10300001)(21056001)(99136001)(66066001)(19580405001)(80316001)(77982003)(81542003)(59896002)(64706001)(105586002)(80022003)(107046002)(97736003)(83072002)(87976001)(95666004)(77096002)(99396003)(85306004)(65806001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1192;H:[137.57.160.210];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8QFEclr001350
 
+On 09/24/2014 03:27 PM, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Add code that requests that the sdr controller go into
+> self-refresh mode.  This code is run from ocram.
+> 
+> This patch assumes that u-boot has already configured sdr:
+>   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
+>   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
+>   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
+> 
+> How to suspend to ram:
+>  $ echo enabled > \
+> /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
+> 
+>  $ echo -n mem > /sys/power/state
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+>  arch/arm/mach-socfpga/Makefile       |    1 +
+>  arch/arm/mach-socfpga/core.h         |    4 +
+>  arch/arm/mach-socfpga/pm.c           |  141 ++++++++++++++++++++++++++++++++
+>  arch/arm/mach-socfpga/self-refresh.S |  148 ++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-socfpga/socfpga.c      |   10 +++
+>  5 files changed, 304 insertions(+)
+>  create mode 100644 arch/arm/mach-socfpga/pm.c
+>  create mode 100644 arch/arm/mach-socfpga/self-refresh.S
+> 
+> diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
+> index 6dd7a93..0591927 100644
+> --- a/arch/arm/mach-socfpga/Makefile
+> +++ b/arch/arm/mach-socfpga/Makefile
+> @@ -4,3 +4,4 @@
+>  
+>  obj-y					:= socfpga.o
+>  obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
+> +obj-$(CONFIG_SUSPEND)	+= pm.o self-refresh.o
+> diff --git a/arch/arm/mach-socfpga/core.h b/arch/arm/mach-socfpga/core.h
+> index c4a0929..cc1a2fb 100644
+> --- a/arch/arm/mach-socfpga/core.h
+> +++ b/arch/arm/mach-socfpga/core.h
+> @@ -38,6 +38,7 @@ extern void socfpga_sysmgr_init(void);
+>  
+>  extern void __iomem *sys_manager_base_addr;
+>  extern void __iomem *rst_manager_base_addr;
+> +extern void __iomem *sdr_ctl_base_addr;
+>  
+>  extern struct smp_operations socfpga_smp_ops;
+>  extern char secondary_trampoline, secondary_trampoline_end;
+> @@ -46,4 +47,7 @@ extern unsigned long cpu1start_addr;
+>  
+>  #define SOCFPGA_SCU_VIRT_BASE   0xfffec000
+>  
+> +u32 socfpga_sdram_self_refresh(u32 sdr_base, u32 scu_base);
+> +extern unsigned int socfpga_sdram_self_refresh_sz;
+> +
+>  #endif
+> diff --git a/arch/arm/mach-socfpga/pm.c b/arch/arm/mach-socfpga/pm.c
+> new file mode 100644
+> index 0000000..02c3719
+> --- /dev/null
+> +++ b/arch/arm/mach-socfpga/pm.c
+> @@ -0,0 +1,141 @@
+> +/*
+> + *  arch/arm/mach-socfpga/pm.c
+> + *
+> + * Copyright (C) 2014 Altera Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/bitops.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/suspend.h>
+> +#include <asm/suspend.h>
+> +#include <asm/fncpy.h>
+> +#include "core.h"
+> +
+> +/* Pointer to function copied to ocram */
+> +static u32 (*socfpga_sdram_self_refresh_in_ocram)(u32 sdr_base, u32 scu_base);
+> +
+> +/* Round up a pointer address to fix aligment for fncpy() */
+> +static void *fncpy_align(void *ptr)
+> +{
+> +	u32 value = (u32)ptr;
+> +
+> +	if ((value & (FNCPY_ALIGN - 1)) != 0)
+> +		value = ((value & ~(FNCPY_ALIGN - 1)) + FNCPY_ALIGN);
+> +
+> +	return (void *)value;
+> +}
+> +
+> +static void *socfpga_init_ocram_exec(void)
+> +{
+> +	struct device_node *np;
+> +	const __be32 *prop;
+> +	u32 ocram_hwaddr, len;
+> +	void __iomem  *iomem_exec_ocram;
+> +	size_t size;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
+> +	if (!np) {
+> +		pr_err("SOCFPGA: Unable to find mmio-sram in dtb\n");
+> +		return 0;
+> +	}
+> +
+> +	/* Determine the OCRAM address and size */
+> +	prop = of_get_property(np, "reg", &size);
+> +	ocram_hwaddr = be32_to_cpup(prop++);
+> +	len = be32_to_cpup(prop);
+> +
+> +	if (!prop || size < sizeof(*prop)) {
+> +		pr_err("SOCFPGA: Unable to find OCRAM mapping in dtb\n");
+> +		return 0;
+> +	}
+> +
+> +	iomem_exec_ocram = __arm_ioremap_exec(ocram_hwaddr, len, 0);
 
+The call to __arm_ioremap_exec can fail. Also, this doesn't seem right,
+what if a good chunk of OCRAM has been used by some other driver in the
+system? From what I've seen, OCRAM should be using the generic allocator
+framework.
 
-> -----Original Message-----
-> From: Mike Surcouf [mailto:mps.surcouf.lkml@gmail.com]
-> Sent: Friday, September 26, 2014 9:52 PM
-> To: Thomas Shao
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> driverdev-devel@linuxdriverproject.org; Olaf Hering; Robo Bot;
-> jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
-> Subject: Re: [PATCH] Drivers: hv: util: Implement Time Synchronization using
-> host time sample
-> 
-> In CENTOS and RHEL 6 and upwards the official way would be to use
-> 
-> /usr/sbin/tickadj
-> 
-> which is provided by ntp/chrony package
-> 
-> This dependency on user space packages that may or may not be installed is
-> going to cause a lot of confusion in an already confused space.
-> Are we sure theres no other way?
+> +
+> +	/* Fix alignment to work with fncpy */
+> +	iomem_exec_ocram = fncpy_align(iomem_exec_ocram);
+> +
+> +	return iomem_exec_ocram;
+> +}
+> +
+> +static int socfpga_setup_ocram_self_refresh(void)
+> +{
+> +	void *ocram_addr;
+> +
+> +	/* Configure ocram and make it executable */
+> +	ocram_addr = socfpga_init_ocram_exec();
+> +	WARN(!ocram_addr, "Unable to initialize ocram for pm");
+> +	if (!ocram_addr)
+> +		return -EFAULT;
+> +
+> +	/* Copy the code that puts DDR in self refresh to ocram */
+> +	socfpga_sdram_self_refresh_in_ocram =
+> +		(void *)fncpy((void *)ocram_addr,
+> +		      &socfpga_sdram_self_refresh,
+> +		      socfpga_sdram_self_refresh_sz);
+> +
+> +	WARN(!socfpga_sdram_self_refresh_in_ocram,
+> +	     "could not copy function to ocram");
+> +	if (!socfpga_sdram_self_refresh_in_ocram)
+> +		return -EFAULT;
+> +
+> +	return 0;
+> +}
+> +
+> +static int socfpga_pm_suspend(unsigned long arg)
+> +{
+> +	u32 ret;
+> +
+> +	ret = socfpga_sdram_self_refresh_in_ocram((u32)sdr_ctl_base_addr,
+> +						  (u32)socfpga_scu_base_addr);
 
-Thanks Mike.
-I think another way is to expose the do_adjtimex to kernel module. I'm not sure if there is any concerns. I'll investigate that.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+What if sdr_ctl_base_addr is not valid?
+
+BR,
+Dinh
+
