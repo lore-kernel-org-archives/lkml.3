@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452AbaIZKim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:38:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60968 "EHLO mx2.suse.de"
+	id S1756630AbaIZKi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:38:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60971 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754617AbaIZJpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:45:55 -0400
+	id S1754672AbaIZJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:45:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Liu Bo <bo.li.liu@oracle.com>,
         Chris Mason <clm@fb.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 009/142] Btrfs: Fix memory corruption by ulist_add_merge() on 32bit arch
-Date: Fri, 26 Sep 2014 11:43:40 +0200
-Message-Id: <e7b4f1fa5e03939cb5671b60635349a7c129e677.1411724723.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 013/142] Btrfs: fix crash on endio of reading corrupted block
+Date: Fri, 26 Sep 2014 11:43:44 +0200
+Message-Id: <8f543e8182632771ed610a88a7b8594b3c6f6820.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,123 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Liu Bo <bo.li.liu@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4eb1f66dce6c4dc28dd90a7ffbe6b2b1cb08aa4e upstream.
+commit 38c1c2e44bacb37efd68b90b3f70386a8ee370ee upstream.
 
-We've got bug reports that btrfs crashes when quota is enabled on
-32bit kernel, typically with the Oops like below:
- BUG: unable to handle kernel NULL pointer dereference at 00000004
- IP: [<f9234590>] find_parent_nodes+0x360/0x1380 [btrfs]
- *pde = 00000000
- Oops: 0000 [#1] SMP
- CPU: 0 PID: 151 Comm: kworker/u8:2 Tainted: G S      W 3.15.2-1.gd43d97e-default #1
- Workqueue: btrfs-qgroup-rescan normal_work_helper [btrfs]
- task: f1478130 ti: f147c000 task.ti: f147c000
- EIP: 0060:[<f9234590>] EFLAGS: 00010213 CPU: 0
- EIP is at find_parent_nodes+0x360/0x1380 [btrfs]
- EAX: f147dda8 EBX: f147ddb0 ECX: 00000011 EDX: 00000000
- ESI: 00000000 EDI: f147dda4 EBP: f147ddf8 ESP: f147dd38
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
- CR0: 8005003b CR2: 00000004 CR3: 00bf3000 CR4: 00000690
- Stack:
-  00000000 00000000 f147dda4 00000050 00000001 00000000 00000001 00000050
-  00000001 00000000 d3059000 00000001 00000022 000000a8 00000000 00000000
-  00000000 000000a1 00000000 00000000 00000001 00000000 00000000 11800000
- Call Trace:
-  [<f923564d>] __btrfs_find_all_roots+0x9d/0xf0 [btrfs]
-  [<f9237bb1>] btrfs_qgroup_rescan_worker+0x401/0x760 [btrfs]
-  [<f9206148>] normal_work_helper+0xc8/0x270 [btrfs]
-  [<c025e38b>] process_one_work+0x11b/0x390
-  [<c025eea1>] worker_thread+0x101/0x340
-  [<c026432b>] kthread+0x9b/0xb0
-  [<c0712a71>] ret_from_kernel_thread+0x21/0x30
-  [<c0264290>] kthread_create_on_node+0x110/0x110
+The crash is
 
-This indicates a NULL corruption in prefs_delayed list.  The further
-investigation and bisection pointed that the call of ulist_add_merge()
-results in the corruption.
+------------[ cut here ]------------
+kernel BUG at fs/btrfs/extent_io.c:2124!
+[...]
+Workqueue: btrfs-endio normal_work_helper [btrfs]
+RIP: 0010:[<ffffffffa02d6055>]  [<ffffffffa02d6055>] end_bio_extent_readpage+0xb45/0xcd0 [btrfs]
 
-ulist_add_merge() takes u64 as aux and writes a 64bit value into
-old_aux.  The callers of this function in backref.c, however, pass a
-pointer of a pointer to old_aux.  That is, the function overwrites
-64bit value on 32bit pointer.  This caused a NULL in the adjacent
-variable, in this case, prefs_delayed.
+This is in fact a regression.
 
-Here is a quick attempt to band-aid over this: a new function,
-ulist_add_merge_ptr() is introduced to pass/store properly a pointer
-value instead of u64.  There are still ugly void ** cast remaining
-in the callers because void ** cannot be taken implicitly.  But, it's
-safer than explicit cast to u64, anyway.
+It is because we forgot to increase @offset properly in reading corrupted block,
+so that the @offset remains, and this leads to checksum errors while reading
+left blocks queued up in the same bio, and then ends up with hiting the above
+BUG_ON.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=887046
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Chris Murphy <lists@colorremedies.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/btrfs/backref.c | 11 +++++------
- fs/btrfs/ulist.h   | 15 +++++++++++++++
- 2 files changed, 20 insertions(+), 6 deletions(-)
+ fs/btrfs/extent_io.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
-index 1f4ce7ac144d..715cfa42e182 100644
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -263,9 +263,8 @@ static int add_all_parents(struct btrfs_root *root, struct btrfs_path *path,
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index b395791dd923..594bbfd4996e 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2485,6 +2485,7 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
+ 					test_bit(BIO_UPTODATE, &bio->bi_flags);
+ 				if (err)
+ 					uptodate = 0;
++				offset += len;
+ 				continue;
  			}
- 			if (ret > 0)
- 				goto next;
--			ret = ulist_add_merge(parents, eb->start,
--					      (uintptr_t)eie,
--					      (u64 *)&old, GFP_NOFS);
-+			ret = ulist_add_merge_ptr(parents, eb->start,
-+						  eie, (void **)&old, GFP_NOFS);
- 			if (ret < 0)
- 				break;
- 			if (!ret && extent_item_pos) {
-@@ -962,9 +961,9 @@ again:
- 					goto out;
- 				ref->inode_list = eie;
- 			}
--			ret = ulist_add_merge(refs, ref->parent,
--					      (uintptr_t)ref->inode_list,
--					      (u64 *)&eie, GFP_NOFS);
-+			ret = ulist_add_merge_ptr(refs, ref->parent,
-+						  ref->inode_list,
-+						  (void **)&eie, GFP_NOFS);
- 			if (ret < 0)
- 				goto out;
- 			if (!ret && extent_item_pos) {
-diff --git a/fs/btrfs/ulist.h b/fs/btrfs/ulist.h
-index fb36731074b5..3e62b57be6b5 100644
---- a/fs/btrfs/ulist.h
-+++ b/fs/btrfs/ulist.h
-@@ -74,6 +74,21 @@ void ulist_free(struct ulist *ulist);
- int ulist_add(struct ulist *ulist, u64 val, u64 aux, gfp_t gfp_mask);
- int ulist_add_merge(struct ulist *ulist, u64 val, u64 aux,
- 		    u64 *old_aux, gfp_t gfp_mask);
-+
-+/* just like ulist_add_merge() but take a pointer for the aux data */
-+static inline int ulist_add_merge_ptr(struct ulist *ulist, u64 val, void *aux,
-+				      void **old_aux, gfp_t gfp_mask)
-+{
-+#if BITS_PER_LONG == 32
-+	u64 old64 = (uintptr_t)*old_aux;
-+	int ret = ulist_add_merge(ulist, val, (uintptr_t)aux, &old64, gfp_mask);
-+	*old_aux = (void *)((uintptr_t)old64);
-+	return ret;
-+#else
-+	return ulist_add_merge(ulist, val, (u64)aux, (u64 *)old_aux, gfp_mask);
-+#endif
-+}
-+
- struct ulist_node *ulist_next(struct ulist *ulist,
- 			      struct ulist_iterator *uiter);
- 
+ 		}
 -- 
 2.1.0
 
