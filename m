@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972AbaIZRpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:45:38 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:63903 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755231AbaIZRpg (ORCPT
+	id S1755541AbaIZRtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:49:15 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52308 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755080AbaIZRtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:45:36 -0400
-Message-ID: <1411753534.7866.66.camel@x220>
-Subject: [PATCH] [TRIVIAL] powerpc: Fix comment typos 'CONFiG_ALTIVEC'
+	Fri, 26 Sep 2014 13:49:14 -0400
+Message-ID: <1411753752.7866.68.camel@x220>
+Subject: [PATCH] [TRIVIAL] powerpc: Fix comment typo 'CONIFG_8xx'
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Date: Fri, 26 Sep 2014 19:45:34 +0200
+Date: Fri, 26 Sep 2014 19:49:12 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 17:45:35.0791 (UTC) FILETIME=[AD5B3BF0:01CFD9B1]
+X-OriginalArrivalTime: 26 Sep 2014 17:49:12.0673 (UTC) FILETIME=[2EA0CD10:01CFD9B2]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
-Untested!
+Still untested!
 
- arch/powerpc/lib/copyuser_power7.S | 2 +-
- arch/powerpc/lib/memcpy_power7.S   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/mm/mmu_decl.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/lib/copyuser_power7.S b/arch/powerpc/lib/copyuser_power7.S
-index c46c876ac96a..92ee840529bc 100644
---- a/arch/powerpc/lib/copyuser_power7.S
-+++ b/arch/powerpc/lib/copyuser_power7.S
-@@ -718,4 +718,4 @@ err3;	stb	r0,0(r3)
+diff --git a/arch/powerpc/mm/mmu_decl.h b/arch/powerpc/mm/mmu_decl.h
+index 9615d82919b8..78c45f392f5b 100644
+--- a/arch/powerpc/mm/mmu_decl.h
++++ b/arch/powerpc/mm/mmu_decl.h
+@@ -67,7 +67,7 @@ static inline void _tlbil_va(unsigned long address, unsigned int pid,
+ {
+ 	__tlbil_va(address, pid);
+ }
+-#endif /* CONIFG_8xx */
++#endif /* CONFIG_8xx */
  
- 15:	addi	r1,r1,STACKFRAMESIZE
- 	b	exit_vmx_usercopy	/* tail call optimise */
--#endif /* CONFiG_ALTIVEC */
-+#endif /* CONFIG_ALTIVEC */
-diff --git a/arch/powerpc/lib/memcpy_power7.S b/arch/powerpc/lib/memcpy_power7.S
-index 2ff5c142f87b..0830587df16e 100644
---- a/arch/powerpc/lib/memcpy_power7.S
-+++ b/arch/powerpc/lib/memcpy_power7.S
-@@ -653,4 +653,4 @@ _GLOBAL(memcpy_power7)
- 15:	addi	r1,r1,STACKFRAMESIZE
- 	ld	r3,-STACKFRAMESIZE+STK_REG(R31)(r1)
- 	b	exit_vmx_copy		/* tail call optimise */
--#endif /* CONFiG_ALTIVEC */
-+#endif /* CONFIG_ALTIVEC */
+ #if defined(CONFIG_PPC_BOOK3E) || defined(CONFIG_PPC_47x)
+ extern void _tlbivax_bcast(unsigned long address, unsigned int pid,
 -- 
 1.9.3
 
