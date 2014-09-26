@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbaIZHEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:04:34 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:37953 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaIZHEd (ORCPT
+	id S1753533AbaIZHEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:04:44 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7401 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293AbaIZHEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:04:33 -0400
-Message-ID: <54250FFE.2050605@linaro.org>
-Date: Fri, 26 Sep 2014 09:04:30 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 26 Sep 2014 03:04:42 -0400
+Message-ID: <54250FF4.1030400@huawei.com>
+Date: Fri, 26 Sep 2014 15:04:20 +0800
+From: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Nathan Lynch <nathan_lynch@mentor.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource
- name if CP15 unavailable
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com>
-In-Reply-To: <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: <gregkh@linuxfoundation.org>, <lizefan@huawei.com>, <wangnan0@huawei.com>,
+        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [request for stable inclusion] perf kmem: Make it work again on non
+ NUMA machines
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.58.157]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/18/2014 04:59 PM, Nathan Lynch wrote:
-> The arm and arm64 VDSOs need CP15 access to the architected counter.
-> If this is unavailable (which is allowed by ARM v7), indicate this by
-> changing the clocksource name to "arch_mem_counter" before registering
-> the clocksource.
->
-> Suggested by Stephen Boyd.
->
-> Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+hi all,
 
-Hi Nathan,
+Now on non NUMA machines with 3.10 stable,perf kmem command does not work well. For instance,
+when exec perf kmem record sleep 2, we can get the perf.data file correctly. but when we exec
+perf kmem stat there is nothing return.
+In upstream the bug has been fixed and perf kmem work well on non NUMA machines.
 
-is it possible to have the acked-by of the different maintainers for the 
-other patches ?
+Can we cherry-pick it to stable repo.
 
-Are these patches targeted to be merged for 3.18 ?
+The commit id is 4921e320244e099bdf237fd10428594ce5f5b87d,the detail as follows:
 
-Thanks
-   -- Daniel
+commit 4921e320244e099bdf237fd10428594ce5f5b87d
+Author: Jiri Olsa <jolsa@redhat.com>
+Date:   Thu Sep 12 18:39:36 2013 +0200
 
-> ---
->   drivers/clocksource/arm_arch_timer.c | 12 ++++++++++--
->   1 file changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 5163ec13429d..c99afdf12e98 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -429,11 +429,19 @@ static void __init arch_counter_register(unsigned type)
->   	u64 start_count;
->
->   	/* Register the CP15 based counter if we have one */
-> -	if (type & ARCH_CP15_TIMER)
-> +	if (type & ARCH_CP15_TIMER) {
->   		arch_timer_read_counter = arch_counter_get_cntvct;
-> -	else
-> +	} else {
->   		arch_timer_read_counter = arch_counter_get_cntvct_mem;
->
-> +		/* If the clocksource name is "arch_sys_counter" the
-> +		 * VDSO will attempt to read the CP15-based counter.
-> +		 * Ensure this does not happen when CP15-based
-> +		 * counter is not available.
-> +		 */
-> +		clocksource_counter.name = "arch_mem_counter";
-> +	}
-> +
->   	start_count = arch_timer_read_counter();
->   	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
->   	cyclecounter.mult = clocksource_counter.mult;
->
+    perf kmem: Make it work again on non NUMA machines
+
+    The commit '2814eb0 perf kmem: Remove die() calls' disabled 'perf kmem'
+    command for machines without numa support. It made the command fail if
+    '/sys/devices/system/node' dir wasn't found.
+
+    Skipping the numa based initialization in case the directory is not
+    found and continue execution.
+
+    Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+    Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Namhyung Kim <namhyung@kernel.org>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Link: http://lkml.kernel.org/r/1379003976-5839-5-git-send-email-jolsa@redhat.com
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index c2dff9c..9b5f077 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -101,7 +101,7 @@ static int setup_cpunode_map(void)
+
+        dir1 = opendir(PATH_SYS_NODE);
+        if (!dir1)
+-           return -1;
++         return 0;
+
+        while ((dent1 = readdir(dir1)) != NULL) {
+                if (dent1->d_type != DT_DIR ||
 
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
