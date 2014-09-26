@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaIZJ7E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:59:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33029 "EHLO mx2.suse.de"
+	id S1755777AbaIZJ7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:59:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089AbaIZJqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:42 -0400
+	id S1755090AbaIZJqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 118/142] CIFS: Fix directory rename error
-Date: Fri, 26 Sep 2014 11:45:29 +0200
-Message-Id: <9d735a8a6cd554ca13907b01c199650852036497.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 054/142] powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
+Date: Fri, 26 Sep 2014 11:44:25 +0200
+Message-Id: <30da621f91f086da7964a3ad1233cfb722ba67f3.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,52 +24,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-Commit a07d322059db66b84c9eb4f98959df468e88b34b upstream.
+commit 629149fae478f0ac6bf705a535708b192e9c6b59 upstream.
 
-CIFS servers process nlink counts differently for files and directories.
-In cifs_rename() if we the request fails on the existing target, we
-try to remove it through cifs_unlink() but this is not what we want
-to do for directories. As the result the following sequence of commands
+If we changed base page size of the segment, either via sub_page_protect
+or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
+table entries. We do a lazy hash page table flush for all mapped pages
+in the demoted segment. This happens when we handle hash page fault
+for these pages.
 
-mkdir {1,2}; mv -T 1 2; rmdir {1,2}; mkdir {1,2}; echo foo > 2/bar
+We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
+pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
+that implies that we could possibly have older 64K hash pte entries in
+the hash page table and we need to invalidate those entries.
 
-and XFS test generic/023 fail with -ENOENT error. That's why the second
-mkdir reuses the existing inode (target inode of the mv -T command) with
-S_DEAD flag.
+Handle this correctly for 16M pages
 
-Fix this by checking whether the target is directory or not and
-calling cifs_rmdir() rather than cifs_unlink() for directories.
-
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/cifs/inode.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/mm/hugepage-hash64.c | 79 ++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 70 insertions(+), 9 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 36d2b1d6d492..2a93255c0150 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1682,7 +1682,10 @@ cifs_rename(struct inode *source_dir, struct dentry *source_dentry,
- unlink_target:
- 	/* Try unlinking the target dentry if it's not negative */
- 	if (target_dentry->d_inode && (rc == -EACCES || rc == -EEXIST)) {
--		tmprc = cifs_unlink(target_dir, target_dentry);
-+		if (S_ISDIR(target_dentry->d_inode->i_mode))
-+			tmprc = cifs_rmdir(target_dir, target_dentry);
-+		else
-+			tmprc = cifs_unlink(target_dir, target_dentry);
- 		if (tmprc)
- 			goto cifs_rename_exit;
- 		rc = cifs_do_rename(xid, source_dentry, from_name,
+diff --git a/arch/powerpc/mm/hugepage-hash64.c b/arch/powerpc/mm/hugepage-hash64.c
+index f50c4dfd1819..e0da84719b46 100644
+--- a/arch/powerpc/mm/hugepage-hash64.c
++++ b/arch/powerpc/mm/hugepage-hash64.c
+@@ -18,6 +18,57 @@
+ #include <linux/mm.h>
+ #include <asm/machdep.h>
+ 
++static void invalidate_old_hpte(unsigned long vsid, unsigned long addr,
++				pmd_t *pmdp, unsigned int psize, int ssize)
++{
++	int i, max_hpte_count, valid;
++	unsigned long s_addr;
++	unsigned char *hpte_slot_array;
++	unsigned long hidx, shift, vpn, hash, slot;
++
++	s_addr = addr & HPAGE_PMD_MASK;
++	hpte_slot_array = get_hpte_slot_array(pmdp);
++	/*
++	 * IF we try to do a HUGE PTE update after a withdraw is done.
++	 * we will find the below NULL. This happens when we do
++	 * split_huge_page_pmd
++	 */
++	if (!hpte_slot_array)
++		return;
++
++	if (ppc_md.hugepage_invalidate)
++		return ppc_md.hugepage_invalidate(vsid, s_addr, hpte_slot_array,
++						  psize, ssize);
++	/*
++	 * No bluk hpte removal support, invalidate each entry
++	 */
++	shift = mmu_psize_defs[psize].shift;
++	max_hpte_count = HPAGE_PMD_SIZE >> shift;
++	for (i = 0; i < max_hpte_count; i++) {
++		/*
++		 * 8 bits per each hpte entries
++		 * 000| [ secondary group (one bit) | hidx (3 bits) | valid bit]
++		 */
++		valid = hpte_valid(hpte_slot_array, i);
++		if (!valid)
++			continue;
++		hidx =  hpte_hash_index(hpte_slot_array, i);
++
++		/* get the vpn */
++		addr = s_addr + (i * (1ul << shift));
++		vpn = hpt_vpn(addr, vsid, ssize);
++		hash = hpt_hash(vpn, shift, ssize);
++		if (hidx & _PTEIDX_SECONDARY)
++			hash = ~hash;
++
++		slot = (hash & htab_hash_mask) * HPTES_PER_GROUP;
++		slot += hidx & _PTEIDX_GROUP_IX;
++		ppc_md.hpte_invalidate(slot, vpn, psize,
++				       MMU_PAGE_16M, ssize, 0);
++	}
++}
++
++
+ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 		    pmd_t *pmdp, unsigned long trap, int local, int ssize,
+ 		    unsigned int psize)
+@@ -85,6 +136,15 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 	vpn = hpt_vpn(ea, vsid, ssize);
+ 	hash = hpt_hash(vpn, shift, ssize);
+ 	hpte_slot_array = get_hpte_slot_array(pmdp);
++	if (psize == MMU_PAGE_4K) {
++		/*
++		 * invalidate the old hpte entry if we have that mapped via 64K
++		 * base page size. This is because demote_segment won't flush
++		 * hash page table entries.
++		 */
++		if ((old_pmd & _PAGE_HASHPTE) && !(old_pmd & _PAGE_COMBO))
++			invalidate_old_hpte(vsid, ea, pmdp, MMU_PAGE_64K, ssize);
++	}
+ 
+ 	valid = hpte_valid(hpte_slot_array, index);
+ 	if (valid) {
+@@ -107,11 +167,8 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 			 * safely update this here.
+ 			 */
+ 			valid = 0;
+-			new_pmd &= ~_PAGE_HPTEFLAGS;
+ 			hpte_slot_array[index] = 0;
+-		} else
+-			/* clear the busy bits and set the hash pte bits */
+-			new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
++		}
+ 	}
+ 
+ 	if (!valid) {
+@@ -119,15 +176,13 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 
+ 		/* insert new entry */
+ 		pa = pmd_pfn(__pmd(old_pmd)) << PAGE_SHIFT;
+-repeat:
+-		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
+-
+-		/* clear the busy bits and set the hash pte bits */
+-		new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
++		new_pmd |= _PAGE_HASHPTE;
+ 
+ 		/* Add in WIMG bits */
+ 		rflags |= (new_pmd & (_PAGE_WRITETHRU | _PAGE_NO_CACHE |
+ 				      _PAGE_COHERENT | _PAGE_GUARDED));
++repeat:
++		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
+ 
+ 		/* Insert into the hash table, primary slot */
+ 		slot = ppc_md.hpte_insert(hpte_group, vpn, pa, rflags, 0,
+@@ -168,6 +223,12 @@ repeat:
+ 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
+ 	}
+ 	/*
++	 * Mark the pte with _PAGE_COMBO, if we are trying to hash it with
++	 * base page size 4k.
++	 */
++	if (psize == MMU_PAGE_4K)
++		new_pmd |= _PAGE_COMBO;
++	/*
+ 	 * The hpte valid is stored in the pgtable whose address is in the
+ 	 * second half of the PMD. Order this against clearing of the busy bit in
+ 	 * huge pmd.
 -- 
 2.1.0
 
