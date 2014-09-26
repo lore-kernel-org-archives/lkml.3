@@ -1,43 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880AbaIZMYp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 08:24:45 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:65263 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753803AbaIZMYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 08:24:44 -0400
-Message-ID: <1411734282.7866.31.camel@x220>
-Subject: Re: ARM: meson: MESON6_TIMER?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Carlo Caione <carlo@caione.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Date: Fri, 26 Sep 2014 14:24:42 +0200
-In-Reply-To: <CAOQ7t2Y0+OMab1CGGegUU+oOPaw=_NAxwM0LKn9GpiMZqAFnvg@mail.gmail.com>
-References: <1411733700.7866.29.camel@x220>
-	 <CAOQ7t2Y0+OMab1CGGegUU+oOPaw=_NAxwM0LKn9GpiMZqAFnvg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 12:24:42.0560 (UTC) FILETIME=[D9895400:01CFD984]
-X-RcptDomain: vger.kernel.org
+	id S1754942AbaIZMZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 08:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45996 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753803AbaIZMZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 08:25:05 -0400
+Date: Fri, 26 Sep 2014 14:22:08 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: nick <yocto6@gmail.com>
+Cc: IvDoorn@gmail.com, helmut.schaa@googlemail.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: FIXMEs in rt2800lib.c
+Message-ID: <20140926122207.GA27809@redhat.com>
+References: <5424566B.6000206@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5424566B.6000206@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-26 at 14:21 +0200, Carlo Caione wrote:
-> Yes. The timer support is going to be added with:
-> 
-> http://www.spinics.net/lists/arm-kernel/msg362483.html
-> 
-> Daniel is already on it.
+On Thu, Sep 25, 2014 at 01:52:43PM -0400, nick wrote:
+> I seem to be hitting to fix mes in the file I listed in the subject. Would someone tell me if it's Ok to remove
+> the lines that over write certain registers.
 
-I probably won't have to bother you again. Thanks!
+No, as long you prove that they are not needed.
 
-
-Paul Bolle
-
+Stanislaw
