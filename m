@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958AbaIZKbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:31:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33004 "EHLO mx2.suse.de"
+	id S932109AbaIZKbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:31:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33054 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754770AbaIZJqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:02 -0400
+	id S1754771AbaIZJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 029/142] NFSv4: Fix problems with close in the presence of a delegation
-Date: Fri, 26 Sep 2014 11:44:00 +0200
-Message-Id: <24bafe7dfd3771f280cbd3074b1dfff62aa7715d.1411724723.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 040/142] s390/locking: Reenable optimistic spinning
+Date: Fri, 26 Sep 2014 11:44:11 +0200
+Message-Id: <f008331068945523ff12ff13f6d07d7303e0e8a9.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,69 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aee7af356e151494d5014f57b33460b162f181b5 upstream.
+commit 36e7fdaa1a04fcf65b864232e1af56a51c7814d6 upstream.
 
-In the presence of delegations, we can no longer assume that the
-state->n_rdwr, state->n_rdonly, state->n_wronly reflect the open
-stateid share mode, and so we need to calculate the initial value
-for calldata->arg.fmode using the state->flags.
+commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc (locking/mutex: Disable
+optimistic spinning on some architectures) fenced spinning for
+architectures without proper cmpxchg.
+There is no need to disable mutex spinning on s390, though:
+The instructions CS,CSG and friends provide the proper guarantees.
+(We dont implement cmpxchg with locks).
 
-Reported-by: James Drews <drews@engr.wisc.edu>
-Fixes: 88069f77e1ac5 (NFSv41: Fix a potential state leakage when...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/nfs/nfs4proc.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ arch/s390/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 40062e42c955..067d8c90eb1a 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2532,6 +2532,7 @@ static void nfs4_close_prepare(struct rpc_task *task, void *data)
- 	struct nfs4_closedata *calldata = data;
- 	struct nfs4_state *state = calldata->state;
- 	struct inode *inode = calldata->inode;
-+	bool is_rdonly, is_wronly, is_rdwr;
- 	int call_close = 0;
- 
- 	dprintk("%s: begin!\n", __func__);
-@@ -2539,18 +2540,24 @@ static void nfs4_close_prepare(struct rpc_task *task, void *data)
- 		goto out_wait;
- 
- 	task->tk_msg.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_OPEN_DOWNGRADE];
--	calldata->arg.fmode = FMODE_READ|FMODE_WRITE;
- 	spin_lock(&state->owner->so_lock);
-+	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
-+	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
-+	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
-+	/* Calculate the current open share mode */
-+	calldata->arg.fmode = 0;
-+	if (is_rdonly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_READ;
-+	if (is_wronly || is_rdwr)
-+		calldata->arg.fmode |= FMODE_WRITE;
- 	/* Calculate the change in open mode */
- 	if (state->n_rdwr == 0) {
- 		if (state->n_rdonly == 0) {
--			call_close |= test_bit(NFS_O_RDONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_rdonly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_READ;
- 		}
- 		if (state->n_wronly == 0) {
--			call_close |= test_bit(NFS_O_WRONLY_STATE, &state->flags);
--			call_close |= test_bit(NFS_O_RDWR_STATE, &state->flags);
-+			call_close |= is_wronly || is_rdwr;
- 			calldata->arg.fmode &= ~FMODE_WRITE;
- 		}
- 	}
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 6671e8db1861..faa97bd4948e 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -93,6 +93,7 @@ config S390
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
+ 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
++	select ARCH_SUPPORTS_ATOMIC_RMW
+ 	select ARCH_USE_CMPXCHG_LOCKREF
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select BUILDTIME_EXTABLE_SORT
 -- 
 2.1.0
 
