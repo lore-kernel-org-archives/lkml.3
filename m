@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422636AbaIZV2r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:28:47 -0400
-Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:33742 "EHLO
-	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755763AbaIZV2q (ORCPT
+	id S1422656AbaIZV2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:28:54 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:62123 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030201AbaIZV2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:28:46 -0400
-Message-ID: <5425DA8A.1030500@nexus-software.ie>
-Date: Fri, 26 Sep 2014 22:28:42 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Reply-To: pure.logic@nexus-software.ie
-Organization: Nexus Software
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 26 Sep 2014 17:28:52 -0400
 MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, davej@redhat.com,
-        boon.leong.ong@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB
- bug
-References: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie> <20140926205955.GA22407@khazad-dum.debian.net>
-In-Reply-To: <20140926205955.GA22407@khazad-dum.debian.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140926205817.GQ7996@ZenIV.linux.org.uk>
+References: <20140914194738.GS7996@ZenIV.linux.org.uk>
+	<CAGhQ9Vx26RQWErODdJ_fV5UnAQ8wLre_x-4E6N_vuP0uExyKgw@mail.gmail.com>
+	<20140926205817.GQ7996@ZenIV.linux.org.uk>
+Date: Fri, 26 Sep 2014 23:28:50 +0200
+Message-ID: <CAGhQ9VzQf2Oa06hOP6MC-qR9F7xF_C7omuubkH+9GcLqxkfX3w@mail.gmail.com>
+Subject: Re: [git pull] vfs fixes
+From: Joachim Eastwood <manabian@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 21:59, Henrique de Moraes Holschuh wrote:
-
-> I'm confused, now.
+On 26 September 2014 22:58, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Sep 26, 2014 at 10:46:14PM +0200, Joachim Eastwood wrote:
+>> On 14 September 2014 21:47, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> > double iput() on failure exit in lustre, racy removal of spliced dentries
+>> > from ->s_anon in __d_materialise_dentry() plus a bunch of assorted RCU pathwalk
+>> > fixes.  Please, pull from the usual place -
+>> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+>> >
+>> > Shortlog:
+>> > Al Viro (5):
+>> >       [fix] lustre: d_make_root() does iput() on dentry allocation failure
+>> >       move the call of __d_drop(anon) into __d_materialise_unique(dentry, anon)
+>> >       fix bogus read_seqretry() checks introduced in b37199e
+>> >       don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
+>> >       be careful with nd->inode in path_init() and follow_dotdot_rcu()
+>>
+>> Hi,
+>>
+>> Commit 4023bfc9f351a7994 "be careful with nd->inode in path_init() and
+>> follow_dotdot_rcu(), seem to hang my ARM no-MMU platform when mounting
+>> the ramdisk.
+>>
+>> 3.17-rc4 - works
+>> 3.17-rc5 - works with 4023bfc9f351a7994 reverted.
+>>
+>> Boot log with from rc5:
+>> [ 5.810000] TCP: cubic registered
+>> [ 5.820000] NET: Registered protocol family 17
+>> [ 5.860000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+>> [ 5.910000] mmc_host mmc0: Bus speed (slot 0) = 12000000Hz (slot req
+>> 25000000Hz, actual 12000000HZ div = 0)
+>> [ 5.930000] mmc0: new SDHC card at address 0007
+>> [ 5.950000] mmcblk0: mmc0:0007 SD08G 7.42 GiB
+>> [ 6.150000] clk: Not disabling unused clocks
+>> [ 81.240000] random: nonblocking pool is initialized
+>>
+>> And there it just hangs it seems.
+>>
+>>
+>> With patch reverted
+>> [ 5.810000] TCP: cubic registered
+>> [ 5.820000] NET: Registered protocol family 17
+>> [ 5.850000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+>> [ 6.100000] clk: Not disabling unused clocks
+>> [ 6.110000] RAMDISK: gzip image found at block 0
+>> [ 9.590000] VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
+>> [ 9.600000] devtmpfs: mounted
+>> [ 9.610000] Freeing unused kernel memory: 68K (281e5000 - 281f6000)
+>>
+>> And then user space starts.
 >
-> Wasn't the other patch -- which just added a comment -- the one selected as
-> a better fix, because there is absolutely no point in calling __flush_tlb()
-> on Quark X1000 *right after* you just flushed the TLB [on these processors]
-> by doing a load_cr3() ?
->
-> Should this one ([PATCH v2] x86: Quark: Add if/else to setup_arch for Quark
-> TLB bug) be ignored?  Or should the other one which just adds a comment be
-> ignored?
+> *blink*  What happens to mmc-related messages on successful boot?  And what
+> in that commit could've possibly lead to those not being produced?
 
-Hi Henrique.
+Now I am puzzled too. I can not longer reproduce that hang.
 
-My view is that the CR3 load should have flushed the TLB in it's entirety.
+I am guessing it was probably related to the mmc card being flaky or
+something random like that.
 
-Ong Boong Leong said that a discussion he had which included HPA 
-concluded with a flush of the TLB being required after the CR3 reload.
+Sorry for noise!
 
-The current code
-
-a) Writes to CR3.
-On Quark that will flush the entire TLB
-Ref: Quark SoC X1000 Core Developer's Manual section 6.4.11
-
-On other processors this won't invalidate the entire TLB under every 
-scenario. For example a PTE with PGE on may not be flushed.
-
-Ref: Intel 64 and IA32 Architectures .. vol (3a, 3b, 3c) 325384.pdf 
-section 4.10.4.1
-
-b) __flush_tlb_all
-Depending on the value of cpu_has_pge() - which will be true for ~all 
-x86 processors will call
-
-native_write_cr4(cr4 & ~X86_CR4_PGE);
-
-According to the same section "4.10.4.1" this will nuke the rest of the 
-TLB entries even with PGE bits set in the PTEs
-
-So the steps a & b are the appropriate sets to take to entirely flush 
-the TLB for most processors i.e. one's that support PGE
-
-The suggestion is that on Quark we should flush the TLB again.
-
-The documentation doesn't really support that statement but, my view is 
-OK if we are going to accommodate that position let's not force a third 
-TLB flush on everybody who isn't running a Quark.
-
- From the technical/documentation standpoint I don't think Quark is 
-forcing a step c - if we do decide to add a __flush_tlb() call for the 
-sake of Quark anyway - then let's not foist the extra cycles on every 
-other x86 processor out there.
-
-My preference is
-
-1. Just comment the code as is to explain why it works for Quark.
-
-If that's not good enough for people then
-
-2. if/else the flow so that Quark does __flush_tlb() and the rest of the 
-world does a __flush_tlb_all()
-
-
---
-BOD
+regards,
+Joachim Eastwood
