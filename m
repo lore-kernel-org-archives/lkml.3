@@ -1,405 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaIZEz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 00:55:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57057 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753357AbaIZEyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 00:54:55 -0400
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 2/4] f2fs: support atomic_write feature for database
-Date: Thu, 25 Sep 2014 21:54:45 -0700
-Message-Id: <1411707287-21760-2-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 1.9.3 (Apple Git-50)
-In-Reply-To: <1411707287-21760-1-git-send-email-jaegeuk@kernel.org>
-References: <1411707287-21760-1-git-send-email-jaegeuk@kernel.org>
+	id S1753772AbaIZE5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 00:57:30 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20604 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170AbaIZE51 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 00:57:27 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-53-5424f22ed4c8
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "=?iso-8859-1?Q?'Heiko_St=FCbner'?=" <heiko@sntech.de>,
+        "'Joachim Eastwood'" <manabian@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, naushad@samsung.com,
+        b29396@freescale.com, tomasz.figa@gmail.com, joshi@samsung.com,
+        thomas.ab@samsung.com, Li.Xiubo@freescale.com,
+        vikas.sajjan@samsung.com, chow.kim@samsung.com, lee.jones@linaro.org,
+        dianders@chromium.org
+References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
+ <CAGhQ9VzZ8LadDT5RWUSX89q0WP3fGiQ8f=bWbRVfEz5Vy_zZKw@mail.gmail.com>
+ <13449286.k3JCbR2ABy@phil> <4389453.TP96FZcCbx@phil>
+In-reply-to: <4389453.TP96FZcCbx@phil>
+Subject: RE: [PATCH v5] mfd: syscon: Decouple syscon interface from platform
+ devices
+Date: Fri, 26 Sep 2014 10:26:35 +0530
+Message-id: <000d01cfd946$521304f0$f6390ed0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-1
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQKkPpk+xGsfKb8cRzoLv6q27vvt4QLpsJPoAdTrK9IBn/p/P5o3DC1g
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsWyRsSkSlfvk0qIwY43RhZ/Jx1jt3i4s5/F
+	Ytmku2wWZ5cdZLP4/+g1q8X3XV/YLXoXXGWzuP/1KKNF54UOVotNj6+xWlzeNYfNYsb5fUwW
+	ty/zWuy+fo7R4tPR/6wWHcsYLVbt+sNocfPZdiYHIY+W5h42j9+/JjF6zG64yOLx73A/k8fO
+	WXfZPe5c28PmsXlJvUffllWMHtuvzWP2+LxJLoArissmJTUnsyy1SN8ugStjw/1PLAU7rCta
+	351jamCcpdfFyMEhIWAi8exNWRcjJ5ApJnHh3nq2LkYuDiGBpYwSHVceM0MkTCQaH01jhEhM
+	Z5S4MfckM4Tzl1Fixaz7YFVsAroST97PBbNFBJIltsyYzgRSxCxwmFli8qI37BAdRxkl3pyf
+	BVbFKaAm8e7lDEYQW1ggTOLPoWYmEJtFQFXiyNKZrCA2r4ClxMy2I+wQtqDEj8n3WEBsZgEd
+	id7v35ghbG2JJ+8usELcqiCx4+xrRogr3CSu71nABlEjLjHpwUOwIyQE7nBI/JoxmxFimYDE
+	t8mHWCCBISux6QDUz5ISB1fcYJnAKDELyepZSFbPQrJ6FpIVCxhZVjGKphYkFxQnpReZ6hUn
+	5haX5qXrJefnbmIEJpfT/55N3MF4/4D1IUYBDkYlHt7GNSohQqyJZcWVuYcYTYEumsgsJZqc
+	D0xheSXxhsZmRhamJqbGRuaWZkrivDrSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MF6Q
+	vHfJ6PSbKbnrL4mvq7dcUnkk/SNP0p8yRWeRD8bt4lseC1yfKvKs/niYcO/TD1x3dTcvW1gh
+	PE3nchNLu0bzgYwP+WvXvZskYLqWL/Fy4Jp7pewzRE7WbH198G6tj+JshaJNtSbqrTLt7L2P
+	GvndbX/M/pO7TsP996dH125I6r6d56z1J0yJpTgj0VCLuag4EQCOzSEHKQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jQV29TyohBjMva1j8nXSM3eLhzn4W
+	i2WT7rJZnF12kM3i/6PXrBbfd31ht+hdcJXN4v7Xo4wWnRc6WC02Pb7GanF51xw2ixnn9zFZ
+	3L7Ma7H7+jlGi09H/7NadCxjtFi16w+jxc1n25kchDxamnvYPH7/msToMbvhIovHv8P9TB47
+	Z91l97hzbQ+bx+Yl9R59W1Yxemy/No/Z4/MmuQCuqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B4
+	53hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygp5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo
+	+oYEwfUYGaCBhDWMGRvuf2Ip2GFd0fruHFMD4yy9LkZODgkBE4nGR9MYIWwxiQv31rN1MXJx
+	CAlMZ5S4MfckM4Tzl1Fixaz7zCBVbAK6Ek/ezwWzRQSSJbbMmM4EUsQscJhZYvKiN+wQHUcZ
+	Jd6cnwVWxSmgJvHu5QywHcICYRJ/DjUzgdgsAqoSR5bOZAWxeQUsJWa2HWGHsAUlfky+xwJi
+	MwvoSPR+/8YMYWtLPHl3gRXiVgWJHWdfM0Jc4SZxfc8CNogacYlJDx6yT2AUmoVk1Cwko2Yh
+	GTULScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHJ65nUDsaVDRaHGAU4GJV4eG+s
+	UwkRYk0sK67MPcQowcGsJMIb+QYoxJuSWFmVWpQfX1Sak1p8iNEU6NOJzFKiyfnAxJpXEm9o
+	bGJuamxqaWJhYmapJM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoGRz0jqXsKUXSLH0jYvlZUL
+	uChQtsNRaLvjbJ1bz6zCOo5vlp1Yv0xOb/7SzgdHp52Uj1yrUbdIi1ukvPN9fePzBwrnQ+z7
+	ZqlbP7ye+y26wZyf1ee4+OUAecYzfkw6WkpyOev+zls275657Z2WjoOXz+7o1f8tftdoz/b+
+	//7HX4mbBB7ce55NiaU4I9FQi7moOBEAAzzB0HQDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a very limited functionality for atomic write support.
-In order to support atomic write, this patch adds two ioctls:
- o F2FS_IOC_ATOMIC_WRITE
- o F2FS_IOC_ATOMIC_COMMIT
+Hi Heiko and Joachim,
 
-For F2FS_IOC_ATOMIC_WRITE, this patch introduces a data structure to communicate
-with applications.
+> -----Original Message-----
+> From: Heiko Stübner [mailto:heiko@sntech.de]
+> Sent: Thursday, September 25, 2014 5:52 PM
+> To: Pankaj Dubey
+> Cc: Joachim Eastwood; linux-arm-kernel@lists.infradead.org; linux-samsung-
+> soc@vger.kernel.org; linux-kernel@vger.kernel.org; kgene.kim@samsung.com;
+> Russell King - ARM Linux; Arnd Bergmann; naushad@samsung.com;
+> b29396@freescale.com; tomasz.figa@gmail.com; joshi@samsung.com;
+> thomas.ab@samsung.com; Li.Xiubo@freescale.com; vikas.sajjan@samsung.com;
+> chow.kim@samsung.com; lee.jones@linaro.org; dianders@chromium.org
+> Subject: Re: [PATCH v5] mfd: syscon: Decouple syscon interface from
+platform
+> devices
+> 
+> Am Mittwoch, 24. September 2014, 20:35:10 schrieb Heiko Stübner:
+> > Hi Pankaj, Joachim,
+> >
+> > Am Dienstag, 23. September 2014, 20:12:50 schrieb Joachim Eastwood:
+> > > On 22 September 2014 06:40, Pankaj Dubey <pankaj.dubey@samsung.com>
+> wrote:
+> > > > Currently a syscon entity can be only registered directly through
+> > > > a platform device that binds to a dedicated syscon driver. However
+> > > > in certain use cases it is desirable to make a device used with
+> > > > another driver a syscon interface provider.
+> > > >
+> > > > For example, certain SoCs (e.g. Exynos) contain system controller
+> > > > blocks which perform various functions such as power domain
+> > > > control, CPU power management, low power mode control, but in
+> > > > addition contain certain IP integration glue, such as various
+> > > > signal masks, coprocessor power control, etc. In such case, there
+> > > > is a need to have a dedicated driver for such system controller
+> > > > but also share registers with other drivers. The latter is where the
+syscon
+> interface is helpful.
+> > > >
+> > > > In case of DT based platforms, this patch decouples syscon object
+> > > > from syscon platform driver, and allows to create syscon objects
+> > > > first time when it is required by calling of
+> > > > syscon_regmap_lookup_by APIs and keep a list of such syscon
+> > > > objects along with syscon provider device_nodes and regmap handles.
+> > > >
+> > > > For non-DT based platforms, this patch keeps syscon platform
+> > > > driver structure where is can be probed and such non-DT based
+> > > > drivers can use syscon_regmap_lookup_by_pdev API and get access to
+> regmap handles.
+> > > > Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT
+> > > > based, we can completly remove platform driver of syscon, and keep
+> > > > only helper functions to get regmap handles.
+> > > >
+> > > > Suggested-by: Arnd Bergmann <arnd@arndb.de>
+> > > > Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
+> > > > Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+> > > > Tested-by: Javier Martinez Canillas
+> > > > <javier.martinez@collabora.co.uk>
+> > > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > >
+> > > I wrote a clk driver using syscon and your patch. clk driver uses
+> > > CLK_OF_DECLARE, btw.
+> > >
+> > > It works but I get a '(null): Failed to create debugfs directory'
+> > > message in the boot log.
+> > >
+> > > Tested-by: Joachim Eastwood <manabian@gmail.com>
+> >
+> > on Rockchip platforms this syscon support also helps quite a bit, as
+> > the pll lock-status is sitting in an external syscon register, so
+> > setting target pll-rates through assigned-clocks is not easily doable
+without it.
+> > Therefore I'm very much looking forward to this.
+> >
+> >
+> > Similar to Joachim I get an error about debugfs from regmap, which
+> > seems to be caused by
+> > 	name = dev_name(map->dev);
+> > returning NULL in regmap_debugfs_init in regmap-debugfs.c for such an
+> > "early" syscon.
+> 
+> It looks like of_device_make_bus_id would be able to do the necessary
+steps to
+> populate the dev_name seemingly correctly.
+> 
+> With the diff below I now get a syscon that can init clocks and also a
+sane regmap
+> debugfs init:
+> 
+> /debug/regmap # ls -la
+> total 0
+> drwxr-xr-x    5 0        0                0 Jan  1  1970 .
+> drwx------   19 0        0                0 Jan  1  1970 ..
+> drwxr-xr-x    2 0        0                0 Jan  1  1970 0-001b
+> drwxr-xr-x    2 0        0                0 Jan  1  1970
+ff730000.power-management
+> drwxr-xr-x    2 0        0                0 Jan  1  1970 ff770000.syscon
+> 
+> 
+> But of course I don't know enough about device-internals to determine if
+this is an
+> insane solution or not :-)
+> 
 
-struct atmoic_w {
-	u64 aid;		/* atomic write id */
-	const char __user *buf;	/* user data */
-	u64 count;		/* size to update */
-	u64 pos;		/* file offset */
-};
+Thanks Heiko for figuring out issue and proposed solution.
 
-This is almost same as write() system call, and application can easily submit
-any atomic data by calling
-  f2fs_ioctl(fd, F2FS_IOC_ATOMIC_WRITE, struct atomic_w *);
+As you and Joachim pointed out that current patch failed to create regmap
+debugfs entry,
+I also investigated and found that it fails to create regmap debugfs entry
+either you call it
+early (from init_irq or clk_init function) or you call it in later stage
+before actual device is
+populated (from init_machine before of_platform_populate_device).
 
-Then, data's page indices are recorded in the linked list, atomic_range list.
-Later, f2fs_ioctl(fd, F2FS_IOC_ATOMIC_COMMIT, aid) trigger will flush all the
-previous atomic data to the storage, which will be shown all or nothing by
-f2fs recovery procedure.
+One point is regmap debugfs code should have handled it gracefully instead
+of kernel panic,
+so looks like it needs some fix in that part of code.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/data.c    |  7 ++++--
- fs/f2fs/f2fs.h    | 23 +++++++++++++++---
- fs/f2fs/file.c    | 55 ++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/gc.c      |  2 +-
- fs/f2fs/inode.c   |  4 ++++
- fs/f2fs/segment.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/f2fs/segment.h | 12 ++++++++--
- fs/f2fs/super.c   |  1 +
- 8 files changed, 167 insertions(+), 8 deletions(-)
+I tried Heiko's suggested solution of calling "of_device_make_bus_id" after
+platform_device_alloc
+and it worked well and I tested it from init_irq as well as clk_init, which
+happens at very early stage.
+Maybe Joachim can also try if it's working for him.
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 13ab7208..369f887 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -14,6 +14,7 @@
- #include <linux/mpage.h>
- #include <linux/aio.h>
- #include <linux/writeback.h>
-+#include <linux/mount.h>
- #include <linux/backing-dev.h>
- #include <linux/blkdev.h>
- #include <linux/bio.h>
-@@ -934,7 +935,6 @@ skip_write:
- 	wbc->pages_skipped += get_dirty_pages(inode);
- 	return 0;
- }
--
- static void f2fs_write_failed(struct address_space *mapping, loff_t to)
- {
- 	struct inode *inode = mapping->host;
-@@ -1052,7 +1052,10 @@ static int f2fs_write_end(struct file *file,
- 
- 	trace_f2fs_write_end(inode, pos, len, copied);
- 
--	set_page_dirty(page);
-+	if (is_inode_flag_set(F2FS_I(inode), FI_ATOMIC_FILE))
-+		get_page(page);
-+	else
-+		set_page_dirty(page);
- 
- 	if (pos + copied > i_size_read(inode)) {
- 		i_size_write(inode, pos + copied);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 94cfdc4..802ebf3 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -192,8 +192,19 @@ static inline bool __has_cursum_space(struct f2fs_summary_block *sum, int size,
- /*
-  * ioctl commands
-  */
--#define F2FS_IOC_GETFLAGS               FS_IOC_GETFLAGS
--#define F2FS_IOC_SETFLAGS               FS_IOC_SETFLAGS
-+#define F2FS_IOC_GETFLAGS		FS_IOC_GETFLAGS
-+#define F2FS_IOC_SETFLAGS		FS_IOC_SETFLAGS
-+
-+#define F2FS_IOCTL_MAGIC		0xf5
-+#define F2FS_IOC_ATOMIC_WRITE	_IOW(F2FS_IOCTL_MAGIC, 1, struct atomic_w)
-+#define F2FS_IOC_ATOMIC_COMMIT	_IOW(F2FS_IOCTL_MAGIC, 2, u64)
-+
-+struct atomic_w {
-+	u64 aid;		/* atomic write id */
-+	const char __user *buf;	/* user data */
-+	u64 count;		/* size to update */
-+	u64 pos;		/* file offset */
-+};
- 
- #if defined(__KERNEL__) && defined(CONFIG_COMPAT)
- /*
-@@ -263,6 +274,8 @@ struct f2fs_inode_info {
- 	unsigned long long xattr_ver;	/* cp version of xattr modification */
- 	struct extent_info ext;		/* in-memory extent cache entry */
- 	struct dir_inode_entry *dirty_dir;	/* the pointer of dirty dir */
-+
-+	struct list_head atomic_pages;	/* atomic page indexes */
- };
- 
- static inline void get_extent_info(struct extent_info *ext,
-@@ -1051,7 +1064,8 @@ enum {
- 	FI_INLINE_DATA,		/* used for inline data*/
- 	FI_APPEND_WRITE,	/* inode has appended data */
- 	FI_UPDATE_WRITE,	/* inode has in-place-update data */
--	FI_NEED_IPU,		/* used fo ipu for fdatasync */
-+	FI_NEED_IPU,		/* used for ipu for fdatasync */
-+	FI_ATOMIC_FILE,		/* used for atomic writes support */
- };
- 
- static inline void set_inode_flag(struct f2fs_inode_info *fi, int flag)
-@@ -1274,6 +1288,8 @@ void destroy_node_manager_caches(void);
- /*
-  * segment.c
-  */
-+void prepare_atomic_pages(struct inode *, struct atomic_w *);
-+void commit_atomic_pages(struct inode *, u64, bool);
- void f2fs_balance_fs(struct f2fs_sb_info *);
- void f2fs_balance_fs_bg(struct f2fs_sb_info *);
- int f2fs_issue_flush(struct f2fs_sb_info *);
-@@ -1355,6 +1371,7 @@ int f2fs_fiemap(struct inode *inode, struct fiemap_extent_info *, u64, u64);
- /*
-  * gc.c
-  */
-+void move_data_page(struct inode *, struct page *, int);
- int start_gc_thread(struct f2fs_sb_info *);
- void stop_gc_thread(struct f2fs_sb_info *);
- block_t start_bidx_of_node(unsigned int, struct f2fs_inode_info *);
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 1184207..d7528c4 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -805,6 +805,57 @@ static inline __u32 f2fs_mask_flags(umode_t mode, __u32 flags)
- 		return flags & F2FS_OTHER_FLMASK;
- }
- 
-+static int f2fs_ioc_atomic_write(struct file *filp, unsigned long arg)
-+{
-+	struct inode *inode = file_inode(filp);
-+	struct atomic_w aw;
-+	loff_t pos;
-+	int ret;
-+
-+	if (!inode_owner_or_capable(inode))
-+		return -EACCES;
-+
-+	if (copy_from_user(&aw, (struct atomic_w __user *)arg, sizeof(aw)))
-+		return -EFAULT;
-+
-+	ret = mnt_want_write_file(filp);
-+	if (ret)
-+		return ret;
-+
-+	pos = aw.pos;
-+	set_inode_flag(F2FS_I(inode), FI_ATOMIC_FILE);
-+	ret = vfs_write(filp, aw.buf, aw.count, &pos);
-+	if (ret >= 0)
-+		prepare_atomic_pages(inode, &aw);
-+	else
-+		clear_inode_flag(F2FS_I(inode), FI_ATOMIC_FILE);
-+
-+	mnt_drop_write_file(filp);
-+	return ret;
-+}
-+
-+static int f2fs_ioc_atomic_commit(struct file *filp, unsigned long arg)
-+{
-+	struct inode *inode = file_inode(filp);
-+	int ret;
-+	u64 aid;
-+
-+	if (!inode_owner_or_capable(inode))
-+		return -EACCES;
-+
-+	if (copy_from_user(&aid, (u64 __user *)arg, sizeof(u64)))
-+		return -EFAULT;
-+
-+	ret = mnt_want_write_file(filp);
-+	if (ret)
-+		return ret;
-+
-+	commit_atomic_pages(inode, aid, false);
-+	ret = f2fs_sync_file(filp, 0, LONG_MAX, 0);
-+	mnt_drop_write_file(filp);
-+	return ret;
-+}
-+
- long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- {
- 	struct inode *inode = file_inode(filp);
-@@ -860,6 +911,10 @@ out:
- 		mnt_drop_write_file(filp);
- 		return ret;
- 	}
-+	case F2FS_IOC_ATOMIC_WRITE:
-+		return f2fs_ioc_atomic_write(filp, arg);
-+	case F2FS_IOC_ATOMIC_COMMIT:
-+		return f2fs_ioc_atomic_commit(filp, arg);
- 	case FITRIM:
- 	{
- 		struct super_block *sb = inode->i_sb;
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 2a8f4ac..1ce6e6c 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -520,7 +520,7 @@ static int check_dnode(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
- 	return 1;
- }
- 
--static void move_data_page(struct inode *inode, struct page *page, int gc_type)
-+void move_data_page(struct inode *inode, struct page *page, int gc_type)
- {
- 	struct f2fs_io_info fio = {
- 		.type = DATA,
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index ff95547..62c5284 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -269,6 +269,10 @@ void f2fs_evict_inode(struct inode *inode)
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
- 	nid_t xnid = F2FS_I(inode)->i_xattr_nid;
- 
-+	/* some remained atomic pages should discarded */
-+	if (is_inode_flag_set(F2FS_I(inode), FI_ATOMIC_FILE))
-+		commit_atomic_pages(inode, 0, true);
-+
- 	trace_f2fs_evict_inode(inode);
- 	truncate_inode_pages_final(&inode->i_data);
- 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index d30cd16..6e3a405 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -26,6 +26,7 @@
- 
- static struct kmem_cache *discard_entry_slab;
- static struct kmem_cache *sit_entry_set_slab;
-+static struct kmem_cache *aw_entry_slab;
- 
- /*
-  * __reverse_ffs is copied from include/asm-generic/bitops/__ffs.h since
-@@ -173,6 +174,70 @@ found_middle:
- 	return result + __reverse_ffz(tmp);
- }
- 
-+/* For atomic write support */
-+void prepare_atomic_pages(struct inode *inode, struct atomic_w *aw)
-+{
-+	pgoff_t start = aw->pos >> PAGE_CACHE_SHIFT;
-+	pgoff_t end = (aw->pos + aw->count + PAGE_CACHE_SIZE - 1) >>
-+						PAGE_CACHE_SHIFT;
-+	struct atomic_range *new;
-+
-+	new = f2fs_kmem_cache_alloc(aw_entry_slab, GFP_NOFS);
-+
-+	/* add atomic page indices to the list */
-+	new->aid = aw->aid;
-+	new->start = start;
-+	new->end = end;
-+	INIT_LIST_HEAD(&new->list);
-+	list_add_tail(&new->list, &F2FS_I(inode)->atomic_pages);
-+}
-+
-+void commit_atomic_pages(struct inode *inode, u64 aid, bool abort)
-+{
-+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-+	struct atomic_range *cur, *tmp;
-+	u64 start;
-+	struct page *page;
-+
-+	if (abort)
-+		goto release;
-+
-+	f2fs_balance_fs(sbi);
-+	mutex_lock(&sbi->cp_mutex);
-+
-+	/* Step #1: write all the pages */
-+	list_for_each_entry(cur, &F2FS_I(inode)->atomic_pages, list) {
-+		if (cur->aid != aid)
-+			continue;
-+
-+		for (start = cur->start; start < cur->end; start++) {
-+			page = grab_cache_page(inode->i_mapping, start);
-+			WARN_ON(!page);
-+			move_data_page(inode, page, FG_GC);
-+		}
-+	}
-+	f2fs_submit_merged_bio(sbi, DATA, WRITE);
-+	mutex_unlock(&sbi->cp_mutex);
-+release:
-+	/* Step #2: wait for writeback */
-+	list_for_each_entry_safe(cur, tmp, &F2FS_I(inode)->atomic_pages, list) {
-+		if (cur->aid != aid && !abort)
-+			continue;
-+
-+		for (start = cur->start; start < cur->end; start++) {
-+			page = find_get_page(inode->i_mapping, start);
-+			WARN_ON(!page);
-+			wait_on_page_writeback(page);
-+			f2fs_put_page(page, 0);
-+
-+			/* release reference got by atomic_write operation */
-+			f2fs_put_page(page, 0);
-+		}
-+		list_del(&cur->list);
-+		kmem_cache_free(aw_entry_slab, cur);
-+	}
-+}
-+
- /*
-  * This function balances dirty node and dentry pages.
-  * In addition, it controls garbage collection.
-@@ -2153,8 +2218,14 @@ int __init create_segment_manager_caches(void)
- 			sizeof(struct nat_entry_set));
- 	if (!sit_entry_set_slab)
- 		goto destory_discard_entry;
-+	aw_entry_slab = f2fs_kmem_cache_create("atomic_entry",
-+			sizeof(struct atomic_range));
-+	if (!aw_entry_slab)
-+		goto destroy_sit_entry_set;
- 	return 0;
- 
-+destroy_sit_entry_set:
-+	kmem_cache_destroy(sit_entry_set_slab);
- destory_discard_entry:
- 	kmem_cache_destroy(discard_entry_slab);
- fail:
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index d080f55..393af7b 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -175,6 +175,13 @@ struct segment_allocation {
- 	void (*allocate_segment)(struct f2fs_sb_info *, int, bool);
- };
- 
-+struct atomic_range {
-+	struct list_head list;
-+	u64 aid;
-+	pgoff_t start;
-+	pgoff_t end;
-+};
-+
- struct sit_info {
- 	const struct segment_allocation *s_ops;
- 
-@@ -502,9 +509,10 @@ static inline bool need_inplace_update(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
- 	unsigned int policy = SM_I(sbi)->ipu_policy;
-+	struct f2fs_inode_info *fi = F2FS_I(inode);
- 
- 	/* IPU can be done only for the user data */
--	if (S_ISDIR(inode->i_mode))
-+	if (S_ISDIR(inode->i_mode) || is_inode_flag_set(fi, FI_ATOMIC_FILE))
- 		return false;
- 
- 	if (policy & (0x1 << F2FS_IPU_FORCE))
-@@ -520,7 +528,7 @@ static inline bool need_inplace_update(struct inode *inode)
- 
- 	/* this is only set during fdatasync */
- 	if (policy & (0x1 << F2FS_IPU_FSYNC) &&
--			is_inode_flag_set(F2FS_I(inode), FI_NEED_IPU))
-+			is_inode_flag_set(fi, FI_NEED_IPU))
- 		return true;
- 
- 	return false;
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index bb6b568..8915c77 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -373,6 +373,7 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
- 	fi->i_advise = 0;
- 	rwlock_init(&fi->ext.ext_lock);
- 	init_rwsem(&fi->i_sem);
-+	INIT_LIST_HEAD(&fi->atomic_pages);
- 
- 	set_inode_flag(fi, FI_NEW_INODE);
- 
--- 
-1.9.3 (Apple Git-50)
+Only concerns for this approach: Is it proper way of doing this?
+
+In my opinion it could be, if we are not getting any other approach of
+handling early syscon.
+
+I also tried to get any other solution for handling debugfs entry, and found
+one more solution.
+But it will work only for late users of syscon: 
+
+pdev = platform_device_alloc("dummy-syscon", -1);
+ret = platform_device_add(pdev);
+
+It can solve issue of regmap debugfs for late users, i.e. if we try to use
+syscon_lookup_by APIs not before
+init_machine. But this will not work for early users of syscon, as I can see
+that "platform_device_add"
+fails (kernel panic) if we call it from init_irq or clk_init.
+
+Meanwhile I have posted a fix [1] for this so that if someone calls
+platform_device_add at very early
+stage at least it should not panic and kernel should handle it gracefully. 
+
+[1]: https://lkml.org/lkml/2014/9/24/348
+
+Also as I mentioned earlier, providing feature of early syscon availability
+was not the main objective of this
+patch, so just to make sure that this should not be a blocking factor for
+current patch I would like to split
+patch in two steps to address to different issues:
+
+1: First patch will cover existing users and allow any such users to create
+actual platform device and register
+their own platform driver, instead of syscon getting probed first.
+I will make sure that it should not break existing users or any existing
+functionality (including debugfs).
+
+2: Second on top of this patch we can have discussion how to go for early
+syscon users.
+
+Thanks,
+Pankaj Dubey
+> 
+> Heiko
+> 
+> 
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c index
+8ebc1c6..3734434
+> 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -73,6 +73,7 @@ static struct syscon *of_syscon_register(struct
+device_node
+> *np)
+>                         goto err_pdev;
+>                 }
+>                 pdev->dev.of_node = of_node_get(np);
+> +               of_device_make_bus_id(&pdev->dev);
+>         }
+> 
+>         regmap = devm_regmap_init_mmio(&pdev->dev, base,
+> &syscon_regmap_config);
 
