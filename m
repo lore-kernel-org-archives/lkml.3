@@ -1,214 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaIZM4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 08:56:01 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51356 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321AbaIZMz7 (ORCPT
+	id S1754419AbaIZNC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:02:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33850 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751537AbaIZNCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 08:55:59 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH] clk: Add floor and ceiling rate constraints for clocks
-Date: Fri, 26 Sep 2014 14:55:01 +0200
-Message-Id: <1411736101-13178-1-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
+	Fri, 26 Sep 2014 09:02:25 -0400
+Date: Fri, 26 Sep 2014 15:02:22 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        arm@kernel.org, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: soc for 3.18 #2
+Message-ID: <20140926130222.GA4408@piout.net>
+References: <1411391733-28891-1-git-send-email-nicolas.ferre@atmel.com>
+ <201409261250.02565.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201409261250.02565.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a way to attach constraints to a clock, for now only floor and
-ceiling rate constraints.
+Hi,
 
-This can be used by cooling devices and battery drivers to set a ceiling on the
-clock of the memory bus, or by devfreq and memory controller drivers to set
-floor rates at which a clock should run so a given performance level is
-sustained.
+On 26/09/2014 at 12:50:02 +0200, Arnd Bergmann wrote :
+> On Monday 22 September 2014, Nicolas Ferre wrote:
+> 
+> > Nicolas Ferre (4):
+> >       ARM: at91: introduce basic SAMA5D4 support
+> >       ARM: at91: SAMA5D4 SoC detection code and low level routines
+> 
+> This resulted in build failures both in at91x40_defconfig and some
+> randconfigs with MMU disabled. I've applied the patch below on top
+> to fix it.
+> 
+> I'm not exactly happy about the soc detection code anyway after I
+> had to look at that. Why do you even hardcode the physical register
+> location rather than getting it from DT?
+> 
+> Also, why do you care about which SoC version you have for the
+> modern SAMA5 chips? All I see is a sama5d4_map_io() callback
+> that maps a lot of completely unused registers along with
+> the uart that you normally get from the implicit debug_ll_io_init,
+> and the SRAM that should probably be turned into a normal driver.
+> 
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Yeah, there are upcoming patches that add more differences between
+sama5d3 and sama5d4. Also, a huge cleanup is planned after all the
+boards files have been removed and all the boards have been either
+migrated to DT and CCF or dropped.
 
----
+I'll owe you the drink of your choice if that is not done by 3.20 ;)
 
-Because the 3.18 merge window is near and the per-user clk patchset isn't yet
-in clk-next and Stephen Boyd voiced reasonable objections to the refactoring,
-I'm sending this patch that adds API for setting clock constraints without any
-invasive changes.
-
-It has been built successfully in Fengguang's kbuild service and tested on the
-Jetson TK1 with experimental code that sets a floor rate based on bandwidth
-requirements and a ceiling rate based on thermal trip points.
----
- drivers/clk/clk.c           | 61 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-private.h |  1 +
- include/linux/clk.h         | 49 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 111 insertions(+)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index b76fa69..37ad6f5 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1538,6 +1538,7 @@ static void clk_change_rate(struct clk *clk)
- int clk_set_rate(struct clk *clk, unsigned long rate)
- {
- 	struct clk *top, *fail_clk;
-+	struct clk_constraint *constraint;
- 	int ret = 0;
- 
- 	if (!clk)
-@@ -1546,6 +1547,17 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-+	hlist_for_each_entry(constraint, &clk->constraints, node) {
-+		if (constraint->type == CLK_CONSTRAINT_RATE_FLOOR)
-+			rate = max(rate, constraint->value);
-+	}
-+
-+	hlist_for_each_entry(constraint, &clk->constraints, node) {
-+		if (constraint->type == CLK_CONSTRAINT_RATE_CEILING &&
-+		    constraint->value > 0)
-+			rate = min(rate, constraint->value);
-+	}
-+
- 	/* bail early if nothing to do */
- 	if (rate == clk_get_rate(clk))
- 		goto out;
-@@ -1890,6 +1902,8 @@ int __clk_init(struct device *dev, struct clk *clk)
- 			}
- 	 }
- 
-+	INIT_HLIST_HEAD(&clk->constraints);
-+
- 	/*
- 	 * optional platform-specific magic
- 	 *
-@@ -2318,6 +2332,53 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
- 
-+void clk_add_constraint(struct clk *clk, struct clk_constraint *constraint,
-+			int constraint_type, unsigned long value)
-+{
-+	clk_prepare_lock();
-+
-+	__clk_get(clk);
-+
-+	constraint->clk = clk;
-+	constraint->type = constraint_type;
-+	constraint->value = value;
-+	hlist_add_head(&constraint->node, &clk->constraints);
-+
-+	clk_set_rate(constraint->clk, clk_get_rate(constraint->clk));
-+
-+	clk_prepare_unlock();
-+}
-+EXPORT_SYMBOL_GPL(clk_add_constraint);
-+
-+void clk_update_constraint(struct clk_constraint *constraint,
-+			   unsigned long new_value)
-+{
-+	clk_prepare_lock();
-+
-+	constraint->value = new_value;
-+
-+	clk_set_rate(constraint->clk, clk_get_rate(constraint->clk));
-+
-+	clk_prepare_unlock();
-+}
-+EXPORT_SYMBOL_GPL(clk_update_constraint);
-+
-+void clk_remove_constraint(struct clk_constraint *constraint)
-+{
-+	clk_prepare_lock();
-+
-+	hlist_del(&constraint->node);
-+
-+	clk_set_rate(constraint->clk, clk_get_rate(constraint->clk));
-+
-+	__clk_put(constraint->clk);
-+
-+	memset(constraint, 0, sizeof(*constraint));
-+
-+	clk_prepare_unlock();
-+}
-+EXPORT_SYMBOL_GPL(clk_remove_constraint);
-+
- #ifdef CONFIG_OF
- /**
-  * struct of_clk_provider - Clock provider registration structure
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index efbf70b..562e1c5 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -53,6 +53,7 @@ struct clk {
- 	struct dentry		*dentry;
- #endif
- 	struct kref		ref;
-+	struct hlist_head	constraints;
- };
- 
- /*
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index fb5e097..13eeb54 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -411,4 +411,53 @@ static inline struct clk *of_clk_get_by_name(struct device_node *np,
- }
- #endif
- 
-+enum {
-+	CLK_CONSTRAINT_RATE_FLOOR,
-+	CLK_CONSTRAINT_RATE_CEILING,
-+
-+	/* insert new constraint ID */
-+	CLK_CONSTRAINT_NUM_TYPES,
-+};
-+
-+struct clk_constraint {
-+	struct clk		*clk;
-+	int			type;
-+	unsigned long		value;
-+	struct hlist_node	node;
-+};
-+
-+/**
-+ * clk_add_constraint - add a new clock constraint
-+ * @clk: clock to be constrained
-+ * @constraint: pointer to a preallocated handle
-+ * @constraint_type: identifies the kind of constraint
-+ * @value: value associated to the constraint
-+ *
-+ * Allows adding a constraint to a clock. A numeric value is associated to
-+ * it which can be updated with clk_update_constraint(). The state of the
-+ * clock will be updated with all the constraints being taken into account.
-+ */
-+void clk_add_constraint(struct clk *clk, struct clk_constraint *constraint,
-+			int constraint_type, unsigned long value);
-+
-+/**
-+ * clk_update_constraint - update the value associated to a clock constraint
-+ * @constraint: pointer to existing constraint handle
-+ * @new_value: new value
-+ *
-+ * Update the numeric value associated to a clock constraint. The state of the
-+ * clock will be updated with all the constraints being taken into account.
-+ */
-+void clk_update_constraint(struct clk_constraint *constraint,
-+			   unsigned long new_value);
-+
-+/**
-+ * clk_remove_constraint - remove a clock constraint
-+ * @constraint: pointer to existing constraint handle
-+ *
-+ * Remove an existing clock constraint. The state of the clock will be updated
-+ * with all the remaining constraints being taken into account.
-+ */
-+void clk_remove_constraint(struct clk_constraint *constraint);
-+
- #endif
 -- 
-1.9.3
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
