@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaIZIky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:40:54 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43593 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754354AbaIZIkw (ORCPT
+	id S1754164AbaIZIn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:43:27 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:48154 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873AbaIZInX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:40:52 -0400
-Date: Fri, 26 Sep 2014 09:40:19 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed
-	MMIO accessors
-Message-ID: <20140926084019.GJ5182@n2100.arm.linux.org.uk>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <4240583.SJ4jiIW6Zy@wuerfel> <54243395.902@linaro.org> <201409252117.19754.arnd@arndb.de>
+	Fri, 26 Sep 2014 04:43:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201409252117.19754.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1411662520-22795-6-git-send-email-geert+renesas@glider.be>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+	<1411662520-22795-6-git-send-email-geert+renesas@glider.be>
+Date: Fri, 26 Sep 2014 10:43:22 +0200
+Message-ID: <CAPDyKFpiTBKEJHTF9cK20GTqEgx=4UNt52sKi0dQ7NsZNhfFOA@mail.gmail.com>
+Subject: Re: [PATCH v3 05/13] PM / Domains: Add helper variable np = dev->of_node
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 09:17:19PM +0200, Arnd Bergmann wrote:
-> On Thursday 25 September 2014, Daniel Thompson wrote:
-> > > +
-> > > +#ifndef readq_relaxed
-> > > +#define readq_relaxed readq
-> > > +#endif
-> > 
-> > Not really sure if it matters but this gives a rather surprising
-> > behaviour to #ifdef readq_relaxed given that readq may not be defined.
-> > 
-> 
-> It was intentional. I could have written this as
-> 
-> #if !defined(readq_relaxed) && defined(readq)
-> 
-> but the effect would be almost the same, and the version I picked looks
-> simpler. Note that 32-bit architectures could provide readq, it's just
-> the generic code that doesn't, because most you typically don't get
-> atomic 64-bit accesses from dereferencing a 64-bit pointer as the
-> generic readq() function does.
+On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
 
-32-bit architectures should *not* provide readq().  Remember, we are
-talking about devices here, and reading registers on devices *may* have
-side effects.
+Why?
 
-Side effects such as clearing the pending interrupt status.
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-How would a 32-bit architecture know whether it should read the least
-significant 32-bit or the most significant 32-bit part of the 64-bit
-register first.  What would be right for one driver may not ben correct
-for another.  Hence, this decision should only be made by the driver
-wanting the accessor, and not having the accessor symbol defined should
-be the trigger for the driver to handle the problem themselves.
+Normally I think this kind of cleanup patches is a bit unnecessary,
+but I don't have strong opinions.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Kind regards
+Uffe
+
+> ---
+> v3:
+>   - No changes
+> v2:
+>   - New
+>
+>  drivers/base/power/domain.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index 6e36bb09e7d9c144..0ebc6bb31c9c227f 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -2171,17 +2171,18 @@ static void genpd_dev_pm_detach(struct device *dev, bool power_off)
+>   */
+>  int genpd_dev_pm_attach(struct device *dev)
+>  {
+> +       struct device_node *np = dev->of_node;
+>         struct of_phandle_args pd_args;
+>         struct generic_pm_domain *pd;
+>         int ret;
+>
+> -       if (!dev->of_node)
+> +       if (!np)
+>                 return -ENODEV;
+>
+>         if (dev->pm_domain)
+>                 return -EEXIST;
+>
+> -       ret = of_parse_phandle_with_args(dev->of_node, "power-domains",
+> +       ret = of_parse_phandle_with_args(np, "power-domains",
+>                                         "#power-domain-cells", 0, &pd_args);
+>         if (ret < 0) {
+>                 if (ret != -ENOENT)
+> @@ -2192,8 +2193,7 @@ int genpd_dev_pm_attach(struct device *dev)
+>                  * (for backwards compatibility of DT ABI)
+>                  */
+>                 pd_args.args_count = 0;
+> -               pd_args.np = of_parse_phandle(dev->of_node,
+> -                                               "samsung,power-domain", 0);
+> +               pd_args.np = of_parse_phandle(np, "samsung,power-domain", 0);
+>                 if (!pd_args.np)
+>                         return -ENOENT;
+>         }
+> @@ -2202,7 +2202,7 @@ int genpd_dev_pm_attach(struct device *dev)
+>         if (IS_ERR(pd)) {
+>                 dev_dbg(dev, "%s() failed to find PM domain: %ld\n",
+>                         __func__, PTR_ERR(pd));
+> -               of_node_put(dev->of_node);
+> +               of_node_put(np);
+>                 return PTR_ERR(pd);
+>         }
+>
+> @@ -2218,7 +2218,7 @@ int genpd_dev_pm_attach(struct device *dev)
+>         if (ret < 0) {
+>                 dev_err(dev, "failed to add to PM domain %s: %d",
+>                         pd->name, ret);
+> -               of_node_put(dev->of_node);
+> +               of_node_put(np);
+>                 return ret;
+>         }
+>
+> --
+> 1.9.1
+>
