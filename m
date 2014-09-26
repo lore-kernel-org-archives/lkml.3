@@ -1,104 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbaIZUmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:42:24 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:64614 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505AbaIZUmW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:42:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
-References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
- <CALCETrXFb=etdrabEjbKdxKg51ViPXptOC=6CkKwcGS7Jau8nA@mail.gmail.com> <CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 13:42:00 -0700
-Message-ID: <CALCETrVAQ7oRm8zDHDiUurjrMw=+ABucLWjed_P__4j8deNE7A@mail.gmail.com>
-Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
- syscall, verifier, testsuite)
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756217AbaIZUnr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:43:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756098AbaIZUnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:43:45 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [mmotm][PATCH 1/2] mm/hugetlb: improve suboptimal migration/hwpoisoned entry check
+Date: Fri, 26 Sep 2014 16:42:06 -0400
+Message-Id: <1411764127-31641-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1411764127-31641-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1411764127-31641-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 1:09 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Sep 26, 2014 at 12:51 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> To add one more point:
->>
->> With the current verifier design, it's impossible to write a userspace
->> tool that can take an eBPF program and check it.  The verification is
->> far too context-dependent for that to be possible.  I won't go so far
->> as to say that a userspace tool needs to *exist*, but I strongly
->> object to exposing a verification algorithm that *precludes* writing
->> such a tool.
->
-> that's just not true.
-> why is it not possible?
+Currently hugetlb_fault() checks at first whether pte of the faulted
+address is a migration or hwpoisoned entry. The reason of this approach
+is that without the checks, the BUG_ON() in huge_pte_alloc() is triggered,
+because it assumes that when pte is not none, it always points to a
+normal hugepage, which was correct originally but not after hugetlb
+supports page migration or hwpoison.
 
-Because the types of referenced objects aren't encoded in the blob
-that a user program loads, unless I'm missing something.
+In order to iron out this weird workaround, this patch changes the
+wrongly assumed BUG_ON() in huge_pte_alloc(). This allows us to check
+pte_present() case only in proper place, which makes code simpler.
 
->
->> I think that the eBPF program format needs to encode all context
->> needed for verification.  Then verification should check that the
->> program is compliant with the context and that the context is correct.
->> The former could, in principle, be done in userspace, too.
->
-> one can have maps and other future objects equally
-> represented in user space. Nothing stops doing exactly the same
-> logic there.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/hugetlb.c | 28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
-But the eBPF binary doesn't encode this information. In fact, the
-caller of an ebpf syscall may not even have access to this
-information.
-
-I really think that the information needed to check type safety should
-be encapsulated in the program.
-
->
->> Here, "context" includes the program type (i.e. what type R1 hasis),
->> the key and value sizes of all referenced maps, the fact that the maps
->> are maps (damnit, "every object implements exactly the same interface
->> and is called a 'map'" is a bad type system*), and possible also
->> things like the intended stack size and any other relevant details
->> about the entry calling convention.
->
-> Andy, I'm not sure where you're going with this.
-> Sounds like you want to redesign the whole thing?
-> How long it will take?
-> Did you consider all the cases I did?
-> I think I understand your concerns. What I don't understand
-> why you think we cannot address them step by step.
-> imo what this does covers a ton of use cases.
-> Some futuristic stuff may be better and may be not.
-> But here I have it working, tested and proven over many
-> use cases, whereas some future unclear stuff will take
-> unknown amount of time to redesign...
-
-I think this is addressable as a smallish change on top of your code.
-Rather than looking up a map when you need to learn its key and value
-size, I think that all you need to do is to look in a program section
-for the key and value size (and the fact that it's a map) and confirm
-that the referenced map *matches* the stored values.
-
---Andy
-
+diff --git mmotm-2014-09-25-16-28.orig/mm/hugetlb.c mmotm-2014-09-25-16-28/mm/hugetlb.c
+index 1ecb625bc498..e6543359be4d 100644
+--- mmotm-2014-09-25-16-28.orig/mm/hugetlb.c
++++ mmotm-2014-09-25-16-28/mm/hugetlb.c
+@@ -3130,20 +3130,10 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct hstate *h = hstate_vma(vma);
+ 	struct address_space *mapping;
+ 	int need_wait_lock = 0;
++	int need_wait_migration = 0;
+ 
+ 	address &= huge_page_mask(h);
+ 
+-	ptep = huge_pte_offset(mm, address);
+-	if (ptep) {
+-		entry = huge_ptep_get(ptep);
+-		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait_huge(vma, mm, ptep);
+-			return 0;
+-		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+-			return VM_FAULT_HWPOISON_LARGE |
+-				VM_FAULT_SET_HINDEX(hstate_index(h));
+-	}
+-
+ 	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
+ 	if (!ptep)
+ 		return VM_FAULT_OOM;
+@@ -3169,12 +3159,16 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	/*
+ 	 * entry could be a migration/hwpoison entry at this point, so this
+ 	 * check prevents the kernel from going below assuming that we have
+-	 * a active hugepage in pagecache. This goto expects the 2nd page fault,
+-	 * and is_hugetlb_entry_(migration|hwpoisoned) check will properly
+-	 * handle it.
++	 * a active hugepage in pagecache.
+ 	 */
+-	if (!pte_present(entry))
++	if (!pte_present(entry)) {
++		if (is_hugetlb_entry_migration(entry))
++			need_wait_migration = 1;
++		else if (is_hugetlb_entry_hwpoisoned(entry))
++			ret = VM_FAULT_HWPOISON_LARGE |
++				VM_FAULT_SET_HINDEX(hstate_index(h));
+ 		goto out_mutex;
++	}
+ 
+ 	/*
+ 	 * If we are going to COW the mapping later, we examine the pending
+@@ -3242,6 +3236,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	}
+ out_mutex:
+ 	mutex_unlock(&htlb_fault_mutex_table[hash]);
++	if (need_wait_migration)
++		migration_entry_wait_huge(vma, mm, ptep);
+ 	if (need_wait_lock)
+ 		wait_on_page_locked(page);
+ 	return ret;
+@@ -3664,7 +3660,7 @@ pte_t *huge_pte_alloc(struct mm_struct *mm,
+ 				pte = (pte_t *)pmd_alloc(mm, pud, addr);
+ 		}
+ 	}
+-	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
++	BUG_ON(pte && !pte_none(*pte) && pte_present(*pte) && !pte_huge(*pte));
+ 
+ 	return pte;
+ }
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.3
+
