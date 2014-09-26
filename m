@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaIZKAL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:00:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
+	id S1755858AbaIZKAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:00:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755087AbaIZJql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755088AbaIZJql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
@@ -12,9 +12,9 @@ Cc: linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/142] powerpc/thp: Invalidate with vpn in loop
-Date: Fri, 26 Sep 2014 11:44:27 +0200
-Message-Id: <5611f07c012a8174a1cd5c9b3ced93810d479989.1411724724.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 049/142] powerpc/mm: Use read barrier when creating real_pte
+Date: Fri, 26 Sep 2014 11:44:20 +0200
+Message-Id: <21c4de8afa1ae7d4a03015304c1dfc236b927a09.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -30,65 +30,64 @@ From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
 ===============
 
-commit 969b7b208f7408712a3526856e4ae60ad13f6928 upstream.
+commit 85c1fafd7262e68ad821ee1808686b1392b1167d upstream.
 
-As per ISA, for 4k base page size we compare 14..65 bits of VA specified
-with the entry_VA in tlb. That implies we need to make sure we do a
-tlbie with all the possible 4k va we used to access the 16MB hugepage.
-With 64k base page size we compare 14..57 bits of VA. Hence we cannot
-ignore the lower 24 bits of va while tlbie .We also cannot tlb
-invalidate a 16MB entry with just one tlbie instruction because
-we don't track which va was used to instantiate the tlb entry.
+On ppc64 we support 4K hash pte with 64K page size. That requires
+us to track the hash pte slot information on a per 4k basis. We do that
+by storing the slot details in the second half of pte page. The pte bit
+_PAGE_COMBO is used to indicate whether the second half need to be
+looked while building real_pte. We need to use read memory barrier while
+doing that so that load of hidx is not reordered w.r.t _PAGE_COMBO
+check. On the store side we already do a lwsync in __hash_page_4K
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/mm/hash_native_64.c | 23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+ arch/powerpc/include/asm/pte-hash64-64k.h | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
-index 9197691fd5d5..9ca9c160dee4 100644
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -418,7 +418,7 @@ static void native_hugepage_invalidate(unsigned long vsid,
- 				       unsigned char *hpte_slot_array,
- 				       int psize, int ssize)
- {
--	int i, lock_tlbie;
-+	int i;
- 	struct hash_pte *hptep;
- 	int actual_psize = MMU_PAGE_16M;
- 	unsigned int max_hpte_count, valid;
-@@ -457,22 +457,13 @@ static void native_hugepage_invalidate(unsigned long vsid,
- 		else
- 			/* Invalidate the hpte. NOTE: this also unlocks it */
- 			hptep->v = 0;
+diff --git a/arch/powerpc/include/asm/pte-hash64-64k.h b/arch/powerpc/include/asm/pte-hash64-64k.h
+index d836d945068d..9ecede1e124c 100644
+--- a/arch/powerpc/include/asm/pte-hash64-64k.h
++++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+@@ -46,11 +46,31 @@
+  * in order to deal with 64K made of 4K HW pages. Thus we override the
+  * generic accessors and iterators here
+  */
+-#define __real_pte(e,p) 	((real_pte_t) { \
+-			(e), (pte_val(e) & _PAGE_COMBO) ? \
+-				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
+-#define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
+-        (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
++#define __real_pte __real_pte
++static inline real_pte_t __real_pte(pte_t pte, pte_t *ptep)
++{
++	real_pte_t rpte;
++
++	rpte.pte = pte;
++	rpte.hidx = 0;
++	if (pte_val(pte) & _PAGE_COMBO) {
 +		/*
-+		 * We need to do tlb invalidate for all the address, tlbie
-+		 * instruction compares entry_VA in tlb with the VA specified
-+		 * here
++		 * Make sure we order the hidx load against the _PAGE_COMBO
++		 * check. The store side ordering is done in __hash_page_4K
 +		 */
-+		tlbie(vpn, psize, actual_psize, ssize, 0);
- 	}
--	/*
--	 * Since this is a hugepage, we just need a single tlbie.
--	 * use the last vpn.
--	 */
--	lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
--	if (lock_tlbie)
--		raw_spin_lock(&native_tlbie_lock);
--
--	asm volatile("ptesync":::"memory");
--	__tlbie(vpn, psize, actual_psize, ssize);
--	asm volatile("eieio; tlbsync; ptesync":::"memory");
--
--	if (lock_tlbie)
--		raw_spin_unlock(&native_tlbie_lock);
--
- 	local_irq_restore(flags);
- }
- 
++		smp_rmb();
++		rpte.hidx = pte_val(*((ptep) + PTRS_PER_PTE));
++	}
++	return rpte;
++}
++
++static inline unsigned long __rpte_to_hidx(real_pte_t rpte, unsigned long index)
++{
++	if ((pte_val(rpte.pte) & _PAGE_COMBO))
++		return (rpte.hidx >> (index<<2)) & 0xf;
++	return (pte_val(rpte.pte) >> 12) & 0xf;
++}
++
+ #define __rpte_to_pte(r)	((r).pte)
+ #define __rpte_sub_valid(rpte, index) \
+ 	(pte_val(rpte.pte) & (_PAGE_HPTE_SUB0 >> (index)))
 -- 
 2.1.0
 
