@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaIZI3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:29:23 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43005 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaIZI3S (ORCPT
+	id S1754099AbaIZIaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:30:23 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:35458 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321AbaIZIaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:29:18 -0400
-Date: Fri, 26 Sep 2014 09:28:56 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140926082856.GD27755@sirena.org.uk>
-References: <1411611449.25671.1.camel@phoenix>
+	Fri, 26 Sep 2014 04:30:20 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VZLKKa0PG5KXlQhV"
-Content-Disposition: inline
-In-Reply-To: <1411611449.25671.1.camel@phoenix>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.45.252.252
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: qcom_rpm: Fix FORCE_MODE_IS_2_BITS macro
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAMuHMdX8MD9vynbehHjgVKryfUVAMJduhXjd2XBt58U=djO11Q@mail.gmail.com>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	<3608975.MxU44B73lk@wuerfel>
+	<CAFiDJ58h4VKrr-wHe6iD+aPB8QU=xLo03kW5k6QDpLW5Et0DGw@mail.gmail.com>
+	<11277081.DWgcnnZv54@wuerfel>
+	<CAFiDJ58Y1iQhkkS-OVwMBdowJnXKKbYfHttQibmBh_qa5vgOmQ@mail.gmail.com>
+	<CAMuHMdX8MD9vynbehHjgVKryfUVAMJduhXjd2XBt58U=djO11Q@mail.gmail.com>
+Date: Fri, 26 Sep 2014 16:30:17 +0800
+X-Google-Sender-Auth: -CriSsZ6392qp6-mzSkzpqt0--c
+Message-ID: <CAFiDJ5-GGitbYY29=zu=nxTMZFaS1x4-5Mt4W2828vFgQf59qA@mail.gmail.com>
+Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
+From: Ley Foon Tan <lftan@altera.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 26, 2014 at 2:41 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Fri, Sep 26, 2014 at 4:22 AM, Ley Foon Tan <lftan@altera.com> wrote:
+>>> Randy Dunlap <rdunlap@infradead.org> is the maintainer listed for
+>>> Documentation, and I see you already have linux-doc@vger.kernel.org
+>>> on Cc here. Please make sure that Randy is on Cc for the documentation
+>>> patches as well. A lot of documentation patches go in without his
+>>> Ack, which I think is fine as long as someone else (i.e. you) is
+>>> responsible for maintaining that documentation later.
+>> Okay, will add Randy to CC list for Documentation patch.
+>
+> Please change that to Jiri Kosina:
+>
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d671e42457e1fef70ad0df07084207078633a9e8
+>
+Oh, okay. Will CC new maintainer.
+Thanks.
 
---VZLKKa0PG5KXlQhV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Sep 25, 2014 at 10:17:29AM +0800, Axel Lin wrote:
-> Current code does not take the macro parameter, fix it.
-> This is not a problem at this moment because the only user actually passes
-> vreg to FORCE_MODE_IS_2_BITS().
-
-Applied, thanks.
-
---VZLKKa0PG5KXlQhV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUJSPHAAoJECTWi3JdVIfQmSsH/1OSIBer7Ewsl0yu34TIjNUg
-MgsAigdlWyWdnZQYARyBI1upcoty8pCKVYkocCbJRaVGnYmM4QhtU6STcSP2czs4
-BIbY9J+OZO57mMX8vKZIpLJWnfYLgBSC7sYNMYoF/SGKlxNBK6R0cQEAquUPjzAo
-1qz3i5abLFkQtLRweXp6qnA09zd0FGQPHnvHgvgeP7aSf/EDp5T3lVpUYLfUwzG8
-/qyiz9B3/BXv+SeQP3t8LcmTuDxj26IXp9d5wCbYyPxkUAU1n3mGxIKKAxdG4sCZ
-w3YABLUEy6r8qgndZCkrp+IRnrhv5ZJnsKRupkvq9RjoJx1SNmYzaV+5AelN6kU=
-=MmST
------END PGP SIGNATURE-----
-
---VZLKKa0PG5KXlQhV--
+Regards
+Ley Foon
