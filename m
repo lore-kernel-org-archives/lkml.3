@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081AbaIZNR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:17:59 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:56648 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671AbaIZNRy (ORCPT
+	id S1754590AbaIZNWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:22:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46279 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754285AbaIZNWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:17:54 -0400
-Message-ID: <5425677B.9030700@pivasoftware.com>
-Date: Fri, 26 Sep 2014 14:17:47 +0100
-From: Oussama Ghorbel <ghorbel@pivasoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 26 Sep 2014 09:22:37 -0400
+Date: Fri, 26 Sep 2014 14:20:38 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Chenhui Zhao <chenhui.zhao@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhuoyu.Zhang@freescale.com" <Zhuoyu.Zhang@freescale.com>,
+        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
+        "leoli@freescale.com" <leoli@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] arm: ls1: add CPU hotplug platform support
+Message-ID: <20140926132038.GF7422@leverpostej>
+References: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
+ <1411730703-25836-2-git-send-email-chenhui.zhao@freescale.com>
+ <20140926122003.GP5182@n2100.arm.linux.org.uk>
+ <20140926124614.GD7422@leverpostej>
+ <20140926130311.GQ5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] phy: omap-usb2: Enable runtime PM of omap-usb2 phy properly
-References: <1411575303-18858-1-git-send-email-ghorbel@pivasoftware.com>
-In-Reply-To: <1411575303-18858-1-git-send-email-ghorbel@pivasoftware.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:5VhaIhGYwit4rHKj1KKqSiNjaDFIT64Y+j4zd6/e8Hm
- YoER+5VOO/J1jcTKu6ggXwJkoIVM2QlkOmUIVaoTmUM9tHraUr
- HKy8dbDiT5ztVAMXCa8yWZaB7bHz+uLfX3CBAbX/gHHl4NZspJ
- 3FcuthfYmmJ3TIvMkkZfOzG8xz3FTl4M58j43zzL2S5/deXLvY
- 7YggmxEkjOg1f2Ugmngl/ofKzaVwqnxS4tXq5WilolE8hfOAe+
- 3Xo31I1CitZeAKyofkO8G1HoyCBTwjo8z5n8Fu2aq0SHI/ajsk
- U+A6Bdja8T+BYY/pJJdSx7VzR3E1I1ChakLdFuueTqnNB6Lser
- XnLp+D8u/VRXJkaixz/kD/rM1wPebUHQSO/PydddD
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140926130311.GQ5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may find merge conflict since v3.17-rc5.
-If necessary I can send a re-based version of this patch on v3.17-rc5 
-for seamless integration.
-In short the line
-generic_phy = devm_phy_create(phy->dev, &ops, NULL);
-became
-generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
+> > This looks to be a carbon copy of the vexpress pseudo-hotplug in
+> > arch/arm/mach-vexpress/hotplug.c, which is obviously broken in the way
+> > you describe above. Perhaps we should go about ripping that out?
+> 
+> The Versatile Express does not support suspend so the only problem case
+> is kexec.  However, isn't this support needed for big.LITTLE, and as
+> the Versatile Express is the platform which these features get developed
+> on, having working CPU hotplug seems rather fundamental for ARM kernel
+> feature development.
+> 
+> In that regard, Versatile Express is something of a special case.
 
-Oussama
+It is admittedly helpful during development to perform pseudo-hotplug on
+Versatile Express. I have a local patch adding vexpress_cpu_disable so I
+can test for bugs that only trigger if CPU0 is hotplugged.
 
-On 09/24/2014 05:15 PM, Oussama Ghorbel wrote:
-> The USB OTG port does not work since v3.16 on omap platform.
-> This is a regression introduced by the commit
-> eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
->   and remove).
-> This because the call to pm_runtime_enable() function is moved after the
-> call to devm_phy_create() function, which has side effect since later in
-> the subsequent calls of devm_phy_create() there is a check with
-> pm_runtime_enabled() to configure few things.
->
-> Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
-> ---
->   drivers/phy/phy-omap-usb2.c | 6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-> index 34b3961..3fb9293 100644
-> --- a/drivers/phy/phy-omap-usb2.c
-> +++ b/drivers/phy/phy-omap-usb2.c
-> @@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
->   	otg->phy		= &phy->phy;
->   
->   	platform_set_drvdata(pdev, phy);
-> +	pm_runtime_enable(phy->dev);
->   
->   	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
-> -	if (IS_ERR(generic_phy))
-> +	if (IS_ERR(generic_phy)) {
-> +		pm_runtime_disable(phy->dev);
->   		return PTR_ERR(generic_phy);
-> +	}
->   
->   	phy_set_drvdata(generic_phy, phy);
->   
-> -	pm_runtime_enable(phy->dev);
->   	phy_provider = devm_of_phy_provider_register(phy->dev,
->   			of_phy_simple_xlate);
->   	if (IS_ERR(phy_provider)) {
+Given that, perhaps we should make it clearer that Versatile Express is
+not a reference implementation for CPU hotplug; add some Kconfig (e.g.
+VEXPRESS_PSEUDO_HOTPLUG) that depends on !KEXEC && !SUSPEND, and putting
+a note in hotplug.c stating it's not suitable as a reference
+implementation.
 
+...but perhaps that's overkill.
+
+Mark.
