@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbaIZRaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:30:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54891 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835AbaIZRaG (ORCPT
+	id S1755857AbaIZRcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:32:12 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:54761 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042AbaIZRcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:30:06 -0400
-Message-ID: <5425A296.3090900@infradead.org>
-Date: Fri, 26 Sep 2014 10:29:58 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 26 Sep 2014 13:32:11 -0400
+Date: Fri, 26 Sep 2014 12:32:04 -0500
+From: Michael Welling <mwelling@emacinc.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        linus.walleij@linaro.org, rjw@rjwysocki.net,
+        gregkh@linuxfoundation.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: GPIO registration for external Ethernet PHY oscillator
+ enable/disable
+Message-ID: <20140926173203.GA4459@sysresccd>
+References: <20140925191722.GA2481@sysresccd>
+ <54247372.40803@gmail.com>
+ <20140926165919.GA3518@sysresccd>
+ <54259F83.5020006@gmail.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: mmotm 2014-09-25-16-28 uploaded (media/platform/vivid)
-References: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
-In-Reply-To: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54259F83.5020006@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/14 16:28, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2014-09-25-16-28 has been uploaded to
+On Fri, Sep 26, 2014 at 10:16:51AM -0700, Florian Fainelli wrote:
+> On 09/26/2014 09:59 AM, Michael Welling wrote:
+> > On Thu, Sep 25, 2014 at 12:56:34PM -0700, Florian Fainelli wrote:
+> >> So, PHY drivers are allowed to provide specialized implementations for
+> >> suspend/resume operations that are called by phy_suspend() and
+> >> phy_resume(), the current Micrel PHY driver uses the generic
+> >> suspend/resume implementation and it is best if we can keep doing that.
+> >>
+> > 
+> > In my situation the defualt phy_suspend is not sufficient. We are
+> > looking to use the board for an application that requires a low sleep
+> > current. The KZS8081 has a slow oscillator low power mode that is 
+> > required to meet the requirements.
+> > 
+> > So I have already overwritten the suspend/resume to send the required
+> > commands to the PHY to achieve the slow clock mode.
+> > 
+> > If you are interested the sequence is explained in the datasheet pg 34:
+> > http://www.micrel.com/_PDF/Ethernet/datasheets/KSZ8081MNX-RNB.pdf
+> > 
+> >>> Can it be handled outside of the PHY driver?
+> >>
+> >> I see a few possible options:
+> >>
+> >> - hook a pm_runtime callbacks for your platform, check the device
+> >> pointer to make sure this is the PHY device, and when that is the case,
+> >> toggle the GPIO accordingly
+> > 
+> > Not too familiar with the pm_runtime callbacks.
+> > 
+> > Can you point me to a similar example that is already in the kernel?
 > 
->    http://www.ozlabs.org/~akpm/mmotm/
+> drivers/sh/pm_runtime.c is a simple example, there might others in the
+> OMAP code.
 > 
-> mmotm-readme.txt says
+> > 
+> >>
+> >> - add an additional "osc_gpio" configuration parameter passed to the
+> >> Ethernet MAC driver (presumably drivers/net/ethernet/cadence/macb.c?)
+> >> and toggle the GPIO before and after the calls to the PHY state machine
+> >> (phy_suspend, phy_resume, phy_start, phy_stop), that might be simpler
+> >>
+> > 
+> > This seems the wrong place as the oscillator is specific to the PHY.
 > 
-> README for mm-of-the-moment:
+> Yes and no, this might feel like the wrong place, but ultimately, the
+> Ethernet MAC is a consumer of the PHY device, and is in control, through
+> the PHY library of how and when the PHY gets to be powered off.
+
+This is a good point. This driver also has the added advantage that it
+is a platform driver so the GPIO could more easily be registered via
+the device tree.
+
+Lets try this option first and see how it works out.
+
 > 
-> http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> >> - last but not least, make the PHY driver aware of that optional GPIO,
+> >> create customized PHY suspend/resume/config_aneg callbacks
+> >>
+> > 
+> > This to me feels like the path of least resistance. Though the driver
+> > does not appear to be a platform driver so I am not sure how to pass
+> > GPIOs to it. Maybe I am missing something.
 > 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-
-
-on i386, when CONFIG_FB is not enabled:
-
-
-ERROR: "cfb_fillrect" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "cfb_imageblit" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "fb_alloc_cmap" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "register_framebuffer" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "fb_dealloc_cmap" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "cfb_copyarea" [drivers/media/platform/vivid/vivid.ko] undefined!
-ERROR: "unregister_framebuffer" [drivers/media/platform/vivid/vivid.ko] undefined!
-
-
-I guess that VIDEO_VIVID should depend on FB.
-
--- 
-~Randy
+> If your platform uses Device Tree, you need to add a probe() and
+> remove() callbacks to the micrel PHY driver, and fetch the gpio resource
+> from there.
+> 
+> For non-Device Tree, we might have to find an another to specify such
+> auxiliary information, but traditionally, people have been using the
+> help of the Ethernet MAC driver to provide additional information down
+> to the PHY driver.
+> --
+> Florian
+> 
