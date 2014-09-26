@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247AbaIZRRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:17:16 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63412 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaIZRRP (ORCPT
+	id S1755431AbaIZRRh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:17:37 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43200 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755278AbaIZRRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:17:15 -0400
-Message-ID: <54259F83.5020006@gmail.com>
-Date: Fri, 26 Sep 2014 10:16:51 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 26 Sep 2014 13:17:35 -0400
 MIME-Version: 1.0
-To: Michael Welling <mwelling@emacinc.com>
-CC: linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        linus.walleij@linaro.org, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: GPIO registration for external Ethernet PHY oscillator enable/disable
-References: <20140925191722.GA2481@sysresccd> <54247372.40803@gmail.com> <20140926165919.GA3518@sysresccd>
-In-Reply-To: <20140926165919.GA3518@sysresccd>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54259BD4.8090508@oracle.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+	<54259BD4.8090508@oracle.com>
+Date: Fri, 26 Sep 2014 21:17:34 +0400
+Message-ID: <CAPAsAGzZyFfhK890hUpecrKWowCUW+TiZ32PK2Vb7rFB18+u3A@mail.gmail.com>
+Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory debugger.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 09:59 AM, Michael Welling wrote:
-> On Thu, Sep 25, 2014 at 12:56:34PM -0700, Florian Fainelli wrote:
->> So, PHY drivers are allowed to provide specialized implementations for
->> suspend/resume operations that are called by phy_suspend() and
->> phy_resume(), the current Micrel PHY driver uses the generic
->> suspend/resume implementation and it is best if we can keep doing that.
+2014-09-26 21:01 GMT+04:00 Sasha Levin <sasha.levin@oracle.com>:
+> On 09/24/2014 08:43 AM, Andrey Ryabinin wrote:
+>> Hi.
 >>
-> 
-> In my situation the defualt phy_suspend is not sufficient. We are
-> looking to use the board for an application that requires a low sleep
-> current. The KZS8081 has a slow oscillator low power mode that is 
-> required to meet the requirements.
-> 
-> So I have already overwritten the suspend/resume to send the required
-> commands to the PHY to achieve the slow clock mode.
-> 
-> If you are interested the sequence is explained in the datasheet pg 34:
-> http://www.micrel.com/_PDF/Ethernet/datasheets/KSZ8081MNX-RNB.pdf
-> 
->>> Can it be handled outside of the PHY driver?
+>> This is a third iteration of kerenel address sanitizer (KASan).
 >>
->> I see a few possible options:
+>> KASan is a runtime memory debugger designed to find use-after-free
+>> and out-of-bounds bugs.
 >>
->> - hook a pm_runtime callbacks for your platform, check the device
->> pointer to make sure this is the PHY device, and when that is the case,
->> toggle the GPIO accordingly
-> 
-> Not too familiar with the pm_runtime callbacks.
-> 
-> Can you point me to a similar example that is already in the kernel?
+>> Currently KASAN supported only for x86_64 architecture and requires kernel
+>> to be build with SLUB allocator.
+>> KASAN uses compile-time instrumentation for checking every memory access, therefore you
+>> will need a fresh GCC >= v5.0.0.
+>
+> Hi Andrey,
+>
+> I tried this patchset, with the latest gcc, and I'm seeing the following:
+>
+> arch/x86/kernel/head.o: In function `_GLOBAL__sub_I_00099_0_reserve_ebda_region':
+> /home/sasha/linux-next/arch/x86/kernel/head.c:71: undefined reference to `__asan_init_v4'
+> init/built-in.o: In function `_GLOBAL__sub_I_00099_0___ksymtab_system_state':
+> /home/sasha/linux-next/init/main.c:1034: undefined reference to `__asan_init_v4'
+> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_init_uts_ns':
+> /home/sasha/linux-next/init/version.c:50: undefined reference to `__asan_init_v4'
+> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_root_mountflags':
+> /home/sasha/linux-next/init/do_mounts.c:638: undefined reference to `__asan_init_v4'
+> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_rd_prompt':
+> /home/sasha/linux-next/init/do_mounts_rd.c:361: undefined reference to `__asan_init_v4'
+> init/built-in.o:/home/sasha/linux-next/init/do_mounts_md.c:312: more undefined references to `__asan_init_v4' follow
+>
+>
+> What am I missing?
+>
 
-drivers/sh/pm_runtime.c is a simple example, there might others in the
-OMAP code.
+__asan_init_v* is a version of compiler's api. Recently it was changed
+in gcc - https://gcc.gnu.org/ml/gcc-patches/2014-09/msg01872.html
 
-> 
->>
->> - add an additional "osc_gpio" configuration parameter passed to the
->> Ethernet MAC driver (presumably drivers/net/ethernet/cadence/macb.c?)
->> and toggle the GPIO before and after the calls to the PHY state machine
->> (phy_suspend, phy_resume, phy_start, phy_stop), that might be simpler
->>
-> 
-> This seems the wrong place as the oscillator is specific to the PHY.
+To fix this, just add:
 
-Yes and no, this might feel like the wrong place, but ultimately, the
-Ethernet MAC is a consumer of the PHY device, and is in control, through
-the PHY library of how and when the PHY gets to be powered off.
+void __asan_init_v4(void) {}
+EXPORT_SYMBOL(__asan_init_v4);
 
-> 
->> - last but not least, make the PHY driver aware of that optional GPIO,
->> create customized PHY suspend/resume/config_aneg callbacks
->>
-> 
-> This to me feels like the path of least resistance. Though the driver
-> does not appear to be a platform driver so I am not sure how to pass
-> GPIOs to it. Maybe I am missing something.
+ to the mm/kasan/kasan.c
 
-If your platform uses Device Tree, you need to add a probe() and
-remove() callbacks to the micrel PHY driver, and fetch the gpio resource
-from there.
+I'll fix this in next spin.
 
-For non-Device Tree, we might have to find an another to specify such
-auxiliary information, but traditionally, people have been using the
-help of the Ethernet MAC driver to provide additional information down
-to the PHY driver.
---
-Florian
+>
+> Thanks,
+> Sasha
+>
+> --
 
+
+
+-- 
+Best regards,
+Andrey Ryabinin
