@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaIZI6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:58:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:25739 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaIZI6E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:58:04 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-1c-54252a9988d8
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Henrique de Moraes Holschuh'" <hmh@hmh.eng.br>
-Cc: neilb@suse.de, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
- <20140925165114.GE10814@khazad-dum.debian.net>
-In-reply-to: <20140925165114.GE10814@khazad-dum.debian.net>
-Subject: RE: [PATCH] md: avoid potential long delay under pers_lock
-Date: Fri, 26 Sep 2014 16:56:44 +0800
-Message-id: <004c01cfd967$fa1012d0$ee303870$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGG4wNqX+f5TUFyB86IvHjUIwy0SgEolAbAnJu2j6A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd2ZWqohBsdfClqs/72SxeLyrjls
-	Fu3zdzFa7J3fwOLA4vH7AKPH5tPVHp83yQUwR3HZpKTmZJalFunbJXBlbN22k7ngvEDFraXN
-	jA2MS3i7GDk5JARMJA63zmCHsMUkLtxbz9bFyMUhJDCdUWLLnwVMEM4PRol3H3axgFSxCahI
-	LO/4zwRiiwgYSXyac4EVxGYW8Ja4Nf0wM4gtJJAl0bn7FdhUTgFrifN3+thAbGEBZ4k569oY
-	QWwWAVWJ/mOXgGZycPAKWEq8mAcW5hUQlPgx+R4LxEgtifU7jzNB2PISm9e8ZYY4VEFix9nX
-	jCCtIgJWEtMfeUKUiEtsPHKLZQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXSK07M
-	LS7NS9dLzs/dxAgO+mfSOxhXNVgcYhTgYFTi4W1YoxIixJpYVlyZe4hRgoNZSYTXSEE1RIg3
-	JbGyKrUoP76oNCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgsEwenVANjpL7vNmtVK4vZ
-	b/datZyw1REzkGRevJ7P/IPtUcGNh9sWP882W8Lv+rBhKve23eej7bINeX4e3ex6oEJi9Rf+
-	PJ4HVtsL/CU3MMWmHlfNO+tjl9UpzWEfETjhwcX1M1fU3lta/Xa5xueqSek3oh88lBbOkFYW
-	009e1qRdG++4dNXh9su/MqSUWIozEg21mIuKEwHyGC61dgIAAA==
+	id S1754291AbaIZI6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:58:36 -0400
+Received: from ou.quest-ce.net ([195.154.187.82]:58074 "EHLO ou.quest-ce.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753957AbaIZI6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:58:32 -0400
+Message-ID: <1411721898.7778.18.camel@localhost.localdomain>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Heinrich Schuchardt <xypron.debian@gmx.de>
+Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org, linux-api@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Date: Fri, 26 Sep 2014 10:58:18 +0200
+In-Reply-To: <542481B3.8070300@gmx.de>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
+	 <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+	 <542481B3.8070300@gmx.de>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:450:1e:232:8e70:5aff:fe2f:2d74
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when
+ requested in fanotify_init()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Henrique de Moraes Holschuh [mailto:hmh@hmh.eng.br]
-> Sent: Friday, September 26, 2014 12:51 AM
-> To: Chao Yu
-> Cc: neilb@suse.de; linux-raid@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] md: avoid potential long delay under pers_lock
-> 
-> On Thu, 25 Sep 2014, Chao Yu wrote:
-> > printk may cause long time lapse if value of printk_delay in sysctl is
-> > configured large by user. If register_md_personality takes long time to print in
-> > spinlock pers_lock, we may encounter high CPU usage rate when there are other
-> > pers_lock competitors who may be blocked to spin.
-> > We can avoid this condition by moving printk out of coverage of pers_lock
-> > spinlock.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  drivers/md/md.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/md/md.c b/drivers/md/md.c
-> > index e02de05..5fcf215 100644
-> > --- a/drivers/md/md.c
-> > +++ b/drivers/md/md.c
-> > @@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops = {
-> >
-> >  int register_md_personality(struct md_personality *p)
-> >  {
-> > +	printk(KERN_INFO "md: %s personality registered for level %d\n",
-> > +						p->name, p->level);
-> >  	spin_lock(&pers_lock);
-> >  	list_add_tail(&p->list, &pers_list);
-> > -	printk(KERN_INFO "md: %s personality registered for level %d\n", p->name, p->level);
-> >  	spin_unlock(&pers_lock);
-> >  	return 0;
-> >  }
-> 
-> Wouldn't it make more sense to move the printk after the spin_unlock ?
+Hi,
 
-As original printk msg in {,un}register_md_personality shows '{,un}registered'
-which means the main job is done before printk, it's better to move the printk
-after spin_unlock in both {,un}register_md_personality. But IMHO, it's another
-minor issue, should we fix in this patch?
-
-Thanks,
-Yu
-
+Le jeudi 25 septembre 2014 à 22:57 +0200, Heinrich Schuchardt a écrit :
+> On 24.09.2014 15:11, Yann Droneaud wrote:
+> > According to commit 80af258867648 ('fanotify: groups can specify
+> > their f_flags for new fd'), file descriptors created as part of
+> > file access notification events inherit flags from the
+> > event_f_flags argument passed to syscall fanotify_init(2).
+> >
+> > So while it is legal for userspace to call fanotify_init() with
+> > O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
+> > silently ignored.
+> >
+> > Indeed event_f_flags are only given to dentry_open(), which only
+> > seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
+> > O_DIRECT in open_check_o_direct() and O_LARGEFILE in
+> > generic_file_open().
 > 
-> --
->   "One disk to rule them all, One disk to find them. One disk to bring
->   them all and in the darkness grind them. In the Land of Redmond
->   where the shadows lie." -- The Silicon Valley Tarot
->   Henrique Holschuh
+> I tested on kernel 3.17.0-rc5. I passed O_CLOEXEC in event_f_flags.
+> When I called fcnt(event_metadata->fd, F_GETFD) it did not return 
+> FD_CLOEXEC. So I can confirm your observation that O_CLOEXEC is not 
+> working as expected.
+> 
+> I found this definition
+> #define get_unused_fd() get_unused_fd_flags(0)
+> 
+> So essentially when get_unused_fd() is called for a fanotify event 
+> O_CLOEXEC is ignored.
+> 
+> This is what your patch fixes.
+> 
+> >
+> > More, there's no effective check on event_f_flags value that
+> > would catch unknown / unsupported values, unlike the one on
+> > f_flags argument of the syscall (see FAN_ALL_INIT_FLAGS in
+> > include/uapi/linux/fanotify.h).
+> 
+> The fanotify_init(2) man page describes which flags are allowable in 
+> event_f_flags.
+> 
+> Could you, please, explain why the following code in fanotify_user.c is 
+> not to be considered an effective check:
+> 
+>      if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
+>          return -EINVAL;
+> 
+>      switch (event_f_flags & O_ACCMODE) {
+>      case O_RDONLY:
+>      case O_RDWR:
+>      case O_WRONLY:
+>          break;
+>      default:
+>          return -EINVAL;
+>      }
+> 
+> I CC Jan Kara as he reviewed the code.
+> 
+
+I missed the opportunity to update my commit message.
+
+I've sent my initial version of the patch (with the same wording) on
+5th, January, 2014:
+
+http://mid.gmane.org/3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com
+http://lkml.kernel.org/r/3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com
+
+The patch was sent again on March, 11:
+
+http://lkml.kernel.org/r/baab31b572b216d13f2149bdf07e0f79a1bae660.1394532336.git.ydroneaud@opteya.com
+http://mid.gmane.org/baab31b572b216d13f2149bdf07e0f79a1bae660.1394532336.git.ydroneaud@opteya.com
+
+And another time, on June, 1st:
+
+http://lkml.kernel.org/r/2c6ab28980f0007ea3b9afa7ecd7497806a6a451.1401630396.git.ydroneaud@opteya.com
+http://mid.gmane.org/2c6ab28980f0007ea3b9afa7ecd7497806a6a451.1401630396.git.ydroneaud@opteya.com
+
+So as you can see, my patch predate yours:
+
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=48149e9d3a7e924010a0daab30a6197b7d7b6580
+
+But I have to apologize: I haven't noticed your patch was merged between
+my previous submission and the current one. My bad.
+
+I will update the commit message to remove my obsolete comment on the
+input parameter check.
+
+Thanks again for review and testing.
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
 
