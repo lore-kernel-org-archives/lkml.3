@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793AbaIZK0s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:26:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33044 "EHLO mx2.suse.de"
+	id S1755776AbaIZK0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:26:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795AbaIZJqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754796AbaIZJqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
+Cc: linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>,
         Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 066/142] scsi: add a blacklist flag which enables VPD page inquiries
-Date: Fri, 26 Sep 2014 11:44:37 +0200
-Message-Id: <29f9575fde21ea15388f74038d384ad55ecf1baa.1411724724.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 065/142] scsi_scan: Restrict sequential scan to 256 LUNs
+Date: Fri, 26 Sep 2014 11:44:36 +0200
+Message-Id: <efd3133b4ac7fc80f8b61bcee10a734cd9b25e6d.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,87 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Hannes Reinecke <hare@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c1d40a527e885a40bb9ea6c46a1b1145d42b66a0 upstream.
+commit 22ffeb48b7584d6cd50f2a595ed6065d86a87459 upstream.
 
-Despite supporting modern SCSI features some storage devices continue to
-claim conformance to an older version of the SPC spec. This is done for
-compatibility with legacy operating systems.
+Sequential scan for more than 256 LUNs is very fragile as
+LUNs might not be numbered sequentially after that point.
 
-Linux by default will not attempt to read VPD pages on devices that
-claim SPC-2 or older. Introduce a blacklist flag that can be used to
-trigger VPD page inquiries on devices that are known to support them.
+SAM revisions later than SCSI-3 impose a structure on
+LUNs larger than 256, making LUN numbers between 256
+and 16384 illegal.
+SCSI-3, however allows for plain 64-bit numbers with
+no internal structure.
 
-Reported-by: KY Srinivasan <kys@microsoft.com>
-Tested-by: KY Srinivasan <kys@microsoft.com>
-Reviewed-by: KY Srinivasan <kys@microsoft.com>
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+So restrict sequential LUN scan to 256 LUNs and add a
+new blacklist flag 'BLIST_SCSI3LUN' to scan up to
+max_lun devices.
+
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Ewan Milne <emilne@redhat.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/scsi_scan.c    | 4 +++-
- drivers/scsi/sd.c           | 5 +++++
- include/scsi/scsi_device.h  | 1 +
- include/scsi/scsi_devinfo.h | 1 +
- 4 files changed, 10 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_scan.c    | 6 ++++++
+ include/scsi/scsi_devinfo.h | 2 ++
+ 2 files changed, 8 insertions(+)
 
 diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index bfad3586d914..17b08db224e8 100644
+index 4109530e92a0..bfad3586d914 100644
 --- a/drivers/scsi/scsi_scan.c
 +++ b/drivers/scsi/scsi_scan.c
-@@ -950,7 +950,9 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+@@ -1236,6 +1236,12 @@ static void scsi_sequential_lun_scan(struct scsi_target *starget,
+ 		max_dev_lun = min(8U, max_dev_lun);
  
- 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
- 
--	if (*bflags & BLIST_SKIP_VPD_PAGES)
-+	if (*bflags & BLIST_TRY_VPD_PAGES)
-+		sdev->try_vpd_pages = 1;
-+	else if (*bflags & BLIST_SKIP_VPD_PAGES)
- 		sdev->skip_vpd_pages = 1;
- 
- 	transport_configure_device(&sdev->sdev_gendev);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index dbc024bd4adf..69d2a7060fde 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2667,6 +2667,11 @@ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
- 
- static int sd_try_extended_inquiry(struct scsi_device *sdp)
- {
-+	/* Attempt VPD inquiry if the device blacklist explicitly calls
-+	 * for it.
-+	 */
-+	if (sdp->try_vpd_pages)
-+		return 1;
  	/*
- 	 * Although VPD inquiries can go to SCSI-2 type devices,
- 	 * some USB ones crash on receiving them, and the pages
-diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
-index b4f1effc9216..409fafb63f63 100644
---- a/include/scsi/scsi_device.h
-+++ b/include/scsi/scsi_device.h
-@@ -149,6 +149,7 @@ struct scsi_device {
- 	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08 */
- 	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f */
- 	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
-+	unsigned try_vpd_pages:1;	/* attempt to read VPD pages */
- 	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page 0x3f */
- 	unsigned no_start_on_add:1;	/* do not issue start on add */
- 	unsigned allow_restart:1; /* issue START_UNIT in error handler */
++	 * Stop scanning at 255 unless BLIST_SCSI3LUN
++	 */
++	if (!(bflags & BLIST_SCSI3LUN))
++		max_dev_lun = min(256U, max_dev_lun);
++
++	/*
+ 	 * We have already scanned LUN 0, so start at LUN 1. Keep scanning
+ 	 * until we reach the max, or no LUN is found and we are not
+ 	 * sparse_lun.
 diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
-index 8670c04e199e..1fdd6fc5492b 100644
+index 447d2d7466fc..8670c04e199e 100644
 --- a/include/scsi/scsi_devinfo.h
 +++ b/include/scsi/scsi_devinfo.h
-@@ -34,4 +34,5 @@
+@@ -32,4 +32,6 @@
+ #define BLIST_ATTACH_PQ3	0x1000000 /* Scan: Attach to PQ3 devices */
+ #define BLIST_NO_DIF		0x2000000 /* Disable T10 PI (DIF) */
  #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages */
- #define BLIST_SCSI3LUN		0x8000000 /* Scan more than 256 LUNs
- 					     for sequential scan */
-+#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
++#define BLIST_SCSI3LUN		0x8000000 /* Scan more than 256 LUNs
++					     for sequential scan */
  #endif
 -- 
 2.1.0
