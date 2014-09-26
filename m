@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799AbaIZKJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:09:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43180 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131AbaIZKJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:09:23 -0400
-Date: Fri, 26 Sep 2014 11:08:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Weike Chen <alvin.chen@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Boon Leong Ong <boon.leong.ong@intel.com>,
-        Raymond Tan <raymond.tan@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Message-ID: <20140926100832.GE27755@sirena.org.uk>
-References: <1411752349-31490-1-git-send-email-alvin.chen@intel.com>
- <1411752349-31490-2-git-send-email-alvin.chen@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ugMgaRwDDWDxqvmW"
-Content-Disposition: inline
-In-Reply-To: <1411752349-31490-2-git-send-email-alvin.chen@intel.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.45.252.252
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1755582AbaIZKGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:06:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754984AbaIZJq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:29 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
+        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 103/142] xfs: don't zero partial page cache pages during O_DIRECT writes
+Date: Fri, 26 Sep 2014 11:45:14 +0200
+Message-Id: <e00641c38e767943d0cc426063e0f562d6b259cc.1411724724.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chris Mason <clm@fb.com>
 
---ugMgaRwDDWDxqvmW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Fri, Sep 26, 2014 at 10:25:49AM -0700, Weike Chen wrote:
+===============
 
-> +static u32 pxa2xx_spi_get_ssrc1_change_mask(const struct driver_data *dr=
-v_data)
-> +{
-> +	if (!is_quark_x1000_ssp(drv_data))
-> +		return SSCR1_CHANGE_MASK;
-> +
-> +	return QUARK_X1000_SSCR1_CHANGE_MASK;
-> +}
+commit 85e584da3212140ee80fd047f9058bbee0bc00d5 upstream.
 
-These functions would be much better written as switch statements -
-think how they're going to look when we've got another controller which
-needs custom values.  It might also be helpful for review to have two
-patches, one splitting things out into the functions and another adding
-the Quark support.
+xfs is using truncate_pagecache_range to invalidate the page cache
+during DIO reads.  This is different from the other filesystems who
+only invalidate pages during DIO writes.
 
-> +/*  see Quark SPI data sheet for implementation rationale */
-> +static u32 quark_x1000_set_clk_regvals(u32 rate, u32 *dds, u32 *clk_div)
-> +{
+truncate_pagecache_range is meant to be used when we are freeing the
+underlying data structs from disk, so it will zero any partial
+ranges in the page.  This means a DIO read can zero out part of the
+page cache page, and it is possible the page will stay in cache.
 
-Please document this in the driver - I don't know if this datasheet is
-public but even if it is it may not stay that way.
+buffered reads will find an up to date page with zeros instead of
+the data actually on disk.
 
-> @@ -613,6 +759,8 @@ static void pump_transfers(unsigned long data)
->  	u32 cr1;
->  	u32 dma_thresh =3D drv_data->cur_chip->dma_threshold;
->  	u32 dma_burst =3D drv_data->cur_chip->dma_burst_size;
-> +	u32 change_mask =3D pxa2xx_spi_get_ssrc1_change_mask(drv_data);
-> +
-> =20
+This patch fixes things by using invalidate_inode_pages2_range
+instead.  It preserves the page cache invalidation, but won't zero
+any pages.
 
-Extra blank line being added here.
+[dchinner: catch error and warn if it fails. Comment.]
 
-> @@ -145,6 +147,9 @@ static inline int pxa25x_ssp_comp(struct driver_data =
-*drv_data)
->  		return 1;
->  	if (drv_data->ssp_type =3D=3D CE4100_SSP)
->  		return 1;
-> +	if (drv_data->ssp_type =3D=3D QUARK_X1000_SSP)
-> +		return 1;
-> +
->  	return 0;
->  }
+Signed-off-by: Chris Mason <clm@fb.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/xfs/xfs_file.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-Things like this should also be refactored into switch statements - in
-general anything that's deciding what to do based on ssp_type probably
-ought to be using switch statements.
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 3e0fccf54ed5..d56b136e68fe 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -299,7 +299,16 @@ xfs_file_aio_read(
+ 				xfs_rw_iunlock(ip, XFS_IOLOCK_EXCL);
+ 				return ret;
+ 			}
+-			truncate_pagecache_range(VFS_I(ip), pos, -1);
++
++			/*
++			 * Invalidate whole pages. This can return an error if
++			 * we fail to invalidate a page, but this should never
++			 * happen on XFS. Warn if it does fail.
++			 */
++			ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
++						pos >> PAGE_CACHE_SHIFT, -1);
++			WARN_ON_ONCE(ret);
++			ret = 0;
+ 		}
+ 		xfs_rw_ilock_demote(ip, XFS_IOLOCK_EXCL);
+ 	}
+-- 
+2.1.0
 
---ugMgaRwDDWDxqvmW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUJTsfAAoJECTWi3JdVIfQE+gH/16f2SYwr2HYqCpe7Vin3oVI
-eh/D/ty70TT5l0/U2C4cSeb5IB2hDd1o79+L2qEDm5Cxmf9jtUYoTtagsVmd1gz3
-cOoq0ifuwMzEDmI+UEnp+97jt5x+AfPGKO7+qKoTDWXIAU7ppPRguv4YC/TH9sla
-0YPKOU/0AByy9DEiIsTld91eFvKcUggbGdEJVYiRtodLrnrf36/txXJ/VAERO6+K
-F5cMRjEmy+7NXYLNKn30KbTG0BaOdPYJjIUyxuM6uFAGAYAajB9XqzvUIp7/b3u7
-MhHfQU0AzJ4a8C6rqa172Y81QS24d2mKP6zjuotLYvYtWq3P3tGFD9qOFoW81CE=
-=EhTZ
------END PGP SIGNATURE-----
-
---ugMgaRwDDWDxqvmW--
