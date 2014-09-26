@@ -1,374 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaIZL50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:57:26 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:47709 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769AbaIZL5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:57:20 -0400
-X-Amavis-Alert: BAD HEADER, Duplicate header field: "In-Reply-To"
-From: Stefan Agner <stefan@agner.ch>
-To: linus.walleij@linaro.org, shawn.guo@freescale.com
-Cc: gnurou@gmail.com, kernel@pengutronix.de, linux-gpio@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        bpringlemeir@nbsps.com, l.stach@pengutronix.de, stefan@agner.ch
-Subject: [PATCH v4 2/4] gpio: vf610: add gpiolib/IRQ chip driver for Vybrid
-Date: Fri, 26 Sep 2014 13:57:09 +0200
-Message-Id: <d978829094e6a287415dc1baeabb0aed2799aafc.1411731755.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1411731755.git.stefan@agner.ch>
-References: <cover.1411731755.git.stefan@agner.ch>
-In-Reply-To: <cover.1411731755.git.stefan@agner.ch>
-References: <cover.1411731755.git.stefan@agner.ch>
+	id S1755038AbaIZL6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:58:08 -0400
+Received: from mail-bn1bon0132.outbound.protection.outlook.com ([157.56.111.132]:22793
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755003AbaIZL6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 07:58:03 -0400
+From: Chenhui Zhao <chenhui.zhao@freescale.com>
+To: <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <leoli@freescale.com>, <Jason.Jin@freescale.com>,
+        <Zhuoyu.Zhang@freescale.com>
+Subject: [PATCH 2/3] pm: add FSM configuration for deep sleep
+Date: Fri, 26 Sep 2014 19:25:02 +0800
+Message-ID: <1411730703-25836-3-git-send-email-chenhui.zhao@freescale.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
+References: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(76176999)(104166001)(104016003)(84676001)(102836001)(107046002)(106466001)(87286001)(87936001)(89996001)(229853001)(86362001)(36756003)(76482002)(97736003)(20776003)(50986999)(74662003)(46102003)(77982003)(68736004)(64706001)(19580405001)(19580395003)(4396001)(81542003)(50226001)(92566001)(31966008)(93916002)(62966002)(81342003)(33646002)(92726001)(74502003)(6806004)(80022003)(120916001)(83072002)(85852003)(85306004)(79102003)(48376002)(83322001)(44976005)(47776003)(10300001)(90102001)(50466002)(88136002)(95666004)(99396003)(21056001)(575784001)(77156001)(2201001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB374;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB374;
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=temperror (sender IP is 192.88.168.50)
+ smtp.mailfrom=chenhui.zhao@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a gpiolib and IRQ chip driver for Vybrid ARM SoC using the
-Vybrid's GPIO and PORT module. The driver is instanced once per
-each GPIO/PORT module pair and handles 32 GPIO's.
+For some Freescale's SoCs which support deep sleep, such as T1040,
+LS1021, software will start a Finite State Machine (FSM) to control
+the hardware precedure to enter deep sleep and return from it.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
+This patch configures parameters of the FSM preparing for deep sleep.
+
+Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
 ---
- drivers/gpio/Kconfig      |   7 ++
- drivers/gpio/Makefile     |   1 +
- drivers/gpio/gpio-vf610.c | 295 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 303 insertions(+)
- create mode 100644 drivers/gpio/gpio-vf610.c
+ drivers/platform/Kconfig         |    1 +
+ drivers/platform/Makefile        |    1 +
+ drivers/platform/fsl/Kconfig     |   10 ++
+ drivers/platform/fsl/Makefile    |    5 +
+ drivers/platform/fsl/sleep_fsm.c |  281 ++++++++++++++++++++++++++++++++++++++
+ drivers/platform/fsl/sleep_fsm.h |  100 ++++++++++++++
+ 6 files changed, 398 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/fsl/Kconfig
+ create mode 100644 drivers/platform/fsl/Makefile
+ create mode 100644 drivers/platform/fsl/sleep_fsm.c
+ create mode 100644 drivers/platform/fsl/sleep_fsm.h
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9de1515..82b38f5 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -334,6 +334,13 @@ config GPIO_TZ1090_PDC
- 	help
- 	  Say yes here to support Toumaz Xenif TZ1090 PDC GPIOs.
+diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
+index 69616ae..54ada25 100644
+--- a/drivers/platform/Kconfig
++++ b/drivers/platform/Kconfig
+@@ -5,3 +5,4 @@ if GOLDFISH
+ source "drivers/platform/goldfish/Kconfig"
+ endif
  
-+config GPIO_VF610
-+	def_bool y
-+	depends on ARCH_MXC && SOC_VF610
-+	select GPIOLIB_IRQCHIP
-+	help
-+	  Say yes here to support Vybrid vf610 GPIOs.
-+
- config GPIO_XILINX
- 	bool "Xilinx GPIO support"
- 	depends on PPC_OF || MICROBLAZE || ARCH_ZYNQ
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d024e3..9893d4c 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -95,6 +95,7 @@ obj-$(CONFIG_GPIO_TWL6040)	+= gpio-twl6040.o
- obj-$(CONFIG_GPIO_TZ1090)	+= gpio-tz1090.o
- obj-$(CONFIG_GPIO_TZ1090_PDC)	+= gpio-tz1090-pdc.o
- obj-$(CONFIG_GPIO_UCB1400)	+= gpio-ucb1400.o
-+obj-$(CONFIG_GPIO_VF610)	+= gpio-vf610.o
- obj-$(CONFIG_GPIO_VIPERBOARD)	+= gpio-viperboard.o
- obj-$(CONFIG_GPIO_VR41XX)	+= gpio-vr41xx.o
- obj-$(CONFIG_GPIO_VX855)	+= gpio-vx855.o
-diff --git a/drivers/gpio/gpio-vf610.c b/drivers/gpio/gpio-vf610.c
++source "drivers/platform/fsl/Kconfig"
+diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
+index 8a44a4c..d0cce95 100644
+--- a/drivers/platform/Makefile
++++ b/drivers/platform/Makefile
+@@ -5,3 +5,4 @@
+ obj-$(CONFIG_X86)		+= x86/
+ obj-$(CONFIG_OLPC)		+= olpc/
+ obj-$(CONFIG_GOLDFISH)		+= goldfish/
++obj-$(CONFIG_FSL_SOC)		+= fsl/
+diff --git a/drivers/platform/fsl/Kconfig b/drivers/platform/fsl/Kconfig
 new file mode 100644
-index 0000000..4ee4cee
+index 0000000..72ed053
 --- /dev/null
-+++ b/drivers/gpio/gpio-vf610.c
-@@ -0,0 +1,295 @@
++++ b/drivers/platform/fsl/Kconfig
+@@ -0,0 +1,10 @@
++#
++# Freescale Specific Power Management Drivers
++#
++
++config FSL_SLEEP_FSM
++	bool
++	help
++	  This driver configures a hardware FSM (Finite State Machine) for deep sleep.
++	  The FSM is used to finish clean-ups at the last stage of system entering deep
++	  sleep, and also wakes up system when a wake up event happens.
+diff --git a/drivers/platform/fsl/Makefile b/drivers/platform/fsl/Makefile
+new file mode 100644
+index 0000000..d99ca0e
+--- /dev/null
++++ b/drivers/platform/fsl/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile for linux/drivers/platform/fsl
++# Freescale Specific Power Management Drivers
++#
++obj-$(CONFIG_FSL_SLEEP_FSM)	+= sleep_fsm.o
+diff --git a/drivers/platform/fsl/sleep_fsm.c b/drivers/platform/fsl/sleep_fsm.c
+new file mode 100644
+index 0000000..d8478a1
+--- /dev/null
++++ b/drivers/platform/fsl/sleep_fsm.c
+@@ -0,0 +1,281 @@
 +/*
-+ * vf610 GPIO support through PORT and GPIO module
++ * Freescale deep sleep FSM (finite-state machine) configuration
 + *
-+ * Copyright (c) 2014 Toradex AG.
++ * Copyright 2014 Freescale Semiconductor Inc.
 + *
-+ * Author: Stefan Agner <stefan@agner.ch>.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
 + */
 +
-+#include <linux/bitops.h>
-+#include <linux/err.h>
-+#include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
++#include <linux/kernel.h>
 +#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/irq.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_irq.h>
++#include <linux/types.h>
 +
-+#define VF610_GPIO_PER_PORT		32
-+
-+struct vf610_gpio_port {
-+	struct gpio_chip gc;
-+	void __iomem *base;
-+	void __iomem *gpio_base;
-+	u8 irqc[VF610_GPIO_PER_PORT];
-+	int irq;
++#include "sleep_fsm.h"
++/*
++ * These values are from chip's reference manual. For example,
++ * the values for T1040 can be found in "8.4.3.8 Programming
++ * supporting deep sleep mode" of Chapter 8 "Run Control and
++ * Power Management (RCPM)".
++ * The default value can be applied to T104x, LS1021.
++ */
++struct fsm_reg_vals epu_default_val[] = {
++	/* EPGCR (Event Processor Global Control Register) */
++	{EPGCR, 0},
++	/* EPECR (Event Processor Event Control Registers) */
++	{EPECR0 + EPECR_STRIDE * 0, 0},
++	{EPECR0 + EPECR_STRIDE * 1, 0},
++	{EPECR0 + EPECR_STRIDE * 2, 0xF0004004},
++	{EPECR0 + EPECR_STRIDE * 3, 0x80000084},
++	{EPECR0 + EPECR_STRIDE * 4, 0x20000084},
++	{EPECR0 + EPECR_STRIDE * 5, 0x08000004},
++	{EPECR0 + EPECR_STRIDE * 6, 0x80000084},
++	{EPECR0 + EPECR_STRIDE * 7, 0x80000084},
++	{EPECR0 + EPECR_STRIDE * 8, 0x60000084},
++	{EPECR0 + EPECR_STRIDE * 9, 0x08000084},
++	{EPECR0 + EPECR_STRIDE * 10, 0x42000084},
++	{EPECR0 + EPECR_STRIDE * 11, 0x90000084},
++	{EPECR0 + EPECR_STRIDE * 12, 0x80000084},
++	{EPECR0 + EPECR_STRIDE * 13, 0x08000084},
++	{EPECR0 + EPECR_STRIDE * 14, 0x02000084},
++	/* This will be written just before entering deep sleep */
++	{EPECR0 + EPECR_STRIDE * 15, 0},
++	/*
++	 * EPEVTCR (Event Processor EVT Pin Control Registers)
++	 * SCU8 triger EVT2, and SCU11 triger EVT9
++	 */
++	{EPEVTCR0 + EPEVTCR_STRIDE * 0, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 1, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 2, 0x80000001},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 3, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 4, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 5, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 6, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 7, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 8, 0},
++	{EPEVTCR0 + EPEVTCR_STRIDE * 9, 0xB0000001},
++	/* EPCMPR (Event Processor Counter Compare Registers) */
++	{EPCMPR0 + EPCMPR_STRIDE * 0, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 1, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 2, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 3, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 4, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 5, 0x00000020},
++	{EPCMPR0 + EPCMPR_STRIDE * 6, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 7, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 8, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 9, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 10, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 11, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 12, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 13, 0},
++	{EPCMPR0 + EPCMPR_STRIDE * 14, 0x000000FF},
++	{EPCMPR0 + EPCMPR_STRIDE * 15, 0x000000FF},
++	/* EPCCR (Event Processor Counter Control Registers) */
++	{EPCCR0 + EPCCR_STRIDE * 0, 0},
++	{EPCCR0 + EPCCR_STRIDE * 1, 0},
++	{EPCCR0 + EPCCR_STRIDE * 2, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 3, 0},
++	{EPCCR0 + EPCCR_STRIDE * 4, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 5, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 6, 0},
++	{EPCCR0 + EPCCR_STRIDE * 7, 0},
++	{EPCCR0 + EPCCR_STRIDE * 8, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 9, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 10, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 11, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 12, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 13, 0},
++	{EPCCR0 + EPCCR_STRIDE * 14, 0x92840000},
++	{EPCCR0 + EPCCR_STRIDE * 15, 0x92840000},
++	/* EPSMCR (Event Processor SCU Mux Control Registers) */
++	{EPSMCR0 + EPSMCR_STRIDE * 0, 0},
++	{EPSMCR0 + EPSMCR_STRIDE * 1, 0},
++	{EPSMCR0 + EPSMCR_STRIDE * 2, 0x6C700000},
++	{EPSMCR0 + EPSMCR_STRIDE * 3, 0x2F000000},
++	{EPSMCR0 + EPSMCR_STRIDE * 4, 0x002F0000},
++	{EPSMCR0 + EPSMCR_STRIDE * 5, 0x00002E00},
++	{EPSMCR0 + EPSMCR_STRIDE * 6, 0x7C000000},
++	{EPSMCR0 + EPSMCR_STRIDE * 7, 0x30000000},
++	{EPSMCR0 + EPSMCR_STRIDE * 8, 0x64300000},
++	{EPSMCR0 + EPSMCR_STRIDE * 9, 0x00003000},
++	{EPSMCR0 + EPSMCR_STRIDE * 10, 0x65000030},
++	{EPSMCR0 + EPSMCR_STRIDE * 11, 0x31740000},
++	{EPSMCR0 + EPSMCR_STRIDE * 12, 0x7F000000},
++	{EPSMCR0 + EPSMCR_STRIDE * 13, 0x00003100},
++	{EPSMCR0 + EPSMCR_STRIDE * 14, 0x00000031},
++	{EPSMCR0 + EPSMCR_STRIDE * 15, 0x76000000},
++	/* EPACR (Event Processor Action Control Registers) */
++	{EPACR0 + EPACR_STRIDE * 0, 0},
++	{EPACR0 + EPACR_STRIDE * 1, 0},
++	{EPACR0 + EPACR_STRIDE * 2, 0},
++	{EPACR0 + EPACR_STRIDE * 3, 0x00000080},
++	{EPACR0 + EPACR_STRIDE * 4, 0},
++	{EPACR0 + EPACR_STRIDE * 5, 0x00000040},
++	{EPACR0 + EPACR_STRIDE * 6, 0},
++	{EPACR0 + EPACR_STRIDE * 7, 0},
++	{EPACR0 + EPACR_STRIDE * 8, 0},
++	{EPACR0 + EPACR_STRIDE * 9, 0x0000001C},
++	{EPACR0 + EPACR_STRIDE * 10, 0x00000020},
++	{EPACR0 + EPACR_STRIDE * 11, 0},
++	{EPACR0 + EPACR_STRIDE * 12, 0x00000003},
++	{EPACR0 + EPACR_STRIDE * 13, 0x06000000},
++	{EPACR0 + EPACR_STRIDE * 14, 0x04000000},
++	{EPACR0 + EPACR_STRIDE * 15, 0x02000000},
++	/* EPIMCR (Event Processor Input Mux Control Registers) */
++	{EPIMCR0 + EPIMCR_STRIDE * 0, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 1, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 2, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 3, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 4, 0x44000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 5, 0x40000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 6, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 7, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 8, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 9, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 10, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 11, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 12, 0x44000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 13, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 14, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 15, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 16, 0x6A000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 17, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 18, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 19, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 20, 0x48000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 21, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 22, 0x6C000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 23, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 24, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 25, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 26, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 27, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 28, 0x76000000},
++	{EPIMCR0 + EPIMCR_STRIDE * 29, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 30, 0},
++	{EPIMCR0 + EPIMCR_STRIDE * 31, 0x76000000},
++	/* EPXTRIGCR (Event Processor Crosstrigger Control Register) */
++	{EPXTRIGCR, 0x0000FFDF},
++	/* end */
++	{FSM_END_FLAG, 0},
 +};
 +
-+#define GPIO_PDOR		0x00
-+#define GPIO_PSOR		0x04
-+#define GPIO_PCOR		0x08
-+#define GPIO_PTOR		0x0c
-+#define GPIO_PDIR		0x10
-+
-+#define PORT_PCR(n)		((n) * 0x4)
-+#define PORT_PCR_IRQC_OFFSET	16
-+
-+#define PORT_ISFR		0xa0
-+#define PORT_DFER		0xc0
-+#define PORT_DFCR		0xc4
-+#define PORT_DFWR		0xc8
-+
-+#define PORT_INT_OFF		0x0
-+#define PORT_INT_LOGIC_ZERO	0x8
-+#define PORT_INT_RISING_EDGE	0x9
-+#define PORT_INT_FALLING_EDGE	0xa
-+#define PORT_INT_EITHER_EDGE	0xb
-+#define PORT_INT_LOGIC_ONE	0xc
-+
-+static const struct of_device_id vf610_gpio_dt_ids[] = {
-+	{ .compatible = "fsl,vf610-gpio" },
-+	{ /* sentinel */ }
++struct fsm_reg_vals npc_default_val[] = {
++	/* NPC triggered Memory-Mapped Access Registers */
++	{NCR, 0x80000000},
++	{MCCR1, 0},
++	{MCSR1, 0},
++	{MMAR1LO, 0},
++	{MMAR1HI, 0},
++	{MMDR1, 0},
++	{MCSR2, 0},
++	{MMAR2LO, 0},
++	{MMAR2HI, 0},
++	{MMDR2, 0},
++	{MCSR3, 0x80000000},
++	{MMAR3LO, 0x000E2130},
++	{MMAR3HI, 0x00030000},
++	{MMDR3, 0x00020000},
++	/* end */
++	{FSM_END_FLAG, 0},
 +};
 +
-+static inline void vf610_gpio_writel(u32 val, void __iomem *reg)
++void fsm_write32(void __iomem *addr, u32 val)
 +{
-+	writel_relaxed(val, reg);
++#ifdef __arm__
++	iowrite32be(val, addr);
++#endif
++
++#ifdef __powerpc__
++	out_be32(addr, val);
++#endif
 +}
 +
-+static inline u32 vf610_gpio_readl(void __iomem *reg)
++/**
++ * fsl_fsm_setup - Configure EPU's FSM registers
++ * @base: the base address of registers
++ * @val: Pointer to address-value pairs for FSM registers
++ */
++void fsl_fsm_setup(void __iomem *base, struct fsm_reg_vals *val)
 +{
-+	return readl_relaxed(reg);
-+}
++	struct fsm_reg_vals *data = val;
 +
-+static int vf610_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void vf610_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+}
-+
-+static int vf610_gpio_get(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	struct vf610_gpio_port *port =
-+		container_of(gc, struct vf610_gpio_port, gc);
-+
-+	return !!(vf610_gpio_readl(port->gpio_base + GPIO_PDIR) & BIT(gpio));
-+}
-+
-+static void vf610_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	struct vf610_gpio_port *port =
-+		container_of(gc, struct vf610_gpio_port, gc);
-+	unsigned long mask = BIT(gpio);
-+
-+	if (val)
-+		vf610_gpio_writel(mask, port->gpio_base + GPIO_PSOR);
-+	else
-+		vf610_gpio_writel(mask, port->gpio_base + GPIO_PCOR);
-+}
-+
-+static int vf610_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
-+{
-+	return pinctrl_gpio_direction_input(chip->base + gpio);
-+}
-+
-+static int vf610_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
-+				       int value)
-+{
-+	vf610_gpio_set(chip, gpio, value);
-+
-+	return pinctrl_gpio_direction_output(chip->base + gpio);
-+}
-+
-+static void vf610_gpio_irq_handler(u32 irq, struct irq_desc *desc)
-+{
-+	struct vf610_gpio_port *port = irq_get_handler_data(irq);
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
-+	int pin;
-+	unsigned long irq_isfr;
-+
-+	chained_irq_enter(chip, desc);
-+
-+	irq_isfr = vf610_gpio_readl(port->base + PORT_ISFR);
-+
-+	for_each_set_bit(pin, &irq_isfr, VF610_GPIO_PER_PORT) {
-+		vf610_gpio_writel(BIT(pin), port->base + PORT_ISFR);
-+
-+		generic_handle_irq(irq_find_mapping(port->gc.irqdomain, pin));
++	BUG_ON(!base || !data);
++	while (data->offset != FSM_END_FLAG) {
++		fsm_write32(base + data->offset, data->value);
++		data++;
 +	}
-+
-+	chained_irq_exit(chip, desc);
 +}
 +
-+static void vf610_gpio_irq_ack(struct irq_data *d)
++void fsl_epu_setup_default(void __iomem *epu_base)
 +{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	int gpio = d->hwirq;
-+
-+	vf610_gpio_writel(BIT(gpio), port->base + PORT_ISFR);
++	fsl_fsm_setup(epu_base, epu_default_val);
 +}
 +
-+static int vf610_gpio_irq_set_type(struct irq_data *d, u32 type)
++void fsl_npc_setup_default(void __iomem *npc_base)
 +{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	u8 irqc;
++	fsl_fsm_setup(npc_base, npc_default_val);
++}
 +
-+	switch (type) {
-+	case IRQ_TYPE_EDGE_RISING:
-+		irqc = PORT_INT_RISING_EDGE;
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		irqc = PORT_INT_FALLING_EDGE;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		irqc = PORT_INT_EITHER_EDGE;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		irqc = PORT_INT_LOGIC_ZERO;
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		irqc = PORT_INT_LOGIC_ONE;
-+		break;
-+	default:
-+		return -EINVAL;
++/**
++ * fsl_fsm_clean - Clear EPU's FSM registers
++ * @base: the base address of registers
++ * @val: Pointer to address-value pairs for FSM registers
++ */
++void fsl_fsm_clean(void __iomem *base, struct fsm_reg_vals *val)
++{
++	struct fsm_reg_vals *data = val;
++
++	BUG_ON(!base || !data);
++	while (data->offset != FSM_END_FLAG) {
++		fsm_write32(base + data->offset, 0);
++		data++;
 +	}
-+
-+	port->irqc[d->hwirq] = irqc;
-+
-+	return 0;
 +}
 +
-+static void vf610_gpio_irq_mask(struct irq_data *d)
++void fsl_epu_clean_default(void __iomem *epu_base)
 +{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	void __iomem *pcr_base = port->base + PORT_PCR(d->hwirq);
++	u32 offset;
 +
-+	vf610_gpio_writel(0, pcr_base);
++	/* follow the exact sequence to clear the registers */
++	/* Clear EPACRn */
++	for (offset = EPACR0; offset <= EPACR15; offset += EPACR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPEVTCRn */
++	for (offset = EPEVTCR0; offset <= EPEVTCR9; offset += EPEVTCR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPGCR */
++	fsm_write32(epu_base + EPGCR, 0);
++
++	/* Clear EPSMCRn */
++	for (offset = EPSMCR0; offset <= EPSMCR15; offset += EPSMCR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPCCRn */
++	for (offset = EPCCR0; offset <= EPCCR31; offset += EPCCR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPCMPRn */
++	for (offset = EPCMPR0; offset <= EPCMPR31; offset += EPCMPR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPCTRn */
++	for (offset = EPCTR0; offset <= EPCTR31; offset += EPCTR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPIMCRn */
++	for (offset = EPIMCR0; offset <= EPIMCR31; offset += EPIMCR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
++
++	/* Clear EPXTRIGCRn */
++	fsm_write32(epu_base + EPXTRIGCR, 0);
++
++	/* Clear EPECRn */
++	for (offset = EPECR0; offset <= EPECR15; offset += EPECR_STRIDE)
++		fsm_write32(epu_base + offset, 0);
 +}
+diff --git a/drivers/platform/fsl/sleep_fsm.h b/drivers/platform/fsl/sleep_fsm.h
+new file mode 100644
+index 0000000..19334e2
+--- /dev/null
++++ b/drivers/platform/fsl/sleep_fsm.h
+@@ -0,0 +1,100 @@
++/*
++ * Freescale deep sleep FSM (finite-state machine) configuration
++ *
++ * Copyright 2014 Freescale Semiconductor Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++#ifndef _FSL_SLEEP_FSM_H
++#define _FSL_SLEEP_FSM_H
 +
-+static void vf610_gpio_irq_unmask(struct irq_data *d)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
-+	void __iomem *pcr_base = port->base + PORT_PCR(d->hwirq);
++#define FSL_STRIDE_4B	4
++#define FSL_STRIDE_8B	8
 +
-+	vf610_gpio_writel(port->irqc[d->hwirq] << PORT_PCR_IRQC_OFFSET,
-+			  pcr_base);
-+}
++/* End flag */
++#define FSM_END_FLAG		0xFFFFFFFFUL
 +
-+static int vf610_gpio_irq_set_wake(struct irq_data *d, u32 enable)
-+{
-+	struct vf610_gpio_port *port = irq_data_get_irq_chip_data(d);
++/* Block offsets */
++#define RCPM_BLOCK_OFFSET	0x00022000
++#define EPU_BLOCK_OFFSET	0x00000000
++#define NPC_BLOCK_OFFSET	0x00001000
 +
-+	if (enable)
-+		enable_irq_wake(port->irq);
-+	else
-+		disable_irq_wake(port->irq);
++/* EPGCR (Event Processor Global Control Register) */
++#define EPGCR		0x000
 +
-+	return 0;
-+}
++/* EPEVTCR0-9 (Event Processor EVT Pin Control Registers) */
++#define EPEVTCR0	0x050
++#define EPEVTCR9	0x074
++#define EPEVTCR_STRIDE	FSL_STRIDE_4B
 +
-+static struct irq_chip vf610_gpio_irq_chip = {
-+	.name		= "gpio-vf610",
-+	.irq_ack	= vf610_gpio_irq_ack,
-+	.irq_mask	= vf610_gpio_irq_mask,
-+	.irq_unmask	= vf610_gpio_irq_unmask,
-+	.irq_set_type	= vf610_gpio_irq_set_type,
-+	.irq_set_wake	= vf610_gpio_irq_set_wake,
++/* EPXTRIGCR (Event Processor Crosstrigger Control Register) */
++#define EPXTRIGCR	0x090
++
++/* EPIMCR0-31 (Event Processor Input Mux Control Registers) */
++#define EPIMCR0		0x100
++#define EPIMCR31	0x17C
++#define EPIMCR_STRIDE	FSL_STRIDE_4B
++
++/* EPSMCR0-15 (Event Processor SCU Mux Control Registers) */
++#define EPSMCR0		0x200
++#define EPSMCR15	0x278
++#define EPSMCR_STRIDE	FSL_STRIDE_8B
++
++/* EPECR0-15 (Event Processor Event Control Registers) */
++#define EPECR0		0x300
++#define EPECR15		0x33C
++#define EPECR_STRIDE	FSL_STRIDE_4B
++
++/* EPACR0-15 (Event Processor Action Control Registers) */
++#define EPACR0		0x400
++#define EPACR15		0x43C
++#define EPACR_STRIDE	FSL_STRIDE_4B
++
++/* EPCCRi0-15 (Event Processor Counter Control Registers) */
++#define EPCCR0		0x800
++#define EPCCR15		0x83C
++#define EPCCR31		0x87C
++#define EPCCR_STRIDE	FSL_STRIDE_4B
++
++/* EPCMPR0-15 (Event Processor Counter Compare Registers) */
++#define EPCMPR0		0x900
++#define EPCMPR15	0x93C
++#define EPCMPR31	0x97C
++#define EPCMPR_STRIDE	FSL_STRIDE_4B
++
++/* EPCTR0-31 (Event Processor Counter Register) */
++#define EPCTR0		0xA00
++#define EPCTR31		0xA7C
++#define EPCTR_STRIDE	FSL_STRIDE_4B
++
++/* NPC triggered Memory-Mapped Access Registers */
++#define NCR		0x000
++#define MCCR1		0x0CC
++#define MCSR1		0x0D0
++#define MMAR1LO		0x0D4
++#define MMAR1HI		0x0D8
++#define MMDR1		0x0DC
++#define MCSR2		0x0E0
++#define MMAR2LO		0x0E4
++#define MMAR2HI		0x0E8
++#define MMDR2		0x0EC
++#define MCSR3		0x0F0
++#define MMAR3LO		0x0F4
++#define MMAR3HI		0x0F8
++#define MMDR3		0x0FC
++
++/* RCPM Core State Action Control Register 0 */
++#define CSTTACR0	0xB00
++
++/* RCPM Core Group 1 Configuration Register 0 */
++#define CG1CR0		0x31C
++
++struct fsm_reg_vals {
++	u32 offset;
++	u32 value;
 +};
 +
-+static int vf610_gpio_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+	struct vf610_gpio_port *port;
-+	struct resource *iores;
-+	struct gpio_chip *gc;
-+	int ret;
-+
-+	port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
-+	if (!port)
-+		return -ENOMEM;
-+
-+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	port->base = devm_ioremap_resource(dev, iores);
-+	if (IS_ERR(port->base))
-+		return PTR_ERR(port->base);
-+
-+	iores = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	port->gpio_base = devm_ioremap_resource(dev, iores);
-+	if (IS_ERR(port->gpio_base))
-+		return PTR_ERR(port->gpio_base);
-+
-+	port->irq = platform_get_irq(pdev, 0);
-+	if (port->irq < 0)
-+		return port->irq;
-+
-+	gc = &port->gc;
-+	gc->of_node = np;
-+	gc->dev = dev;
-+	gc->label = "vf610-gpio",
-+	gc->ngpio = VF610_GPIO_PER_PORT,
-+	gc->base = of_alias_get_id(np, "gpio") * VF610_GPIO_PER_PORT;
-+
-+	gc->request = vf610_gpio_request,
-+	gc->free = vf610_gpio_free,
-+	gc->direction_input = vf610_gpio_direction_input,
-+	gc->get = vf610_gpio_get,
-+	gc->direction_output = vf610_gpio_direction_output,
-+	gc->set = vf610_gpio_set,
-+
-+	ret = gpiochip_add(gc);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Clear the interrupt status register for all GPIO's */
-+	vf610_gpio_writel(~0, port->base + PORT_ISFR);
-+
-+	ret = gpiochip_irqchip_add(gc, &vf610_gpio_irq_chip, 0,
-+				   handle_simple_irq, IRQ_TYPE_NONE);
-+	if (ret) {
-+		dev_err(dev, "failed to add irqchip\n");
-+		gpiochip_remove(gc);
-+		return ret;
-+	}
-+	gpiochip_set_chained_irqchip(gc, &vf610_gpio_irq_chip, port->irq,
-+				     vf610_gpio_irq_handler);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver vf610_gpio_driver = {
-+	.driver		= {
-+		.name	= "gpio-vf610",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = vf610_gpio_dt_ids,
-+	},
-+	.probe		= vf610_gpio_probe,
-+};
-+
-+static int __init gpio_vf610_init(void)
-+{
-+	return platform_driver_register(&vf610_gpio_driver);
-+}
-+device_initcall(gpio_vf610_init);
-+
-+MODULE_AUTHOR("Stefan Agner <stefan@agner.ch>");
-+MODULE_DESCRIPTION("Freescale VF610 GPIO");
-+MODULE_LICENSE("GPL v2");
++#endif /* _FSL_SLEEP_FSM_H */
 -- 
-2.1.0
+1.7.3
 
