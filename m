@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaIZJOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:14:54 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:56265 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaIZJOv (ORCPT
+	id S1753792AbaIZJPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:15:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6364 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753610AbaIZJO7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:14:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Joachim Eastwood <manabian@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Douglas Anderson <dianders@chromium.org>, kgene.kim@samsung.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        naushad@samsung.com, Li.Xiubo@freescale.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        thomas.ab@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
-        Lee Jones <lee.jones@linaro.org>, sunil joshi <joshi@samsung.com>,
-        b29396@freescale.com
-Subject: Re: [PATCH v5] mfd: syscon: Decouple syscon interface from platform devices
-Date: Fri, 26 Sep 2014 11:14:30 +0200
-Message-ID: <3291391.H71MjevFsA@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGhQ9VwAe7d7fX1Lw22ocxDSXjOZbvXdmG1u6_d5v7ptmYMYeg@mail.gmail.com>
-References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com> <2553182.6YgvmDLuEA@wuerfel> <CAGhQ9VwAe7d7fX1Lw22ocxDSXjOZbvXdmG1u6_d5v7ptmYMYeg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Fri, 26 Sep 2014 05:14:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391923473"
+From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+To: "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
+Thread-Topic: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
+Thread-Index: AQHP0zQSih2TMGVJkkyH0NU8qSMEqpwTJk7A
+Date: Fri, 26 Sep 2014 09:14:48 +0000
+Message-ID: <50B33AC5ED75F74F991980326F1C438D0FBE89AD@PGSMSX108.gar.corp.intel.com>
+References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1410943745-9354-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <20140918113122.GO10854@lahna.fi.intel.com>
+In-Reply-To: <20140918113122.GO10854@lahna.fi.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Ax3vjhMVdQsMVEh8r/KDI63SLWzzMOZiltaeN53c3cd
- 9gJS//sN6gZi1JFsT2GOv0I9fKLc4fe6Ooqzrl0nb7rzhpCf8y
- gxw+FXsLRUuKDDAgYyroQyHu+3I1P2yyDzsQWjGKTkhS2xKKN6
- 3ov1mLmZtIUpg86ZZJT8gzP3pRGYCdXUSNTC0qr4aTTqqwXacI
- 1mFGF77opmeBGPpeD9pZxgFNIsw8ToUpj7vOnE8lJZ5otATX8k
- mCKuvw2qZezLN7B843R3DI3VkrI0nFnKE3Zw/Mw3yiTn0UNvr/
- K7qtGaydyq8vTdyYbR3ucKc3vkkYXNMdPDhdwZDEohXTLhH6Pl
- 1Ozp3QyrtT4Ze+WTCdE4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 September 2014 09:48:24 Joachim Eastwood wrote:
-> On 26 September 2014 09:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Friday 26 September 2014 07:34:12 Joachim Eastwood wrote:
-> >> I am working on Cortex-M4 no-MMU platform that isn't upstream yet, btw.
-> >>
+> > @@ -203,6 +376,17 @@ static int sch_gpio_probe(struct platform_device
+> *pdev)
+> >  				 pdev->name))
+> >  		return -EBUSY;
 > >
-> > Sorry for drifting off-topic, but this is very interesting to me. Can you
-> > say which one you are working on and what your timeline is for submitting
-> > it upstream?
+> > +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> > +	sch->irq_support = !!irq;
+> > +	if (sch->irq_support) {
+> > +		sch->irq_num = irq->start;
+> > +		if (sch->irq_num < 0) {
+> > +			dev_warn(&pdev->dev,
+> > +				 "failed to obtain irq number for device\n");
+> > +			sch->irq_support = 0;
+> > +		}
+> > +	}
+> > +
+> >  	spin_lock_init(&sch->lock);
+> >  	sch->iobase = res->start;
+> >  	sch->chip = sch_gpio_chip;
+> > @@ -251,17 +435,72 @@ static int sch_gpio_probe(struct platform_device
+> *pdev)
+> >  		return -ENODEV;
+> >  	}
+> >
+> > +	err = gpiochip_add(&sch->chip);
+> > +	if (err < 0)
+> > +		goto err_sch_gpio;
+> > +
+> > +	if (sch->irq_support) {
+> > +		sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
+> > +						NUMA_NO_NODE);
+> > +		if (sch->irq_base < 0) {
+> > +			dev_err(&pdev->dev,
+> > +				"failed to add GPIO IRQ descs\n");
+> > +			sch->irq_base = -1;
+> > +			goto err_sch_intr_chip;
+> > +		}
 > 
-> It's NXP LPC18xx/43xx which is Cortex-M3/M4.
+> Was there some reason why you can't use gpiochip_irqchip_* helpers here?
+
+I will look into the helpers function and see what I can change here.
+
 > 
-> 3.19 or 3.20 might be target.
-
-Ah, very nice!
-
-> Right now everything is in a github repository here:
-> https://github.com/manabian/linux-lpc
+> > +
+> > +		/* disable interrupts */
+> > +		sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
+> > +
+> > +		err = request_irq(sch->irq_num, sch_gpio_irq_handler,
+> > +				  IRQF_SHARED, KBUILD_MODNAME, sch);
 > 
-> Most stuff are working now and I am in the process of clean it up and
-> adding documentation.
+> This seems weird, typically irqchip drivers don't call request_irq() directly but
+> instead irq_set_chained_handler() or similar. With
+> gpiochip_irqchip_* stuff you don't need even that.
+> 
+Regarding this, gpio-sch is actually using shared interrupts and the IRQ resources are from ACPI SCI. As per my understanding, resources from ACPI SCI might be shared for power management purposes. In this case, irq_set_chained_handler() might not be able to use here. What do you think?
 
-Ok, looks like you are making good progress. I noticed three high-level
-issues that you may want to address:
-
-- the watchdog driver should use the generic watchdog framework rather
-  than registering a misc device.
-- the ehci glue can probably go away if you make very small changes
-  to the generic ehci platform driver
-- I don't like the way that the stmmac glue drivers are added, I thought
-  we had fixed this before but I think I need to dig up old emails.
-  The driver should really be a loadable module that hooks calls into
-  the common code rather than being linked into one module.
-
-I also have a plan for doing multiplatform builds of nommu kernels, 
-for build testing mostly, I wouldn't expect you to run that configuration.
-No need for you to address that yourself though, we'll get there.
-
-	Arnd
+Rebecca
