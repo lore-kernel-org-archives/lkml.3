@@ -1,125 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaIZGVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 02:21:16 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:18240 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaIZGVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 02:21:11 -0400
-Message-ID: <542505B3.7040208@huawei.com>
-Date: Fri, 26 Sep 2014 14:20:35 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753909AbaIZGWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 02:22:31 -0400
+Received: from mail-bl2on0142.outbound.protection.outlook.com ([65.55.169.142]:31684
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753417AbaIZGW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 02:22:29 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>
+CC: <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH v2] clocksource: Add BE APIs support for clocksource counter reading.
+Date: Fri, 26 Sep 2014 14:22:09 +0800
+Message-ID: <1411712529-35293-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(83322001)(76482002)(575784001)(92726001)(92566001)(19580395003)(86362001)(31966008)(19580405001)(4396001)(69596002)(105606002)(44976005)(93916002)(20776003)(104166001)(6806004)(50226001)(84676001)(85852003)(120916001)(10300001)(74502003)(47776003)(81342003)(80022003)(85306004)(77982003)(95666004)(106466001)(46102003)(87936001)(74662003)(89996001)(88136002)(81542003)(64706001)(68736004)(79102003)(81156004)(83072002)(107046002)(87286001)(99396003)(21056001)(104016003)(36756003)(62966002)(90102001)(102836001)(77156001)(50986999)(48376002)(229853001)(50466002)(97736003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0622;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:;
 MIME-Version: 1.0
-To: Liviu Dudau <liviu@dudau.co.uk>, Thierry Reding <thierry.reding@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <20140925074235.GN12423@ulmo> <20140925144855.GB31157@bart.dudau.co.uk> <20140925164937.GB30382@ulmo> <20140925171612.GC31157@bart.dudau.co.uk>
-In-Reply-To: <20140925171612.GC31157@bart.dudau.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.542505D1.007E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: bc7a0eef4c8aa463ce41e250f24a1d40
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0622;
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The PCI core can already deal with that. An MSI chip can be set per bus
->> and the weak pcibios_add_bus() can be used to set that. Often it might
->> not even be necessary to do it via pcibios_add_bus() if you create the
->> root bus directly, since you can attach the MSI chip at that time.
-> 
-> But I'm thinking that we need to move away from pcibios_add_bus() interface to do
-> something that should be generic. You don't need to be called for every bus when all
-> you want is just the root bus in order to add the MSI chip. Also, from looking at
-> the current patchset, a lot of architectures would set the MSI chip to a global
-> variable, which means you don't have an option to choose the MSI chip based on the
-> bus.
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
 
-I also agree to remove the pcibios_add_bus() in arm which call .add_bus() to associate msi_chip
-and PCI bus.
+Hi Daniel, Thomas
 
-In my opinions, all PCI devices under the same PCI hostbridge must share same msi chip, right ?
-So if we can associate msi chip and PCI hostbridge, every PCI device can find correct msi chip.
-PCI hostbridge private attributes can be saved in PCI sysdata, and this data will be propagate to
-PCI root bus and its child buses.
-
-> 
->>
->>> What I would like to see is a way of creating the pci_host_bridge structure outside
->>> the pci_create_root_bus(). That would then allow us to pass this sort of platform
->>> details like associated msi_chip into the host bridge and the child busses will
->>> have an easy way of finding the information needed by finding the root bus and then
->>> the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
->>> everyone and the drivers can remove their kludges that try to work around the
->>> current limitations.
->>
->> I think both issues are orthogonal. Last time I checked a lot of work
->> was still necessary to unify host bridges enough so that it could be
->> shared across architectures. But perhaps some of that work has
->> happened in the meantime.
-> 
-> Breaking out the host bridge creation from root bus creation is not difficult, just not
-> agree upon. That would be the first step in making the generic host brige structure
-> useful for sharing, specially if used as a sort of "parent" structure that you can
-> wrap with your actual host bridge structure.
-
-Breaking out the host bridge creation is a good idea, but there need a lot of changes, we can
-do it in another series. And if we save msi chip in pci sysdata now, it will be easy to
-move it to generic pci host bridge. We can also move the pci domain number and other common info to it.
-
-Thanks!
-Yijing.
-
-> 
->>
->> But like I said, when you create the root bus, you can easily attach the
->> MSI chip to it.
-> 
-> Not if you want to use the generic pci_scan_root_bus() function. One needs to copy the code
-> and add their own needed modifications. Which makes it hard to fix bugs and prevents code
-> reuse.
-> 
-> Best regards,
-> Liviu
-> 
->>
->> Thierry
-> 
-> 
-> 
+For now I just added  _be() support using ioread{16,32}be.
+And i have a check of the clocksource drivers, didn't find anyone
+using LE mode on one BE SoC, so _le() APIs is not needed.
 
 
+For V2:
+- Using ioread{16,32}[be]() instead of readl_relaxed().
+- Add clocksource_mmio_readX_Y_be() supports only.
+
+ drivers/clocksource/mmio.c  | 28 ++++++++++++++++++++++++----
+ include/linux/clocksource.h |  4 ++++
+ 2 files changed, 28 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+index 1593ade..d35a407 100644
+--- a/drivers/clocksource/mmio.c
++++ b/drivers/clocksource/mmio.c
+@@ -20,24 +20,44 @@ static inline struct clocksource_mmio *to_mmio_clksrc(struct clocksource *c)
+ 	return container_of(c, struct clocksource_mmio, clksrc);
+ }
+ 
++cycle_t clocksource_mmio_readl_up_be(struct clocksource *c)
++{
++	return (cycle_t)ioread32be(to_mmio_clksrc(c)->reg);
++}
++
+ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+ {
+-	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)ioread32(to_mmio_clksrc(c)->reg);
++}
++
++cycle_t clocksource_mmio_readl_down_be(struct clocksource *c)
++{
++	return ~(cycle_t)ioread32be(to_mmio_clksrc(c)->reg) & c->mask;
+ }
+ 
+ cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+ {
+-	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
++	return ~(cycle_t)ioread32(to_mmio_clksrc(c)->reg) & c->mask;
++}
++
++cycle_t clocksource_mmio_readw_up_be(struct clocksource *c)
++{
++	return (cycle_t)ioread16be(to_mmio_clksrc(c)->reg);
+ }
+ 
+ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+ {
+-	return (cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)ioread16(to_mmio_clksrc(c)->reg);
++}
++
++cycle_t clocksource_mmio_readw_down_be(struct clocksource *c)
++{
++	return ~(cycle_t)ioread16be(to_mmio_clksrc(c)->reg) & c->mask;
+ }
+ 
+ cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+ {
+-	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
++	return ~(cycle_t)ioread16(to_mmio_clksrc(c)->reg) & c->mask;
+ }
+ 
+ /**
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 653f0e2..931a037 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -327,9 +327,13 @@ static inline void __clocksource_updatefreq_khz(struct clocksource *cs, u32 khz)
+ 
+ extern int timekeeping_notify(struct clocksource *clock);
+ 
++extern cycle_t clocksource_mmio_readl_up_be(struct clocksource *);
+ extern cycle_t clocksource_mmio_readl_up(struct clocksource *);
++extern cycle_t clocksource_mmio_readl_down_be(struct clocksource *);
+ extern cycle_t clocksource_mmio_readl_down(struct clocksource *);
++extern cycle_t clocksource_mmio_readw_up_be(struct clocksource *);
+ extern cycle_t clocksource_mmio_readw_up(struct clocksource *);
++extern cycle_t clocksource_mmio_readw_down_be(struct clocksource *);
+ extern cycle_t clocksource_mmio_readw_down(struct clocksource *);
+ 
+ extern int clocksource_mmio_init(void __iomem *, const char *,
 -- 
-Thanks!
-Yijing
+2.1.0.27.g96db324
 
