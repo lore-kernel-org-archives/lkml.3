@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877AbaIZK2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:28:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
+	id S1756861AbaIZK2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:28:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33030 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754787AbaIZJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754786AbaIZJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:04 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 059/142] Drivers: scsi: storvsc: Filter commands based on the storage protocol version
-Date: Fri, 26 Sep 2014 11:44:30 +0200
-Message-Id: <158cfff2650f44280bc5a0a68eec0d3a8c36c8f8.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Peter Chen <peter.chen@freescale.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 025/142] usb: ehci: using wIndex + 1 for hub port
+Date: Fri, 26 Sep 2014 11:43:56 +0200
+Message-Id: <9c1421dce49baa6afc74bc845994d32786d9156c.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,55 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Peter Chen <peter.chen@freescale.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8caf92d80526f3d7cc96831ec18b384ebcaccdf0 upstream.
+commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
 
-Going forward it is possible that some of the commands that are not currently
-implemented will be implemented on future Windows hosts. Even if they are not
-implemented, we are told the host will corrrectly handle unsupported
-commands (by returning appropriate return code and sense information).
-Make command filtering depend on the host version.
+The roothub's index per controller is from 0, but the hub port index per hub
+is from 1, this patch fixes "can't find device at roohub" problem for connecting
+test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This patch is for v3.12+.
+
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/storvsc_drv.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ drivers/usb/host/ehci-hub.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index a14a1f7cd577..4bae90722ad2 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1564,9 +1564,19 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 	struct vmscsi_request *vm_srb;
- 	struct stor_mem_pools *memp = scmnd->device->hostdata;
- 
--	if (!storvsc_scsi_cmd_ok(scmnd)) {
--		scmnd->scsi_done(scmnd);
--		return 0;
-+	if (vmstor_current_major <= VMSTOR_WIN8_MAJOR) {
-+		/*
-+		 * On legacy hosts filter unimplemented commands.
-+		 * Future hosts are expected to correctly handle
-+		 * unsupported commands. Furthermore, it is
-+		 * possible that some of the currently
-+		 * unsupported commands maybe supported in
-+		 * future versions of the host.
-+		 */
-+		if (!storvsc_scsi_cmd_ok(scmnd)) {
-+			scmnd->scsi_done(scmnd);
-+			return 0;
-+		}
- 	}
- 
- 	request_size = sizeof(struct storvsc_cmd_request);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 1bb85bee2625..7ba861543d03 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -1241,7 +1241,7 @@ static int ehci_hub_control (
+ 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
+ 				spin_unlock_irqrestore(&ehci->lock, flags);
+ 				retval = ehset_single_step_set_feature(hcd,
+-									wIndex);
++								wIndex + 1);
+ 				spin_lock_irqsave(&ehci->lock, flags);
+ 				break;
+ 			}
 -- 
 2.1.0
 
