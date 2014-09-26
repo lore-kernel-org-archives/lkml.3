@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923AbaIZOEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:04:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61283 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737AbaIZODM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755738AbaIZODM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 10:03:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5513 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755697AbaIZODH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:03:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="609110607"
+   d="scan'208";a="609110412"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFT v2 24/24] x86, uv: Use hierarchy irqdomain to manage UV interrupts
-Date: Fri, 26 Sep 2014 22:02:25 +0800
-Message-Id: <1411740145-30626-25-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFT v2 19/24] x86: irq_remapping: Clean up unused MSI related code
+Date: Fri, 26 Sep 2014 22:02:20 +0800
+Message-Id: <1411740145-30626-20-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,420 +35,296 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance UV code to support hierarchy irqdomain, it helps to make
-the architecture more clear.
-
-We should construct hwirq based on mmr_blade and mmr_offset, but
-mmr_offset is type of unsigned long, it may exceed the range of
-irq_hw_number_t. So help about the way to construct hwirq based
-on mmr_blade and mmr_offset is welcomed!
+Now MSI interrupt has been converted to new hierarchy irqdomain
+interfaces, so kill legacy MSI related code and interfaces.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/hw_irq.h |    9 ++
- arch/x86/platform/uv/uv_irq.c |  290 ++++++++++++++++-------------------------
- 2 files changed, 122 insertions(+), 177 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |   13 ---
+ arch/x86/include/asm/pci.h           |    5 --
+ arch/x86/kernel/x86_init.c           |    2 -
+ drivers/iommu/irq_remapping.c        |  153 ----------------------------------
+ drivers/iommu/irq_remapping.h        |   15 ----
+ 5 files changed, 188 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 35bdc90e5797..1cb6687375f8 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -122,6 +122,7 @@ enum irq_alloc_type {
- 	X86_IRQ_ALLOC_TYPE_MSI,
- 	X86_IRQ_ALLOC_TYPE_MSIX,
- 	X86_IRQ_ALLOC_TYPE_DMAR,
-+	X86_IRQ_ALLOC_TYPE_UV,
- };
- 
- struct irq_alloc_info {
-@@ -164,6 +165,14 @@ struct irq_alloc_info {
- 			void		*ht_update;
- 		};
- #endif
-+#ifdef	CONFIG_X86_UV
-+		struct {
-+			int		uv_limit;
-+			int		uv_blade;
-+			unsigned long	uv_offset;
-+			char		*uv_name;
-+		};
-+#endif
- 	};
- };
- 
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 474912d03f40..743b409e966c 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -19,17 +19,31 @@
- #include <asm/uv/uv_hub.h>
- 
- /* MMR offset and pnode of hub sourcing interrupts for a given irq */
--struct uv_irq_2_mmr_pnode{
--	struct rb_node		list;
-+struct uv_irq_2_mmr_pnode {
- 	unsigned long		offset;
- 	int			pnode;
--	int			irq;
- };
- 
--static DEFINE_SPINLOCK(uv_irq_lock);
--static struct rb_root		uv_irq_root;
-+static void uv_program_mmr(struct irq_cfg *cfg, struct uv_irq_2_mmr_pnode *info)
-+{
-+	unsigned long mmr_value;
-+	struct uv_IO_APIC_route_entry *entry;
-+
-+	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
-+		     sizeof(unsigned long));
-+
-+	mmr_value = 0;
-+	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
-+	entry->vector		= cfg->vector;
-+	entry->delivery_mode	= apic->irq_delivery_mode;
-+	entry->dest_mode	= apic->irq_dest_mode;
-+	entry->polarity		= 0;
-+	entry->trigger		= 0;
-+	entry->mask		= 0;
-+	entry->dest		= cfg->dest_apicid;
- 
--static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
-+	uv_write_global_mmr64(info->pnode, info->offset, mmr_value);
-+}
- 
- static void uv_noop(struct irq_data *data) { }
- 
-@@ -38,6 +52,24 @@ static void uv_ack_apic(struct irq_data *data)
- 	ack_APIC_irq();
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index 7f82841b1671..514bb9b73013 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -49,10 +49,6 @@ extern int setup_ioapic_remapped_entry(int irq,
+ 				       int vector,
+ 				       struct io_apic_irq_attr *attr);
+ extern void free_remapped_irq(int irq);
+-extern void compose_remapped_msi_msg(struct pci_dev *pdev,
+-				     unsigned int irq, unsigned int dest,
+-				     struct msi_msg *msg, u8 hpet_id);
+-extern int setup_hpet_msi_remapped(unsigned int irq, unsigned int id);
+ extern void panic_if_irq_remap(const char *msg);
+ extern bool setup_remapped_irq(int irq,
+ 			       struct irq_cfg *cfg,
+@@ -111,15 +107,6 @@ static inline int setup_ioapic_remapped_entry(int irq,
+ 	return -ENODEV;
  }
- 
-+static int
-+uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
-+		    bool force)
-+{
-+	struct irq_data *parent = data->parent_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
-+	int ret;
-+
-+	ret = parent->chip->irq_set_affinity(parent, mask, force);
-+	if (ret >= 0) {
-+		uv_program_mmr(cfg, data->chip_data);
-+		if (cfg->move_in_progress)
-+			send_cleanup_vector(cfg);
-+	}
-+
-+	return ret;
-+}
-+
- static struct irq_chip uv_irq_chip = {
- 	.name			= "UV-CORE",
- 	.irq_mask		= uv_noop,
-@@ -46,179 +78,106 @@ static struct irq_chip uv_irq_chip = {
- 	.irq_set_affinity	= uv_set_irq_affinity,
- };
- 
--/*
-- * Add offset and pnode information of the hub sourcing interrupts to the
-- * rb tree for a specific irq.
-- */
--static int uv_set_irq_2_mmr_info(int irq, unsigned long offset, unsigned blade)
-+static int uv_domain_alloc(struct irq_domain *domain, unsigned int virq,
-+			   unsigned int nr_irqs, void *arg)
- {
--	struct rb_node **link = &uv_irq_root.rb_node;
--	struct rb_node *parent = NULL;
--	struct uv_irq_2_mmr_pnode *n;
--	struct uv_irq_2_mmr_pnode *e;
--	unsigned long irqflags;
--
--	n = kmalloc_node(sizeof(struct uv_irq_2_mmr_pnode), GFP_KERNEL,
--				uv_blade_to_memory_nid(blade));
--	if (!n)
-+	struct uv_irq_2_mmr_pnode *chip_data;
-+	struct irq_alloc_info *info = arg;
-+	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
-+	int ret;
-+
-+	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_UV)
-+		return -EINVAL;
-+
-+	chip_data = kmalloc_node(sizeof(*chip_data), GFP_KERNEL,
-+				 irq_data->node);
-+	if (!chip_data)
- 		return -ENOMEM;
- 
--	n->irq = irq;
--	n->offset = offset;
--	n->pnode = uv_blade_to_pnode(blade);
--	spin_lock_irqsave(&uv_irq_lock, irqflags);
--	/* Find the right place in the rbtree: */
--	while (*link) {
--		parent = *link;
--		e = rb_entry(parent, struct uv_irq_2_mmr_pnode, list);
--
--		if (unlikely(irq == e->irq)) {
--			/* irq entry exists */
--			e->pnode = uv_blade_to_pnode(blade);
--			e->offset = offset;
--			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--			kfree(n);
--			return 0;
--		}
--
--		if (irq < e->irq)
--			link = &(*link)->rb_left;
-+	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-+	if (ret >= 0) {
-+		if (info->uv_limit == UV_AFFINITY_CPU)
-+			irq_set_status_flags(virq, IRQ_NO_BALANCING);
- 		else
--			link = &(*link)->rb_right;
-+			irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
-+
-+		chip_data->pnode = uv_blade_to_pnode(info->uv_blade);
-+		chip_data->offset = info->uv_offset;
-+		irq_domain_set_hwirq_and_chip(domain, virq, virq,
-+					      &uv_irq_chip, chip_data);
-+		__irq_set_handler(virq, handle_percpu_irq, 0, info->uv_name);
-+	} else {
-+		kfree(chip_data);
- 	}
- 
--	/* Insert the node into the rbtree. */
--	rb_link_node(&n->list, parent, link);
--	rb_insert_color(&n->list, &uv_irq_root);
--
--	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--	return 0;
-+	return ret;
- }
- 
--/* Retrieve offset and pnode information from the rb tree for a specific irq */
--int uv_irq_2_mmr_info(int irq, unsigned long *offset, int *pnode)
-+static void uv_domain_free(struct irq_domain *domain, unsigned int virq,
-+			   unsigned int nr_irqs)
- {
--	struct uv_irq_2_mmr_pnode *e;
--	struct rb_node *n;
--	unsigned long irqflags;
--
--	spin_lock_irqsave(&uv_irq_lock, irqflags);
--	n = uv_irq_root.rb_node;
--	while (n) {
--		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
--
--		if (e->irq == irq) {
--			*offset = e->offset;
--			*pnode = e->pnode;
--			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--			return 0;
--		}
--
--		if (irq < e->irq)
--			n = n->rb_left;
--		else
--			n = n->rb_right;
--	}
--	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--	return -1;
-+	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
-+
-+	BUG_ON(nr_irqs != 1);
-+	kfree(irq_data->chip_data);
-+	irq_domain_reset_irq_data(irq_data);
-+	irq_set_handler(virq, NULL);
-+	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
-+	irq_clear_status_flags(virq, IRQ_NO_BALANCING);
-+	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
- }
- 
- /*
-  * Re-target the irq to the specified CPU and enable the specified MMR located
-  * on the specified blade to allow the sending of MSIs to the specified CPU.
-  */
--static int
--arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
--		       unsigned long mmr_offset, int limit)
-+static int uv_domain_activate(struct irq_domain *domain,
-+			      struct irq_data *irq_data)
- {
--	struct irq_cfg *cfg = irq_cfg(irq);
--	unsigned long mmr_value;
--	struct uv_IO_APIC_route_entry *entry;
--	int mmr_pnode;
--
--	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
--			sizeof(unsigned long));
--
--	if (limit == UV_AFFINITY_CPU)
--		irq_set_status_flags(irq, IRQ_NO_BALANCING);
--	else
--		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
--
--	irq_set_chip_and_handler_name(irq, &uv_irq_chip, handle_percpu_irq,
--				      irq_name);
-+	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
- 
--	mmr_value = 0;
--	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
--	entry->vector		= cfg->vector;
--	entry->delivery_mode	= apic->irq_delivery_mode;
--	entry->dest_mode	= apic->irq_dest_mode;
--	entry->polarity		= 0;
--	entry->trigger		= 0;
--	entry->mask		= 0;
--	entry->dest		= cfg->dest_apicid;
--
--	mmr_pnode = uv_blade_to_pnode(mmr_blade);
--	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
--
--	if (cfg->move_in_progress)
--		send_cleanup_vector(cfg);
--
--	return irq;
-+	return 0;
- }
- 
- /*
-  * Disable the specified MMR located on the specified blade so that MSIs are
-  * longer allowed to be sent.
-  */
--static void arch_disable_uv_irq(int mmr_pnode, unsigned long mmr_offset)
-+static int uv_domain_deactivate(struct irq_domain *domain,
-+				struct irq_data *irq_data)
- {
- 	unsigned long mmr_value;
- 	struct uv_IO_APIC_route_entry *entry;
- 
--	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
--			sizeof(unsigned long));
--
- 	mmr_value = 0;
- 	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
- 	entry->mask = 1;
-+	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
- 
--	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-+	return 0;
- }
- 
--static int
--uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
--		    bool force)
+ static inline void free_remapped_irq(int irq) { }
+-static inline void compose_remapped_msi_msg(struct pci_dev *pdev,
+-					    unsigned int irq, unsigned int dest,
+-					    struct msi_msg *msg, u8 hpet_id)
 -{
--	struct irq_cfg *cfg = irqd_cfg(data);
--	unsigned int dest;
--	unsigned long mmr_value, mmr_offset;
--	struct uv_IO_APIC_route_entry *entry;
--	int mmr_pnode;
--
--	if (apic_set_affinity(data, mask, &dest))
--		return -1;
--
--	mmr_value = 0;
--	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
--
--	entry->vector		= cfg->vector;
--	entry->delivery_mode	= apic->irq_delivery_mode;
--	entry->dest_mode	= apic->irq_dest_mode;
--	entry->polarity		= 0;
--	entry->trigger		= 0;
--	entry->mask		= 0;
--	entry->dest		= dest;
--
--	/* Get previously stored MMR and pnode of hub sourcing interrupts */
--	if (uv_irq_2_mmr_info(data->irq, &mmr_offset, &mmr_pnode))
--		return -1;
--
--	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-+static struct irq_domain_ops uv_domain_ops = {
-+	.alloc = uv_domain_alloc,
-+	.free = uv_domain_free,
-+	.activate = uv_domain_activate,
-+	.deactivate = uv_domain_deactivate,
-+};
+-}
+-static inline int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	return -ENODEV;
+-}
  
--	if (cfg->move_in_progress)
--		send_cleanup_vector(cfg);
-+static struct irq_domain *uv_get_irq_domain(void)
-+{
-+	static struct irq_domain *uv_domain;
-+	static DEFINE_MUTEX(uv_lock);
-+
-+	mutex_lock(&uv_lock);
-+	if (uv_domain == NULL) {
-+		uv_domain = irq_domain_add_tree(NULL, &uv_domain_ops, NULL);
-+		if (uv_domain)
-+			uv_domain->parent = x86_vector_domain;
-+	}
-+	mutex_unlock(&uv_lock);
+ static inline void panic_if_irq_remap(const char *msg)
+ {
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 4e370a5d8117..d8c80ff32e8c 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -96,15 +96,10 @@ extern void pci_iommu_alloc(void);
+ #ifdef CONFIG_PCI_MSI
+ /* implemented in arch/x86/kernel/apic/io_apic. */
+ struct msi_desc;
+-void native_compose_msi_msg(struct pci_dev *pdev, unsigned int irq,
+-			    unsigned int dest, struct msi_msg *msg, u8 hpet_id);
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+-int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-		  unsigned int irq_base, unsigned int irq_offset);
+ #else
+-#define native_compose_msi_msg		NULL
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+ #endif
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index e48b674639cc..814fcbadaad1 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -111,11 +111,9 @@ EXPORT_SYMBOL_GPL(x86_platform);
+ #if defined(CONFIG_PCI_MSI)
+ struct x86_msi_ops x86_msi = {
+ 	.setup_msi_irqs		= native_setup_msi_irqs,
+-	.compose_msi_msg	= native_compose_msi_msg,
+ 	.teardown_msi_irq	= native_teardown_msi_irq,
+ 	.teardown_msi_irqs	= default_teardown_msi_irqs,
+ 	.restore_msi_irqs	= default_restore_msi_irqs,
+-	.setup_hpet_msi		= default_setup_hpet_msi,
+ 	.msi_mask_irq		= default_msi_mask_irq,
+ 	.msix_mask_irq		= default_msix_mask_irq,
+ };
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index bda0d8e73fde..d72094e01dec 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -25,9 +25,6 @@ int no_x2apic_optout;
  
--	return IRQ_SET_MASK_OK_NOCOPY;
-+	return uv_domain;
+ static struct irq_remap_ops *remap_ops;
+ 
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec);
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle);
+ static int set_remapped_irq_affinity(struct irq_data *data,
+ 				     const struct cpumask *mask,
+ 				     bool force);
+@@ -50,117 +47,6 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
  }
  
- /*
-@@ -229,23 +188,20 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
- 		 unsigned long mmr_offset, int limit)
- {
--	int ret, irq;
- 	struct irq_alloc_info info;
-+	struct irq_domain *domain = uv_get_irq_domain();
-+
-+	if (!domain)
-+		return -ENOMEM;
- 
- 	init_irq_alloc_info(&info, cpumask_of(cpu));
--	irq = irq_domain_alloc_irqs(NULL, 1, uv_blade_to_memory_nid(mmr_blade),
--				    &info);
--	if (irq <= 0)
--		return -EBUSY;
+-#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+-static unsigned int irq_alloc_hwirqs(int cnt, int node)
+-{
+-	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
+-}
 -
--	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
--		limit);
--	if (ret == irq)
--		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
--	else
--		irq_domain_free_irqs(irq, 1);
-+	info.uv_limit = limit;
-+	info.uv_blade = mmr_blade;
-+	info.uv_offset = mmr_offset;
-+	info.uv_name = irq_name;
- 
--	return ret;
-+	return irq_domain_alloc_irqs(domain, 1,
-+				     uv_blade_to_memory_nid(mmr_blade), &info);
- }
- EXPORT_SYMBOL_GPL(uv_setup_irq);
- 
-@@ -258,26 +214,6 @@ EXPORT_SYMBOL_GPL(uv_setup_irq);
-  */
- void uv_teardown_irq(unsigned int irq)
- {
--	struct uv_irq_2_mmr_pnode *e;
--	struct rb_node *n;
--	unsigned long irqflags;
+-static void irq_free_hwirqs(unsigned int from, int cnt)
+-{
+-	irq_domain_free_irqs(from, cnt);
+-}
+-#endif
 -
--	spin_lock_irqsave(&uv_irq_lock, irqflags);
--	n = uv_irq_root.rb_node;
--	while (n) {
--		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
--		if (e->irq == irq) {
--			arch_disable_uv_irq(e->pnode, e->offset);
--			rb_erase(n, &uv_irq_root);
--			kfree(e);
--			break;
+-static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+-{
+-	int ret, sub_handle, nvec_pow2, index = 0;
+-	unsigned int irq;
+-	struct msi_desc *msidesc;
+-
+-	WARN_ON(!list_is_singular(&dev->msi_list));
+-	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-	WARN_ON(msidesc->irq);
+-	WARN_ON(msidesc->msi_attrib.multiple);
+-	WARN_ON(msidesc->nvec_used);
+-
+-	irq = irq_alloc_hwirqs(nvec, dev_to_node(&dev->dev));
+-	if (irq == 0)
+-		return -ENOSPC;
+-
+-	nvec_pow2 = __roundup_pow_of_two(nvec);
+-	msidesc->nvec_used = nvec;
+-	msidesc->msi_attrib.multiple = ilog2(nvec_pow2);
+-	for (sub_handle = 0; sub_handle < nvec; sub_handle++) {
+-		if (!sub_handle) {
+-			index = msi_alloc_remapped_irq(dev, irq, nvec_pow2);
+-			if (index < 0) {
+-				ret = index;
+-				goto error;
+-			}
+-		} else {
+-			ret = msi_setup_remapped_irq(dev, irq + sub_handle,
+-						     index, sub_handle);
+-			if (ret < 0)
+-				goto error;
 -		}
--		if (irq < e->irq)
--			n = n->rb_left;
--		else
--			n = n->rb_right;
+-		ret = setup_msi_irq(dev, msidesc, irq, sub_handle);
+-		if (ret < 0)
+-			goto error;
 -	}
--	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
- 	irq_domain_free_irqs(irq, 1);
+-	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, nvec);
+-
+-	/*
+-	 * Restore altered MSI descriptor fields and prevent just destroyed
+-	 * IRQs from tearing down again in default_teardown_msi_irqs()
+-	 */
+-	msidesc->irq = 0;
+-	msidesc->nvec_used = 0;
+-	msidesc->msi_attrib.multiple = 0;
+-
+-	return ret;
+-}
+-
+-static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
+-{
+-	int node, ret, sub_handle, index = 0;
+-	struct msi_desc *msidesc;
+-	unsigned int irq;
+-
+-	node		= dev_to_node(&dev->dev);
+-	sub_handle	= 0;
+-
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-
+-		irq = irq_alloc_hwirqs(1, node);
+-		if (irq == 0)
+-			return -1;
+-
+-		if (sub_handle == 0)
+-			ret = index = msi_alloc_remapped_irq(dev, irq, nvec);
+-		else
+-			ret = msi_setup_remapped_irq(dev, irq, index, sub_handle);
+-
+-		if (ret < 0)
+-			goto error;
+-
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
+-		if (ret < 0)
+-			goto error;
+-
+-		sub_handle += 1;
+-		irq        += 1;
+-	}
+-
+-	return 0;
+-
+-error:
+-	irq_free_hwirqs(irq, 1);
+-	return ret;
+-}
+-
+-static int irq_remapping_setup_msi_irqs(struct pci_dev *dev,
+-					int nvec, int type)
+-{
+-	if (type == PCI_CAP_ID_MSI)
+-		return do_setup_msi_irqs(dev, nvec);
+-	else
+-		return do_setup_msix_irqs(dev, nvec);
+-}
+-
+ static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
+ {
+ 	/*
+@@ -178,8 +64,6 @@ static void __init irq_remapping_modify_x86_ops(void)
+ 	x86_io_apic_ops.set_affinity	= set_remapped_irq_affinity;
+ 	x86_io_apic_ops.setup_entry	= setup_ioapic_remapped_entry;
+ 	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
+-	x86_msi.setup_hpet_msi		= setup_hpet_msi_remapped;
+-	x86_msi.compose_msi_msg		= compose_remapped_msi_msg;
  }
- EXPORT_SYMBOL_GPL(uv_teardown_irq);
+ 
+ static __init int setup_nointremap(char *str)
+@@ -326,43 +210,6 @@ void free_remapped_irq(int irq)
+ 		remap_ops->free_irq(irq);
+ }
+ 
+-void compose_remapped_msi_msg(struct pci_dev *pdev,
+-			      unsigned int irq, unsigned int dest,
+-			      struct msi_msg *msg, u8 hpet_id)
+-{
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	if (!irq_remapped(cfg))
+-		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-	else if (remap_ops && remap_ops->compose_msi_msg)
+-		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-}
+-
+-static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+-{
+-	if (!remap_ops || !remap_ops->msi_alloc_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
+-}
+-
+-static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+-				  int index, int sub_handle)
+-{
+-	if (!remap_ops || !remap_ops->msi_setup_irq)
+-		return -ENODEV;
+-
+-	return remap_ops->msi_setup_irq(pdev, irq, index, sub_handle);
+-}
+-
+-int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+-{
+-	if (!remap_ops || !remap_ops->setup_hpet_msi)
+-		return -ENODEV;
+-
+-	return remap_ops->setup_hpet_msi(irq, id);
+-}
+-
+ void panic_if_irq_remap(const char *msg)
+ {
+ 	if (irq_remapping_enabled)
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index 6e46074f06d0..474e20be528f 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -70,21 +70,6 @@ struct irq_remap_ops {
+ 	/* Free an IRQ */
+ 	int (*free_irq)(int);
+ 
+-	/* Create MSI msg to use for interrupt remapping */
+-	void (*compose_msi_msg)(struct pci_dev *,
+-				unsigned int, unsigned int,
+-				struct msi_msg *, u8);
+-
+-	/* Allocate remapping resources for MSI */
+-	int (*msi_alloc_irq)(struct pci_dev *, int, int);
+-
+-	/* Setup the remapped MSI irq */
+-	int (*msi_setup_irq)(struct pci_dev *, unsigned int, int, int);
+-
+-	/* Setup interrupt remapping for an HPET MSI */
+-	int (*setup_hpet_msi)(unsigned int, unsigned int);
+-
+-	/* Get the irqdomain associated the IOMMU device */
+ 	struct irq_domain *(*get_ir_irq_domain)(struct irq_alloc_info *);
+ 
+ 	/* Get the MSI irqdomain associated with the IOMMU device */
 -- 
 1.7.10.4
 
