@@ -1,79 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaIZKCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:02:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33004 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754539AbaIZJqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:39 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 050/142] powerpc/pseries: Failure on removing device node
-Date: Fri, 26 Sep 2014 11:44:21 +0200
-Message-Id: <1eae3e47d2aa45ab90ea035ed7135d813e2309e4.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1755196AbaIZKCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:02:41 -0400
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:36569 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaIZKCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:02:36 -0400
+From: Thomas Shao <huishao@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com, mps.surcouf.lkml@gmail.com
+Cc: kys@microsoft.com, haiyangz@microsoft.com,
+        Thomas Shao <huishao@microsoft.com>
+Subject: [PATCH] Drivers: hv: util: Implement Time Synchronization using host time sample
+Date: Fri, 26 Sep 2014 10:02:16 +0000
+Message-Id: <1411725736-49225-1-git-send-email-huishao@microsoft.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+In current hyper-v time sync service,it only gets the initial clock time
+from the host. It didn't process the following time samples. This change
+introduced a module parameter called host_time_sync. If it is set to true,
+the guest will periodically sychronize it's time with the host clock using
+host time sample. By default it is disabled, because we still recommend
+user to configure NTP for time synchronization.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit f1b3929c232784580e5d8ee324b6bc634e709575 upstream.
-
-While running command "drmgr -c phb -r -s 'PHB 528'", following
-backtrace jumped out because the target device node isn't marked
-with OF_DETACHED by of_detach_node(), which caused by error
-returned from memory hotplug related reconfig notifier when
-disabling CONFIG_MEMORY_HOTREMOVE. The patch fixes it.
-
-ERROR: Bad of_node_put() on /pci@800000020000210/ethernet@0
-CPU: 14 PID: 2252 Comm: drmgr Tainted: G        W     3.16.0+ #427
-Call Trace:
-[c000000012a776a0] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
-[c000000012a77750] [c00000000083cd34] .dump_stack+0x7c/0x9c
-[c000000012a777d0] [c0000000006807c4] .of_node_release+0x58/0xe0
-[c000000012a77860] [c00000000038a7d0] .kobject_release+0x174/0x1b8
-[c000000012a77900] [c00000000038a884] .kobject_put+0x70/0x78
-[c000000012a77980] [c000000000681680] .of_node_put+0x28/0x34
-[c000000012a77a00] [c000000000681ea8] .__of_get_next_child+0x64/0x70
-[c000000012a77a90] [c000000000682138] .of_find_node_by_path+0x1b8/0x20c
-[c000000012a77b40] [c000000000051840] .ofdt_write+0x308/0x688
-[c000000012a77c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
-[c000000012a77cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
-[c000000012a77d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
-[c000000012a77e30] [c00000000000a064] syscall_exit+0x0/0x98
-
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Thomas Shao <huishao@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hv/hv_util.c |  133 +++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 125 insertions(+), 8 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 9a432de363b8..bebe64ed5dc3 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -158,7 +158,7 @@ static int pseries_remove_memory(struct device_node *np)
- static inline int pseries_remove_memblock(unsigned long base,
- 					  unsigned int memblock_size)
- {
--	return -EOPNOTSUPP;
-+	return 0;
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 3b9c9ef..9b167c6 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -51,11 +51,30 @@
+ #define HB_WS2008_MAJOR	1
+ #define HB_WS2008_VERSION	(HB_WS2008_MAJOR << 16 | HB_MINOR)
+ 
++#define  TIMESAMPLE_INTERVAL 5000000000L  /* 5s in nanosecond */
++
++/*host sends time sample for every 5s.So the max polling interval
++ *is 128*5 = 640s.
++*/
++#define  TIME_ADJ_MAX_INTERVAL 128 /*Max polling interval */
++
+ static int sd_srv_version;
+ static int ts_srv_version;
+ static int hb_srv_version;
+ static int util_fw_version;
+ 
++/*host sends time sample for every 5s.So the initial polling interval
++ *is 5s.
++*/
++static s32 adj_interval = 1;
++
++/*The host_time_sync module parameter is used to control the time
++  sync between host and guest.
++*/
++static bool host_time_sync;
++module_param(host_time_sync, bool, (S_IRUGO | S_IWUSR));
++MODULE_PARM_DESC(host_time_sync, "If the guest sync time with host");
++
+ static void shutdown_onchannelcallback(void *context);
+ static struct hv_util_service util_shutdown = {
+ 	.util_cb = shutdown_onchannelcallback,
+@@ -160,18 +179,83 @@ static void shutdown_onchannelcallback(void *context)
+ 		schedule_work(&shutdown_work);
  }
- static inline int pseries_remove_memory(struct device_node *np)
+ 
++/* helper function to call adjtimex command in user mode */
++static void run_adjtimex_cmd(s64 tickvalue)
++{
++	char *argv[4], *envp[3];
++	char str_tickvalue[20];
++
++	sprintf(str_tickvalue, "%lld", tickvalue);
++
++	argv[0] = "/sbin/adjtimex";
++	argv[1] = "-t";
++	argv[2] = str_tickvalue;
++	argv[3] = NULL;
++
++	envp[0] = "HOME=/";
++	envp[1] = "PATH=/sbin:/bin:/usr/sbin:/usr/bin";
++	envp[2] = NULL;
++
++	call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
++}
++
+ /*
+  * Set guest time to host UTC time.
+  */
+-static inline void do_adj_guesttime(u64 hosttime)
++static inline void do_adj_guesttime(u64 hosttime, bool forceSync)
  {
+-	s64 host_tns;
+-	struct timespec host_ts;
++	s64 host_tns, guest_tns, diff;
++	struct timespec host_ts, guest_ts;
++	s64 tickchg, tickval;
++	int diff_sign;
+ 
+ 	host_tns = (hosttime - WLTIMEDELTA) * 100;
+ 	host_ts = ns_to_timespec(host_tns);
+ 
+-	do_settimeofday(&host_ts);
++	if (forceSync) {
++		do_settimeofday(&host_ts);
++	} else {
++		/* for the first time, reset the tick value */
++		if (adj_interval == 1) {
++			run_adjtimex_cmd(TICK_USEC);
++			adj_interval = adj_interval * 2;
++			do_settimeofday(&host_ts);
++			return;
++		}
++
++		guest_ts = CURRENT_TIME;
++		guest_tns = timespec_to_ns(&guest_ts);
++		diff = host_tns - guest_tns;
++		if (diff >= 0) {
++			diff_sign = 1;
++		} else {
++			diff_sign = -1;
++			diff = -diff;
++		}
++
++		/*1s in nanosecond */
++		if (diff > 1000000000 || diff < -1000000000) {
++			do_settimeofday(&host_ts);
++			return;
++		}
++
++		/*1ms in nanosecond */
++		if (diff > 1000000 || diff < -1000000) {
++			tickchg = diff * TICK_USEC /
++					(TIMESAMPLE_INTERVAL * adj_interval);
++
++			if (tickchg > TICK_USEC/10)
++				tickchg = TICK_USEC/10;
++
++			tickval = TICK_USEC + diff_sign * tickchg;
++			run_adjtimex_cmd(tickval);
++
++		} else {
++			/* double the polling interval*/
++			if (adj_interval < TIME_ADJ_MAX_INTERVAL)
++				adj_interval = adj_interval * 2;
++		}
++	}
+ }
+ 
+ /*
+@@ -179,8 +263,9 @@ static inline void do_adj_guesttime(u64 hosttime)
+  */
+ 
+ struct adj_time_work {
+-	struct work_struct work;
++	struct	work_struct work;
+ 	u64	host_time;
++	bool	forceSync;
+ };
+ 
+ static void hv_set_host_time(struct work_struct *work)
+@@ -188,7 +273,7 @@ static void hv_set_host_time(struct work_struct *work)
+ 	struct adj_time_work	*wrk;
+ 
+ 	wrk = container_of(work, struct adj_time_work, work);
+-	do_adj_guesttime(wrk->host_time);
++	do_adj_guesttime(wrk->host_time, wrk->forceSync);
+ 	kfree(wrk);
+ }
+ 
+@@ -202,11 +287,14 @@ static void hv_set_host_time(struct work_struct *work)
+  * thing is, systime is automatically set to emulated hardware clock which may
+  * not be UTC time or in the same time zone. So, to override these effects, we
+  * use the first 50 time samples for initial system time setting.
++ * If the host_time_sync module parameter is set, we will use the host time
++ * samples to adjust guest time after the first 50 samples.
+  */
+ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ {
+ 	struct adj_time_work    *wrk;
+ 	static s32 scnt = 50;
++	static s32 sample_count;
+ 
+ 	wrk = kmalloc(sizeof(struct adj_time_work), GFP_ATOMIC);
+ 	if (wrk == NULL)
+@@ -214,6 +302,7 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ 
+ 	wrk->host_time = hosttime;
+ 	if ((flags & ICTIMESYNCFLAG_SYNC) != 0) {
++		wrk->forceSync = true;
+ 		INIT_WORK(&wrk->work, hv_set_host_time);
+ 		schedule_work(&wrk->work);
+ 		return;
+@@ -221,10 +310,38 @@ static inline void adj_guesttime(u64 hosttime, u8 flags)
+ 
+ 	if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0 && scnt > 0) {
+ 		scnt--;
++		wrk->forceSync = true;
+ 		INIT_WORK(&wrk->work, hv_set_host_time);
+ 		schedule_work(&wrk->work);
+-	} else
+-		kfree(wrk);
++		return;
++	}
++
++	if (host_time_sync) {
++		/*
++		* Use the Hyper-V time sample to adjust the guest time. The
++		* algorithm is: If the sample offsets exceeds 1 second, we
++		* directly set the clock to the server time. If the offset is
++		* less than 1ms, we ignore the time sample. Otherwise we adjust
++		* the clock.
++		*/
++
++		if ((flags & ICTIMESYNCFLAG_SAMPLE) != 0) {
++			if (sample_count < adj_interval) {
++				sample_count++;
++				goto cleanup;
++			}
++			/* reset the polling interval */
++			sample_count = 0;
++			wrk->forceSync = false;
++			INIT_WORK(&wrk->work, hv_set_host_time);
++			schedule_work(&wrk->work);
++			return;
++		}
++	}
++
++cleanup:
++	kfree(wrk);
++
+ }
+ 
+ /*
 -- 
-2.1.0
+1.7.1
 
