@@ -1,145 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaIZPMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:12:32 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:38167 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755641AbaIZPMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:12:25 -0400
+	id S1754990AbaIZPOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:14:34 -0400
+Received: from mail-bn1on0147.outbound.protection.outlook.com ([157.56.110.147]:30448
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754191AbaIZPOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:14:32 -0400
+X-Greylist: delayed 9797 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Sep 2014 11:14:32 EDT
+From: Thomas Shao <huishao@microsoft.com>
+To: Mike Surcouf <mps.surcouf.lkml@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Olaf Hering <olaf@aepfle.de>, Robo Bot <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] Drivers: hv: util: Implement Time Synchronization using
+ host time sample
+Thread-Topic: [PATCH] Drivers: hv: util: Implement Time Synchronization
+ using host time sample
+Thread-Index: AQHP2XESGfKWnzoNvEy532a+Bg3JTpwTTgaAgAAIEqCAAAy5AIAADGuAgAAUy7A=
+Date: Fri, 26 Sep 2014 15:13:24 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD84014154098BC7@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1411725736-49225-1-git-send-email-huishao@microsoft.com>
+	<CAL7Bo8HoYU1mbUbw-k0ufj7n8D=Z_hLtf268gKeyACcnZHH5rw@mail.gmail.com>
+	<CD2CABCB2C0A0D4682C5F8AD8401415409846D@HKXPRD3002MB006.064d.mgd.msft.net>
+	<CAL7Bo8G_7cOYxbtPR=JDxE8VJShbzs2+2Y=F9OOABgFZr=m29A@mail.gmail.com>
+ <CAL7Bo8EocBnW28r-QtYU7AvSTyQNdMm39ns5WyM2++rbnJKxrg@mail.gmail.com>
+In-Reply-To: <CAL7Bo8EocBnW28r-QtYU7AvSTyQNdMm39ns5WyM2++rbnJKxrg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [114.91.240.4]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <542573EE.8070103@hurleysoftware.com>
-References: <54246506.50401@hurleysoftware.com>
-	<20140925143555.1f276007@as>
-	<5424AAD0.9010708@hurleysoftware.com>
-	<542512AD.9070304@vmware.com>
-	<20140926054005.5c7985c0@as>
-	<542543D8.8020604@vmware.com>
-	<CAF6AEGvOkPq5LQR76-VbspYyCvUxL1=W-dLc4g_aWX2wkUmRpg@mail.gmail.com>
-	<54255EA5.3030207@redhat.com>
-	<542573EE.8070103@hurleysoftware.com>
-Date: Fri, 26 Sep 2014 08:12:24 -0700
-Message-ID: <CAAE8-r+52KWP8BkDatwUoZfOMBBSDVqLZqunff9+L-Ac109Bxg@mail.gmail.com>
-Subject: Re: page allocator bug in 3.16?
-From: Leann Ogasawara <leann.ogasawara@canonical.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Rik van Riel <riel@redhat.com>, Rob Clark <robdclark@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickens <hughd@google.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(377454003)(199003)(51704005)(189002)(13464003)(31966008)(4396001)(33656002)(76482002)(85306004)(23676002)(50986999)(54356999)(106116001)(93886004)(76176999)(50466002)(26826002)(16796002)(87936001)(106466001)(86146001)(120916001)(83322001)(55846006)(83072002)(44976005)(84676001)(21056001)(99396003)(2656002)(10300001)(19580405001)(81156004)(6806004)(97736003)(92566001)(64706001)(92726001)(86612001)(66066001)(107046002)(47776003)(20776003)(86362001)(85852003)(81542003)(90102001)(80022003)(79102003)(69596002)(74662003)(77096002)(95666004)(19580395003)(77982003)(74502003)(68736004)(81342003)(46102003)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB274;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB274;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8QFEclr001350
 
-On Fri, Sep 26, 2014 at 7:10 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> [ +cc Leann Ogasawara, Marek Szyprowski, Kyungmin Park, Arnd Bergmann ]
->
-> On 09/26/2014 08:40 AM, Rik van Riel wrote:
->> On 09/26/2014 08:28 AM, Rob Clark wrote:
->>> On Fri, Sep 26, 2014 at 6:45 AM, Thomas Hellstrom
->>> <thellstrom@vmware.com> wrote:
->>>> On 09/26/2014 12:40 PM, Chuck Ebbert wrote:
->>>>> On Fri, 26 Sep 2014 09:15:57 +0200 Thomas Hellstrom
->>>>> <thellstrom@vmware.com> wrote:
->>>>>
->>>>>> On 09/26/2014 01:52 AM, Peter Hurley wrote:
->>>>>>> On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
->>>>>>>> There are six ttm patches queued for 3.16.4:
->>>>>>>>
->>>>>>>> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
->>>>>>>>
->>>>>>>>
->> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
->>>>>>>> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
->>>>>>>>
->>>>>>>>
->> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
->>>>>>>> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
->>>>>>>> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
->>>>>>>
->>>>>>>>
->> Thanks for info, Chuck.
->>>>>>>
->>>>>>> Unfortunately, none of these fix TTM dma allocation doing
->>>>>>> CMA dma allocation, which is the root problem.
->>>>>>>
->>>>>>> Regards, Peter Hurley
->>>>>> The problem is not really in TTM but in CMA, There was a guy
->>>>>> offering to fix this in the CMA code but I guess he didn't
->>>>>> probably because he didn't receive any feedback.
->>>>>>
->>>>> Yeah, the "solution" to this problem seems to be "don't enable
->>>>> CMA on x86". Maybe it should even be disabled in the config
->>>>> system.
->>>> Or, as previously suggested, don't use CMA for order 0 (single
->>>> page) allocations....
->>>
->>> On devices that actually need CMA pools to arrange for memory to be
->>> in certain ranges, I think you probably do want to have order 0
->>> pages come from the CMA pool.
->>>
->>> Seems like disabling CMA on x86 (where it should be unneeded) is
->>> the better way, IMO
->>
->> CMA has its uses on x86. For example, CMA is used to allocate 1GB huge
->> pages.
->>
->> There may also be people with devices that do not scatter-gather, and
->> need a large physically contiguous buffer, though there should be
->> relatively few of those on x86.
->>
->> I suspect it makes most sense to do DMA allocations up to PAGE_ORDER
->> through the normal allocator on x86, and only invoking CMA for larger
->> allocations.
->
-> The code that uses CMA to satisfy DMA allocations on x86 is
-> specific to the x86 arch and was added in 2011 as a means of _testing_
-> CMA in KVM:
->
-> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
-> Author: Marek Szyprowski <m.szyprowski@samsung.com>
-> Date:   Thu Dec 29 13:09:51 2011 +0100
->
->     X86: integrate CMA with DMA-mapping subsystem
->
->     This patch adds support for CMA to dma-mapping subsystem for x86
->     architecture that uses common pci-dma/pci-nommu implementation. This
->     allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
->
->     Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->     CC: Michal Nazarewicz <mina86@mina86.com>
->     Acked-by: Arnd Bergmann <arnd@arndb.de>
->
-> (no x86 maintainer acks?).
->
-> Unfortunately, this code is enabled whenever CMA is enabled, rather
-> than as a separate test configuration.
->
-> So, while enabling CMA may have other purposes on x86, using it for
-> x86 swiotlb and nommu dma allocations is not one of the them.
->
-> And Ubuntu should not be enabling CONFIG_DMA_CMA for their i386
-> and amd64 configurations, as this is trying to drive _all_ dma mapping
-> allocations through a _very_ small window (which is killing GPU
-> performance).
 
-Thanks for the note Peter.  We do have this disabled for our upcoming
-Ubuntu 14.10 release.  It is however still enabled in the previous 14.04
-release.  We have been tracking this in
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1362261 but users
-able to reproduce performance impacts in 14.10 were unable to reproduce
-in 14.04 which is why we hadn't yet disabled it there.
 
-Thanks,
-Leann
+> -----Original Message-----
+> From: Mike Surcouf [mailto:mps.surcouf.lkml@gmail.com]
+> Sent: Friday, September 26, 2014 9:52 PM
+> To: Thomas Shao
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> driverdev-devel@linuxdriverproject.org; Olaf Hering; Robo Bot;
+> jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
+> Subject: Re: [PATCH] Drivers: hv: util: Implement Time Synchronization using
+> host time sample
+> 
+> In CENTOS and RHEL 6 and upwards the official way would be to use
+> 
+> /usr/sbin/tickadj
+> 
+> which is provided by ntp/chrony package
+> 
+> This dependency on user space packages that may or may not be installed is
+> going to cause a lot of confusion in an already confused space.
+> Are we sure theres no other way?
+
+Thanks Mike.
+I think another way is to expose the do_adjtimex to kernel module. I'm not sure if there is any concerns. I'll investigate that.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
