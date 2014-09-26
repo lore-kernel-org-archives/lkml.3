@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaIZGZE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 02:25:04 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:46470 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553AbaIZGZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 02:25:01 -0400
-Message-ID: <1411712697.6005.7.camel@marge.simpson.net>
-Subject: Re: BUG: sleeping function called from invalid context at
- drivers/cpufreq/cpufreq.c:370
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Rafael Wysocki <rjw@rjwysocki.net>, Viresh Kumar <viresh.kumar@linaro.org>
-Date: Fri, 26 Sep 2014 08:24:57 +0200
-In-Reply-To: <1411653544.15810.47.camel@marge.simpson.net>
-References: <20140924081845.572814794@infradead.org>
-	 <1411633803.15810.12.camel@marge.simpson.net>
-	 <20140925090619.GA5430@worktop> <20140925091556.GB5430@worktop>
-	 <1411639019.15810.31.camel@marge.simpson.net>
-	 <1411653544.15810.47.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754015AbaIZGZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 02:25:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:59105 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446AbaIZGZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 02:25:19 -0400
+Date: Fri, 26 Sep 2014 16:25:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: linux-next: manual merge of the tip tree with the arm-soc tree
+Message-ID: <20140926162512.07ef4957@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/4JAOwzqUquCHY52QtU4T675"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(the hazards of multitasking.. post escaped early, and went to mostly
-the wrong folks)
+--Sig_/4JAOwzqUquCHY52QtU4T675
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-While testing some scheduler patches, the below pcc-cpufreq
-might_sleep() gripe fell out.
+Today's linux-next merge of the tip tree got a conflict in
+arch/arm/mach-omap2/irq.c between commit 8598066cddd1 ("arm: omap: irq:
+move irq.c to drivers/irqchip/") from the arm-soc tree and commit
+f978999f6096 ("Use the new handle_domain_irq method to handle
+interrupts") from the tip tree.
 
-On Thu, 2014-09-25 at 15:59 +0200, Mike Galbraith wrote:
+I fixed it up (I applied the latter patch to the moved file - see
+below) and can carry the fix as necessary (no action is required).
 
-> pcc-cpufreq: spin_lock() -> wait_event() -> gripe() gripe() gripe()...
-> 
-> [   50.756280] BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
-> [   50.850582] in_atomic(): 1, irqs_disabled(): 0, pid: 2636, name: modprobe
-> [   50.926744] Preemption disabled at:[<ffffffffa04d74d7>] pcc_cpufreq_target+0x27/0x200 [pcc_cpufreq]
-> [   51.025044]
-> [   51.045454] CPU: 57 PID: 2636 Comm: modprobe Tainted: G            E  3.17.0-default #7
-> [   51.136727] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
-> [   51.218484]  00000000ffffffff ffff88026c46b828 ffffffff81589dbd 0000000000000000
-> [   51.300293]  ffff880037978090 ffff88026c46b848 ffffffff8108e1df ffff880037978090
-> [   51.382666]  0000000000000000 ffff88026c46b878 ffffffff8108e298 ffff88026d73ec00
-> [   51.464884] Call Trace:
-> [   51.495159]  [<ffffffff81589dbd>] dump_stack+0x4d/0x90
-> [   51.555439]  [<ffffffff8108e1df>] ___might_sleep+0x10f/0x180
-> [   51.620610]  [<ffffffff8108e298>] __might_sleep+0x48/0xd0
-> [   51.684774]  [<ffffffff8145b905>] cpufreq_freq_transition_begin+0x75/0x140 drivers/cpufreq/cpufreq.c:370 wait_event(policy->transition_wait, !policy->transition_ongoing);
-> [   51.767992]  [<ffffffff8108fc99>] ? preempt_count_add+0xb9/0xc0
-> [   51.833294]  [<ffffffffa04d7513>] pcc_cpufreq_target+0x63/0x200 [pcc_cpufreq] drivers/cpufreq/pcc-cpufreq.c:207 spin_lock(&pcc_lock);
-> [   51.930204]  [<ffffffff810e0d0f>] ? update_ts_time_stats+0x7f/0xb0
-> [   52.009288]  [<ffffffff8145be55>] __cpufreq_driver_target+0x85/0x170
-> [   52.082479]  [<ffffffff8145e4c8>] od_check_cpu+0xa8/0xb0
-> [   52.143874]  [<ffffffff8145ef10>] dbs_check_cpu+0x180/0x1d0
-> [   52.207329]  [<ffffffff8145f310>] cpufreq_governor_dbs+0x3b0/0x720
-> [   52.276916]  [<ffffffff8145ebe3>] od_cpufreq_governor_dbs+0x33/0xe0
-> [   52.349048]  [<ffffffff814593d9>] __cpufreq_governor+0xa9/0x210
-> [   52.415040]  [<ffffffff81459fb2>] cpufreq_set_policy+0x1e2/0x2e0
-> [   52.480473]  [<ffffffff8145a6cc>] cpufreq_init_policy+0x8c/0x110
-> [   52.545829]  [<ffffffff8145c9a0>] ? cpufreq_update_policy+0x1b0/0x1b0
-> [   52.615796]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
-> [   52.681961]  [<ffffffff8145c6c6>] __cpufreq_add_dev+0x596/0x6b0
-> [   52.746288]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
-> [   52.830472]  [<ffffffff8145c7ee>] cpufreq_add_dev+0xe/0x10
-> [   52.894106]  [<ffffffff81408e81>] subsys_interface_register+0xc1/0xf0
-> [   52.970763]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
-> [   53.038953]  [<ffffffff8145b3d7>] cpufreq_register_driver+0x117/0x2a0
-> [   53.110751]  [<ffffffffa016c65d>] pcc_cpufreq_init+0x55/0x9f8 [pcc_cpufreq]
-> [   53.186920]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
-> [   53.267583]  [<ffffffff81000298>] do_one_initcall+0xc8/0x1f0
-> [   53.330601]  [<ffffffff811a731d>] ? __vunmap+0x9d/0x100
-> [   53.388285]  [<ffffffff810eb9a0>] do_init_module+0x30/0x1b0
-> [   53.451958]  [<ffffffff810edfa6>] load_module+0x686/0x710
-> [   53.514007]  [<ffffffff810ebb20>] ? do_init_module+0x1b0/0x1b0
-> [   53.581246]  [<ffffffff810ee1db>] SyS_init_module+0x9b/0xc0
-> [   53.644024]  [<ffffffff8158f7a9>] system_call_fastpath+0x16/0x1b
-> 
+diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-int=
+c.c
+index f3814e79192d..28718d3e8281 100644
+--- a/drivers/irqchip/irq-omap-intc.c
++++ b/drivers/irqchip/irq-omap-intc.c
+@@ -334,8 +334,7 @@ out:
+ 		irqnr &=3D ACTIVEIRQ_MASK;
+=20
+ 		if (irqnr) {
+-			irqnr =3D irq_find_mapping(domain, irqnr);
+-			handle_IRQ(irqnr, regs);
++			handle_domain_irq(domain, irqnr, regs);
+ 			handled_irq =3D 1;
+ 		}
+ 	} while (irqnr);
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/4JAOwzqUquCHY52QtU4T675
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUJQbNAAoJEMDTa8Ir7ZwVqhQP/1JAY7Uo1vZg2PEc4Al1rfXL
+D/vFAeGwbVcjlDdj4NU6/QgFdgnQ7zrq3jeYVl518SyoYG41kPwUI2tBwUmWGu0H
++tG/c4EX7t5mORY9CFWzYBEQrATnAs7cM3EBsvc3zKvehnhDM2th9CCR0DdT+BhC
+Cncha4nG4UmqdO8vMuCs0A3oWdrTa+HaClaF041teb/qpO8oWchmsDF/BQzFDY4z
+B2sMEkO48IdwU1HXkuGqGarFgp6f8iv8xoWeyWzZdV8Vpo9kxkRikQfgL/VNKzF2
+AqLq+JhcP4ICa2vnNsVFHBRtuDh56wVZEPB2Pqybm3U26pS3DtAcszVJ00mIZYPm
+i/G56DxiS3YzUhJu2NIyIV+h0MetFIsw78zQc77jpL2Yd7CDNFd0LHlJPrmnFVfH
+ax/5seb71Jcc6xTdD8tFQMYgPL363r6ViYZR6Z7dMFoAWcyP6/D1gyfluQh5mXmG
+CeHph/n8OgkasuucbsTrtFcC2HOZQhOS3R7eQXJx4FDCajEfmQDZiAf0k5+0+rQY
+GTaVaabapk5KZGRjTQJ85ZHe1icrZIaSfUlK/5ZblrO24mCYgJOrU+FHXXMlTZbY
+2nlTM7QXFcJM+PMJOnVjN8AwJpIsDt8I5TWUh7RPFtDxA/t0yET0siguv+qQKI15
+fyyKJNN7NWJQh/rPogER
+=p3h8
+-----END PGP SIGNATURE-----
+
+--Sig_/4JAOwzqUquCHY52QtU4T675--
