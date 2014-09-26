@@ -1,138 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaIZTdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:33:00 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:38926 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbaIZTc7 (ORCPT
+	id S1755903AbaIZTeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:34:44 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53026 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281AbaIZTel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:32:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOS_Y6QMVePeSwsqPEcK0EBu6mP=wVc7DA22utrk8TGSY_O3QA@mail.gmail.com>
-References: <138a894f22366da4173c8a4f2bfb0e670c66dbec.1411758752.git.luto@amacapital.net>
- <20140926142315.49215fc5@as> <CAOS_Y6QMVePeSwsqPEcK0EBu6mP=wVc7DA22utrk8TGSY_O3QA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 12:32:37 -0700
-Message-ID: <CALCETrWdVZUuUz9MGqxJHLPQ7VtFG1Kf2tG8GvEswH-zsFaF2w@mail.gmail.com>
-Subject: Re: [PATCH v3] init: Add strictinit to disable init= fallbacks
-To: Rob Landley <rob@landley.net>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
+	Fri, 26 Sep 2014 15:34:41 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: David Ahern <lxhacker68@gmail.com>
+Cc: nicolas.dichtel@6wind.com, Cong Wang <cwang@twopensource.com>,
+        netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+        Andy Lutomirski <luto@amacapital.net>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
+	<54228D87.3070309@6wind.com>
+	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
+	<5422F0F4.6000709@6wind.com>
+	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>
+	<5423D80B.9060500@6wind.com>
+	<CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com>
+	<54256CCB.4000709@6wind.com> <5425BB3E.10700@gmail.com>
+Date: Fri, 26 Sep 2014 12:34:16 -0700
+In-Reply-To: <5425BB3E.10700@gmail.com> (David Ahern's message of "Fri, 26 Sep
+	2014 13:15:10 -0600")
+Message-ID: <87mw9myy4n.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19U38EMx7rEYS9W6ViK4eMakoa9EoTOKzc=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3322]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;David Ahern <lxhacker68@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 12:30 PM, Rob Landley <rob@landley.net> wrote:
-> On Fri, Sep 26, 2014 at 2:23 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
->> On Fri, 26 Sep 2014 12:13:57 -0700
->> Andy Lutomirski <luto@amacapital.net> wrote:
->>
->>> If a user puts init=/whatever on the command line and /whatever
->>> can't be run, then the kernel will try a few default options before
->>> giving up.  If init=/whatever came from a bootloader prompt, then
->>> this probably makes sense.  On the other hand, if it comes from a
->>> script (e.g. a tool like virtme or perhaps a future kselftest
->>> script), then the fallbacks are likely to exist, but they'll do the
->>> wrong thing.  For example, they might unexpectedly invoke systemd.
+David Ahern <lxhacker68@gmail.com> writes:
+
+> On 9/26/14, 7:40 AM, Nicolas Dichtel wrote:
 >>>
->>> This adds a new option called strictinit.  If init= and strictinit
->>> are both set, and the init= binary is not executable, then the
->>> kernel will panic immediately.  If strictinit is set but init= is
->>> not set, then strictinit will have no effect, because the only real
->>> alternative would be to panic regardless of the contents of the root
->>> fs.
 >>>
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>> ---
->>>  Documentation/kernel-parameters.txt |  8 ++++++++
->>>  init/main.c                         | 16 ++++++++++++++--
->>>  2 files changed, 22 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->>> index 10d51c2f10d7..1576273edce6 100644
->>> --- a/Documentation/kernel-parameters.txt
->>> +++ b/Documentation/kernel-parameters.txt
->>> @@ -3236,6 +3236,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>>       stifb=          [HW]
->>>                       Format: bpp:<bpp1>[:<bpp2>[:<bpp3>...]]
->>>
->>> +     strictinit      [KNL,BOOT]
->>> +                     Normally, if the kernel can't find the init binary
->>> +                     specified by rdinit= and/or init=, then it will
->>> +                     try several fallbacks.  If strictinit is set
->>> +                     and the value specified by init= does not work,
->>> +                     then the kernel will panic instead.
->>> +                     This option makes no sense if init= is not specified.
->>> +
->>>       sunrpc.min_resvport=
->>>       sunrpc.max_resvport=
->>>                       [NFS,SUNRPC]
->>> diff --git a/init/main.c b/init/main.c
->>> index bb1aed928f21..2ae0f2776155 100644
->>> --- a/init/main.c
->>> +++ b/init/main.c
->>> @@ -131,6 +131,7 @@ static char *initcall_command_line;
->>>
->>>  static char *execute_command;
->>>  static char *ramdisk_execute_command;
->>> +static bool strictinit;
->>>
->>>  /*
->>>   * Used to generate warnings if static_key manipulation functions are used
->>> @@ -347,6 +348,13 @@ static int __init rdinit_setup(char *str)
->>>  }
->>>  __setup("rdinit=", rdinit_setup);
->>>
->>> +static int __init strictinit_setup(char *str)
->>> +{
->>> +     strictinit = true;
->>> +     return 1;
->>> +}
->>> +__setup("strictinit", strictinit_setup);
->>> +
->>>  #ifndef CONFIG_SMP
->>>  static const unsigned int setup_max_cpus = NR_CPUS;
->>>  #ifdef CONFIG_X86_LOCAL_APIC
->>> @@ -960,8 +968,12 @@ static int __ref kernel_init(void *unused)
->>>               ret = run_init_process(execute_command);
->>>               if (!ret)
->>>                       return 0;
->>> -             pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
->>> -                     execute_command, ret);
->>> +             if (strictinit)
->>> +                     panic("Requested init %s failed (error %d) and strictinit was set.",
->>> +                           execute_command, ret);
->>> +             else
->>> +                     pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
->>> +                            execute_command, ret);
->>>       }
->>>       if (!try_to_run_init_process("/sbin/init") ||
->>>           !try_to_run_init_process("/etc/init") ||
->>
->> Can't you just make it use "init=foo,strict" instead?
+>>> No, I don't want to monitor anything. Even if I wanted, I would just
+>>> start one
+>>> daemon in each netns instead of one for all.
+>> Ok you don't want, but some other people (not only me) want it! And
+>> having one
+>> daemon per netns does not scale: there are scenarii with thousand netns
+>> which
+>> are dynamically created and deleted.
 >
-> Can't we just change the default behavior and add a
-> CONFIG_INIT_FALLBACK that defaults to "n" which you can switch on to
-> get the old behavior? (And then immediately deprecate it?)
+> An example of the scaling problem using quagga (old but still seems to be a
+> relevant data point):
 >
-> If you're specifying an init, you probably want that init...
-
-Hmm, that's a reasonable point.
-
-Thoughts, anyone?  I'd be okay with doing that.
-
---Andy
-
 >
-> Rob
+> https://lists.quagga.net/pipermail/quagga-users/2010-February/011351.html
+>
+> "2k VRFs that would be 2.6G"
+>
+> And that does not include the overhead of each namespace -- roughly
+> 200kB/namespace on one kernel I checked (v3.10). So that's a ballpark of 3G of
+> memory.
 
+Resetting the conversation just a little bit.
 
+When I wrote the "ip netns" support I never expected that all
+applications would want to run in a specific network namespace.  All
+that is needed is one socket per network namespace.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Furthermore one socket or one procesess per network namespaces is
+completely orthogonal to the patches presented.  I do not see a
+identifying where the far end of a veth pair or similar set of
+networking objects as anything that even closely resembles a path to a
+using only a single socket.
+
+So I think this whole subthread is quite silly and grossly off track.
+
+Eric
