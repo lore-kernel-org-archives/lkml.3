@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774AbaIZR2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:28:43 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44199 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaIZR2l (ORCPT
+	id S1755833AbaIZR36 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:29:58 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:35796 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080AbaIZR34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:28:41 -0400
-Message-ID: <1411752500.1447.4.camel@localhost.localdomain>
-Subject: [PATCH] cpuidle: Minor optimization in cpuidle governor finding.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 26 Sep 2014 23:28:20 +0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 (3.10.2-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Sep 2014 13:29:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+ <54259BD4.8090508@oracle.com> <CACT4Y+Y0fzbs4DPt3n30R33cYqXEZ8E86tzCfzL6RUE9f+-r=w@mail.gmail.com>
+ <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Fri, 26 Sep 2014 10:29:34 -0700
+Message-ID: <CACT4Y+bptO341KQAQMSzUVV22KsjuomdTeDip=HaHJ3+1kvraQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory debugger.
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Currently in __cpuidle_find_governor(), strnicmp() is used to
-find which governor (menu or ladder) to register where CPUIDLE_NAME_LEN
-is passed strnicmp()'s comparision max limit. But, "menu" or "ladder"
-these strings are much smaller than CPUIDLE_NAME_LEN. To avoid it
-this patch introduces len field on cpuidle_governor structure, which
-is statically initialized to the size of length of governor name. Later
-on this size has been passed as strnicmp()'s length param. Another
-advantage this patch introduces, before calling strnicmp() by checking
-the size of governor name length we can determine whether to call
-strnicmp() i.e a shortcut.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
-index ca89412..f601cc5 100644
---- a/drivers/cpuidle/governor.c
-+++ b/drivers/cpuidle/governor.c
-@@ -20,16 +20,21 @@ struct cpuidle_governor *cpuidle_curr_governor;
- /**
-  * __cpuidle_find_governor - finds a governor of the specified name
-  * @str: the name
-+ * @size: length of str
-  *
-  * Must be called with cpuidle_lock acquired.
-  */
--static struct cpuidle_governor * __cpuidle_find_governor(const char *str)
-+static struct cpuidle_governor *__cpuidle_find_governor(const char *str,
-+							size_t size)
- {
- 	struct cpuidle_governor *gov;
- 
--	list_for_each_entry(gov, &cpuidle_governors, governor_list)
--		if (!strnicmp(str, gov->name, CPUIDLE_NAME_LEN))
-+	list_for_each_entry(gov, &cpuidle_governors, governor_list) {
-+		if (size != gov->len)
-+			continue;
-+		if (!strnicmp(str, gov->name, gov->len))
- 			return gov;
-+	}
- 
- 	return NULL;
- }
-@@ -85,7 +90,7 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
- 		return -ENODEV;
- 
- 	mutex_lock(&cpuidle_lock);
--	if (__cpuidle_find_governor(gov->name) == NULL) {
-+	if (__cpuidle_find_governor(gov->name, gov->len) == NULL) {
- 		ret = 0;
- 		list_add_tail(&gov->governor_list, &cpuidle_governors);
- 		if (!cpuidle_curr_governor ||
-diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
-index 044ee0d..91aff9c 100644
---- a/drivers/cpuidle/governors/ladder.c
-+++ b/drivers/cpuidle/governors/ladder.c
-@@ -177,6 +177,7 @@ static void ladder_reflect(struct cpuidle_device *dev, int index)
- 
- static struct cpuidle_governor ladder_governor = {
- 	.name =		"ladder",
-+	.len =		6,
- 	.rating =	10,
- 	.enable =	ladder_enable_device,
- 	.select =	ladder_select_state,
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 34db2fb..23de182 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -477,6 +477,7 @@ static int menu_enable_device(struct cpuidle_driver *drv,
- 
- static struct cpuidle_governor menu_governor = {
- 	.name =		"menu",
-+	.len =		4,
- 	.rating =	20,
- 	.enable =	menu_enable_device,
- 	.select =	menu_select,
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 25e0df6..bb9b5bd 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -198,6 +198,7 @@ struct cpuidle_governor {
- 	char			name[CPUIDLE_NAME_LEN];
- 	struct list_head 	governor_list;
- 	unsigned int		rating;
-+	size_t			len;
- 
- 	int  (*enable)		(struct cpuidle_driver *drv,
- 					struct cpuidle_device *dev);
+On Fri, Sep 26, 2014 at 10:22 AM, Andrey Ryabinin
+<ryabinin.a.a@gmail.com> wrote:
+> 2014-09-26 21:07 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
+>> On Fri, Sep 26, 2014 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>> On 09/24/2014 08:43 AM, Andrey Ryabinin wrote:
+>>>> Hi.
+>>>>
+>>>> This is a third iteration of kerenel address sanitizer (KASan).
+>>>>
+>>>> KASan is a runtime memory debugger designed to find use-after-free
+>>>> and out-of-bounds bugs.
+>>>>
+>>>> Currently KASAN supported only for x86_64 architecture and requires kernel
+>>>> to be build with SLUB allocator.
+>>>> KASAN uses compile-time instrumentation for checking every memory access, therefore you
+>>>> will need a fresh GCC >= v5.0.0.
+>>>
+>>> Hi Andrey,
+>>>
+>>> I tried this patchset, with the latest gcc, and I'm seeing the following:
+>>>
+>>> arch/x86/kernel/head.o: In function `_GLOBAL__sub_I_00099_0_reserve_ebda_region':
+>>> /home/sasha/linux-next/arch/x86/kernel/head.c:71: undefined reference to `__asan_init_v4'
+>>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0___ksymtab_system_state':
+>>> /home/sasha/linux-next/init/main.c:1034: undefined reference to `__asan_init_v4'
+>>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_init_uts_ns':
+>>> /home/sasha/linux-next/init/version.c:50: undefined reference to `__asan_init_v4'
+>>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_root_mountflags':
+>>> /home/sasha/linux-next/init/do_mounts.c:638: undefined reference to `__asan_init_v4'
+>>> init/built-in.o: In function `_GLOBAL__sub_I_00099_0_rd_prompt':
+>>> /home/sasha/linux-next/init/do_mounts_rd.c:361: undefined reference to `__asan_init_v4'
+>>> init/built-in.o:/home/sasha/linux-next/init/do_mounts_md.c:312: more undefined references to `__asan_init_v4' follow
+>>>
+>>>
+>>> What am I missing?
+>>
+>>
+>> Emission of __asan_init_vx needs to be disabled when
+>> -fsanitize=kernel-address. Our kernel does not boot with them at all.
+>> It probably hits some limit for something that can be increased. But I
+>> don't want to investigate what that limit is, as __asan_init is not
+>> needed for kasan at all.
+>>
+>
+> __asan_init_vx maybe not needed for kernel, but we still need somehow
+> to identify
+> compiler's asan version (e.g. for globals).
+> We could add some define to GCC or just something like this in kernel:
+> #if __GNUC__ == 5
+> #define ASAN_V4
+> ....
 
 
+This looks good to me.
+The versioning won't work the same way it works for clang/compiler-rt
+and gcc/libgcc. Because clang/compiler-rt are both part of the same
+repo and always versioned simultaneously. While kernel and gcc are
+versioned independently, so once you bump API version you break all
+users who use old gcc.
+
+So in kernel we will need to support all API versions, and the
+following looks like a much simpler way to identify current API
+version:
+> #if __GNUC__ == 5
+> #define ASAN_V4
+
+Note that in user-space asan the other important purpose of
+__asan_init is to trigger asan runtime initialization as early as
+possible. This is not needed for kernel.
