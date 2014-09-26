@@ -1,136 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670AbaIZCOj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:14:39 -0400
-Received: from mail-bn1on0115.outbound.protection.outlook.com ([157.56.110.115]:33103
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753625AbaIZCOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:14:35 -0400
-Date: Fri, 26 Sep 2014 10:21:12 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <a.zummo@towertech.it>, <grant.likely@linaro.org>,
-        <kernel@pengutronix.de>, <LW@KARO-electronics.de>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] rtc: snvs: add poweroff function
-Message-ID: <20140926022110.GA21831@Robin-OptiPlex-780>
-References: <1411611233-29919-1-git-send-email-b38343@freescale.com>
- <20140926012410.GD21077@dragon>
+	id S1753515AbaIZCQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:16:12 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:31038 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794AbaIZCQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:16:09 -0400
+Message-ID: <5424CC54.1040507@huawei.com>
+Date: Fri, 26 Sep 2014 10:15:48 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140926012410.GD21077@dragon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(24454002)(189002)(97756001)(83506001)(97736003)(76482002)(90102001)(120916001)(99396003)(54356999)(76176999)(46406003)(31966008)(44976005)(68736004)(92566001)(92726001)(23726002)(69596002)(104016003)(50986999)(10300001)(6806004)(19580405001)(83322001)(81156004)(83072002)(102836001)(50466002)(79102003)(107046002)(74502003)(74662003)(33656002)(64706001)(47776003)(46102003)(77982003)(81542003)(80022003)(20776003)(4396001)(81342003)(95666004)(19580395003)(106466001)(105606002)(84676001)(110136001)(87936001)(21056001)(33716001)(85852003)(85306004)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB340;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB340;
-X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB259;
-X-OriginatorOrg: freescale.com
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-2-git-send-email-wangyijing@huawei.com> <20140925071536.GG12423@ulmo> <alpine.DEB.2.10.1409251208420.4604@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409251208420.4604@nanos>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.5424CC65.00D5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 5cd6542b35db9be32f3a78ca7be566a9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 09:24:11AM +0800, Shawn Guo wrote:
-> On Thu, Sep 25, 2014 at 10:13:53AM +0800, Robin Gong wrote:
-> > On i.mx6 chips, PMIC_ON_REQ can be pulled by snvs LPCR. That can be
-> > used poweroff system if PMIC_ON_REQ connected with external PMIC or
-> > power control circuit.Power up again if PMIC_ON_REQ pulled high.
-> > 
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
+On 2014/9/25 18:20, Thomas Gleixner wrote:
+> On Thu, 25 Sep 2014, Thierry Reding wrote:
 > 
-> I'm not sure it's a good idea to plug poweroff support into RTC driver.
-> If RTC driver is built out, poweroff function is gone too.
+>> On Thu, Sep 25, 2014 at 11:14:11AM +0800, Yijing Wang wrote:
+>>> Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
+>>> argument.
+>>
+>> That's not true. Out of the four drivers that you modify two use the
+>> parameter. And the two that don't probably should be using it too.
+>>
+>> 50% is not "rarely". =)
+>>
+>>>           We can look up msi_chip pointer by the device pointer
+>>> or irq number, so clean up msi_chip argument.
+>>
+>> I don't like this particular change. The idea was to keep the API object
+>> oriented so that drivers wouldn't have to know where to get the MSI chip
+>> from. It also makes it more resilient against code reorganizations since
+>> the core code is the only place that needs to know where to get the chip
+>> from.
 > 
-> Shawn
->
-Yes, that's true since there is no real SNVS driver, only snvs-rtc and
-snvs-caam driver. I'll pick up the patch about the driver which located
-in drivers/power/reset.
-> > ---
-> >  Documentation/devicetree/bindings/crypto/fsl-sec4.txt |  4 ++++
-> >  drivers/rtc/rtc-snvs.c                                | 18 ++++++++++++++++++
-> >  2 files changed, 22 insertions(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-> > index e402277..00d67f2 100644
-> > --- a/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-> > +++ b/Documentation/devicetree/bindings/crypto/fsl-sec4.txt
-> > @@ -363,11 +363,15 @@ Secure Non-Volatile Storage (SNVS) Low Power (LP) RTC Node
-> >        Value type: <prop-encoded-array>
-> >        Definition: A standard property.  Specifies the physical
-> >            address and length of the SNVS LP configuration registers.
-> > +  - fsl,poweroff
-> > +      Usage: opertional, recommend if PMIC_ON_REQ connected with external
-> > +	PMIC or power control circuit.
-> >  
-> >  EXAMPLE
-> >  	sec_mon_rtc_lp@314000 {
-> >  		compatible = "fsl,sec-v4.0-mon-rtc-lp";
-> >  		reg = <0x34 0x58>;
-> > +		fsl,poweroff;
-> >  	};
-> >  
-> >  =====================================================================
-> > diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
-> > index fa384fe..ef32541 100644
-> > --- a/drivers/rtc/rtc-snvs.c
-> > +++ b/drivers/rtc/rtc-snvs.c
-> > @@ -29,6 +29,8 @@
-> >  #define SNVS_LPCR_SRTC_ENV	(1 << 0)
-> >  #define SNVS_LPCR_LPTA_EN	(1 << 1)
-> >  #define SNVS_LPCR_LPWUI_EN	(1 << 3)
-> > +#define SNVS_LPCR_DP		(1 << 5)
-> > +#define SNVS_LPCR_TOP		(1 << 6)
-> >  #define SNVS_LPSR_LPTA		(1 << 0)
-> >  
-> >  #define SNVS_LPPGDR_INIT	0x41736166
-> > @@ -41,6 +43,8 @@ struct snvs_rtc_data {
-> >  	spinlock_t lock;
-> >  };
-> >  
-> > +static void __iomem *snvs_base;
-> > +
-> >  static u32 rtc_read_lp_counter(void __iomem *ioaddr)
-> >  {
-> >  	u64 read1, read2;
-> > @@ -241,8 +245,17 @@ static irqreturn_t snvs_rtc_irq_handler(int irq, void *dev_id)
-> >  	return events ? IRQ_HANDLED : IRQ_NONE;
-> >  }
-> >  
-> > +static void snvs_poweroff(void)
-> > +{
-> > +	u32 value;
-> > +
-> > +	value = readl(snvs_base + SNVS_LPCR);
-> > +	writel(value | SNVS_LPCR_DP | SNVS_LPCR_TOP, snvs_base + SNVS_LPCR);
-> > +}
-> > +
-> >  static int snvs_rtc_probe(struct platform_device *pdev)
-> >  {
-> > +	struct device_node *np = pdev->dev.of_node;
-> >  	struct snvs_rtc_data *data;
-> >  	struct resource *res;
-> >  	int ret;
-> > @@ -260,6 +273,11 @@ static int snvs_rtc_probe(struct platform_device *pdev)
-> >  	if (data->irq < 0)
-> >  		return data->irq;
-> >  
-> > +	if (np && of_get_property(np, "fsl,poweroff", NULL)) {
-> > +		snvs_base = data->ioaddr;
-> > +		pm_power_off = snvs_poweroff;
-> > +	}
-> > +
-> >  	platform_set_drvdata(pdev, data);
-> >  
-> >  	spin_lock_init(&data->lock);
-> > -- 
-> > 1.9.1
-> > 
+> Right. We have the same thing in the irq_chip callbacks. All of them
+> take "struct irq_data", because it's already available in the core
+> code and it gives easy access to all information (chip, chipdata ...)
+> which is necessary for the callback implementations.
+
+OK, I will drop this change, tglx, thanks for your review and comments!
+
+Thanks!
+Yijing.
+
+
+> 
+> Thanks,
+> 
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
