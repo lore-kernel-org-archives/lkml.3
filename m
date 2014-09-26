@@ -1,200 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459AbaIZLyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:54:54 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:36134 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbaIZLyx (ORCPT
+	id S1754693AbaIZLzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:55:09 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:35716 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754104AbaIZLzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:54:53 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com
-Cc: dsaxena@linaro.org, Vijaya.Kumar@caviumnetworks.com,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [RFC v2] arm64: kgdb: fix single stepping
-Date: Fri, 26 Sep 2014 20:54:13 +0900
-Message-Id: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 26 Sep 2014 07:55:05 -0400
+Message-ID: <54255411.4090508@hitachi.com>
+Date: Fri, 26 Sep 2014 20:54:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Shuah Khan <shuahkh@osg.samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
+References: <20140923173846.603cb49c@gandalf.local.home> <5422336A.6030304@hitachi.com> <20140924114235.4287f4a1@gandalf.local.home> <20140924115811.6eeeab8c@gandalf.local.home> <5422EAE2.6080005@osg.samsung.com> <20140924120853.0a717b7e@gandalf.local.home> <877g0qkj9g.fsf@sejong.aot.lge.com>
+In-Reply-To: <877g0qkj9g.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to verify kgdb in vanilla kernel on fast model, but it seems that
-the single stepping with kgdb doesn't work correctly since its first
-appearance at v3.15.
+(2014/09/26 15:06), Namhyung Kim wrote:
+> Hi Steve,
+> 
+> On Wed, 24 Sep 2014 12:08:53 -0400, Steven Rostedt wrote:
+>> On Wed, 24 Sep 2014 10:01:38 -0600
+>> Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>>
+>>> I am working on adding the framework for c tests. We will have
+>>> to get this evolved for shell scripts. Please see the following
+>>> thread:
+>>>
+>>> https://lkml.org/lkml/2014/9/23/926
+>>>
+>>
+>> Thanks,
+>>
+>> Also, what's the rules for a test that requires other tools. Some of my
+>> tests require trace-cmd to be installed as well as perf. My stress test
+>> runs perf against trace-cmd running hackbench (another required tool),
+>> but I believe that perf has hackbench built in so I could replace
+>> hackbench with the perf version.
+> 
+> Yeah, and I think we can at least build perf (if not found) for test as
+> we can always have the source.  The trace-cmd is different and it'd be
+> another reason I need to work on 'perf ftrace' command soon.  ;-)
 
-On v3.15, 'stepi' command after breaking the kernel at some breakpoint
-steps forward to the next instruction, but the succeeding 'stepi' never
-goes beyond that.
-On v3.16, 'stepi' moves forward and stops at the next instruction just
-after enable_dbg in el1_dbg, and never goes beyond that. This variance of
-behavior seems to come in with the following patch in v3.16:
++1 :)
 
-    commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
-    paths where possible")
+For the kselftest, we can only expect to have tools in kernel tree (which
+should be static-linked) and busybox, so that we can use qemu emulator to
+run kselftest on other archs. I guess perf still need some shared
+objects to run. That should be solved too.
 
-This patch
-(1) moves kgdb_disable_single_step() from 'c' command handling to single
-    step handler.
-    This makes sure that single stepping gets effective at every 's' command.
-    Please note that, under the current implementation, single step bit in
-    spsr, which is cleared by the first single stepping, will not be set
-    again for the consecutive 's' commands because single step bit in mdscr
-    is still kept on (that is, kernel_active_single_step() in
-    kgdb_arch_handle_exception() is true).
-(2) removes 'enable_dbg' in el1_dbg.
-    Single step bit in mdscr is turned on in do_handle_exception()->
-    kgdb_handle_expection() before returning to debugged context, and if
-    debug exception is enabled in el1_dbg, we will see unexpected single-
-    stepping in el1_dbg.
-(3) masks interrupts while single-stepping one instruction.
-    If an interrupt is caught during processing a single-stepping, debug
-    exception is unintentionally enabled by el1_irq's 'enable_dbg' before
-    returning to debugged context.
-    Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+Anyway, at first we'd better add simpler tests which is not relay on
+other tools except busybox shell.
 
-Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
+Thank you,
 
-With those changes, we will see another problem if a breakpoint is set
-at interrupt-sensible places, like gic_handle_irq():
 
-    KGDB: re-enter error: breakpoint removed ffffffc000081258
-    ------------[ cut here ]------------
-    WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
-					kgdb_handle_exception+0x1dc/0x1f4()
-    Modules linked in:
-    CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
-    Call trace:
-    [<ffffffc000087fac>] dump_backtrace+0x0/0x130
-    [<ffffffc0000880ec>] show_stack+0x10/0x1c
-    [<ffffffc0004d683c>] dump_stack+0x74/0xb8
-    [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
-    [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
-    [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
-    [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
-    [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
-    [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
-    Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
-    ...
-    [<ffffffc000083cac>] el1_dbg+0x14/0x68
-    [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
-    [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
-    [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
-    [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
-    [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
-    Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
-    ...
-    [<ffffffc000083cac>] el1_dbg+0x14/0x68
-    [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
-    [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
-    [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
-    [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
-    [<ffffffc0001939b0>] SyS_write+0x40/0xa0
-
-Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
-Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
-Current kgdb_roundup_cpus() unmasks interrupts temporarily to
-use smp_call_function().
-This eventually allows another interrupt to occur and likely results in
-hitting a breakpoint at gic_handle_irq() again since debug exception is
-always enabled in el1_irq.
-
-We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
-but this will also leave other cpus be in unknown state in terms of kgdb,
-and may result in interfering with kgdb activity.
-
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/kernel/entry.S |    1 -
- arch/arm64/kernel/kgdb.c  |   29 +++++++++++++++++++----------
- 2 files changed, 19 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index fdd6eae..a935d5f 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -325,7 +325,6 @@ el1_dbg:
- 	mrs	x0, far_el1
- 	mov	x2, sp				// struct pt_regs
- 	bl	do_debug_exception
--	enable_dbg
- 	kernel_exit 1
- el1_inv:
- 	// TODO: add support for undefined instructions in kernel mode
-diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
-index 75c9cf1..f1fc1d8 100644
---- a/arch/arm64/kernel/kgdb.c
-+++ b/arch/arm64/kernel/kgdb.c
-@@ -22,6 +22,7 @@
- #include <linux/irq.h>
- #include <linux/kdebug.h>
- #include <linux/kgdb.h>
-+#include <asm/percpu.h>
- #include <asm/traps.h>
- 
- struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
-@@ -95,6 +96,8 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
- 	{ "fpcr", 4, -1 },
- };
- 
-+static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
-+
- char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
- {
- 	if (regno >= DBG_MAX_REG_NUM || regno < 0)
-@@ -176,18 +179,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
- 		 * over and over again.
- 		 */
- 		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
--		atomic_set(&kgdb_cpu_doing_single_step, -1);
--		kgdb_single_step =  0;
--
--		/*
--		 * Received continue command, disable single step
--		 */
--		if (kernel_active_single_step())
--			kernel_disable_single_step();
- 
- 		err = 0;
- 		break;
- 	case 's':
-+		/* mask interrupts while single stepping */
-+		__this_cpu_write(kgdb_pstate, linux_regs->pstate);
-+		linux_regs->pstate |= (1 << 7);
-+
- 		/*
- 		 * Update step address value with address passed
- 		 * with step packet.
-@@ -198,8 +197,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
- 		 */
- 		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
- 		atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
--		kgdb_single_step =  1;
--
- 		/*
- 		 * Enable single step handling
- 		 */
-@@ -229,6 +226,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
- 
- static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
- {
-+	unsigned int pstate;
-+
-+	kernel_disable_single_step();
-+	atomic_set(&kgdb_cpu_doing_single_step, -1);
-+
-+	/* restore interrupt mask status */
-+	pstate = __this_cpu_read(kgdb_pstate);
-+	if (pstate & (1 << 7))
-+		regs->pstate |= (1 << 7);
-+	else
-+		regs->pstate &= ~(1 << 7);
-+
- 	kgdb_handle_exception(1, SIGTRAP, 0, regs);
- 	return 0;
- }
 -- 
-1.7.9.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
