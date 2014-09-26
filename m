@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464AbaIZONn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:13:43 -0400
-Received: from mga14.intel.com ([192.55.52.115]:2158 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537AbaIZONk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:13:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597276986"
-From: Loic Poulain <loic.poulain@intel.com>
-To: mika.westerberg@intel.com, linus.walleij@linaro.org
-Cc: linux-kernel@vger.kernel.org, samuel.ortiz@intel.com,
-        mathias.nyman@linux.intel.com, heikki.krogerus@linux.intel.com,
-        Loic Poulain <loic.poulain@intel.com>
-Subject: [PATCHv3] pinctrl: baytrail: Clear DIRECT_IRQ bit
-Date: Fri, 26 Sep 2014 16:14:51 +0200
-Message-Id: <1411740891-3311-1-git-send-email-loic.poulain@intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754656AbaIZOSo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:18:44 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:63292 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754101AbaIZOSn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:18:43 -0400
+Date: Fri, 26 Sep 2014 10:18:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
+Message-ID: <20140926101840.7d495620@gandalf.local.home>
+In-Reply-To: <5425564A.4020107@hitachi.com>
+References: <20140923173846.603cb49c@gandalf.local.home>
+	<5422336A.6030304@hitachi.com>
+	<20140924114235.4287f4a1@gandalf.local.home>
+	<20140924115811.6eeeab8c@gandalf.local.home>
+	<5422EAE2.6080005@osg.samsung.com>
+	<20140924120853.0a717b7e@gandalf.local.home>
+	<5422EFB4.2050104@osg.samsung.com>
+	<20140924123007.7fcb0099@gandalf.local.home>
+	<5422F328.2040707@osg.samsung.com>
+	<5425564A.4020107@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Direct irq en bit should be cleared for pads using io mode.
-If not, the io based irq will never be detected.
-However, this bit can sometimes be misconfigured (BIOS issue).
-Force clearing of this bit in io mode and trigger a WARN.
+On Fri, 26 Sep 2014 21:04:26 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
----
- v2: Apply over ff998356b644ebe723127bd9eec6040b59a4a4f6 + add Warning
- v3: Update commit message & warn message
 
- drivers/pinctrl/pinctrl-baytrail.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+> > Please go ahead and get them in. The framework might have to wait
+> > until 3.19, so there is no need to have it gate test development.
+> > We can evolve them as we go. If tests require special, it means that
+> > they aren't suitable for certain envs such as qemu boot with busybox.
+> > There is a plan to add test targets to cover such cases.
+> 
+> Agreed, anyway, in some env those tools(commands) may not supported
+> by busybox because of the memory size etc. In that case, we can just
+> mark the test unsupported or xfail.
+> 
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index 701a646..d1e9484 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -230,10 +230,14 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
- 	spin_lock_irqsave(&vg->lock, flags);
- 	value = readl(reg);
+Note, if memory size is such a big issue it that other tools may not be
+there, then most of the ftrace features will probably be disabled due
+to memory constraints on the kernel itself.
 
-+	WARN(value & BYT_DIRECT_IRQ_EN,
-+		"Bad pad config for io mode, force direct_irq_en bit clearing");
-+
- 	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
- 	 * are used to indicate high and low level triggering
- 	 */
--	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
-+	value &= ~(BYT_DIRECT_IRQ_EN | BYT_TRIG_POS | BYT_TRIG_NEG |
-+		   BYT_TRIG_LVL);
+As we have a way to state "unsupported" we can just return that from
+tests that require tools not available, and say why it is the case.
 
- 	switch (type) {
- 	case IRQ_TYPE_LEVEL_HIGH:
---
-1.8.3.2
-
+-- Steve
