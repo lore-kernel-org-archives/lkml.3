@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167AbaIZO5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:57:35 -0400
+	id S1756176AbaIZO5m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:57:42 -0400
 Received: from mga11.intel.com ([192.55.52.93]:58972 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756139AbaIZO53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:57:29 -0400
+	id S1755207AbaIZO5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:57:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597292766"
+   d="scan'208";a="597292814"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -23,10 +23,10 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [RFC v1 26/28] x86, irq: Kill function apic_set_affinity()
-Date: Fri, 26 Sep 2014 22:57:56 +0800
-Message-Id: <1411743478-31435-27-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, Daniel J Blueman <daniel@numascale.com>
+Subject: [RFC v1 28/28] x86, irq: Add kernel parameter vector_alloc to set CPU vector allocation policy
+Date: Fri, 26 Sep 2014 22:57:58 +0800
+Message-Id: <1411743478-31435-29-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,86 +34,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there's no user of apic_set_affinity(), so kill it.
-Also rename vector_set_affinity() to apic_set_affinity() for consistency.
+Parameter vector_alloc should be set to an integer with:
+bit 0:	enable allocating CPU vector from CPUs on device local node.
+	That's to allocate from cpumask_of_node(irq_data->node).
+bit 1: enable the default policy, which is to allocate from
+       apic->target_cpus().
+
+When allocating vectors, it tries all enabled policies from lower bit
+position to higher bit position.
+
+This option could be use to optimize interrupt distribution on large
+system such as NumaChip etc.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Daniel J Blueman <daniel@numascale.com>
 ---
- arch/x86/include/asm/hw_irq.h |    2 --
- arch/x86/kernel/apic/vector.c |   40 +++-------------------------------------
- 2 files changed, 3 insertions(+), 39 deletions(-)
+ Documentation/kernel-parameters.txt |    6 ++++++
+ arch/x86/kernel/apic/vector.c       |   11 +++++++++++
+ 2 files changed, 17 insertions(+)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index fdf8300dcc29..6c6002e386d4 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -185,8 +185,6 @@ extern void send_cleanup_vector(struct irq_cfg *);
- extern void irq_complete_move(struct irq_cfg *cfg);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 10d51c2f10d7..895ba404eb0d 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3586,6 +3586,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	vector=		[IA-64,SMP]
+ 			vector=percpu: enable percpu vector domain
  
- extern void apic_ack_edge(struct irq_data *data);
--extern int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
--			     unsigned int *dest_id);
- #else	/*  CONFIG_X86_LOCAL_APIC */
- static inline void lock_vector_lock(void) {}
- static inline void unlock_vector_lock(void) {}
++	vector_alloc=	[x86,SMP]
++			vector_alloc=policy: policy is a bitmap, bit 0
++			for allocating CPU vector from CPUs on device local
++			node; bit 1 for the default policy to allocating from
++			apic->target_cpus(). All higher bits are reserved.
++
+ 	video=		[FB] Frame buffer configuration
+ 			See Documentation/fb/modedb.txt.
+ 
 diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index ec2b991884f2..01311ddec2de 100644
+index 4a16e0a5ae0f..d1f616374ec0 100644
 --- a/arch/x86/kernel/apic/vector.c
 +++ b/arch/x86/kernel/apic/vector.c
-@@ -457,42 +457,8 @@ void apic_ack_edge(struct irq_data *data)
- 	ack_APIC_irq();
+@@ -65,6 +65,17 @@ void set_vector_alloc_policy(unsigned int policy)
+ 		x86_vector_alloc_policy = policy | X86_VECTOR_POL_CALLER;
  }
  
--/*
-- * Either sets data->affinity to a valid value, and returns
-- * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
-- * leaves data->affinity untouched.
-- */
--int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
--		      unsigned int *dest_id)
--{
--	struct irq_cfg *cfg = irqd_cfg(data);
--	unsigned int irq = data->irq;
--	int err;
--
--	if (!config_enabled(CONFIG_SMP))
--		return -EPERM;
--
--	if (!cpumask_intersects(mask, cpu_online_mask))
--		return -EINVAL;
--
--	err = assign_irq_vector(irq, cfg, mask);
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(mask, cfg->domain, dest_id);
--	if (err) {
--		if (assign_irq_vector(irq, cfg, data->affinity))
--			pr_err("Failed to recover vector for irq %d\n", irq);
--		return err;
--	}
--
--	cpumask_copy(data->affinity, mask);
--
--	return 0;
--}
--
--static int vector_set_affinity(struct irq_data *irq_data,
--			       const struct cpumask *dest, bool force)
-+static int apic_set_affinity(struct irq_data *irq_data,
-+			     const struct cpumask *dest, bool force)
++static int __init apic_parse_vector_policy(char *str)
++{
++	int policy;
++
++	if (get_option(&str, &policy) == 1)
++		set_vector_alloc_policy(policy);
++
++	return 1;
++}
++__setup("vector_alloc=", apic_parse_vector_policy);
++
+ static struct irq_cfg *alloc_irq_cfg(int node)
  {
- 	int err;
- 	int irq = irq_data->irq;
-@@ -518,7 +484,7 @@ static int vector_set_affinity(struct irq_data *irq_data,
- 
- static struct irq_chip vector_chip = {
- 	.irq_ack = apic_ack_edge,
--	.irq_set_affinity = vector_set_affinity,
-+	.irq_set_affinity = apic_set_affinity,
- 	.irq_retrigger = apic_retrigger_irq,
- };
- 
+ 	struct irq_cfg *cfg;
 -- 
 1.7.10.4
 
