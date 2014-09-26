@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065AbaIZKFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:05:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
+	id S1756053AbaIZKFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:05:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33029 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755000AbaIZJqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755008AbaIZJqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 106/142] libceph: do not hard code max auth ticket len
-Date: Fri, 26 Sep 2014 11:45:17 +0200
-Message-Id: <0884f8d4139431deb0b98ba0d6fb2d17e2c25c84.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 099/142] xfs: ensure verifiers are attached to recovered buffers
+Date: Fri, 26 Sep 2014 11:45:10 +0200
+Message-Id: <725f6824f86949a1610d47477e08f5c08d128308.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,204 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Dave Chinner <dchinner@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c27a3e4d667fdcad3db7b104f75659478e0c68d8 upstream.
+commit 67dc288c21064b31a98a53dc64f6b9714b819fd6 upstream.
 
-We hard code cephx auth ticket buffer size to 256 bytes.  This isn't
-enough for any moderate setups and, in case tickets themselves are not
-encrypted, leads to buffer overflows (ceph_x_decrypt() errors out, but
-ceph_decode_copy() doesn't - it's just a memcpy() wrapper).  Since the
-buffer is allocated dynamically anyway, allocated it a bit later, at
-the point where we know how much is going to be needed.
+Crash testing of CRC enabled filesystems has resulted in a number of
+reports of bad CRCs being detected after the filesystem was mounted.
+Errors such as the following were being seen:
 
-Fixes: http://tracker.ceph.com/issues/8979
+XFS (sdb3): Mounting V5 Filesystem
+XFS (sdb3): Starting recovery (logdev: internal)
+XFS (sdb3): Metadata CRC error detected at xfs_agf_read_verify+0x5a/0x100 [xfs], block 0x1
+XFS (sdb3): Unmount and run xfs_repair
+XFS (sdb3): First 64 bytes of corrupted metadata buffer:
+ffff880136ffd600: 58 41 47 46 00 00 00 01 00 00 00 00 00 0f aa 40  XAGF...........@
+ffff880136ffd610: 00 02 6d 53 00 02 77 f8 00 00 00 00 00 00 00 01  ..mS..w.........
+ffff880136ffd620: 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 03  ................
+ffff880136ffd630: 00 00 00 04 00 08 81 d0 00 08 81 a7 00 00 00 00  ................
+XFS (sdb3): metadata I/O error: block 0x1 ("xfs_trans_read_buf_map") error 74 numblks 1
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
+The errors were typically being seen in AGF, AGI and their related
+btree block buffers some time after log recovery had run. Often it
+wasn't until later subsequent mounts that the problem was
+discovered. The common symptom was a buffer with the correct
+contents, but a CRC and an LSN that matched an older version of the
+contents.
+
+Some debug added to _xfs_buf_ioapply() indicated that buffers were
+being written without verifiers attached to them from log recovery,
+and Jan Kara isolated the cause to log recovery readahead an dit's
+interactions with buffers that had a more recent LSN on disk than
+the transaction being recovered. In this case, the buffer did not
+get a verifier attached, and os when the second phase of log
+recovery ran and recovered EFIs and unlinked inodes, the buffers
+were modified and written without the verifier running. Hence they
+had up to date contents, but stale LSNs and CRCs.
+
+Fix it by attaching verifiers to buffers we skip due to future LSN
+values so they don't escape into the buffer cache without the
+correct verifier attached.
+
+This patch is based on analysis and a patch from Jan Kara.
+
+Reported-by: Jan Kara <jack@suse.cz>
+Reported-by: Fanael Linithien <fanael4@gmail.com>
+Reported-by: Grozdan <neutrino8@gmail.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ceph/auth_x.c | 64 +++++++++++++++++++++++++------------------------------
- 1 file changed, 29 insertions(+), 35 deletions(-)
+ fs/xfs/xfs_log_recover.c | 51 +++++++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 20 deletions(-)
 
-diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
-index 0eb146dce1aa..de6662b14e1f 100644
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -13,8 +13,6 @@
- #include "auth_x.h"
- #include "auth_x_protocol.h"
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 39797490a1f1..5b166a07d55e 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -2121,6 +2121,17 @@ xlog_recover_validate_buf_type(
+ 	__uint16_t		magic16;
+ 	__uint16_t		magicda;
  
--#define TEMP_TICKET_BUF_LEN	256
--
- static void ceph_x_validate_tickets(struct ceph_auth_client *ac, int *pneed);
- 
- static int ceph_x_is_authenticated(struct ceph_auth_client *ac)
-@@ -64,7 +62,7 @@ static int ceph_x_encrypt(struct ceph_crypto_key *secret,
- }
- 
- static int ceph_x_decrypt(struct ceph_crypto_key *secret,
--			  void **p, void *end, void *obuf, size_t olen)
-+			  void **p, void *end, void **obuf, size_t olen)
- {
- 	struct ceph_x_encrypt_header head;
- 	size_t head_len = sizeof(head);
-@@ -75,8 +73,14 @@ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
- 		return -EINVAL;
- 
- 	dout("ceph_x_decrypt len %d\n", len);
--	ret = ceph_decrypt2(secret, &head, &head_len, obuf, &olen,
--			    *p, len);
-+	if (*obuf == NULL) {
-+		*obuf = kmalloc(len, GFP_NOFS);
-+		if (!*obuf)
-+			return -ENOMEM;
-+		olen = len;
-+	}
++	/*
++	 * We can only do post recovery validation on items on CRC enabled
++	 * fielsystems as we need to know when the buffer was written to be able
++	 * to determine if we should have replayed the item. If we replay old
++	 * metadata over a newer buffer, then it will enter a temporarily
++	 * inconsistent state resulting in verification failures. Hence for now
++	 * just avoid the verification stage for non-crc filesystems
++	 */
++	if (!xfs_sb_version_hascrc(&mp->m_sb))
++		return;
 +
-+	ret = ceph_decrypt2(secret, &head, &head_len, *obuf, &olen, *p, len);
- 	if (ret)
- 		return ret;
- 	if (head.struct_v != 1 || le64_to_cpu(head.magic) != CEPHX_ENC_MAGIC)
-@@ -131,18 +135,19 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 	magic32 = be32_to_cpu(*(__be32 *)bp->b_addr);
+ 	magic16 = be16_to_cpu(*(__be16*)bp->b_addr);
+ 	magicda = be16_to_cpu(info->magic);
+@@ -2156,8 +2167,6 @@ xlog_recover_validate_buf_type(
+ 		bp->b_ops = &xfs_agf_buf_ops;
+ 		break;
+ 	case XFS_BLFT_AGFL_BUF:
+-		if (!xfs_sb_version_hascrc(&mp->m_sb))
+-			break;
+ 		if (magic32 != XFS_AGFL_MAGIC) {
+ 			xfs_warn(mp, "Bad AGFL block magic!");
+ 			ASSERT(0);
+@@ -2190,10 +2199,6 @@ xlog_recover_validate_buf_type(
+ #endif
+ 		break;
+ 	case XFS_BLFT_DINO_BUF:
+-		/*
+-		 * we get here with inode allocation buffers, not buffers that
+-		 * track unlinked list changes.
+-		 */
+ 		if (magic16 != XFS_DINODE_MAGIC) {
+ 			xfs_warn(mp, "Bad INODE block magic!");
+ 			ASSERT(0);
+@@ -2273,8 +2278,6 @@ xlog_recover_validate_buf_type(
+ 		bp->b_ops = &xfs_attr3_leaf_buf_ops;
+ 		break;
+ 	case XFS_BLFT_ATTR_RMT_BUF:
+-		if (!xfs_sb_version_hascrc(&mp->m_sb))
+-			break;
+ 		if (magic32 != XFS_ATTR3_RMT_MAGIC) {
+ 			xfs_warn(mp, "Bad attr remote magic!");
+ 			ASSERT(0);
+@@ -2381,16 +2384,7 @@ xlog_recover_do_reg_buffer(
+ 	/* Shouldn't be any more regions */
+ 	ASSERT(i == item->ri_total);
  
- static int process_one_ticket(struct ceph_auth_client *ac,
- 			      struct ceph_crypto_key *secret,
--			      void **p, void *end,
--			      void *dbuf, void *ticket_buf)
-+			      void **p, void *end)
- {
- 	struct ceph_x_info *xi = ac->private;
- 	int type;
- 	u8 tkt_struct_v, blob_struct_v;
- 	struct ceph_x_ticket_handler *th;
-+	void *dbuf = NULL;
- 	void *dp, *dend;
- 	int dlen;
- 	char is_enc;
- 	struct timespec validity;
- 	struct ceph_crypto_key old_key;
-+	void *ticket_buf = NULL;
- 	void *tp, *tpend;
- 	struct ceph_timespec new_validity;
- 	struct ceph_crypto_key new_session_key;
-@@ -167,8 +172,7 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 	}
- 
- 	/* blob for me */
--	dlen = ceph_x_decrypt(secret, p, end, dbuf,
--			      TEMP_TICKET_BUF_LEN);
-+	dlen = ceph_x_decrypt(secret, p, end, &dbuf, 0);
- 	if (dlen <= 0) {
- 		ret = dlen;
- 		goto out;
-@@ -195,20 +199,25 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 
- 	/* ticket blob for service */
- 	ceph_decode_8_safe(p, end, is_enc, bad);
--	tp = ticket_buf;
- 	if (is_enc) {
- 		/* encrypted */
- 		dout(" encrypted ticket\n");
--		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
--				      TEMP_TICKET_BUF_LEN);
-+		dlen = ceph_x_decrypt(&old_key, p, end, &ticket_buf, 0);
- 		if (dlen < 0) {
- 			ret = dlen;
- 			goto out;
- 		}
-+		tp = ticket_buf;
- 		dlen = ceph_decode_32(&tp);
- 	} else {
- 		/* unencrypted */
- 		ceph_decode_32_safe(p, end, dlen, bad);
-+		ticket_buf = kmalloc(dlen, GFP_NOFS);
-+		if (!ticket_buf) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		tp = ticket_buf;
- 		ceph_decode_need(p, end, dlen, bad);
- 		ceph_decode_copy(p, ticket_buf, dlen);
- 	}
-@@ -237,6 +246,8 @@ static int process_one_ticket(struct ceph_auth_client *ac,
- 	xi->have_keys |= th->service;
- 
- out:
-+	kfree(ticket_buf);
-+	kfree(dbuf);
- 	return ret;
- 
- bad:
-@@ -249,21 +260,10 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
- 				    void *buf, void *end)
- {
- 	void *p = buf;
--	char *dbuf;
--	char *ticket_buf;
- 	u8 reply_struct_v;
- 	u32 num;
- 	int ret;
- 
--	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
--	if (!dbuf)
--		return -ENOMEM;
--
--	ret = -ENOMEM;
--	ticket_buf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
--	if (!ticket_buf)
--		goto out_dbuf;
--
- 	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
- 	if (reply_struct_v != 1)
- 		return -EINVAL;
-@@ -272,22 +272,15 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
- 	dout("%d tickets\n", num);
- 
- 	while (num--) {
--		ret = process_one_ticket(ac, secret, &p, end,
--					 dbuf, ticket_buf);
-+		ret = process_one_ticket(ac, secret, &p, end);
- 		if (ret)
--			goto out;
-+			return ret;
- 	}
- 
--	ret = 0;
--out:
--	kfree(ticket_buf);
--out_dbuf:
--	kfree(dbuf);
--	return ret;
-+	return 0;
- 
- bad:
--	ret = -EINVAL;
--	goto out;
-+	return -EINVAL;
+-	/*
+-	 * We can only do post recovery validation on items on CRC enabled
+-	 * fielsystems as we need to know when the buffer was written to be able
+-	 * to determine if we should have replayed the item. If we replay old
+-	 * metadata over a newer buffer, then it will enter a temporarily
+-	 * inconsistent state resulting in verification failures. Hence for now
+-	 * just avoid the verification stage for non-crc filesystems
+-	 */
+-	if (xfs_sb_version_hascrc(&mp->m_sb))
+-		xlog_recover_validate_buf_type(mp, bp, buf_f);
++	xlog_recover_validate_buf_type(mp, bp, buf_f);
  }
  
- static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
-@@ -603,13 +596,14 @@ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
- 	struct ceph_x_ticket_handler *th;
- 	int ret = 0;
- 	struct ceph_x_authorize_reply reply;
-+	void *preply = &reply;
- 	void *p = au->reply_buf;
- 	void *end = p + sizeof(au->reply_buf);
+ /*
+@@ -2625,12 +2619,29 @@ xlog_recover_buffer_pass2(
+ 	}
  
- 	th = get_ticket_handler(ac, au->service);
- 	if (IS_ERR(th))
- 		return PTR_ERR(th);
--	ret = ceph_x_decrypt(&th->session_key, &p, end, &reply, sizeof(reply));
-+	ret = ceph_x_decrypt(&th->session_key, &p, end, &preply, sizeof(reply));
- 	if (ret < 0)
- 		return ret;
- 	if (ret != sizeof(reply))
+ 	/*
+-	 * recover the buffer only if we get an LSN from it and it's less than
++	 * Recover the buffer only if we get an LSN from it and it's less than
+ 	 * the lsn of the transaction we are replaying.
++	 *
++	 * Note that we have to be extremely careful of readahead here.
++	 * Readahead does not attach verfiers to the buffers so if we don't
++	 * actually do any replay after readahead because of the LSN we found
++	 * in the buffer if more recent than that current transaction then we
++	 * need to attach the verifier directly. Failure to do so can lead to
++	 * future recovery actions (e.g. EFI and unlinked list recovery) can
++	 * operate on the buffers and they won't get the verifier attached. This
++	 * can lead to blocks on disk having the correct content but a stale
++	 * CRC.
++	 *
++	 * It is safe to assume these clean buffers are currently up to date.
++	 * If the buffer is dirtied by a later transaction being replayed, then
++	 * the verifier will be reset to match whatever recover turns that
++	 * buffer into.
+ 	 */
+ 	lsn = xlog_recover_get_buf_lsn(mp, bp);
+-	if (lsn && lsn != -1 && XFS_LSN_CMP(lsn, current_lsn) >= 0)
++	if (lsn && lsn != -1 && XFS_LSN_CMP(lsn, current_lsn) >= 0) {
++		xlog_recover_validate_buf_type(mp, bp, buf_f);
+ 		goto out_release;
++	}
+ 
+ 	if (buf_f->blf_flags & XFS_BLF_INODE_BUF) {
+ 		error = xlog_recover_do_inode_buffer(mp, item, bp, buf_f);
 -- 
 2.1.0
 
