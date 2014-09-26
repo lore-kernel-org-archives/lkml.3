@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259AbaIZU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:56:24 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63779 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaIZU4W (ORCPT
+	id S1756273AbaIZU6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:58:21 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48134 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755979AbaIZU6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:56:22 -0400
-Message-ID: <5425D2F0.2050207@gmail.com>
-Date: Fri, 26 Sep 2014 14:56:16 -0600
-From: David Ahern <lxhacker68@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: nicolas.dichtel@6wind.com, Cong Wang <cwang@twopensource.com>,
-        netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
+	Fri, 26 Sep 2014 16:58:20 -0400
+Date: Fri, 26 Sep 2014 21:58:17 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joachim Eastwood <manabian@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>	<5422F0F4.6000709@6wind.com>	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>	<5423D80B.9060500@6wind.com>	<CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com>	<54256CCB.4000709@6wind.com> <5425BB3E.10700@gmail.com>	<87mw9myy4n.fsf@x220.int.ebiederm.org> <5425C22F.7050301@gmail.com> <87tx3uun4q.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87tx3uun4q.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs fixes
+Message-ID: <20140926205817.GQ7996@ZenIV.linux.org.uk>
+References: <20140914194738.GS7996@ZenIV.linux.org.uk>
+ <CAGhQ9Vx26RQWErODdJ_fV5UnAQ8wLre_x-4E6N_vuP0uExyKgw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGhQ9Vx26RQWErODdJ_fV5UnAQ8wLre_x-4E6N_vuP0uExyKgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/14, 2:45 PM, Eric W. Biederman wrote:
-> Ah.  You are talking about a system with 2k namespaces and 20-50
-> services providing services in all 2k namespaces. Something completely
-> different than the case of quagga you mentioned earlier.
+On Fri, Sep 26, 2014 at 10:46:14PM +0200, Joachim Eastwood wrote:
+> On 14 September 2014 21:47, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > double iput() on failure exit in lustre, racy removal of spliced dentries
+> > from ->s_anon in __d_materialise_dentry() plus a bunch of assorted RCU pathwalk
+> > fixes.  Please, pull from the usual place -
+> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+> >
+> > Shortlog:
+> > Al Viro (5):
+> >       [fix] lustre: d_make_root() does iput() on dentry allocation failure
+> >       move the call of __d_drop(anon) into __d_materialise_unique(dentry, anon)
+> >       fix bogus read_seqretry() checks introduced in b37199e
+> >       don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
+> >       be careful with nd->inode in path_init() and follow_dotdot_rcu()
+> 
+> Hi,
+> 
+> Commit 4023bfc9f351a7994 "be careful with nd->inode in path_init() and
+> follow_dotdot_rcu(), seem to hang my ARM no-MMU platform when mounting
+> the ramdisk.
+> 
+> 3.17-rc4 - works
+> 3.17-rc5 - works with 4023bfc9f351a7994 reverted.
+> 
+> Boot log with from rc5:
+> [ 5.810000] TCP: cubic registered
+> [ 5.820000] NET: Registered protocol family 17
+> [ 5.860000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+> [ 5.910000] mmc_host mmc0: Bus speed (slot 0) = 12000000Hz (slot req
+> 25000000Hz, actual 12000000HZ div = 0)
+> [ 5.930000] mmc0: new SDHC card at address 0007
+> [ 5.950000] mmcblk0: mmc0:0007 SD08G 7.42 GiB
+> [ 6.150000] clk: Not disabling unused clocks
+> [ 81.240000] random: nonblocking pool is initialized
+> 
+> And there it just hangs it seems.
+> 
+> 
+> With patch reverted
+> [ 5.810000] TCP: cubic registered
+> [ 5.820000] NET: Registered protocol family 17
+> [ 5.850000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+> [ 6.100000] clk: Not disabling unused clocks
+> [ 6.110000] RAMDISK: gzip image found at block 0
+> [ 9.590000] VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
+> [ 9.600000] devtmpfs: mounted
+> [ 9.610000] Freeing unused kernel memory: 68K (281e5000 - 281f6000)
+> 
+> And then user space starts.
 
-Not at all. The earlier quagga example was a starting point on the 
-bigger topic -- inefficiencies of namespaces as VRFs. In all of the 
-products I have worked on there is always more than 1 service running on 
-the system.
+*blink*  What happens to mmc-related messages on successful boot?  And what
+in that commit could've possibly lead to those not being produced?
 
-> But again this has nothing do with the peer netns work.  So if you have
-> something practical to contribute please start a new thread.
+Another question: what happens if you revert a half of that commit?  There
+are two separate parts, easy to isolate - one in follow_dotdot_rcu(), another
+in path_init().  They deal with similar problems, but they are independent
+from each other; which one is triggering that crap?
 
-Sure, I'll start a new thread.
-
-Thanks,
-David
+Al, really mystified...
