@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963AbaIZRxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:53:15 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58652 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754703AbaIZRxN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:53:13 -0400
-Message-ID: <1411753991.7866.69.camel@x220>
-Subject: [PATCH] [TRIVIAL] PCI: Fix comment typo 'COMFIG_PM_OPS'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 26 Sep 2014 19:53:11 +0200
+	id S1755976AbaIZRx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:53:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754703AbaIZRx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:53:26 -0400
+Message-ID: <1411753981.2739.16.camel@redhat.com>
+Subject: Re: [PATCH v2] next: openrisc: Fix build
+From: Eric Paris <eparis@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-next@vger.kernel.org,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 26 Sep 2014 13:53:01 -0400
+In-Reply-To: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
+References: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 17:53:11.0979 (UTC) FILETIME=[BD43FFB0:01CFD9B2]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Build tested only.
+Would you like me to carry this in the audit tree, since I'm the one who
+broke it?
 
- drivers/pci/pci-driver.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+-Eric
 
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 2b3c89425bb5..3c6ba623c325 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -1231,11 +1231,11 @@ static const struct dev_pm_ops pci_dev_pm_ops = {
- 
- #define PCI_PM_OPS_PTR	(&pci_dev_pm_ops)
- 
--#else /* !COMFIG_PM_OPS */
-+#else /* !CONFIG_PM */
- 
- #define PCI_PM_OPS_PTR	NULL
- 
--#endif /* !COMFIG_PM_OPS */
-+#endif /* !CONFIG_PM */
- 
- /**
-  * __pci_register_driver - register a new pci driver
--- 
-1.9.3
+On Fri, 2014-09-26 at 09:05 -0700, Guenter Roeck wrote:
+> openrisc:defconfig fails to build in next-20140926 with the following error.
+> 
+> In file included from arch/openrisc/kernel/signal.c:31:0:
+> ./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
+> ./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
+> 
+> Fix by moving EM_OPENRISC to include/uapi/linux/elf-em.h.
+> 
+> Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2: Only move EM_OPENRISC.
+> 
+> Another possible solution for the problem would be to include asm/elf.h
+> in arch/openrisc/kernel/signal.c. I had actually submitted a patch with
+> that fix back in August (maybe that is where I remembered the problem from).
+> Wonder what happened with that patch.
+> 
+> Would it make sense to drop EM_OR32 and replace it with EM_OPENRISC where
+> it is used ? binutils seems to suggest that EM_OPENRISC is the "official"
+> definition.
+> 
+>  arch/openrisc/include/uapi/asm/elf.h | 3 +--
+>  include/uapi/linux/elf-em.h          | 1 +
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
+> index f02ea58..8884276 100644
+> --- a/arch/openrisc/include/uapi/asm/elf.h
+> +++ b/arch/openrisc/include/uapi/asm/elf.h
+> @@ -55,9 +55,8 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
+>  /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
+>  typedef unsigned long elf_fpregset_t;
+>  
+> -/* This should be moved to include/linux/elf.h */
+> +/* EM_OPENRISC is defined in linux/elf-em.h */
+>  #define EM_OR32         0x8472
+> -#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
+>  
+>  /*
+>   * These are used to set parameters in the core dumps.
+> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
+> index 01529bd..aa90bc9 100644
+> --- a/include/uapi/linux/elf-em.h
+> +++ b/include/uapi/linux/elf-em.h
+> @@ -32,6 +32,7 @@
+>  #define EM_V850		87	/* NEC v850 */
+>  #define EM_M32R		88	/* Renesas M32R */
+>  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
+> +#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
+>  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
+>  #define EM_TI_C6000	140	/* TI C6X DSPs */
+>  #define EM_AARCH64	183	/* ARM 64 bit */
+
 
