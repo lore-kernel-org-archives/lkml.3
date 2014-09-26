@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaIZTOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:14:06 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50325 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457AbaIZTOE (ORCPT
+	id S1755281AbaIZTO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:14:27 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52612 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874AbaIZTOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:14:04 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Cc: Randy Dunlap <rdunlap@infradead.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3] init: Add strictinit to disable init= fallbacks
-Date: Fri, 26 Sep 2014 12:13:57 -0700
-Message-Id: <138a894f22366da4173c8a4f2bfb0e670c66dbec.1411758752.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
+	Fri, 26 Sep 2014 15:14:25 -0400
+Date: Fri, 26 Sep 2014 12:14:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [git pull] Input updates for 3.17-rc6
+Message-ID: <20140926191421.GA14589@core.coreip.homeip.net>
+References: <20140926180111.GA3911@core.coreip.homeip.net>
+ <CA+55aFzD0Vo2c74_M-k-0Q6kGRd8btYDM34vnYA-UOP6Mko2QA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzD0Vo2c74_M-k-0Q6kGRd8btYDM34vnYA-UOP6Mko2QA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a user puts init=/whatever on the command line and /whatever
-can't be run, then the kernel will try a few default options before
-giving up.  If init=/whatever came from a bootloader prompt, then
-this probably makes sense.  On the other hand, if it comes from a
-script (e.g. a tool like virtme or perhaps a future kselftest
-script), then the fallbacks are likely to exist, but they'll do the
-wrong thing.  For example, they might unexpectedly invoke systemd.
+On Fri, Sep 26, 2014 at 11:19:51AM -0700, Linus Torvalds wrote:
+> On Fri, Sep 26, 2014 at 11:01 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >
+> > to receive updates for the input subsystem. You will get a small fixup to
+> > i8042 adding Asus X450LCP to the nomux list.
+> 
+> Side note: I'm wondering how painful it would be to just make nomux
+> the default.
+> 
+> I think it's getting to be a legacy issue, since the traditional
+> reason for it (afaik) is just having both an external PS/2 port _and_
+> a touchpad connnected to the same controller. And even when that
+> happens, it seems that as often as not, the bug reports in this area
+> have been about the touchpad _not_ working due to us incorrectly
+> thinking it's muxed.
+> 
+> I dunno. Maybe mux mode is used more than I think it is, and it would
+> cause tons of problems. But I do find myself wondering whether we'd be
+> better off not doing mux by default, and making the DMI check instead
+> check for systems that *do* want muxing.
+> 
+> Hmm? Am I just being crazy?
 
-This adds a new option called strictinit.  If init= and strictinit
-are both set, and the init= binary is not executable, then the
-kernel will panic immediately.  If strictinit is set but init= is
-not set, then strictinit will have no effect, because the only real
-alternative would be to panic regardless of the contents of the root
-fs.
+Not a all. In fact, we've been discussing it recently and I am going to flip
+the flag for 3.18. I really think that number users with laptops correctly
+implementing MUX and who are also using docking stations with external PS/2
+mice) is miniscule (note that we are not talking about users who prefer
+external mouse - you don't need MUX for that - we are talking about users who
+want native touchpad protocol and also external mouse - at the same time).
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- Documentation/kernel-parameters.txt |  8 ++++++++
- init/main.c                         | 16 ++++++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 10d51c2f10d7..1576273edce6 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3236,6 +3236,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	stifb=		[HW]
- 			Format: bpp:<bpp1>[:<bpp2>[:<bpp3>...]]
- 
-+	strictinit	[KNL,BOOT]
-+			Normally, if the kernel can't find the init binary
-+			specified by rdinit= and/or init=, then it will
-+			try several fallbacks.  If strictinit is set
-+			and the value specified by init= does not work,
-+			then the kernel will panic instead.
-+			This option makes no sense if init= is not specified.
-+
- 	sunrpc.min_resvport=
- 	sunrpc.max_resvport=
- 			[NFS,SUNRPC]
-diff --git a/init/main.c b/init/main.c
-index bb1aed928f21..2ae0f2776155 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -131,6 +131,7 @@ static char *initcall_command_line;
- 
- static char *execute_command;
- static char *ramdisk_execute_command;
-+static bool strictinit;
- 
- /*
-  * Used to generate warnings if static_key manipulation functions are used
-@@ -347,6 +348,13 @@ static int __init rdinit_setup(char *str)
- }
- __setup("rdinit=", rdinit_setup);
- 
-+static int __init strictinit_setup(char *str)
-+{
-+	strictinit = true;
-+	return 1;
-+}
-+__setup("strictinit", strictinit_setup);
-+
- #ifndef CONFIG_SMP
- static const unsigned int setup_max_cpus = NR_CPUS;
- #ifdef CONFIG_X86_LOCAL_APIC
-@@ -960,8 +968,12 @@ static int __ref kernel_init(void *unused)
- 		ret = run_init_process(execute_command);
- 		if (!ret)
- 			return 0;
--		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
--			execute_command, ret);
-+		if (strictinit)
-+			panic("Requested init %s failed (error %d) and strictinit was set.",
-+			      execute_command, ret);
-+		else
-+			pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
-+			       execute_command, ret);
- 	}
- 	if (!try_to_run_init_process("/sbin/init") ||
- 	    !try_to_run_init_process("/etc/init") ||
 -- 
-1.9.3
-
+Dmitry
