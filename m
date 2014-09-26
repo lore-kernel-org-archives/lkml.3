@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaIZBzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 21:55:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:57192 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752672AbaIZBzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 21:55:46 -0400
-Date: Fri, 26 Sep 2014 11:55:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Jiancheng Xue <xuejiancheng@huawei.com>, Wei Xu <xuwei5@hisilicon.com>
-Subject: linux-next: build failure after merge of the arm-soc tree
-Message-ID: <20140926115539.6873630b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753179AbaIZB4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 21:56:09 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:18447 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986AbaIZBzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 21:55:50 -0400
+Message-ID: <5424C77B.2060807@huawei.com>
+Date: Fri, 26 Sep 2014 09:55:07 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/POjXz5pledPf3.4rRcoCSvW"; protocol="application/pgp-signature"
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH v2 02/22] PCI/MSI: Remove useless bus->msi assignment
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-3-git-send-email-wangyijing@huawei.com> <20140925070601.GF12423@ulmo>
+In-Reply-To: <20140925070601.GF12423@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.5424C792.00B0,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 92fc8dcb982db260fa22475eeee18a7a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/POjXz5pledPf3.4rRcoCSvW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014/9/25 15:06, Thierry Reding wrote:
+> On Thu, Sep 25, 2014 at 11:14:12AM +0800, Yijing Wang wrote:
+>> Currently, PCI drivers will initialize bus->msi in
+>> pcibios_add_bus(). pcibios_add_bus() will be called
+>> in every pci bus initialization. So the bus->msi
+>> assignment in pci_alloc_child_bus() is useless.
+> 
+> I think this should be the other way around. The default should be to
+> inherit bus->msi from the parent. That way drivers don't typically have
+> to do it, yet they can still opt to override it if they need to.
+> 
+> For Tegra for example I think it would work if we assigned the MSI chip
+> to the root bus (in tegra_pcie_scan_bus()) and then have it propagated
+> to child busses in pci_alloc_child_bus() so that tegra_pcie_add_bus()
+> can be removed altogether.
 
-Hi all,
+Hi Thierry, thanks very much for your review and comments!
 
-After merging the arm-soc tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+Because pcibios_add_bus() and "child->msi = parent->msi;" in pci_alloc_child_bus()
+do the same thing. So I think we should use one and remove another. I like
+the latter.
 
-Error: arch/arm/boot/dts/hisi-x5hd2.dtsi:374.22-23 syntax error
-FATAL ERROR: Unable to parse input tree
+In addition, I consider several solutions to associate msi chip and PCI device.
 
-There are a series of new commits to this file today and I have no idea
-which one caused the problem.
+1. Add a msi_chip member in PCI arch sysdata to store the msi_chip pointer. Because
+all PCI devices under a PCI hostbridge always share the same msi chip, so every PCI device
+can find the msi chip by pci_bus->sysdata, but in this solution, we also need to add
+ARCH specific functions to extract msi chip from PCI arch sysdata, like pci_domain_nr().
+Then we can remove .add_bus() like tegra_pcie_add_bus() and the msi assignment in  pci_alloc_child_bus().
 
-I reverted:
+2. Remove .add_bus() functions, associate PCI root bus and msi chip after PCI root bus created,
+as you mentioned above. In this solution we need to associate PCI root bus and msi chip in all PCI
+hostbridge drivers, like in tegra_pcie_scan_bus().
 
-610bd8722ef4	"ARM: dts: hix5hd2: add wdg node"
-6868feb6dd97	"ARM: dts: hix5hd2: add gpio node"
-420a2d55f046	"ARM: dts: hix5hd2: add sata node"
-f16c7fb2f3ff	"ARM: dts: hix5hd2: add usb node"
-b196e1ca400d	"ARM: dts: hix5hd2: add mmc node"
-de8b6054780e	"ARM: dts: hix5hd2: add gmac node"
 
-which fixed the build problem.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+3. Introduce a global msi chip list, currently, only in arm, there maybe more than one type MSI chip,
+but in arm, we can find msi chip by PCI hostbridge platform device's of_node, Eg. use "msi-parent" property
+to find it. Or msi chip is integrated into PCI hostbridge, we can find msi chip by compare msi_chip->dev and
+PCI hostbridge's platform device's struct device *dev pointer. And because PCI hostbridge platform device pass
+to pci_create_root_bus() as the parent device, so every PCI devices can first find the platform device, then
+to find the msi chip, this solution looks a bit ugly, but we only associate pci hostbridge and msi chip, PCI child
+buses and devices do not have to know the msi chip details.
 
---Sig_/POjXz5pledPf3.4rRcoCSvW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+4. Last, in this series, introduced weak arch function arch_find_msi_chip(), it's the simplest one, because all platforms
+except arm, only one msi chip will exist in system.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+What do you think about this ?
 
-iQIcBAEBCAAGBQJUJMefAAoJEMDTa8Ir7ZwVUDEP/0hBYdLNrUoqm2CwnmmDB1B2
-c1F+Rx9LehDEne3LOE3e5WHFOmNuN3Xs7KOeNBSTUfxR5OIK+ovM1cb9BRULHj/H
-wL+c58//Hve/FIMdP7ou0s5xtLUOYhWv21rzuvH5TBFG6C3j+0c0OnsKAJgET8ue
-qxsvh/6zuTHWwtRhEqMBFBzUJZreVJXJVexE4o7Jmtsz90hDZoeFdv0j3U8iW8wI
-akVK5gTzANswe59DerS8aWs+1pgcbOWoS5MM3Sam7LlIEsw5Qtn6cOabF3BBUEAX
-fsrWwAxtSh+2wvykEJ6saveEovwy5X35WEchRDo5u8m2xm0ofqRLPosbns7gg86R
-rx/FB67rKoP976l67TlFNeqbv/SSy1yYAhKcPa59fTFVKV8GGle++hBmSHAhlO7r
-+8wEQErpzg4WwbxKIuNReNpbVh31QxxcQElDjcHTu5OVnz7t5hvvqAbmYqkknz2C
-aOzcQxARF0g9TbFt3n6jC8PUJ+MSOWh43jnegy0kxfI6mNspKtF3BMnzL52kUS58
-wMr4LFkOGjRgEy56VhCQA4s00KtSulUX5KyMxTC2sAp8aGB5hBvn0glqslN+sXvS
-dM0lQfLWBGFRysA3s3NjUbaR/FiMylsRIRxIjM0lsPdkVESvgQmbKiZ1R803oTSs
-4cDL5WEfqp41r4r9tpSM
-=9Ps4
------END PGP SIGNATURE-----
+Thanks!
+Yijing.
 
---Sig_/POjXz5pledPf3.4rRcoCSvW--
+> 
+> Thierry
+> 
+
+
+-- 
+Thanks!
+Yijing
+
