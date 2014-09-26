@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856AbaIZOzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:55:36 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48488 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaIZOzc (ORCPT
+	id S1756386AbaIZPHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:07:15 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:46140 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755455AbaIZPHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:55:32 -0400
-Message-ID: <54257E5D.5060600@mentor.com>
-Date: Fri, 26 Sep 2014 09:55:25 -0500
-From: Nathan Lynch <Nathan_Lynch@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 26 Sep 2014 11:07:12 -0400
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+X-Originating-IP: [2a01:e35:2434:4600:aca4:bf5e:39c6:55e8]
+In-Reply-To: <1411513877.24563.62.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-14-git-send-email-a.motakis@virtualopensystems.com> <1411513877.24563.62.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Fri, 26 Sep 2014 17:06:52 +0200
+Message-ID: <CAG8rG2xgXZsNMC-UrnjTmxAisO1gmboZXHMq1bi5Fm+VpZH-Ag@mail.gmail.com>
+Subject: Re: [PATCHv7 13/26] vfio: amba: add the VFIO for AMBA devices module
+ to Kconfig
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
         Will Deacon <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource
- name if CP15 unavailable
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com> <54250FFE.2050605@linaro.org>
-In-Reply-To: <54250FFE.2050605@linaro.org>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On 09/26/2014 02:04 AM, Daniel Lezcano wrote:
-> On 09/18/2014 04:59 PM, Nathan Lynch wrote:
->> The arm and arm64 VDSOs need CP15 access to the architected counter.
->> If this is unavailable (which is allowed by ARM v7), indicate this by
->> changing the clocksource name to "arch_mem_counter" before registering
->> the clocksource.
+On Wed, Sep 24, 2014 at 1:11 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+>> Enable building the VFIO AMBA driver. VFIO_AMBA depends on VFIO_PLATFORM,
+>> since it is sharing a portion of the code, and it is essentially implemented
+>> as a platform device whose resources are discovered via AMBA specific APIs
+>> in the kernel.
 >>
->> Suggested by Stephen Boyd.
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> ---
+>>  drivers/vfio/platform/Kconfig  | 10 ++++++++++
+>>  drivers/vfio/platform/Makefile |  4 ++++
+>>  2 files changed, 14 insertions(+)
 >>
->> Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
->> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> Hi Nathan,
-> 
-> is it possible to have the acked-by of the different maintainers for the
-> other patches ?
+>> diff --git a/drivers/vfio/platform/Kconfig b/drivers/vfio/platform/Kconfig
+>> index c51af17..8b97786 100644
+>> --- a/drivers/vfio/platform/Kconfig
+>> +++ b/drivers/vfio/platform/Kconfig
+>> @@ -7,3 +7,13 @@ config VFIO_PLATFORM
+>>         framework.
+>>
+>>         If you don't know what to do here, say N.
+>> +
+>> +config VFIO_AMBA
+>> +     tristate "VFIO support for AMBA devices"
+>> +     depends on VFIO && VFIO_PLATFORM && EVENTFD && ARM_AMBA
+>
+> nit, VFIO_PLATFORM already depends on VFIO && EVENTFD
 
-As Will said, he acked the series.
+Ack
 
-> Are these patches targeted to be merged for 3.18 ?
+>
+>> +     help
+>> +       Support for ARM AMBA devices with VFIO. This is required to make
+>> +       use of ARM AMBA devices present on the system using the VFIO
+>> +       framework.
+>> +
+>> +       If you don't know what to do here, say N.
+>> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+>> index 279862b..1957170 100644
+>> --- a/drivers/vfio/platform/Makefile
+>> +++ b/drivers/vfio/platform/Makefile
+>> @@ -2,3 +2,7 @@
+>>  vfio-platform-y := vfio_platform.o vfio_platform_common.o
+>>
+>>  obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
+>> +
+>> +vfio-amba-y := vfio_amba.o
+>> +
+>> +obj-$(CONFIG_VFIO_AMBA) += vfio-amba.o
+>
+>
+>
 
-3.18 is preferable, if it's not too late.  But nothing will break if it
-needs to wait.
 
-Thanks,
-Nathan
 
+-- 
+Antonios Motakis
+Virtual Open Systems
