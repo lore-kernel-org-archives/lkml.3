@@ -1,154 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaIZDUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:20:32 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:60714 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069AbaIZDU2 (ORCPT
+	id S1753574AbaIZDVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:21:37 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45352 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875AbaIZDVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:20:28 -0400
-Message-ID: <5424DB77.7000008@roeck-us.net>
-Date: Thu, 25 Sep 2014 20:20:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 25 Sep 2014 23:21:35 -0400
+Date: Thu, 25 Sep 2014 20:21:32 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        David Woodhouse <david.woodhouse@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
+ properties interface
+Message-ID: <20140926032131.GC40523@vmdeb7>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2809308.3y5s7TV5Ip@wuerfel>
+ <D04730D8.A9DB0%dvhart@linux.intel.com>
+ <6744174.JquHLt80n3@wuerfel>
 MIME-Version: 1.0
-To: Josh Cartwright <joshc@codeaurora.org>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-CC: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] watchdog: qcom: register a restart notifier
-References: <cover.1411684967.git.joshc@codeaurora.org> <1baf370c79a9bd7d57214c732863375374da2e0a.1411684967.git.joshc@codeaurora.org>
-In-Reply-To: <1baf370c79a9bd7d57214c732863375374da2e0a.1411684967.git.joshc@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.5424DB7B.00C6,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 25
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6744174.JquHLt80n3@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 03:51 PM, Josh Cartwright wrote:
-> The WDT's BITE_TIME warm-reset behavior can be leveraged as a last
-> resort mechanism for triggering chip reset.  Usually, other restart
-> methods (such as PS_HOLD) are preferrable for issuing a more complete
-> reset of the chip.  As such, keep the priority of the watchdog notifier
-> low.
->
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+On Wed, Sep 24, 2014 at 11:12:36AM +0200, Arnd Bergmann wrote:
+> On Tuesday 23 September 2014 14:15:47 Darren Hart wrote:
+> > Arnd, I think you meant:
+> > 
+> >         Return gpio_leds_create_acpi(pdev) ?
+> 
+> Yes, sorry for the confusion on my part.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Hi Arnd,
 
-> ---
->   drivers/watchdog/qcom-wdt.c | 38 ++++++++++++++++++++++++++++++++++++++
->   1 file changed, 38 insertions(+)
->
-> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
-> index 68db322..aa85618 100644
-> --- a/drivers/watchdog/qcom-wdt.c
-> +++ b/drivers/watchdog/qcom-wdt.c
-> @@ -11,11 +11,13 @@
->    *
->    */
->   #include <linux/clk.h>
-> +#include <linux/delay.h>
->   #include <linux/io.h>
->   #include <linux/kernel.h>
->   #include <linux/module.h>
->   #include <linux/of.h>
->   #include <linux/platform_device.h>
-> +#include <linux/reboot.h>
->   #include <linux/watchdog.h>
->
->   #define WDT_RST		0x0
-> @@ -26,6 +28,7 @@ struct qcom_wdt {
->   	struct watchdog_device	wdd;
->   	struct clk		*clk;
->   	unsigned long		rate;
-> +	struct notifier_block	restart_nb;
->   	void __iomem		*base;
->   };
->
-> @@ -84,6 +87,32 @@ static const struct watchdog_info qcom_wdt_info = {
->   	.identity	= KBUILD_MODNAME,
->   };
->
-> +static int qcom_wdt_restart(struct notifier_block *nb, unsigned long action,
-> +			    void *data)
-> +{
-> +	struct qcom_wdt *wdt = container_of(nb, struct qcom_wdt, restart_nb);
-> +	u32 timeout;
-> +
-> +	/*
-> +	 * Trigger watchdog bite:
-> +	 *    Setup BITE_TIME to be 128ms, and enable WDT.
-> +	 */
-> +	timeout = 128 * wdt->rate / 1000;
-> +
-> +	writel(0, wdt->base + WDT_EN);
-> +	writel(1, wdt->base + WDT_RST);
-> +	writel(timeout, wdt->base + WDT_BITE_TIME);
-> +	writel(1, wdt->base + WDT_EN);
-> +
-> +	/*
-> +	 * Actually make sure the above sequence hits hardware before sleeping.
-> +	 */
-> +	wmb();
-> +
-> +	msleep(150);
-> +	return NOTIFY_DONE;
-> +}
-> +
->   static int qcom_wdt_probe(struct platform_device *pdev)
->   {
->   	struct qcom_wdt *wdt;
-> @@ -147,6 +176,14 @@ static int qcom_wdt_probe(struct platform_device *pdev)
->   		goto err_clk_unprepare;
->   	}
->
-> +	/*
-> +	 * WDT restart notifier has priority 0 (use as a last resort)
-> +	 */
-> +	wdt->restart_nb.notifier_call = qcom_wdt_restart;
-> +	ret = register_restart_handler(&wdt->restart_nb);
-> +	if (ret)
-> +		dev_err(&pdev->dev, "failed to setup restart handler\n");
-> +
->   	platform_set_drvdata(pdev, wdt);
->   	return 0;
->
-> @@ -159,6 +196,7 @@ static int qcom_wdt_remove(struct platform_device *pdev)
->   {
->   	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
->
-> +	unregister_restart_handler(&wdt->restart_nb);
->   	watchdog_unregister_device(&wdt->wdd);
->   	clk_disable_unprepare(wdt->clk);
->   	return 0;
->
+No problem, just wanted to make sure I knew what you meant.
 
+> 
+> > This is what we did early on to prototype this concept, but the problem
+> > with this approach we duplicate all of the creation code, which leads to
+> > maintenance errors, and is inconsistent with the goals of the _DSD which
+> > is to reuse the same schemas for ACPI and FDT. If we have separate pdata
+> > creation functions anyway, we are leaving much of the advantage of the
+> > common schema on the table. Namely the ability to reuse drivers relatively
+> > easily across firmware implementations. We don't want driver authors to
+> > have to care if it's ACPI or FDT.
+> 
+> I think we are absolutely in agreement about the basic principle here,
+> but disagree on how far we'd want to take the abstraction.
+> 
+> I got a little confused by the leds-gpio example, as I initially saw
+> that as generic infrastructure rather than a specific driver. As I just
+> wrote in my reply to Rafael, I generally believe we should strive to
+> have generic driver-side interfaces so drivers don't have to care,
+> but keep the differences in subsystem specific code.
+> 
+> > We would have preferred to have deprecated the of property interface in
+> > favor of the new generic device_property interface, but Grant specifically
+> > requested that we update drivers individually rather than all at once,
+> > which means we can't just kill the OF interface.
+> 
+> I don't actually have a strong opinion on that matter, having only the
+> device property interface does have some advantages as well, but I also
+> agree that we are somewhat better off not having to change all the drivers.
+> 
+> > We agreed to that, somewhat reluctantly as it adds more work in updating
+> > the drivers over time which will slow adoption, but I understand the
+> > desire not to make large sweeping changes due to the risk of breaking
+> > things inadvertently as we cannot expect to be able to test all of them.
+> > That said, I don't want to forget that the goal is to use the common
+> > interface over time as we convert individual drivers, and using the common
+> > interface means we need a common iterator function and that we not have fw
+> > implementation specific pdata create functions.
+> 
+> I've looked a bit closer at how the LED subsystem handles sub-nodes
+> in DT at the moment. It seems that there is some duplication between
+> the drivers already, as they all implement a variation of the sub-node
+> parsing code.
+> 
+> There are other non-LED drivers with similar loops, but they seem to be
+> either very specialized, or explicitly for DT abstractions, so I'm still
+> not convinced we need a generic loop-through-child-nodes-and-parse-properties
+> interface.
+> 
+> How would you feel about a more general way of probing LED, using
+> a new helper in the leds-core that iterates over the child nodes
+> and parses the standard properties but calls into a driver specific
+> callback to parse the specific properties?
+> It's probably much more work than your current approach, but it seems
+> to me that there is more to gain by solving the problem for LED
+> drivers in particular to cut down the per-driver duplication
+> at the same time as the per-firmware-interface duplication.
+> 
+> As a start, we could probably take the proposed device_for_each_child_node
+> and move that into the leds-core, changing the fw_dev_node argument
+> for an led_classdev with the addition of the of_node and acpi_object
+> members. It would still leave it up to the gpio-leds driver to do
+> 
+> 	if (led_cdev->of_node)
+> 		gpiod = devm_of_get_gpiod(led_cdev->of_node, ...);
+> 	else
+> 		gpiod = devm_acpi_get_gpiod(led_cdev->acpi_object, ...);
+
+So as Mika has pointed out, LEDs aren't the only ones affected. Several drivers
+will need to walk through non-device child nodes, and it seems to me that having
+a firmware-independent mechanism to do so benefits the drivers by both making
+them smaller and by increasing the reusability of new drivers and drivers
+updated to use the new API across platforms.
+
+I fear we might be entering bike shed territory as we seem to be repeating
+points now. Can you restate your concern with the interface and why this level
+of abstraction is worse for the kernel? I'm not seeing this point, so I'm not
+sure what to address in my response.
+
+Grant, Linus W? Thoughts?
+
+> 
+> but there seems little benefit in abstracting this because there is
+> only one driver that needs it.
+> 
+> 	Arnd
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
