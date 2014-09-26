@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861AbaIZRgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042AbaIZRgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:36:09 -0400
-Date: Fri, 26 Sep 2014 13:35:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: hpa@zytor.org, mingo@redhat.com, tglx@linutronix.de, hmh@hmh.eng.br,
-        boon.leong.ong@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Quark: Add if/else to setup_arch for Quark TLB bug
-Message-ID: <20140926173546.GA9931@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Bryan O'Donoghue <pure.logic@nexus-software.ie>, hpa@zytor.org,
-	mingo@redhat.com, tglx@linutronix.de, hmh@hmh.eng.br,
-	boon.leong.ong@intel.com, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1411751985-4351-1-git-send-email-pure.logic@nexus-software.ie>
+	id S1755899AbaIZRg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:36:56 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:57289 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276AbaIZRgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:36:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411751985-4351-1-git-send-email-pure.logic@nexus-software.ie>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACT4Y+aJ9htaruQ1Nn7+MSGwtNzRb_hfytQo98J1wq5N6oh1BA@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+	<1411562649-28231-12-git-send-email-a.ryabinin@samsung.com>
+	<CACT4Y+aJ9htaruQ1Nn7+MSGwtNzRb_hfytQo98J1wq5N6oh1BA@mail.gmail.com>
+Date: Fri, 26 Sep 2014 21:36:54 +0400
+Message-ID: <CAPAsAGxLxCxOayqcu=PbgFG6J7JEuL8J3+ouz94p_k0v0Hy=wA@mail.gmail.com>
+Subject: Re: [PATCH v3 11/13] kmemleak: disable kasan instrumentation for kmemleak
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 06:19:45PM +0100, Bryan O'Donoghue wrote:
- > Quark X1000 incorrectly advertises PGE. In later the stages of boot
- > specifically in early_init_intel we setup_clear_cpu_cap for PGE.
- > At this point in time cpu_has_pge() will still be true.
- > 
- > Use the boot_cpu_data to decide if __flush_tlb_all() or __flush_tlb()
- > should be called subsequent to loading CR3
- 
- > +	 * Flush the TLB after loading CR3
- > +	 *
- > +	 * Quark X1000 wrongly advertises PGE. Use boot_cpu_data to
- > +	 * to make sure the TLB is flushed correctly in the early
- > +	 * stage of setup_arch() for Quark X1000.
- > +	 * X86_FEATURE_PGE flag is only setup later stage at
- > +	 * early_cpu_init();
- > +	 */
- > +	if (boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
- > +		__flush_tlb();
+2014-09-26 21:10 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
+> Looks good to me.
+>
+> We can disable kasan instrumentation of this file as well.
+>
 
-This also needs a check for the cpu vendor, or this will apply
-the workaround on for eg, AMD K6-III's.
+Yes, but why? I don't think we need that.
 
-	Dave
- 
+> On Wed, Sep 24, 2014 at 5:44 AM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+>> kmalloc internally round up allocation size, and kmemleak
+>> uses rounded up size as object's size. This makes kasan
+>> to complain while kmemleak scans memory or calculates of object's
+>> checksum. The simplest solution here is to disable kasan.
+>>
+>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>> ---
+>>  mm/kmemleak.c | 6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+>> index 3cda50c..9bda1b3 100644
+>> --- a/mm/kmemleak.c
+>> +++ b/mm/kmemleak.c
+>> @@ -98,6 +98,7 @@
+>>  #include <asm/processor.h>
+>>  #include <linux/atomic.h>
+>>
+>> +#include <linux/kasan.h>
+>>  #include <linux/kmemcheck.h>
+>>  #include <linux/kmemleak.h>
+>>  #include <linux/memory_hotplug.h>
+>> @@ -1113,7 +1114,10 @@ static bool update_checksum(struct kmemleak_object *object)
+>>         if (!kmemcheck_is_obj_initialized(object->pointer, object->size))
+>>                 return false;
+>>
+>> +       kasan_disable_local();
+>>         object->checksum = crc32(0, (void *)object->pointer, object->size);
+>> +       kasan_enable_local();
+>> +
+>>         return object->checksum != old_csum;
+>>  }
+>>
+>> @@ -1164,7 +1168,9 @@ static void scan_block(void *_start, void *_end,
+>>                                                   BYTES_PER_POINTER))
+>>                         continue;
+>>
+>> +               kasan_disable_local();
+>>                 pointer = *ptr;
+>> +               kasan_enable_local();
+>>
+>>                 object = find_and_get_object(pointer, 1);
+>>                 if (!object)
+>> --
+>> 2.1.1
+>>
+>
+
+
+-- 
+Best regards,
+Andrey Ryabinin
