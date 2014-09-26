@@ -1,431 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170AbaIZKgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:36:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
+	id S1757180AbaIZKgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:36:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755AbaIZJp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754324AbaIZJp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:45:57 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 001/142] openrisc: Rework signal handling
-Date: Fri, 26 Sep 2014 11:43:32 +0200
-Message-Id: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 022/142] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
+Date: Fri, 26 Sep 2014 11:43:53 +0200
+Message-Id: <b7952dab2e21f48f2c5679d896fbfd6f57556e0f.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
 References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Bonn <jonas@southpole.se>
+From: Johan Hovold <johan@kernel.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 10f67dbf6add97751050f294d4c8e0cc1e5c2c23 upstream.
+commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
 
-The mainline signal handling code for OpenRISC has been buggy since day
-one with respect to syscall restart.  This patch significantly reworks
-the signal handling code:
+Add device id for Basic Micro ATOM Nano USB2Serial adapters.
 
-i)   Move the "work pending" loop to C code (borrowed from ARM arch)
-
-ii)  Allow a tracer to muck about with the IP and skip syscall restart
-     in that case (again, borrowed from ARM)
-
-iii) Make signal handling WRT syscall restart actually work
-
-v)   Make the signal handling code look more like that of other
-     architectures so that it's easier for others to follow
-
-Reported-by: Anders Nystrom <anders@southpole.se>
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
+Reported-by: Nicolas Alt <n.alt@mytum.de>
+Tested-by: Nicolas Alt <n.alt@mytum.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/openrisc/kernel/entry.S  |  59 +++++++------
- arch/openrisc/kernel/signal.c | 198 ++++++++++++++++++++++--------------------
- 2 files changed, 139 insertions(+), 118 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 1 +
+ drivers/usb/serial/ftdi_sio_ids.h | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/arch/openrisc/kernel/entry.S b/arch/openrisc/kernel/entry.S
-index d8a455ede5a7..fec8bf97d806 100644
---- a/arch/openrisc/kernel/entry.S
-+++ b/arch/openrisc/kernel/entry.S
-@@ -853,37 +853,44 @@ UNHANDLED_EXCEPTION(_vector_0x1f00,0x1f00)
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index bac979402ce3..b370cc8f0b96 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -152,6 +152,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 1e58d90a0b6c..3168a0191973 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -42,6 +42,8 @@
+ /* www.candapter.com Ewert Energy Systems CANdapter device */
+ #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
  
- /* ========================================================[ return ] === */
- 
-+_resume_userspace:
-+	DISABLE_INTERRUPTS(r3,r4)
-+	l.lwz	r4,TI_FLAGS(r10)
-+	l.andi	r13,r4,_TIF_WORK_MASK
-+	l.sfeqi	r13,0
-+	l.bf	_restore_all
-+	 l.nop
++#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
 +
- _work_pending:
--	/*
--	 * if (current_thread_info->flags & _TIF_NEED_RESCHED)
--	 *     schedule();
--	 */
--	l.lwz   r5,TI_FLAGS(r10)
--	l.andi	r3,r5,_TIF_NEED_RESCHED
--	l.sfnei r3,0
--	l.bnf   _work_notifysig
-+	l.lwz	r5,PT_ORIG_GPR11(r1)
-+	l.sfltsi r5,0
-+	l.bnf	1f
- 	 l.nop
--	l.jal   schedule
-+	l.andi	r5,r5,0
-+1:
-+	l.jal	do_work_pending
-+	 l.ori	r3,r1,0			/* pt_regs */
-+
-+	l.sfeqi	r11,0
-+	l.bf	_restore_all
- 	 l.nop
--	l.j	_resume_userspace
-+	l.sfltsi r11,0
-+	l.bnf	1f
- 	 l.nop
--
--/* Handle pending signals and notify-resume requests.
-- * do_notify_resume must be passed the latest pushed pt_regs, not
-- * necessarily the "userspace" ones.  Also, pt_regs->syscallno
-- * must be set so that the syscall restart functionality works.
-- */
--_work_notifysig:
--	l.jal	do_notify_resume
--	 l.ori	r3,r1,0		  /* pt_regs */
--
--_resume_userspace:
--	DISABLE_INTERRUPTS(r3,r4)
--	l.lwz	r3,TI_FLAGS(r10)
--	l.andi	r3,r3,_TIF_WORK_MASK
--	l.sfnei	r3,0
--	l.bf	_work_pending
-+	l.and	r11,r11,r0
-+	l.ori	r11,r11,__NR_restart_syscall
-+	l.j	_syscall_check_trace_enter
- 	 l.nop
-+1:
-+	l.lwz	r11,PT_ORIG_GPR11(r1)
-+	/* Restore arg registers */
-+	l.lwz	r3,PT_GPR3(r1)
-+	l.lwz	r4,PT_GPR4(r1)
-+	l.lwz	r5,PT_GPR5(r1)
-+	l.lwz	r6,PT_GPR6(r1)
-+	l.lwz	r7,PT_GPR7(r1)
-+	l.j	_syscall_check_trace_enter
-+	 l.lwz	r8,PT_GPR8(r1)
- 
- _restore_all:
- 	RESTORE_ALL
-diff --git a/arch/openrisc/kernel/signal.c b/arch/openrisc/kernel/signal.c
-index ae167f7e081a..c277ec82783d 100644
---- a/arch/openrisc/kernel/signal.c
-+++ b/arch/openrisc/kernel/signal.c
-@@ -28,24 +28,24 @@
- #include <linux/tracehook.h>
- 
- #include <asm/processor.h>
-+#include <asm/syscall.h>
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
- 
- #define DEBUG_SIG 0
- 
- struct rt_sigframe {
--	struct siginfo *pinfo;
--	void *puc;
- 	struct siginfo info;
- 	struct ucontext uc;
- 	unsigned char retcode[16];	/* trampoline code */
- };
- 
--static int restore_sigcontext(struct pt_regs *regs, struct sigcontext *sc)
-+static int restore_sigcontext(struct pt_regs *regs,
-+			      struct sigcontext __user *sc)
- {
--	unsigned int err = 0;
-+	int err = 0;
- 
--	/* Alwys make any pending restarted system call return -EINTR */
-+	/* Always make any pending restarted system calls return -EINTR */
- 	current_thread_info()->restart_block.fn = do_no_restart_syscall;
- 
- 	/*
-@@ -53,25 +53,21 @@ static int restore_sigcontext(struct pt_regs *regs, struct sigcontext *sc)
- 	 * (sc is already checked for VERIFY_READ since the sigframe was
- 	 *  checked in sys_sigreturn previously)
- 	 */
--	if (__copy_from_user(regs, sc->regs.gpr, 32 * sizeof(unsigned long)))
--		goto badframe;
--	if (__copy_from_user(&regs->pc, &sc->regs.pc, sizeof(unsigned long)))
--		goto badframe;
--	if (__copy_from_user(&regs->sr, &sc->regs.sr, sizeof(unsigned long)))
--		goto badframe;
-+	err |= __copy_from_user(regs, sc->regs.gpr, 32 * sizeof(unsigned long));
-+	err |= __copy_from_user(&regs->pc, &sc->regs.pc, sizeof(unsigned long));
-+	err |= __copy_from_user(&regs->sr, &sc->regs.sr, sizeof(unsigned long));
- 
- 	/* make sure the SM-bit is cleared so user-mode cannot fool us */
- 	regs->sr &= ~SPR_SR_SM;
- 
-+	regs->orig_gpr11 = -1;	/* Avoid syscall restart checks */
-+
- 	/* TODO: the other ports use regs->orig_XX to disable syscall checks
- 	 * after this completes, but we don't use that mechanism. maybe we can
- 	 * use it now ?
- 	 */
- 
- 	return err;
--
--badframe:
--	return 1;
- }
- 
- asmlinkage long _sys_rt_sigreturn(struct pt_regs *regs)
-@@ -111,21 +107,18 @@ badframe:
-  * Set up a signal frame.
-  */
- 
--static int setup_sigcontext(struct sigcontext *sc, struct pt_regs *regs,
--			    unsigned long mask)
-+static int setup_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
- {
- 	int err = 0;
- 
- 	/* copy the regs */
--
-+	/* There should be no need to save callee-saved registers here...
-+	 * ...but we save them anyway.  Revisit this
-+	 */
- 	err |= __copy_to_user(sc->regs.gpr, regs, 32 * sizeof(unsigned long));
- 	err |= __copy_to_user(&sc->regs.pc, &regs->pc, sizeof(unsigned long));
- 	err |= __copy_to_user(&sc->regs.sr, &regs->sr, sizeof(unsigned long));
- 
--	/* then some other stuff */
--
--	err |= __put_user(mask, &sc->oldmask);
--
- 	return err;
- }
- 
-@@ -181,24 +174,18 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 	int err = 0;
- 
- 	frame = get_sigframe(ka, regs, sizeof(*frame));
--
- 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
- 		goto give_sigsegv;
- 
--	err |= __put_user(&frame->info, &frame->pinfo);
--	err |= __put_user(&frame->uc, &frame->puc);
--
-+	/* Create siginfo.  */
- 	if (ka->sa.sa_flags & SA_SIGINFO)
- 		err |= copy_siginfo_to_user(&frame->info, info);
--	if (err)
--		goto give_sigsegv;
- 
--	/* Clear all the bits of the ucontext we don't use.  */
--	err |= __clear_user(&frame->uc, offsetof(struct ucontext, uc_mcontext));
-+	/* Create the ucontext.  */
- 	err |= __put_user(0, &frame->uc.uc_flags);
- 	err |= __put_user(NULL, &frame->uc.uc_link);
- 	err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
--	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs, set->sig[0]);
-+	err |= setup_sigcontext(regs, &frame->uc.uc_mcontext);
- 
- 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
- 
-@@ -207,9 +194,12 @@ static int setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- 
- 	/* trampoline - the desired return ip is the retcode itself */
- 	return_ip = (unsigned long)&frame->retcode;
--	/* This is l.ori r11,r0,__NR_sigreturn, l.sys 1 */
--	err |= __put_user(0xa960, (short *)(frame->retcode + 0));
--	err |= __put_user(__NR_rt_sigreturn, (short *)(frame->retcode + 2));
-+	/* This is:
-+		l.ori r11,r0,__NR_sigreturn
-+		l.sys 1
-+	 */
-+	err |= __put_user(0xa960,             (short *)(frame->retcode + 0));
-+	err |= __put_user(__NR_rt_sigreturn,  (short *)(frame->retcode + 2));
- 	err |= __put_user(0x20000001, (unsigned long *)(frame->retcode + 4));
- 	err |= __put_user(0x15000000, (unsigned long *)(frame->retcode + 8));
- 
-@@ -262,82 +252,106 @@ handle_signal(unsigned long sig,
-  * mode below.
-  */
- 
--void do_signal(struct pt_regs *regs)
-+int do_signal(struct pt_regs *regs, int syscall)
- {
- 	siginfo_t info;
- 	int signr;
- 	struct k_sigaction ka;
--
--	/*
--	 * We want the common case to go fast, which
--	 * is why we may in certain cases get here from
--	 * kernel mode. Just return without doing anything
--	 * if so.
--	 */
--	if (!user_mode(regs))
--		return;
--
--	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
--
--	/* If we are coming out of a syscall then we need
--	 * to check if the syscall was interrupted and wants to be
--	 * restarted after handling the signal.  If so, the original
--	 * syscall number is put back into r11 and the PC rewound to
--	 * point at the l.sys instruction that resulted in the
--	 * original syscall.  Syscall results other than the four
--	 * below mean that the syscall executed to completion and no
--	 * restart is necessary.
--	 */
--	if (regs->orig_gpr11) {
--		int restart = 0;
--
--		switch (regs->gpr[11]) {
-+	unsigned long continue_addr = 0;
-+	unsigned long restart_addr = 0;
-+	unsigned long retval = 0;
-+	int restart = 0;
-+
-+	if (syscall) {
-+		continue_addr = regs->pc;
-+		restart_addr = continue_addr - 4;
-+		retval = regs->gpr[11];
-+
-+		/*
-+		 * Setup syscall restart here so that a debugger will
-+		 * see the already changed PC.
-+		 */
-+		switch (retval) {
- 		case -ERESTART_RESTARTBLOCK:
-+			restart = -2;
-+			/* Fall through */
- 		case -ERESTARTNOHAND:
--			/* Restart if there is no signal handler */
--			restart = (signr <= 0);
--			break;
- 		case -ERESTARTSYS:
--			/* Restart if there no signal handler or
--			 * SA_RESTART flag is set */
--			restart = (signr <= 0 || (ka.sa.sa_flags & SA_RESTART));
--			break;
- 		case -ERESTARTNOINTR:
--			/* Always restart */
--			restart = 1;
-+			restart++;
-+			regs->gpr[11] = regs->orig_gpr11;
-+			regs->pc = restart_addr;
- 			break;
- 		}
-+	}
- 
--		if (restart) {
--			if (regs->gpr[11] == -ERESTART_RESTARTBLOCK)
--				regs->gpr[11] = __NR_restart_syscall;
--			else
--				regs->gpr[11] = regs->orig_gpr11;
--			regs->pc -= 4;
--		} else {
--			regs->gpr[11] = -EINTR;
-+	/*
-+	 * Get the signal to deliver.  When running under ptrace, at this
-+	 * point the debugger may change all our registers ...
-+	 */
-+	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
-+	/*
-+	 * Depending on the signal settings we may need to revert the
-+	 * decision to restart the system call.  But skip this if a
-+	 * debugger has chosen to restart at a different PC.
-+	 */
-+	if (signr > 0) {
-+		if (unlikely(restart) && regs->pc == restart_addr) {
-+			if (retval == -ERESTARTNOHAND ||
-+			    retval == -ERESTART_RESTARTBLOCK
-+			    || (retval == -ERESTARTSYS
-+			        && !(ka.sa.sa_flags & SA_RESTART))) {
-+				/* No automatic restart */
-+				regs->gpr[11] = -EINTR;
-+				regs->pc = continue_addr;
-+			}
- 		}
--	}
- 
--	if (signr <= 0) {
--		/* no signal to deliver so we just put the saved sigmask
--		 * back */
--		restore_saved_sigmask();
--	} else {		/* signr > 0 */
--		/* Whee!  Actually deliver the signal.  */
- 		handle_signal(signr, &info, &ka, regs);
-+	} else {
-+		/* no handler */
-+		restore_saved_sigmask();
-+		/*
-+		 * Restore pt_regs PC as syscall restart will be handled by
-+		 * kernel without return to userspace
-+		 */
-+		if (unlikely(restart) && regs->pc == restart_addr) {
-+			regs->pc = continue_addr;
-+			return restart;
-+		}
- 	}
- 
--	return;
-+	return 0;
- }
- 
--asmlinkage void do_notify_resume(struct pt_regs *regs)
-+asmlinkage int
-+do_work_pending(struct pt_regs *regs, unsigned int thread_flags, int syscall)
- {
--	if (current_thread_info()->flags & _TIF_SIGPENDING)
--		do_signal(regs);
--
--	if (current_thread_info()->flags & _TIF_NOTIFY_RESUME) {
--		clear_thread_flag(TIF_NOTIFY_RESUME);
--		tracehook_notify_resume(regs);
--	}
-+	do {
-+		if (likely(thread_flags & _TIF_NEED_RESCHED)) {
-+			schedule();
-+		} else {
-+			if (unlikely(!user_mode(regs)))
-+				return 0;
-+			local_irq_enable();
-+			if (thread_flags & _TIF_SIGPENDING) {
-+				int restart = do_signal(regs, syscall);
-+				if (unlikely(restart)) {
-+					/*
-+					 * Restart without handlers.
-+					 * Deal with it without leaving
-+					 * the kernel space.
-+					 */
-+					return restart;
-+				}
-+				syscall = 0;
-+			} else {
-+				clear_thread_flag(TIF_NOTIFY_RESUME);
-+				tracehook_notify_resume(regs);
-+			}
-+		}
-+		local_irq_disable();
-+		thread_flags = current_thread_info()->flags;
-+	} while (thread_flags & _TIF_WORK_MASK);
-+	return 0;
- }
+ /*
+  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
+  * http://processors.wiki.ti.com/index.php/XDS100
 -- 
 2.1.0
 
