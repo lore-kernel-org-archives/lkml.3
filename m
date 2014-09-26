@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaIZEFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 00:05:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:48380 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170AbaIZEFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 00:05:07 -0400
-Date: Fri, 26 Sep 2014 14:05:06 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH 02/15] powerpc/cell: Move data segment faulting code out
- of cell platform
-Message-ID: <20140926140506.3d8fdac3@kryten>
-In-Reply-To: <1411028820-29933-3-git-send-email-mikey@neuling.org>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-	<1411028820-29933-3-git-send-email-mikey@neuling.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752990AbaIZENw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 00:13:52 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37491 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaIZENu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 00:13:50 -0400
+Date: Fri, 26 Sep 2014 00:13:41 -0400 (EDT)
+Message-Id: <20140926.001341.1361691136914532479.davem@davemloft.net>
+To: b.galvani@gmail.com
+Cc: netdev@vger.kernel.org, peppe.cavallaro@st.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, carlo@caione.org,
+        jerry.cao@amlogic.com, victor.wan@amlogic.com,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: net: stmmac glue layer for Amlogic Meson SoCs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
+References: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 25 Sep 2014 21:13:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> From: Ian Munsie <imunsie@au1.ibm.com>
+From: Beniamino Galvani <b.galvani@gmail.com>
+Date: Sat, 20 Sep 2014 15:29:15 +0200
 > 
-> __spu_trap_data_seg() currently contains code to determine the VSID
-> and ESID required for a particular EA and mm struct.
+> the Ethernet controller available in Amlogic Meson6 and Meson8 SoCs is
+> a Synopsys DesignWare MAC IP core, already supported by the stmmac
+> driver.
 > 
-> This code is generically useful for other co-processors.  This moves
-> the code of the cell platform so it can be used by other powerpc code.
+> These patches add a glue layer to the driver for the platform-specific
+> settings required by the Amlogic variant.
+> 
+> This has been tested on a Amlogic S802 device with the initial Meson
+> support submitted by Carlo Caione [1].
+> 
+> [1] http://lwn.net/Articles/612000/
 
-Could we also mention:
-
-and adds 1TB segment support.
-
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-
-Reviewed-by: Anton Blanchard <anton@samba.org>
-
-Anton
+Series applied to net-next, thanks.
