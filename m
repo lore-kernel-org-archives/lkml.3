@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbaIZHs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:48:28 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:60368 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaIZHs0 (ORCPT
+	id S1753966AbaIZHwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:52:10 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:56974 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284AbaIZHwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:48:26 -0400
+	Fri, 26 Sep 2014 03:52:09 -0400
+Message-ID: <54251B27.909@linaro.org>
+Date: Fri, 26 Sep 2014 09:52:07 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <2553182.6YgvmDLuEA@wuerfel>
-References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com>
-	<000d01cfd946$521304f0$f6390ed0$@samsung.com>
-	<CAGhQ9VxwTS9=biwp0nCKu2bVU2aNe679aKR=HU5rd_Uaw99sUw@mail.gmail.com>
-	<2553182.6YgvmDLuEA@wuerfel>
-Date: Fri, 26 Sep 2014 09:48:24 +0200
-Message-ID: <CAGhQ9VwAe7d7fX1Lw22ocxDSXjOZbvXdmG1u6_d5v7ptmYMYeg@mail.gmail.com>
-Subject: Re: [PATCH v5] mfd: syscon: Decouple syscon interface from platform devices
-From: Joachim Eastwood <manabian@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Douglas Anderson <dianders@chromium.org>, kgene.kim@samsung.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, naushad@samsung.com,
-        Li.Xiubo@freescale.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        thomas.ab@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
-        Lee Jones <lee.jones@linaro.org>, sunil joshi <joshi@samsung.com>,
-        b29396@freescale.com
-Content-Type: text/plain; charset=UTF-8
+To: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 4/4] arm: pxa: add non device-tree timer link to clocksource
+References: <1405356724-32207-1-git-send-email-robert.jarzmik@free.fr>	<1405356724-32207-4-git-send-email-robert.jarzmik@free.fr>	<53CD25A4.7030606@linaro.org> <87oawivarv.fsf@free.fr>
+In-Reply-To: <87oawivarv.fsf@free.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2014 09:16, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 26 September 2014 07:34:12 Joachim Eastwood wrote:
->> I am working on Cortex-M4 no-MMU platform that isn't upstream yet, btw.
->>
+On 07/21/2014 08:15 PM, Robert Jarzmik wrote:
+> Daniel Lezcano <daniel.lezcano@linaro.org> writes:
 >
-> Sorry for drifting off-topic, but this is very interesting to me. Can you
-> say which one you are working on and what your timeline is for submitting
-> it upstream?
+>> On 07/14/2014 06:52 PM, Robert Jarzmik wrote:
+>>> As clocksource pxa_timer was moved to clocksource framework, the
+>>> pxa_timer initialization needs to be a bit amended, to pass the
+>>> necessary informations to clocksource, ie :
+>>>    - the timer interrupt (mach specific)
+>>>    - the timer registers base (ditto)
+>>>    - the timer clockrate
+>>>
+>>> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+>>>
+>>> ---
+>>> Since V2: Arnd's comment : moved extern declaration into .h file
+>>> ---
+>>
+>> Shall I take the patches 4-5 also ?
+> Mmm you mean patch 4 I think.
+> Then I'd like you too, because it's linked in the serie, and without it the
+> former non-DT platforms break, hence I'd like all the serie to go through 1
+> tree.
+>
+> Yet we'd need Haojian's ack here. Haojian, would you give your blessing on the
+> serie and agree that Daniel carries all the patches including patch 4/4 ?
 
-It's NXP LPC18xx/43xx which is Cortex-M3/M4.
+Hi,
 
-3.19 or 3.20 might be target.
+May be I missed it but I don't see the Haojian's ack.
 
-Right now everything is in a github repository here:
-https://github.com/manabian/linux-lpc
+Thanks
+   -- Daniel
 
-Most stuff are working now and I am in the process of clean it up and
-adding documentation.
 
-> I generally like to know about new platforms early, and sometimes we get
-> multiple people working on the same one.
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-I see.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-regards,
-Joachim Eastwood
