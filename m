@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaIZRkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:40:15 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:47955 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755222AbaIZRkO (ORCPT
+	id S1755858AbaIZRkU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:40:20 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:60196 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755222AbaIZRkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:40:14 -0400
-Message-ID: <5425A4FC.9070706@nexus-software.ie>
-Date: Fri, 26 Sep 2014 18:40:12 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Reply-To: pure.logic@nexus-software.ie
-Organization: Nexus Software
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, hpa@zytor.org, mingo@redhat.com,
-        tglx@linutronix.de, hmh@hmh.eng.br, boon.leong.ong@intel.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Quark: Add if/else to setup_arch for Quark TLB bug
-References: <1411751985-4351-1-git-send-email-pure.logic@nexus-software.ie> <20140926173546.GA9931@redhat.com>
-In-Reply-To: <20140926173546.GA9931@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Fri, 26 Sep 2014 13:40:18 -0400
+Message-ID: <1411753216.7866.65.camel@x220>
+Subject: [PATCH] [TRIVIAL] m68k: Fix typo 'COFNIG_MBAR'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Sep 2014 19:40:16 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Sep 2014 17:40:17.0950 (UTC) FILETIME=[EFE88BE0:01CFD9B0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 18:35, Dave Jones wrote:
->   > +	if (boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
->   > +		__flush_tlb();
->
-> This also needs a check for the cpu vendor, or this will apply
-> the workaround on for eg, AMD K6-III's.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested!
 
-Ah OK.
+Geert, PASR is obviously unused. Is it needed?
 
-Will update.
+ arch/m68k/include/asm/m54xxpci.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---
-BOD
+diff --git a/arch/m68k/include/asm/m54xxpci.h b/arch/m68k/include/asm/m54xxpci.h
+index 6fbf54f72f2e..4687f5aa3741 100644
+--- a/arch/m68k/include/asm/m54xxpci.h
++++ b/arch/m68k/include/asm/m54xxpci.h
+@@ -72,7 +72,7 @@
+ #define	PCIRFWPR	(CONFIG_MBAR + 0x84d4)	/* RX FIFO write pointer */
+ 
+ #define	PACR		(CONFIG_MBAR + 0xc00)	/* PCI arbiter control */
+-#define	PASR		(COFNIG_MBAR + 0xc04)	/* PCI arbiter status */
++#define	PASR		(CONFIG_MBAR + 0xc04)	/* PCI arbiter status */
+ 
+ /*
+  *	Definitions for the Global status and control register.
+-- 
+1.9.3
 
