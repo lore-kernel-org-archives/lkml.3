@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaIZLXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:23:18 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:59088 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaIZLXR (ORCPT
+	id S1754208AbaIZLYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:24:04 -0400
+Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:58339 "EHLO
+	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753898AbaIZLYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:23:17 -0400
-Date: Fri, 26 Sep 2014 13:23:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH 2/2] perf: Userspace software event and ioctl
-Message-ID: <20140926112312.GB9870@gmail.com>
-References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
- <1411050873-9310-3-git-send-email-pawel.moll@arm.com>
- <1411491764.3922.46.camel@hornet>
- <20140924074942.GB3797@gmail.com>
- <1411665649.4768.84.camel@hornet>
- <20140925183342.GB6854@gmail.com>
- <1411728487.3852.9.camel@hornet>
+	Fri, 26 Sep 2014 07:24:02 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Message-ID: <54254C4E.3070807@smartplayin.com>
+Date: Fri, 26 Sep 2014 16:51:50 +0530
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411728487.3852.9.camel@hornet>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
+References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pawel Moll <pawel.moll@arm.com> wrote:
-
-> On Thu, 2014-09-25 at 19:33 +0100, Ingo Molnar wrote:
-> > > How would we select tasks that can write to a given buffer? Maybe an
-> > > ioctl() on a perf fd? Something like this?
-> > > 
-> > > 	ioctl(perf_fd, PERF_EVENT_IOC_ENABLE_UEVENT, pid);
-> > > 	ioctl(perf_fd, PERF_EVENT_IOC_DISABLE_UEVENT, pid);
-> > 
-> > No, I think there's a simpler way: this should be a regular 
-> > perf_attr flag, which defaults to '0' (tasks cannot do this), 
-> > but which can be set to 1 if the profiler explicitly allows 
-> > such event injection.
+On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
+> Add support for the temperature alarm peripheral found inside
+> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
+> peripheral outputs a pulse on an interrupt line whenever the
+> thermal over temperature stage value changes.  Implement an ISR
+> to manage this interrupt.
 > 
-> As in: allows *all* tasks to inject the data? Are you sure we 
-> don't want more fine-grained control, in particular per task?
 
-Yeah. If the profiler allows it, then any task that is being 
-traced can inject data.
+<snip>
 
-More finegrained control might be useful if there's a 
-justification for it, but only if this basic, most useful model 
-is implemented. Too finegrained control will just make it 
-unusable. So please keep it simple and useful.
+> + * This function updates the internal temp value based on the
+> + * current thermal stage and threshold as well as the previous stage
+> + */
+> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
+> +{
+> +	unsigned int stage;
+> +	int rc;
+> +	u8 reg;
+> +
+> +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	stage = reg & STATUS_STAGE_MASK;
 
-> If we have two buffers, both created with the "injecting 
-> allowed" flag, do we inject a given uevent into both of them?
+During compilation, getting a waring as below,
 
-Yes, and that semantics is desired: if I run two globally tracing 
-apps, independent of each other, both ought to get the events if 
-they ask for them.
+drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
+drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  stage = reg & STATUS_STAGE_MASK;
 
-> > I.e. whether user-events are allowed is controlled by the 
-> > profiling/tracing context, via the regular perf syscall. It 
-> > would propagate into the perf context, so it would be easy to 
-> > check at event generation time.
-> 
-> It would definitely be the profiling/tracing tools that would 
-> decide if the injection is allowed, no question about that. I 
-> just feel that it should be able to select the tasks that can 
-> do that, not just flip a big switch saying "everyone is 
-> welcome". [...]
+> +
+> +	if (stage > chip->stage) {
+> +		/* increasing stage, use lower bound */
+> +		chip->temp = (stage - 1) * TEMP_STAGE_STEP +
+> +			     chip->thresh * TEMP_THRESH_STEP +
+> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> +	} else if (stage < chip->stage) {
+> +		/* decreasing stage, use upper bound */
+> +		chip->temp = stage * TEMP_STAGE_STEP +
+> +			     chip->thresh * TEMP_THRESH_STEP -
+> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> +	}
+> +
+> +	chip->stage = stage;
+> +
+> +	return 0;
+> +}
+> +
 
-But that's the point: our main problem right now is too little 
-data (not enough apps generating interesting events), not too 
-much data.
+<snip>
 
-So lets concentrate on the task of getting events to us as easily 
-as possible first. If in the far future we are overwhelmed with 
-events, and tools want to do some filtering on them, by all means 
-we can implement it - but don't impose it straight away.
+> +
+> +#define QPNP_TM_PM_OPS	(&qpnp_tm_pm_ops)
+> +#else
+> +#define QPNP_TM_PM_OPS	NULL
+> +#endif
+> +
+> +static struct of_device_id qpnp_tm_match_table[] = {
 
-> [...] Other question is: should a non-root context be able to 
-> receive events from root processes? Wouldn't it be a security 
-> hole (for example, it could be used as a kind of covert 
-> channel)? Maybe we should do what ptrace does? As in: if a task 
-> can ptrace another task, it can also receive uevents from it.
-
-So, by default a non-root context will not be able to 
-profile/trace a root owned task already, it cannot generate per 
-CPU events for example. So this already handled at event/buffer 
-creation time. Plus if a task gains privilege (via suid exec) 
-then we already zap its perf context IIRC.
-
-Should be double checked, but the important part is to make it to 
-willing tracing apps as easy as possible. Lets worry about the 
-'too much data' case later, otherwise we _guarantee_ that this 
-interface won't take off and apps, tools and people won't use it, 
-ok?
+It must be static const struct of_device_id, because all OF functions handle it as const.
 
 Thanks,
+--Kiran
 
-	Ingo
+> +	{ .compatible = "qcom,spmi-temp-alarm" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, qpnp_tm_match_table);
+> +
+> +static struct platform_driver qpnp_tm_driver = {
+> +	.driver = {
+> +		.name = "spmi-temp-alarm",
+> +		.of_match_table = qpnp_tm_match_table,
+> +		.pm = QPNP_TM_PM_OPS,
+> +	},
+> +	.probe  = qpnp_tm_probe,
+> +	.remove = qpnp_tm_remove,
+> +};
+> +module_platform_driver(qpnp_tm_driver);
+> +
+> +MODULE_ALIAS("platform:spmi-temp-alarm");
+> +MODULE_DESCRIPTION("QPNP PMIC Temperature Alarm driver");
+> +MODULE_LICENSE("GPL v2");
+> 
+
