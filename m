@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858AbaIZRkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:40:20 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:60196 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755222AbaIZRkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:40:18 -0400
-Message-ID: <1411753216.7866.65.camel@x220>
-Subject: [PATCH] [TRIVIAL] m68k: Fix typo 'COFNIG_MBAR'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Sep 2014 19:40:16 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 17:40:17.0950 (UTC) FILETIME=[EFE88BE0:01CFD9B0]
-X-RcptDomain: vger.kernel.org
+	id S1755740AbaIZRoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:44:10 -0400
+Received: from mail.us.es ([193.147.175.20]:48330 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755222AbaIZRoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:44:08 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus6 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.4/19441. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-101.4/7.5):. 
+ Processed in 2.434087 secs); 26 Sep 2014 17:44:05 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Fri, 26 Sep 2014 19:45:17 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: akpm@linux-foundation.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: Re: mmotm 2014-09-25-16-28 uploaded (nf_nat_masquerade_ipv4.c)
+Message-ID: <20140926174517.GA11463@salvia>
+References: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
+ <54259A5C.2060102@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54259A5C.2060102@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested!
+Hi Randy,
 
-Geert, PASR is obviously unused. Is it needed?
+On Fri, Sep 26, 2014 at 09:54:52AM -0700, Randy Dunlap wrote:
+> On 09/25/14 16:28, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2014-09-25-16-28 has been uploaded to
+> > 
+> >    http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > mmotm-readme.txt says
+> > 
+> > README for mm-of-the-moment:
+> > 
+> > http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+> 
+> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c: In function 'nf_nat_masquerade_ipv4':
+> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:59:5: error: 'struct nf_conn_nat' has no member named 'masq_index'
+>   nat->masq_index = out->ifindex;
+>      ^
+> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c: In function 'device_cmp':
+> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:83:12: error: 'const struct nf_conn_nat' has no member named 'masq_index'
+>   return nat->masq_index == (int)(long)ifindex;
+>             ^
+> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:84:1: warning: control reaches end of non-void function [-Wreturn-type]
 
- arch/m68k/include/asm/m54xxpci.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'll pass this patch in the upcoming nf-next batch:
 
-diff --git a/arch/m68k/include/asm/m54xxpci.h b/arch/m68k/include/asm/m54xxpci.h
-index 6fbf54f72f2e..4687f5aa3741 100644
---- a/arch/m68k/include/asm/m54xxpci.h
-+++ b/arch/m68k/include/asm/m54xxpci.h
-@@ -72,7 +72,7 @@
- #define	PCIRFWPR	(CONFIG_MBAR + 0x84d4)	/* RX FIFO write pointer */
- 
- #define	PACR		(CONFIG_MBAR + 0xc00)	/* PCI arbiter control */
--#define	PASR		(COFNIG_MBAR + 0xc04)	/* PCI arbiter status */
-+#define	PASR		(CONFIG_MBAR + 0xc04)	/* PCI arbiter status */
- 
- /*
-  *	Definitions for the Global status and control register.
--- 
-1.9.3
+http://git.kernel.org/cgit/linux/kernel/git/pablo/nf-next.git/commit/?id=67981fefb20e717cea55b42f9081a833fa46b3be
 
+Thanks.
