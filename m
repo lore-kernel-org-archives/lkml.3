@@ -1,148 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaIZK7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:59:42 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:46269 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaIZK7j (ORCPT
+	id S1755489AbaIZK7X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:59:23 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:60083 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754859AbaIZK6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:59:39 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <5fc54c48d4d0108de345594d11e4624c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
+	Fri, 26 Sep 2014 06:58:36 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+From: Johan Hovold <johan@kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [RESENT PATCH v7 3/3] dt-bindings: video: Add documentation for rockchip vop
-Date: Fri, 26 Sep 2014 18:58:23 +0800
-Message-Id: <1411729103-25268-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411728800-25112-1-git-send-email-mark.yao@rock-chips.com>
-References: <1411728800-25112-1-git-send-email-mark.yao@rock-chips.com>
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3/6] mfd: core: add helper function to register hotplug devices
+Date: Fri, 26 Sep 2014 12:55:30 +0200
+Message-Id: <1411728933-13351-4-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1411728933-13351-1-git-send-email-johan@kernel.org>
+References: <1411728933-13351-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark yao <mark.yao@rock-chips.com>
+Hot-pluggable multi-function devices should always be registered with
+PLATFORM_DEVID_AUTO to avoid name collisions on the platform bus. This
+helper also hides the memory map and irq parameters, which aren't used
+by hot-pluggable (e.g. USB-based) devices.
 
-This adds binding documentation for Rockchip SoC VOP driver.
-
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
-Acked-by: Daniel Vetter <daniel@ffwll.ch>
-Reviewed-by: Rob Clark <robdclark@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
-Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
-- add port for display-subsystem
+ include/linux/mfd/core.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Changes in v3: None
-
-Changes in v4: None
-
-Changes in v5: None
-
-Changes in v6: None
-
-Changes in v7: None
-
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-new file mode 100644
-index 0000000..d15351f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index f543de91ce19..1e47262a1c63 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -108,6 +108,13 @@ extern int mfd_add_devices(struct device *parent, int id,
+ 			   struct resource *mem_base,
+ 			   int irq_base, struct irq_domain *irq_domain);
+ 
++static inline int mfd_add_hotplug_devices(struct device *parent,
++		const struct mfd_cell *cells, int n_devs)
++{
++	return mfd_add_devices(parent, PLATFORM_DEVID_AUTO, cells, n_devs,
++			NULL, 0, NULL);
++}
 +
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
-+
-+Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
-+
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
-+- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
-+
-+- iommus: required a iommu node
-+
-+- port: A port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
-+			};
-+		};
-+	};
+ extern void mfd_remove_devices(struct device *parent);
+ 
+ #endif
 -- 
-1.7.9.5
-
+1.8.5.5
 
