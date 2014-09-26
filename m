@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816AbaIZK13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:27:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32932 "EHLO mx2.suse.de"
+	id S1756893AbaIZK2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:28:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33056 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792AbaIZJqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:07 -0400
+	id S1754781AbaIZJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:04 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 064/142] drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
-Date: Fri, 26 Sep 2014 11:44:35 +0200
-Message-Id: <92eaf5be80602f3465611d349ee7adaf9c803d10.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 030/142] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
+Date: Fri, 26 Sep 2014 11:44:01 +0200
+Message-Id: <d9cd4a157bb0068a044552015bdf0020d21bbfd4.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,44 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3533f8603d28b77c62d75ec899449a99bc6b77a1 upstream.
+commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
 
-On some Windows hosts on FC SANs, TEST_UNIT_READY can return SRB_STATUS_ERROR.
-Correctly handle this. Note that there is sufficient sense information to
-support scsi error handling even in this case.
+Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
+investigated the problem and suggested the right fix.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+while_each_thread() is racy and should die, this patch updates
+vm_is_stack().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/storvsc_drv.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ mm/util.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index b529ae8e8fff..ed0f899e8aa5 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1018,6 +1018,13 @@ static void storvsc_handle_error(struct vmscsi_request *vm_srb,
- 		case ATA_12:
- 			set_host_byte(scmnd, DID_PASSTHROUGH);
- 			break;
-+		/*
-+		 * On Some Windows hosts TEST_UNIT_READY command can return
-+		 * SRB_STATUS_ERROR, let the upper level code deal with it
-+		 * based on the sense information.
-+		 */
-+		case TEST_UNIT_READY:
-+			break;
- 		default:
- 			set_host_byte(scmnd, DID_TARGET_FAILURE);
- 		}
+diff --git a/mm/util.c b/mm/util.c
+index 96da2d7c076c..de943ec0a4c8 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -272,17 +272,14 @@ pid_t vm_is_stack(struct task_struct *task,
+ 
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
+ 
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
+ 	}
 -- 
 2.1.0
 
