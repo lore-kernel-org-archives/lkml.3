@@ -1,190 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673AbaIZKHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:07:40 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:39760 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754843AbaIZKHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:07:37 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: davinci: Fix and simplify probe failure path
-Date: Fri, 26 Sep 2014 15:41:08 +0530
-Message-Id: <1411726268-12605-1-git-send-email-pramod.gurav@smartplayin.com>
+	id S1756131AbaIZKHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:07:48 -0400
+Received: from mga14.intel.com ([192.55.52.115]:7420 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755720AbaIZKHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:07:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="391941515"
+From: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@intel.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 0/3] Enable Quark X1000 support in gpio-sch
+Date: Fri, 26 Sep 2014 18:07:24 +0800
+Message-Id: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sequence of resource release in probe failure path in this
-driver was wrong and needed fixes to cleanly unload the driver.
-This changes does the same by switching to managed resources and
-fixes return path to release resource in proper sequence.
+Hi,
 
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+This is a revised version for gpio-sch.
 
----
- drivers/mmc/host/davinci_mmc.c |   91 +++++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 58 deletions(-)
+Change log for V2:
+Patch 1:
+- Move sch_gpio_get() and sch_gpio_set() to avoid forward declaration.
+- Changed sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
+  sch_gpio_register_clear().
 
-diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-index 5d4c5e0..160b7e8 100644
---- a/drivers/mmc/host/davinci_mmc.c
-+++ b/drivers/mmc/host/davinci_mmc.c
-@@ -1242,22 +1242,20 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 		return -ENOENT;
- 	}
- 
--	ret = -ENODEV;
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	irq = platform_get_irq(pdev, 0);
- 	if (!r || irq == NO_IRQ)
--		goto out;
-+		return -ENODEV;
- 
--	ret = -EBUSY;
- 	mem_size = resource_size(r);
--	mem = request_mem_region(r->start, mem_size, pdev->name);
-+	mem = devm_request_mem_region(&pdev->dev, r->start, mem_size,
-+				      pdev->name);
- 	if (!mem)
--		goto out;
-+		return -EBUSY;
- 
--	ret = -ENOMEM;
- 	mmc = mmc_alloc_host(sizeof(struct mmc_davinci_host), &pdev->dev);
- 	if (!mmc)
--		goto out;
-+		return -ENOMEM;
- 
- 	host = mmc_priv(mmc);
- 	host->mmc = mmc;	/* Important */
-@@ -1275,15 +1273,16 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 		host->txdma = r->start;
- 
- 	host->mem_res = mem;
--	host->base = ioremap(mem->start, mem_size);
--	if (!host->base)
--		goto out;
-+	host->base = devm_ioremap(&pdev->dev, mem->start, mem_size);
-+	if (IS_ERR(host->base)) {
-+		ret = PTR_ERR(host->base);
-+		goto err_ioremap;
-+	}
- 
--	ret = -ENXIO;
--	host->clk = clk_get(&pdev->dev, "MMCSDCLK");
-+	host->clk = devm_clk_get(&pdev->dev, "MMCSDCLK");
- 	if (IS_ERR(host->clk)) {
- 		ret = PTR_ERR(host->clk);
--		goto out;
-+		goto err_ioremap;
- 	}
- 	clk_enable(host->clk);
- 	host->mmc_input_clk = clk_get_rate(host->clk);
-@@ -1350,20 +1349,22 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 	ret = mmc_davinci_cpufreq_register(host);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register cpufreq\n");
--		goto cpu_freq_fail;
-+		goto err_cpu_freq;
- 	}
- 
- 	ret = mmc_add_host(mmc);
- 	if (ret < 0)
--		goto out;
-+		goto err_mmc_add;
- 
--	ret = request_irq(irq, mmc_davinci_irq, 0, mmc_hostname(mmc), host);
-+	ret = devm_request_irq(&pdev->dev, irq, mmc_davinci_irq, 0,
-+			       mmc_hostname(mmc), host);
- 	if (ret)
--		goto out;
-+		goto err_request_irq;
- 
- 	if (host->sdio_irq >= 0) {
--		ret = request_irq(host->sdio_irq, mmc_davinci_sdio_irq, 0,
--				  mmc_hostname(mmc), host);
-+		ret = devm_request_irq(&pdev->dev, host->sdio_irq,
-+				       mmc_davinci_sdio_irq, 0,
-+				       mmc_hostname(mmc), host);
- 		if (!ret)
- 			mmc->caps |= MMC_CAP_SDIO_IRQ;
- 	}
-@@ -1376,27 +1377,15 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--out:
-+err_request_irq:
-+	mmc_free_host(mmc);
-+err_mmc_add:
- 	mmc_davinci_cpufreq_deregister(host);
--cpu_freq_fail:
--	if (host) {
--		davinci_release_dma_channels(host);
--
--		if (host->clk) {
--			clk_disable(host->clk);
--			clk_put(host->clk);
--		}
--
--		if (host->base)
--			iounmap(host->base);
--	}
--
--	if (mmc)
--		mmc_free_host(mmc);
--
--	if (mem)
--		release_resource(mem);
--
-+err_cpu_freq:
-+	davinci_release_dma_channels(host);
-+	clk_disable(host->clk);
-+err_ioremap:
-+	mmc_remove_host(mmc);
- 	dev_dbg(&pdev->dev, "probe err %d\n", ret);
- 
- 	return ret;
-@@ -1406,25 +1395,11 @@ static int __exit davinci_mmcsd_remove(struct platform_device *pdev)
- {
- 	struct mmc_davinci_host *host = platform_get_drvdata(pdev);
- 
--	if (host) {
--		mmc_davinci_cpufreq_deregister(host);
--
--		mmc_remove_host(host->mmc);
--		free_irq(host->mmc_irq, host);
--		if (host->mmc->caps & MMC_CAP_SDIO_IRQ)
--			free_irq(host->sdio_irq, host);
--
--		davinci_release_dma_channels(host);
--
--		clk_disable(host->clk);
--		clk_put(host->clk);
--
--		iounmap(host->base);
--
--		release_resource(host->mem_res);
--
--		mmc_free_host(host->mmc);
--	}
-+	mmc_free_host(host->mmc);
-+	mmc_davinci_cpufreq_deregister(host);
-+	davinci_release_dma_channels(host);
-+	clk_disable(host->clk);
-+	mmc_remove_host(host->mmc);
- 
- 	return 0;
- }
+Patch 3:
+- Changed all sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
+  sch_gpio_register_clear().
+
+Version 1:
+This patch series is about enabling legacy GPIO support for Quark X1000.
+The patches were developed on top of Mika Westerberg's commit on
+consolidating core and resume banks. Please refer to the link below for
+more information about his commit.
+https://lkml.org/lkml/2014/8/17/13
+
+The patches are generally enable GPIO support for Intel Quark X1000 SoC.
+In the first patch of the series, I've also done some consolidating work as
+there are similar algorithms that can be merged and generalized.
+
+The second patch is about adding Quark X1000 pci ids and gpio pins supported
+in the legacy gpio bridge.
+
+The last patch in the series is about enable IRQ handling for gpio-sch. Intel
+Quark X1000's legacy GPIO is an IRQ based GPIO. The IRQ resources will be
+provided by MFD's lpc_sch.c. The changes in MFD (lpc_sch.c) required in order
+to support gpio-sch has been merged into linux-next.git.
+
+The patches has been built and tested working on Intel Galileo board.
+
+Thank you.
+
+Regards
+Rebecca
+
+Chang Rebecca Swee Fun (3):
+  gpio: sch: Consolidate similar algorithms
+  gpio: sch: Add support for Intel Quark X1000 SoC
+  gpio: sch: Enable IRQ support for Quark X1000
+
+ drivers/gpio/Kconfig    |   11 +-
+ drivers/gpio/gpio-sch.c |  362 ++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 318 insertions(+), 55 deletions(-)
+
 -- 
 1.7.9.5
 
