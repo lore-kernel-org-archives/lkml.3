@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557AbaIZLnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:43:00 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43837 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754487AbaIZLm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:42:57 -0400
-Date: Fri, 26 Sep 2014 12:42:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
-        Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 7/8] ARM: mm: allow non-text sections to be
-	non-executable
-Message-ID: <20140926114239.GM5182@n2100.arm.linux.org.uk>
-References: <1411067949-10913-1-git-send-email-keescook@chromium.org> <1411067949-10913-8-git-send-email-keescook@chromium.org>
+	id S1754625AbaIZLnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:43:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35802 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753619AbaIZLnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 07:43:13 -0400
+Date: Fri, 26 Sep 2014 13:43:10 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Gilles.Muller@lip6.fr, nicolas.palix@imag.fr, cocci@systeme.lip6.fr,
+        linux-kernel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] coccinelle: misc: semantic patch to delete overly
+	complex return code processing
+Message-ID: <20140926114309.GA31096@pobox.suse.cz>
+References: <1408772085-28818-1-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1411067949-10913-8-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408772085-28818-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 12:19:08PM -0700, Kees Cook wrote:
-> @@ -1373,13 +1373,24 @@ static void __init map_lowmem(void)
->  		if (start >= end)
->  			break;
->  
-> -		if (end < kernel_x_start || start >= kernel_x_end) {
-> +		if (end < kernel_x_start) {
->  			map.pfn = __phys_to_pfn(start);
->  			map.virtual = __phys_to_virt(start);
->  			map.length = end - start;
->  			map.type = MT_MEMORY_RWX;
->  
->  			create_mapping(&map);
-> +		} else if (start >= kernel_x_end) {
-> +			map.pfn = __phys_to_pfn(start);
-> +			map.virtual = __phys_to_virt(start);
-> +			map.length = end - start;
-> +#ifdef CONFIG_ARM_KERNMEM_PERMS
-> +			map.type = MT_MEMORY_RW;
-> +#else
-> +			map.type = MT_MEMORY_RWX;
-> +#endif
-> +
-> +			create_mapping(&map);
+On Sat, Aug 23, 2014 at 07:34:45AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> This semantic patch simplifies cases where the effect of the processing of
+> a function call's return code is just to return the result of the function
+> directly.  It may also delete a local return flag variable, if this is no
+> longer used.
+> 
+> This was proposed by Uwe Kleine-König.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
+Applied to kbuild.git#misc, thanks.
 
-I'm looking at this, and wondering two things.  Firstly, why isn't it
-MT_MEMORY_RW in the first place.  Secondly, why do you need to make
-this depend on CONFIG_ARM_KERNMEM_PERMS at all?
-
-I think the first is an oversight by me (and is a case which never came
-up in my testing, because most of my platforms don't have segmented
-memory layouts.)
-
-The second I think is not necessary - the memory region being considered
-is not part of the kernel at all, and so should not be executable in any
-shape or form.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Michal
