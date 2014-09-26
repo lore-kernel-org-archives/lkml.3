@@ -1,154 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbaIZVMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:12:17 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:39964 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770AbaIZVMP (ORCPT
+	id S1756260AbaIZVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:13:16 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:42270 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaIZVNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:12:15 -0400
-Date: Fri, 26 Sep 2014 23:12:12 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: alsa-devel@alsa-project.org, Andreas Mohr <andi@lisas.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ES938 support for ES18xx driver
-Message-ID: <20140926211212.GA24145@rhlx01.hs-esslingen.de>
-References: <1411755805-8165-1-git-send-email-linux@rainbow-software.org>
+	Fri, 26 Sep 2014 17:13:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411755805-8165-1-git-send-email-linux@rainbow-software.org>
-X-Priority: none
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5425D5CD.4000002@nvidia.com>
+References: <CAOnawYp7kv7Zjn4j-j4-TUOshE9G1uXWEqXB_=RHePNwNLmwWA@mail.gmail.com>
+	<CA+55aFwX_nV9oUjh6u5WY=jpLxN-a5GFLmXQWDbHW0Yom9OOVA@mail.gmail.com>
+	<1411504140.4184.26.camel@pasglop>
+	<5425D5CD.4000002@nvidia.com>
+Date: Fri, 26 Sep 2014 17:13:14 -0400
+X-Google-Sender-Auth: CuK2P3AZ3w28STz5vNM64nRrJIM
+Message-ID: <CAKb7Uvguk-tZkEC61uCPPo0_LWFTDyZAzWYk9jOCsqoZDtUr7g@mail.gmail.com>
+Subject: Re: Stupid NVIDIA 3D vgaarb.c patch
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Aaron Plattner <aplattner@nvidia.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        =?UTF-8?B?QyBCZXJnc3Ryw7Zt?= <cbergstrom@pathscale.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Sep 26, 2014 at 5:08 PM, Aaron Plattner <aplattner@nvidia.com> wrote:
+> On 09/23/2014 01:29 PM, Benjamin Herrenschmidt wrote:
+>>
+>> On Mon, 2014-09-22 at 13:43 -0700, Linus Torvalds wrote:
+>>>
+>>> Adding proper people and mailing lists..
+>>>
+>>> The PCI_CLASS_DISPLAY_VGA test goes back to the very beginning by
+>>> BenH, and I have no idea if adding PCI_CLASS_DISPLAY_3D is
+>>> appropriate, but hopefully somebody does. The fact that it makes
+>>> things work certainly argues fairly convincingly for it, but I want
+>>> some backup here.
+>>>
+>>> Dave, BenH?
+>>>
+>>> Christopher(?), can you please also specify which laptop etc. And the
+>>> patch itself seems to have come from somebody else, unless you're
+>>> Lekensteyn. So we'd want to get the provenance of that too.
+>>
+>>
+>> Hrm, that sucks. "3D" could mean anything really, we might need an
+>> explicit vendor ID check as well and maybe even device ID ...
+>
+>
+> If my understanding is correct, the board designers explicitly mark them as
+> "3D controller" when they don't have any outputs connected, specifically so
+> the SBIOS won't choose them as the boot VGA device. Depending on the design,
+> some GPUs on these 3D controller boards don't have a display engine at all,
+> while others still have it in the silicon but leave it disabled at runtime.
+> In either case, VGA should not be routed to them and I don't think they
+> should need to participate in VGA arbitration.
 
-On Fri, Sep 26, 2014 at 08:23:25PM +0200, Ondrej Zary wrote:
-> -	return snd_card_register(card);
-> +	err = snd_card_register(card);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	if (mpu_port[dev] > 0 && mpu_port[dev] != SNDRV_AUTO_PORT)
+Without commenting on the vga aspects of this discussion (about which
+I know next to nothing), I'm moderately sure the nouveau team has seen
+optimus setups where the secondary GPU reports itself as a 3d
+controller, but has a working display engine, and outputs connected to
+it. And I believe the inverse has also happened (a device that reports
+itself as VGA but has no outputs advertised and a potentially-absent
+display engine).
 
-Should probably add comment here, like:
-		/* Since ES938 support is an optional component,
-		   we choose to not take into account its failure result codes
-		   as reason for fatal abort of soundcard registration. */
-> +		snd_es938_init(&chip->es938, card, 0, 0);
-> +
-> +	return 0;
->  }
-
-OTOH completely ignoring es938 result might be undesirable,
-thus it could be suitable to at least add announcing failure via a dev_warn()
-in addition to the comment.
-
-
-> +static int snd_es938_read_reg(struct snd_es938 *chip, u8 reg, u8 *out)
-> +{
-> +	u8 buf[8];
-> +	int i = 0, res;
-> +	u8 sysex[] = { MIDI_CMD_COMMON_SYSEX, 0x00, 0x00, ES938_ID,
-> +		       ES938_CMD_REG_R, reg, MIDI_CMD_COMMON_SYSEX_END };
-> +	unsigned long end_time;
-> +
-> +	snd_rawmidi_kernel_write(chip->rfile.output, sysex, sizeof(sysex));
-
-long snd_rawmidi_kernel_write(struct snd_rawmidi_substream *substream,
-                              const unsigned char *buf, long count);
-
---> constify sysex!
-
-Also, there is a "unsigned char" vs. "u8" type ""violation"".
-
-> +	memset(buf, 0, sizeof(buf));
-> +	end_time = jiffies + msecs_to_jiffies(100);
-> +	while (i < sizeof(buf)) {
-> +		res = snd_rawmidi_kernel_read(chip->rfile.input, buf + i,
-> +					      sizeof(buf) - i);
-> +		if (res > 0)
-> +			i += res;
-> +		if (time_after(jiffies, end_time))
-> +			return -1;
-> +	}
-
-Could we somehow manage to get rid of basing the calculation on jiffies?
-AFAIK the kernel is strongly steering away from jiffies-based
-calculation (normalizing things on ktime instead, AFAIK, or seconds-based),
-for hopefully good reasons...
-(ktime is an abstract, future-proof "kernel time",
-and "msecs" is an obvious human-parseable unit,
-whereas jiffies is a rather hardware-specific and ugly thingy).
-
-> +
-> +	/* check reply */
-> +	if (memcmp(buf, sysex, 6) || buf[7] != MIDI_CMD_COMMON_SYSEX_END)
-> +		return -1;
-> +
-> +	if (out)
-> +		*out = buf[6];
-
-A wee bit too many literals here for my taste...
-(but it's not an overly clear-cut case of a simple direct sizeof(x)
-replacement OTOH, so I'm still left wondering)
-
-> +
-> +	return 0;
-> +}
-> +
-> +static void snd_es938_write_reg(struct snd_es938 *chip, u8 reg, u8 val)
-> +{
-> +	u8 sysex[] = { MIDI_CMD_COMMON_SYSEX, 0x00, 0x00, ES938_ID,
-> +		       ES938_CMD_REG_W, reg, val, MIDI_CMD_COMMON_SYSEX_END };
-
-See case above.
-
-> +static const DECLARE_TLV_DB_SCALE(db_scale_tone, -900, 300, 0);
-
-Yup, I also wanted to make use of TLV controls in my driver -
-good to see that you're doing that already :)
-
-> +
-> +static struct snd_kcontrol_new snd_es938_controls[] = {
-> +ES938_MIXER_TLV("Tone Control - Bass", 0, ES938_REG_TONE, 0, 7, db_scale_tone),
-> +ES938_MIXER_TLV("Tone Control - Treble", 0, ES938_REG_TONE, 4, 7, db_scale_tone),
-> +ES938_MIXER("3D Control - Level", 0, ES938_REG_SPATIAL, 1, 63),
-> +ES938_MIXER("3D Control - Switch", 0, ES938_REG_SPATIAL_EN, 0, 1),
-> +};
-> +
-> +int snd_es938_init(struct snd_es938 *chip, struct snd_card *card, int device,
-> +		   int subdevice)
-> +{
-> +	int ret, i;
-> +
-> +	ret = snd_rawmidi_kernel_open(card, device, subdevice,
-> +			SNDRV_RAWMIDI_LFLG_OPEN | SNDRV_RAWMIDI_LFLG_APPEND,
-> +			&chip->rfile);
-> +	if (ret < 0) {
-> +		snd_printk(KERN_WARNING "es938: unable to open MIDI device\n");
-> +		return ret;
-> +	}
-
-I've been told the Fashionable Logger API Of The Week is dev_warn(),
-since it's providing proper implicitly dev context decorated logging,
-thus changing all affected code might be useful.
-OTOH prior code happens to be making use of snd_printk currently,
-so there should be an earlier commit to first convert existing parts to new API,
-and then have your ES938 commit, doing a dev_warn();
-or simply have some resignation and do add this line as snd_printk(), too ;)
-(for a later commit to then change everything to dev_warn())
-
-
-notyet-Reviewed-by: Andreas Mohr <andim2@users.sf.net>
-
-Thanks for such an interesting addition,
-
-Andreas Mohr
-
--- 
-GNU/Linux. It's not the software that's free, it's you.
+  -ilia
