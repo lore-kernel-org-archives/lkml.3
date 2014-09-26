@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaIZJqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:46:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
+	id S1756782AbaIZKZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:25:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754754AbaIZJqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:00 -0400
+	id S1754824AbaIZJqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 020/142] xhci: Treat not finding the event_seg on COMP_STOP the same as COMP_STOP_INVAL
-Date: Fri, 26 Sep 2014 11:43:51 +0200
-Message-Id: <12434db6ddb3f56ecc025fb3f75744b385c82c4e.1411724723.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
+        Dan Walsh <dwalsh@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 044/142] CAPABILITIES: remove undefined caps from all processes
+Date: Fri, 26 Sep 2014 11:44:15 +0200
+Message-Id: <ace57c92048721f447c4e9baffaf560ebaccef5b.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,48 +27,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Eric Paris <eparis@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9a54886342e227433aebc9d374f8ae268a836475 upstream.
+commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
 
-When using a Renesas uPD720231 chipset usb-3 uas to sata bridge with a 120G
-Crucial M500 ssd, model string: Crucial_ CT120M500SSD1, together with a
-the integrated Intel xhci controller on a Haswell laptop:
+This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
+plus fixing it a different way...
 
-00:14.0 USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
+We found, when trying to run an application from an application which
+had dropped privs that the kernel does security checks on undefined
+capability bits.  This was ESPECIALLY difficult to debug as those
+undefined bits are hidden from /proc/$PID/status.
 
-The following error gets logged to dmesg:
+Consider a root application which drops all capabilities from ALL 4
+capability sets.  We assume, since the application is going to set
+eff/perm/inh from an array that it will clear not only the defined caps
+less than CAP_LAST_CAP, but also the higher 28ish bits which are
+undefined future capabilities.
 
-xhci error: Transfer event TRB DMA ptr not part of current TD
+The BSET gets cleared differently.  Instead it is cleared one bit at a
+time.  The problem here is that in security/commoncap.c::cap_task_prctl()
+we actually check the validity of a capability being read.  So any task
+which attempts to 'read all things set in bset' followed by 'unset all
+things set in bset' will not even attempt to unset the undefined bits
+higher than CAP_LAST_CAP.
 
-Treating COMP_STOP the same as COMP_STOP_INVAL when no event_seg gets found
-fixes this.
+So the 'parent' will look something like:
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	ffffffc000000000
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+All of this 'should' be fine.  Given that these are undefined bits that
+aren't supposed to have anything to do with permissions.  But they do...
+
+So lets now consider a task which cleared the eff/perm/inh completely
+and cleared all of the valid caps in the bset (but not the invalid caps
+it couldn't read out of the kernel).  We know that this is exactly what
+the libcap-ng library does and what the go capabilities library does.
+They both leave you in that above situation if you try to clear all of
+you capapabilities from all 4 sets.  If that root task calls execve()
+the child task will pick up all caps not blocked by the bset.  The bset
+however does not block bits higher than CAP_LAST_CAP.  So now the child
+task has bits in eff which are not in the parent.  These are
+'meaningless' undefined bits, but still bits which the parent doesn't
+have.
+
+The problem is now in cred_cap_issubset() (or any operation which does a
+subset test) as the child, while a subset for valid cap bits, is not a
+subset for invalid cap bits!  So now we set durring commit creds that
+the child is not dumpable.  Given it is 'more priv' than its parent.  It
+also means the parent cannot ptrace the child and other stupidity.
+
+The solution here:
+1) stop hiding capability bits in status
+	This makes debugging easier!
+
+2) stop giving any task undefined capability bits.  it's simple, it you
+don't put those invalid bits in CAP_FULL_SET you won't get them in init
+and you won't get them in any other task either.
+	This fixes the cap_issubset() tests and resulting fallout (which
+	made the init task in a docker container untraceable among other
+	things)
+
+3) mask out undefined bits when sys_capset() is called as it might use
+~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
+	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
+
+4) mask out undefined bit when we read a file capability off of disk as
+again likely all bits are set in the xattr for forward/backward
+compatibility.
+	This lets 'setcap all+pe /bin/bash; /bin/bash' run
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Andrew G. Morgan <morgan@kernel.org>
+Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Steve Grubb <sgrubb@redhat.com>
+Cc: Dan Walsh <dwalsh@redhat.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/host/xhci-ring.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/proc/array.c            | 11 +----------
+ include/linux/capability.h |  5 ++++-
+ kernel/audit.c             |  2 +-
+ kernel/capability.c        |  4 ++++
+ security/commoncap.c       |  3 +++
+ 5 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 6118e292d5df..46ad9f3f589d 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2579,7 +2579,8 @@ static int handle_tx_event(struct xhci_hcd *xhci,
- 		 * last TRB of the previous TD. The command completion handle
- 		 * will take care the rest.
- 		 */
--		if (!event_seg && trb_comp_code == COMP_STOP_INVAL) {
-+		if (!event_seg && (trb_comp_code == COMP_STOP ||
-+				   trb_comp_code == COMP_STOP_INVAL)) {
- 			ret = 0;
- 			goto cleanup;
- 		}
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index cbd0f1b324b9..09f0d9c374a3 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -304,15 +304,11 @@ static void render_cap_t(struct seq_file *m, const char *header,
+ 	seq_puts(m, header);
+ 	CAP_FOR_EACH_U32(__capi) {
+ 		seq_printf(m, "%08x",
+-			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
++			   a->cap[CAP_LAST_U32 - __capi]);
+ 	}
+ 	seq_putc(m, '\n');
+ }
+ 
+-/* Remove non-existent capabilities */
+-#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
+-				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
+-
+ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ {
+ 	const struct cred *cred;
+@@ -326,11 +322,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ 	cap_bset	= cred->cap_bset;
+ 	rcu_read_unlock();
+ 
+-	NORM_CAPS(cap_inheritable);
+-	NORM_CAPS(cap_permitted);
+-	NORM_CAPS(cap_effective);
+-	NORM_CAPS(cap_bset);
+-
+ 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+ 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+ 	render_cap_t(m, "CapEff:\t", &cap_effective);
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 84b13ad67c1c..aa93e5ef594c 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff_set;
+ # error Fix up hand-coded capability macro initializers
+ #else /* HAND-CODED capability initializers */
+ 
++#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
++#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
++
+ # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+-# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
++# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
+ # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+ 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+ 				    CAP_FS_MASK_B1 } })
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 197a496587a6..4059e949beb2 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1412,7 +1412,7 @@ void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
+ 	audit_log_format(ab, " %s=", prefix);
+ 	CAP_FOR_EACH_U32(i) {
+ 		audit_log_format(ab, "%08x",
+-				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
++				 cap->cap[CAP_LAST_U32 - i]);
+ 	}
+ }
+ 
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 788653b97430..50fb74b136db 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -268,6 +268,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
+ 		i++;
+ 	}
+ 
++	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
+diff --git a/security/commoncap.c b/security/commoncap.c
+index b9d613e0ef14..963dc5981661 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data
+ 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
+ 	}
+ 
++	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	return 0;
+ }
+ 
 -- 
 2.1.0
 
