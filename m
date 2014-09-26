@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaIZOSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:18:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:63292 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754101AbaIZOSn (ORCPT
+	id S1754881AbaIZOTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:19:49 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16373 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695AbaIZOTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:18:43 -0400
-Date: Fri, 26 Sep 2014 10:18:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-Message-ID: <20140926101840.7d495620@gandalf.local.home>
-In-Reply-To: <5425564A.4020107@hitachi.com>
-References: <20140923173846.603cb49c@gandalf.local.home>
-	<5422336A.6030304@hitachi.com>
-	<20140924114235.4287f4a1@gandalf.local.home>
-	<20140924115811.6eeeab8c@gandalf.local.home>
-	<5422EAE2.6080005@osg.samsung.com>
-	<20140924120853.0a717b7e@gandalf.local.home>
-	<5422EFB4.2050104@osg.samsung.com>
-	<20140924123007.7fcb0099@gandalf.local.home>
-	<5422F328.2040707@osg.samsung.com>
-	<5425564A.4020107@hitachi.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 26 Sep 2014 10:19:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19HfM3M7oH/ID55WcAqbxHEfrziaVWtp/4=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 50C265EDE00
+Date: Fri, 26 Sep 2014 10:19:43 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@linaro.org>
+Subject: Re: [git pull] Devicetree changes for v3.15
+Message-ID: <20140926141943.GC23926@titan.lakedaemon.net>
+References: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
+ <CACRpkdZoo=P7uTO1rNDD_HUPjfAk26C0=mNYPoZmTV0wcO3V-w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZoo=P7uTO1rNDD_HUPjfAk26C0=mNYPoZmTV0wcO3V-w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014 21:04:26 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Linus,
 
-
-> > Please go ahead and get them in. The framework might have to wait
-> > until 3.19, so there is no need to have it gate test development.
-> > We can evolve them as we go. If tests require special, it means that
-> > they aren't suitable for certain envs such as qemu boot with busybox.
-> > There is a plan to add test targets to cover such cases.
+On Fri, Sep 26, 2014 at 02:30:53PM +0200, Linus Walleij wrote:
+> On Tue, Apr 1, 2014 at 12:15 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
 > 
-> Agreed, anyway, in some env those tools(commands) may not supported
-> by busybox because of the memory size etc. In that case, we can just
-> mark the test unsupported or xfail.
+> > Here are the dt changes I've got queued up for v3.15. The full
+> > description is below in the tag. Please pull.
+> (...)
+> > Jason Cooper (1):
+> >       kbuild: dtbs_install: new make target
+
+Exact patch is:
+
+  f4d4ffc03efc kbuild: dtbs_install: new make target
+
+> After this patch a while back I have observed the following behaviour
+> of the kernel build:
 > 
+> make zImage
+> make zImage
+> -> incremental build, just relink
+> 
+> make zImage
+> make dtbs
+> make zImage
+> -> The whole kernel gets rebuilt
+> 
+> So now if I happen to recompile my device trees, I suddenly want
+> the entire zImage to be rebuilt to? It's by definition not changes that
+> affect the kernel build :-(
+> 
+> I noticed this because my build scripts calls make dtbs && make zImage,
+> and started to rebuild absolutely everything all the time.
+> 
+> Do you think this can be fixed? It's quite simple to reproduce...
 
-Note, if memory size is such a big issue it that other tools may not be
-there, then most of the ftrace features will probably be disabled due
-to memory constraints on the kernel itself.
+Does the attached fix your problem?
 
-As we have a way to state "unsupported" we can just return that from
-tests that require tools not available, and say why it is the case.
+thx,
 
--- Steve
+Jason.
+
+----------->8------------------------------------------
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 0ce9d0f71f2a..a88b13af58d2 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -313,7 +313,9 @@ $(INSTALL_TARGETS):
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $(boot)/dts/$@
+ 
+ PHONY += dtbs dtbs_install
+-dtbs dtbs_install: prepare scripts
++dtbs: scripts
++	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
++dtbs_install: prepare scripts
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts MACHINE=$(MACHINE) $@
+ 
+ # We use MRPROPER_FILES and CLEAN_FILES now
