@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874AbaIZJqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:46:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32933 "EHLO mx2.suse.de"
+	id S932094AbaIZKXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:23:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749AbaIZJqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:00 -0400
+	id S1754754AbaIZJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 034/142] media: au0828: Only alt setting logic when needed
-Date: Fri, 26 Sep 2014 11:44:05 +0200
-Message-Id: <c2c9d04ef4afefa2fa1bd5c9f213bc26987dfe18.1411724723.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 077/142] ASoC: samsung: Correct I2S DAI suspend/resume ops
+Date: Fri, 26 Sep 2014 11:44:48 +0200
+Message-Id: <109275a6d60b1212965ffbb1fcd3d99bb2cefb58.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,97 +22,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
+commit d3d4e5247b013008a39e4d5f69ce4c60ed57f997 upstream.
 
-It seems that there's a bug at au0828 hardware/firmware
-related to alternate setting: when the device is already at
-alt 5, a further call causes the URBs to receive -ESHUTDOWN.
+We should save/restore relevant I2S registers regardless of
+the dai->active flag, otherwise some settings are being lost
+after system suspend/resume cycle. E.g. I2S slave mode set only
+during dai initialization is not preserved and the device ends
+up in master mode after system resume.
 
-I found two different encarnations of this issue:
-
-1) at qv4l2, it fails the second time we try to open the
-video screen;
-2) at xawtv, when audio underrun occurs, with is very
-frequent, at least on my test machine.
-
-The fix is simple: just check if alt=5 before calling
-set_usb_interface().
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/media/usb/au0828/au0828-video.c | 34 ++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ sound/soc/samsung/i2s.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-index f6154546b5c0..7ed75efa1c36 100644
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -787,11 +787,27 @@ static int au0828_i2s_init(struct au0828_dev *dev)
- 
- /*
-  * Auvitek au0828 analog stream enable
-- * Please set interface0 to AS5 before enable the stream
-  */
- static int au0828_analog_stream_enable(struct au0828_dev *d)
+diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
+index b302f3b7a587..2ac8d88fe7eb 100644
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -922,11 +922,9 @@ static int i2s_suspend(struct snd_soc_dai *dai)
  {
-+	struct usb_interface *iface;
-+	int ret;
-+
- 	dprintk(1, "au0828_analog_stream_enable called\n");
-+
-+	iface = usb_ifnum_to_if(d->usbdev, 0);
-+	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
-+		dprintk(1, "Changing intf#0 to alt 5\n");
-+		/* set au0828 interface0 to AS5 here again */
-+		ret = usb_set_interface(d->usbdev, 0, 5);
-+		if (ret < 0) {
-+			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
-+			return -EBUSY;
-+		}
-+	}
-+
-+	/* FIXME: size should be calculated using d->width, d->height */
-+
- 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
- 	au0828_writereg(d, 0x106, 0x00);
- 	/* set x position */
-@@ -1002,15 +1018,6 @@ static int au0828_v4l2_open(struct file *filp)
- 		return -ERESTARTSYS;
- 	}
- 	if (dev->users == 0) {
--		/* set au0828 interface0 to AS5 here again */
--		ret = usb_set_interface(dev->usbdev, 0, 5);
--		if (ret < 0) {
--			mutex_unlock(&dev->lock);
--			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
--			kfree(fh);
--			return -EBUSY;
--		}
--
- 		au0828_analog_stream_enable(dev);
- 		au0828_analog_stream_reset(dev);
+ 	struct i2s_dai *i2s = to_info(dai);
  
-@@ -1252,13 +1259,6 @@ static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
- 		}
- 	}
- 
--	/* set au0828 interface0 to AS5 here again */
--	ret = usb_set_interface(dev->usbdev, 0, 5);
--	if (ret < 0) {
--		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
--		return -EBUSY;
+-	if (dai->active) {
+-		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
+-		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
+-		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
 -	}
--
- 	au0828_analog_stream_enable(dev);
++	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
++	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
++	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
  
  	return 0;
+ }
+@@ -935,11 +933,9 @@ static int i2s_resume(struct snd_soc_dai *dai)
+ {
+ 	struct i2s_dai *i2s = to_info(dai);
+ 
+-	if (dai->active) {
+-		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
+-		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
+-		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+-	}
++	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
++	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
++	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+ 
+ 	return 0;
+ }
 -- 
 2.1.0
 
