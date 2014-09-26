@@ -1,344 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828AbaIZKLS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:11:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
+	id S1756216AbaIZKLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:11:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53928 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976AbaIZJq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:28 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 090/142] mnt: Add tests for unprivileged remount cases that have found to be faulty
-Date: Fri, 26 Sep 2014 11:45:01 +0200
-Message-Id: <4194b9700ce41ff2f7031aa0c6108c2539028ab5.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1754976AbaIZKLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:11:19 -0400
+Date: Fri, 26 Sep 2014 12:11:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCHv2 2/3] x86, ptdump: Simplify page flag evaluation code
+Message-ID: <20140926101112.GE2062@nazgul.tnic>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+ <1411313216-2641-3-git-send-email-minipli@googlemail.com>
+ <541F2BCD.2040007@linux.intel.com>
+ <CA+rthh_UJWqeTJP9aewuC0HRo9wnucy5GScqYH0=0ob=bn4nBw@mail.gmail.com>
+ <20140924074555.GA3797@gmail.com>
+ <CA+rthh9HRMg0E3gE11F+KSdyMpjYC6d=gZhcu5-1TDqMfAw3Uw@mail.gmail.com>
+ <20140926092539.GA9649@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140926092539.GA9649@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Fri, Sep 26, 2014 at 11:25:39AM +0200, Ingo Molnar wrote:
+> We always welcome cleanups that are a side effect of feature 
+> work. Cleanups for code that is perfectly readable, just for 
+> cleanup's sake, is counterproductive ...
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Greg says there's enough work to be done in the staging drivers if
+people wanna. :-)
 
-===============
-
-commit db181ce011e3c033328608299cd6fac06ea50130 upstream.
-
-Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
-read-only bind mount read-only in a user namespace the
-MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
-to the remount a read-only mount read-write.
-
-Upon review of the code in remount it was discovered that the code allowed
-nosuid, noexec, and nodev to be cleared.  It was also discovered that
-the code was allowing the per mount atime flags to be changed.
-
-The first naive patch to fix these issues contained the flaw that using
-default atime settings when remounting a filesystem could be disallowed.
-
-To avoid this problems in the future add tests to ensure unprivileged
-remounts are succeeding and failing at the appropriate times.
-
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- tools/testing/selftests/Makefile                   |   1 +
- tools/testing/selftests/mount/Makefile             |  17 ++
- .../selftests/mount/unprivileged-remount-test.c    | 242 +++++++++++++++++++++
- 3 files changed, 260 insertions(+)
- create mode 100644 tools/testing/selftests/mount/Makefile
- create mode 100644 tools/testing/selftests/mount/unprivileged-remount-test.c
-
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 9f3eae290900..2d9ab9417289 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -4,6 +4,7 @@ TARGETS += efivarfs
- TARGETS += kcmp
- TARGETS += memory-hotplug
- TARGETS += mqueue
-+TARGETS += mount
- TARGETS += net
- TARGETS += ptrace
- TARGETS += timers
-diff --git a/tools/testing/selftests/mount/Makefile b/tools/testing/selftests/mount/Makefile
-new file mode 100644
-index 000000000000..337d853c2b72
---- /dev/null
-+++ b/tools/testing/selftests/mount/Makefile
-@@ -0,0 +1,17 @@
-+# Makefile for mount selftests.
-+
-+all: unprivileged-remount-test
-+
-+unprivileged-remount-test: unprivileged-remount-test.c
-+	gcc -Wall -O2 unprivileged-remount-test.c -o unprivileged-remount-test
-+
-+# Allow specific tests to be selected.
-+test_unprivileged_remount: unprivileged-remount-test
-+	@if [ -f /proc/self/uid_map ] ; then ./unprivileged-remount-test ; fi
-+
-+run_tests: all test_unprivileged_remount
-+
-+clean:
-+	rm -f unprivileged-remount-test
-+
-+.PHONY: all test_unprivileged_remount
-diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
-new file mode 100644
-index 000000000000..1b3ff2fda4d0
---- /dev/null
-+++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
-@@ -0,0 +1,242 @@
-+#define _GNU_SOURCE
-+#include <sched.h>
-+#include <stdio.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <sys/types.h>
-+#include <sys/mount.h>
-+#include <sys/wait.h>
-+#include <stdlib.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+#include <grp.h>
-+#include <stdbool.h>
-+#include <stdarg.h>
-+
-+#ifndef CLONE_NEWNS
-+# define CLONE_NEWNS 0x00020000
-+#endif
-+#ifndef CLONE_NEWUTS
-+# define CLONE_NEWUTS 0x04000000
-+#endif
-+#ifndef CLONE_NEWIPC
-+# define CLONE_NEWIPC 0x08000000
-+#endif
-+#ifndef CLONE_NEWNET
-+# define CLONE_NEWNET 0x40000000
-+#endif
-+#ifndef CLONE_NEWUSER
-+# define CLONE_NEWUSER 0x10000000
-+#endif
-+#ifndef CLONE_NEWPID
-+# define CLONE_NEWPID 0x20000000
-+#endif
-+
-+#ifndef MS_RELATIME
-+#define MS_RELATIME (1 << 21)
-+#endif
-+#ifndef MS_STRICTATIME
-+#define MS_STRICTATIME (1 << 24)
-+#endif
-+
-+static void die(char *fmt, ...)
-+{
-+	va_list ap;
-+	va_start(ap, fmt);
-+	vfprintf(stderr, fmt, ap);
-+	va_end(ap);
-+	exit(EXIT_FAILURE);
-+}
-+
-+static void write_file(char *filename, char *fmt, ...)
-+{
-+	char buf[4096];
-+	int fd;
-+	ssize_t written;
-+	int buf_len;
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
-+	va_end(ap);
-+	if (buf_len < 0) {
-+		die("vsnprintf failed: %s\n",
-+		    strerror(errno));
-+	}
-+	if (buf_len >= sizeof(buf)) {
-+		die("vsnprintf output truncated\n");
-+	}
-+
-+	fd = open(filename, O_WRONLY);
-+	if (fd < 0) {
-+		die("open of %s failed: %s\n",
-+		    filename, strerror(errno));
-+	}
-+	written = write(fd, buf, buf_len);
-+	if (written != buf_len) {
-+		if (written >= 0) {
-+			die("short write to %s\n", filename);
-+		} else {
-+			die("write to %s failed: %s\n",
-+				filename, strerror(errno));
-+		}
-+	}
-+	if (close(fd) != 0) {
-+		die("close of %s failed: %s\n",
-+			filename, strerror(errno));
-+	}
-+}
-+
-+static void create_and_enter_userns(void)
-+{
-+	uid_t uid;
-+	gid_t gid;
-+
-+	uid = getuid();
-+	gid = getgid();
-+
-+	if (unshare(CLONE_NEWUSER) !=0) {
-+		die("unshare(CLONE_NEWUSER) failed: %s\n",
-+			strerror(errno));
-+	}
-+
-+	write_file("/proc/self/uid_map", "0 %d 1", uid);
-+	write_file("/proc/self/gid_map", "0 %d 1", gid);
-+
-+	if (setgroups(0, NULL) != 0) {
-+		die("setgroups failed: %s\n",
-+			strerror(errno));
-+	}
-+	if (setgid(0) != 0) {
-+		die ("setgid(0) failed %s\n",
-+			strerror(errno));
-+	}
-+	if (setuid(0) != 0) {
-+		die("setuid(0) failed %s\n",
-+			strerror(errno));
-+	}
-+}
-+
-+static
-+bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
-+{
-+	pid_t child;
-+
-+	child = fork();
-+	if (child == -1) {
-+		die("fork failed: %s\n",
-+			strerror(errno));
-+	}
-+	if (child != 0) { /* parent */
-+		pid_t pid;
-+		int status;
-+		pid = waitpid(child, &status, 0);
-+		if (pid == -1) {
-+			die("waitpid failed: %s\n",
-+				strerror(errno));
-+		}
-+		if (pid != child) {
-+			die("waited for %d got %d\n",
-+				child, pid);
-+		}
-+		if (!WIFEXITED(status)) {
-+			die("child did not terminate cleanly\n");
-+		}
-+		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
-+	}
-+
-+	create_and_enter_userns();
-+	if (unshare(CLONE_NEWNS) != 0) {
-+		die("unshare(CLONE_NEWNS) failed: %s\n",
-+			strerror(errno));
-+	}
-+
-+	if (mount("testing", "/tmp", "ramfs", mount_flags, NULL) != 0) {
-+		die("mount of /tmp failed: %s\n",
-+			strerror(errno));
-+	}
-+
-+	create_and_enter_userns();
-+
-+	if (unshare(CLONE_NEWNS) != 0) {
-+		die("unshare(CLONE_NEWNS) failed: %s\n",
-+			strerror(errno));
-+	}
-+
-+	if (mount("/tmp", "/tmp", "none",
-+		  MS_REMOUNT | MS_BIND | remount_flags, NULL) != 0) {
-+		/* system("cat /proc/self/mounts"); */
-+		die("remount of /tmp failed: %s\n",
-+		    strerror(errno));
-+	}
-+
-+	if (mount("/tmp", "/tmp", "none",
-+		  MS_REMOUNT | MS_BIND | invalid_flags, NULL) == 0) {
-+		/* system("cat /proc/self/mounts"); */
-+		die("remount of /tmp with invalid flags "
-+		    "succeeded unexpectedly\n");
-+	}
-+	exit(EXIT_SUCCESS);
-+}
-+
-+static bool test_unpriv_remount_simple(int mount_flags)
-+{
-+	return test_unpriv_remount(mount_flags, mount_flags, 0);
-+}
-+
-+static bool test_unpriv_remount_atime(int mount_flags, int invalid_flags)
-+{
-+	return test_unpriv_remount(mount_flags, mount_flags, invalid_flags);
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	if (!test_unpriv_remount_simple(MS_RDONLY|MS_NODEV)) {
-+		die("MS_RDONLY malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_simple(MS_NODEV)) {
-+		die("MS_NODEV malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_simple(MS_NOSUID|MS_NODEV)) {
-+		die("MS_NOSUID malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_simple(MS_NOEXEC|MS_NODEV)) {
-+		die("MS_NOEXEC malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODEV,
-+				       MS_NOATIME|MS_NODEV))
-+	{
-+		die("MS_RELATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODEV,
-+				       MS_NOATIME|MS_NODEV))
-+	{
-+		die("MS_STRICTATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODEV,
-+				       MS_STRICTATIME|MS_NODEV))
-+	{
-+		die("MS_RELATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODIRATIME|MS_NODEV,
-+				       MS_NOATIME|MS_NODEV))
-+	{
-+		die("MS_RELATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODIRATIME|MS_NODEV,
-+				       MS_NOATIME|MS_NODEV))
-+	{
-+		die("MS_RELATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODIRATIME|MS_NODEV,
-+				       MS_STRICTATIME|MS_NODEV))
-+	{
-+		die("MS_RELATIME malfunctions\n");
-+	}
-+	if (!test_unpriv_remount(MS_STRICTATIME|MS_NODEV, MS_NODEV,
-+				 MS_NOATIME|MS_NODEV))
-+	{
-+		die("Default atime malfunctions\n");
-+	}
-+	return EXIT_SUCCESS;
-+}
 -- 
-2.1.0
-
+Regards/Gruss,
+    Boris.
+--
