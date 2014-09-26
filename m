@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbaIZVtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:49:20 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:36523 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755799AbaIZVtS (ORCPT
+	id S1756032AbaIZVwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:52:17 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:51276 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811AbaIZVwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:49:18 -0400
+	Fri, 26 Sep 2014 17:52:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuw3rmQR5v7zrhUR=jYKrhCTp+GpndHDa-9djT3nBnhsaA@mail.gmail.com>
-References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
- <CALCETrXFb=etdrabEjbKdxKg51ViPXptOC=6CkKwcGS7Jau8nA@mail.gmail.com>
- <CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
- <CALCETrVAQ7oRm8zDHDiUurjrMw=+ABucLWjed_P__4j8deNE7A@mail.gmail.com> <CAMEtUuw3rmQR5v7zrhUR=jYKrhCTp+GpndHDa-9djT3nBnhsaA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 14:48:57 -0700
-Message-ID: <CALCETrXmiJKQNC0ipu-pN-XFN4PpvJxvbDEpwfvgWAmXOjnWWw@mail.gmail.com>
-Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
- syscall, verifier, testsuite)
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAGhQ9VzQf2Oa06hOP6MC-qR9F7xF_C7omuubkH+9GcLqxkfX3w@mail.gmail.com>
+References: <20140914194738.GS7996@ZenIV.linux.org.uk>
+	<CAGhQ9Vx26RQWErODdJ_fV5UnAQ8wLre_x-4E6N_vuP0uExyKgw@mail.gmail.com>
+	<20140926205817.GQ7996@ZenIV.linux.org.uk>
+	<CAGhQ9VzQf2Oa06hOP6MC-qR9F7xF_C7omuubkH+9GcLqxkfX3w@mail.gmail.com>
+Date: Fri, 26 Sep 2014 23:52:14 +0200
+Message-ID: <CAGhQ9VyEMMdr00TbDeLvQ8MS13wsyu6vKvDmx+i9bDGSfz2GZQ@mail.gmail.com>
+Subject: Re: [git pull] vfs fixes
+From: Joachim Eastwood <manabian@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 2:46 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Sep 26, 2014 at 1:42 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Sep 26, 2014 at 1:09 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> On Fri, Sep 26, 2014 at 12:51 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>
->>>> To add one more point:
->>>>
->>>> With the current verifier design, it's impossible to write a userspace
->>>> tool that can take an eBPF program and check it.  The verification is
->>>> far too context-dependent for that to be possible.  I won't go so far
->>>> as to say that a userspace tool needs to *exist*, but I strongly
->>>> object to exposing a verification algorithm that *precludes* writing
->>>> such a tool.
+On 26 September 2014 23:28, Joachim  Eastwood <manabian@gmail.com> wrote:
+> On 26 September 2014 22:58, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Fri, Sep 26, 2014 at 10:46:14PM +0200, Joachim Eastwood wrote:
+>>> On 14 September 2014 21:47, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>> > double iput() on failure exit in lustre, racy removal of spliced dentries
+>>> > from ->s_anon in __d_materialise_dentry() plus a bunch of assorted RCU pathwalk
+>>> > fixes.  Please, pull from the usual place -
+>>> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+>>> >
+>>> > Shortlog:
+>>> > Al Viro (5):
+>>> >       [fix] lustre: d_make_root() does iput() on dentry allocation failure
+>>> >       move the call of __d_drop(anon) into __d_materialise_unique(dentry, anon)
+>>> >       fix bogus read_seqretry() checks introduced in b37199e
+>>> >       don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
+>>> >       be careful with nd->inode in path_init() and follow_dotdot_rcu()
 >>>
->>> that's just not true.
->>> why is it not possible?
+>>> Hi,
+>>>
+>>> Commit 4023bfc9f351a7994 "be careful with nd->inode in path_init() and
+>>> follow_dotdot_rcu(), seem to hang my ARM no-MMU platform when mounting
+>>> the ramdisk.
+>>>
+>>> 3.17-rc4 - works
+>>> 3.17-rc5 - works with 4023bfc9f351a7994 reverted.
+>>>
+>>> Boot log with from rc5:
+>>> [ 5.810000] TCP: cubic registered
+>>> [ 5.820000] NET: Registered protocol family 17
+>>> [ 5.860000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+>>> [ 5.910000] mmc_host mmc0: Bus speed (slot 0) = 12000000Hz (slot req
+>>> 25000000Hz, actual 12000000HZ div = 0)
+>>> [ 5.930000] mmc0: new SDHC card at address 0007
+>>> [ 5.950000] mmcblk0: mmc0:0007 SD08G 7.42 GiB
+>>> [ 6.150000] clk: Not disabling unused clocks
+>>> [ 81.240000] random: nonblocking pool is initialized
+>>>
+>>> And there it just hangs it seems.
+>>>
+>>>
+>>> With patch reverted
+>>> [ 5.810000] TCP: cubic registered
+>>> [ 5.820000] NET: Registered protocol family 17
+>>> [ 5.850000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
+>>> [ 6.100000] clk: Not disabling unused clocks
+>>> [ 6.110000] RAMDISK: gzip image found at block 0
+>>> [ 9.590000] VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
+>>> [ 9.600000] devtmpfs: mounted
+>>> [ 9.610000] Freeing unused kernel memory: 68K (281e5000 - 281f6000)
+>>>
+>>> And then user space starts.
 >>
->> Because the types of referenced objects aren't encoded in the blob
->> that a user program loads, unless I'm missing something.
+>> *blink*  What happens to mmc-related messages on successful boot?  And what
+>> in that commit could've possibly lead to those not being produced?
 >
-> patch #8 'handle pseudo BPF_LD_IMM64 insn' of this set
-> handles first type == map. Other types will be added in the future.
-> The same verification can be done in user space.
-> It's pretty much copy paste for everything from the kernel.
-> I don't understand yet why you really must do it in in userspace
-> in addition to doing it in kernel. It's definitely doable.
-> Instead of asking kernel to create a map, user space
-> can just remember map attributes (key_size, value_size)
-> and continues verification in userspace.
+> Now I am puzzled too. I can not longer reproduce that hang.
 >
->> But the eBPF binary doesn't encode this information. In fact, the
->> caller of an ebpf syscall may not even have access to this
->> information.
+> I am guessing it was probably related to the mmc card being flaky or
+> something random like that.
 >
-> I don't follow. What info are you talking about?
-> are you saying that program only that references maps via fds
-> is not verifiable unless one knows what this fds refer to?
-> yeah, but we're talking user space verification here.
-> user knows what maps it creates with what attributes.
-> Also we can add a command to this syscall to fetch map
-> attributes. That would be trivial _incremental_ addition, right?
+> Sorry for noise!
 
-That would also work, I suppose.
+Just to confirm what was happening:
 
->
->> I think this is addressable as a smallish change on top of your code.
->> Rather than looking up a map when you need to learn its key and value
->> size, I think that all you need to do is to look in a program section
->> for the key and value size (and the fact that it's a map) and confirm
->> that the referenced map *matches* the stored values.
->
-> we can add extra info to the program that will encode
-> program assumptions about maps. Sure. Though I think
-> it's extra info that kernel doesn't really need, since it can
-> only check that program assumptions match to what
-> kernel already knows. Kernel cannot rely on them.
-> So I'm not sure what this extra check really buys.
->
-> Anyway, if you think it's a smallish change, we can do it
-> incrementally on top of existing stuff, right?
-> Why this arguing then?
-> Sounds like you want to help with the development?
-> This is great! I'm all for it :)
+I managed to trigger it again and removing the mmc driver makes the
+problem go away. So this is an mmc issue and _not_ vfs.
 
+But what is strange is that reverting 4023bfc9f351a also makes it boot
+again... Which is what fooled me.
 
+Here are the boot logs just in case you want to have a look.
+Boot log with hang: http://slexy.org/raw/s2eRhKN3aG
+Boot ok (4023bfc9f351a reverted): http://slexy.org/raw/s21NgzZkCA
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+mmc is behaving differently.
+
+Sorry for prematurely blaming vfs.
+
+regards,
+Joachim Eastwood
