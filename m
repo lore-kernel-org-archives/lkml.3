@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674AbaIZKUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:20:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901AbaIZJqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:18 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "David E. Box" <david.e.box@linux.intel.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 084/142] ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
-Date: Fri, 26 Sep 2014 11:44:55 +0200
-Message-Id: <7af5504c102a378376101dbd160246b10a814dd0.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1756704AbaIZKU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:20:29 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:14763 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756072AbaIZKUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:20:24 -0400
+X-IronPort-AV: E=Sophos;i="5.04,603,1406563200"; 
+   d="scan'208";a="36518164"
+From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+CC: Richard Weinberger <richard.weinberger@gmail.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: RE: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
+ to ns
+Thread-Topic: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
+ to ns
+Thread-Index: AQHP195u16fgq2K+Ek2axoqmdIkT2JwTNPWA
+Date: Fri, 26 Sep 2014 10:20:02 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E5C7377@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
+In-Reply-To: <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8QAKbAm030827
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+Hi,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> -----Original Message-----
+> From: containers-bounces@lists.linux-foundation.org
+> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
+> Hanxiao
+> Sent: Wednesday, September 24, 2014 6:00 PM
+> To: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+> Cc: Richard Weinberger; Serge Hallyn; Oleg Nesterov; Mateusz Guzik; David Howells;
+> Eric W. Biederman
+> Subject: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according to ns
+> 
+> If some issues occurred inside a container guest, host user
+> could not know which process is in trouble just by guest pid:
+> the users of container guest only knew the pid inside containers.
+> This will bring obstacle for trouble shooting.
+> 
+> This patch adds four fields: NStgid, NSpid, NSpgid and NSsid:
+> a) In init_pid_ns, nothing changed;
+> 
+> b) In one pidns, will tell the pid inside containers:
+> NStgid:	21776   5       1
+> NSpid:  21776   5       1
+> NSpgid:	21776   5       1
+> NSsid:  21729   1       0
+> ** Process id is 21776 in level 0, 5 in level 1, 1 in level 2.
+> 
+> c) If pidns is nested, it depends on which pidns are you in.
+> NStgid: 5       1
+> NSpid:  5       1
+> NSpgid: 5       1
+> NSsid:  1       0
+> ** Views from level 1
+> 
 
-===============
+This patch is simple, useful and safe.
+But currently there is not any feedbacks.
 
-commit 8aa5e56eeb61a099ea6519eb30ee399e1bc043ce upstream.
+Any comments or ideas? 
 
-Adds return status check on copy routines to delete the allocated destination
-object if either copy fails. Reported by Colin Ian King on bugs.acpica.org,
-Bug 1087.
-The last applicable commit:
- Commit: 3371c19c294a4cb3649aa4e84606be8a1d999e61
- Subject: ACPICA: Remove ACPI_GET_OBJECT_TYPE macro
-
-Link: https://bugs.acpica.org/show_bug.cgi?id=1087
-Reported-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/acpi/acpica/utcopy.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/drivers/acpi/acpica/utcopy.c b/drivers/acpi/acpica/utcopy.c
-index 1731c27c36a6..2cac1d1f3863 100644
---- a/drivers/acpi/acpica/utcopy.c
-+++ b/drivers/acpi/acpica/utcopy.c
-@@ -1001,5 +1001,11 @@ acpi_ut_copy_iobject_to_iobject(union acpi_operand_object *source_desc,
- 		status = acpi_ut_copy_simple_object(source_desc, *dest_desc);
- 	}
- 
-+	/* Delete the allocated object if copy failed */
-+
-+	if (ACPI_FAILURE(status)) {
-+		acpi_ut_remove_reference(*dest_desc);
-+	}
-+
- 	return_ACPI_STATUS(status);
- }
--- 
-2.1.0
-
+Thanks,
+- Chen
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
