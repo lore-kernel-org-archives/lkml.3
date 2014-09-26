@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaIZJwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:52:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33004 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183AbaIZJqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755204AbaIZJqw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 05:46:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33033 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754876AbaIZJqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:36 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 140/142] ibmveth: Fix endian issues with rx_no_buffer statistic
-Date: Fri, 26 Sep 2014 11:45:51 +0200
-Message-Id: <e66983c5b25182a5e1ebc3ab4f68f613eb1c9fe8.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 105/142] libceph: add process_one_ticket() helper
+Date: Fri, 26 Sep 2014 11:45:16 +0200
+Message-Id: <113fde589ce46f4ea8d4947cec2e03f7bc3e3cdd.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,71 +22,284 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
+commit 597cda357716a3cf8d994cb11927af917c8d71fa upstream.
 
-Hidden away in the last 8 bytes of the buffer_list page is a solitary
-statistic. It needs to be byte swapped or else ethtool -S will
-produce numbers that terrify the user.
+Add a helper for processing individual cephx auth tickets.  Needed for
+the next commit, which deals with allocating ticket buffers.  (Most of
+the diff here is whitespace - view with git diff -b).
 
-Since we do this in multiple places, create a helper function with a
-comment explaining what is going on.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/ibm/ibmveth.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ net/ceph/auth_x.c | 228 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 124 insertions(+), 104 deletions(-)
 
-diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
-index 6c0fd8e0f9bf..895b086ec261 100644
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -293,6 +293,18 @@ failure:
- 	atomic_add(buffers_added, &(pool->available));
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index 96238ba95f2b..0eb146dce1aa 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -129,17 +129,131 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 	kfree(th);
  }
  
-+/*
-+ * The final 8 bytes of the buffer list is a counter of frames dropped
-+ * because there was not a buffer in the buffer list capable of holding
-+ * the frame.
-+ */
-+static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
++static int process_one_ticket(struct ceph_auth_client *ac,
++			      struct ceph_crypto_key *secret,
++			      void **p, void *end,
++			      void *dbuf, void *ticket_buf)
 +{
-+	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
++	struct ceph_x_info *xi = ac->private;
++	int type;
++	u8 tkt_struct_v, blob_struct_v;
++	struct ceph_x_ticket_handler *th;
++	void *dp, *dend;
++	int dlen;
++	char is_enc;
++	struct timespec validity;
++	struct ceph_crypto_key old_key;
++	void *tp, *tpend;
++	struct ceph_timespec new_validity;
++	struct ceph_crypto_key new_session_key;
++	struct ceph_buffer *new_ticket_blob;
++	unsigned long new_expires, new_renew_after;
++	u64 new_secret_id;
++	int ret;
 +
-+	adapter->rx_no_buffer = be64_to_cpup(p);
++	ceph_decode_need(p, end, sizeof(u32) + 1, bad);
++
++	type = ceph_decode_32(p);
++	dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
++
++	tkt_struct_v = ceph_decode_8(p);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	th = get_ticket_handler(ac, type);
++	if (IS_ERR(th)) {
++		ret = PTR_ERR(th);
++		goto out;
++	}
++
++	/* blob for me */
++	dlen = ceph_x_decrypt(secret, p, end, dbuf,
++			      TEMP_TICKET_BUF_LEN);
++	if (dlen <= 0) {
++		ret = dlen;
++		goto out;
++	}
++	dout(" decrypted %d bytes\n", dlen);
++	dp = dbuf;
++	dend = dp + dlen;
++
++	tkt_struct_v = ceph_decode_8(&dp);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	memcpy(&old_key, &th->session_key, sizeof(old_key));
++	ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
++	if (ret)
++		goto out;
++
++	ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
++	ceph_decode_timespec(&validity, &new_validity);
++	new_expires = get_seconds() + validity.tv_sec;
++	new_renew_after = new_expires - (validity.tv_sec / 4);
++	dout(" expires=%lu renew_after=%lu\n", new_expires,
++	     new_renew_after);
++
++	/* ticket blob for service */
++	ceph_decode_8_safe(p, end, is_enc, bad);
++	tp = ticket_buf;
++	if (is_enc) {
++		/* encrypted */
++		dout(" encrypted ticket\n");
++		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
++				      TEMP_TICKET_BUF_LEN);
++		if (dlen < 0) {
++			ret = dlen;
++			goto out;
++		}
++		dlen = ceph_decode_32(&tp);
++	} else {
++		/* unencrypted */
++		ceph_decode_32_safe(p, end, dlen, bad);
++		ceph_decode_need(p, end, dlen, bad);
++		ceph_decode_copy(p, ticket_buf, dlen);
++	}
++	tpend = tp + dlen;
++	dout(" ticket blob is %d bytes\n", dlen);
++	ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
++	blob_struct_v = ceph_decode_8(&tp);
++	new_secret_id = ceph_decode_64(&tp);
++	ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	if (ret)
++		goto out;
++
++	/* all is well, update our ticket */
++	ceph_crypto_key_destroy(&th->session_key);
++	if (th->ticket_blob)
++		ceph_buffer_put(th->ticket_blob);
++	th->session_key = new_session_key;
++	th->ticket_blob = new_ticket_blob;
++	th->validity = new_validity;
++	th->secret_id = new_secret_id;
++	th->expires = new_expires;
++	th->renew_after = new_renew_after;
++	dout(" got ticket service %d (%s) secret_id %lld len %d\n",
++	     type, ceph_entity_type_name(type), th->secret_id,
++	     (int)th->ticket_blob->vec.iov_len);
++	xi->have_keys |= th->service;
++
++out:
++	return ret;
++
++bad:
++	ret = -EINVAL;
++	goto out;
 +}
 +
- /* replenish routine */
- static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
+ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    struct ceph_crypto_key *secret,
+ 				    void *buf, void *end)
  {
-@@ -308,8 +320,7 @@ static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
- 			ibmveth_replenish_buffer_pool(adapter, pool);
+-	struct ceph_x_info *xi = ac->private;
+-	int num;
+ 	void *p = buf;
+-	int ret;
+ 	char *dbuf;
+ 	char *ticket_buf;
+ 	u8 reply_struct_v;
++	u32 num;
++	int ret;
+ 
+ 	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+ 	if (!dbuf)
+@@ -150,112 +264,18 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 	if (!ticket_buf)
+ 		goto out_dbuf;
+ 
+-	ceph_decode_need(&p, end, 1 + sizeof(u32), bad);
+-	reply_struct_v = ceph_decode_8(&p);
++	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+-		goto bad;
+-	num = ceph_decode_32(&p);
+-	dout("%d tickets\n", num);
+-	while (num--) {
+-		int type;
+-		u8 tkt_struct_v, blob_struct_v;
+-		struct ceph_x_ticket_handler *th;
+-		void *dp, *dend;
+-		int dlen;
+-		char is_enc;
+-		struct timespec validity;
+-		struct ceph_crypto_key old_key;
+-		void *tp, *tpend;
+-		struct ceph_timespec new_validity;
+-		struct ceph_crypto_key new_session_key;
+-		struct ceph_buffer *new_ticket_blob;
+-		unsigned long new_expires, new_renew_after;
+-		u64 new_secret_id;
+-
+-		ceph_decode_need(&p, end, sizeof(u32) + 1, bad);
+-
+-		type = ceph_decode_32(&p);
+-		dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
+-
+-		tkt_struct_v = ceph_decode_8(&p);
+-		if (tkt_struct_v != 1)
+-			goto bad;
+-
+-		th = get_ticket_handler(ac, type);
+-		if (IS_ERR(th)) {
+-			ret = PTR_ERR(th);
+-			goto out;
+-		}
+-
+-		/* blob for me */
+-		dlen = ceph_x_decrypt(secret, &p, end, dbuf,
+-				      TEMP_TICKET_BUF_LEN);
+-		if (dlen <= 0) {
+-			ret = dlen;
+-			goto out;
+-		}
+-		dout(" decrypted %d bytes\n", dlen);
+-		dend = dbuf + dlen;
+-		dp = dbuf;
+-
+-		tkt_struct_v = ceph_decode_8(&dp);
+-		if (tkt_struct_v != 1)
+-			goto bad;
++		return -EINVAL;
+ 
+-		memcpy(&old_key, &th->session_key, sizeof(old_key));
+-		ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
+-		if (ret)
+-			goto out;
++	ceph_decode_32_safe(&p, end, num, bad);
++	dout("%d tickets\n", num);
+ 
+-		ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
+-		ceph_decode_timespec(&validity, &new_validity);
+-		new_expires = get_seconds() + validity.tv_sec;
+-		new_renew_after = new_expires - (validity.tv_sec / 4);
+-		dout(" expires=%lu renew_after=%lu\n", new_expires,
+-		     new_renew_after);
+-
+-		/* ticket blob for service */
+-		ceph_decode_8_safe(&p, end, is_enc, bad);
+-		tp = ticket_buf;
+-		if (is_enc) {
+-			/* encrypted */
+-			dout(" encrypted ticket\n");
+-			dlen = ceph_x_decrypt(&old_key, &p, end, ticket_buf,
+-					      TEMP_TICKET_BUF_LEN);
+-			if (dlen < 0) {
+-				ret = dlen;
+-				goto out;
+-			}
+-			dlen = ceph_decode_32(&tp);
+-		} else {
+-			/* unencrypted */
+-			ceph_decode_32_safe(&p, end, dlen, bad);
+-			ceph_decode_need(&p, end, dlen, bad);
+-			ceph_decode_copy(&p, ticket_buf, dlen);
+-		}
+-		tpend = tp + dlen;
+-		dout(" ticket blob is %d bytes\n", dlen);
+-		ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
+-		blob_struct_v = ceph_decode_8(&tp);
+-		new_secret_id = ceph_decode_64(&tp);
+-		ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	while (num--) {
++		ret = process_one_ticket(ac, secret, &p, end,
++					 dbuf, ticket_buf);
+ 		if (ret)
+ 			goto out;
+-
+-		/* all is well, update our ticket */
+-		ceph_crypto_key_destroy(&th->session_key);
+-		if (th->ticket_blob)
+-			ceph_buffer_put(th->ticket_blob);
+-		th->session_key = new_session_key;
+-		th->ticket_blob = new_ticket_blob;
+-		th->validity = new_validity;
+-		th->secret_id = new_secret_id;
+-		th->expires = new_expires;
+-		th->renew_after = new_renew_after;
+-		dout(" got ticket service %d (%s) secret_id %lld len %d\n",
+-		     type, ceph_entity_type_name(type), th->secret_id,
+-		     (int)th->ticket_blob->vec.iov_len);
+-		xi->have_keys |= th->service;
  	}
  
--	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- }
- 
- /* empty and free ana buffer pool - also used to do cleanup in error paths */
-@@ -699,8 +710,7 @@ static int ibmveth_close(struct net_device *netdev)
- 
- 	free_irq(netdev->irq, netdev);
- 
--	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- 
- 	ibmveth_cleanup(adapter);
- 
+ 	ret = 0;
 -- 
 2.1.0
 
