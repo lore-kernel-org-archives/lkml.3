@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaIZB6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 21:58:42 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:62445 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaIZB6k convert rfc822-to-8bit (ORCPT
+	id S1753487AbaIZB7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 21:59:16 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:20069 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187AbaIZB7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 21:58:40 -0400
+	Thu, 25 Sep 2014 21:59:11 -0400
+Message-ID: <5424C85E.4090006@huawei.com>
+Date: Fri, 26 Sep 2014 09:58:54 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <5423D808.7050800@6wind.com>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
-	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
-	<54228D87.3070309@6wind.com>
-	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
-	<CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>
-	<5422F1F7.8010308@6wind.com>
-	<CAHA+R7MM04ew=J8sHfSQERwoCAgEDfrGgtgRORqs3ePgtjVYWg@mail.gmail.com>
-	<5423D808.7050800@6wind.com>
-Date: Thu, 25 Sep 2014 18:58:39 -0700
-Message-ID: <CAHA+R7OdOUMShX6Nphdfh8+fGiXyO+sGNHy0ch_XYh5dpURcmQ@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-From: Cong Wang <cwang@twopensource.com>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-2-git-send-email-wangyijing@huawei.com> <20140925071536.GG12423@ulmo>
+In-Reply-To: <20140925071536.GG12423@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.5424C86C.00B3,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 5cd6542b35db9be32f3a78ca7be566a9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 1:53 AM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
-> Le 24/09/2014 18:48, Cong Wang a écrit :
->
->> On Wed, Sep 24, 2014 at 9:31 AM, Nicolas Dichtel
->> <nicolas.dichtel@6wind.com> wrote:
->>>>
->>>> I think in this case your ID's are still available, but aren't you
->>>> providing a new way
->>>> for the inner netns device to escape which we are trying to avoid?
->>>
->>>
->>> It's why the ids depend on user ns. Only if user ns are the same we allow
->>> to
->>> get an id for a peer netns.
->>
->>
->> Too late, userns is relatively new, relying on it breaks our existing
->> assumption.
->>
-> I don't get your point. netns has been added in kernel after user ns:
-> acce292c82d4 user namespace: add the framework => 2.6.23
-> 5f256becd868 [NET]: Basic network namespace infrastructure. => 2.6.24
+On 2014/9/25 15:15, Thierry Reding wrote:
+> On Thu, Sep 25, 2014 at 11:14:11AM +0800, Yijing Wang wrote:
+>> Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
+>> argument.
+> 
+> That's not true. Out of the four drivers that you modify two use the
+> parameter. And the two that don't probably should be using it too.
+> 
+> 50% is not "rarely". =)
+> 
+>>           We can look up msi_chip pointer by the device pointer
+>> or irq number, so clean up msi_chip argument.
+> 
+> I don't like this particular change. The idea was to keep the API object
+> oriented so that drivers wouldn't have to know where to get the MSI chip
+> from. It also makes it more resilient against code reorganizations since
+> the core code is the only place that needs to know where to get the chip
+> from.
 
-Was it complete on 2.6.x? I doubt...
+Hm, ok, Thomas also don't like this change, I will drop this one, thanks.
 
-https://lkml.org/lkml/2014/8/20/826
+Thanks!
+Yijing.
 
-   As at Linux 3.8, most relevant subsystems supported  user  names‐
-       paces,  but  a number of filesystems did not have the infrastruc‐
-       ture needed to map user and group IDs  between  user  namespaces.
-       Linux  3.9  added the required infrastructure support for many of
-       the remaining unsupported filesystems (Plan 9 (9P),  Andrew  File
-       System  (AFS),  Ceph,  CIFS,  CODA,  NFS, and OCFS2).  Linux 3.11
-       added support the last of the unsupported major filesystems, XFS.
+> 
+> Thierry
+> 
 
 
->
-> In the kernel, each netns is linked with a user ns.
+-- 
+Thanks!
+Yijing
 
-Are you saying every time we create a netns we have a new userns?
-This doesn't make sense for me.
