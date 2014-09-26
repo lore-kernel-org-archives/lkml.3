@@ -1,215 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbaIZO4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:56:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27175 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754744AbaIZO4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:56:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597292204"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [RFC v1 10/28] x86, irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
-Date: Fri, 26 Sep 2014 22:57:40 +0800
-Message-Id: <1411743478-31435-11-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1030217AbaIZPES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:04:18 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:57858 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715AbaIZPEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:04:14 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2a01:e35:2434:4600:aca4:bf5e:39c6:55e8]
+In-Reply-To: <1411578009.24563.107.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-21-git-send-email-a.motakis@virtualopensystems.com> <1411578009.24563.107.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Fri, 26 Sep 2014 17:03:53 +0200
+Message-ID: <CAG8rG2zSaKqmZMiEa4W68zvLU4UgW0VHpLxWFqmidPk76FPuaw@mail.gmail.com>
+Subject: Re: [PATCHv7 20/26] vfio/platform: trigger an interrupt via eventfd
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there is no user of x86_io_apic_ops.eoi_ioapic_pin anymore, so kill
-it.
+On Wed, Sep 24, 2014 at 7:00 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+>> This patch allows to set an eventfd for a patform device's interrupt,
+>> and also to trigger the interrupt eventfd from userspace for testing.
+>>
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> ---
+>>  drivers/vfio/platform/vfio_platform_irq.c     | 89 ++++++++++++++++++++++++++-
+>>  drivers/vfio/platform/vfio_platform_private.h |  2 +
+>>  2 files changed, 89 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+>> index 007b386..25a7825 100644
+>> --- a/drivers/vfio/platform/vfio_platform_irq.c
+>> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+>> @@ -45,11 +45,91 @@ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+>>       return -EINVAL;
+>>  }
+>>
+>> +static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+>> +{
+>> +     struct vfio_platform_irq *irq_ctx = dev_id;
+>> +
+>> +     eventfd_signal(irq_ctx->trigger, 1);
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>> +static int vfio_set_trigger(struct vfio_platform_device *vdev,
+>> +                         int index, int fd)
+>> +{
+>> +     struct vfio_platform_irq *irq = &vdev->irqs[index];
+>> +     struct eventfd_ctx *trigger;
+>> +     int ret;
+>> +
+>> +     if (irq->trigger) {
+>> +             free_irq(irq->hwirq, irq);
+>> +             kfree(irq->name);
+>> +             eventfd_ctx_put(irq->trigger);
+>> +             irq->trigger = NULL;
+>> +     }
+>> +
+>> +     if (fd < 0) /* Disable only */
+>> +             return 0;
+>> +
+>> +     irq->name = kasprintf(GFP_KERNEL, "vfio-irq[%d](%s)",
+>> +                                             irq->hwirq, vdev->name);
+>> +     if (!irq->name)
+>> +             return -ENOMEM;
+>> +
+>> +     trigger = eventfd_ctx_fdget(fd);
+>> +     if (IS_ERR(trigger)) {
+>> +             kfree(irq->name);
+>> +             return PTR_ERR(trigger);
+>> +     }
+>> +
+>> +     irq->trigger = trigger;
+>> +
+>> +     ret = request_irq(irq->hwirq, vfio_irq_handler, 0, irq->name, irq);
+>> +     if (ret) {
+>> +             kfree(irq->name);
+>> +             eventfd_ctx_put(trigger);
+>> +             irq->trigger = NULL;
+>> +             return ret;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>>  static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+>>                                    unsigned index, unsigned start,
+>>                                    unsigned count, uint32_t flags, void *data)
+>>  {
+>> -     return -EINVAL;
+>> +     struct vfio_platform_irq *irq = &vdev->irqs[index];
+>> +     uint8_t irq_bitmap;
+>
+> Minor nit here and also present in the next patch, I believe when we
+> have DATA_BOOL, it's defined to be a u8 array, where each byte is a
+> bool, not each bit.  So it's not actually a bitmap.  The PCI code
+> handles any non-zero byte as true, not just bit0.  Thanks,
+>
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/io_apic.h  |    7 -------
- arch/x86/include/asm/x86_init.h |    1 -
- arch/x86/kernel/apic/io_apic.c  |   38 +-------------------------------------
- arch/x86/kernel/x86_init.c      |    1 -
- drivers/iommu/irq_remapping.c   |   19 -------------------
- 5 files changed, 1 insertion(+), 65 deletions(-)
+Ok, I will correct this. Thanks for the clarification.
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index e82f78f0c04d..f58cf21ced59 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -150,10 +150,6 @@ struct irq_cfg;
- extern void ioapic_insert_resources(void);
- extern int arch_early_ioapic_init(void);
- 
--extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
--
--extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
--
- extern int save_ioapic_entries(void);
- extern void mask_ioapic_entries(void);
- extern int restore_ioapic_entries(void);
-@@ -238,8 +234,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
- 	x86_io_apic_ops.modify(apic, reg, value);
- }
- 
--extern void io_apic_eoi(unsigned int apic, unsigned int vector);
--
- extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
- extern void disable_IO_APIC(void);
-@@ -284,7 +278,6 @@ static inline void disable_ioapic_support(void) { }
- #define native_io_apic_write		NULL
- #define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
--#define native_eoi_ioapic_pin		NULL
- #endif
- 
- #endif /* _ASM_X86_IO_APIC_H */
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 2637e8fb978d..fa6b1b5128ee 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -194,7 +194,6 @@ struct x86_io_apic_ops {
- 	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
--	void		(*eoi_ioapic_pin)(int apic, int pin, int vector);
- };
- 
- extern struct x86_init_ops x86_init;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3f4c2cc2772b..7ab9cea9ae1b 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -290,7 +290,7 @@ static __attribute_const__ struct io_apic __iomem *io_apic_base(int idx)
- 		+ (mpc_ioapic_addr(idx) & ~PAGE_MASK);
- }
- 
--void io_apic_eoi(unsigned int apic, unsigned int vector)
-+static inline void io_apic_eoi(unsigned int apic, unsigned int vector)
- {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 	writel(vector, &io_apic->eoi);
-@@ -546,30 +546,6 @@ static void unmask_ioapic_irq(struct irq_data *data)
-  * Otherwise, we simulate the EOI message manually by changing the trigger
-  * mode to edge and then back to level, with RTE being masked during this.
-  */
--void native_eoi_ioapic_pin(int apic, int pin, int vector)
--{
--	if (mpc_ioapic_ver(apic) >= 0x20) {
--		io_apic_eoi(apic, vector);
--	} else {
--		struct IO_APIC_route_entry entry, entry1;
--
--		entry = entry1 = __ioapic_read_entry(apic, pin);
--
--		/*
--		 * Mask the entry and change the trigger mode to edge.
--		 */
--		entry1.mask = 1;
--		entry1.trigger = IOAPIC_EDGE;
--
--		__ioapic_write_entry(apic, pin, entry1);
--
--		/*
--		 * Restore the previous level triggered entry.
--		 */
--		__ioapic_write_entry(apic, pin, entry);
--	}
--}
--
- static void eoi_io_apic(bool remapped, int apic, int pin, int vector)
- {
- 	if (unlikely(remapped)) {
-@@ -602,18 +578,6 @@ static void eoi_io_apic(bool remapped, int apic, int pin, int vector)
- 	}
- }
- 
--void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
--{
--	struct irq_pin_list *entry;
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&ioapic_lock, flags);
--	for_each_irq_pin(entry, cfg->irq_2_pin)
--		x86_io_apic_ops.eoi_ioapic_pin(entry->apic, entry->pin,
--					       cfg->vector);
--	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
--}
--
- static void clear_IO_APIC_pin(unsigned int apic, unsigned int pin)
- {
- 	struct IO_APIC_route_entry entry;
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index 377b22008280..ac2b604c00ec 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -154,5 +154,4 @@ struct x86_io_apic_ops x86_io_apic_ops = {
- 	.write			= native_io_apic_write,
- 	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
--	.eoi_ioapic_pin		= native_eoi_ioapic_pin,
- };
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 116796c194d2..cebb198ecf16 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -43,21 +43,9 @@ static void irq_remapping_disable_io_apic(void)
- 		disconnect_bsp_APIC(0);
- }
- 
--static void eoi_ioapic_pin_remapped(int apic, int pin, int vector)
--{
--	/*
--	 * Intr-remapping uses pin number as the virtual vector
--	 * in the RTE. Actual vector is programmed in
--	 * intr-remapping table entry. Hence for the io-apic
--	 * EOI we use the pin number.
--	 */
--	io_apic_eoi(apic, pin);
--}
--
- static void __init irq_remapping_modify_x86_ops(void)
- {
- 	x86_io_apic_ops.disable		= irq_remapping_disable_io_apic;
--	x86_io_apic_ops.eoi_ioapic_pin	= eoi_ioapic_pin_remapped;
- }
- 
- static __init int setup_nointremap(char *str)
-@@ -193,12 +181,6 @@ void ir_ack_apic_edge(struct irq_data *data)
- 	ack_APIC_irq();
- }
- 
--static void ir_ack_apic_level(struct irq_data *data)
--{
--	ack_APIC_irq();
--	eoi_ioapic_irq(data->irq, irqd_cfg(data));
--}
--
- void irq_remapping_print_chip(struct irq_data *data, struct seq_file *p)
- {
- 	/*
-@@ -221,7 +203,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip)
- {
- 	chip->irq_print_chip = ir_print_prefix;
- 	chip->irq_ack = ir_ack_apic_edge;
--	chip->irq_eoi = ir_ack_apic_level;
- }
- 
- bool setup_remapped_irq(int irq, struct irq_cfg *cfg, struct irq_chip *chip)
+> Alex
+>
+>> +     int32_t fd;
+>> +
+>> +     switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
+>> +     case VFIO_IRQ_SET_DATA_NONE:
+>> +             if (count == 0)
+>> +                     return vfio_set_trigger(vdev, index, -1);
+>> +
+>> +             vfio_irq_handler(irq->hwirq, irq);
+>> +             return 0;
+>> +
+>> +     case VFIO_IRQ_SET_DATA_BOOL:
+>> +             if (copy_from_user(&irq_bitmap, data, sizeof(uint8_t)))
+>> +                     return -EFAULT;
+>> +
+>> +             if (irq_bitmap == 0x1) {
+>> +                     vfio_irq_handler(irq->hwirq, irq);
+>> +                     return 0;
+>> +             }
+>> +
+>> +             return -EINVAL;
+>> +
+>> +     case VFIO_IRQ_SET_DATA_EVENTFD:
+>> +             if (copy_from_user(&fd, data, sizeof(int32_t)))
+>> +                     return -EFAULT;
+>> +
+>> +             return vfio_set_trigger(vdev, index, fd);
+>> +     }
+>> +
+>> +     return -EFAULT;
+>>  }
+>>
+>>  int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+>> @@ -95,7 +175,7 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>>               if (hwirq < 0)
+>>                       goto err;
+>>
+>> -             vdev->irqs[i].flags = 0;
+>> +             vdev->irqs[i].flags = VFIO_IRQ_INFO_EVENTFD;
+>>               vdev->irqs[i].count = 1;
+>>               vdev->irqs[i].hwirq = hwirq;
+>>       }
+>> @@ -110,6 +190,11 @@ err:
+>>
+>>  void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+>>  {
+>> +     int i;
+>> +
+>> +     for (i = 0; i < vdev->num_irqs; i++)
+>> +             vfio_set_trigger(vdev, i, -1);
+>> +
+>>       vdev->num_irqs = 0;
+>>       kfree(vdev->irqs);
+>>  }
+>> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+>> index 4201b94..765b371 100644
+>> --- a/drivers/vfio/platform/vfio_platform_private.h
+>> +++ b/drivers/vfio/platform/vfio_platform_private.h
+>> @@ -28,6 +28,8 @@ struct vfio_platform_irq {
+>>       u32                     flags;
+>>       u32                     count;
+>>       int                     hwirq;
+>> +     char                    *name;
+>> +     struct eventfd_ctx      *trigger;
+>>  };
+>>
+>>  struct vfio_platform_region {
+>
+>
+>
+
+
+
 -- 
-1.7.10.4
-
+Antonios Motakis
+Virtual Open Systems
