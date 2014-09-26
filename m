@@ -1,77 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaIZOih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:38:37 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51691 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836AbaIZOif (ORCPT
+	id S1755681AbaIZOjH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:39:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35002 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754748AbaIZOeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:38:35 -0400
-Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
-From: Namhyung Kim <namhyung@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-In-Reply-To: <1411729103.3852.19.camel@hornet>
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
-	 <1411491787-25938-2-git-send-email-pawel.moll@arm.com>
-	 <87sijhk21x.fsf@sejong.aot.lge.com> <1411642198.4768.30.camel@hornet>
-	 <8738bekith.fsf@sejong.aot.lge.com>  <1411729103.3852.19.camel@hornet>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Sep 2014 23:38:26 +0900
-Message-ID: <1411742306.1669.6.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 26 Sep 2014 10:34:01 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 02/10] net: pxa168_eth: add device tree support
+Date: Fri, 26 Sep 2014 16:33:48 +0200
+Message-Id: <1411742036-23520-3-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-26 (금), 11:58 +0100, Pawel Moll:
-> On Fri, 2014-09-26 at 07:16 +0100, Namhyung Kim wrote:
-> > > It would be doable, I guess, but what
-> > > if someone *wants* to have sched clock as the timestamps source (because
-> > > it's cheap) but still be able to correlate them with userspace? In this
-> > > case two separate timestamps are required to do the approximation.
-> > 
-> > But by collecting two timestamps, you'll loose the win of the first
-> > timestamp, no?
-> 
-> But I can ask for both timestamps only being collected on "low
-> bandwidth" events, in particular context switches and/or periodic (eg.
-> 10ms hrtimer) software events.
-> 
-> Then I have loads of normal normal samples, timestamped with sched clock
-> only, and every now and then one with both timestamps which then I can
-> use for time correlation. The whole point is that the frequency of such
-> "synchronisation" event can be much (much!) lower than of the normal
-> samples, but it still allows pretty good approximation (I was getting
-> accuracy of ~1 microsecond and better with sched_switch trace event
-> marked with additional raw monotonic timestamp).
+Add the device tree support to the pxa168_eth driver.
 
-Okay.  But in that case wouldn't it be enough to use just a single
-timestamp for each event - sched_clock for cpu-cycles and monotonic raw
-for sched_switch?
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/net/ethernet/marvell/pxa168_eth.c | 70 +++++++++++++++++++++----------
+ 1 file changed, 47 insertions(+), 23 deletions(-)
 
-
-> 
-> Pawel
-> 
-> PS. Have you sent a couple of the messages via some kind of gmane's
-> proxy? All the mail addresses got rather messed up...
-> 
-
-Yes, I use gnus to communicate with lkml, but it seems it messed up mail
-addresses if it contains some list (like linux-api ?).  Sorry about
-that.
-
-Thanks,
-Namhyung
-
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index b370162dbe02..978f26198dd6 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -193,6 +193,7 @@ struct tx_desc {
+ 
+ struct pxa168_eth_private {
+ 	int port_num;		/* User Ethernet port number    */
++	int phy_addr;
+ 
+ 	int rx_resource_err;	/* Rx ring resource error flag */
+ 
+@@ -1360,24 +1361,25 @@ static struct phy_device *phy_scan(struct pxa168_eth_private *pep, int phy_addr)
+ 	return phydev;
+ }
+ 
+-static void phy_init(struct pxa168_eth_private *pep, int speed, int duplex)
++static void phy_init(struct pxa168_eth_private *pep)
+ {
+ 	struct phy_device *phy = pep->phy;
+ 
+ 	phy_attach(pep->dev, dev_name(&phy->dev), PHY_INTERFACE_MODE_MII);
+ 
+-	if (speed == 0) {
++	if (pep->pd && pep->pd->speed != 0) {
++		phy->autoneg = AUTONEG_DISABLE;
++		phy->advertising = 0;
++		phy->speed = pep->pd->speed;
++		phy->duplex = pep->pd->duplex;
++	} else {
+ 		phy->autoneg = AUTONEG_ENABLE;
+ 		phy->speed = 0;
+ 		phy->duplex = 0;
+ 		phy->supported &= PHY_BASIC_FEATURES;
+ 		phy->advertising = phy->supported | ADVERTISED_Autoneg;
+-	} else {
+-		phy->autoneg = AUTONEG_DISABLE;
+-		phy->advertising = 0;
+-		phy->speed = speed;
+-		phy->duplex = duplex;
+ 	}
++
+ 	phy_start_aneg(phy);
+ }
+ 
+@@ -1385,11 +1387,13 @@ static int ethernet_phy_setup(struct net_device *dev)
+ {
+ 	struct pxa168_eth_private *pep = netdev_priv(dev);
+ 
+-	if (pep->pd->init)
++	if (pep->pd && pep->pd->init)
+ 		pep->pd->init();
+-	pep->phy = phy_scan(pep, pep->pd->phy_addr & 0x1f);
++
++	pep->phy = phy_scan(pep, pep->phy_addr & 0x1f);
+ 	if (pep->phy != NULL)
+-		phy_init(pep, pep->pd->speed, pep->pd->duplex);
++		phy_init(pep);
++
+ 	update_hash_table_mac_address(pep, NULL, dev->dev_addr);
+ 
+ 	return 0;
+@@ -1449,16 +1453,17 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 	struct net_device *dev = NULL;
+ 	struct resource *res;
+ 	struct clk *clk;
++	struct device_node *np;
+ 	int err;
+ 
+ 	printk(KERN_NOTICE "PXA168 10/100 Ethernet Driver\n");
+ 
+-	clk = clk_get(&pdev->dev, "MFUCLK");
++	clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(clk)) {
+ 		dev_err(&pdev->dev, "Fast Ethernet failed to get clock\n");
+ 		return -ENODEV;
+ 	}
+-	clk_enable(clk);
++	clk_prepare_enable(clk);
+ 
+ 	dev = alloc_etherdev(sizeof(struct pxa168_eth_private));
+ 	if (!dev) {
+@@ -1475,8 +1480,8 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 		err = -ENODEV;
+ 		goto err_netdev;
+ 	}
+-	pep->base = ioremap(res->start, resource_size(res));
+-	if (pep->base == NULL) {
++	pep->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(pep->base)) {
+ 		err = -ENOMEM;
+ 		goto err_netdev;
+ 	}
+@@ -1493,16 +1498,28 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 	dev_info(&pdev->dev, "Using random mac address\n");
+ 	eth_hw_addr_random(dev);
+ 
+-	pep->pd = dev_get_platdata(&pdev->dev);
+ 	pep->rx_ring_size = NUM_RX_DESCS;
+-	if (pep->pd->rx_queue_size)
+-		pep->rx_ring_size = pep->pd->rx_queue_size;
+-
+ 	pep->tx_ring_size = NUM_TX_DESCS;
+-	if (pep->pd->tx_queue_size)
+-		pep->tx_ring_size = pep->pd->tx_queue_size;
+ 
+-	pep->port_num = pep->pd->port_number;
++	pep->pd = dev_get_platdata(&pdev->dev);
++	if (pep->pd) {
++		if (pep->pd->rx_queue_size)
++			pep->rx_ring_size = pep->pd->rx_queue_size;
++
++		if (pep->pd->tx_queue_size)
++			pep->tx_ring_size = pep->pd->tx_queue_size;
++
++		pep->port_num = pep->pd->port_number;
++		pep->phy_addr = pep->pd->phy_addr;
++	} else if (pdev->dev.of_node) {
++		of_property_read_u32(pdev->dev.of_node, "port-id",
++				     &pep->port_num);
++
++		np = of_parse_phandle(pdev->dev.of_node, "phy-handle", 0);
++		if (np)
++			of_property_read_u32(np, "reg", &pep->phy_addr);
++	}
++
+ 	/* Hardware supports only 3 ports */
+ 	BUG_ON(pep->port_num > 2);
+ 	netif_napi_add(dev, &pep->napi, pxa168_rx_poll, pep->rx_ring_size);
+@@ -1603,6 +1620,12 @@ static int pxa168_eth_suspend(struct platform_device *pdev, pm_message_t state)
+ #define pxa168_eth_suspend NULL
+ #endif
+ 
++static const struct of_device_id pxa168_eth_of_match[] = {
++	{ .compatible = "marvell,pxa168-eth" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, pxa168_eth_of_match)
++
+ static struct platform_driver pxa168_eth_driver = {
+ 	.probe = pxa168_eth_probe,
+ 	.remove = pxa168_eth_remove,
+@@ -1610,8 +1633,9 @@ static struct platform_driver pxa168_eth_driver = {
+ 	.resume = pxa168_eth_resume,
+ 	.suspend = pxa168_eth_suspend,
+ 	.driver = {
+-		   .name = DRIVER_NAME,
+-		   },
++		.name		= DRIVER_NAME,
++		.of_match_table	= of_match_ptr(pxa168_eth_of_match),
++	},
+ };
+ 
+ module_platform_driver(pxa168_eth_driver);
+-- 
+1.9.1
 
