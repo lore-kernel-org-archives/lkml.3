@@ -1,209 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaIZGwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 02:52:39 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37371 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997AbaIZGwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 02:52:38 -0400
-X-Original-SENDERIP: 10.177.220.159
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Luigi Semenzato <semenzato@google.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [RFC PATCH 2/2] zram: make afmalloc as zram's backend memory allocator
-Date: Fri, 26 Sep 2014 15:53:15 +0900
-Message-Id: <1411714395-18115-2-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411714395-18115-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1411714395-18115-1-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1753379AbaIZG6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 02:58:19 -0400
+Received: from mail-by2on0133.outbound.protection.outlook.com ([207.46.100.133]:48908
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752968AbaIZG6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 02:58:18 -0400
+X-Greylist: delayed 76613 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Sep 2014 02:58:18 EDT
+From: Thomas Shao <huishao@microsoft.com>
+To: Sitsofe Wheeler <sitsofe@gmail.com>
+CC: Olaf Hering <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "KY Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: Time keeps on slipping... on Hyper-V
+Thread-Topic: Time keeps on slipping... on Hyper-V
+Thread-Index: AQHP2MSs3f6Dn2FF4EqEMJgPvPUmjJwS92Og
+Date: Fri, 26 Sep 2014 06:57:31 +0000
+Message-ID: <CD2CABCB2C0A0D4682C5F8AD8401415409741D@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
+ <20140923075610.GA10933@aepfle.de> <20140925060745.GA9450@sucs.org>
+ <CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
+ <20140925132055.GA13108@sucs.org>
+In-Reply-To: <20140925132055.GA13108@sucs.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.4]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(438002)(377454003)(24454002)(199003)(51704005)(189002)(13464003)(31966008)(16796002)(15395725005)(86146001)(1411001)(10300001)(76482002)(120916001)(4396001)(26826002)(95666004)(23676002)(50986999)(93886004)(50466002)(85306004)(54356999)(15202345003)(76176999)(106466001)(84676001)(106116001)(6806004)(2656002)(21056001)(81156004)(19580405001)(97736003)(19580395003)(55846006)(15975445006)(87936001)(33656002)(64706001)(92726001)(92566001)(86362001)(47776003)(86612001)(107046002)(20776003)(90102001)(46102003)(69596002)(74502003)(74662003)(80022003)(83072002)(77982003)(85852003)(44976005)(77096002)(110136001)(79102003)(83322001)(66066001)(68736004)(99396003)(81342003)(81542003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0301MB1206;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1206;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=huishao@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8Q6wZ4W028311
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- drivers/block/zram/Kconfig    |    2 +-
- drivers/block/zram/zram_drv.c |   40 ++++++++++++----------------------------
- drivers/block/zram/zram_drv.h |    4 ++--
- 3 files changed, 15 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
-index 6489c0f..1c09a11 100644
---- a/drivers/block/zram/Kconfig
-+++ b/drivers/block/zram/Kconfig
-@@ -1,6 +1,6 @@
- config ZRAM
- 	tristate "Compressed RAM block device support"
--	depends on BLOCK && SYSFS && ZSMALLOC
-+	depends on BLOCK && SYSFS && ANTI_FRAGMENTATION_MALLOC
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	default n
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index bc20fe1..545e43f 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -103,7 +103,7 @@ static ssize_t mem_used_total_show(struct device *dev,
- 
- 	down_read(&zram->init_lock);
- 	if (init_done(zram))
--		val = zs_get_total_pages(meta->mem_pool);
-+		val = afmalloc_get_used_pages(meta->mem_pool);
- 	up_read(&zram->init_lock);
- 
- 	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-@@ -173,16 +173,12 @@ static ssize_t mem_used_max_store(struct device *dev,
- 	int err;
- 	unsigned long val;
- 	struct zram *zram = dev_to_zram(dev);
--	struct zram_meta *meta = zram->meta;
- 
- 	err = kstrtoul(buf, 10, &val);
- 	if (err || val != 0)
- 		return -EINVAL;
- 
- 	down_read(&zram->init_lock);
--	if (init_done(zram))
--		atomic_long_set(&zram->stats.max_used_pages,
--				zs_get_total_pages(meta->mem_pool));
- 	up_read(&zram->init_lock);
- 
- 	return len;
-@@ -309,7 +305,7 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
- 
- static void zram_meta_free(struct zram_meta *meta)
- {
--	zs_destroy_pool(meta->mem_pool);
-+	afmalloc_destroy_pool(meta->mem_pool);
- 	vfree(meta->table);
- 	kfree(meta);
- }
-@@ -328,7 +324,8 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- 		goto free_meta;
- 	}
- 
--	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-+	meta->mem_pool = afmalloc_create_pool(AFMALLOC_MAX_LEVEL,
-+						disksize, GFP_NOIO);
- 	if (!meta->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		goto free_table;
-@@ -405,7 +402,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 		return;
- 	}
- 
--	zs_free(meta->mem_pool, handle);
-+	afmalloc_free(meta->mem_pool, handle);
- 
- 	atomic64_sub(zram_get_obj_size(meta, index),
- 			&zram->stats.compr_data_size);
-@@ -434,12 +431,12 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
-+	cmem = afmalloc_map_handle(meta->mem_pool, handle, size, true);
- 	if (size == PAGE_SIZE)
- 		copy_page(mem, cmem);
- 	else
- 		ret = zcomp_decompress(zram->comp, cmem, size, mem);
--	zs_unmap_object(meta->mem_pool, handle);
-+	afmalloc_unmap_handle(meta->mem_pool, handle);
- 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
-@@ -523,11 +520,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	size_t clen;
- 	unsigned long handle;
- 	struct page *page;
--	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-+	unsigned char *user_mem, *src, *uncmem = NULL;
- 	struct zram_meta *meta = zram->meta;
- 	struct zcomp_strm *zstrm;
- 	bool locked = false;
--	unsigned long alloced_pages;
- 
- 	page = bvec->bv_page;
- 	if (is_partial_io(bvec)) {
-@@ -589,7 +585,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			src = uncmem;
- 	}
- 
--	handle = zs_malloc(meta->mem_pool, clen);
-+	handle = afmalloc_alloc(meta->mem_pool, clen);
- 	if (!handle) {
- 		pr_info("Error allocating memory for compressed page: %u, size=%zu\n",
- 			index, clen);
-@@ -597,28 +593,16 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	alloced_pages = zs_get_total_pages(meta->mem_pool);
--	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
--		zs_free(meta->mem_pool, handle);
--		ret = -ENOMEM;
--		goto out;
--	}
--
--	update_used_max(zram, alloced_pages);
--
--	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
--
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
- 		src = kmap_atomic(page);
--		copy_page(cmem, src);
-+		afmalloc_store(meta->mem_pool, handle, src, clen);
- 		kunmap_atomic(src);
- 	} else {
--		memcpy(cmem, src, clen);
-+		afmalloc_store(meta->mem_pool, handle, src, clen);
- 	}
- 
- 	zcomp_strm_release(zram->comp, zstrm);
- 	locked = false;
--	zs_unmap_object(meta->mem_pool, handle);
- 
- 	/*
- 	 * Free memory associated with this sector
-@@ -725,7 +709,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 		if (!handle)
- 			continue;
- 
--		zs_free(meta->mem_pool, handle);
-+		afmalloc_free(meta->mem_pool, handle);
- 	}
- 
- 	zcomp_destroy(zram->comp);
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index c6ee271..1a116c0 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -16,7 +16,7 @@
- #define _ZRAM_DRV_H_
- 
- #include <linux/spinlock.h>
--#include <linux/zsmalloc.h>
-+#include <linux/afmalloc.h>
- 
- #include "zcomp.h"
- 
-@@ -95,7 +95,7 @@ struct zram_stats {
- 
- struct zram_meta {
- 	struct zram_table_entry *table;
--	struct zs_pool *mem_pool;
-+	struct afmalloc_pool *mem_pool;
- };
- 
- struct zram {
--- 
-1.7.9.5
 
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Sitsofe Wheeler
+> Sent: Thursday, September 25, 2014 9:28 PM
+> To: Thomas Shao
+> Cc: Olaf Hering; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> driverdev-devel@linuxdriverproject.org; apw@canonical.com;
+> jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
+> Subject: Re: Time keeps on slipping... on Hyper-V
+> 
+> On Thu, Sep 25, 2014 at 09:40:42AM +0000, Thomas Shao wrote:
+> > > > On Tue, Sep 23, Thomas Shao wrote:
+> > > >
+> > > > with the host clock using host time sample. By default it is
+> > > > disabled, because we still recommend user to configure NTP for
+> > > > time
+> > >
+> > > -----Original Message-----
+> > > From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
+> > > Sent: Thursday, September 25, 2014 2:08 PM
+> > >
+> > > You [Microsoft?] do? Can you link to public sources where is this
+> > > stated
+> >
+> > As far as I know, currently the document about time sync in Hyper-V is
+> > only for Windows. Below is a doc from MSDN:
+> > http://blogs.msdn.com/b/virtual_pc_guy/archive/2010/11/19/time-synchro
+> > nization-in-hyper-v.aspx
+> 
+> That post is problematic and not quite enough because it doesn't say "we
+> recommend you always configure an external time source for a guest" but
+> rather gives a more complicated statement saying "because guest time drifts
+> we have a time synchronisation service that will sort things out.
+> If you happen to be running a domain controller we recommend you configure
+> regular synchronisation to an external time source in addition". This leads to
+> questions like: if my (Linux) guest's sole purpose is to run a web server am I in
+> the domain controller situation (domain controllers have to re-serve time so
+> perhaps they are special)?
+> It also doesn't cover the "clock drift is so bad ntpd can't correct it"
+> issue.
+> 
+> Have you seen this document on TechNet -
+> http://blogs.technet.com/b/enterprise_admin/archive/2010/04/04/linux-on-hy
+> per-v-timesync.aspx
+> "With the new Integration Services, Linux virtual machines can!
+> 
+> TimeSync means that you don‚Äôt have to hassle with configur[ing]
+> network-based time sync for your Linux VMs on Hyper-V‚Ä¶they can get the
+> correct time from the host!"
+> 
+> This document gives simpler advice looks quite compelling at first glance.
+> 
+> > We are working on the document about Time Sync on Hyper-V to cover
+> > both Linux and Windows.
+> 
+> The sooner you can get such an official document out the better. All sources of
+> guest time synchronisation information (including Microsoft blogs and
+> non-Microsoft Q&A sites) need updating so they say the same
+> (correct!) thing in a clear way.
+> 
+> For the meantime can you state what you believe the recommend practice is
+> for Linux Hyper-V guests with regards to time synchronisation?
+> 
+
+We still recommend user to configure NTP in the guest VM. With the new time sync feature in this patch, 
+you could have one more option to enable the guest-host sync, if the NTP didn't work in the environment.
+For example the guest VM didn't have network connection.
+
+> --
+> Sitsofe | http://sucs.org/~sits/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
+> body of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
