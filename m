@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740AbaIZRoK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:44:10 -0400
-Received: from mail.us.es ([193.147.175.20]:48330 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222AbaIZRoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:44:08 -0400
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus6 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.4/19441. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-101.4/7.5):. 
- Processed in 2.434087 secs); 26 Sep 2014 17:44:05 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Fri, 26 Sep 2014 19:45:17 +0200
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: akpm@linux-foundation.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2014-09-25-16-28 uploaded (nf_nat_masquerade_ipv4.c)
-Message-ID: <20140926174517.GA11463@salvia>
-References: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
- <54259A5C.2060102@infradead.org>
+	id S1755948AbaIZRpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:45:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40147 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080AbaIZRpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:45:11 -0400
+Date: Fri, 26 Sep 2014 13:39:29 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-09-25
+Message-ID: <20140926173928.GH22967@tuxdriver.com>
+References: <20140925113553.GA9506@t440s.kiipula.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54259A5C.2060102@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140925113553.GA9506@t440s.kiipula.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-On Fri, Sep 26, 2014 at 09:54:52AM -0700, Randy Dunlap wrote:
-> On 09/25/14 16:28, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2014-09-25-16-28 has been uploaded to
-> > 
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > mmotm-readme.txt says
-> > 
-> > README for mm-of-the-moment:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > more than once a week.
+On Thu, Sep 25, 2014 at 02:35:53PM +0300, Johan Hedberg wrote:
+> Hi John,
 > 
-> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c: In function 'nf_nat_masquerade_ipv4':
-> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:59:5: error: 'struct nf_conn_nat' has no member named 'masq_index'
->   nat->masq_index = out->ifindex;
->      ^
-> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c: In function 'device_cmp':
-> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:83:12: error: 'const struct nf_conn_nat' has no member named 'masq_index'
->   return nat->masq_index == (int)(long)ifindex;
->             ^
-> ../net/ipv4/netfilter/nf_nat_masquerade_ipv4.c:84:1: warning: control reaches end of non-void function [-Wreturn-type]
+> This 3.18 pull request replaces the one I did on Monday ("bluetooth-next
+> 2014-09-22", which hasn't been pulled yet). The additions since the last
+> request are:
+> 
+>  - SCO connection fix for devices not supporting eSCO
+>  - Cleanups regarding the SCO establishment logic
+>  - Remove unnecessary return value from logging functions
+>  - Header compression fix for 6lowpan
+>  - Cleanups to the ieee802154/mrf24j40 driver
+> 
+> Here's a copy from previous request that this one replaces:
+> 
+> "
+> Here are some more patches for 3.18. They include various fixes to the
+> btusb HCI driver, a fix for LE SMP, as well as adding Jukka to the
+> MAINTAINERS file for generic 6LoWPAN (as requested by Alexander Aring).
+> 
+> I've held on to this pull request a bit since we were waiting for a SCO
+> related fix to get sorted out first. However, since the merge window is
+> getting closer I decided not to wait for it. If we do get the fix sorted
+> out there'll probably be a second small pull request later this week.
+> "
+> 
+> Please let me know if there are any issues pulling. Thanks.
+> 
+> Johan
+> 
+> ---
+> The following changes since commit 9a783a139c32a905825ee0aa9597f485ea461f76:
+> 
+>   Bluetooth: Fix re-setting RPA as expired when deferring update (2014-09-12 18:34:25 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+> 
+> for you to fetch changes up to 565766b087a6d6ff257f5b79c8ceda0188c9169f:
+> 
+>   Bluetooth: Rename sco_param_wideband table to esco_param_msbc (2014-09-25 10:35:08 +0200)
 
-I'll pass this patch in the upcoming nf-next batch:
+Pulling now, but I don't plan to push it back out until Dave pulls my earlier batch...
 
-http://git.kernel.org/cgit/linux/kernel/git/pablo/nf-next.git/commit/?id=67981fefb20e717cea55b42f9081a833fa46b3be
-
-Thanks.
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
