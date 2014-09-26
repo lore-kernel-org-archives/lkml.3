@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaIZD2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:28:38 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33204 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016AbaIZD2h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:28:37 -0400
-Message-ID: <5424DD5E.3040809@roeck-us.net>
-Date: Thu, 25 Sep 2014 20:28:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753643AbaIZD3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:29:12 -0400
+Received: from ozlabs.org ([103.22.144.67]:55688 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253AbaIZD3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 23:29:10 -0400
+Date: Fri, 26 Sep 2014 13:29:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <treding@nvidia.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: linux-next: manual merge of the pci tree with the asm-generic tree
+Message-ID: <20140926132902.603fb9f8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] power: Add simple gpio-restart driver
-References: <1409167431-21155-1-git-send-email-davidriley@chromium.org> <1409167431-21155-2-git-send-email-davidriley@chromium.org> <541BB278.9010701@roeck-us.net> <20140925234145.GA2063@earth.universe>
-In-Reply-To: <20140925234145.GA2063@earth.universe>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.5424DD64.008E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/ow5xe+EKyE8fo+vUZAtbux3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 04:41 PM, Sebastian Reichel wrote:
-> Hi Guenter,
->
-> On Thu, Sep 18, 2014 at 09:35:04PM -0700, Guenter Roeck wrote:
->> On 08/27/2014 12:23 PM, David Riley wrote:
->>> This driver registers a restart handler to set a GPIO line high/low
->>> to reset a board based on devicetree bindings.
->>>
->>> Signed-off-by: David Riley <davidriley@chromium.org>
->>
->> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
->
-> Is there an immutable branch available with your restart handler
-> stuff, which I can pull into battery-2.6.git?
->
-> -- Sebastian
->
+--Sig_/ow5xe+EKyE8fo+vUZAtbux3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Bjorn,
 
-Hi Sebastian,
+Today's linux-next merge of the pci tree got a conflict in
+include/asm-generic/io.h between commit 4005bfe0aa45
+("asm-generic/io.h: Implement generic {read,write}s*()") from the
+asm-generic tree and commit 3aad9c969c09 ("asm-generic/io.h: Fix
+ioport_map() for !CONFIG_GENERIC_IOMAP") from the pci tree.
 
-Unfortunately not.
+I fixed it up (the only difference is that the latter castes the result
+to void __iomem * - see below) and can carry the fix as necessary (no
+action is required).
 
-Andrew has the patches in his tree and will hopefully send the set to Linus
-during the next commit window. Not sure if/how I could create an immutable
-branch from the commits in his repository, especially since (if I understand
-it correctly) he re-creates his tree on a regular basis, which is changing
-the SHAs and, unless I am missing something, the commit dates.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-[ Not really sure how to best handle situations like that .. ]
+diff --cc include/asm-generic/io.h
+index 3e976be3bdd4,2e2161b0c795..000000000000
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@@ -756,16 -329,11 +756,16 @@@ static inline void iounmap(void __iome
+ =20
+  #ifdef CONFIG_HAS_IOPORT_MAP
+  #ifndef CONFIG_GENERIC_IOMAP
+ +#ifndef ioport_map
+ +#define ioport_map ioport_map
+  static inline void __iomem *ioport_map(unsigned long port, unsigned int n=
+r)
+  {
+- 	return PCI_IOBASE + (port & IO_SPACE_LIMIT);
++ 	return (void __iomem *)(PCI_IOBASE + (port & IO_SPACE_LIMIT));
+  }
+ +#endif
+ =20
+ +#ifndef ioport_unmap
+ +#define ioport_unmap ioport_unmap
+  static inline void ioport_unmap(void __iomem *p)
+  {
+  }
 
-Guenter
+--Sig_/ow5xe+EKyE8fo+vUZAtbux3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUJN2DAAoJEMDTa8Ir7ZwV9vgP/3BnKrDma9zJlMeUR3Celdgw
+6nO4CvZeQhM9GktOJA4gXGcIj0aq1x1fYNoEOcNO5BBzoNPqw6/4Btj845tarBWX
+624IBKQNdvIc4kYWlsHso/ylMS1ItpTZnnvmstamhmfFlgterDYBBosA/DYC+v8I
+UK0vA0HFA2CdbNF6B1FNHF6VkZdUgiZq/eb4VhIb+ANlF08VY2N73f/x2gLjxiAy
+qe/9NUzzkXtWcr+HKvFXlwsaz+VE6W60dyTnUADnqcO6YdClSQAg9Lovuohp2Ocv
+DiESfCt2DAfrX3Csdx7VbPKdGhd7aQCMOcz8ry8a4mOGgqDL/FAf0oyuDrTcJ6jQ
+ECfWb6H/ZMjrycKDDZrHVcJQgUVC4oajY9s+iNS6uTGc3s87xSCZfTRiM6XBVC3p
+EKl5fC8p/7RmABlE2gz3HBJ2jDNwwvQbrN73upRi549d6SD4jWSNNBGY9yvTj1AF
+Ct0LWN2/ibf2kSKeMHIeRCLpX16u0YcYzpHHu0XwXVtYNb+Y/934j5fkN3pkv9vF
+HZ9eME6WFkCVWQF7x9ooNH5VICu5JUiQJAdkoC3fnWQnW2B5qaWNxF1weSKpIazd
+amYW4LP+T97P/SHZBEQC/QdZBxzohRQsbPz+IEGA/n+6AeLqte6w83oJFxjRjxHg
+gtnLhI47NHphAcRkEgLw
+=HTA/
+-----END PGP SIGNATURE-----
+
+--Sig_/ow5xe+EKyE8fo+vUZAtbux3--
