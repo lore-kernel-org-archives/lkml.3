@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094AbaIZUlj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:41:39 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:61097 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829AbaIZUli (ORCPT
+	id S1756168AbaIZUmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:42:24 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:64614 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505AbaIZUmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:41:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] pinctrl: remove remaining users of gpiochip_remove() retval
-Date: Fri, 26 Sep 2014 22:41:32 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org
-References: <1410905274-22339-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1410905274-22339-1-git-send-email-linus.walleij@linaro.org>
+	Fri, 26 Sep 2014 16:42:22 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201409262241.32579.arnd@arndb.de>
-X-Provags-ID: V02:K0:25gBSlvalXQZhka6v2HuDUHVBN8GQuG940fNSY3Ygat
- Dew0G8vMhrVQglIdf3qVzWsUbPzOfQQ/DytJxrxfgbxBDiI0PI
- qMnWUWMgVV1CX3COyllr1S0NJ+QAaqckhTniZ9Q264TPn9zJvd
- angUHoEOOEJS0A7xeKt7lf+NDAFSd9XCKQjd/SnEEMAbCktIS7
- LlTVjMyNMKxXZ2gtD0LV2r+9LDFsMvWc2ePGNkIp8vJCMnBaTO
- Zeq7Z6cY6KUGFph7qTj5XeJsnqpvI1KnjvtFeCDQoJkSj4+yrU
- CyAG4tix1I4n/DZ/xzGFenHNb0vWI22m18ofnUUMMWCYRbgH80
- V8uyfayeiwTW6xUpndGI=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
+References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+ <CALCETrXFb=etdrabEjbKdxKg51ViPXptOC=6CkKwcGS7Jau8nA@mail.gmail.com> <CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 26 Sep 2014 13:42:00 -0700
+Message-ID: <CALCETrVAQ7oRm8zDHDiUurjrMw=+ABucLWjed_P__4j8deNE7A@mail.gmail.com>
+Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
+ syscall, verifier, testsuite)
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 September 2014, Linus Walleij wrote:
-> Some drivers accidentally still use the return value from
-> gpiochip_remove(). Get rid of them so we can simplify this function
-> and get rid of the return value.
-> 
-> Cc: Abdoulaye Berthe <berthe.ab@gmail.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> This patch will be merged through the GPIO tree.
+On Fri, Sep 26, 2014 at 1:09 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Fri, Sep 26, 2014 at 12:51 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> To add one more point:
+>>
+>> With the current verifier design, it's impossible to write a userspace
+>> tool that can take an eBPF program and check it.  The verification is
+>> far too context-dependent for that to be possible.  I won't go so far
+>> as to say that a userspace tool needs to *exist*, but I strongly
+>> object to exposing a verification algorithm that *precludes* writing
+>> such a tool.
+>
+> that's just not true.
+> why is it not possible?
 
-Hi Linus, this patch caused a new build warning in some configurations:
+Because the types of referenced objects aren't encoded in the blob
+that a user program loads, unless I'm missing something.
 
-> diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-> index a53a689a2bfa..7df34b70e8b6 100644
-> --- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
-> +++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-> @@ -1298,10 +1298,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
->  	return 0;
->  
->  out_rem_chip:
-> -	err = gpiochip_remove(&pct->chip);
-> -	if (err)
-> -		dev_info(&pdev->dev, "failed to remove gpiochip\n");
-> -
-> +	gpiochip_remove(&pct->chip);
->  	return ret;
->  }
+>
+>> I think that the eBPF program format needs to encode all context
+>> needed for verification.  Then verification should check that the
+>> program is compliant with the context and that the context is correct.
+>> The former could, in principle, be done in userspace, too.
+>
+> one can have maps and other future objects equally
+> represented in user space. Nothing stops doing exactly the same
+> logic there.
 
+But the eBPF binary doesn't encode this information. In fact, the
+caller of an ebpf syscall may not even have access to this
+information.
 
-drivers/pinctrl/nomadik/pinctrl-abx500.c: In function 'abx500_gpio_probe':
-drivers/pinctrl/nomadik/pinctrl-abx500.c:1208:11: warning: unused variable 'err' [-Wunused-variable]
+I really think that the information needed to check type safety should
+be encapsulated in the program.
 
-Please fix by removing that variable.
+>
+>> Here, "context" includes the program type (i.e. what type R1 hasis),
+>> the key and value sizes of all referenced maps, the fact that the maps
+>> are maps (damnit, "every object implements exactly the same interface
+>> and is called a 'map'" is a bad type system*), and possible also
+>> things like the intended stack size and any other relevant details
+>> about the entry calling convention.
+>
+> Andy, I'm not sure where you're going with this.
+> Sounds like you want to redesign the whole thing?
+> How long it will take?
+> Did you consider all the cases I did?
+> I think I understand your concerns. What I don't understand
+> why you think we cannot address them step by step.
+> imo what this does covers a ton of use cases.
+> Some futuristic stuff may be better and may be not.
+> But here I have it working, tested and proven over many
+> use cases, whereas some future unclear stuff will take
+> unknown amount of time to redesign...
 
-	Arnd
+I think this is addressable as a smallish change on top of your code.
+Rather than looking up a map when you need to learn its key and value
+size, I think that all you need to do is to look in a program section
+for the key and value size (and the fact that it's a map) and confirm
+that the referenced map *matches* the stored values.
+
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
