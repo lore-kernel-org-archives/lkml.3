@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaIZNjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:39:03 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:61420 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754508AbaIZNjA (ORCPT
+	id S1754984AbaIZNj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:39:27 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46563 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754508AbaIZNjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:39:00 -0400
-Message-ID: <54256C71.20108@6wind.com>
-Date: Fri, 26 Sep 2014 15:38:57 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 26 Sep 2014 09:39:24 -0400
+Date: Fri, 26 Sep 2014 14:39:20 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "hns@goldelico.com" <hns@goldelico.com>,
+        "sre@debian.org" <sre@debian.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] Documentation: DT: Document twl4030-madc-battery
+ bindings.
+Message-ID: <20140926133920.GG7422@leverpostej>
+References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
+ <1394052739-8589-4-git-send-email-marek@goldelico.com>
+ <20140922110320.GI3290@leverpostej>
+ <CAAfyv352GrgTzKf-XxPNthtoR9rdhssnOSdx1mZ-q=D4okBSAA@mail.gmail.com>
 MIME-Version: 1.0
-To: Cong Wang <cwang@twopensource.com>
-CC: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>	<CAHA+R7MVL=WpepRy8iz6iT6Kkq1RHG+b9TxJothP94ixyAj-3Q@mail.gmail.com>	<5422F1F7.8010308@6wind.com>	<CAHA+R7MM04ew=J8sHfSQERwoCAgEDfrGgtgRORqs3ePgtjVYWg@mail.gmail.com>	<5423D808.7050800@6wind.com> <CAHA+R7OdOUMShX6Nphdfh8+fGiXyO+sGNHy0ch_XYh5dpURcmQ@mail.gmail.com>
-In-Reply-To: <CAHA+R7OdOUMShX6Nphdfh8+fGiXyO+sGNHy0ch_XYh5dpURcmQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv352GrgTzKf-XxPNthtoR9rdhssnOSdx1mZ-q=D4okBSAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 26/09/2014 03:58, Cong Wang a écrit :
-> On Thu, Sep 25, 2014 at 1:53 AM, Nicolas Dichtel
-> <nicolas.dichtel@6wind.com> wrote:
->> Le 24/09/2014 18:48, Cong Wang a écrit :
->>
->>> On Wed, Sep 24, 2014 at 9:31 AM, Nicolas Dichtel
->>> <nicolas.dichtel@6wind.com> wrote:
->>>>>
->>>>> I think in this case your ID's are still available, but aren't you
->>>>> providing a new way
->>>>> for the inner netns device to escape which we are trying to avoid?
->>>>
->>>>
->>>> It's why the ids depend on user ns. Only if user ns are the same we allow
->>>> to
->>>> get an id for a peer netns.
->>>
->>>
->>> Too late, userns is relatively new, relying on it breaks our existing
->>> assumption.
->>>
->> I don't get your point. netns has been added in kernel after user ns:
->> acce292c82d4 user namespace: add the framework => 2.6.23
->> 5f256becd868 [NET]: Basic network namespace infrastructure. => 2.6.24
->
-> Was it complete on 2.6.x? I doubt...
->
-> https://lkml.org/lkml/2014/8/20/826
->
->     As at Linux 3.8, most relevant subsystems supported  user  names‐
->         paces,  but  a number of filesystems did not have the infrastruc‐
->         ture needed to map user and group IDs  between  user  namespaces.
->         Linux  3.9  added the required infrastructure support for many of
->         the remaining unsupported filesystems (Plan 9 (9P),  Andrew  File
->         System  (AFS),  Ceph,  CIFS,  CODA,  NFS, and OCFS2).  Linux 3.11
->         added support the last of the unsupported major filesystems, XFS.
->
->
->>
->> In the kernel, each netns is linked with a user ns.
->
-> Are you saying every time we create a netns we have a new userns?
-> This doesn't make sense for me.
->
-No. I mean that each netns depends on a userns.
-See include/net/net_namespace.h:
-struct net {
-[snip]
-         struct user_namespace   *user_ns;       /* Owning user namespace */
-[snip]
-}
+On Mon, Sep 22, 2014 at 09:35:03PM +0100, Belisko Marek wrote:
+> Hi Mark,
+> 
+> On Mon, Sep 22, 2014 at 1:03 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> > Hi,
+> >
+> > On Wed, Mar 05, 2014 at 08:52:19PM +0000, Marek Belisko wrote:
+> >> Signed-off-by: Marek Belisko <marek@goldelico.com>
+> >> ---
+> >>  .../bindings/power_supply/twl4030_madc_battery.txt | 43 ++++++++++++++++++++++
+> >>  1 file changed, 43 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+> >> new file mode 100644
+> >> index 0000000..fd0b6d2
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+> >> @@ -0,0 +1,43 @@
+> >> +twl4030_madc_battery
+> >> +
+> >> +Required properties:
+> >> + - compatible : "ti,twl4030-madc-battery"
+> >
+> > I'm rather confused by this; the code seems to have stripped away all
+> > the twl4030 dependencies and this now seems to be a generic ADC battery
+> > status driver. So why does this need to be specific to twl4030?
+> You are right. Also possibly driver name is incorrect :). Better name could be
+> ti, madc-battery.
+
+Ok.
+
+> >
+> >> + - capacity : battery capacity in uAh
+> >
+> > I would make the units explicit in the name; "capacity" can be measured
+> > in many ways.
+> OK capacity_uAh should be fine I believe.
+
+Well, "capacity-uah" to match naming conventions.
+
+> >
+> >> + - charging-calibration-data : list of voltage(mV):level(%) values
+> >> +     for charging calibration (see example)
+> >> + - discharging-calibration-data : list of voltage(mV):level(%) values
+> >> +     for discharging calibration (see example)
+> >
+> > Regardless of the prefixing of these property names, the specifics are
+> > unclear to me.
+> Do you suggest to rename it completely or is enough to add "ti, " prefix?
+
+I'm not suggesting prefixing. I'm suggesting that "calibration data"
+could mean a variety of things, so having a more specific name would be
+beneficial.
+
+> > Does this apply to vbat?
+> Yes bat is read and then interpolation algorithm is applied for
+> various power properties.
+> So mapping from voltage to percentage is defined in table.
+> >
+> > Is vbat guaranteed to read in mV?
+> Yes.
+> >
+> > Is any particular order required? The example seems to go be in
+> > descending percentage values.
+> There is done sorting in driver so ordering it's not necessary.
+> >
+> > Is any particular interpolation expected on behalf of the OS, or is this
+> > just an informative set of measurements that hte OS can use as it sees
+> > fit?
+> >
+> >> + - io-channels: Should contain IIO channel specifiers
+> >> +     for each element in io-channel-names.
+> >> +- io-channel-names: Should contain the following values:
+> All 3 statements was copied from rx51-battery and documentation is the same.
+> There is not unit for all channels just raw values which are then
+> converted in driver.
+
+I don't understand. How do you figure out the mapping of those raw
+values to sensible units? Surely you need additional information to do
+so?
+
+Mark.
