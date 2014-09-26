@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaIZFum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 01:50:42 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47508 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaIZFuk (ORCPT
+	id S1753732AbaIZFvi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 01:51:38 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51754 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178AbaIZFvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 01:50:40 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arun Sharma <asharma@fb.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] perf callchain: Use global caching provided by libunwind
-References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
-	<1411453828-14832-2-git-send-email-namhyung@kernel.org>
-	<54217D09.40500@fb.com> <874mvxlprb.fsf@sejong.aot.lge.com>
-	<CAFrcx1kc1FRZVosg6ziEkX-u41PiAw3=uPzKL0g87WAQnimOTg@mail.gmail.com>
-Date: Fri, 26 Sep 2014 14:50:39 +0900
-In-Reply-To: <CAFrcx1kc1FRZVosg6ziEkX-u41PiAw3=uPzKL0g87WAQnimOTg@mail.gmail.com>
-	(Jean Pihet's message of "Wed, 24 Sep 2014 15:45:57 +0200")
-Message-ID: <87bnq3j5g0.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 26 Sep 2014 01:51:37 -0400
+Message-ID: <5424FEE0.2020806@roeck-us.net>
+Date: Thu, 25 Sep 2014 22:51:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Wim Van Sebroeck <wim@iguana.be>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: linux-next: build failure after merge of the watchdog tree
+References: <20140926154031.4bc4dc39@canb.auug.org.au>
+In-Reply-To: <20140926154031.4bc4dc39@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.5424FEE8.00C9,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-On Wed, 24 Sep 2014 15:45:57 +0200, Jean Pihet wrote:
-> Hi!
+On 09/25/2014 10:40 PM, Stephen Rothwell wrote:
+> Hi Wim,
 >
-> Here are the test results on ARMv7 for the 2 patches. The speedup is
-> about x2.1 for identical unwinding output data.
+> After merging the watchdog tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
 >
-> 'perf record --call-graph dwarf -- stress --cpu 2 --io 2 --vm 2
-> --timeout 10s' generates a 365 MB perf.data file.
 >
-> time perf.orig report --sort symbol --call-graph --stdio 2&>1 > /dev/null
-> average on 3 runs
-> real    36.736
-> user   14.79
-> sys    21.91
+> drivers/watchdog/meson_wdt.c: In function 'meson_wdt_probe':
+> drivers/watchdog/meson_wdt.c:178:2: error: implicit declaration of function 'register_restart_handler' [-Werror=implicit-function-declaration]
+>    err = register_restart_handler(&meson_wdt->restart_handler);
+>    ^
+> drivers/watchdog/meson_wdt.c: In function 'meson_wdt_remove':
+> drivers/watchdog/meson_wdt.c:193:2: error: implicit declaration of function 'unregister_restart_handler' [-Werror=implicit-function-declaration]
+>    unregister_restart_handler(&meson_wdt->restart_handler);
+>    ^
 >
-> time perf.libunwind.speedup report --sort symbol --call-graph --stdio
-> 2&>1 > /dev/null
-> average on 3 runs
-> real    17.41        x2.11
-> user     6.42        x2.3
-> sys    10.97        x2
+> Caused by commit 575f4153957b ("ARM: meson: add watchdog driver").
 >
-> So the patches definitely speedup the unwinding.
-> FWIW: Acked-by: Jean Pihet <jean.pihet@linaro.org>
-
-Thanks for your test!
-
-Btw, have you checked the difference of the output before and after the
-caching?
-
+> I have reverted that commit for today.
 >
-> For info unwinding using libdw is about 5x faster:
-> time perf.libdw.speedup report --sort symbol --call-graph --stdio 2&>1
->> /dev/null
-> real    0m3.484s
-> user    0m2.360s
-> sys    0m1.070s
 
-Wow, it's pretty nice.  I'll take a look at the libdw unwinding later.
+Those functions are defined by patches which reside in Andrew's tree.
+Is that merged later ?
 
-Thanks,
-Namhyung
+Guenter
+
