@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081AbaIZKFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:05:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
+	id S1756065AbaIZKFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:05:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754997AbaIZJqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755000AbaIZJqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/142] CIFS: Fix wrong filename length for SMB2
-Date: Fri, 26 Sep 2014 11:45:22 +0200
-Message-Id: <47770ac167aec89d4743afee133ef9f6609ce768.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 106/142] libceph: do not hard code max auth ticket len
+Date: Fri, 26 Sep 2014 11:45:17 +0200
+Message-Id: <0884f8d4139431deb0b98ba0d6fb2d17e2c25c84.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,98 +22,204 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1bbe4997b13de903c421c1cc78440e544b5f9064 upstream.
+commit c27a3e4d667fdcad3db7b104f75659478e0c68d8 upstream.
 
-The existing code uses the old MAX_NAME constant. This causes
-XFS test generic/013 to fail. Fix it by replacing MAX_NAME with
-PATH_MAX that SMB1 uses. Also remove an unused MAX_NAME constant
-definition.
+We hard code cephx auth ticket buffer size to 256 bytes.  This isn't
+enough for any moderate setups and, in case tickets themselves are not
+encrypted, leads to buffer overflows (ceph_x_decrypt() errors out, but
+ceph_decode_copy() doesn't - it's just a memcpy() wrapper).  Since the
+buffer is allocated dynamically anyway, allocated it a bit later, at
+the point where we know how much is going to be needed.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Fixes: http://tracker.ceph.com/issues/8979
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/cifs/cifsglob.h  | 5 -----
- fs/cifs/smb2file.c  | 2 +-
- fs/cifs/smb2inode.c | 2 +-
- fs/cifs/smb2ops.c   | 2 +-
- fs/cifs/smb2pdu.c   | 2 +-
- 5 files changed, 4 insertions(+), 9 deletions(-)
+ net/ceph/auth_x.c | 64 +++++++++++++++++++++++++------------------------------
+ 1 file changed, 29 insertions(+), 35 deletions(-)
 
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 465b65488b27..d13f77ea0034 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -70,11 +70,6 @@
- #define SERVER_NAME_LENGTH 40
- #define SERVER_NAME_LEN_WITH_NULL     (SERVER_NAME_LENGTH + 1)
+diff --git a/net/ceph/auth_x.c b/net/ceph/auth_x.c
+index 0eb146dce1aa..de6662b14e1f 100644
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -13,8 +13,6 @@
+ #include "auth_x.h"
+ #include "auth_x_protocol.h"
  
--/* used to define string lengths for reversing unicode strings */
--/*         (256+1)*2 = 514                                     */
--/*           (max path length + 1 for null) * 2 for unicode    */
--#define MAX_NAME 514
+-#define TEMP_TICKET_BUF_LEN	256
 -
- /* SMB echo "timeout" -- FIXME: tunable? */
- #define SMB_ECHO_INTERVAL (60 * HZ)
+ static void ceph_x_validate_tickets(struct ceph_auth_client *ac, int *pneed);
  
-diff --git a/fs/cifs/smb2file.c b/fs/cifs/smb2file.c
-index 3f17b4550831..45992944e238 100644
---- a/fs/cifs/smb2file.c
-+++ b/fs/cifs/smb2file.c
-@@ -50,7 +50,7 @@ smb2_open_file(const unsigned int xid, struct cifs_open_parms *oparms,
- 		goto out;
- 	}
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL) {
- 		rc = -ENOMEM;
-diff --git a/fs/cifs/smb2inode.c b/fs/cifs/smb2inode.c
-index 84c012a6aba0..215f8d3e3e53 100644
---- a/fs/cifs/smb2inode.c
-+++ b/fs/cifs/smb2inode.c
-@@ -131,7 +131,7 @@ smb2_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
- 	*adjust_tz = false;
- 	*symlink = false;
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL)
- 		return -ENOMEM;
-diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
-index 4ac88f89a5e5..8956cf67299b 100644
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -251,7 +251,7 @@ smb2_query_file_info(const unsigned int xid, struct cifs_tcon *tcon,
- 	int rc;
- 	struct smb2_file_all_info *smb2_data;
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL)
- 		return -ENOMEM;
-diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-index 7cf843b976fd..fb0c67372a90 100644
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -1489,7 +1489,7 @@ SMB2_query_info(const unsigned int xid, struct cifs_tcon *tcon,
- {
- 	return query_info(xid, tcon, persistent_fid, volatile_fid,
- 			  FILE_ALL_INFORMATION,
--			  sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+			  sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			  sizeof(struct smb2_file_all_info), data);
+ static int ceph_x_is_authenticated(struct ceph_auth_client *ac)
+@@ -64,7 +62,7 @@ static int ceph_x_encrypt(struct ceph_crypto_key *secret,
  }
  
+ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+-			  void **p, void *end, void *obuf, size_t olen)
++			  void **p, void *end, void **obuf, size_t olen)
+ {
+ 	struct ceph_x_encrypt_header head;
+ 	size_t head_len = sizeof(head);
+@@ -75,8 +73,14 @@ static int ceph_x_decrypt(struct ceph_crypto_key *secret,
+ 		return -EINVAL;
+ 
+ 	dout("ceph_x_decrypt len %d\n", len);
+-	ret = ceph_decrypt2(secret, &head, &head_len, obuf, &olen,
+-			    *p, len);
++	if (*obuf == NULL) {
++		*obuf = kmalloc(len, GFP_NOFS);
++		if (!*obuf)
++			return -ENOMEM;
++		olen = len;
++	}
++
++	ret = ceph_decrypt2(secret, &head, &head_len, *obuf, &olen, *p, len);
+ 	if (ret)
+ 		return ret;
+ 	if (head.struct_v != 1 || le64_to_cpu(head.magic) != CEPHX_ENC_MAGIC)
+@@ -131,18 +135,19 @@ static void remove_ticket_handler(struct ceph_auth_client *ac,
+ 
+ static int process_one_ticket(struct ceph_auth_client *ac,
+ 			      struct ceph_crypto_key *secret,
+-			      void **p, void *end,
+-			      void *dbuf, void *ticket_buf)
++			      void **p, void *end)
+ {
+ 	struct ceph_x_info *xi = ac->private;
+ 	int type;
+ 	u8 tkt_struct_v, blob_struct_v;
+ 	struct ceph_x_ticket_handler *th;
++	void *dbuf = NULL;
+ 	void *dp, *dend;
+ 	int dlen;
+ 	char is_enc;
+ 	struct timespec validity;
+ 	struct ceph_crypto_key old_key;
++	void *ticket_buf = NULL;
+ 	void *tp, *tpend;
+ 	struct ceph_timespec new_validity;
+ 	struct ceph_crypto_key new_session_key;
+@@ -167,8 +172,7 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	}
+ 
+ 	/* blob for me */
+-	dlen = ceph_x_decrypt(secret, p, end, dbuf,
+-			      TEMP_TICKET_BUF_LEN);
++	dlen = ceph_x_decrypt(secret, p, end, &dbuf, 0);
+ 	if (dlen <= 0) {
+ 		ret = dlen;
+ 		goto out;
+@@ -195,20 +199,25 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 
+ 	/* ticket blob for service */
+ 	ceph_decode_8_safe(p, end, is_enc, bad);
+-	tp = ticket_buf;
+ 	if (is_enc) {
+ 		/* encrypted */
+ 		dout(" encrypted ticket\n");
+-		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
+-				      TEMP_TICKET_BUF_LEN);
++		dlen = ceph_x_decrypt(&old_key, p, end, &ticket_buf, 0);
+ 		if (dlen < 0) {
+ 			ret = dlen;
+ 			goto out;
+ 		}
++		tp = ticket_buf;
+ 		dlen = ceph_decode_32(&tp);
+ 	} else {
+ 		/* unencrypted */
+ 		ceph_decode_32_safe(p, end, dlen, bad);
++		ticket_buf = kmalloc(dlen, GFP_NOFS);
++		if (!ticket_buf) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		tp = ticket_buf;
+ 		ceph_decode_need(p, end, dlen, bad);
+ 		ceph_decode_copy(p, ticket_buf, dlen);
+ 	}
+@@ -237,6 +246,8 @@ static int process_one_ticket(struct ceph_auth_client *ac,
+ 	xi->have_keys |= th->service;
+ 
+ out:
++	kfree(ticket_buf);
++	kfree(dbuf);
+ 	return ret;
+ 
+ bad:
+@@ -249,21 +260,10 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    void *buf, void *end)
+ {
+ 	void *p = buf;
+-	char *dbuf;
+-	char *ticket_buf;
+ 	u8 reply_struct_v;
+ 	u32 num;
+ 	int ret;
+ 
+-	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!dbuf)
+-		return -ENOMEM;
+-
+-	ret = -ENOMEM;
+-	ticket_buf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+-	if (!ticket_buf)
+-		goto out_dbuf;
+-
+ 	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+ 		return -EINVAL;
+@@ -272,22 +272,15 @@ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 	dout("%d tickets\n", num);
+ 
+ 	while (num--) {
+-		ret = process_one_ticket(ac, secret, &p, end,
+-					 dbuf, ticket_buf);
++		ret = process_one_ticket(ac, secret, &p, end);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
+ 
+-	ret = 0;
+-out:
+-	kfree(ticket_buf);
+-out_dbuf:
+-	kfree(dbuf);
+-	return ret;
++	return 0;
+ 
+ bad:
+-	ret = -EINVAL;
+-	goto out;
++	return -EINVAL;
+ }
+ 
+ static int ceph_x_build_authorizer(struct ceph_auth_client *ac,
+@@ -603,13 +596,14 @@ static int ceph_x_verify_authorizer_reply(struct ceph_auth_client *ac,
+ 	struct ceph_x_ticket_handler *th;
+ 	int ret = 0;
+ 	struct ceph_x_authorize_reply reply;
++	void *preply = &reply;
+ 	void *p = au->reply_buf;
+ 	void *end = p + sizeof(au->reply_buf);
+ 
+ 	th = get_ticket_handler(ac, au->service);
+ 	if (IS_ERR(th))
+ 		return PTR_ERR(th);
+-	ret = ceph_x_decrypt(&th->session_key, &p, end, &reply, sizeof(reply));
++	ret = ceph_x_decrypt(&th->session_key, &p, end, &preply, sizeof(reply));
+ 	if (ret < 0)
+ 		return ret;
+ 	if (ret != sizeof(reply))
 -- 
 2.1.0
 
