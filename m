@@ -1,139 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138AbaIZVTk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:19:40 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64667 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755752AbaIZVTi (ORCPT
+	id S1030182AbaIZVX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:23:26 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:39816 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752AbaIZVXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:19:38 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Eric Caruso <ejcaruso@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Dmitry Torokhov <dtor@google.com>,
-        linux-kernel@vger.kernel.org, Benson Leung <bleung@google.com>
-Subject: Re: irq mask swapping during suspend/resume
-Date: Fri, 26 Sep 2014 23:39:28 +0200
-Message-ID: <14556491.5ApW8OU2l5@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAA9CXT0p+J2aHE0uLcHdaX5xurV-==5h_bCg--NWxRMwO2b0tA@mail.gmail.com>
-References: <CAA9CXT07f01KW4UeoPPy4k1NM6qfxdtsOQXXSPjTKx7mG_v7Rw@mail.gmail.com> <2213339.XxHo9Gxm0z@vostro.rjw.lan> <CAA9CXT0p+J2aHE0uLcHdaX5xurV-==5h_bCg--NWxRMwO2b0tA@mail.gmail.com>
+	Fri, 26 Sep 2014 17:23:24 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140924054514.GA10275@kroah.com>
+References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
+	<1410450558-12358-2-git-send-email-mathieu.poirier@linaro.org>
+	<20140911203344.GA7593@kroah.com>
+	<CANLsYkyPFvOnqRJaWZrvw1aVjBWG=tHuv+V9Tj5RhMy_gD_oiA@mail.gmail.com>
+	<20140912181601.GA21033@kroah.com>
+	<CANLsYkz1DhJ-DCgaUHFgmtUB+QfGDKrnbGRJQDBp=PkKvg9RMA@mail.gmail.com>
+	<20140924054514.GA10275@kroah.com>
+Date: Fri, 26 Sep 2014 15:23:23 -0600
+Message-ID: <CANLsYkxFf8nDpKm_7-z95PqE2EKZNU1YiJfVYACPRfY_1o7e7w@mail.gmail.com>
+Subject: Re: [PATCH 01/11 v6] coresight: add CoreSight core layer framework
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        James King <james.king@linaro.org>,
+        Panchaxari Prasannamurthy Tumkur 
+	<panchaxari.prasannamurthy@linaro.org>,
+        Kaixu Xia <kaixu.xia@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
+        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
+        Robert Marklund <robbelibobban@gmail.com>,
+        Patch Tracking <patches@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deepak Saxena <dsaxena@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 26, 2014 09:58:39 AM Eric Caruso wrote:
-> I was putting together a prototype for this, and ran into a design
-> issue. It's not obvious how to get from the struct wakeup_source to
-> places where we hold all of the relevant device information or irq
-> information. If we were to walk the list of wakeup source objects,
-> where would we actually get the irq information to call
-> enable_irq_wake()?
-> 
-> Does this just require a bunch of extra plumbing we don't have right
-> now, and this is what you meant by changes to wakeup_source_create()
-> and friends?
+On 23 September 2014 23:45, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Sep 18, 2014 at 05:09:11PM -0600, Mathieu Poirier wrote:
+>> On 12 September 2014 12:16, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Fri, Sep 12, 2014 at 11:41:44AM -0600, Mathieu Poirier wrote:
+>> >> Good morning and thanks for the review.  Pls see comments below.
+>> >>
+>> >> Mathieu
+>> >>
+>> >> On 11 September 2014 14:33, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> >> > Some first impressions in glancing at the code, not a complete review at
+>> >> > all:
+>> >> >
+>> >> > On Thu, Sep 11, 2014 at 09:49:08AM -0600, mathieu.poirier@linaro.org wrote:
+>> >> >> --- /dev/null
+>> >> >> +++ b/drivers/coresight/coresight.c
+>> >> >> @@ -0,0 +1,663 @@
+>> >> >> +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+>> >> >> + *
+>> >> >> + * This program is free software; you can redistribute it and/or modify
+>> >> >> + * it under the terms of the GNU General Public License version 2 and
+>> >> >> + * only version 2 as published by the Free Software Foundation.
+>> >> >> + *
+>> >> >> + * This program is distributed in the hope that it will be useful,
+>> >> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> >> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> >> >> + * GNU General Public License for more details.
+>> >> >> + */
+>> >> >> +
+>> >> >> +#define pr_fmt(fmt) "coresight: " fmt
+>> >> >
+>> >> > MODULE_NAME ?
+>> >>
+>> >> Is this what you had in mind?
+>> >>
+>> >> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> >
+>> > Sorry, yes, that's much better and "portable".
+>> >
+>> > But as you are using the driver model, the odds of you ever using a pr_*
+>> > call is all but none, so why do you even need this?
+>>
+>> You suggest to use dev_* instead?  My (perhaps flawed) logic was that
+>> the framework ins't associated with a single device but a set of them.
+>
+> Yes, but a single device is causing a message to be emitted, so
+> reference that please.
+>
+>> >> >> +     struct coresight_connection *conns;
+>> >> >> +     int nr_conns;
+>> >> >> +     enum coresight_dev_type type;
+>> >> >> +     struct coresight_dev_subtype subtype;
+>> >> >> +     const struct coresight_ops *ops;
+>> >> >> +     struct dentry *de;
+>> >> >
+>> >> > All devices have a dentry?  in debugfs?  isn't that overkill?
+>> >>
+>> >> All devices along a "path" can require specific configuration, which
+>> >> can only be made by a user.  Exposing the registers via debugfs seemed
+>> >> like the most plausible solution.
+>> >
+>> > configuration is not to be done through debugfs, especially as that is
+>> > restricted to root, and lots of systems don't even have it.  debugfs is
+>> > always optional, don't make your code depend on it to work properly.
+>>
+>> Humm... You are the first one to be of the opinion that debugfs
+>> shouldn't be used for coresight configuration - other reviewers have
+>> unequivocally requested that configurables be moved under debugfs.
+>> Debugfs seemed to be a good fit, specifically since ftrace is already
+>> in there.  We could enable CONFIG_DEBUG_FS automatically (the same way
+>> I do it for AMBA) when coresight gets enabled in the kernel config...
+>>
+>> If not debugfs, where then?  I'd welcome a suggestion.
+>
+> It is a mistake that ftrace is in debugfs, the developers of that code
+> admit it.
 
-Yes, that's it.
+That's interesting to know.
 
-But at least some drivers call enable_irq_wake() today, so it should just
-work for devices handled by them.  That may not be all devices you want,
-though.
+>
+> Your system should be able to run just fine if debugfs is disabled, if
+> your interface is "optional" like that, great, put it in debugfs,
+> otherwise put it somewhere else.
 
-And BTW, there is a problem with the approach I was talking about which is
-the sysfs interface for enabling wakeup, so we actually need to put wakeup
-IRQ information into struct dev_pm_info and point to that from the
-associated wakeup source object.  It still should be doable though.
+I lumped the entries under /sys/bus/coresight/, the same way the
+orgininal author had them.
 
-> On Sat, Sep 20, 2014 at 5:48 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Thursday, September 18, 2014 01:32:06 PM Thomas Gleixner wrote:
-> >> On Wed, 17 Sep 2014, Dmitry Torokhov wrote:
-> >> > Hi Thomas,
-> >> >
-> >> > On Wednesday, September 17, 2014 12:05:42 PM Thomas Gleixner wrote:
-> >> > > On Tue, 16 Sep 2014, Eric Caruso wrote:
-> >> > > > We would like to be able to set different irq masks for triggers during
-> >> > > > normal operation and for waking up the system. For example, while a laptop
-> >> > > > is awake, closing the lid and opening the lid should both fire an
-> >> > > > interrupt, but when the system is asleep, we would like to stay asleep
-> >> > > > when
-> >> > > > closing the lid.
-> >> > > >
-> >> > > > We are thinking about stashing the irq mask used specifically for waking
-> >> > > > the system up in the irq_desc struct, and then swapping it during
-> >> > > > enable_irq_wake and disable_irq_wake calls. Devices that do not specify a
-> >> > > > different wake mask will use their normal trigger mask for both
-> >> > > > situations.
-> >> > > >
-> >> > > > Is this acceptable?
-> >> > >
-> >> > > Not really. Why should irq_desc provide storage for random
-> >> > > configurations and bind them to some random system state?
-> >> > >
-> >> > > What's wrong with calling
-> >> > >
-> >> > >        irq_set_type(irq, B);
-> >> > >        enable_irq_wake(irq);
-> >> > >
-> >> > >        disable_irq_wake(irq);
-> >> > >        irq_set_type(irq, A);
-> >> >
-> >> > The desire is to avoid doing it in [every] driver but rather have it done
-> >> > centrally by device/PM core. It does not have to be irq_desc though,
-> >> > maybe you can suggest a better place for it (aside of the individual driver
-> >> > code that is)?
-> >>
-> >> Well, if it should be done by the device/pm core then you want to
-> >> store that information in the device related data structure.
-> >>
-> >> struct dev_pm_info might be the right place for it, but that's up to
-> >> Rafael.
-> >>
-> >> So driver would set
-> >>
-> >>    dev->power.update_wakeirq_type = true;
-> >>    dev->power.irq_type_normal = IRQ_TYPE_EDGE_BOTH;
-> >>    dev->power.irq_type_sleep = IRQ_TYPE_EDGE_LOW;
-> >>
-> >> And the dev/PM core can issue the calls on suspend/resume.
-> >
-> > So I'd rather put that into the struct wakeup_source pointed to by
-> > the wakeup pointer in struct dev_pm_info.  That would give us a mapping
-> > between wakeup source objects and wakeup interrupts and which would make
-> > a fair amount of sense in my view.
-> >
-> > Then, we could simply walk the list of wakeup source objects before
-> > suspend_device_irqs() and call enable_irq_wake() etc. for all of the
-> > interrupts in question without drivers having to worry about that.
-> > We also could save the current IRQ type for them at that point and
-> > restore it during resume.
-> >
-> > Of course, that would require some changes to wakeup_source_create()
-> > and friends, but is probably worth doing.
-> >
-> > Still, before we start making those changes, here's a bunch of questions
-> > to answer:
-> >
-> > (1) Say a wakeup interrupt is shared between two drivers and one of them
-> >     asks for a different "IRQ type for sleep" than the other one.  How are
-> >     we going to resolve such conflicts?
-> >
-> > (2) Can platforms place restrictions on the IRQ type to be used with a given
-> >     line?  If so, how do we handle situations in which the requested
-> >     "IRQ type for sleep" is different from what the given line can use?
-> >     Do we need to resolve that at the struct wakeup_source creation time or
-> >     can we do that later (during suspend?) and how?
-> >
-> > Rafael
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> As to where else to put it, what exactly are you trying to do here?
+> What do you want to export / import?  Who would use it?  How would they
+> use it?  When would they use it?
+>
+>> >> >> +     struct device dev;
+>> >> >> +     struct kref kref;
+>> >> >
+>> >> > You CAN NOT have two reference counts in the same structure, that's a
+>> >> > huge design mistake.  Stick with one reference count, otherwise they are
+>> >> > guaranteed to get out of sync and bad things will happen.
+>> >>
+>> >> In this case the additional @kref is for accounting of components
+>> >> within the coresight framework only.  When the amba framework calls
+>> >> the driver's _probe() routine the kref count is already equal to '2'
+>> >> (as expected), even if no other coresight components have used that
+>> >> device.  Knowing when a component is no longer in use by the framework
+>> >> (but still available in the system) is important for coresight cleanup
+>> >> consideration, i.e switch off the component to save power.
+>> >>
+>> >> The kref helpers don't expose the refcount and @kref_sub will only
+>> >> call the cleanup method when refcount is '1'.  How else should I
+>> >> proceed?
+>> >
+>> > Don't use a kref at all, you should never need to "know" a refcount
+>> > value.  If you do, your logic is incorrect, sorry.  Just use the normal
+>> > driver core functions for when to cleanup memory and the like and you
+>> > will be fine.
+>>
+>> I completely agree with you on the fact that the driver core alone
+>> should be the one doing the memory cleanup for a device.  What those
+>> krefs are doing is to keep track of what is happening in the
+>> framework, nothing else.
+>
+> That's not what a kref is for, don't abuse it that way.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I was using ref_counts before but changing to krefs under the advice
+of another maintainer.
+
+> You shouldn't
+> care what is "happening in the framework" if the driver core is handling
+> the reference counting properly, right?
+
+By framework I meant the coresight framework.  We need to keep track
+of what is happening and what coresight components are active.  That
+is all those krefs were doing.  Again, I'll gladly move back to using
+ref_counts if I've abused the usage of krefs...
+
+>
+>> The framework needs to keep track of component usage by other
+>> components...
+>
+> No it should not.
+>
+>> Say we have a sink that is used by multiple sources.
+>> The framework can't call sink->disable() for as long as a coresight
+>> source is using it and this is exactly what those krefs are for.
+>> Disabling a device in the framework doesn't mean the kernel should be
+>> reclaiming resources for the device.  That device should still be
+>> there for future processing if need be.
+>
+> What do you mean "if need be"?  How could the resource come back?  Why
+> do you need to care if a device is "disabled" or not?
+>
+>> On the flip side if a component isn't used by the framework there is
+>> no point using resources for it i.e, clock, pinout lines, channels...
+>
+> Make up your mind :)
+>
+> greg k-h
