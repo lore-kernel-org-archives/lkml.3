@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292AbaIZVh5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:37:57 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54682 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881AbaIZVhz (ORCPT
+	id S1756093AbaIZVqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:46:17 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:46936 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983AbaIZVqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:37:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
-Date: Fri, 26 Sep 2014 23:36:13 +0200
-Message-ID: <3359318.XmOCYLZHTV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140926134608.GT5182@n2100.arm.linux.org.uk>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <9197976.uQdLmtvIl1@wuerfel> <20140926134608.GT5182@n2100.arm.linux.org.uk>
+	Fri, 26 Sep 2014 17:46:15 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:bM3Q1b8/aU2pCNY2r/Lg3Tc9zXJw3fgugz4QWaVIaev
- DFHp5aHG8GZ6z3Nsa5tWnVnJbrLv36JOwaFzjVtUGJY/nf6UKU
- RvYiQX9gwRUQFJGlLN6b89a1HpuFIigp9Gmubt2RPqRXQV+5AL
- B94/RzNj5YUhchZ4MYyycOjgbbemmou0JV2PA/SN9qvm/+LOBO
- me650cgTc3oC+qIxoONUiyIe5RtBEijKqaOQJTHqdTZWIAelW2
- XKAo6v7zalkDtqjBo7ThsfdPWySnAxLXd012h+jlFEM9m8IcI1
- 0qLUde78VpdH1Q5vnpFkI6wjil7wTBEBar204mq5b4s6PuBgGK
- 7p/3L3G3eLgBZ/fuWFc8=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CALCETrVAQ7oRm8zDHDiUurjrMw=+ABucLWjed_P__4j8deNE7A@mail.gmail.com>
+References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+	<CALCETrXFb=etdrabEjbKdxKg51ViPXptOC=6CkKwcGS7Jau8nA@mail.gmail.com>
+	<CAMEtUuzAuX=PVDtfQiRKgO7h5wx3gsTJUajr8VKsF4FR-d=JDw@mail.gmail.com>
+	<CALCETrVAQ7oRm8zDHDiUurjrMw=+ABucLWjed_P__4j8deNE7A@mail.gmail.com>
+Date: Fri, 26 Sep 2014 14:46:13 -0700
+Message-ID: <CAMEtUuw3rmQR5v7zrhUR=jYKrhCTp+GpndHDa-9djT3nBnhsaA@mail.gmail.com>
+Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
+ syscall, verifier, testsuite)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 September 2014 14:46:08 Russell King - ARM Linux wrote:
-> 
-> Obviously, this does nothing for the:
-> 
-> include/asm-generic/io.h:804:29: error: redefinition of 'virt_to_bus'
-> include/asm-generic/io.h:809:21: error: redefinition of 'bus_to_virt'
-> 
-> errors which are also reported in Olof's build system.
-> 
-> Given how close we are to the merge window, I'd suggest this stuff gets
-> reverted so that it can have a better period of testing, rather than
-> stuffing it into -next at such a critical time.
+On Fri, Sep 26, 2014 at 1:42 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Sep 26, 2014 at 1:09 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Fri, Sep 26, 2014 at 12:51 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>
+>>> To add one more point:
+>>>
+>>> With the current verifier design, it's impossible to write a userspace
+>>> tool that can take an eBPF program and check it.  The verification is
+>>> far too context-dependent for that to be possible.  I won't go so far
+>>> as to say that a userspace tool needs to *exist*, but I strongly
+>>> object to exposing a verification algorithm that *precludes* writing
+>>> such a tool.
+>>
+>> that's just not true.
+>> why is it not possible?
+>
+> Because the types of referenced objects aren't encoded in the blob
+> that a user program loads, unless I'm missing something.
 
-Right, I've fixed these all up locally, but then found new warnings on
-allmodconfig builds that I haven't been able to track down yet.
+patch #8 'handle pseudo BPF_LD_IMM64 insn' of this set
+handles first type == map. Other types will be added in the future.
+The same verification can be done in user space.
+It's pretty much copy paste for everything from the kernel.
+I don't understand yet why you really must do it in in userspace
+in addition to doing it in kernel. It's definitely doable.
+Instead of asking kernel to create a map, user space
+can just remember map attributes (key_size, value_size)
+and continues verification in userspace.
 
-I've dropped everything from the asm-generic tree now, so we can get
-a clean linux-next tree.
+> But the eBPF binary doesn't encode this information. In fact, the
+> caller of an ebpf syscall may not even have access to this
+> information.
 
-	Arnd
+I don't follow. What info are you talking about?
+are you saying that program only that references maps via fds
+is not verifiable unless one knows what this fds refer to?
+yeah, but we're talking user space verification here.
+user knows what maps it creates with what attributes.
+Also we can add a command to this syscall to fetch map
+attributes. That would be trivial _incremental_ addition, right?
+
+> I think this is addressable as a smallish change on top of your code.
+> Rather than looking up a map when you need to learn its key and value
+> size, I think that all you need to do is to look in a program section
+> for the key and value size (and the fact that it's a map) and confirm
+> that the referenced map *matches* the stored values.
+
+we can add extra info to the program that will encode
+program assumptions about maps. Sure. Though I think
+it's extra info that kernel doesn't really need, since it can
+only check that program assumptions match to what
+kernel already knows. Kernel cannot rely on them.
+So I'm not sure what this extra check really buys.
+
+Anyway, if you think it's a smallish change, we can do it
+incrementally on top of existing stuff, right?
+Why this arguing then?
+Sounds like you want to help with the development?
+This is great! I'm all for it :)
