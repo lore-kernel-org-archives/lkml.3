@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186AbaIZAs7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:48:59 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10849 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752738AbaIZAs6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:48:58 -0400
-Date: Thu, 25 Sep 2014 17:49:09 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Josh Cartwright <joshc@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v2] pinctrl: qcom: use restart_notifier mechanism for
- ps_hold
-Message-ID: <20140926004908.GC28481@sonymobile.com>
-References: <1411505993-8414-1-git-send-email-joshc@codeaurora.org>
- <CACRpkdauNieUTSAR=PGsvrXOrPNsBgyCPC9Ot=ZDXctfSdEp8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CACRpkdauNieUTSAR=PGsvrXOrPNsBgyCPC9Ot=ZDXctfSdEp8w@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1752857AbaIZAz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:55:28 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59580 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389AbaIZAz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 20:55:27 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] init: Add strictinit to disable init= fallbacks
+Date: Thu, 25 Sep 2014 17:55:20 -0700
+Message-Id: <0df43a7e86c386129905b679014acd1cd7b61220.1411692874.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25 Sep 00:41 PDT 2014, Linus Walleij wrote:
+If a user puts init=/whatever on the command line and /whatever
+can't be run, then the kernel will try a few default options before
+giving up.  If init=/whatever came from a bootloader prompt, then
+this probably makes sense.  On the other hand, if it comes from a
+script (e.g. a tool like virtme or perhaps a future kselftest
+script), then the fallbacks are likely to exist, but they'll do the
+wrong thing.  For example, they might unexpectedly invoke systemd.
 
-> On Tue, Sep 23, 2014 at 10:59 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
-> 
-> > By converting to the restart_notifier mechanism for restart, we allow
-> > for other mechanisms, like the watchdog, to be used for restart in the
-> > case where PS_HOLD has failed to reset the chip.
-> >
-> > Since this mechanism may be one of several mechanisms registered, change
-> > the post-ps_hold write timeout to be a more reasonable 1 second instead
-> > of 10 seconds.
-> >
-> > Choose priority 128, as according to documentation, this mechanism "is
-> > sufficient to restart the entire system".
-> >
-> > Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
-> > Cc: Guenter Roeck <linux@roeck-us.net>
-> > Tested-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > ---
-> >
-> > Changes since v1:
-> >   - Simplified conditional notifier block registration
-> >   - Reduced wait time to 1s, which I've found to be sufficient on an IFC6410
-> >     board.
-> 
-> Björn, are you OK with this patch?
-> 
+This adds a new option called strictinit.  If init= and strictinit
+are both set, and the init= binary is not executable, then the
+kernel will panic immediately.  If strictinit is set but init= is
+not set, then strictinit will have no effect, because the only real
+alternative would be to panic regardless of the contents of the root
+fs.
 
-Indeed, this is better than overriding arm_pm_restart.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ Documentation/kernel-parameters.txt |  8 ++++++++
+ init/main.c                         | 10 ++++++++++
+ 2 files changed, 18 insertions(+)
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 10d51c2f10d7..60f8b3a7a506 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3236,6 +3236,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	stifb=		[HW]
+ 			Format: bpp:<bpp1>[:<bpp2>[:<bpp3>...]]
+ 
++	strictinit	[KNL,BOOT]
++			Normally, the kernel can't find the init binary
++			specified by rdinit= and/or init=, then it will
++			try several fallbacks.  If strictinit is set
++			and the value specified by init= does not work,
++			then the kernel will panic instead.
++			This has no effect if init= is not specified.
++
+ 	sunrpc.min_resvport=
+ 	sunrpc.max_resvport=
+ 			[NFS,SUNRPC]
+diff --git a/init/main.c b/init/main.c
+index bb1aed928f21..4fd80dcef9d0 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -131,6 +131,7 @@ static char *initcall_command_line;
+ 
+ static char *execute_command;
+ static char *ramdisk_execute_command;
++static bool strictinit;
+ 
+ /*
+  * Used to generate warnings if static_key manipulation functions are used
+@@ -347,6 +348,13 @@ static int __init rdinit_setup(char *str)
+ }
+ __setup("rdinit=", rdinit_setup);
+ 
++static int __init strictinit_setup(char *str)
++{
++	strictinit = true;
++	return 1;
++}
++__setup("strictinit", strictinit_setup);
++
+ #ifndef CONFIG_SMP
+ static const unsigned int setup_max_cpus = NR_CPUS;
+ #ifdef CONFIG_X86_LOCAL_APIC
+@@ -962,6 +970,8 @@ static int __ref kernel_init(void *unused)
+ 			return 0;
+ 		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+ 			execute_command, ret);
++		if (strictinit)
++			panic("Requested init failed and strictinit was set.");
+ 	}
+ 	if (!try_to_run_init_process("/sbin/init") ||
+ 	    !try_to_run_init_process("/etc/init") ||
+-- 
+1.9.3
 
-Regards,
-Bjorn
