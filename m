@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaIZOad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:30:33 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:44032 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754196AbaIZOac (ORCPT
+	id S1755179AbaIZOeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:34:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34992 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753823AbaIZOeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:30:32 -0400
-Message-ID: <54257884.2080401@nexus-software.ie>
-Date: Fri, 26 Sep 2014 15:30:28 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>,
-        Ong Boon Leong <boon.leong.ong@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] x86, setup: add __flush_tlb() for Intel Quark X1000
-References: <1411705827-2522-1-git-send-email-boon.leong.ong@intel.com> <1411705827-2522-2-git-send-email-boon.leong.ong@intel.com> <5424FA7C.6020303@intel.com> <54252756.6000001@nexus-software.ie> <54257627.5090303@intel.com>
-In-Reply-To: <54257627.5090303@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Sep 2014 10:34:00 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 00/10] ARM: Berlin: Ethernet support
+Date: Fri, 26 Sep 2014 16:33:46 +0200
+Message-Id: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 15:20, Dave Hansen wrote:
-> On 09/26/2014 01:44 AM, Bryan O'Donoghue wrote:
->>
->> +    /*
->> +     * Locate the page directory and flush the TLB.
->> +     *
->> +     * On Quark X1000 CPUs we still have the PGE bit incorrectly set
->> +     * due to a processor erratum, so __flush_tlb_all() is not yet
->> +     * doing what it says.  Fortunately we have a cr3 flush here,
->> +     * which is what is needed in this processor to flush TLBs, so
->> +     * there's no need to add a Quark X1000 quirk here.
->> +     *
->> +     * early_init_intel will unset the X86_FEATURE_PGE flag later
->> +     * and __flush_tlb_all() will flush via cr3
->> +     */
->
-> That looks fine to me.
+Hi all,
 
-OK.
+This series introduce support for the Ethernet controller on Berlin SoCs,
+using the existing pxa168 Ethernet driver. In order to do this, DT
+support is added to the driver alongside some other modifications and
+fixes.
 
-I think to keep everybody aligned/on-the-same-page no pun intended.
+This has been tested on a Berlin BG2Q DMP board.
 
-We want
+Changes since v4:
+	- removed the phy-addr property and added a phy subnode
+	- added COMPILE_TEST for the pxa168_eth driver
 
-+    /*
-+     * Locate the page directory and flush the TLB.
-+     *
-+     * On Quark X1000 CPUs we still have the PGE bit incorrectly set
-+     * due to a processor erratum, so __flush_tlb_all() is not yet
-+     * doing what it says.  Fortunately we have a cr3 flush here,
-+     * which is what is needed in this processor to flush TLBs, so
-+     * there's no need to add a Quark X1000 quirk here.
-+     *
-+     * early_init_intel will unset the X86_FEATURE_PGE flag later
-+     * and __flush_tlb_all() will flush via cr3
-+     */
-+    __flush_tlb();
+Changes since v3:
+        - moved the addition of pxa168_eth_get_mac_address() to the patch
+          using it first
 
-With the extra __flush_tlb(); on the end.
+Changes since v2:
+        - reworked how the MAC address is configured
+        - made the clock anonymous
+
+Changes since v1:
+        - removed custom Berlin Ethernet driver
+        - used the pxa168 Ethernet driver instead
+        - made modifications to the pxa168 driver (DT support, fixes)
+
+Antoine Tenart (10):
+  net: pxa168_eth: clean up
+  net: pxa168_eth: add device tree support
+  Documentation: bindings: net: add the Marvell PXA168 Ethernet
+    controller
+  net: pxa168_eth: fix Ethernet flow control status
+  net: pxa168_eth: set the mac address on the Ethernet controller
+  net: pxa168_eth: rework the MAC address setup
+  net: pxa168_eth: allow Berlin SoCs to use the pxa168_eth driver
+  net: pxa168_eth: allow to compile the pxa168_eth driver for tests
+  ARM: dts: berlin: add the Ethernet node
+  ARM: dts: berlin: enable the Ethernet port on the BG2Q DMP
+
+ .../devicetree/bindings/net/marvell-pxa168.txt     |  36 ++++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |   4 +
+ arch/arm/boot/dts/berlin2q.dtsi                    |  17 ++
+ drivers/net/ethernet/marvell/Kconfig               |   2 +-
+ drivers/net/ethernet/marvell/pxa168_eth.c          | 219 +++++++++++++--------
+ 5 files changed, 199 insertions(+), 79 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/marvell-pxa168.txt
+
+-- 
+1.9.1
+
