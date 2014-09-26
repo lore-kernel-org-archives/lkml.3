@@ -1,55 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaIZIrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:47:24 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:43738 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaIZIrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:47:20 -0400
+	id S1753994AbaIZIwE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:52:04 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:45205 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187AbaIZIwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:52:00 -0400
+Date: Fri, 26 Sep 2014 09:50:30 +0100
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+Message-ID: <20140926085030.GE31157@bart.dudau.co.uk>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <20140925074235.GN12423@ulmo>
+ <20140925144855.GB31157@bart.dudau.co.uk>
+ <20140925164937.GB30382@ulmo>
+ <5424E09F.50701@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpiTBKEJHTF9cK20GTqEgx=4UNt52sKi0dQ7NsZNhfFOA@mail.gmail.com>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-6-git-send-email-geert+renesas@glider.be>
-	<CAPDyKFpiTBKEJHTF9cK20GTqEgx=4UNt52sKi0dQ7NsZNhfFOA@mail.gmail.com>
-Date: Fri, 26 Sep 2014 10:47:18 +0200
-X-Google-Sender-Auth: -8-GZNn2dnySbyrBxo0fFZg8pvQ
-Message-ID: <CAMuHMdUEA07weFje47u4sJ6uc0FCvoq+FEe27DSmKOVB0dTatA@mail.gmail.com>
-Subject: Re: [PATCH v3 05/13] PM / Domains: Add helper variable np = dev->of_node
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5424E09F.50701@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Sep 26 09:51:58 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,5425292e3111863064294
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:43 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
->
-> Why?
+On Fri, Sep 26, 2014 at 11:42:23AM +0800, Yijing Wang wrote:
+> >> I am actually in disagreement with you, Thierry. I don't like the general direction
+> >> of the patches, or at least I don't like the fact that we don't have a portable
+> >> way of setting up the msi_chip without having to rely on weak architectural hooks.
+> > 
+> > Oh, good. That's actually one of the things I said I wasn't happy with
+> > either. =)
+> 
+> Hm, I decide to drop weak arch_find_msi_chip(), no one likes it.
+> Let's find a better solution :)
+> 
+> > 
+> >> I'm surprised no one considers the case of a platform having more than one host
+> >> bridge and possibly more than one MSI unit. With the current proposed patchset I
+> >> can't see how that would work.
+> > 
+> > The PCI core can already deal with that. An MSI chip can be set per bus
+> > and the weak pcibios_add_bus() can be used to set that. Often it might
+> > not even be necessary to do it via pcibios_add_bus() if you create the
+> > root bus directly, since you can attach the MSI chip at that time.
+> 
+> Yes, PCI hostbridge driver find the matched msi chip during its initialization,
+> and assign the msi chip to PCI bus in pcibios_add_bus().
+> 
+> > 
+> >> What I would like to see is a way of creating the pci_host_bridge structure outside
+> >> the pci_create_root_bus(). That would then allow us to pass this sort of platform
+> >> details like associated msi_chip into the host bridge and the child busses will
+> >> have an easy way of finding the information needed by finding the root bus and then
+> >> the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
+> >> everyone and the drivers can remove their kludges that try to work around the
+> >> current limitations.
+> 
+> So I think maybe save msi chip in PCI arch sysdata is a good candidate.
 
-Because else the next patch would add a few more users of dev->of_node.
+Except that arch sysdata at the moment is an opaque pointer. I am all in favour in
+changing the type of sysdata from void* into pci_host_bridge* and arches can wrap their old
+sysdata around the pci_host_bridge*.
 
-Gr{oetje,eeting}s,
+Best regards,
+Liviu
 
-                        Geert
+> 
+> > 
+> > I think both issues are orthogonal. Last time I checked a lot of work
+> > was still necessary to unify host bridges enough so that it could be
+> > shared across architectures. But perhaps some of that work has
+> > happened in the meantime.
+> > 
+> > But like I said, when you create the root bus, you can easily attach the
+> > MSI chip to it.
+> > 
+> > Thierry
+> > 
+> 
+> 
+> -- 
+> Thanks!
+> Yijing
+> 
+> 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+ One small step
+   for me ...
+
