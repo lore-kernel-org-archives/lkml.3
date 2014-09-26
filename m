@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaIZIpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:45:55 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:60089 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738AbaIZIpv (ORCPT
+	id S1754352AbaIZIqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:46:13 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:40165 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288AbaIZIqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:45:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-8-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-8-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:45:50 +0200
-Message-ID: <CAPDyKFrWKOENKxF1JBrtwYfQNTVjsQPqws3UTfGXy_4Uqog+pg@mail.gmail.com>
-Subject: Re: [PATCH v3 07/13] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev()
- for pm_clk setup
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 26 Sep 2014 04:46:10 -0400
+X-Auth-Info: TpjnIj9fcunQZKwmOOes2zVlRKDp7j60zYN6V4yyh7s=
+From: Marek Vasut <marex@denx.de>
+To: bpqw <bpqw@micron.com>
+Subject: Re: [PATCH 1/1] driver:mtd:spi-nor: Add Micron quad I/O support
+Date: Fri, 26 Sep 2014 10:46:07 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com> <201409251211.57183.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409261046.07132.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> Use the just introduced genpd attach/detach callbacks to register the
-> devices' module clocks, instead of doing it directly, to make it
-> DT-proof.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+On Friday, September 26, 2014 at 10:39:38 AM, bpqw wrote:
+> >> +	/* set EVCR ,enable quad I/O */
+> >> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
+> >> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
+> >> +	if (ret < 0) {
+> >> +		dev_err(nor->dev,
+> >> +			"error while writing EVCR register\n");
+> >> +		return -EINVAL;
+> >> +	}
+> >> +
+> >> +	if (wait_till_ready(nor))
+> >> +		return 1;
+> >
+> >Why does this not return proper error code or even better, return value
+> >from wait_till_ready() ?
+> >
+> >Other than that, there's nothing wrong with the patch I think.
+> 
+> Hi,Marek
+> Thanks for your review,you can find the same usage in the spi-nor.c.
+> Below method is OK? Or you can give me some suggestion.
+> 
+> if (wait_till_ready(nor))
+> 	return - EINVAL;
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+ret = wait_till_readynor()
+if (ret)
+ return ret;
 
-> ---
-> v3:
->   - Update for callback signature changes,
-> v2:
->   - New
->
->  arch/arm/mach-shmobile/pm-rmobile.c | 15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
-> index 717e6413d29cb998..ae846dfcd69293f7 100644
-> --- a/arch/arm/mach-shmobile/pm-rmobile.c
-> +++ b/arch/arm/mach-shmobile/pm-rmobile.c
-> @@ -101,6 +101,17 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
->         return true;
->  }
->
-> +static void rmobile_pd_attach_dev(struct device *dev)
-> +{
-> +       if (pm_clk_no_clocks(dev))
-> +               pm_clk_add(dev, NULL);
-> +}
-> +
-> +static void rmobile_pd_detach_dev(struct device *dev)
-> +{
-> +       pm_clk_remove(dev, NULL);
-> +}
-> +
->  static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
->  {
->         struct generic_pm_domain *genpd = &rmobile_pd->genpd;
-> @@ -112,6 +123,8 @@ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
->         genpd->dev_ops.active_wakeup    = rmobile_pd_active_wakeup;
->         genpd->power_off                = rmobile_pd_power_down;
->         genpd->power_on                 = rmobile_pd_power_up;
-> +       genpd->attach_dev               = rmobile_pd_attach_dev;
-> +       genpd->detach_dev               = rmobile_pd_detach_dev;
->         __rmobile_pd_power_up(rmobile_pd, false);
->  }
->
-> @@ -130,8 +143,6 @@ void rmobile_add_device_to_domain_td(const char *domain_name,
->         struct device *dev = &pdev->dev;
->
->         __pm_genpd_name_add_device(domain_name, dev, td);
-> -       if (pm_clk_no_clocks(dev))
-> -               pm_clk_add(dev, NULL);
->  }
->
->  void rmobile_add_devices_to_domains(struct pm_domain_device data[],
-> --
-> 1.9.1
->
+But all right, this means the subsystem isn't perfect. Well, others, what do you 
+think ?
+
+Best regards,
+Marek Vasut
