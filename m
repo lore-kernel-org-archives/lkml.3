@@ -1,51 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890AbaIZOER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:04:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55268 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218AbaIZOEM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:04:12 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 2/2] soc/fsl: add ftm alarm driver for ls1021a platform
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1411714121-32138-2-git-send-email-dongsheng.wang@freescale.com>
-Date: Fri, 26 Sep 2014 09:04:08 -0500
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>, Olof Johansson <olof@lixom.net>,
-        shawn.guo@linaro.org, Greg KH <gregkh@linuxfoundation.org>,
-        Paul Walmsley <paul@pwsan.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, shawn.guo@freescale.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B448818B-E208-4451-8BA0-53D53E4BB7FC@codeaurora.org>
-References: <1411714121-32138-1-git-send-email-dongsheng.wang@freescale.com> <1411714121-32138-2-git-send-email-dongsheng.wang@freescale.com>
-To: Dongsheng Wang <dongsheng.wang@freescale.com>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1755923AbaIZOEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:04:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61283 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755737AbaIZODM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:03:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
+   d="scan'208";a="609110607"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [RFT v2 24/24] x86, uv: Use hierarchy irqdomain to manage UV interrupts
+Date: Fri, 26 Sep 2014 22:02:25 +0800
+Message-Id: <1411740145-30626-25-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enhance UV code to support hierarchy irqdomain, it helps to make
+the architecture more clear.
 
-On Sep 26, 2014, at 1:48 AM, Dongsheng Wang <dongsheng.wang@freescale.com> wrote:
+We should construct hwirq based on mmr_blade and mmr_offset, but
+mmr_offset is type of unsigned long, it may exceed the range of
+irq_hw_number_t. So help about the way to construct hwirq based
+on mmr_blade and mmr_offset is welcomed!
 
-> From: Wang Dongsheng <dongsheng.wang@freescale.com>
-> 
-> Only Ftm0 can be used when system going to deep sleep. So this driver
-> to support ftm0 as a wakeup source.
-> 
-> Signed-off-by: Wang Dongsheng <dongsheng.wang@freescale.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/hw_irq.h |    9 ++
+ arch/x86/platform/uv/uv_irq.c |  290 ++++++++++++++++-------------------------
+ 2 files changed, 122 insertions(+), 177 deletions(-)
 
-How does this differ from drivers/clocksource/fsl_ftm_timer.c
-
-Why not extend that with the alarm functionality you need?
-
-Also, where is the DT binding spec for this (if you plan on having a separate driver)?
-
-- k
-
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 35bdc90e5797..1cb6687375f8 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -122,6 +122,7 @@ enum irq_alloc_type {
+ 	X86_IRQ_ALLOC_TYPE_MSI,
+ 	X86_IRQ_ALLOC_TYPE_MSIX,
+ 	X86_IRQ_ALLOC_TYPE_DMAR,
++	X86_IRQ_ALLOC_TYPE_UV,
+ };
+ 
+ struct irq_alloc_info {
+@@ -164,6 +165,14 @@ struct irq_alloc_info {
+ 			void		*ht_update;
+ 		};
+ #endif
++#ifdef	CONFIG_X86_UV
++		struct {
++			int		uv_limit;
++			int		uv_blade;
++			unsigned long	uv_offset;
++			char		*uv_name;
++		};
++#endif
+ 	};
+ };
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index 474912d03f40..743b409e966c 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -19,17 +19,31 @@
+ #include <asm/uv/uv_hub.h>
+ 
+ /* MMR offset and pnode of hub sourcing interrupts for a given irq */
+-struct uv_irq_2_mmr_pnode{
+-	struct rb_node		list;
++struct uv_irq_2_mmr_pnode {
+ 	unsigned long		offset;
+ 	int			pnode;
+-	int			irq;
+ };
+ 
+-static DEFINE_SPINLOCK(uv_irq_lock);
+-static struct rb_root		uv_irq_root;
++static void uv_program_mmr(struct irq_cfg *cfg, struct uv_irq_2_mmr_pnode *info)
++{
++	unsigned long mmr_value;
++	struct uv_IO_APIC_route_entry *entry;
++
++	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
++		     sizeof(unsigned long));
++
++	mmr_value = 0;
++	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
++	entry->vector		= cfg->vector;
++	entry->delivery_mode	= apic->irq_delivery_mode;
++	entry->dest_mode	= apic->irq_dest_mode;
++	entry->polarity		= 0;
++	entry->trigger		= 0;
++	entry->mask		= 0;
++	entry->dest		= cfg->dest_apicid;
+ 
+-static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
++	uv_write_global_mmr64(info->pnode, info->offset, mmr_value);
++}
+ 
+ static void uv_noop(struct irq_data *data) { }
+ 
+@@ -38,6 +52,24 @@ static void uv_ack_apic(struct irq_data *data)
+ 	ack_APIC_irq();
+ }
+ 
++static int
++uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
++		    bool force)
++{
++	struct irq_data *parent = data->parent_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
++	int ret;
++
++	ret = parent->chip->irq_set_affinity(parent, mask, force);
++	if (ret >= 0) {
++		uv_program_mmr(cfg, data->chip_data);
++		if (cfg->move_in_progress)
++			send_cleanup_vector(cfg);
++	}
++
++	return ret;
++}
++
+ static struct irq_chip uv_irq_chip = {
+ 	.name			= "UV-CORE",
+ 	.irq_mask		= uv_noop,
+@@ -46,179 +78,106 @@ static struct irq_chip uv_irq_chip = {
+ 	.irq_set_affinity	= uv_set_irq_affinity,
+ };
+ 
+-/*
+- * Add offset and pnode information of the hub sourcing interrupts to the
+- * rb tree for a specific irq.
+- */
+-static int uv_set_irq_2_mmr_info(int irq, unsigned long offset, unsigned blade)
++static int uv_domain_alloc(struct irq_domain *domain, unsigned int virq,
++			   unsigned int nr_irqs, void *arg)
+ {
+-	struct rb_node **link = &uv_irq_root.rb_node;
+-	struct rb_node *parent = NULL;
+-	struct uv_irq_2_mmr_pnode *n;
+-	struct uv_irq_2_mmr_pnode *e;
+-	unsigned long irqflags;
+-
+-	n = kmalloc_node(sizeof(struct uv_irq_2_mmr_pnode), GFP_KERNEL,
+-				uv_blade_to_memory_nid(blade));
+-	if (!n)
++	struct uv_irq_2_mmr_pnode *chip_data;
++	struct irq_alloc_info *info = arg;
++	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
++	int ret;
++
++	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_UV)
++		return -EINVAL;
++
++	chip_data = kmalloc_node(sizeof(*chip_data), GFP_KERNEL,
++				 irq_data->node);
++	if (!chip_data)
+ 		return -ENOMEM;
+ 
+-	n->irq = irq;
+-	n->offset = offset;
+-	n->pnode = uv_blade_to_pnode(blade);
+-	spin_lock_irqsave(&uv_irq_lock, irqflags);
+-	/* Find the right place in the rbtree: */
+-	while (*link) {
+-		parent = *link;
+-		e = rb_entry(parent, struct uv_irq_2_mmr_pnode, list);
+-
+-		if (unlikely(irq == e->irq)) {
+-			/* irq entry exists */
+-			e->pnode = uv_blade_to_pnode(blade);
+-			e->offset = offset;
+-			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
+-			kfree(n);
+-			return 0;
+-		}
+-
+-		if (irq < e->irq)
+-			link = &(*link)->rb_left;
++	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
++	if (ret >= 0) {
++		if (info->uv_limit == UV_AFFINITY_CPU)
++			irq_set_status_flags(virq, IRQ_NO_BALANCING);
+ 		else
+-			link = &(*link)->rb_right;
++			irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
++
++		chip_data->pnode = uv_blade_to_pnode(info->uv_blade);
++		chip_data->offset = info->uv_offset;
++		irq_domain_set_hwirq_and_chip(domain, virq, virq,
++					      &uv_irq_chip, chip_data);
++		__irq_set_handler(virq, handle_percpu_irq, 0, info->uv_name);
++	} else {
++		kfree(chip_data);
+ 	}
+ 
+-	/* Insert the node into the rbtree. */
+-	rb_link_node(&n->list, parent, link);
+-	rb_insert_color(&n->list, &uv_irq_root);
+-
+-	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
+-	return 0;
++	return ret;
+ }
+ 
+-/* Retrieve offset and pnode information from the rb tree for a specific irq */
+-int uv_irq_2_mmr_info(int irq, unsigned long *offset, int *pnode)
++static void uv_domain_free(struct irq_domain *domain, unsigned int virq,
++			   unsigned int nr_irqs)
+ {
+-	struct uv_irq_2_mmr_pnode *e;
+-	struct rb_node *n;
+-	unsigned long irqflags;
+-
+-	spin_lock_irqsave(&uv_irq_lock, irqflags);
+-	n = uv_irq_root.rb_node;
+-	while (n) {
+-		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
+-
+-		if (e->irq == irq) {
+-			*offset = e->offset;
+-			*pnode = e->pnode;
+-			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
+-			return 0;
+-		}
+-
+-		if (irq < e->irq)
+-			n = n->rb_left;
+-		else
+-			n = n->rb_right;
+-	}
+-	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
+-	return -1;
++	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
++
++	BUG_ON(nr_irqs != 1);
++	kfree(irq_data->chip_data);
++	irq_domain_reset_irq_data(irq_data);
++	irq_set_handler(virq, NULL);
++	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
++	irq_clear_status_flags(virq, IRQ_NO_BALANCING);
++	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
+ }
+ 
+ /*
+  * Re-target the irq to the specified CPU and enable the specified MMR located
+  * on the specified blade to allow the sending of MSIs to the specified CPU.
+  */
+-static int
+-arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
+-		       unsigned long mmr_offset, int limit)
++static int uv_domain_activate(struct irq_domain *domain,
++			      struct irq_data *irq_data)
+ {
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-	unsigned long mmr_value;
+-	struct uv_IO_APIC_route_entry *entry;
+-	int mmr_pnode;
+-
+-	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
+-			sizeof(unsigned long));
+-
+-	if (limit == UV_AFFINITY_CPU)
+-		irq_set_status_flags(irq, IRQ_NO_BALANCING);
+-	else
+-		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-
+-	irq_set_chip_and_handler_name(irq, &uv_irq_chip, handle_percpu_irq,
+-				      irq_name);
++	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
+ 
+-	mmr_value = 0;
+-	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
+-	entry->vector		= cfg->vector;
+-	entry->delivery_mode	= apic->irq_delivery_mode;
+-	entry->dest_mode	= apic->irq_dest_mode;
+-	entry->polarity		= 0;
+-	entry->trigger		= 0;
+-	entry->mask		= 0;
+-	entry->dest		= cfg->dest_apicid;
+-
+-	mmr_pnode = uv_blade_to_pnode(mmr_blade);
+-	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
+-
+-	if (cfg->move_in_progress)
+-		send_cleanup_vector(cfg);
+-
+-	return irq;
++	return 0;
+ }
+ 
+ /*
+  * Disable the specified MMR located on the specified blade so that MSIs are
+  * longer allowed to be sent.
+  */
+-static void arch_disable_uv_irq(int mmr_pnode, unsigned long mmr_offset)
++static int uv_domain_deactivate(struct irq_domain *domain,
++				struct irq_data *irq_data)
+ {
+ 	unsigned long mmr_value;
+ 	struct uv_IO_APIC_route_entry *entry;
+ 
+-	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
+-			sizeof(unsigned long));
+-
+ 	mmr_value = 0;
+ 	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
+ 	entry->mask = 1;
++	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
+ 
+-	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
++	return 0;
+ }
+ 
+-static int
+-uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+-		    bool force)
+-{
+-	struct irq_cfg *cfg = irqd_cfg(data);
+-	unsigned int dest;
+-	unsigned long mmr_value, mmr_offset;
+-	struct uv_IO_APIC_route_entry *entry;
+-	int mmr_pnode;
+-
+-	if (apic_set_affinity(data, mask, &dest))
+-		return -1;
+-
+-	mmr_value = 0;
+-	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
+-
+-	entry->vector		= cfg->vector;
+-	entry->delivery_mode	= apic->irq_delivery_mode;
+-	entry->dest_mode	= apic->irq_dest_mode;
+-	entry->polarity		= 0;
+-	entry->trigger		= 0;
+-	entry->mask		= 0;
+-	entry->dest		= dest;
+-
+-	/* Get previously stored MMR and pnode of hub sourcing interrupts */
+-	if (uv_irq_2_mmr_info(data->irq, &mmr_offset, &mmr_pnode))
+-		return -1;
+-
+-	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
++static struct irq_domain_ops uv_domain_ops = {
++	.alloc = uv_domain_alloc,
++	.free = uv_domain_free,
++	.activate = uv_domain_activate,
++	.deactivate = uv_domain_deactivate,
++};
+ 
+-	if (cfg->move_in_progress)
+-		send_cleanup_vector(cfg);
++static struct irq_domain *uv_get_irq_domain(void)
++{
++	static struct irq_domain *uv_domain;
++	static DEFINE_MUTEX(uv_lock);
++
++	mutex_lock(&uv_lock);
++	if (uv_domain == NULL) {
++		uv_domain = irq_domain_add_tree(NULL, &uv_domain_ops, NULL);
++		if (uv_domain)
++			uv_domain->parent = x86_vector_domain;
++	}
++	mutex_unlock(&uv_lock);
+ 
+-	return IRQ_SET_MASK_OK_NOCOPY;
++	return uv_domain;
+ }
+ 
+ /*
+@@ -229,23 +188,20 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
+ 		 unsigned long mmr_offset, int limit)
+ {
+-	int ret, irq;
+ 	struct irq_alloc_info info;
++	struct irq_domain *domain = uv_get_irq_domain();
++
++	if (!domain)
++		return -ENOMEM;
+ 
+ 	init_irq_alloc_info(&info, cpumask_of(cpu));
+-	irq = irq_domain_alloc_irqs(NULL, 1, uv_blade_to_memory_nid(mmr_blade),
+-				    &info);
+-	if (irq <= 0)
+-		return -EBUSY;
+-
+-	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
+-		limit);
+-	if (ret == irq)
+-		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
+-	else
+-		irq_domain_free_irqs(irq, 1);
++	info.uv_limit = limit;
++	info.uv_blade = mmr_blade;
++	info.uv_offset = mmr_offset;
++	info.uv_name = irq_name;
+ 
+-	return ret;
++	return irq_domain_alloc_irqs(domain, 1,
++				     uv_blade_to_memory_nid(mmr_blade), &info);
+ }
+ EXPORT_SYMBOL_GPL(uv_setup_irq);
+ 
+@@ -258,26 +214,6 @@ EXPORT_SYMBOL_GPL(uv_setup_irq);
+  */
+ void uv_teardown_irq(unsigned int irq)
+ {
+-	struct uv_irq_2_mmr_pnode *e;
+-	struct rb_node *n;
+-	unsigned long irqflags;
+-
+-	spin_lock_irqsave(&uv_irq_lock, irqflags);
+-	n = uv_irq_root.rb_node;
+-	while (n) {
+-		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
+-		if (e->irq == irq) {
+-			arch_disable_uv_irq(e->pnode, e->offset);
+-			rb_erase(n, &uv_irq_root);
+-			kfree(e);
+-			break;
+-		}
+-		if (irq < e->irq)
+-			n = n->rb_left;
+-		else
+-			n = n->rb_right;
+-	}
+-	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
+ 	irq_domain_free_irqs(irq, 1);
+ }
+ EXPORT_SYMBOL_GPL(uv_teardown_irq);
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.10.4
 
