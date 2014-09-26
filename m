@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbaIZIzy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:55:54 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:46800 "EHLO
+	id S1754489AbaIZIz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:55:58 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:46812 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753326AbaIZIzt (ORCPT
+	by vger.kernel.org with ESMTP id S1754443AbaIZIzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:55:49 -0400
+	Fri, 26 Sep 2014 04:55:54 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -21,10 +21,11 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v3 8/8] ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, PCIe & USB3) PHY
-Date: Fri, 26 Sep 2014 10:54:17 +0200
-Message-Id: <1411721657-9924-9-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Harsh Gupta <harsh.gupta@st.com>
+Subject: [PATCH v3 6/8] phy: miphy28lp: Add SSC support for PCIE
+Date: Fri, 26 Sep 2014 10:54:15 +0200
+Message-Id: <1411721657-9924-7-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -34,23 +35,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+SSC is the technique of modulating the operating frequency of a signal
+slightly to spread its radiated emissions over a range of frequencies.
+This reduction in the maximum emission for a given frequency helps meet
+radiated emission requirements.
+These settings are applicable for PCIE with Internal clock.
+
+Signed-off-by: Harsh Gupta <harsh.gupta@st.com>
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/phy/phy-miphy28lp.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 5fb95fb..641e367 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -386,6 +386,7 @@ CONFIG_PWM_TEGRA=y
- CONFIG_PWM_VT8500=y
- CONFIG_OMAP_USB2=y
- CONFIG_TI_PIPE3=y
-+CONFIG_PHY_MIPHY28LP=y
- CONFIG_PHY_MIPHY365X=y
- CONFIG_PHY_SUN4I_USB=y
- CONFIG_EXT4_FS=y
+diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
+index 7285543..b6574e8 100644
+--- a/drivers/phy/phy-miphy28lp.c
++++ b/drivers/phy/phy-miphy28lp.c
+@@ -579,6 +579,35 @@ static void miphy_sata_tune_ssc(struct miphy28lp_phy *miphy_phy)
+ 	}
+ }
+ 
++static void miphy_pcie_tune_ssc(struct miphy28lp_phy *miphy_phy)
++{
++	u8 val;
++
++	/* Compensate Tx impedance to avoid out of range values */
++	/*
++	 * Enable the SSC on PLL for all banks
++	 * SSC Modulation @ 31 KHz and 4000 ppm modulation amp
++	 */
++	val = readb_relaxed(miphy_phy->base + MIPHY_BOUNDARY_2);
++	val |= SSC_EN_SW;
++	writeb_relaxed(val, miphy_phy->base + MIPHY_BOUNDARY_2);
++
++	val = readb_relaxed(miphy_phy->base + MIPHY_BOUNDARY_SEL);
++	val |= SSC_SEL;
++	writeb_relaxed(val, miphy_phy->base + MIPHY_BOUNDARY_SEL);
++
++	for (val = 0; val < 2; val++) {
++		writeb_relaxed(val, miphy_phy->base + MIPHY_CONF);
++		writeb_relaxed(0x69, miphy_phy->base + MIPHY_PLL_SBR_3);
++		writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
++		writeb_relaxed(0x3c, miphy_phy->base + MIPHY_PLL_SBR_2);
++		writeb_relaxed(0x21, miphy_phy->base + MIPHY_PLL_SBR_4);
++		writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
++		writeb_relaxed(0x02, miphy_phy->base + MIPHY_PLL_SBR_1);
++		writeb_relaxed(0x00, miphy_phy->base + MIPHY_PLL_SBR_1);
++	}
++}
++
+ static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
+ {
+ 	void __iomem *base = miphy_phy->base;
+@@ -647,6 +676,9 @@ static inline int miphy28lp_configure_pcie(struct miphy28lp_phy *miphy_phy)
+ 	if (err)
+ 		return err;
+ 
++	if (miphy_phy->ssc)
++		miphy_pcie_tune_ssc(miphy_phy);
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.1
 
