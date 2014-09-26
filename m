@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaIZJrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:47:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
+	id S1755273AbaIZJrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:47:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755208AbaIZJqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755216AbaIZJqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 142/142] arm64: flush TLS registers during exec
-Date: Fri, 26 Sep 2014 11:45:53 +0200
-Message-Id: <7bcae251a2dfb6c0aa2c34dc505a5796c7c39426.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>,
+        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 125/142] drm/tilcdc: fix double kfree
+Date: Fri, 26 Sep 2014 11:45:36 +0200
+Message-Id: <a84cc78e2adc8e099cd3ef8b0da555df11f25a26.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
 References: <cover.1411724723.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
+From: Guido Martínez <guido@vanguardiasur.com.ar>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
+commit c9a3ad25eddfdb898114a9d73cdb4c3472d9dfca upstream.
 
-Nathan reports that we leak TLS information from the parent context
-during an exec, as we don't clear the TLS registers when flushing the
-thread state.
+display_timings_release calls kfree on the display_timings object passed
+to it. Calling kfree after it is wrong. SLUB debug showed the following
+warning:
 
-This patch updates the flushing code so that we:
+    =============================================================================
+    BUG kmalloc-64 (Tainted: G        W    ): Object already free
+    -----------------------------------------------------------------------------
 
-  (1) Unconditionally zero the tpidr_el0 register (since this is fully
-      context switched for native tasks and zeroed for compat tasks)
+    Disabling lock debugging due to kernel taint
+    INFO: Allocated in of_get_display_timings+0x2c/0x214 age=601 cpu=0
+    pid=884
+     __slab_alloc.constprop.79+0x2e0/0x33c
+     kmem_cache_alloc+0xac/0xdc
+     of_get_display_timings+0x2c/0x214
+     panel_probe+0x7c/0x314 [tilcdc]
+     platform_drv_probe+0x18/0x48
+     [..snip..]
+    INFO: Freed in panel_destroy+0x18/0x3c [tilcdc] age=0 cpu=0 pid=907
+     __slab_free+0x34/0x330
+     panel_destroy+0x18/0x3c [tilcdc]
+     tilcdc_unload+0xd0/0x118 [tilcdc]
+     drm_dev_unregister+0x24/0x98
+     [..snip..]
 
-  (2) Zero the tp_value state in thread_info before clearing the
-      tpidrr0_el0 register for compat tasks (since this is only writable
-      by the set_tls compat syscall and therefore not fully switched).
-
-A missing compiler barrier is also added to the compat set_tls syscall.
-
-Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm64/kernel/process.c    | 18 ++++++++++++++++++
- arch/arm64/kernel/sys_compat.c |  6 ++++++
- 2 files changed, 24 insertions(+)
+ drivers/gpu/drm/tilcdc/tilcdc_panel.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 7ae8a1f00c3c..7af6183daa2e 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -183,9 +183,27 @@ void exit_thread(void)
+diff --git a/drivers/gpu/drm/tilcdc/tilcdc_panel.c b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
+index 1943b2f50ca0..b085dcc54fb5 100644
+--- a/drivers/gpu/drm/tilcdc/tilcdc_panel.c
++++ b/drivers/gpu/drm/tilcdc/tilcdc_panel.c
+@@ -286,10 +286,8 @@ static void panel_destroy(struct tilcdc_module *mod)
  {
- }
+ 	struct panel_module *panel_mod = to_panel_module(mod);
  
-+static void tls_thread_flush(void)
-+{
-+	asm ("msr tpidr_el0, xzr");
-+
-+	if (is_compat_task()) {
-+		current->thread.tp_value = 0;
-+
-+		/*
-+		 * We need to ensure ordering between the shadow state and the
-+		 * hardware state, so that we don't corrupt the hardware state
-+		 * with a stale shadow state during context switch.
-+		 */
-+		barrier();
-+		asm ("msr tpidrro_el0, xzr");
-+	}
-+}
-+
- void flush_thread(void)
- {
- 	fpsimd_flush_thread();
-+	tls_thread_flush();
- 	flush_ptrace_hw_breakpoint(current);
- }
+-	if (panel_mod->timings) {
++	if (panel_mod->timings)
+ 		display_timings_release(panel_mod->timings);
+-		kfree(panel_mod->timings);
+-	}
  
-diff --git a/arch/arm64/kernel/sys_compat.c b/arch/arm64/kernel/sys_compat.c
-index 26e9c4eeaba8..78039927c807 100644
---- a/arch/arm64/kernel/sys_compat.c
-+++ b/arch/arm64/kernel/sys_compat.c
-@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *regs)
- 
- 	case __ARM_NR_compat_set_tls:
- 		current->thread.tp_value = regs->regs[0];
-+
-+		/*
-+		 * Protect against register corruption from context switch.
-+		 * See comment in tls_thread_flush.
-+		 */
-+		barrier();
- 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
- 		return 0;
- 
+ 	tilcdc_module_cleanup(mod);
+ 	kfree(panel_mod->info);
 -- 
 2.1.0
 
