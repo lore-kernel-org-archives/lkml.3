@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaIZJAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:00:19 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55710 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575AbaIZJAO convert rfc822-to-8bit (ORCPT
+	id S1754646AbaIZJAe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:00:34 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13177 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446AbaIZJAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:00:14 -0400
-Date: Fri, 26 Sep 2014 10:00:11 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Feiner <pfeiner@google.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: manual merge of the akpm-current tree with the pci
- tree
-Message-ID: <20140926090011.GH841@e106497-lin.cambridge.arm.com>
-References: <20140925174730.302842e6@canb.auug.org.au>
- <20140925193000.GA26946@google.com>
- <20140925124744.b1e37bdbd5b4f4cfcfbb6505@linux-foundation.org>
-MIME-Version: 1.0
-In-Reply-To: <20140925124744.b1e37bdbd5b4f4cfcfbb6505@linux-foundation.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 26 Sep 2014 09:00:12.0407 (UTC) FILETIME=[47F49070:01CFD968]
-X-MC-Unique: 114092610001213001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Fri, 26 Sep 2014 05:00:30 -0400
+X-AuditID: cbfee61b-f79d76d0000024d6-a2-54252b2bbda1
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'NeilBrown'" <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
+ <20140926103620.7c397832@notabene.brown>
+In-reply-to: <20140926103620.7c397832@notabene.brown>
+Subject: RE: [PATCH] md: avoid potential long delay under pers_lock
+Date: Fri, 26 Sep 2014 16:59:47 +0800
+Message-id: <004d01cfd968$513d6d00$f3b84700$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGG4wNqX+f5TUFyB86IvHjUIwy0SgJOudLmnJKTzfA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jAV1tbdUQg8nnZC0u75rDZtE+fxej
+	xd75DSwOzB6bT1d7fN4kF8AUxWWTkpqTWZZapG+XwJVxb1ITc8EN3oru34/YGxg/cXUxcnJI
+	CJhIXJzSxgxhi0lcuLeerYuRi0NIYBGjxPd/k5ghnB+MEt2zlrKDVLEJqEgs7/jPBGKLCMhL
+	rOo7xghiMwvYSNx5MI0FxBYSSJFo3LsMbCqngKnEn0/3WEFsYQFniTnr2sDqWQRUJU6194PV
+	8ApYSqzcvZ4RwhaU+DH5HgvETC2J9TuPM0HY8hKb17yFulRBYsfZ14wQN1hJTJjRxg5RIy6x
+	8cgtlgmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4zJ9J
+	72Bc1WBxiFGAg1GJh7dhjUqIEGtiWXFl7iFGCQ5mJRFeIwXVECHelMTKqtSi/Pii0pzU4kOM
+	0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2Ma2xZquxfX2i4Hl7i/STwh6zd7LsTejkS
+	xFLWpggve/NRyyhMeb5uGmd+meiRPXXJP5ZqcHVEFP6O3f7uh4Wh3b+N3D8SQmTFqvSuLX23
+	RPmnBMvMY498NLxS52euFozycc9ief1mkevi5hXxHzXZwubyeJ7bvaLtwa2e7OYH78/JeQht
+	7oxRYinOSDTUYi4qTgQAhIhwKG8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 08:47:44PM +0100, Andrew Morton wrote:
-> On Thu, 25 Sep 2014 12:30:00 -0700 Peter Feiner <pfeiner@google.com> wrote:
+> -----Original Message-----
+> From: NeilBrown [mailto:neilb@suse.de]
+> Sent: Friday, September 26, 2014 8:36 AM
+> To: Chao Yu
+> Cc: linux-raid@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] md: avoid potential long delay under pers_lock
 > 
-> > On Thu, Sep 25, 2014 at 05:47:30PM +1000, Stephen Rothwell wrote:
-> > > Hi Andrew,
-> > > 
-> > > Today's linux-next merge of the akpm-current tree got a conflict in
-> > > include/asm-generic/pgtable.h between commit b766eafe6828 ("PCI: Add
-> > > pci_remap_iospace() to map bus I/O resources") from the pci tree and
-> > > commit 4cc2f91f2636 ("mm: softdirty: enable write notifications on VMAs
-> > > after VM_SOFTDIRTY cleared") from the akpm-current tree.
-> > > 
-> > > I fixed it up (see below) and can carry the fix as necessary (no action
-> > > is required).
-> > > 
-> > > -- 
-> > > Cheers,
-> > > Stephen Rothwell                    sfr@canb.auug.org.au
-> > > 
-> > > diff --cc include/asm-generic/pgtable.h
-> > > index 977e545a64c3,f6acf1195182..000000000000
-> > > --- a/include/asm-generic/pgtable.h
-> > > +++ b/include/asm-generic/pgtable.h
-> > > @@@ -249,10 -249,18 +249,22 @@@ static inline int pmd_same(pmd_t pmd_a
-> > >   #define pgprot_writecombine pgprot_noncached
-> > >   #endif
-> > >   
-> > >  +#ifndef pgprot_device
-> > >  +#define pgprot_device pgprot_noncached
-> > >  +#endif
-> > >  +
-> > > + #ifndef pgprot_modify
-> > > + #define pgprot_modify pgprot_modify
-> > > + static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
-> > > + {
-> > > + 	if (pgprot_val(oldprot) == pgprot_val(pgprot_noncached(oldprot)))
-> > > + 		newprot = pgprot_noncached(newprot);
-> > > + 	if (pgprot_val(oldprot) == pgprot_val(pgprot_writecombine(oldprot)))
-> > > + 		newprot = pgprot_writecombine(newprot);
-> > 
-> > For completeness of the arch-independent pgprot-modify,
-> > 
-> > 	if (pgprot_val(oldprot) == pgprot_val(pgprot_device(oldprot)))
-> > 		newprot = pgprot_device(newprot);
-> > 
-> > should be added here.
-> > 
-
-Thanks for noticing this Peter!
-
+> On Thu, 25 Sep 2014 15:28:34 +0800 Chao Yu <chao2.yu@samsung.com> wrote:
 > 
-> Tricky.  I've moved
-> mm-softdirty-enable-write-notifications-on-vmas-after-vm_softdirty-cleared.paqtch
-> to be staged after linux-next, so I'll merge it after PCI has merged. 
-> And added this:
+> > printk may cause long time lapse if value of printk_delay in sysctl is
+> > configured large by user. If register_md_personality takes long time to print in
+> > spinlock pers_lock, we may encounter high CPU usage rate when there are other
+> > pers_lock competitors who may be blocked to spin.
+> > We can avoid this condition by moving printk out of coverage of pers_lock
+> > spinlock.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > ---
+> >  drivers/md/md.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/md/md.c b/drivers/md/md.c
+> > index e02de05..5fcf215 100644
+> > --- a/drivers/md/md.c
+> > +++ b/drivers/md/md.c
+> > @@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops = {
+> >
+> >  int register_md_personality(struct md_personality *p)
+> >  {
+> > +	printk(KERN_INFO "md: %s personality registered for level %d\n",
+> > +						p->name, p->level);
+> >  	spin_lock(&pers_lock);
+> >  	list_add_tail(&p->list, &pers_list);
+> > -	printk(KERN_INFO "md: %s personality registered for level %d\n", p->name, p->level);
+> >  	spin_unlock(&pers_lock);
+> >  	return 0;
+> >  }
 > 
-> --- a/include/asm-generic/pgtable.h~mm-softdirty-enable-write-notifications-on-vmas-after-vm_softdirty-cleared-fix
-> +++ a/include/asm-generic/pgtable.h
-> @@ -261,6 +261,8 @@ static inline pgprot_t pgprot_modify(pgp
->  		newprot = pgprot_noncached(newprot);
->  	if (pgprot_val(oldprot) == pgprot_val(pgprot_writecombine(oldprot)))
->  		newprot = pgprot_writecombine(newprot);
-> +	if (pgprot_val(oldprot) == pgprot_val(pgprot_device(oldprot)))
-> +		newprot = pgprot_device(newprot);
->  	return newprot;
->  }
->  #endif
-> _
+> I'm not sure I see the pressing need for this - have you noticed actual
+> problems?
+
+Haven't, I found this by code review.
+
+Thanks,
+Yu
+
+> However it seems to make sense so I've applied it.
 > 
-
-Thanks for the patch Andrew!
-
-Best regards,
-Liviu
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+> Thanks,
+> NeilBrown
 
