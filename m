@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbaIZRx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:53:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754703AbaIZRx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:53:26 -0400
-Message-ID: <1411753981.2739.16.camel@redhat.com>
-Subject: Re: [PATCH v2] next: openrisc: Fix build
-From: Eric Paris <eparis@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        linux-next@vger.kernel.org,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 26 Sep 2014 13:53:01 -0400
-In-Reply-To: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
-References: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755883AbaIZRzX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:55:23 -0400
+Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:49006 "EHLO
+	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755231AbaIZRzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:55:22 -0400
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, davej@redhat.com,
+        hmh@hmh.eng.br, boon.leong.ong@intel.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB bug
+Date: Fri, 26 Sep 2014 18:55:18 +0100
+Message-Id: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would you like me to carry this in the audit tree, since I'm the one who
-broke it?
+Quark X1000 incorrectly advertises PGE. In later stages of boot
+specifically in early_init_intel we setup_clear_cpu_cap for PGE.
+At this point in time cpu_has_pge() will still be true.
 
--Eric
+Use the boot_cpu_data to decide if __flush_tlb_all() or __flush_tlb()
+should be called subsequent to loading CR3
 
-On Fri, 2014-09-26 at 09:05 -0700, Guenter Roeck wrote:
-> openrisc:defconfig fails to build in next-20140926 with the following error.
-> 
-> In file included from arch/openrisc/kernel/signal.c:31:0:
-> ./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
-> ./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
-> 
-> Fix by moving EM_OPENRISC to include/uapi/linux/elf-em.h.
-> 
-> Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v2: Only move EM_OPENRISC.
-> 
-> Another possible solution for the problem would be to include asm/elf.h
-> in arch/openrisc/kernel/signal.c. I had actually submitted a patch with
-> that fix back in August (maybe that is where I remembered the problem from).
-> Wonder what happened with that patch.
-> 
-> Would it make sense to drop EM_OR32 and replace it with EM_OPENRISC where
-> it is used ? binutils seems to suggest that EM_OPENRISC is the "official"
-> definition.
-> 
->  arch/openrisc/include/uapi/asm/elf.h | 3 +--
->  include/uapi/linux/elf-em.h          | 1 +
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
-> index f02ea58..8884276 100644
-> --- a/arch/openrisc/include/uapi/asm/elf.h
-> +++ b/arch/openrisc/include/uapi/asm/elf.h
-> @@ -55,9 +55,8 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
->  /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
->  typedef unsigned long elf_fpregset_t;
->  
-> -/* This should be moved to include/linux/elf.h */
-> +/* EM_OPENRISC is defined in linux/elf-em.h */
->  #define EM_OR32         0x8472
-> -#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
->  
->  /*
->   * These are used to set parameters in the core dumps.
-> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-> index 01529bd..aa90bc9 100644
-> --- a/include/uapi/linux/elf-em.h
-> +++ b/include/uapi/linux/elf-em.h
-> @@ -32,6 +32,7 @@
->  #define EM_V850		87	/* NEC v850 */
->  #define EM_M32R		88	/* Renesas M32R */
->  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
-> +#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
->  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
->  #define EM_TI_C6000	140	/* TI C6X DSPs */
->  #define EM_AARCH64	183	/* ARM 64 bit */
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+---
+ arch/x86/kernel/setup.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 41ead8d..980c3c3 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -879,7 +879,21 @@ void __init setup_arch(char **cmdline_p)
+ 			KERNEL_PGD_PTRS);
+ 
+ 	load_cr3(swapper_pg_dir);
+-	__flush_tlb_all();
++
++	/*
++	 * Flush the TLB after loading CR3
++	 *
++	 * Quark X1000 wrongly advertises PGE. Use boot_cpu_data to
++	 * to make sure ithe TLB is flushed correctly in the early
++	 * stage of setup_arch() for Quark X1000.
++	 * X86_FEATURE_PGE flag is only setup later stage at
++	 * early_cpu_init();
++	 */
++	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
++	    boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
++		__flush_tlb();
++	else
++		__flush_tlb_all();
+ #else
+ 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
+ #endif
+-- 
+1.9.1
 
