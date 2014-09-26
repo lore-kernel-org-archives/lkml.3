@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaIZOXY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:23:24 -0400
-Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:36624 "EHLO
-	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754548AbaIZOXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:23:21 -0400
-Date: Fri, 26 Sep 2014 09:22:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dmitry Vyukov <dvyukov@google.com>
-cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+	id S1754868AbaIZO3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:29:41 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55731 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481AbaIZO3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:29:38 -0400
+Date: Fri, 26 Sep 2014 16:29:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 09/13] mm: slub: add kernel address sanitizer support
- for slub allocator
-In-Reply-To: <CACT4Y+a0DMk8vyCcesrsKt7rXVDD2LZsfnGemJAgeRiVbMxxxw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1409260918460.32028@gentwo.org>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com> <1411562649-28231-10-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+a0DMk8vyCcesrsKt7rXVDD2LZsfnGemJAgeRiVbMxxxw@mail.gmail.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFT Part2 v2 00/24] Enable hierarchy irqdomian on x86 platforms
+Message-ID: <20140926142931.GA10066@nazgul.tnic>
+References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Dmitry Vyukov wrote:
+On Fri, Sep 26, 2014 at 10:02:01PM +0800, Jiang Liu wrote:
+> We plan to restructure x86 interrupt code based on hierarchy irqdomain,
+> that is to build irqdomains for CPU vector, interrupt remapping unit,
+> IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
+> Each irqdomain manages corresponding interrupt controller and talks to
+> parent interrupt controller through public irqdomain interfaces. We also
+> support stacked irq_chip based on hierarchy irqdomain. It will make the
+> x86 interrupt architecture much more clear and more easy to maintain
+> with hierarchy irqdomain and stacked irq_chip. It may also help ARM
+> interrupt management architecture too.
+> 
+> This is the second patch set to enable support of hierarchy irqdomain
+> on x86 platforms. It depends on the first part at:
+> https://lkml.org/lkml/2014/9/26/501
+> And you may access it at:
+> https://github.com/jiangliu/linux.git irqdomain/p2v2
+> 
+> And there will be a third patch set to convert IOAPIC driver to support
+> hierarchy irqdomain and clean up code.
+> 
+> The first patch extends irqdomain interfaces to support hierarchy
+> irqdomain. Hope this interface could be used by other architectures too,
+> such as ARM/ARM64.
+> The second patch introduces two helper functions to support stacked
+> irq_chip.
+> Patch 3-9 implements an irqdomain to manange CPU interrupt vectors, and
+> it's the root irqdomain for x86 platforms.
+> Patch 10-13 converts Intel and AMD interrupt remapping drivers to
+> support hierarchy irqdomain.
+> Patch 14-16 converts HPET and MSI to support hierarchy irqdomain.
+> Patch 17-20 cleans up unsued code in x86 arch and interrupt remapping
+> drivers.
+> Patch 21-24 converts DMAR, HTIRQ and UV to support hierarchy irqdomain.
+> 
+> We have tested this patchset on Intel 32-bit and 64-bit systems. And it
+> also passes Fengguang's 0day tests. But helps are need for testing:
+> 1) AMD interrupt remapping 
+> 2) AMD HT_IRQ
 
-> > +       depends on SLUB_DEBUG
->
->
-> What does SLUB_DEBUG do? I think that generally we don't want any
-> other *heavy* debug checks to be required for kasan.
+Adding Aravind.
 
-SLUB_DEBUG includes the capabilties for debugging. It does not switch
-debug on by default. SLUB_DEBUG_ON will results in a kernel that boots
-with active debugging. Without SLUB_DEBUG_ON a kernel parameter activates
-debugging.
+@Aravind: you might want to give that patchset a run just in case, to
+make sure it doesn't break anything on AMD. You'll need the previous
+patchset to go before too, though:
 
-> > +{
-> > +       unsigned long size = cache->size;
-> > +       unsigned long rounded_up_size = round_up(size, KASAN_SHADOW_SCALE_SIZE);
-> > +
->
-> Add a comment saying that SLAB_DESTROY_BY_RCU objects can be "legally"
-> used after free.
+https://lkml.kernel.org/r/1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com
 
-Add "within the rcu period"
+I'm sure Jiang will help you if you have more questions.
 
-> >  static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
-> > @@ -1416,8 +1426,10 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
-> >                 setup_object(s, page, p);
-> >                 if (likely(idx < page->objects))
-> >                         set_freepointer(s, p, p + s->size);
->
-> Sorry, I don't fully follow this code, so I will just ask some questions.
-> Can we have some slab padding after last object in this case as well?
+Thanks.
 
-This is the free case. If poisoing is enabled then the object will be
-overwritten on free. Padding is used depending on the need to align the
-object and is optional. Redzoning will occur if requested. Are you asking
-for redzoning?
-
-> kasan_mark_slab_padding poisons only up to end of the page. Can there
-> be multiple pages that we need to poison?
-
-If there is a higher order page then only the end portion needs to be
-poisoned. Objects may straddle order 0 boundaries then.
-
+-- 
+Regards/Gruss,
+    Boris.
+--
