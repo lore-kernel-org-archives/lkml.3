@@ -1,139 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaIZIN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:13:26 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:48525 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaIZINJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:13:09 -0400
+	id S1754147AbaIZIOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:14:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58967 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967AbaIZINW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:13:22 -0400
+Message-ID: <54252014.5080805@redhat.com>
+Date: Fri, 26 Sep 2014 10:13:08 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-11-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-11-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:13:06 +0200
-X-Google-Sender-Auth: 3IcOEIP8g-5XV4OGN1K8qZpyyFg
-Message-ID: <CAMuHMdWfyL3eju+GF1M_h9gvTLsO=3NniFjhP6SRgiQ_-H2gyw@mail.gmail.com>
-Subject: Re: [PATCH v3 10/13] ARM: shmobile: r8a7740 dtsi: Add PM domain support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable
+ and apic access page.
+References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com> <54227EB4.7070608@redhat.com> <5423D015.6090107@cn.fujitsu.com> <54241BFA.5000503@redhat.com> <5424BF8B.1010701@cn.fujitsu.com>
+In-Reply-To: <5424BF8B.1010701@cn.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 6:28 PM, Geert Uytterhoeven
-<geert+renesas@glider.be> wrote:
-> Add a device node for the System Controller, with subnodes that
-> represent the hardware power area hierarchy.
-> Hook up all devices to their respective PM domains.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Il 26/09/2014 03:21, Tang Chen ha scritto:
+>>>
+>>> I'd like to help to test the patches.
+>>> Would you please tell me what is the best way to test this patch-set ?
+>> How did _you_ test the patches?...
+> 
+> I just added "-cpu xxx,-x2apic" option, start the guest, using numactl
+> to bind it
+> to a node (eg: node1). And offline the pages on node1. And repeat above
+> thing
+> for a while. And it is OK.
+> 
+> I'm not sure if this is enough.
 
-> diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-> index 502483f4dccb2f45..4fead480a405bebe 100644
-> --- a/arch/arm/boot/dts/r8a7740.dtsi
-> +++ b/arch/arm/boot/dts/r8a7740.dtsi
+Yes, this should be enough.
 
-> @@ -383,6 +408,7 @@
->                         compatible = "renesas,r8a7740-cpg-clocks";
->                         reg = <0xe6150000 0x10000>;
->                         clocks = <&extal1_clk>, <&extalr_clk>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         clock-output-names = "system", "pllc0", "pllc1",
->                                              "pllc2", "r",
-> @@ -397,6 +423,7 @@
->                         compatible = "renesas,r8a7740-div6-clock", "renesas,cpg-div6-clock";
->                         reg = <0xe6150080 4>;
->                         clocks = <&pllc1_div2_clk>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <0>;
->                         clock-output-names = "sub";
->                 };
-> @@ -405,6 +432,7 @@
->                 pllc1_div2_clk: pllc1_div2_clk {
->                         compatible = "fixed-factor-clock";
->                         clocks = <&cpg_clocks R8A7740_CLK_PLLC1>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <0>;
->                         clock-div = <2>;
->                         clock-mult = <1>;
-> @@ -413,6 +441,7 @@
->                 extal1_div2_clk: extal1_div2_clk {
->                         compatible = "fixed-factor-clock";
->                         clocks = <&extal1_clk>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <0>;
->                         clock-div = <2>;
->                         clock-mult = <1>;
-> @@ -424,6 +453,7 @@
->                         compatible = "renesas,r8a7740-mstp-clocks", "renesas,cpg-mstp-clocks";
->                         reg = <0xe6150080 4>;
->                         clocks = <&sub_clk>, <&sub_clk>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         renesas,clock-indices = <
->                                 R8A7740_CLK_SUBCK R8A7740_CLK_SUBCK2
-> @@ -439,6 +469,7 @@
->                                  <&cpg_clocks R8A7740_CLK_B>,
->                                  <&sub_clk>, <&sub_clk>,
->                                  <&cpg_clocks R8A7740_CLK_B>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         renesas,clock-indices = <
->                                 R8A7740_CLK_CEU21 R8A7740_CLK_CEU20 R8A7740_CLK_TMU0
-> @@ -460,6 +491,7 @@
->                                  <&sub_clk>, <&sub_clk>, <&sub_clk>,
->                                  <&sub_clk>, <&sub_clk>, <&sub_clk>,
->                                  <&sub_clk>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         renesas,clock-indices = <
->                                 R8A7740_CLK_SCIFA6 R8A7740_CLK_INTCA
-> @@ -489,6 +521,7 @@
->                                  <&cpg_clocks R8A7740_CLK_HP>,
->                                  <&cpg_clocks R8A7740_CLK_HP>,
->                                  <&cpg_clocks R8A7740_CLK_HP>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         renesas,clock-indices = <
->                                 R8A7740_CLK_CMT1 R8A7740_CLK_FSI R8A7740_CLK_IIC1
-> @@ -506,6 +539,7 @@
->                                  <&cpg_clocks R8A7740_CLK_HP>,
->                                  <&cpg_clocks R8A7740_CLK_HP>,
->                                  <&cpg_clocks R8A7740_CLK_HP>;
-> +                       power-domains = <&pd_c5>;
->                         #clock-cells = <1>;
->                         renesas,clock-indices = <
->                                 R8A7740_CLK_USBH R8A7740_CLK_SDHI2
-
-Woosh, looks like I've been too eager adding links to the pd_c5 "always on"
-PM domain to any node that has a clocks property. This must not be done for
-the clocks. They are not instantiated as platform devices.
-
-Thanks to Grygorii for questioning me.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Paolo
