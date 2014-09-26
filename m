@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaIZPpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:45:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35745 "EHLO
+	id S1755555AbaIZPp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:45:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35754 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754127AbaIZPpO (ORCPT
+	with ESMTP id S1755196AbaIZPpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:45:14 -0400
+	Fri, 26 Sep 2014 11:45:22 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -21,392 +21,435 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Gregory Clement <gregory.clement@free-electrons.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation for the dma controller API
-Date: Fri, 26 Sep 2014 17:40:35 +0200
-Message-Id: <1411746035-15882-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 1/2] Documentation: dmaengine: Move the current doc to a folder of its own
+Date: Fri, 26 Sep 2014 17:40:34 +0200
+Message-Id: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dmaengine is neither trivial nor properly documented at the moment, which
-means a lot of trial and error development, which is not that good for such a
-central piece of the system.
-
-Attempt at making such a documentation.
+Move the current client-side documentation to a subfolder to prepare the
+introduction of a provider-side API documentation.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- Documentation/dmaengine/provider.txt | 358 +++++++++++++++++++++++++++++++++++
- 1 file changed, 358 insertions(+)
- create mode 100644 Documentation/dmaengine/provider.txt
+ Documentation/dmaengine.txt        | 199 -------------------------------------
+ Documentation/dmaengine/client.txt | 199 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 199 insertions(+), 199 deletions(-)
+ delete mode 100644 Documentation/dmaengine.txt
+ create mode 100644 Documentation/dmaengine/client.txt
 
-diff --git a/Documentation/dmaengine/provider.txt b/Documentation/dmaengine/provider.txt
+diff --git a/Documentation/dmaengine.txt b/Documentation/dmaengine.txt
+deleted file mode 100644
+index 573e28ce9751..000000000000
+--- a/Documentation/dmaengine.txt
++++ /dev/null
+@@ -1,199 +0,0 @@
+-			DMA Engine API Guide
+-			====================
+-
+-		 Vinod Koul <vinod dot koul at intel.com>
+-
+-NOTE: For DMA Engine usage in async_tx please see:
+-	Documentation/crypto/async-tx-api.txt
+-
+-
+-Below is a guide to device driver writers on how to use the Slave-DMA API of the
+-DMA Engine. This is applicable only for slave DMA usage only.
+-
+-The slave DMA usage consists of following steps:
+-1. Allocate a DMA slave channel
+-2. Set slave and controller specific parameters
+-3. Get a descriptor for transaction
+-4. Submit the transaction
+-5. Issue pending requests and wait for callback notification
+-
+-1. Allocate a DMA slave channel
+-
+-   Channel allocation is slightly different in the slave DMA context,
+-   client drivers typically need a channel from a particular DMA
+-   controller only and even in some cases a specific channel is desired.
+-   To request a channel dma_request_channel() API is used.
+-
+-   Interface:
+-	struct dma_chan *dma_request_channel(dma_cap_mask_t mask,
+-			dma_filter_fn filter_fn,
+-			void *filter_param);
+-   where dma_filter_fn is defined as:
+-	typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
+-
+-   The 'filter_fn' parameter is optional, but highly recommended for
+-   slave and cyclic channels as they typically need to obtain a specific
+-   DMA channel.
+-
+-   When the optional 'filter_fn' parameter is NULL, dma_request_channel()
+-   simply returns the first channel that satisfies the capability mask.
+-
+-   Otherwise, the 'filter_fn' routine will be called once for each free
+-   channel which has a capability in 'mask'.  'filter_fn' is expected to
+-   return 'true' when the desired DMA channel is found.
+-
+-   A channel allocated via this interface is exclusive to the caller,
+-   until dma_release_channel() is called.
+-
+-2. Set slave and controller specific parameters
+-
+-   Next step is always to pass some specific information to the DMA
+-   driver.  Most of the generic information which a slave DMA can use
+-   is in struct dma_slave_config.  This allows the clients to specify
+-   DMA direction, DMA addresses, bus widths, DMA burst lengths etc
+-   for the peripheral.
+-
+-   If some DMA controllers have more parameters to be sent then they
+-   should try to embed struct dma_slave_config in their controller
+-   specific structure. That gives flexibility to client to pass more
+-   parameters, if required.
+-
+-   Interface:
+-	int dmaengine_slave_config(struct dma_chan *chan,
+-				  struct dma_slave_config *config)
+-
+-   Please see the dma_slave_config structure definition in dmaengine.h
+-   for a detailed explanation of the struct members.  Please note
+-   that the 'direction' member will be going away as it duplicates the
+-   direction given in the prepare call.
+-
+-3. Get a descriptor for transaction
+-
+-   For slave usage the various modes of slave transfers supported by the
+-   DMA-engine are:
+-
+-   slave_sg	- DMA a list of scatter gather buffers from/to a peripheral
+-   dma_cyclic	- Perform a cyclic DMA operation from/to a peripheral till the
+-		  operation is explicitly stopped.
+-   interleaved_dma - This is common to Slave as well as M2M clients. For slave
+-		 address of devices' fifo could be already known to the driver.
+-		 Various types of operations could be expressed by setting
+-		 appropriate values to the 'dma_interleaved_template' members.
+-
+-   A non-NULL return of this transfer API represents a "descriptor" for
+-   the given transaction.
+-
+-   Interface:
+-	struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
+-		struct dma_chan *chan, struct scatterlist *sgl,
+-		unsigned int sg_len, enum dma_data_direction direction,
+-		unsigned long flags);
+-
+-	struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
+-		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+-		size_t period_len, enum dma_data_direction direction);
+-
+-	struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+-		struct dma_chan *chan, struct dma_interleaved_template *xt,
+-		unsigned long flags);
+-
+-   The peripheral driver is expected to have mapped the scatterlist for
+-   the DMA operation prior to calling device_prep_slave_sg, and must
+-   keep the scatterlist mapped until the DMA operation has completed.
+-   The scatterlist must be mapped using the DMA struct device.
+-   If a mapping needs to be synchronized later, dma_sync_*_for_*() must be
+-   called using the DMA struct device, too.
+-   So, normal setup should look like this:
+-
+-	nr_sg = dma_map_sg(chan->device->dev, sgl, sg_len);
+-	if (nr_sg == 0)
+-		/* error */
+-
+-	desc = dmaengine_prep_slave_sg(chan, sgl, nr_sg, direction, flags);
+-
+-   Once a descriptor has been obtained, the callback information can be
+-   added and the descriptor must then be submitted.  Some DMA engine
+-   drivers may hold a spinlock between a successful preparation and
+-   submission so it is important that these two operations are closely
+-   paired.
+-
+-   Note:
+-	Although the async_tx API specifies that completion callback
+-	routines cannot submit any new operations, this is not the
+-	case for slave/cyclic DMA.
+-
+-	For slave DMA, the subsequent transaction may not be available
+-	for submission prior to callback function being invoked, so
+-	slave DMA callbacks are permitted to prepare and submit a new
+-	transaction.
+-
+-	For cyclic DMA, a callback function may wish to terminate the
+-	DMA via dmaengine_terminate_all().
+-
+-	Therefore, it is important that DMA engine drivers drop any
+-	locks before calling the callback function which may cause a
+-	deadlock.
+-
+-	Note that callbacks will always be invoked from the DMA
+-	engines tasklet, never from interrupt context.
+-
+-4. Submit the transaction
+-
+-   Once the descriptor has been prepared and the callback information
+-   added, it must be placed on the DMA engine drivers pending queue.
+-
+-   Interface:
+-	dma_cookie_t dmaengine_submit(struct dma_async_tx_descriptor *desc)
+-
+-   This returns a cookie can be used to check the progress of DMA engine
+-   activity via other DMA engine calls not covered in this document.
+-
+-   dmaengine_submit() will not start the DMA operation, it merely adds
+-   it to the pending queue.  For this, see step 5, dma_async_issue_pending.
+-
+-5. Issue pending DMA requests and wait for callback notification
+-
+-   The transactions in the pending queue can be activated by calling the
+-   issue_pending API. If channel is idle then the first transaction in
+-   queue is started and subsequent ones queued up.
+-
+-   On completion of each DMA operation, the next in queue is started and
+-   a tasklet triggered. The tasklet will then call the client driver
+-   completion callback routine for notification, if set.
+-
+-   Interface:
+-	void dma_async_issue_pending(struct dma_chan *chan);
+-
+-Further APIs:
+-
+-1. int dmaengine_terminate_all(struct dma_chan *chan)
+-
+-   This causes all activity for the DMA channel to be stopped, and may
+-   discard data in the DMA FIFO which hasn't been fully transferred.
+-   No callback functions will be called for any incomplete transfers.
+-
+-2. int dmaengine_pause(struct dma_chan *chan)
+-
+-   This pauses activity on the DMA channel without data loss.
+-
+-3. int dmaengine_resume(struct dma_chan *chan)
+-
+-   Resume a previously paused DMA channel.  It is invalid to resume a
+-   channel which is not currently paused.
+-
+-4. enum dma_status dma_async_is_tx_complete(struct dma_chan *chan,
+-        dma_cookie_t cookie, dma_cookie_t *last, dma_cookie_t *used)
+-
+-   This can be used to check the status of the channel.  Please see
+-   the documentation in include/linux/dmaengine.h for a more complete
+-   description of this API.
+-
+-   This can be used in conjunction with dma_async_is_complete() and
+-   the cookie returned from dmaengine_submit() to check for
+-   completion of a specific DMA transaction.
+-
+-   Note:
+-	Not all DMA engine drivers can return reliable information for
+-	a running DMA channel.  It is recommended that DMA engine users
+-	pause or stop (via dmaengine_terminate_all) the channel before
+-	using this API.
+diff --git a/Documentation/dmaengine/client.txt b/Documentation/dmaengine/client.txt
 new file mode 100644
-index 000000000000..ba407e706cde
+index 000000000000..573e28ce9751
 --- /dev/null
-+++ b/Documentation/dmaengine/provider.txt
-@@ -0,0 +1,358 @@
-+DMAengine controller documentation
-+==================================
++++ b/Documentation/dmaengine/client.txt
+@@ -0,0 +1,199 @@
++			DMA Engine API Guide
++			====================
 +
-+Hardware Introduction
-++++++++++++++++++++++
++		 Vinod Koul <vinod dot koul at intel.com>
 +
-+Most of the Slave DMA controllers have the same general principles of
-+operations.
++NOTE: For DMA Engine usage in async_tx please see:
++	Documentation/crypto/async-tx-api.txt
 +
-+They have a given number of channels to use for the DMA transfers, and
-+a given number of requests lines.
 +
-+Requests and channels are pretty much orthogonal. Channels can be used
-+to serve several to any requests. To simplify, channels are the
-+entities that will be doing the copy, and requests what endpoints are
-+involved.
++Below is a guide to device driver writers on how to use the Slave-DMA API of the
++DMA Engine. This is applicable only for slave DMA usage only.
 +
-+The request lines actually correspond to physical lines going from the
-+DMA-elligible devices to the controller itself. Whenever the device
-+will want to start a transfer, it will assert a DMA request (DRQ) by
-+asserting that request line.
++The slave DMA usage consists of following steps:
++1. Allocate a DMA slave channel
++2. Set slave and controller specific parameters
++3. Get a descriptor for transaction
++4. Submit the transaction
++5. Issue pending requests and wait for callback notification
 +
-+A very simple DMA controller would only take into account a single
-+parameter: the transfer size. At each clock cycle, it would transfer a
-+byte of data from one buffer to another, until the transfer size has
-+been reached.
++1. Allocate a DMA slave channel
 +
-+That wouldn't work well in the real world, since slave devices might
-+require to have to retrieve various number of bits from memory at a
-+time. For example, we probably want to transfer 32 bits at a time when
-+doing a simple memory copy operation, but our audio device will
-+require to have 16 or 24 bits written to its FIFO. This is why most if
-+not all of the DMA controllers can adjust this, using a parameter
-+called the width.
++   Channel allocation is slightly different in the slave DMA context,
++   client drivers typically need a channel from a particular DMA
++   controller only and even in some cases a specific channel is desired.
++   To request a channel dma_request_channel() API is used.
 +
-+Moreover, some DMA controllers, whenever the RAM is involved, can
-+group the reads or writes in memory into a buffer, so instead of
-+having a lot of small memory accesses, which is not really efficient,
-+you'll get several bigger transfers. This is done using a parameter
-+called the burst size, that defines how many single reads/writes it's
-+allowed to do in a single clock cycle.
++   Interface:
++	struct dma_chan *dma_request_channel(dma_cap_mask_t mask,
++			dma_filter_fn filter_fn,
++			void *filter_param);
++   where dma_filter_fn is defined as:
++	typedef bool (*dma_filter_fn)(struct dma_chan *chan, void *filter_param);
 +
-+Our theorical DMA controller would then only be able to do transfers
-+that involve a single contiguous block of data. However, some of the
-+transfers we usually have are not, and want to copy data from
-+non-contiguous buffers to a contiguous buffer, which is called
-+scatter-gather.
++   The 'filter_fn' parameter is optional, but highly recommended for
++   slave and cyclic channels as they typically need to obtain a specific
++   DMA channel.
 +
-+DMAEngine, at least for mem2dev transfers, require support for
-+scatter-gather. So we're left with two cases here: either we have a
-+quite simple DMA controller that doesn't support it, and we'll have to
-+implement it in software, or we have a more advanced DMA controller,
-+that implements in hardware scatter-gather.
++   When the optional 'filter_fn' parameter is NULL, dma_request_channel()
++   simply returns the first channel that satisfies the capability mask.
 +
-+The latter are usually programmed using a collection of chunks to
-+transfer, and whenever the transfer is started, the controller will go
-+over that collection, doing whatever we programmed there.
++   Otherwise, the 'filter_fn' routine will be called once for each free
++   channel which has a capability in 'mask'.  'filter_fn' is expected to
++   return 'true' when the desired DMA channel is found.
 +
-+This collection is usually either a table or a linked list. You will
-+then push either the address of the table and its number of elements,
-+or the first item of the list to one channel of the DMA controller,
-+and whenever a DRQ will be asserted, it will go through the collection
-+to know where to fetch the data from.
++   A channel allocated via this interface is exclusive to the caller,
++   until dma_release_channel() is called.
 +
-+Either way, the format of this collection is completely dependent of
-+your hardware. Each DMA controller will require a different structure,
-+but all of them will require, for every chunk, at least the source and
-+destination addresses, wether it should increment these addresses or
-+not and the three parameters we saw earlier: the burst size, the bus
-+width and the transfer size.
++2. Set slave and controller specific parameters
 +
-+The one last thing is that usually, slave devices won't issue DRQ by
-+default, and you have to enable this in your slave device driver first
-+whenever you're willing to use DMA.
++   Next step is always to pass some specific information to the DMA
++   driver.  Most of the generic information which a slave DMA can use
++   is in struct dma_slave_config.  This allows the clients to specify
++   DMA direction, DMA addresses, bus widths, DMA burst lengths etc
++   for the peripheral.
 +
-+These were just the general memory-to-memory (also called mem2mem) or
-+memory-to-device (mem2dev) transfers. Other kind of transfers might be
-+offered by your DMA controller, and are probably already supported by
-+dmaengine.
++   If some DMA controllers have more parameters to be sent then they
++   should try to embed struct dma_slave_config in their controller
++   specific structure. That gives flexibility to client to pass more
++   parameters, if required.
 +
-+DMA Support in Linux
-+++++++++++++++++++++
++   Interface:
++	int dmaengine_slave_config(struct dma_chan *chan,
++				  struct dma_slave_config *config)
 +
-+Historically, DMA controller driver have been implemented using the
-+async TX API, to offload operations such as memory copy, XOR,
-+cryptography, etc, basically any memory to memory operation.
++   Please see the dma_slave_config structure definition in dmaengine.h
++   for a detailed explanation of the struct members.  Please note
++   that the 'direction' member will be going away as it duplicates the
++   direction given in the prepare call.
 +
-+Over the time, the need for memory to device transfers arose, and
-+dmaengine was extended. Nowadays, the async TX API is written as a
-+layer on top of dmaengine, and act as a client. Still, dmaengine
-+accomodates that API in some cases, and made some design choices to
-+ensure that it stayed compatible.
++3. Get a descriptor for transaction
 +
-+For more information on the Async TX API, please look the relevant
-+documentation file in Documentation/crypto/async-tx-api.txt.
++   For slave usage the various modes of slave transfers supported by the
++   DMA-engine are:
 +
-+DMAEngine Registration
-+++++++++++++++++++++++
++   slave_sg	- DMA a list of scatter gather buffers from/to a peripheral
++   dma_cyclic	- Perform a cyclic DMA operation from/to a peripheral till the
++		  operation is explicitly stopped.
++   interleaved_dma - This is common to Slave as well as M2M clients. For slave
++		 address of devices' fifo could be already known to the driver.
++		 Various types of operations could be expressed by setting
++		 appropriate values to the 'dma_interleaved_template' members.
 +
-+struct dma_device Initialization
-+--------------------------------
++   A non-NULL return of this transfer API represents a "descriptor" for
++   the given transaction.
 +
-+Just like any other kernel framework, the whole DMAEngine registration
-+relies on the driver filling a structure and registering against the
-+framework. In our case, that structure is dma_device.
++   Interface:
++	struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
++		struct dma_chan *chan, struct scatterlist *sgl,
++		unsigned int sg_len, enum dma_data_direction direction,
++		unsigned long flags);
 +
-+The first thing you need to do in your driver is to allocate this
-+structure. Any of the usual memory allocator will do, but you'll also
-+need to initialize a few fields in there:
++	struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
++		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
++		size_t period_len, enum dma_data_direction direction);
 +
-+  * chancnt:	should be the number of channels your driver is exposing
-+		to the system.
-+		This doesn't have to be the number of physical
-+		channels: some DMA controllers also expose virtual
-+		channels to the system to overcome the case where you
-+		have more consumers than physical channels available.
++	struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
++		struct dma_chan *chan, struct dma_interleaved_template *xt,
++		unsigned long flags);
 +
-+  * channels:	should be initialized as a list using the
-+		INIT_LIST_HEAD macro for example
++   The peripheral driver is expected to have mapped the scatterlist for
++   the DMA operation prior to calling device_prep_slave_sg, and must
++   keep the scatterlist mapped until the DMA operation has completed.
++   The scatterlist must be mapped using the DMA struct device.
++   If a mapping needs to be synchronized later, dma_sync_*_for_*() must be
++   called using the DMA struct device, too.
++   So, normal setup should look like this:
 +
-+  * dev: 	should hold the pointer to the struct device associated
-+		to your current driver instance.
++	nr_sg = dma_map_sg(chan->device->dev, sgl, sg_len);
++	if (nr_sg == 0)
++		/* error */
 +
-+Supported transaction types
-+---------------------------
-+The next thing you need is to actually set which transaction type your
-+device (and driver) supports.
++	desc = dmaengine_prep_slave_sg(chan, sgl, nr_sg, direction, flags);
 +
-+Our dma_device structure has a field called caps_mask that holds the
-+various types of transaction supported, and you need to modify this
-+mask using the dma_cap_set function, with various flags depending on
-+transaction types you support as an argument.
++   Once a descriptor has been obtained, the callback information can be
++   added and the descriptor must then be submitted.  Some DMA engine
++   drivers may hold a spinlock between a successful preparation and
++   submission so it is important that these two operations are closely
++   paired.
 +
-+All those capabilities are defined in the dma_transaction_type enum,
-+in include/linux/dmaengine.h
++   Note:
++	Although the async_tx API specifies that completion callback
++	routines cannot submit any new operations, this is not the
++	case for slave/cyclic DMA.
 +
-+Currently, the types available are:
-+  * DMA_MEMCPY
-+    - The device is able to do memory to memory copies
++	For slave DMA, the subsequent transaction may not be available
++	for submission prior to callback function being invoked, so
++	slave DMA callbacks are permitted to prepare and submit a new
++	transaction.
 +
-+  * DMA_XOR
-+    - The device is able to perform XOR operations on memory areas
-+    - Particularly useful to accelerate XOR intensive tasks, such as
-+      RAID5
++	For cyclic DMA, a callback function may wish to terminate the
++	DMA via dmaengine_terminate_all().
 +
-+  * DMA_XOR_VAL
-+    - The device is able to perform parity check using the XOR
-+      algorithm against a memory buffer.
++	Therefore, it is important that DMA engine drivers drop any
++	locks before calling the callback function which may cause a
++	deadlock.
 +
-+  * DMA_PQ
-+    - The device is able to perform RAID6 P+Q computations, P being a
-+      simple XOR, and Q being a Reed-Solomon algorithm.
++	Note that callbacks will always be invoked from the DMA
++	engines tasklet, never from interrupt context.
 +
-+  * DMA_PQ_VAL
-+    - The device is able to perform parity check using RAID6 P+Q
-+      algorithm against a memory buffer.
++4. Submit the transaction
 +
-+  * DMA_INTERRUPT
-+    /* TODO: Is it that the device has one interrupt per channel? */
++   Once the descriptor has been prepared and the callback information
++   added, it must be placed on the DMA engine drivers pending queue.
 +
-+  * DMA_SG
-+    - The device supports memory to memory scatter-gather
-+      transfers.
-+    - Even though a plain memcpy can look like a particular case of a
-+      scatter-gather transfer, with a single chunk to transfer, it's a
-+      distinct transaction type in the mem2mem transfers case
++   Interface:
++	dma_cookie_t dmaengine_submit(struct dma_async_tx_descriptor *desc)
 +
-+  * DMA_PRIVATE
-+    - The devices only supports slave transfers, and as such isn't
-+      avaible for async transfers.
++   This returns a cookie can be used to check the progress of DMA engine
++   activity via other DMA engine calls not covered in this document.
 +
-+  * DMA_ASYNC_TX
-+    - Must not be set by the device, and will be set by the framework
-+      if needed
-+    - /* TODO: What is it about? */
++   dmaengine_submit() will not start the DMA operation, it merely adds
++   it to the pending queue.  For this, see step 5, dma_async_issue_pending.
 +
-+  * DMA_SLAVE
-+    - The device can handle device to memory transfers, including
-+      scatter-gather transfers.
-+    - While in the mem2mem case we were having two distinct types to
-+      deal with a single chunk to copy or a collection of them, here,
-+      we just have a single transaction type that is supposed to
-+      handle both.
++5. Issue pending DMA requests and wait for callback notification
 +
-+  * DMA_CYCLIC
-+    - The device can handle cyclic transfers.
-+    - A cyclic transfer is a transfer where the chunk collection will
-+      loop over itself, with the last item pointing to the first. It's
-+      usually used for audio transfers, where you want to operate on a
-+      single big buffer that you will fill with your audio data.
++   The transactions in the pending queue can be activated by calling the
++   issue_pending API. If channel is idle then the first transaction in
++   queue is started and subsequent ones queued up.
 +
-+  * DMA_INTERLEAVE
-+    - The device supports interleaved transfer. Those transfers
-+      usually involve an interleaved set of data, with chunks a few
-+      bytes wide, where a scatter-gather transfer would be quite
-+      inefficient.
++   On completion of each DMA operation, the next in queue is started and
++   a tasklet triggered. The tasklet will then call the client driver
++   completion callback routine for notification, if set.
 +
-+These various types will also affect how the source and destination
-+addresses change over time, as DMA_SLAVE transfers will usually have
-+one of the addresses that will increment, while the other will not,
-+DMA_CYCLIC will have one address that will loop, while the other, will
-+not change, etc.
++   Interface:
++	void dma_async_issue_pending(struct dma_chan *chan);
 +
-+Device operations
-+-----------------
++Further APIs:
 +
-+Our dma_device structure also requires a few function pointers in
-+order to implement the actual logic, now that we described what
-+operations we were able to perform.
++1. int dmaengine_terminate_all(struct dma_chan *chan)
 +
-+The functions that we have to fill in there, and hence have to
-+implement, obviously depend on the transaction types you reported as
-+supported.
++   This causes all activity for the DMA channel to be stopped, and may
++   discard data in the DMA FIFO which hasn't been fully transferred.
++   No callback functions will be called for any incomplete transfers.
 +
-+   * device_alloc_chan_resources
-+   * device_free_chan_resources
-+     - These functions will be called whenever a driver will call
-+       dma_request_channel or dma_release_channel for the first/last
-+       time on the channel associated to that driver.
-+     - They are in charge of allocating/freeing all the needed
-+       resources in order for that channel to be useful for your
-+       driver.
-+     - These functions can sleep.
++2. int dmaengine_pause(struct dma_chan *chan)
 +
-+   * device_prep_dma_*
-+     - These functions are matching the capabilities you registered
-+       previously.
-+     - These functions all take the buffer or the scatterlist relevant
-+       for the transfer being prepared, and should create a hardware
-+       descriptor or a list of descriptors from it
-+     - These functions can be called from an interrupt context
-+     - Any allocation you might do should be using the GFP_NOWAIT
-+       flag, in order not to potentially sleep, but without depleting
-+       the emergency pool either.
++   This pauses activity on the DMA channel without data loss.
 +
-+     - It should return a unique instance of the
-+       dma_async_tx_descriptor structure, that further represents this
-+       particular transfer.
++3. int dmaengine_resume(struct dma_chan *chan)
 +
-+     - This structure can be allocated using the function
-+       dma_async_tx_descriptor_init.
-+     - You'll also need to set two fields in this structure:
-+       + flags:
-+		TODO: Can it be modified by the driver itself, or
-+		should it be always the flags passed in the arguments
++   Resume a previously paused DMA channel.  It is invalid to resume a
++   channel which is not currently paused.
 +
-+       + tx_submit:	A pointer to a function you have to implement,
-+			that is supposed to push the current descriptor
-+			to a pending queue, waiting for issue_pending to
-+			be called.
++4. enum dma_status dma_async_is_tx_complete(struct dma_chan *chan,
++        dma_cookie_t cookie, dma_cookie_t *last, dma_cookie_t *used)
 +
-+   * device_issue_pending
-+     - Takes the first descriptor in the pending queue, and starts the
-+       transfer. Whenever that transfer is done, it should move to the
-+       next transaction in the list.
-+     - It should call the registered callback if any each time a
-+       transaction is done.
-+     - This function can be called in an interrupt context
++   This can be used to check the status of the channel.  Please see
++   the documentation in include/linux/dmaengine.h for a more complete
++   description of this API.
 +
-+   * device_tx_status
-+     - Should report the bytes left to go over on the given channel
-+     - Should also only concern about the given descriptor, not the
-+       currently active one.
-+     - The tx_state argument might be NULL
-+     - Should use dma_set_residue to report it
-+     - In the case of a cyclic transfer, it should only take into
-+       account the current period.
-+     - This function can be called in an interrupt context.
++   This can be used in conjunction with dma_async_is_complete() and
++   the cookie returned from dmaengine_submit() to check for
++   completion of a specific DMA transaction.
 +
-+   * device_control
-+     - Used by client drivers to control and configure the channel it
-+       has a handle on.
-+     - Called with a command and an argument
-+       + The command is one of the values listed by the enum
-+         dma_ctrl_cmd. To this date, the valid commands are:
-+         + DMA_RESUME
-+           + Restarts a transfer on the channel
-+           + This command should operate synchronously on the channel,
-+             resuming right away the work of the given channel
-+         + DMA_PAUSE
-+           + Pauses a transfer on the channel
-+           + This command should operate synchronously on the channel,
-+             pausing right away the work of the given channel
-+         + DMA_TERMINATE_ALL
-+           + Aborts all the pending and ongoing transfers on the
-+             channel
-+           + This command should operate synchronously on the channel,
-+             terminating right away all the channels
-+         + DMA_SLAVE_CONFIG
-+           + Reconfigures the channel with passed configuration
-+           + This command should NOT perform synchronously, or on any
-+             currently queued transfers, but only on subsequent ones
-+           + In this case, the function will receive a
-+             dma_slave_config structure pointer as an argument, that
-+             will detail which configuration to use.
-+           + Even though that structure contains a direction field,
-+             this field is deprecated in favor of the direction
-+             argument given to the prep_* functions
-+         + FSLDMA_EXTERNAL_START
-+           + TODO: Why does that even exist?
-+       + The argument is an opaque unsigned long. This actually is a
-+         pointer to a struct dma_slave_config that should be used only
-+         in the DMA_SLAVE_CONFIG.
-+
-+  * device_slave_caps
-+    - Called through the framework by client drivers in order to have
-+      an idea of what are the properties of the channel allocated to
-+      them.
-+    - Such properties are the buswidth, available directions, etc.
-+    - Required for every generic layer doing DMA transfers, such as
-+      ASoC.
-+
-+Misc notes (stuff that should be documented, but don't really know
-+where to put them)
-+------------------------------------------------------------------
-+  * dma_run_dependencies
-+    - Should be called at the end of an async TX transfer, and can be
-+      ignored ine the slave transfers case.
-+    - Makes sure that dependent operations are run before marking it
-+      as complete.
-+
-+  * dma_cookie_t
-+    - it's a DMA transaction ID, that will increment over time.
-+    - Not really relevant anymore since the introduction of virt-dma
-+      that abstracts it away.
-+
-+  * DMA_CTRL_ACK
-+    - Undocumented feature
-+    - No one really has an idea of what's it's about, beside being
-+      related to reusing the DMA descriptors or having additional
-+      transactions added to it in the async-tx API
-+    - Useless in the case of the slave API
-+
-+General Design Notes
-+--------------------
-+
-+Most of the DMAEngine drivers you'll see all are based on a similar
-+design that handles the end of transfer interrupts in the handler, but
-+defer most work to a tasklet, including the start of a new transfer
-+whenever the previous transfer ended.
-+
-+This is a rather inefficient design though, because the inter-transfer
-+latency will be not only the interrupt latency, but also the
-+scheduling latency of the tasklet, which will leave the channel idle
-+in between, which will slow down the global transfer rate.
-+
-+You should avoid this kind of pratice, and instead of electing a new
-+transfer in your tasklet, move that part to the interrupt handler in
-+order to have a shorter idle window (that we can't really avoid
-+anyway).
-+
-+Glossary
-+--------
-+
-+Burst:		Usually a few contiguous bytes that will be transfered
-+		at once by the DMA controller
-+Chunk:		A contiguous collection of bursts
-+Transfer:	A collection of chunks (be it contiguous or not)
++   Note:
++	Not all DMA engine drivers can return reliable information for
++	a running DMA channel.  It is recommended that DMA engine users
++	pause or stop (via dmaengine_terminate_all) the channel before
++	using this API.
 -- 
 2.1.0
 
