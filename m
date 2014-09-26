@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaIZLZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:25:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35517 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754489AbaIZLZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:25:49 -0400
-Date: Fri, 26 Sep 2014 13:25:46 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Johan Hovold <johan@kernel.org>
-cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 5/6] HID: hid-sensor-hub: use mfd_add_hotplug_devices
- helper
-In-Reply-To: <1411728933-13351-6-git-send-email-johan@kernel.org>
-Message-ID: <alpine.LNX.2.00.1409261325100.22196@pobox.suse.cz>
-References: <1411728933-13351-1-git-send-email-johan@kernel.org> <1411728933-13351-6-git-send-email-johan@kernel.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754281AbaIZL0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:26:47 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37907 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaIZL0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 07:26:46 -0400
+Message-ID: <1411730797.3852.23.camel@hornet>
+Subject: Re: [PATCH 2/2] perf: Userspace software event and ioctl
+From: Pawel Moll <pawel.moll@arm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Fri, 26 Sep 2014 12:26:37 +0100
+In-Reply-To: <20140926112312.GB9870@gmail.com>
+References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
+	 <1411050873-9310-3-git-send-email-pawel.moll@arm.com>
+	 <1411491764.3922.46.camel@hornet> <20140924074942.GB3797@gmail.com>
+	 <1411665649.4768.84.camel@hornet> <20140925183342.GB6854@gmail.com>
+	 <1411728487.3852.9.camel@hornet> <20140926112312.GB9870@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Johan Hovold wrote:
-
-> Use mfd_add_hotplug_devices helper to register the subdevices.
+On Fri, 2014-09-26 at 12:23 +0100, Ingo Molnar wrote:
+> > As in: allows *all* tasks to inject the data? Are you sure we 
+> > don't want more fine-grained control, in particular per task?
 > 
-> Compile-only tested.
-> 
-> Signed-off-by: Johan Hovold <johan@kernel.org>
+> Yeah. If the profiler allows it, then any task that is being 
+> traced can inject data.
 
-As I expect this to be going through MFD tree together with the rest of 
-the patchset
+The "that is being traced" fragment was the key here. I missed the fact
+that perf trace already takes a list of pids, so we're not talking about
+all tasks in the system. That should work.
 
-	Acked-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/hid/hid-sensor-hub.c | 8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-> index 2ac25760a9a9..fbe1a6d2aa53 100644
-> --- a/drivers/hid/hid-sensor-hub.c
-> +++ b/drivers/hid/hid-sensor-hub.c
-> @@ -641,9 +641,6 @@ static int sensor_hub_probe(struct hid_device *hdev,
->  					goto err_stop_hw;
->  			}
->  			sd->hid_sensor_hub_client_devs[
-> -				sd->hid_sensor_client_cnt].id =
-> -							PLATFORM_DEVID_AUTO;
-> -			sd->hid_sensor_hub_client_devs[
->  				sd->hid_sensor_client_cnt].name = name;
->  			sd->hid_sensor_hub_client_devs[
->  				sd->hid_sensor_client_cnt].platform_data =
-> @@ -659,8 +656,9 @@ static int sensor_hub_probe(struct hid_device *hdev,
->  	if (last_hsdev)
->  		last_hsdev->end_collection_index = i;
->  
-> -	ret = mfd_add_devices(&hdev->dev, 0, sd->hid_sensor_hub_client_devs,
-> -		sd->hid_sensor_client_cnt, NULL, 0, NULL);
-> +	ret = mfd_add_hotplug_devices(&hdev->dev,
-> +			sd->hid_sensor_hub_client_devs,
-> +			sd->hid_sensor_client_cnt);
->  	if (ret < 0)
->  		goto err_stop_hw;
+Paweł
 
--- 
-Jiri Kosina
-SUSE Labs
