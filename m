@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124AbaIZVAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:00:10 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47835 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755234AbaIZVAI (ORCPT
+	id S1756123AbaIZVHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:07:04 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:33981 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755770AbaIZVHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:00:08 -0400
-X-Sasl-enc: NYVmbdhsicx8b8Eg7bdgSjjTuoqNYZBibslPZFAdIMeQ 1411765207
-Date: Fri, 26 Sep 2014 17:59:55 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, davej@redhat.com,
-        boon.leong.ong@intel.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB
- bug
-Message-ID: <20140926205955.GA22407@khazad-dum.debian.net>
-References: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie>
+	Fri, 26 Sep 2014 17:07:02 -0400
+Date: Fri, 26 Sep 2014 21:06:52 +0000
+From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH] fork.c: copy_process(): fix cleanup WRT
+ perf_event_free_task()
+Message-ID: <20140926210652.GA27199@erable>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Bryan O'Donoghue wrote:
-> Quark X1000 incorrectly advertises PGE. In later stages of boot
-> specifically in early_init_intel we setup_clear_cpu_cap for PGE.
-> At this point in time cpu_has_pge() will still be true.
-> 
-> Use the boot_cpu_data to decide if __flush_tlb_all() or __flush_tlb()
-> should be called subsequent to loading CR3
+Date:   Fri Sep 26 20:56:07 2014 +0000
 
-...
+fork.c: copy_process(): fix cleanup WRT perf_event_free_task()
 
->  	load_cr3(swapper_pg_dir);
-> -	__flush_tlb_all();
-> +
-> +	/*
-> +	 * Flush the TLB after loading CR3
-> +	 *
-> +	 * Quark X1000 wrongly advertises PGE. Use boot_cpu_data to
-> +	 * to make sure ithe TLB is flushed correctly in the early
-> +	 * stage of setup_arch() for Quark X1000.
-> +	 * X86_FEATURE_PGE flag is only setup later stage at
-> +	 * early_cpu_init();
-> +	 */
-> +	if (boot_cpu_data.x86_vendor == X86_VENDOR_INTEL &&
-> +	    boot_cpu_data.x86 == 5 && boot_cpu_data.x86_model == 9)
-> +		__flush_tlb();
-> +	else
-> +		__flush_tlb_all();
->  #else
->  	printk(KERN_INFO "Command line: %s\n", boot_command_line);
->  #endif
+Currently, in copy_process(), a failure of either sched_fork() or
+perf_event_init_task() does trigger perf_event_free_task()!
 
-I'm confused, now.
+Moreover, the label bad_fork_cleanup_policy does more than what its name
+implies, because it includes perf_event_free_task()!
 
-Wasn't the other patch -- which just added a comment -- the one selected as
-a better fix, because there is absolutely no point in calling __flush_tlb()
-on Quark X1000 *right after* you just flushed the TLB [on these processors]
-by doing a load_cr3() ?
+Let's explain the change with a grASCIIcally-enhanced kind-of-diff which
+provides an adequate context.
+                                        // Read vertically this column
+                                        //   |  |  |  |  |  |  |  |  |
+                                        //   v  v  v  v  v  v  v  v  v
+ {
+//SNIP//
+    if (clone_flags & CLONE_THREAD)
+        threadgroup_change_begin(current);
+//SNIP//
+ #ifdef CONFIG_NUMA
+    p->mempolicy = mpol_dup(p->mempolicy);
+    if (IS_ERR(p->mempolicy)) {
+//SNIP//
+        goto bad_fork_cleanup_threadgroup_lock;
+    }
+ #endif
+//SNIP//
+    retval = sched_fork(clone_flags, p);
+    if (retval)
+//                                      // mustn't perf_event_free_task()
+        goto bad_fork_cleanup_policy;
+    retval = perf_event_init_task(p);
+    if (retval)
+//                                      // mustn't perf_event_free_task()
+        goto bad_fork_cleanup_policy;
+    retval = audit_alloc(p);
+    if (retval)
+//                                      // must perf_event_free_task()
+//                                      @@ Hence change this way:
+-       goto bad_fork_cleanup_policy;
++       goto bad_fork_cleanup_perf;
+//SNIP//
+ bad_fork_cleanup_audit:
+    audit_free(p);
+//                                      // let's clean perf up
+//                                      @@ Hence change this way:
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+    perf_event_free_task(p);
+//                                      // no (longer) need to clean perf up
+//                                      @@ Hence change this way:
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+    mpol_put(p->mempolicy);
+ bad_fork_cleanup_threadgroup_lock:
+ #endif
+    if (clone_flags & CLONE_THREAD)
+        threadgroup_change_end(current);
+//SNIP//
+ }
 
-Should this one ([PATCH v2] x86: Quark: Add if/else to setup_arch for Quark
-TLB bug) be ignored?  Or should the other one which just adds a comment be
-ignored?
+Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+---
+ kernel/fork.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0cf9cdb..a91e47d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1360,7 +1360,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto bad_fork_cleanup_policy;
+ 	retval = audit_alloc(p);
+ 	if (retval)
+-		goto bad_fork_cleanup_policy;
++		goto bad_fork_cleanup_perf;
+ 	/* copy all the process information */
+ 	shm_init_task(p);
+ 	retval = copy_semundo(clone_flags, p);
+@@ -1566,8 +1566,9 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+ 	perf_event_free_task(p);
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+ bad_fork_cleanup_threadgroup_lock:
+
+Regards,
+Sylvain "ythier" Hitier
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Business is about being busy, not being rich...
+Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
+There's THE room for ideals in this mechanical place!
