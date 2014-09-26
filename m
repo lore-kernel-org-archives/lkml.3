@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaIZUEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:04:36 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:42966 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978AbaIZUEe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:04:34 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mark Rustad <mark.d.rustad@intel.com>,
-        "Kirsher\, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] include: kernel.h: deduplicate code implementing clamp* macros
-In-Reply-To: <CAPh34mcT1tcWFO316+6dxAEhWc7MzLU0Uq3ATXv4N3cf9z5DHA@mail.gmail.com>
-Organization: http://mina86.com/
-References: <1410471576-12053-1-git-send-email-mina86@mina86.com> <1411660211-8303-1-git-send-email-mina86@mina86.com> <CAPh34mcT1tcWFO316+6dxAEhWc7MzLU0Uq3ATXv4N3cf9z5DHA@mail.gmail.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140926:rostedt@goodmis.org::uwZKASCCHdUICG2p:0000000000000000000000000000000000000000000FpO
-X-Hashcash: 1:20:140926:hagen@jauu.net::8kARZKmODA1/YonR:0003X2n
-X-Hashcash: 1:20:140926:mark.d.rustad@intel.com::7niZFjOYl4knTm69:000000000000000000000000000000000000004EFa
-X-Hashcash: 1:20:140926:jeffrey.t.kirsher@intel.com::Ee6p1ie4nJ2Kes3Y:00000000000000000000000000000000006McA
-X-Hashcash: 1:20:140926:linux-kernel@vger.kernel.org::K6IHOXPlh/iClhe3:0000000000000000000000000000000005utK
-X-Hashcash: 1:20:140926:akpm@linux-foundation.org::zQX073WI6JZCi2pV:000000000000000000000000000000000000BAFh
-Date: Fri, 26 Sep 2014 22:04:27 +0200
-Message-ID: <xa1tvboaywqc.fsf@mina86.com>
+	id S1755992AbaIZUG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:06:26 -0400
+Received: from mail-bl2on0089.outbound.protection.outlook.com ([65.55.169.89]:55002
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755431AbaIZUGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:06:25 -0400
+Date: Fri, 26 Sep 2014 13:06:20 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: David Miller <davem@davemloft.net>
+CC: <nicolas.ferre@atmel.com>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH] Revert "net/macb: add pinctrl consumer support"
+References: <1411429748-31444-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20140926.154930.1459165439870528648.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140926.154930.1459165439870528648.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20976.005
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <b3c8ab73-4dd5-436e-9647-c4a43e40c3a9@BL2FFO11FD051.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(43544003)(377424004)(24454002)(199003)(189002)(51704005)(90102001)(23676002)(85306004)(95666004)(77096002)(70736001)(64706001)(53416004)(104016003)(1496007)(106466001)(47776003)(20776003)(107046002)(110136001)(76482002)(85182001)(87936001)(50466002)(4396001)(6806004)(44976005)(83322001)(19580395003)(19580405001)(102836001)(81342003)(83072002)(85852003)(92566001)(86362001)(21056001)(99396003)(10300001)(74316001)(120916001)(31696002)(85202003)(54356999)(92726001)(31966008)(76176999)(46102003)(77982003)(74662003)(81542003)(79102003)(50986999)(83506001)(80022003)(74502003)(107986001)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB006;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25 2014, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> On 25 September 2014 17:50, Michal Nazarewicz <mina86@mina86.com> wrote:
->
->> - * @min: minimum allowable value
->> - * @max: maximum allowable value
->> + * @lo: minimum allowable value
->> + * @hi: maximum allowable value
->
-> Ok, but why do you rename min/max to low/high after so many years?
-> min/max is just perfect
+On Fri, 2014-09-26 at 03:49PM -0400, David Miller wrote:
+> From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> Date: Mon, 22 Sep 2014 16:49:08 -0700
+> 
+> > This reverts commit 8ef29f8aae524bd51298fb10ac6a5ce6c4c5a3d8.
+> > The driver core already calls pinctrl_get() and claims the default
+> > state. There is no need to replicate this in the driver.
+> > ---
+> > Hi,
+> > 
+> > I might be mistaken, but I think the driver core does already take care of
+> > calling into the pinctrl framework and the driver does not need to do it on its
+> > own (drivers/base/dd.c:really_probe() calls 'pinctrl_bind_pins() which takes
+> > care of the pinctrl setup).
+> > 
+> 
+> Applied and queued up for -stable, thanks.
 
-To match argument names of the clamp macro (which got renamed when
-rewriting min3, max3 and clamp), but I don't really care either way.
+thx
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+> Next time please provide a proper "Signed-off-by: " in the commit message
+> of your submission.
+
+Yeah, sorry for that. I overlooked that one. My alias for commit takes
+care of this, but I don't have that for revert.
+
+In case you need it:
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+
+	Sören
