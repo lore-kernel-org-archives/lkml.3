@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575AbaIZC11 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:27:27 -0400
-Received: from mail.lang.hm ([64.81.33.126]:37412 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110AbaIZC1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:27:25 -0400
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Sep 2014 22:27:25 EDT
-Date: Thu, 25 Sep 2014 19:20:39 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: nick <yocto6@gmail.com>
-cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Help Out and Issues with the Community
-In-Reply-To: <5424BB1E.80605@gmail.com>
-Message-ID: <alpine.DEB.2.02.1409251914420.28845@nftneq.ynat.uz>
-References: <5424BB1E.80605@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753841AbaIZC1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:27:36 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:36356 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbaIZC1e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:27:34 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <1410168160-3624-29-git-send-email-lftan@altera.com>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	<1410168160-3624-29-git-send-email-lftan@altera.com>
+Date: Fri, 26 Sep 2014 10:27:32 +0800
+X-Google-Sender-Auth: KJ4DKJ6GVXQGf94qOszHdULiEWc
+Message-ID: <CAFiDJ5_J0a0OWkX6FV=Gqz6J6BWcyYYOvZyAS9oRqvMaq4Nftw@mail.gmail.com>
+Subject: Re: [PATCH v3 28/29] Documentation: Add documentation for Nios2 architecture
+From: Ley Foon Tan <lftan@altera.com>
+To: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Cc: Ley Foon Tan <lftan@altera.com>, LeyFoon Tan <lftan.linux@gmail.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>, rdunlap@infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello Developers,
-> For the last week or two I have been trying to contact people for help and/or learning in order to help out
-> more. I am unable to get any emails back from them, I am assuming this is due to my issues with the community.
-> If someone would like to explain a way to either resolve this or help me me learn the community rules and how
-> to do things the right way that would be great.
+On Mon, Sep 8, 2014 at 5:22 PM, Ley Foon Tan <lftan@altera.com> wrote:
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  Documentation/nios2/README | 23 +++++++++++++++++++++++
+>  1 file changed, 23 insertions(+)
+>  create mode 100644 Documentation/nios2/README
+>
+> diff --git a/Documentation/nios2/README b/Documentation/nios2/README
+> new file mode 100644
+> index 0000000..054a67d
+> --- /dev/null
+> +++ b/Documentation/nios2/README
+> @@ -0,0 +1,23 @@
+> +Linux on the Nios II architecture
+> +=================================
+> +
+> +This is a port of Linux to Nios II (nios2) processor.
+> +
+> +In order to compile for Nios II, you need a version of GCC with support for the generic
+> +system call ABI. Please see this link for more information on how compiling and booting
+> +software for the Nios II platform:
+> +http://www.rocketboards.org/foswiki/Documentation/NiosIILinuxUserManual
+> +
+> +For reference, please see the following link:
+> +http://www.altera.com/literature/lit-nio2.jsp
+> +
+> +What is Nios II?
+> +================
+> +Nios II is a 32-bit embedded-processor architecture designed specifically for the
+> +Altera family of FPGAs. In order to support Linux, Nios II needs to be configured
+> +with MMU and hardware multiplier enabled.
+> +
+> +Nios II ABI
+> +===========
+> +Please refer to chapter "Application Binary Interface" in Nios II Processor Reference
+> +Handbook.
+> --
+> 1.8.2.1
+>
 
-Going over the archives a bit, it looks like there are a lot of people who have 
-taken the time to reply to you.
-
-It looks like you are falling into a common trap of looking at particular bug 
-reports or FIXME items and trying to silence them. But you are doing so without 
-understanding the code or functionality being provided. As a result, you are 
-doing exactly what people are afraid that static checking will result in, a 
-local fix to silence the checker that doesn't actually fix the overall problem.
-
-In addition to the various places you've already been pointed at, I'd suggest 
-that you look at the kernel janitors pages and mailing list 
-(http://kernelnewbies.org/KernelJanitors), the linux-kernel list has a huge 
-membership and a high volume of traffic, so learning as you work here is not 
-always the best thing to do.
-
-David Lang
+Add Randy to CC list.
