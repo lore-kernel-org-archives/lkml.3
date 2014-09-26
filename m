@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923AbaIZN1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:27:34 -0400
+	id S1755143AbaIZN1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:27:45 -0400
 Received: from mga01.intel.com ([192.55.52.88]:24798 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754523AbaIZN12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:27:28 -0400
+	id S1754965AbaIZN1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:27:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597257387"
+   d="scan'208";a="597257473"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,47 +24,166 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v2 01/18] x86, irq, ACPI: Fix building warning of unused code
-Date: Fri, 26 Sep 2014 21:29:38 +0800
-Message-Id: <1411738196-29958-2-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v2 04/18] x86, irq: Refine hw_irq.h to prepare for irqdomain support
+Date: Fri, 26 Sep 2014 21:29:41 +0800
+Message-Id: <1411738196-29958-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix building warning when CONFIG_X86_LOCAL_APIC is disabled.
-arch/x86/kernel/acpi/boot.c:699:20: warning: ‘acpi_set_irq_model_ioapic’ defined but not used [-Wunused-function]
+Refine hw_irq.h to prepare for irqdomain support by:
+1) guarding common APIC related interfaces with CONFIG_X86_LOCAL_APIC
+2) guarding interrupt remapping related interfaces with CONFIG_IRQ_REMAP
+3) guarding IOAPIC related interfaces with CONFIG_X86_IO_APIC
+
+There should be no functional changes.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/acpi/boot.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/hw_irq.h |   94 ++++++++++++++++++++++-------------------
+ 1 file changed, 51 insertions(+), 43 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 5a69df5dba56..0e54a67b5cd6 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -706,6 +706,7 @@ void acpi_unregister_gsi(u32 gsi)
- }
- EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 28f283988c8e..8188d648d48c 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -94,30 +94,7 @@ extern void trace_call_function_single_interrupt(void);
+ #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
+ #endif /* CONFIG_TRACING */
  
-+#ifdef CONFIG_X86_LOCAL_APIC
- static void __init acpi_set_irq_model_ioapic(void)
- {
- 	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
-@@ -713,6 +714,7 @@ static void __init acpi_set_irq_model_ioapic(void)
- 	__acpi_unregister_gsi = acpi_unregister_gsi_ioapic;
- 	acpi_ioapic = 1;
- }
+-/* IOAPIC */
+-#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
+-extern unsigned long io_apic_irqs;
+-
+-extern void setup_IO_APIC(void);
+-extern void disable_IO_APIC(void);
+-
+-struct io_apic_irq_attr {
+-	int ioapic;
+-	int ioapic_pin;
+-	int trigger;
+-	int polarity;
+-};
+-
+-static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+-					int ioapic, int ioapic_pin,
+-					int trigger, int polarity)
+-{
+-	irq_attr->ioapic	= ioapic;
+-	irq_attr->ioapic_pin	= ioapic_pin;
+-	irq_attr->trigger	= trigger;
+-	irq_attr->polarity	= polarity;
+-}
+-
++#ifdef CONFIG_IRQ_REMAP
+ /* Intel specific interrupt remapping information */
+ struct irq_2_iommu {
+ 	struct intel_iommu *iommu;
+@@ -131,14 +108,10 @@ struct irq_2_irte {
+ 	u16 devid; /* Device ID for IRTE table */
+ 	u16 index; /* Index into IRTE table*/
+ };
++#endif	/* CONFIG_IRQ_REMAP */
+ 
+-/*
+- * This is performance-critical, we want to do it O(1)
+- *
+- * Most irqs are mapped 1:1 with pins.
+- */
++#ifdef	CONFIG_X86_LOCAL_APIC
+ struct irq_cfg {
+-	struct list_head	irq_2_pin;
+ 	cpumask_var_t		domain;
+ 	cpumask_var_t		old_domain;
+ 	u8			vector;
+@@ -150,18 +123,64 @@ struct irq_cfg {
+ 		struct irq_2_irte  irq_2_irte;
+ 	};
+ #endif
++	union {
++#ifdef CONFIG_X86_IO_APIC
++		struct {
++			struct list_head	irq_2_pin;
++		};
 +#endif
++	};
+ };
  
- /*
-  *  ACPI based hotplug support for CPU
++extern void setup_vector_irq(int cpu);
+ extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
+ extern void send_cleanup_vector(struct irq_cfg *);
+ 
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ 			  unsigned int *dest_id);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+-extern void setup_ioapic_dest(void);
++#endif	/* CONFIG_X86_LOCAL_APIC */
++
++#ifdef CONFIG_X86_IO_APIC
++extern void lock_vector_lock(void);
++extern void unlock_vector_lock(void);
++extern void __setup_vector_irq(int cpu);
++#else
++static inline void lock_vector_lock(void) {}
++static inline void unlock_vector_lock(void) {}
++static inline void __setup_vector_irq(int cpu) {}
++#endif
++
++/* IOAPIC */
++#ifdef CONFIG_X86_IO_APIC
++struct io_apic_irq_attr {
++	int ioapic;
++	int ioapic_pin;
++	int trigger;
++	int polarity;
++};
++
++static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
++					int ioapic, int ioapic_pin,
++					int trigger, int polarity)
++{
++	irq_attr->ioapic	= ioapic;
++	irq_attr->ioapic_pin	= ioapic_pin;
++	irq_attr->trigger	= trigger;
++	irq_attr->polarity	= polarity;
++}
+ 
++extern void setup_IO_APIC(void);
+ extern void enable_IO_APIC(void);
++extern void disable_IO_APIC(void);
++extern void setup_ioapic_dest(void);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
++
++extern unsigned long io_apic_irqs;
++#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
++#else	/* CONFIG_X86_IO_APIC */
++#define IO_APIC_IRQ(x)	0
++#endif	/* CONFIG_X86_IO_APIC */
+ 
+ /* Statistics */
+ extern atomic_t irq_err_count;
+@@ -195,17 +214,6 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+ 
+ typedef int vector_irq_t[NR_VECTORS];
+ DECLARE_PER_CPU(vector_irq_t, vector_irq);
+-extern void setup_vector_irq(int cpu);
+-
+-#ifdef CONFIG_X86_IO_APIC
+-extern void lock_vector_lock(void);
+-extern void unlock_vector_lock(void);
+-extern void __setup_vector_irq(int cpu);
+-#else
+-static inline void lock_vector_lock(void) {}
+-static inline void unlock_vector_lock(void) {}
+-static inline void __setup_vector_irq(int cpu) {}
+-#endif
+ 
+ #endif /* !ASSEMBLY_ */
+ 
 -- 
 1.7.10.4
 
