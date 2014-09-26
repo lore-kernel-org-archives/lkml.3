@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaIZQl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 12:41:26 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34842 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918AbaIZQlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 12:41:24 -0400
-Message-ID: <54259708.1030801@ti.com>
-Date: Fri, 26 Sep 2014 19:40:40 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1755574AbaIZQnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 12:43:15 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:51359 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaIZQnN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 12:43:13 -0400
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@kernel.org>
-CC: <santosh.shilimkar@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        <linux-pm@vger.kernel.org>, <ben.dooks@codethink.co.uk>,
-        <laurent.pinchart@ideasonboard.com>, <grant.likely@secretlab.ca>,
-        <ulf.hansson@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 2/4] ARM: keystone: pm: switch to use generic pm domains
-References: <1411657537-25238-1-git-send-email-grygorii.strashko@ti.com>	<1411657537-25238-3-git-send-email-grygorii.strashko@ti.com> <7hlhp79w6p.fsf@deeprootsystems.com>
-In-Reply-To: <7hlhp79w6p.fsf@deeprootsystems.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140926114239.GM5182@n2100.arm.linux.org.uk>
+References: <1411067949-10913-1-git-send-email-keescook@chromium.org>
+	<1411067949-10913-8-git-send-email-keescook@chromium.org>
+	<20140926114239.GM5182@n2100.arm.linux.org.uk>
+Date: Fri, 26 Sep 2014 09:43:12 -0700
+X-Google-Sender-Auth: z4jbZ-D4KVDsPxSDMTIQNECrIgQ
+Message-ID: <CAGXu5jL+ksQ4nq4pxOk7gM0POmwtTQ7DgmugpVK45arpMLGzvg@mail.gmail.com>
+Subject: Re: [PATCH v6 7/8] ARM: mm: allow non-text sections to be non-executable
+From: Kees Cook <keescook@chromium.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Will Deacon <will.deacon@arm.com>,
+        Rabin Vincent <rabin@rab.in>, Laura Abbott <lauraa@codeaurora.org>,
+        Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Mark Salter <msalter@redhat.com>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 01:23 AM, Kevin Hilman wrote:
-> Grygorii Strashko <grygorii.strashko@ti.com> writes:
->
->> This patch switches Keystone 2 PM code to use Generic PM domains
->> instead of PM  clock domains because of the lack of DT support
->> for the last.
+On Fri, Sep 26, 2014 at 4:42 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Sep 18, 2014 at 12:19:08PM -0700, Kees Cook wrote:
+>> @@ -1373,13 +1373,24 @@ static void __init map_lowmem(void)
+>>               if (start >= end)
+>>                       break;
 >>
->> Keystone 2 PM domain should be specified per device for which
->> Runtime PM has to be enabled and handles the list of functional clocks
->> to enable/disable device.
+>> -             if (end < kernel_x_start || start >= kernel_x_end) {
+>> +             if (end < kernel_x_start) {
+>>                       map.pfn = __phys_to_pfn(start);
+>>                       map.virtual = __phys_to_virt(start);
+>>                       map.length = end - start;
+>>                       map.type = MT_MEMORY_RWX;
 >>
->> Example:
->>   qmss_domain: qmss_pm_controller {
->> 	compatible = "ti,keystone-pm-controller";
->> 	clocks = <&chipclk13>;
->> 	#power-domain-cells = <0>;
->>   };
->>
->>   qmss: qmss@2a40000 {
->> 	compatible = "ti,keystone-navigator-qmss";
->> 	...
->> 	power-domains = <&qmss_domain>;
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->
-> [...]
->
->> +static int keystone_pm_domain_power_off(struct generic_pm_domain *genpd)
->> +{
->> +	int ret;
->> +	struct keystone_domain *dm = container_of(genpd,
->> +						  struct keystone_domain,
->> +						  base);
+>>                       create_mapping(&map);
+>> +             } else if (start >= kernel_x_end) {
+>> +                     map.pfn = __phys_to_pfn(start);
+>> +                     map.virtual = __phys_to_virt(start);
+>> +                     map.length = end - start;
+>> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+>> +                     map.type = MT_MEMORY_RW;
+>> +#else
+>> +                     map.type = MT_MEMORY_RWX;
+>> +#endif
 >> +
->> +	/* Enable reset clocks for all devices in the PU domain */
+>> +                     create_mapping(&map);
 >
-> This says enable clocks...
 >
->> +	ret = pm_clk_suspend(dm->dev);
+> I'm looking at this, and wondering two things.  Firstly, why isn't it
+> MT_MEMORY_RW in the first place.  Secondly, why do you need to make
+> this depend on CONFIG_ARM_KERNMEM_PERMS at all?
 >
-> ...but this calls clk_disable().
+> I think the first is an oversight by me (and is a case which never came
+> up in my testing, because most of my platforms don't have segmented
+> memory layouts.)
 >
->> +	if (ret)
->> +		dev_err(dm->dev, "can't turn off clocks %d\n", ret);
->> +
->> +	return ret;
->> +}
->> +
->> +static int keystone_pm_domain_power_on(struct generic_pm_domain *genpd)
->> +{
->> +	int ret;
->> +	struct keystone_domain *dm = container_of(genpd,
->> +						  struct keystone_domain,
->> +						  base);
->> +
->> +	/* Disable reset clocks for all devices in the PU domain */
->
-> And this says disable clocks...
->
->> +	ret = pm_clk_resume(dm->dev);
->
-> ...but this calls clk_enable().
->
-> -ECONFUSED.
->
+> The second I think is not necessary - the memory region being considered
+> is not part of the kernel at all, and so should not be executable in any
+> shape or form.
 
-Will update.
+I'm happy to change this. My original intent was to make layout for
+builds without CONFIG_ARM_KERNMEM_PERMS identical to what was there
+before, so I took this step to make sure.
 
-Thanks you for comments.
+I will drop the #ifdef and respin. Does the rest look ok? Shall I send
+a pull request?
 
-Regards,
--grygorii
+Thanks!
 
+-Kees
 
-
+-- 
+Kees Cook
+Chrome OS Security
