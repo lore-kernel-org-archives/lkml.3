@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbaIZJ0l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:26:41 -0400
-Received: from ozlabs.org ([103.22.144.67]:43471 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880AbaIZJ0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:26:39 -0400
-Date: Fri, 26 Sep 2014 19:26:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: linux-next: manual merge of the pci tree with the asm-generic
- tree
-Message-ID: <20140926192632.31fb96fd@canb.auug.org.au>
-In-Reply-To: <20140926091357.GL841@e106497-lin.cambridge.arm.com>
-References: <20140926132902.603fb9f8@canb.auug.org.au>
-	<20140926070022.GA31002@ulmo>
-	<20140926091357.GL841@e106497-lin.cambridge.arm.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754499AbaIZJ1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:27:31 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:47963 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324AbaIZJ12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:27:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/mc3SRbiOUe._V1GbCX8oVo8"; protocol="application/pgp-signature"
+In-Reply-To: <3136347.ncZoJtR6MK@vostro.rjw.lan>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+	<3136347.ncZoJtR6MK@vostro.rjw.lan>
+Date: Fri, 26 Sep 2014 11:27:26 +0200
+X-Google-Sender-Auth: m27aJ0hNLTFE4dBA-TTgXomoNLA
+Message-ID: <CAMuHMdXJPQjRQip+YY0jysR5pzU3hEz-QQ6C-GZQmDKqU1TreA@mail.gmail.com>
+Subject: Re: [PATCH 00/13] ARM: shmobile: R-Mobile: DT PM domain support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/mc3SRbiOUe._V1GbCX8oVo8
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Rafael,
 
-Hi Liviu,
-
-On Fri, 26 Sep 2014 10:13:57 +0100 Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+On Thu, Sep 25, 2014 at 10:19 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> Rafael: If you accept "PM / Domains: Add genpd attach/detach callbacks", it
+>> would be good to get this patch in v3.18-rc1, as it's the only hard dependency
+>> on linux-pm.git for the rest of this series. The other parts have relaxed
+>> ordering constraints due to the separation of code and DTS.
 >
-> I agree with Thierry's solution.
->=20
-> I don't know how these cases are handled. Should I send Bjorn a patch for=
- his tree?
+> OK, this one looks good to me, so I can push it for 3.18.
 
-They need to be fixed in one or other of the trees, so yes.
+Thank you very much!
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Gr{oetje,eeting}s,
 
---Sig_/mc3SRbiOUe._V1GbCX8oVo8
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+                        Geert
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-iQIcBAEBCAAGBQJUJTFNAAoJEMDTa8Ir7ZwV94wQAII4XGIyoDbhF5lkr/o683re
-0Kc4H7leNKeR3u0mQc71P5xBorb6jRuJ5FSrk0CKOW/zIyZgdgnjYRLALAwE9duj
-tfH9Va4YqCFwEahjqcw1W9SSFjWdW6tzEPGoSMPx/46f8ggqdIXol0izVGpezvaR
-kD/ebS9gxf3YZPB/PJvrB7NpPZSVhnFRT11IuwAmnpJCU/ZCVVya8CODdpgYZ1yY
-Ip6REfEJLp0LDNIeLMNzQ3uz4yp616JO3TRDVCrKWCkYARba9F1xNgX8KuiU1e4F
-pCT96pDcIEcZnX9lkfZ5dVFboGCVL9Qn6nteM9Qz0GreIC8yYvVcaFAH7HvNtWtb
-5ZF9jidXpc7pYSChBQAomhqheBHTpuL6tC16MV7e2Vdz27AQYfKW8c0XEBB0JYsD
-AYjs/aJqaXRaZr5VfMbXZLWxtwWxquCacXFJGZBaKIt/Hl5k2TWUzb7OahxamY5h
-vsBnEuXbl2H+VohCiJYd7mgzS6x8FiGsu6UOEUHozRxXan9Vd/nadB6inPlXqKDO
-GQO0qh+Ini0HxDKoj6YlFHDUvRrrZKf5n9OwvFaaEWiIE49NEw+RwhmALoetPDMP
-bQtAAwwZ72AQNupME6xTNN8MuUJ05nERACZQJ7qil4yAmwH37dTGUedBSJSVaG/O
-nt42/ojAFnLMOWMfY+yK
-=8Jeq
------END PGP SIGNATURE-----
-
---Sig_/mc3SRbiOUe._V1GbCX8oVo8--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
