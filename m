@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaIZMaz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 08:30:55 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:58236 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754AbaIZMax (ORCPT
+	id S1754883AbaIZMee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 08:34:34 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:60204 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaIZMec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 08:30:53 -0400
+	Fri, 26 Sep 2014 08:34:32 -0400
+Date: Fri, 26 Sep 2014 13:34:29 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140926123429.GX18635@console-pimps.org>
+References: <20140925073133.GQ18635@console-pimps.org>
+ <20140925144127.GA3828@gmail.com>
+ <1411730854.7866.10.camel@x220>
+ <20140926114454.GV18635@console-pimps.org>
+ <1411732755.7866.24.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
-References: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
-Date: Fri, 26 Sep 2014 14:30:53 +0200
-Message-ID: <CACRpkdZoo=P7uTO1rNDD_HUPjfAk26C0=mNYPoZmTV0wcO3V-w@mail.gmail.com>
-Subject: Re: [git pull] Devicetree changes for v3.15
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411732755.7866.24.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 12:15 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+On Fri, 26 Sep, at 01:59:15PM, Paul Bolle wrote:
+> 
+> I have a 800 line perl monster that checks for stuff like this. It's not
+> very sophisticated but smart enough to spot typos like this one. I try
+> to have it check each linux-next (and mainline) release.
+ 
+Very cool.
 
-> Here are the dt changes I've got queued up for v3.15. The full
-> description is below in the tag. Please pull.
-(...)
-> Jason Cooper (1):
->       kbuild: dtbs_install: new make target
+> (I think Valentin Rothberg is trying to automate this properly. See
+> http://www.linuxplumbersconf.org/2014/ocw/sessions/1863 .)
 
-After this patch a while back I have observed the following behaviour
-of the kernel build:
+Have either of you guys thought about asking for this to be included
+with the 0-day kbuild bot or submitted under scripts/?
 
-make zImage
-make zImage
--> incremental build, just relink
+It certainly seems like a useful bit of functionality.
 
-make zImage
-make dtbs
-make zImage
--> The whole kernel gets rebuilt
+Fengguang, the interesting bits of this thread start here,
 
-So now if I happen to recompile my device trees, I suddenly want
-the entire zImage to be rebuilt to? It's by definition not changes that
-affect the kernel build :-(
+  https://lkml.kernel.org/r/1411730854.7866.10.camel@x220
 
-I noticed this because my build scripts calls make dtbs && make zImage,
-and started to rebuild absolutely everything all the time.
-
-Do you think this can be fixed? It's quite simple to reproduce...
-
-Yours,
-Linus Walleij
+-- 
+Matt Fleming, Intel Open Source Technology Center
