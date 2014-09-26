@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782AbaIZKZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:25:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
+	id S1756759AbaIZKZA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:25:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33004 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754824AbaIZJqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754616AbaIZJqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
-        Dan Walsh <dwalsh@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 044/142] CAPABILITIES: remove undefined caps from all processes
-Date: Fri, 26 Sep 2014 11:44:15 +0200
-Message-Id: <ace57c92048721f447c4e9baffaf560ebaccef5b.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 047/142] regulator: arizona-ldo1: remove bypass functionality
+Date: Fri, 26 Sep 2014 11:44:18 +0200
+Message-Id: <a068339caabfcb209bf5417f2a162af691ba5f86.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -27,192 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Paris <eparis@redhat.com>
+From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
+commit 5b919f3ebb533cbe400664837e24f66a0836b907 upstream.
 
-This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
-plus fixing it a different way...
+WM5110/8280 devices do not support bypass mode for LDO1 so remove
+the bypass callbacks registered with regulator core.
 
-We found, when trying to run an application from an application which
-had dropped privs that the kernel does security checks on undefined
-capability bits.  This was ESPECIALLY difficult to debug as those
-undefined bits are hidden from /proc/$PID/status.
-
-Consider a root application which drops all capabilities from ALL 4
-capability sets.  We assume, since the application is going to set
-eff/perm/inh from an array that it will clear not only the defined caps
-less than CAP_LAST_CAP, but also the higher 28ish bits which are
-undefined future capabilities.
-
-The BSET gets cleared differently.  Instead it is cleared one bit at a
-time.  The problem here is that in security/commoncap.c::cap_task_prctl()
-we actually check the validity of a capability being read.  So any task
-which attempts to 'read all things set in bset' followed by 'unset all
-things set in bset' will not even attempt to unset the undefined bits
-higher than CAP_LAST_CAP.
-
-So the 'parent' will look something like:
-CapInh:	0000000000000000
-CapPrm:	0000000000000000
-CapEff:	0000000000000000
-CapBnd:	ffffffc000000000
-
-All of this 'should' be fine.  Given that these are undefined bits that
-aren't supposed to have anything to do with permissions.  But they do...
-
-So lets now consider a task which cleared the eff/perm/inh completely
-and cleared all of the valid caps in the bset (but not the invalid caps
-it couldn't read out of the kernel).  We know that this is exactly what
-the libcap-ng library does and what the go capabilities library does.
-They both leave you in that above situation if you try to clear all of
-you capapabilities from all 4 sets.  If that root task calls execve()
-the child task will pick up all caps not blocked by the bset.  The bset
-however does not block bits higher than CAP_LAST_CAP.  So now the child
-task has bits in eff which are not in the parent.  These are
-'meaningless' undefined bits, but still bits which the parent doesn't
-have.
-
-The problem is now in cred_cap_issubset() (or any operation which does a
-subset test) as the child, while a subset for valid cap bits, is not a
-subset for invalid cap bits!  So now we set durring commit creds that
-the child is not dumpable.  Given it is 'more priv' than its parent.  It
-also means the parent cannot ptrace the child and other stupidity.
-
-The solution here:
-1) stop hiding capability bits in status
-	This makes debugging easier!
-
-2) stop giving any task undefined capability bits.  it's simple, it you
-don't put those invalid bits in CAP_FULL_SET you won't get them in init
-and you won't get them in any other task either.
-	This fixes the cap_issubset() tests and resulting fallout (which
-	made the init task in a docker container untraceable among other
-	things)
-
-3) mask out undefined bits when sys_capset() is called as it might use
-~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
-	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
-
-4) mask out undefined bit when we read a file capability off of disk as
-again likely all bits are set in the xattr for forward/backward
-compatibility.
-	This lets 'setcap all+pe /bin/bash; /bin/bash' run
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Andrew G. Morgan <morgan@kernel.org>
-Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Dan Walsh <dwalsh@redhat.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/proc/array.c            | 11 +----------
- include/linux/capability.h |  5 ++++-
- kernel/audit.c             |  2 +-
- kernel/capability.c        |  4 ++++
- security/commoncap.c       |  3 +++
- 5 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/regulator/arizona-ldo1.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index cbd0f1b324b9..09f0d9c374a3 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -304,15 +304,11 @@ static void render_cap_t(struct seq_file *m, const char *header,
- 	seq_puts(m, header);
- 	CAP_FOR_EACH_U32(__capi) {
- 		seq_printf(m, "%08x",
--			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
-+			   a->cap[CAP_LAST_U32 - __capi]);
- 	}
- 	seq_putc(m, '\n');
- }
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 7917bb2fa834..406e50ef5152 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -141,8 +141,6 @@ static struct regulator_ops arizona_ldo1_ops = {
+ 	.map_voltage = regulator_map_voltage_linear,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+-	.get_bypass = regulator_get_bypass_regmap,
+-	.set_bypass = regulator_set_bypass_regmap,
+ };
  
--/* Remove non-existent capabilities */
--#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
--				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
--
- static inline void task_cap(struct seq_file *m, struct task_struct *p)
- {
- 	const struct cred *cred;
-@@ -326,11 +322,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
- 	cap_bset	= cred->cap_bset;
- 	rcu_read_unlock();
- 
--	NORM_CAPS(cap_inheritable);
--	NORM_CAPS(cap_permitted);
--	NORM_CAPS(cap_effective);
--	NORM_CAPS(cap_bset);
--
- 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
- 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
- 	render_cap_t(m, "CapEff:\t", &cap_effective);
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 84b13ad67c1c..aa93e5ef594c 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff_set;
- # error Fix up hand-coded capability macro initializers
- #else /* HAND-CODED capability initializers */
- 
-+#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
-+#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
-+
- # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
--# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-+# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
- # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
- 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
- 				    CAP_FS_MASK_B1 } })
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 197a496587a6..4059e949beb2 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1412,7 +1412,7 @@ void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
- 	audit_log_format(ab, " %s=", prefix);
- 	CAP_FOR_EACH_U32(i) {
- 		audit_log_format(ab, "%08x",
--				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
-+				 cap->cap[CAP_LAST_U32 - i]);
- 	}
- }
- 
-diff --git a/kernel/capability.c b/kernel/capability.c
-index 788653b97430..50fb74b136db 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -268,6 +268,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
- 		i++;
- 	}
- 
-+	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	new = prepare_creds();
- 	if (!new)
- 		return -ENOMEM;
-diff --git a/security/commoncap.c b/security/commoncap.c
-index b9d613e0ef14..963dc5981661 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data
- 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
- 	}
- 
-+	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	return 0;
- }
- 
+ static const struct regulator_desc arizona_ldo1 = {
 -- 
 2.1.0
 
