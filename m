@@ -1,74 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422631AbaIZUZc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:25:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53139 "EHLO mail.kernel.org"
+	id S1756009AbaIZU15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:27:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12256 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbaIZUZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:25:30 -0400
-Date: Fri, 26 Sep 2014 22:25:23 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v4] power: reset: use restart_notifier mechanism for
- msm-poweroff
-Message-ID: <20140926202523.GB27687@earth.universe>
-References: <1411644831-2931-1-git-send-email-pramod.gurav@smartplayin.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="TakKZr9L6Hm6aLOc"
-Content-Disposition: inline
-In-Reply-To: <1411644831-2931-1-git-send-email-pramod.gurav@smartplayin.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755127AbaIZU14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:27:56 -0400
+Message-ID: <1411763257.7360.49.camel@ul30vt.home>
+Subject: Re: [PATCHv7 06/26] vfio/iommu_type1: implement the
+ VFIO_DMA_MAP_FLAG_NOEXEC flag
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Sep 2014 14:27:37 -0600
+In-Reply-To: <CAG8rG2z14gT28jec66o3UQ=z-omNv+bC43moJT-FhdUtd2OJDg@mail.gmail.com>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1411483586-29304-7-git-send-email-a.motakis@virtualopensystems.com>
+	 <1411512059.24563.57.camel@ul30vt.home>
+	 <CAG8rG2z14gT28jec66o3UQ=z-omNv+bC43moJT-FhdUtd2OJDg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-09-26 at 17:39 +0200, Antonios Motakis wrote:
+> On Wed, Sep 24, 2014 at 12:40 AM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+> >> Some IOMMU drivers, such as the ARM SMMU driver, make available the
+> >> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
+> >> This affects devices such as the ARM PL330 DMA Controller, which respects
+> >> this flag and will refuse to fetch DMA instructions from memory where the
+> >> XN flag has been set.
+> >>
+> >> The flag can be used only if all IOMMU domains behind the container support
+> >> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
+> >> new domains with devices will have to support it as well.
+> >>
+> >> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> >> ---
+> >>  drivers/vfio/vfio_iommu_type1.c | 38 +++++++++++++++++++++++++++++++++++++-
+> >>  1 file changed, 37 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+> >> index 0734fbe..09e5064 100644
+> >> --- a/drivers/vfio/vfio_iommu_type1.c
+> >> +++ b/drivers/vfio/vfio_iommu_type1.c
+> >> @@ -81,6 +81,26 @@ struct vfio_group {
+> >>  };
+> >>
+> >>  /*
+> >> + * This function returns true only if _all_ domains support the capability.
+> >> + */
+> >> +static int vfio_all_domains_have_iommu_noexec(struct vfio_iommu *iommu)
+> >
+> > Rename to vfio_domains_have_iommu_noexec() for consistency with the
+> > cache version.
+> >
+> 
+> The logic here is a slightly different logic between the two. For
+> IOMMU_CACHE we generally check if any domain includes it,
 
---TakKZr9L6Hm6aLOc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Not true, all the domains must support IOMMU_CACHE for the function to
+return 1.  In fact, the code is so identical that if we were to cache
+IOMMU_CAP_NOEXEC into domain->prot, we should probably only have one
+function:
 
-Hi,
+static int vfio_domains_have_iommu_flag(struct vfio_iommu *iommu, int flag);
 
-On Thu, Sep 25, 2014 at 05:03:51PM +0530, Pramod Gurav wrote:
-> This change replaces use of arm_pm_restart with recently introduced
-> reset mechanism in Linux kernel called restart_notifier.
->=20
-> Choosing priority 128, which is default priority, as according to=20
-> documentation, this mechanism is sufficient to restart the entire system.
+>  for NOEXEC
+> in contract we need all domains to support it, otherwise we can't
+> expose the capability. Hence the _all_ addition in the name of the
+> function.
+> 
+> >> +{
+> >> +     struct vfio_domain *d;
+> >> +     int ret = 1;
+> >> +
+> >> +     mutex_lock(&iommu->lock);
+> >> +     list_for_each_entry(d, &iommu->domain_list, next) {
+> >> +             if (!iommu_domain_has_cap(d->domain, IOMMU_CAP_NOEXEC)) {
+> >
+> > Should we cache this in domain->prot like we do for IOMMU_CACHE?
+> >
+> >> +                     ret = 0;
+> >> +                     break;
+> >> +             }
+> >> +     }
+> >> +     mutex_unlock(&iommu->lock);
+> >> +
+> >> +     return ret;
+> >> +}
+> >> +
+> >> +/*
+> >>   * This code handles mapping and unmapping of user data buffers
+> >>   * into DMA'ble space using the IOMMU
+> >>   */
+> >> @@ -546,6 +566,11 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+> >>               prot |= IOMMU_WRITE;
+> >>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+> >>               prot |= IOMMU_READ;
+> >> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
+> >> +             if (!vfio_all_domains_have_iommu_noexec(iommu))
+> >> +                     return -EINVAL;
+> >> +             prot |= IOMMU_NOEXEC;
+> >> +     }
+> >>
+> >>       if (!prot || !size || (size | iova | vaddr) & mask)
+> >>               return -EINVAL;
+> >> @@ -636,6 +661,12 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
+> >>               dma = rb_entry(n, struct vfio_dma, node);
+> >>               iova = dma->iova;
+> >>
+> >> +             /* if any of the mappings to be replayed has the NOEXEC flag
+> >> +              * set, then the new iommu domain must support it */
+> >
+> > nit, please fix the comment style to match the rest of the file.
+> >
+> 
+> Ack
+> 
+> >> +             if ((dma->prot | IOMMU_NOEXEC) &&
+> >> +                 !iommu_domain_has_cap(domain->domain, IOMMU_CAP_NOEXEC))
+> >> +                     return -EINVAL;
+> >> +
+> >>               while (iova < dma->iova + dma->size) {
+> >>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
+> >>                       size_t size;
+> >> @@ -890,6 +921,10 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+> >>                       if (!iommu)
+> >>                               return 0;
+> >>                       return vfio_domains_have_iommu_cache(iommu);
+> >> +             case VFIO_IOMMU_PROT_NOEXEC:
+> >> +                     if (!iommu)
+> >> +                             return 0;
+> >> +                     return vfio_all_domains_have_iommu_noexec(iommu);
+> >>               default:
+> >>                       return 0;
+> >>               }
+> >> @@ -913,7 +948,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+> >>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
+> >>               struct vfio_iommu_type1_dma_map map;
+> >>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+> >> -                             VFIO_DMA_MAP_FLAG_WRITE;
+> >> +                             VFIO_DMA_MAP_FLAG_WRITE |
+> >> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
+> >>
+> >>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+> >>
+> >
+> >
+> >
+> 
+> 
+> 
 
-http://git.infradead.org/battery-2.6.git/commit/18a702e0de9879d5c0225a09f49=
-4443f0b91a0cc
 
--- Sebastian
 
---TakKZr9L6Hm6aLOc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUJcuzAAoJENju1/PIO/qavv4P/1WKpZuxgWjdfStheOI1Ngmn
-aE07N3sVc90RTp13LFhs6on/vGHS1ZmB4MaD/v9T4Z9in4dNQYSrKGmzcx81MlDx
-j8j9dybTm5W8TMhAhplPYA4PBaQX4iWGZr5uOCB3XZsoS6x373VhgWonG0Ln6NVD
-W+NlYhdur0vs8kI+eFwAPfa3xvPSkk2+k1w41BUYsNiS8Hewwc60p0dmbDaB5dqi
-PzBtsqZV6/Q4kfTKMPp7Boz33fw2I3dGySkc4CN7PF1pxioZzgu7D4UUPL77yezb
-k+B46Y32WHTZ0jxhXPliNBo1HUZaodQq5d/u4TUhMuSIX+WFxvJJ7lw/q8Poxw4r
-hCBARlMuYIUyGTip60D8m7ZLpFy8aLuhoZWpptGQqT6D36XILixl/jmFU5XSrBm/
-mKMbkewxS8T49Hw22nVCGVWcbk6MS510tI8yMwcqYBKCcR0HBAFqBp+Eth4YgU/j
-nk+bdQf9NRBFZC53JRPAA0M+gJ2xU3o2KktkGS3QIXy7p+uyrrxIFV5ua/HOoSWJ
-c9VgFqXcdqAJy2le9p2dnHplBN86P5Q0Oqm+xnoiPWyIaFyVHtjq5xyLeDARYlcB
-6tJql7FHkZBQqLH9HBVd9YIpIx9GpVaUF7lElmVthYcB0w1dwr7ldt/Nd4nEjuYw
-iNm2J5oLWFncovkDfwAD
-=o39E
------END PGP SIGNATURE-----
-
---TakKZr9L6Hm6aLOc--
