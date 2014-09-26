@@ -1,44 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaIZIOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:14:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967AbaIZINW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:13:22 -0400
-Message-ID: <54252014.5080805@redhat.com>
-Date: Fri, 26 Sep 2014 10:13:08 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754110AbaIZIQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:16:56 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:45507 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753540AbaIZIQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:16:51 -0400
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 0/8] kvm, mem-hotplug: Do not pin ept identity pagetable
- and apic access page.
-References: <1411545478-9848-1-git-send-email-tangchen@cn.fujitsu.com> <54227EB4.7070608@redhat.com> <5423D015.6090107@cn.fujitsu.com> <54241BFA.5000503@redhat.com> <5424BF8B.1010701@cn.fujitsu.com>
-In-Reply-To: <5424BF8B.1010701@cn.fujitsu.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1411662520-22795-14-git-send-email-geert+renesas@glider.be>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+	<1411662520-22795-14-git-send-email-geert+renesas@glider.be>
+Date: Fri, 26 Sep 2014 10:16:48 +0200
+X-Google-Sender-Auth: j8imj3k4S7Tiq9wiWRVP3kzCngE
+Message-ID: <CAMuHMdWa_TDz6EyeXGDo-WGJyr15mhA4fH6r45hz8joNdkBbeQ@mail.gmail.com>
+Subject: Re: [PATCH v3 13/13] ARM: shmobile: r8a7740 dtsi: Add preliminary PM
+ QoS device latencies
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/09/2014 03:21, Tang Chen ha scritto:
->>>
->>> I'd like to help to test the patches.
->>> Would you please tell me what is the best way to test this patch-set ?
->> How did _you_ test the patches?...
-> 
-> I just added "-cpu xxx,-x2apic" option, start the guest, using numactl
-> to bind it
-> to a node (eg: node1). And offline the pages on node1. And repeat above
-> thing
-> for a while. And it is OK.
-> 
-> I'm not sure if this is enough.
+On Thu, Sep 25, 2014 at 6:28 PM, Geert Uytterhoeven
+<geert+renesas@glider.be> wrote:
+> diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+> index ed0adeb61a1ad8ec..713170442b7bd4b2 100644
+> --- a/arch/arm/boot/dts/r8a7740.dtsi
+> +++ b/arch/arm/boot/dts/r8a7740.dtsi
 
-Yes, this should be enough.
+> @@ -409,6 +509,10 @@
+>                         reg = <0xe6150000 0x10000>;
+>                         clocks = <&extal1_clk>, <&extalr_clk>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         clock-output-names = "system", "pllc0", "pllc1",
+>                                              "pllc2", "r",
+> @@ -424,6 +528,10 @@
+>                         reg = <0xe6150080 4>;
+>                         clocks = <&pllc1_div2_clk>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <0>;
+>                         clock-output-names = "sub";
+>                 };
+> @@ -433,6 +541,10 @@
+>                         compatible = "fixed-factor-clock";
+>                         clocks = <&cpg_clocks R8A7740_CLK_PLLC1>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <0>;
+>                         clock-div = <2>;
+>                         clock-mult = <1>;
+> @@ -442,6 +554,10 @@
+>                         compatible = "fixed-factor-clock";
+>                         clocks = <&extal1_clk>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <0>;
+>                         clock-div = <2>;
+>                         clock-mult = <1>;
+> @@ -454,6 +570,10 @@
+>                         reg = <0xe6150080 4>;
+>                         clocks = <&sub_clk>, <&sub_clk>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         renesas,clock-indices = <
+>                                 R8A7740_CLK_SUBCK R8A7740_CLK_SUBCK2
+> @@ -470,6 +590,10 @@
+>                                  <&sub_clk>, <&sub_clk>,
+>                                  <&cpg_clocks R8A7740_CLK_B>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         renesas,clock-indices = <
+>                                 R8A7740_CLK_CEU21 R8A7740_CLK_CEU20 R8A7740_CLK_TMU0
+> @@ -492,6 +616,10 @@
+>                                  <&sub_clk>, <&sub_clk>, <&sub_clk>,
+>                                  <&sub_clk>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         renesas,clock-indices = <
+>                                 R8A7740_CLK_SCIFA6 R8A7740_CLK_INTCA
+> @@ -522,6 +650,10 @@
+>                                  <&cpg_clocks R8A7740_CLK_HP>,
+>                                  <&cpg_clocks R8A7740_CLK_HP>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         renesas,clock-indices = <
+>                                 R8A7740_CLK_CMT1 R8A7740_CLK_FSI R8A7740_CLK_IIC1
+> @@ -540,6 +672,10 @@
+>                                  <&cpg_clocks R8A7740_CLK_HP>,
+>                                  <&cpg_clocks R8A7740_CLK_HP>;
+>                         power-domains = <&pd_c5>;
+> +                       stop-latency = <250000>;
+> +                       start-latency = <250000>;
+> +                       save-state-latency = <250000>;
+> +                       restore-state-latency = <250000>;
+>                         #clock-cells = <1>;
+>                         renesas,clock-indices = <
+>                                 R8A7740_CLK_USBH R8A7740_CLK_SDHI2
 
-Paolo
+Same here, as there should be no power-domains properties in the clocks
+nodes, there should be no latencies specified neither.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
