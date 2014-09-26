@@ -1,60 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaIZHyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:54:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58446 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185AbaIZHyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:54:17 -0400
-Message-ID: <54251BA6.6080907@suse.com>
-Date: Fri, 26 Sep 2014 09:54:14 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com
-Subject: Re: [PATCH V3] xen: eliminate scalability issues from initial mapping
- setup
-References: <1410965981-15444-1-git-send-email-jgross@suse.com> <1410965981-15444-2-git-send-email-jgross@suse.com> <5422C512.1010602@citrix.com>
-In-Reply-To: <5422C512.1010602@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754019AbaIZHzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:55:13 -0400
+Received: from regular1.263xmail.com ([211.150.99.137]:46525 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185AbaIZHzJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 03:55:09 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <c3290da357d1a59d3be6ea730cd2267c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v7 0/3] Add drm driver for Rockchip Socs
+Date: Fri, 26 Sep 2014 15:54:51 +0800
+Message-Id: <1411718091-15056-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 03:20 PM, David Vrabel wrote:
-> On 17/09/14 15:59, Juergen Gross wrote:
->> Direct Xen to place the initial P->M table outside of the initial
->> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
->> restriction on the size of the initial mapping limits the amount
->> of memory a domain can be handed initially.
->>
->> As the initial P->M table is copied rather early during boot to
->> domain private memory and it's initial virtual mapping is dropped,
->> the easiest way to avoid virtual address conflicts with other
->> addresses in the kernel is to use a user address area for the
->> virtual address of the initial P->M table. This allows us to just
->> throw away the page tables of the initial mapping after the copy
->> without having to care about address invalidation.
->>
->> It should be noted that this patch won't enable a pv-domain to USE
->> more than 512 GB of RAM. It just enables it to be started with a
->> P->M table covering more memory. This is especially important for
->> being able to boot a Dom0 on a system with more than 512 GB memory.
->
-> This doesn't seem to work.  It crashes when attempting to construct
-> the page tables.  Have these patches been tested on a host with > 512 GiB?
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-After some tests on a machine with 1 TB memory I think this patch makes
-sense only if the booted domain will be capable of using all the memory.
-Ignoring everything above 512 GB will not work as the hypervisor is
-putting vital information in this region (mfn_list, initrd, ...).
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-So please ignore this patch. I'm trying to setup a solution using a
-virtually mapped linear p2m list.
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
 
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
 
-Juergen
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
+
+Changes in v7:
+- fix memory leakage problem.
+
+Mark yao (3):
+  drm/rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  516 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   61 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  230 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  345 +++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1422 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3179 insertions(+)
+
+-- 
+1.7.9.5
+
 
