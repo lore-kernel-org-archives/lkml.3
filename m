@@ -1,160 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaIZWsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 18:48:01 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:42735 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763AbaIZWr6 convert rfc822-to-8bit (ORCPT
+	id S1756067AbaIZXBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 19:01:50 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61869 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751542AbaIZXBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 18:47:58 -0400
-Date: Fri, 26 Sep 2014 23:47:52 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v12 08/12] PCI: OF: Introduce helper function for
- retrieving PCI domain numbers
-Message-ID: <20140926224752.GB22030@e106497-lin.cambridge.arm.com>
-References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
- <1411498874-9864-9-git-send-email-Liviu.Dudau@arm.com>
- <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
- <20140926212052.GA6030@borg.dudau.co.uk>
- <CAL_JsqKJ6bfPuOofo4grVm3qW_WOpUzcS1juZvHxZdFyyF_19A@mail.gmail.com>
+	Fri, 26 Sep 2014 19:01:48 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Wang Weidong <wangweidong1@huawei.com>
+Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance states
+Date: Sat, 27 Sep 2014 01:21:39 +0200
+Message-ID: <2075276.PKjjuvNeys@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53F589C3.4050504@huawei.com>
+References: <53F589C3.4050504@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKJ6bfPuOofo4grVm3qW_WOpUzcS1juZvHxZdFyyF_19A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 26 Sep 2014 22:47:54.0094 (UTC) FILETIME=[E8A0A0E0:01CFD9DB]
-X-MC-Unique: 114092623475500301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:53:26PM +0100, Rob Herring wrote:
-> On Fri, Sep 26, 2014 at 4:20 PM,  <liviu@dudau.co.uk> wrote:
-> > On Fri, Sep 26, 2014 at 01:20:39PM -0500, Rob Herring wrote:
-> >> On Tue, Sep 23, 2014 at 2:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > Add pci_get_new_domain_nr() to allocate a new domain number
-> >> > and of_get_pci_domain_nr() to retrieve the PCI domain number
-> >> > of a given device from DT. Host bridge drivers or architecture
-> >> > specific code can choose to implement their PCI domain number
-> >> > policy using these two functions.
-> >> >
-> >> > Using of_get_pci_domain_nr() guarantees a stable PCI domain
-> >> > number on every boot provided that all host bridge controllers
-> >> > are assigned a number in the device tree using "linux,pci-domain"
-> >> > property. Mix use of pci_get_new_domain_nr() and of_get_pci_domain_nr()
-> >> > is not recommended as it can lead to potentially conflicting
-> >> > domain numbers being assigned to root busses behind different
-> >> > host bridges.
-> >> >
-> >> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> >> > Cc: Arnd Bergmann <arnd@arndb.de>
-> >> > Cc: Grant Likely <grant.likely@linaro.org>
-> >> > Cc: Rob Herring <robh+dt@kernel.org>
-> >> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> >> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >>
-> >> Looks pretty good, but a couple of comments that can be addressed as
-> >> follow-up patches.
-> >>
-> >> > ---
-> >> >  drivers/of/of_pci.c    | 25 +++++++++++++++++++++++++
-> >> >  drivers/pci/pci.c      |  9 +++++++++
-> >> >  include/linux/of_pci.h |  7 +++++++
-> >> >  include/linux/pci.h    |  3 +++
-> >> >  4 files changed, 44 insertions(+)
-> >> >
-> >> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> >> > index 8481996..82d172f 100644
-> >> > --- a/drivers/of/of_pci.c
-> >> > +++ b/drivers/of/of_pci.c
-> >> > @@ -89,6 +89,31 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
-> >> >  }
-> >> >  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
-> >> >
-> >> > +/**
-> >> > + * This function will try to obtain the host bridge domain number by
-> >> > + * finding a property called "linux,pci-domain" of the given device node.
-> >> > + *
-> >> > + * @node: device tree node with the domain information
-> >> > + *
-> >> > + * Returns the associated domain number from DT in the range [0-0xffff], or
-> >> > + * a negative value if the required property is not found.
-> >> > + */
-> >> > +int of_get_pci_domain_nr(struct device_node *node)
-> >> > +{
-> >> > +       const __be32 *value;
-> >> > +       int len;
-> >> > +       u16 domain;
-> >> > +
-> >> > +       value = of_get_property(node, "linux,pci-domain", &len);
-> >>
-> >> This needs to be documented.
-> >
-> > I would say needs agreed on *and* documented.
+On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
+> As the initialized freq_tables maybe different from the p-states
+> values, so the array index is different as well.
 > 
-> I thought Bjorn already applied the series. Who's agreement are you
-> waiting for specifically.
-
-Looks like he only applied about 60% of the series.
-
-I'm not waiting on anyones specifig agreement, just general agreement.
-Jason Gunthrope have initially suggested using pci-domain alias which
-you don't like, now I'm using "linux,pci-domain" property which you've
-ACKed, I wonder if I need to give people more time to catch up to the
-fact?
-
+> p-states value: [2400 2400 2000 ...], while the freq_tables:
+> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
+> the perf->state is 3 while the freqs_table's index should be 2.
+> So when call the get_cur_freq_on_cpu, the freqs value we get
+> is 2400.
 > 
-> >>
-> >> > +       if (!value || len < sizeof(*value))
-> >> > +               return -EINVAL;
-> >> > +
-> >> > +       domain = (u16)be32_to_cpup(value);
-> >>
-> >> of_property_read_u32 would not work here?
-> >
-> > It should, I guess, but I want to limit the domain number range to 16 bits.
+> So, fix the problem with the correct tables.
+
+What you're saying is basically that freq_table and perf->states
+diverge at one point.  Shouldn't we re-generate freq_table in that
+case instead of fixing up get_cur_freq_on_cpu() only in a quite
+indirect way? 
+
+> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
+> ---
+>  drivers/cpufreq/acpi-cpufreq.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> Okay, but it would still be fewer lines to use of_property_read_u32
-> and then cast it. You could use the u16 variant and make the property
-> be defined to be 16-bit in the documentation.
-
-True. Will do.
-
-Best regards,
-Liviu
-
-> 
-> Rob
+> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+> index b0c18ed..ac93885 100644
+> --- a/drivers/cpufreq/acpi-cpufreq.c
+> +++ b/drivers/cpufreq/acpi-cpufreq.c
+> @@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
+>  static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
+>  {
+>  	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
+> +	struct acpi_processor_performance *perf;
+>  	unsigned int freq;
+>  	unsigned int cached_freq;
+>  
+> @@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
+>  		return 0;
+>  	}
+>  
+> -	cached_freq = data->freq_table[data->acpi_data->state].frequency;
+> +	perf = data->acpi_data;
+> +	cached_freq = perf->states[perf->state].core_frequency * 1000;
+>  	freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
+>  	if (freq != cached_freq) {
+>  		/*
 > 
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
