@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331AbaIZXZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 19:25:21 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50561 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370AbaIZXZQ convert rfc822-to-8bit (ORCPT
+	id S1756405AbaIZXbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 19:31:32 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:33931 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316AbaIZXb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 19:25:16 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 26 Sep 2014 19:31:29 -0400
+Date: Sat, 27 Sep 2014 00:31:25 +0100
+From: Ross Lagerwall <rosslagerwall@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Subject: Mount propagation issue
+Message-ID: <20140926233125.GA6918@hobo.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tero Kristo <t-kristo@ti.com>, "Stephen Boyd" <sboyd@codeaurora.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <5425135F.2070809@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org, tony@atomide.com,
-        nm@ti.com, linux-arm-kernel@lists.infradead.org
-References: <1408628866-32351-1-git-send-email-t-kristo@ti.com>
- <20140922191816.GF10233@codeaurora.org> <542177E5.9060606@ti.com>
- <5424C2FA.4000508@codeaurora.org> <5425135F.2070809@ti.com>
-Message-ID: <20140926232453.19023.25483@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate change
-Date: Fri, 26 Sep 2014 16:24:53 -0700
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tero Kristo (2014-09-26 00:18:55)
-> On 09/26/2014 04:35 AM, Stephen Boyd wrote:
-> > On 09/23/14 06:38, Tero Kristo wrote:
-> >> On 09/22/2014 10:18 PM, Stephen Boyd wrote:
-> >>> On 08/21, Tero Kristo wrote:
-> >>>>            /* Skip children who will be reparented to another clock */
-> >>>>            if (child->new_parent && child->new_parent != clk)
-> >>>>                continue;
-> >>>
-> >>> Are we not hitting the new_parent check here? I don't understand
-> >>> how we can be changing parents here unless the check is being
-> >>> avoided, in which case I wonder why determine_rate isn't being
-> >>> used.
-> >>>
-> >>
-> >> It depends how the clock underneath handles the situation. The error I
-> >> am seeing actually happens with a SoC specific compound clock (DPLL)
-> >> which integrates set_rate + mux functionality into a single clock
-> >> node. A call to the clk_set_rate changes the parent of this clock
-> >> (from bypass clock to reference clock), in addition to changing the
-> >> rate (tune the mul+div.) I looked at using the determine rate call
-> >> with this type but it breaks everything up... the parent gets changed
-> >> but not the clock rate, in addition to some other issues.
-> >
-> > Ok. Is this omap3_noncore_dpll_set_rate()?
-> 
-> Yes.
-> 
->  > Can we use determine_rate +
-> > clk_set_parent_and_rate()? At least clk_set_parent_and_rate() would
-> > allow us to do the mult+div and the parent in the same op call, although
-> > I don't understand why setting the parent and then setting the rate is
-> > not going to work.
-> 
-> Well, setting parent first, then rate later causes problems with the 
-> DPLL ending up running with illegal (non-specified) rate, the M+N values 
-> are most likely wrong if you just switch from bypass clock to reference 
-> clock first without programming the M+N first.
+Hi,
 
-I took a quick look and it still seems to me that the OMAP DPLLs are
-still not modeled properly as mux clocks. Is this correct?
+I have encountered a strange bug (on 3.14, 3.16.3 and master) regarding
+mount namespaces and a particular directory.  Somehow, mounts are being
+mounted successfully but disappearing when the process dies, but only
+for /mnt/puppy, not for any other directory in the system:
 
-This issue has been lingering for a long time and we can't use
-determine_rate unless that clock has multiple parents. Simply hacking
-knowledge of the parent bypass clock into the .set_rate callback is not
-enough.
+# grep puppy /proc/mounts            # nothing mounted yet
+# mount -t tmpfs tmpfs /mnt/puppy
+# grep puppy /proc/mounts            # no output
 
-Regards,
-Mike
+# mount -t tmpfs tmpfs /mnt/puppy2
+# grep puppy /proc/mounts
+tmpfs /mnt/puppy2 tmpfs rw,relatime 0 0
 
-> 
->   I'm interested in the other issues that you mentioned
-> > too.
-> 
-> Mostly these were side-effects from the illegal DPLL setup I guess, like 
-> boot hang, failed drivers etc. I didn't really investigate this that 
-> much as it is much more simpler just to use safe list iteration here.
-> 
-> -Tero
+Furthermore, I wrote a program to mount /mnt/puppy and immediately
+read /proc/mounts:
+# grep puppy /proc/mounts            # no output
+# ./mounter
+tmpfs /mnt/puppy tmpfs rw,relatime 0 0
+# grep puppy /proc/mounts            # no output
+
+Finally, I note that the problem seems to occur if the mount needs to be
+propagated to the default namespace (note that systemd causes namespaces
+to be shared by default):
+# unshare -m
+
+subshell # mount -t tmpfs tmpfs /mnt/puppy
+subshell # grep puppy /proc/mounts   # no output
+subshell # mount --make-rprivate /
+subshell # mount -t tmpfs tmpfs /mnt/puppy
+subshell # grep puppy /proc/mounts   # success!
+tmpfs /mnt/puppy tmpfs rw,relatime 0 0
+subshell # umount /mnt/puppy
+subshell # exit
+
+# mount --make-rprivate /            # back in the default namespace
+# mount -t tmpfs tmpfs /mnt/puppy
+# grep puppy /proc/mounts            # no output
+
+I hope someone has an idea of what's going on or how to debug this
+because I've run out of ideas...
+
+Thanks!
+-- 
+Ross Lagerwall
