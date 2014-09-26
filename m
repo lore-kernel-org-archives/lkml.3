@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbaIZFFE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 01:05:04 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:39578 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaIZFFB (ORCPT
+	id S1753378AbaIZFLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 01:11:35 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:52978 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542AbaIZFLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 01:05:01 -0400
-Date: Fri, 26 Sep 2014 01:04:57 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Zefan Li <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "cgroup: remove redundant variable in
- cgroup_mount()"
-Message-ID: <20140926050457.GB14426@htj.dyndns.org>
-References: <1411704205-28995-1-git-send-email-lizefan@huawei.com>
- <20140926042617.GA14426@htj.dyndns.org>
- <20140926045352.GN7996@ZenIV.linux.org.uk>
+	Fri, 26 Sep 2014 01:11:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140926045352.GN7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140926.004024.1179261758092351350.davem@davemloft.net>
+References: <1411344411-3824-1-git-send-email-ast@plumgrid.com>
+	<1411344411-3824-11-git-send-email-ast@plumgrid.com>
+	<20140926.004024.1179261758092351350.davem@davemloft.net>
+Date: Thu, 25 Sep 2014 22:11:30 -0700
+Message-ID: <CAMEtUuzMepq5KkEc0APbMXpY-tZnv0U0xGMFzhc_uT4YeJETtw@mail.gmail.com>
+Subject: Re: [PATCH v14 net-next 10/11] bpf: verifier (add verifier core)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 05:53:52AM +0100, Al Viro wrote:
-> On Fri, Sep 26, 2014 at 12:26:17AM -0400, Tejun Heo wrote:
-> > On Fri, Sep 26, 2014 at 12:03:25PM +0800, Zefan Li wrote:
-> > > This reverts commit 0c7bf3e8cab7900e17ce7f97104c39927d835469.
-...
-> > > Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> > > Reported-by: Andrey Wagin <avagin@gmail.com>
-> > > Signed-off-by: Zefan Li <lizefan@huawei.com>
-> > 
-> > Applied to cgroup/for-3.18.
-> 
-> Er?  It's a clear regression since 3.16; shouldn't it go into mainline
-> before 3.17-final?  Another thing: AFAICS, if kernfs_fill_super() fails,
+On Thu, Sep 25, 2014 at 9:40 PM, David Miller <davem@davemloft.net> wrote:
+> From: Alexei Starovoitov <ast@plumgrid.com>
+> Date: Sun, 21 Sep 2014 17:06:50 -0700
+>
+>> +#define _(OP) ({ int ret = (OP); if (ret < 0) return ret; })
+>
+> Please do not hide program control flow inside of a macro.
 
-Hmmm?  This is reverting 0c7bf3e8cab7 which was committed six days ago
-to cgroup/for-3.18.
-
-> you get unbalanced kernfs_put() on the cleanup path - kernfs_kill_sb()
-> will be called in those cases as well.  IOW, we'd better move that
->         kernfs_get(info->root->kn);
-> in kernfs_fill_super() all way up to the point before kernfs_get_inode().
-> Something like this:
-> 
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> ---
-> diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-> index f973ae9..e5e92e3 100644
-> --- a/fs/kernfs/mount.c
-> +++ b/fs/kernfs/mount.c
-> @@ -74,6 +74,7 @@ static int kernfs_fill_super(struct super_block *sb, unsigned long magic)
->  	sb->s_magic = magic;
->  	sb->s_op = &kernfs_sops;
->  	sb->s_time_gran = 1;
-> +	kernfs_get(info->root->kn);
->  
->  	/* get root inode, initialize and unlock it */
->  	mutex_lock(&kernfs_mutex);
-> @@ -90,7 +91,6 @@ static int kernfs_fill_super(struct super_block *sb, unsigned long magic)
->  		pr_debug("%s: could not get root dentry!\n", __func__);
->  		return -ENOMEM;
->  	}
-> -	kernfs_get(info->root->kn);
-
-Ooh, right.  Will test & send the patch to Greg.
-
-Thanks.
-
--- 
-tejun
+ok.
+I'm pretty sure it will be less readable, but I'll get rid off it.
+I'm assuming you considered my arguments about it here:
+https://lkml.org/lkml/2014/7/2/656
+No problem. It's a minor thing.
