@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaIZMnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 08:43:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55182 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753994AbaIZMnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 08:43:19 -0400
-Message-ID: <54255F61.4060302@linux.vnet.ibm.com>
-Date: Fri, 26 Sep 2014 07:43:13 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	id S1754590AbaIZMrD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 08:47:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45541 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751001AbaIZMrB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 08:47:01 -0400
+Date: Fri, 26 Sep 2014 13:46:14 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Chenhui Zhao <chenhui.zhao@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhuoyu.Zhang@freescale.com" <Zhuoyu.Zhang@freescale.com>,
+        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
+        "leoli@freescale.com" <leoli@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] arm: ls1: add CPU hotplug platform support
+Message-ID: <20140926124614.GD7422@leverpostej>
+References: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
+ <1411730703-25836-2-git-send-email-chenhui.zhao@freescale.com>
+ <20140926122003.GP5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@lst.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xiong <wenxiong@linux.vnet.ibm.com>
-Subject: Re: linux-next: build failure after merge of the scsi tree
-References: <20140926183450.7474b448@canb.auug.org.au> <20140926083632.GA19463@lst.de> <1411725461.2183.2.camel@jarvis>
-In-Reply-To: <1411725461.2183.2.camel@jarvis>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092612-7182-0000-0000-0000008E790D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140926122003.GP5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 04:57 AM, James Bottomley wrote:
-> On Fri, 2014-09-26 at 10:36 +0200, Christoph Hellwig wrote:
->> On Fri, Sep 26, 2014 at 06:34:50PM +1000, Stephen Rothwell wrote:
->>> Hi James,
->>>
->>> After merging the scsi tree, today's linux-next build (powerpc
->>> ppc64_defconfig) failed like this:
->>>
->>> drivers/scsi/ipr.c: In function 'ipr_handle_log_data':
->>> drivers/scsi/ipr.c:2468:15: error: 'IPR_IOASC_HW_CMD_FAILED' undeclared (first use in this function)
->>>   if (ioasc == IPR_IOASC_HW_CMD_FAILED &&
->>>                ^
->>>
->>> Caused by commit 3185ea63907c ("ipr: don't log error messages when
->>> applications issues illegal requests").  Someone typoed that name in
->>> ipr.h ...
->>>
->>> I have reverted that commit for today.
->>
->> Thanks.  The fix should be here:
->>
->> http://git.infradead.org/users/hch/scsi-queue.git/commitdiff/d247a70a4d67623eb738176ee703a7bb8b6c325c
+On Fri, Sep 26, 2014 at 01:20:04PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Sep 26, 2014 at 07:25:01PM +0800, Chenhui Zhao wrote:
+> > +static inline void ls1_do_lowpower(unsigned int cpu, int *spurious)
+> > +{
+> > +	/*
+> > +	 * there is no power-control hardware on this platform, so all
+> > +	 * we can do is put the core into WFI; this is safe as the calling
+> > +	 * code will have already disabled interrupts
+> > +	 */
+> > +	for (;;) {
+> > +		wfi();
+> > +
+> > +		if (pen_release == cpu_logical_map(cpu)) {
+> > +			/*OK, proper wakeup, we're done*/
+> > +			break;
+> > +		}
+> > +
+> > +		/*
+> > +		 * Getting here, means that we have come out of WFI without
+> > +		 * having been woken up - this shouldn't happen
+> > +		 *
+> > +		 * Just note it happening - when we're woken, we can report
+> > +		 * its occurrence.
+> > +		 */
+> > +		(*spurious)++;
+> > +	}
+> > +}
 > 
-> OK, Pushed out.
-> 
-> I'll wait for the next couple of build cycles before pushing (assuming
-> merge window opens on Sunday) just in case more things show up.
+> This is pretty much unacceptable - this breaks kexec(), and suspend
+> support because your secondary CPUs aren't really sleeping, they're
+> sitting in a loop doing nothing.
 
-Hi James,
+Agreed.
 
-Anything preventing this patch set from getting picked up? Do you need a resend?
+This looks to be a carbon copy of the vexpress pseudo-hotplug in
+arch/arm/mach-vexpress/hotplug.c, which is obviously broken in the way
+you describe above. Perhaps we should go about ripping that out?
 
-http://marc.info/?l=linux-scsi&m=140657929221696&w=2
-
-Thanks,
-
-Brian
-
--- 
-Brian King
-Power Linux I/O
-IBM Linux Technology Center
-
-
+Mark.
