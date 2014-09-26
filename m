@@ -1,190 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaIZUj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:39:27 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:46733 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770AbaIZUj0 (ORCPT
+	id S1756094AbaIZUlj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:41:39 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:61097 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754829AbaIZUli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:39:26 -0400
+	Fri, 26 Sep 2014 16:41:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] pinctrl: remove remaining users of gpiochip_remove() retval
+Date: Fri, 26 Sep 2014 22:41:32 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+References: <1410905274-22339-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1410905274-22339-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
-References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
- <CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 13:39:03 -0700
-Message-ID: <CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
-Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
- syscall, verifier, testsuite)
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409262241.32579.arnd@arndb.de>
+X-Provags-ID: V02:K0:25gBSlvalXQZhka6v2HuDUHVBN8GQuG940fNSY3Ygat
+ Dew0G8vMhrVQglIdf3qVzWsUbPzOfQQ/DytJxrxfgbxBDiI0PI
+ qMnWUWMgVV1CX3COyllr1S0NJ+QAaqckhTniZ9Q264TPn9zJvd
+ angUHoEOOEJS0A7xeKt7lf+NDAFSd9XCKQjd/SnEEMAbCktIS7
+ LlTVjMyNMKxXZ2gtD0LV2r+9LDFsMvWc2ePGNkIp8vJCMnBaTO
+ Zeq7Z6cY6KUGFph7qTj5XeJsnqpvI1KnjvtFeCDQoJkSj4+yrU
+ CyAG4tix1I4n/DZ/xzGFenHNb0vWI22m18ofnUUMMWCYRbgH80
+ V8uyfayeiwTW6xUpndGI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 1:00 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Sep 26, 2014 at 12:06 PM, David Miller <davem@davemloft.net> wrote:
->>> From: Alexei Starovoitov <ast@plumgrid.com>
->>> Date: Fri, 26 Sep 2014 00:16:56 -0700
->>>
->>>> v14 -> v15:
->>>> - got rid of macros with hidden control flow (suggested by David)
->>>>   replaced macro with explicit goto or return and simplified
->>>>   where possible (affected patches #9 and #10)
->>>> - rebased, retested
->>>
->>> Series applied to net-next, thanks.
->>
->> Hi all-
->>
->> I read through the verifier.  Sorry this email is a little bit late.
->> Here are some thoughts, in no particular order.
->>
->> Programs should IMO have feature flags.  One such feature would be
->> "can use pointers as integers", for example.
->
-> of course.
-> I believe we discussed it in the past.
-> programs will have flags. I'm not sure why you insist on this in
-> the first version.
->
->> UNKNOWN_VALUE is IMO a crappy type.  I think that it should renamed to
->> INTEGER and that a bunch of the things that generate it should be
->> errors.
->
-> it's an internal type.
-> Sure, I'm ok renaming it, but 'integer' name doesn't fit.
-> It's not integer type.
-> When I post a patch for "can use pointers as integers" flag
-> you'll see that this 'unknown_value' will be broken down
-> into more precise types.
->
->> ALU ops like adding two pointers should IMO be failures.  I don't
->> think that they should result in UNKNOWN_VALUE.
->
-> they will be failures for unprivileged programs.
-> In this patch the whole thing is for root only and root programs need
-> arithmetic on pointers to compute hashes and so on.
-> I wish we spent more time chatting, so I could explain this better.
->
->> I don't like PTR_TO_MAP_VALUE as a type.  I think that there should
->> instead be "pointer to (const?) buffer of N bytes".
->>
->> ARG_PTR_TO_MAP_KEY is odd.  Why do we care what a function does with a
->> key?  It just needs to be a big enough buffer, right?
->
-> not quite. there is a distinction between key and value.
-> They both come from map definition and correspond to key_size
-> and value_size, so they have to have two different corresponding
-> _internal_ types 'ptr_to_map_key' and 'ptr_to_map_value'
-> This distinction is needed to properly describe function
-> arguments constraints.
+On Wednesday 17 September 2014, Linus Walleij wrote:
+> Some drivers accidentally still use the return value from
+> gpiochip_remove(). Get rid of them so we can simplify this function
+> and get rid of the return value.
+> 
+> Cc: Abdoulaye Berthe <berthe.ab@gmail.com>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> This patch will be merged through the GPIO tree.
 
-But they're still just pointers to buffers of some size known to the
-verifier, right?  By calling them "pointer to map key" and "pointer to
-map value" you're tying them to map objects in a way that makes little
-sense to me.
+Hi Linus, this patch caused a new build warning in some configurations:
 
->
->> All of the stack spill stuff seems overcomplicated.  Can you just
->> disallow unaligned stack access?  Right off the bat, that will delete
->> a bunch of code and cut down runtime memory use by nearly a factor of
->> eight.
->
-> not quite. stack spill/fill is not for unaligned access.
-> unaligned access is disallowed first.
-> See line 663 in check_mem_access().
-> Often enough gcc/llvm ran out of registers and have to spill
-> them into stack. This spill/fill tracking mechanism keeps
-> track of what is stored into stack. Otherwise type violation will be
-> possible. We cannot get rid of it. It essential for safety.
+> diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+> index a53a689a2bfa..7df34b70e8b6 100644
+> --- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
+> +++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+> @@ -1298,10 +1298,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
+>  	return 0;
+>  
+>  out_rem_chip:
+> -	err = gpiochip_remove(&pct->chip);
+> -	if (err)
+> -		dev_info(&pdev->dev, "failed to remove gpiochip\n");
+> -
+> +	gpiochip_remove(&pct->chip);
+>  	return ret;
+>  }
 
-So what's "spill part"?  Unless I misunderstood the stack tracking
-code, you're tracking each byte separately.
 
-You're also tracking the type for each stack slot separately for each
-instruction.  That looks like it'll account for the considerable
-majority of total memory usage.
+drivers/pinctrl/nomadik/pinctrl-abx500.c: In function 'abx500_gpio_probe':
+drivers/pinctrl/nomadik/pinctrl-abx500.c:1208:11: warning: unused variable 'err' [-Wunused-variable]
 
->
->> Also, there are no calls to functions written eBPF, right?  If so, why
->> not just give each stack slot a *fixed* type for the lifetime of the
->> program?  That would be a huge time complexity win, not to mention
->> being more comprehensible.  When function calls get added, they'll
->> need a whole pile of new infrastructure anyway.
->
-> you cannot. stack cannot be fixed. It's very small and valuable
-> resources. Programs will be using differently.
->
->> check_call is a mess.  I predict that it will be unmaintainable.
->
-> why? care to provide details?
+Please fix by removing that variable.
 
-I may have misread my notes.
-
-I don't like the fact that the function proto comes from the
-environment instead of from the program.
-
->
->> check_ld_abs is messy, IMO.  Can't there be a real type "pointer to
->> object of type [type]", where skb would be a type?  Then you could use
->> the normal function call logic for skb pointers instead of hardcoded
->> crud.
->>
->> You're doing a depth-first search.  I don't like it.  You need complex
->> pruning logic to avoid exponential behavior, and it's not obvious to
->
-> there was in patch in previous series that did the prunning.
-> I dropped out of this set to simplify things.
->
->> me that pathological programs that cause exponential blowups in the
->> verifier don't exist.  Wouldn't it make more sense to do a
->> breadth-first search instead and to give each reg/stack slot a
->> definite type at each point in the control flow?  You'd need a
->> function to find the intersection of two types, but I think that would
->> be preferable to the current code that tests whether one type is a
->> subset of another.
->
-> nope. breadth-first just doesn't work at all.
-
-Sorry, I didn't actually mean BFS.  I meant to order the search such
-that all incoming control flow edges to an insn are visited before any
-of the outgoing edges are visited.
-
->
->> At some point someone will want loops, and that will open a huge can
->> of worms involving explicit typing or type inference.  It might pay to
->> add some kind of stack slot (and maybe even register slot) type
->> declarations now to get things ready for that.
->
-> sure. As discussed we may allow loops in the future.
->
->> NB: If this code is actually invoked in net-next when loading a
->> filter, please don't push to Linus until there's a convincing argument
->> that the verifier has acceptable asymptotic complexity.
->
-> complexity is actually described in the doc.
-> There are several limits. Verifier will be aborted if it walks
-> more then 32k instructions or more then 1k branches.
-> So the very worst case takes micro seconds to reject
-> the program. So I don't see your concern.
-
-That this will randomly fail, then.  For all I know, there are
-existing valid BPF programs with vastly more than 32k "instructions"
-as counted by the verifier.
-
---Andy
+	Arnd
