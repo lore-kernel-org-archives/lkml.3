@@ -1,110 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929AbaIZPna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:43:30 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:59819 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814AbaIZPn2 (ORCPT
+	id S1755452AbaIZPn5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:43:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46034 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754127AbaIZPnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:43:28 -0400
+	Fri, 26 Sep 2014 11:43:55 -0400
+Date: Fri, 26 Sep 2014 10:43:06 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <balbi@ti.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <devicetree@vger.kernel.org>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>,
+        Peter Chen <peter.chen@freescale.com>, <p.zabel@pengutronix.de>,
+        <jszhang@marvell.com>, <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140926154306.GE26227@saruman>
+Reply-To: <balbi@ti.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <20140926003750.GA12770@saruman>
+ <20140926003934.GD12770@saruman>
+ <3346642.tZaefcZubX@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdxZwrBsvRt7X0KN2+vnQVRDAJdUGOyNgq2rynwmsur9A@mail.gmail.com>
-References: <1406896194-4667-1-git-send-email-jaswinder.singh@linaro.org>
-	<1406896296-4863-1-git-send-email-jaswinder.singh@linaro.org>
-	<CAJ5Y-eZ5gNMQ2YRN4iS5QTU7qUrgxGdTHXhQZ_2ut4iBsEZHGg@mail.gmail.com>
-	<5420675C.6040805@arm.com>
-	<54206B7C.60501@arm.com>
-	<CAJ5Y-ea7e1LCym49jGen-eXuw6tWOzTi3Rrd_K-4ZcZUwkv_jg@mail.gmail.com>
-	<CAJe_ZhdxZwrBsvRt7X0KN2+vnQVRDAJdUGOyNgq2rynwmsur9A@mail.gmail.com>
-Date: Fri, 26 Sep 2014 11:43:26 -0400
-Message-ID: <CAJ5Y-eZDHuHJpbZ8owYosR3gmqfEtTJeeMB_B_z6dxda+QyNnw@mail.gmail.com>
-Subject: Re: [PATCHv10 2/4] mailbox: Introduce framework for mailbox
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Jassi Brar <jaswinder.singh@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Matt Porter <mporter@linaro.org>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
-        "mollie.wu@linaro.org" <mollie.wu@linaro.org>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "andy.green@linaro.org" <andy.green@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AsxXAMtlQ5JHofzM"
+Content-Disposition: inline
+In-Reply-To: <3346642.tZaefcZubX@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 20:57, Jassi Brar <jaswinder.singh@linaro.org> wrote:
-> On 24 September 2014 09:14, Ashwin Chaugule <ashwin.chaugule@linaro.org> wrote:
->> On 22 September 2014 14:33, Sudeep Holla <sudeep.holla@arm.com> wrote:
->
->>>>>> +static void poll_txdone(unsigned long data)
->>>>>> +{
->>>>>> +       struct mbox_controller *mbox = (struct mbox_controller *)data;
->>>>>> +       bool txdone, resched = false;
->>>>>> +       int i;
->>>>>> +
->>>>>> +       for (i = 0; i < mbox->num_chans; i++) {
->>>>>> +               struct mbox_chan *chan = &mbox->chans[i];
->>>>>> +
->>>>>> +               if (chan->active_req && chan->cl) {
->>>>>> +                       resched = true;
->>>>>> +                       txdone = chan->mbox->ops->last_tx_done(chan);
->>>>>> +                       if (txdone)
->>>>>> +                               tx_tick(chan, 0);
->>>>>> +               }
->>>>>> +       }
->>>>>> +
->>>>>> +       if (resched)
->>>>>> +               mod_timer(&mbox->poll, jiffies +
->>>>>> +                               msecs_to_jiffies(mbox->period));
->>>>>
->>>>>
->>>>> While preparing a different patch which uses the Mbox framework, I
->>>>> noticed that mbox->period might not be initialized anywhere. Also, how
->>>>> is mbox->txpoll_period to be used? It appears from the description of
->>>>> txpoll_period in mbox_controller.h that you'd want to use that value
->>>>> in the mod_timer above, or equate the two somewhere in the controller
->>>>> registration or eliminate one of the two. FWIW I also looked at your
->>>>> code in [1].
->>>>>
->>>>
->>>> IIUC the controller needs to set the txpoll_period if it sets
->>>> txdone_poll, may be a sanity check for !0 would be good.
->>>>
->>>
->>> Ah, sorry I confused mbox->period to txpoll_period.
->>> You are right mbox->period is not set, the header claims it to be
->>> private, and hence I assume it needs to be handled only in core mailbox
->>> library. Not sure if we need both mbox->period and txpoll_period though.
->>
->> Right. I dont see the need for having both either. Unless the Mailbox
->> maintainer wants to fix this in some other way, I can send a patch for
->> replacing mbox->period with mbox->txpoll_period along with my PCC
->> work.
->>
-> Yeah, probably we should just get rid of mbox_controller.period  I
-> have updated the same in for-next.
+--AsxXAMtlQ5JHofzM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks like linux-next already has the older version[1]. Your for-next
-branch seems to have the fix squashed into the previous commit.
-Wouldnt you need to send this as a separate patch? Or ask for the
-patch to be reverted in linux-next and then pull again from your
-branch.
+Hi,
 
-Thanks,
-Ashwin
+On Fri, Sep 26, 2014 at 09:20:54AM +0200, Arnd Bergmann wrote:
+> On Thursday 25 September 2014 19:39:34 Felipe Balbi wrote:
+> > >=20
+> > > why would a glue layer need to access registers from the core ? That
+> > > sounds very odd. I haven't seen that and will, definitely, NACK such a
+> > > patch=20
+> > >=20
+> > > can you further describe why you think a glue layer might need to acc=
+ess
+> > > core IP's registers ?
+> >=20
+> > I just realised we're talking about chipidea here... in any case, it's
+> > still valid to ask why would glue need to fiddle with core IP's
+> > registers.
+>=20
+> Generally, the glue driver wouldn't access the registers, but I don't
+> think it's important to prevent it from doing that. In some cases,=20
 
-[1] - http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/drivers/mailbox/mailbox.c
+sure it is. Have already gone through debugging sessions just because
+someone fiddled with registers they shouldn't. Also RMK's L2 rework
+patchset is another example of why it's important to prevent other
+layers from messing with registers they don't really own.
+
+> a glue driver needs to override a function of the core driver, e.g.
+> to work around an errata. We have a lot of those quirks in ATA drivers,
+
+pass a quirk flag and let core driver handle it.
+
+> one example from ahci_mvebu.c is
+>=20
+> static void ahci_mvebu_regret_option(struct ahci_host_priv *hpriv)
+> {
+>         /*
+>          * Enable the regret bit to allow the SATA unit to regret a
+>          * request that didn't receive an acknowlegde and avoid a
+>          * deadlock
+>          */
+>         writel(0x4, hpriv->mmio + AHCI_VENDOR_SPECIFIC_0_ADDR);
+>         writel(0x80, hpriv->mmio + AHCI_VENDOR_SPECIFIC_0_DATA);
+
+I would rather see:
+
+	if (this_is_one_of_the_broken_mvebu_versions(hpriv))
+		quirks |=3D AHCI_NEEDS_REGRET_BIT;
+
+then let core handle the rest. If other glue has the same bug and needs
+the workaround, we don't duplicate code.
+
+--=20
+balbi
+
+--AsxXAMtlQ5JHofzM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUJYmKAAoJEIaOsuA1yqREd+QP+gMT9mRfPY+Tc7gb/L9ltPvu
+IfVPneXdEdoSDYnMmPYiiIGyn3ilqzcNnrgREdsO27CNqS3nmfnMu3HJXUVralLI
+ztR0LzSaqG2bwdAj4PqCv3P6NPMyAvWnFCwrGAcWDdysaQJuT2UQxxJ4yHZFcK88
+JT7wghPSTAbHJrwN5BaW5jzhrVnapOGGaaxBDTBC55gFmferWbwiY4QZJjniWi62
+apMQo77ZfZad8V47dmYQxp6Qv02YXHgGoKD9GYfbDsvGzMX0EWrYVg7IklmZStNG
+II+MiuhmVdDtXwHbQIW28iYd2M+d0b9a6LnvlghLdwAN3ZZqClwIhd9KENs6IoZK
+60p58kUBez+NUZrEx7aag/ikFqVUsrVtaj7SaHJrKFJHxu9Aoyu4PaNom/cZFG/X
+7IPoJ3gzDonsNkPU4WR1Xk/QXsSVDi1ObgKUug0j+EZYPPRY296kSwpAdJlrsUwu
+K0pM3rwMFoEWJBJxXh6uSJ78xGC0oTqKEPRGS1BOMnLUOaisRQZWw4AGRMzmSKmh
+ZySjVPStjwzPrhwhEerUus+6KigibQyzJREOyepOJTEXRvZCfr6yKA/1oEwCaHx4
+ccV0r6yxTtShdly5o5V/sE15VnKW59rMjxzMEx/vx6wYLCo89oeR1VPpJ4ae8zcu
+AM+janwF4xSj3+OWX9lk
+=1Ma1
+-----END PGP SIGNATURE-----
+
+--AsxXAMtlQ5JHofzM--
