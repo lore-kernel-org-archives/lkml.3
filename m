@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaIZNwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:52:30 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44084 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753908AbaIZNw3 (ORCPT
+	id S1755033AbaIZNyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:54:24 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:32898 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751537AbaIZNyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:52:29 -0400
-Date: Fri, 26 Sep 2014 14:52:10 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Carlo Caione <carlo@caione.org>,
-        Krzysztof =?utf-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>,
-        Florian Fainelli <f.fainelli@gmail.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20140926135210.GU5182@n2100.arm.linux.org.uk>
-References: <20140926112344.3ee87d2f@canb.auug.org.au> <20140926081804.GH5182@n2100.arm.linux.org.uk> <54253195.5040003@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54253195.5040003@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 26 Sep 2014 09:54:23 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Eric Paris <eparis@redhat.com>,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [PATCH] next: openrisc: Fix build
+Date: Fri, 26 Sep 2014 06:54:15 -0700
+Message-Id: <1411739655-4715-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:27:49AM +0100, Daniel Thompson wrote:
-> On 26/09/14 09:18, Russell King - ARM Linux wrote:
-> > On Fri, Sep 26, 2014 at 11:23:44AM +1000, Stephen Rothwell wrote:
-> >> Hi all,
-> >>
-> >> Today's linux-next merge of the arm-soc tree got a conflict in
-> >> arch/arm/Kconfig.debug between commits 0889a9e35bd3 ("ARM: 8142/1:
-> >> ks8695: Migrate debug_ll macros to shared directory"), e38c399ca584
-> >> ("ARM: 8144/2: netx: Migrate DEBUG_LL macros to shared directory"),
-> >> 6741cacfa3f1 ("ARM: 8145/1: sa1100: Migrate DEBUG_LL macros to shared
-> >> directory") and debf843bf7ee ("ARM: 8146/1: Seperate DEBUG_UART_PHYS
-> >> from DEBUG_LL on EP93XX") from the arm tree and commits d8a00916b303
-> >> ("ARM: meson: debug: add debug UART for earlyprintk support"),
-> >> b125170a39ea ("CNS3xxx: Fix debug UART") and b51312bebfa4 ("ARM:
-> >> BCM63XX: add low-level UART debug support") from the arm-soc tree.
-> >>
-> >> I fixed it up (hopefully - see below) and can carry the fix as
-> >> necessary (no action is required).
-> >>
-> >> You may be able to clean some of this up by using intermediate config
-> >> symbols that are selected by the low level symbols and depended upon by
-> >> the higher level config symbols.
-> > 
-> > Actually, I'll drop the patch set I have.  I didn't spot this earlier,
-> > but people seem to have a hard time sorting stuff numerically:
-> > 
-> >         default 0xffd82340 if ARCH_IOP13XX
-> > +       default 0xfffb0000 if DEBUG_OMAP1UART1 || DEBUG_OMAP7XXUART1
-> > +       default 0xfffb0800 if DEBUG_OMAP1UART2 || DEBUG_OMAP7XXUART2
-> > +       default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
-> >         default 0xfff36000 if DEBUG_HIGHBANK_UART
-> 
-> Oops. This is disappointing from my point-of-view but there's no one to
-> blame but me.
-> 
-> I have fixed this in my tree and will requeue for 3.19.
+openrisc:defconfig fails to build in next-20140926 with the following error.
 
-Okay, I've dropped 8141/1 onwards, so the only patches I have from your
-series are:
+In file included from arch/openrisc/kernel/signal.c:31:0:
+./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
+./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
 
-ep93xx: Enable DEBUG_LL_UART_PL01X
-versatile: Enable DEBUG_LL_UART_PL01X
+Fix by moving EM_OPENRISC and EM_OR32 to include/uapi/linux/elf-em.h.
 
+Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Based Stefan's note. No idea if it is the correct fix.
+
+ arch/openrisc/include/uapi/asm/elf.h | 4 +---
+ include/uapi/linux/elf-em.h          | 2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
+index f02ea58..e75fdce 100644
+--- a/arch/openrisc/include/uapi/asm/elf.h
++++ b/arch/openrisc/include/uapi/asm/elf.h
+@@ -55,9 +55,7 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
+ /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
+ typedef unsigned long elf_fpregset_t;
+ 
+-/* This should be moved to include/linux/elf.h */
+-#define EM_OR32         0x8472
+-#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
++/* EM_OPENRISC and EM_OR32 defined in linux/elf-em.h	*/
+ 
+ /*
+  * These are used to set parameters in the core dumps.
+diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
+index 01529bd..c5d3948 100644
+--- a/include/uapi/linux/elf-em.h
++++ b/include/uapi/linux/elf-em.h
+@@ -32,11 +32,13 @@
+ #define EM_V850		87	/* NEC v850 */
+ #define EM_M32R		88	/* Renesas M32R */
+ #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
++#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
+ #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
+ #define EM_TI_C6000	140	/* TI C6X DSPs */
+ #define EM_AARCH64	183	/* ARM 64 bit */
+ #define EM_FRV		0x5441	/* Fujitsu FR-V */
+ #define EM_AVR32	0x18ad	/* Atmel AVR32 */
++#define EM_OR32         0x8472	/* OpenRISC, alternate */
+ 
+ /*
+  * This is an interim value that we will use until the committee comes
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
