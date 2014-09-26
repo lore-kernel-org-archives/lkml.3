@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297AbaIZOBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:01:11 -0400
+	id S1755393AbaIZOBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:01:21 -0400
 Received: from mga09.intel.com ([134.134.136.24]:41353 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101AbaIZOBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:01:08 -0400
+	id S1755341AbaIZOBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:01:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="609109957"
+   d="scan'208";a="609110007"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFT v2 07/24] x86, uv: Use new irqdomain interfaces to allocate/free IRQ
-Date: Fri, 26 Sep 2014 22:02:08 +0800
-Message-Id: <1411740145-30626-8-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFT v2 09/24] x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+Date: Fri, 26 Sep 2014 22:02:10 +0800
+Message-Id: <1411740145-30626-10-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,94 +35,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new irqdomain interfaces to allocate/free IRQ, so we could
-kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
+Use new irqdomain interfaces to allocate/free IRQ for DMAR and interrupt
+remapping, so we could kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
+
+The private definition of irq_alloc_hwirqs()/irq_free_hwirqs() are
+temporary solution, it will be removed once we have converted interrupt
+remapping driver to use irqdomain framework.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/platform/uv/uv_irq.c |   27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |    4 ++--
+ arch/x86/kernel/apic/msi.c           |   10 ++++++++++
+ drivers/iommu/irq_remapping.c        |   17 +++++++++++++++--
+ 3 files changed, 27 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 0ce673645432..474912d03f40 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -12,6 +12,7 @@
- #include <linux/rbtree.h>
- #include <linux/slab.h>
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index b7747c4c2cf2..230dde9b695e 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -103,7 +103,7 @@ static inline bool setup_remapped_irq(int irq,
+ }
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+-#define dmar_alloc_hwirq()	irq_alloc_hwirq(-1)
+-#define dmar_free_hwirq		irq_free_hwirq
++extern int dmar_alloc_hwirq(void);
++extern void dmar_free_hwirq(int irq);
+ 
+ #endif /* __X86_IRQ_REMAPPING_H */
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index 64561ffa51a9..29012f37aad9 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -221,6 +221,16 @@ int arch_setup_dmar_msi(unsigned int irq)
+ 				      "edge");
+ 	return 0;
+ }
++
++int dmar_alloc_hwirq(void)
++{
++	return irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
++}
++
++void dmar_free_hwirq(int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
+ #endif
+ 
+ /*
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 34d01de91bd7..7dd893ee70be 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -6,6 +6,7 @@
+ #include <linux/msi.h>
  #include <linux/irq.h>
+ #include <linux/pci.h>
 +#include <linux/irqdomain.h>
  
- #include <asm/apic.h>
- #include <asm/uv/uv_irq.h>
-@@ -130,24 +131,14 @@ static int
- arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
- 		       unsigned long mmr_offset, int limit)
+ #include <asm/hw_irq.h>
+ #include <asm/irq_remapping.h>
+@@ -49,6 +50,18 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
++#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
++static unsigned int irq_alloc_hwirqs(int cnt, int node)
++{
++	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
++}
++
++static void irq_free_hwirqs(unsigned int from, int cnt)
++{
++	irq_domain_free_irqs(from, cnt);
++}
++#endif
++
+ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
  {
--	const struct cpumask *eligible_cpu = cpumask_of(cpu);
- 	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long mmr_value;
- 	struct uv_IO_APIC_route_entry *entry;
--	int mmr_pnode, err;
--	unsigned int dest;
-+	int mmr_pnode;
+ 	int ret, sub_handle, nvec_pow2, index = 0;
+@@ -112,7 +125,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
  
- 	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
- 			sizeof(unsigned long));
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
  
--	err = assign_irq_vector(irq, cfg, eligible_cpu);
--	if (err != 0)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(eligible_cpu, eligible_cpu, &dest);
--	if (err != 0)
--		return err;
--
- 	if (limit == UV_AFFINITY_CPU)
- 		irq_set_status_flags(irq, IRQ_NO_BALANCING);
- 	else
-@@ -164,7 +155,7 @@ arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
- 	entry->polarity		= 0;
- 	entry->trigger		= 0;
- 	entry->mask		= 0;
--	entry->dest		= dest;
-+	entry->dest		= cfg->dest_apicid;
+-		irq = irq_alloc_hwirq(node);
++		irq = irq_alloc_hwirqs(1, node);
+ 		if (irq == 0)
+ 			return -1;
  
- 	mmr_pnode = uv_blade_to_pnode(mmr_blade);
- 	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-@@ -238,9 +229,13 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
- 		 unsigned long mmr_offset, int limit)
- {
--	int ret, irq = irq_alloc_hwirq(uv_blade_to_memory_nid(mmr_blade));
-+	int ret, irq;
-+	struct irq_alloc_info info;
+@@ -135,7 +148,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
+ 	return 0;
  
--	if (!irq)
-+	init_irq_alloc_info(&info, cpumask_of(cpu));
-+	irq = irq_domain_alloc_irqs(NULL, 1, uv_blade_to_memory_nid(mmr_blade),
-+				    &info);
-+	if (irq <= 0)
- 		return -EBUSY;
- 
- 	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
-@@ -248,7 +243,7 @@ int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
- 	if (ret == irq)
- 		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
- 	else
--		irq_free_hwirq(irq);
-+		irq_domain_free_irqs(irq, 1);
- 
+ error:
+-	irq_free_hwirq(irq);
++	irq_free_hwirqs(irq, 1);
  	return ret;
  }
-@@ -283,6 +278,6 @@ void uv_teardown_irq(unsigned int irq)
- 			n = n->rb_right;
- 	}
- 	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
--	irq_free_hwirq(irq);
-+	irq_domain_free_irqs(irq, 1);
- }
- EXPORT_SYMBOL_GPL(uv_teardown_irq);
+ 
 -- 
 1.7.10.4
 
