@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaIZHYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:24:46 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:42051 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429AbaIZHYo (ORCPT
+	id S1754392AbaIZHZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:25:27 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40826 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001AbaIZHZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:24:44 -0400
+	Fri, 26 Sep 2014 03:25:25 -0400
+Message-ID: <542514DF.6050204@roeck-us.net>
+Date: Fri, 26 Sep 2014 00:25:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
+To: Sebastian Reichel <sre@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] power: Add simple gpio-restart driver
+References: <1409167431-21155-1-git-send-email-davidriley@chromium.org> <1409167431-21155-2-git-send-email-davidriley@chromium.org> <541BB278.9010701@roeck-us.net> <20140925234145.GA2063@earth.universe> <5424DD5E.3040809@roeck-us.net>
+In-Reply-To: <5424DD5E.3040809@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Fri, 26 Sep 2014 09:24:03 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de, tglx@linutronix.de,
-        festevam@gmail.com, jingchang.lu@freescale.com, bpringlemeir@nbsps.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] ARM: vf610: Fix/add clocksource
-In-Reply-To: <54250F35.8060306@linaro.org>
-References: <1411575610-20895-1-git-send-email-stefan@agner.ch>
- <54250F35.8060306@linaro.org>
-Message-ID: <5f84a10302bfb9bc5fed68e789fd1764@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.542514E5.001F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-09-26 09:01, schrieb Daniel Lezcano:
-> On 09/24/2014 06:20 PM, Stefan Agner wrote:
->> This patchset came out of need for a clocksource which supports shutdown.
->> In the first version I proposed to just replace the current clocksource
->> with the ARM Global Timer and even proposed to remove the PIT clocksource
->> driver. But Bill Pringlemeir brought up a reasonable point why we should
->> keep the PIT clocksource.
+On 09/25/2014 08:28 PM, Guenter Roeck wrote:
+> On 09/25/2014 04:41 PM, Sebastian Reichel wrote:
+>> Hi Guenter,
 >>
->> Since we need shutdown support for suspend/resume, I added another patch
->> which fixes shutdown functionality for the PIT driver. Now it's possible
->> to use suspend/resume functionality with each of the two clocksources.
+>> On Thu, Sep 18, 2014 at 09:35:04PM -0700, Guenter Roeck wrote:
+>>> On 08/27/2014 12:23 PM, David Riley wrote:
+>>>> This driver registers a restart handler to set a GPIO line high/low
+>>>> to reset a board based on devicetree bindings.
+>>>>
+>>>> Signed-off-by: David Riley <davidriley@chromium.org>
+>>>
+>>> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 >>
->> Changes in v2:
->> - Added shutdown support for PIT clocksource (and hence clocksource
->>    maintainers as receipient).
->> - Create Kconfig entries which allow to choose between the two
->>    clocksources
->> - Clarified commit message
->> - Renamed device tree node to "timer"
+>> Is there an immutable branch available with your restart handler
+>> stuff, which I can pull into battery-2.6.git?
 >>
-> 
-> Hi Stefan,
-> 
-> I will take the patch 1/3 and let the other patches to be acked-by or
-> picked in another tree.
-> 
-> Thanks
->   -- Daniel
+>> -- Sebastian
+>>
+>
+>
+> Hi Sebastian,
+>
+> Unfortunately not.
+>
+> Andrew has the patches in his tree and will hopefully send the set to Linus
+> during the next commit window. Not sure if/how I could create an immutable
+> branch from the commits in his repository, especially since (if I understand
+> it correctly) he re-creates his tree on a regular basis, which is changing
+> the SHAs and, unless I am missing something, the commit dates.
+>
+> [ Not really sure how to best handle situations like that .. ]
+>
+> Guenter
+>
+Followup ... I am in the process of creating a branch.
+Expect to see a pull request tomorrow.
 
-Hi Daniel, 
+Guenter
 
-Great thx. If not already to late, can you drop that superfluous empty
-line mentioned by Sergei?
-
---
-Stefan
-
-> 
->> Stefan Agner (3):
->>    clocksource: vf_pit_timer: Support shutdown mode
->>    ARM: dts: vf610: Add ARM Global Timer
->>    ARM: vf610: Add ARM Global Timer clocksource option
->>
->>   arch/arm/boot/dts/vf610.dtsi       |  8 ++++++++
->>   arch/arm/mach-imx/Kconfig          | 19 ++++++++++++++++++-
->>   drivers/clocksource/vf_pit_timer.c |  5 +++++
->>   3 files changed, 31 insertions(+), 1 deletion(-)
->>
