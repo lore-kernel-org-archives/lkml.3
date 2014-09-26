@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030198AbaIZUUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 16:20:13 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52692 "EHLO mail.kernel.org"
+	id S1756154AbaIZUUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:20:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52708 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044AbaIZUUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 16:20:10 -0400
+	id S1755044AbaIZUUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 16:20:13 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Pranith Kumar <bobby.prani@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Milian Wolff <mail@milianw.de>, Namhyung Kim <namhyung.kim@lge.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/10] perf tools: Use ACCESS_ONCE() instead of volatile cast
-Date: Fri, 26 Sep 2014 17:19:41 -0300
-Message-Id: <1411762787-26113-5-git-send-email-acme@kernel.org>
+Subject: [PATCH 05/10] perf hists browser: Fix callchain print bug on TUI
+Date: Fri, 26 Sep 2014 17:19:42 -0300
+Message-Id: <1411762787-26113-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411762787-26113-1-git-send-email-acme@kernel.org>
 References: <1411762787-26113-1-git-send-email-acme@kernel.org>
@@ -25,37 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pranith Kumar <bobby.prani@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Use ACCESS_ONCE() instead of the cast to volatile and read. This is just
-a style change which is reader friendly.
+Currently perf report -g graph option doesn't work as expected and
+always work as same as -g fractal.  This was a bug during recent
+callchain print code cleanup.
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Before:
+  $ perf report -g graph
+
+    Children      Self  Command  Shared Object      Symbol
+  ================================================================
+  -   56.19%    35.41%  sleep    [kernel.kallsyms]  [k] page_fault
+     - page_fault
+        + 63.02% _dl_relocate_object
+        + 36.98% clear_user
+
+After:
+    Children      Self  Command  Shared Object      Symbol
+  ================================================================
+  -   56.19%    35.41%  sleep    [kernel.kallsyms]  [k] page_fault
+     - page_fault
+        + 35.41% _dl_relocate_object
+        + 20.78% clear_user
+
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Milian Wolff <mail@milianw.de>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1411484109-10442-1-git-send-email-bobby.prani@gmail.com
+Link: http://lkml.kernel.org/r/1411434104-5307-2-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/ui/browsers/hists.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 8dd41cad2d59..ffb440462008 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -126,5 +126,5 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index d4cef68176da..8f60a970404f 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -804,9 +804,6 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 			.is_current_entry = current_entry,
+ 		};
  
- extern volatile int session_done;
- 
--#define session_done()	(*(volatile int *)(&session_done))
-+#define session_done()	ACCESS_ONCE(session_done)
- #endif /* __PERF_SESSION_H */
+-		if (symbol_conf.cumulate_callchain)
+-			total = entry->stat_acc->period;
+-
+ 		printed += hist_browser__show_callchain(browser,
+ 					&entry->sorted_chain, 1, row, total,
+ 					hist_browser__show_callchain_entry, &arg,
 -- 
 1.9.3
 
