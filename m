@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaIZAea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:34:30 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:47254 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751783AbaIZAe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:34:28 -0400
-Message-ID: <5424B47F.9010506@gmail.com>
-Date: Thu, 25 Sep 2014 17:34:07 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752893AbaIZAgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:36:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53603 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315AbaIZAga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 20:36:30 -0400
+Date: Fri, 26 Sep 2014 10:36:20 +1000
+From: NeilBrown <neilb@suse.de>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md: avoid potential long delay under pers_lock
+Message-ID: <20140926103620.7c397832@notabene.brown>
+In-Reply-To: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
+References: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Jonathan Richardson <jonathar@broadcom.com>
-CC: Scott Branden <sbranden@broadcom.com>, Christian Daudt <bcm@fixthebug.org>,
-        Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>,
-        devicetree@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Ray Jui <rjui@broadcom.com>
-Subject: Re: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
-References: <Jonathan Richardson <jonathar@broadcom.com> <1411507057-14771-1-git-send-email-jonathar@broadcom.com> <54248344.5030308@broadcom.com> <54248791.9060805@gmail.com> <5424AFD2.2070406@gmail.com> <5424B335.6000602@broadcom.com>
-In-Reply-To: <5424B335.6000602@broadcom.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/jASjM37T=RQ9pDhaA_8U+Al"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 05:28 PM, Jonathan Richardson wrote:
-> On 14-09-25 05:14 PM, Florian Fainelli wrote:
->> Scott, Jonathan,
->>
->> On 09/25/2014 02:22 PM, Florian Fainelli wrote:
->>> Hi Scott,
->>>
->>> On 09/25/2014 02:04 PM, Scott Branden wrote:
->>>> Hi Matt/Christian (and others),
->>>>
->>>> We would like to move forward in getting our base Cygnus support into
->>>> the mainline kernel.  From there we will be able to contribute
->>>> additional drivers.
->>>>
->>>> Is somebody willing to accept this pull request to get this patchset
->>>> accepted by the open source community?
->>>
->>> I am fine with taking the ARM patches and putting them at
->>> http://github/brcm/linux.git, with C code in cygnus/board and the Device
->>> Tree files in cygnus/dt for instance?
->>>
->>> The clock driver patch will have to go through Mike Turquette's tree
->>> unless he wants to delegate that one.
->>
->> Could you resend patch 3 without the clock binding, patch 4 without the
->> clocks node, and patch 6 without the drivers/clk changes? Once you do
->> that, I can assemble these patches quickly and send a pull request which
->> does only contain ARM SoC and DTS changes, and you can get the clock
->> driver to be reviewed separately by its maintainer?
-> 
-> The serial driver needs a clock so probably better not to pull out the
-> clock nodes. It's part of the core functionality we'd like in the
-> initial Cygnus support. I didn't hear from Mike (cc'd), though Mark
-> reviewed it.
+--Sig_/jASjM37T=RQ9pDhaA_8U+Al
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I just sent out the pull request, we'll see how it goes from there. Thanks!
---
-Florian
+On Thu, 25 Sep 2014 15:28:34 +0800 Chao Yu <chao2.yu@samsung.com> wrote:
+
+> printk may cause long time lapse if value of printk_delay in sysctl is
+> configured large by user. If register_md_personality takes long time to p=
+rint in
+> spinlock pers_lock, we may encounter high CPU usage rate when there are o=
+ther
+> pers_lock competitors who may be blocked to spin.
+> We can avoid this condition by moving printk out of coverage of pers_lock
+> spinlock.
+>=20
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  drivers/md/md.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/md/md.c b/drivers/md/md.c
+> index e02de05..5fcf215 100644
+> --- a/drivers/md/md.c
+> +++ b/drivers/md/md.c
+> @@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops =
+=3D {
+> =20
+>  int register_md_personality(struct md_personality *p)
+>  {
+> +	printk(KERN_INFO "md: %s personality registered for level %d\n",
+> +						p->name, p->level);
+>  	spin_lock(&pers_lock);
+>  	list_add_tail(&p->list, &pers_list);
+> -	printk(KERN_INFO "md: %s personality registered for level %d\n", p->nam=
+e, p->level);
+>  	spin_unlock(&pers_lock);
+>  	return 0;
+>  }
+
+I'm not sure I see the pressing need for this - have you noticed actual
+problems?
+However it seems to make sense so I've applied it.
+
+Thanks,
+NeilBrown
+
+--Sig_/jASjM37T=RQ9pDhaA_8U+Al
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIUAwUBVCS1BDnsnt1WYoG5AQLr6A/4gQrk0LUF0nzgvvq3Id2C0AFmx8zuoXFt
+PbT3zTlEMNqOXurdy63KMnM21OmMkl+N+SeQtrqWiodjtJGvGpwnvsgyI/Tvugnw
+RJ6uIk9HdsmfwOZ7/6e4thTq5xp8uQtblqrMQbKwjAbN0u6R4JVr7qF2sxZO1UGa
+3WThI4vii4le5UjGjoDD3ImWIpBoFCBbBTYU20E2Y6nokUaZNenE2VEFj3ZNP6cH
+wIJeK/Lji+Q58tpjlHTzkslsWwsLsGYhTr2C11Fkcil4gQ/x5D46a90FgP5g70aC
+wYNdM/2oGIkkbByg1CZg1qA3H5CN3y29/FT+otVDgz+aCmfwe60h6kDkwsa2P5by
+m9fmdVe0/ncPgRPAT0fyKXRXmRG/aFazwrZRmJTplnZ7bmb64PYWzjqica1XnLVC
+WYMNPentmLfbzWehTSyoB321kvVk/ylqk99I0n2NjVbPoYrH0oo/mJoPJhmBjrEh
+znddy9iOgbhCEX6gzYsllMeyO3dVaM/9F0lcfAN1e+WG+Ttotcrr820Zb4//24wl
+QfAJSUN+SXUGvhs+mC1JIoroLWrN4PKUghKnqgSByMGTqM3EXJJOjHrLRbbOiwdi
+RicFpwyiayko0ZjpSOOh2kIAv9usTr9YZfvhZKOGe2IjJER+qT5z/4OzLypX3YJF
+7/V86MkR2Q==
+=7zVt
+-----END PGP SIGNATURE-----
+
+--Sig_/jASjM37T=RQ9pDhaA_8U+Al--
