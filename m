@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaIZJXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:23:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57217 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbaIZJXE (ORCPT
+	id S1754700AbaIZJYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:24:09 -0400
+Received: from mail-ig0-f193.google.com ([209.85.213.193]:56622 "EHLO
+	mail-ig0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435AbaIZJYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:23:04 -0400
-Date: Fri, 26 Sep 2014 02:22:28 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-6qegv786zbf6i8us6t4rxug9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, dzickus@redhat.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace: Filter out POLLHUP'
- ed file descriptors
-Git-Commit-ID: 46fb3c21d20415dd2693570c33d0ea6eb8745e04
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 26 Sep 2014 05:24:06 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CD2CABCB2C0A0D4682C5F8AD8401415409741D@HKXPRD3002MB006.064d.mgd.msft.net>
+References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
+	<20140923075610.GA10933@aepfle.de>
+	<20140925060745.GA9450@sucs.org>
+	<CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
+	<20140925132055.GA13108@sucs.org>
+	<CD2CABCB2C0A0D4682C5F8AD8401415409741D@HKXPRD3002MB006.064d.mgd.msft.net>
+Date: Fri, 26 Sep 2014 10:24:05 +0100
+Message-ID: <CAL7Bo8EP8he+OycqAnnNOD+W9eZ=qYfUNXFJ5zffUHq_0GUxYQ@mail.gmail.com>
+Subject: Re: Time keeps on slipping... on Hyper-V
+From: Mike Surcouf <mps.surcouf.lkml@gmail.com>
+To: Thomas Shao <huishao@microsoft.com>
+Cc: Sitsofe Wheeler <sitsofe@gmail.com>, Olaf Hering <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46fb3c21d20415dd2693570c33d0ea6eb8745e04
-Gitweb:     http://git.kernel.org/tip/46fb3c21d20415dd2693570c33d0ea6eb8745e04
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 22 Sep 2014 14:39:48 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 25 Sep 2014 16:46:56 -0300
+> We still recommend user to configure NTP in the guest VM. With the new time sync feature in this patch,
+> you could have one more option to enable the guest-host sync, if the NTP didn't work in the environment.
+> For example the guest VM didn't have network connection.
 
-perf trace: Filter out POLLHUP'ed file descriptors
+Microsoft used to use host time-samples in their older drivers but
+this was dropped (when I don't know).
+Now we must use NTP to correct hyperv_clocksource which suffers from
+the usual problems associated with virtual environment  cpu loading.
 
-So that we don't continue polling on vanished file descriptors, i.e.
-file descriptors for events monitoring threads that exited.
+Host time-samples in conjunction with an effective clock stability
+algorithm with slews rather than steps should be the default.
+NTP is a workaround and should not be the primary solution.
 
-I.e. the following 'trace' command now exits as expected, instead
-of staying in an eternal loop:
+I have seen a lots of posts for RHEL CENTOS  Linux that have a
+FAST.hyper_clocksource confirmed by myself on CENTOS 6.5 and 7.0
+(also confirmed by Olaf on SLES).
 
-      $ sleep 5s &
-      $ trace -p `pidof sleep`
+If this patch steps the clock once in a while without any form of
+slewing then it has the potential to break things as files and logs
+travel BACK in time.
 
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-6qegv786zbf6i8us6t4rxug9@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+Apologies Thomas could you send me the patch via email as lkml.org
+does not have it in the archives.
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index b8fedf3..fe39dc6 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2044,6 +2044,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	int err = -1, i;
- 	unsigned long before;
- 	const bool forks = argc > 0;
-+	bool draining = false;
- 	char sbuf[STRERR_BUFSIZE];
- 
- 	trace->live = true;
-@@ -2171,8 +2172,12 @@ next_event:
- 	if (trace->nr_events == before) {
- 		int timeout = done ? 100 : -1;
- 
--		if (perf_evlist__poll(evlist, timeout) > 0)
-+		if (!draining && perf_evlist__poll(evlist, timeout) > 0) {
-+			if (perf_evlist__filter_pollfd(evlist, POLLERR | POLLHUP) == 0)
-+				draining = true;
-+
- 			goto again;
-+		}
- 	} else {
- 		goto again;
- 	}
+Regards Mike
