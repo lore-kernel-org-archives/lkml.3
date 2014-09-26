@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaIZI2w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:28:52 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:62361 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862AbaIZI2t (ORCPT
+	id S1753858AbaIZI3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:29:12 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43001 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753609AbaIZI3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:28:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-4-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-4-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:28:48 +0200
-Message-ID: <CAPDyKFq8oo2M4X3Awb4saijdwaWHMS4Eg0jEZw-3craXH5qVcg@mail.gmail.com>
-Subject: Re: [PATCH v3 03/13] PM / Domains: Add DT bindings for PM QoS device latencies
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Fri, 26 Sep 2014 04:29:09 -0400
+Date: Fri, 26 Sep 2014 09:28:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <20140926082846.GC27755@sirena.org.uk>
+References: <1411551925.24415.0.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UvwuEPigQXXfOf7G"
+Content-Disposition: inline
+In-Reply-To: <1411551925.24415.0.camel@phoenix>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.45.252.252
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: qcom_rpm: Don't explicitly initialise the
+ first field of config
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> PM QoS device start/stop and save/restore state latencies are more or
-> less properties of the hardware.
-> In legacy code, they're specified from platform code.
-> On DT platforms, their values should come from DT.
 
-I am not so sure about this.
+--UvwuEPigQXXfOf7G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-First, I think there a too much software affecting these latencies to
-call them hardware properties.
+On Wed, Sep 24, 2014 at 05:45:25PM +0800, Axel Lin wrote:
+> Doing so generates a warning as the first field is a pointer but we use
+> 0 to initialize it.
 
-Second, I am not sure that the future version of genpd will have all
-these four latencies, but maybe only two. Let's see. I would thus
-suggest to put this patch on hold for a while.
+Applied, thanks.
 
-Kind regards
-Uffe
+--UvwuEPigQXXfOf7G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
-> Should these properties be called "linux,*-latency"?
->
-> v3:
->   - No changes
-> v2:
->   - New
->
->  Documentation/devicetree/bindings/power/power_domain.txt | 10 ++++++++++
->  1 file changed, 10 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
-> index 7bc421d84367d636..024815bc257723b1 100644
-> --- a/Documentation/devicetree/bindings/power/power_domain.txt
-> +++ b/Documentation/devicetree/bindings/power/power_domain.txt
-> @@ -42,12 +42,22 @@ Required properties:
->   - power-domains : A phandle and PM domain specifier as defined by bindings of
->                     the power controller specified by phandle.
->
-> +Optional properties:
-> + - stop-latency: Stop latency of the device, in ns,
-> + - start-latency: Start latency of the device, in ns,
-> + - save-state-latency: Save-state latency of the device, in ns,
-> + - restore-state-latency: Restore-state latency of the device, in ns.
-> +
->  Example:
->
->         leaky-device@12350000 {
->                 compatible = "foo,i-leak-current";
->                 reg = <0x12350000 0x1000>;
->                 power-domains = <&power 0>;
-> +               stop-latency = <250000>;
-> +               start-latency = <250000>;
-> +               save-state-latency = <250000>;
-> +               restore-state-latency = <250000>;
->         };
->
->  The node above defines a typical PM domain consumer device, which is located
-> --
-> 1.9.1
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUJSO9AAoJECTWi3JdVIfQbXIH/0kvfAtrsIk0tqY55shVfaMk
+vBoJp2KPo2i5v4WnLc0yjcfmaeJJrKycifbQWCYpqOlEWLc2/Y57hF0JJdlictvU
+g66mgs3BqE/RMxkJeCpAwt8OLDqa3Il1e+6BXRRJFmrT27lcOYz+9JUz3Bk4L+Y4
+XpOqHe9fOSWyiz7E38UbgqNNogcZXZj4TIOq61hO2m5ZTYn4ISriqZMs+HX+uJay
+WfJ0M1LgZ9fp3rY8Vljy94nM+7tV8HD97gZe/SyDLi4qbVVig2CbZX98SSG9HZeK
+6BsZvmp95tGS89AitPed+YYeM7okTq7AUwBETt0oFiCoFB3O96rYjZa73KveObA=
+=fXSJ
+-----END PGP SIGNATURE-----
+
+--UvwuEPigQXXfOf7G--
