@@ -1,223 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbaIZHcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:32:13 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:13831 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687AbaIZHcM (ORCPT
+	id S1753653AbaIZHhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:37:20 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:60586 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbaIZHhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:32:12 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-7b-542516785955
-Message-id: <542514DD.5080402@samsung.com>
-Date: Fri, 26 Sep 2014 11:25:17 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.0
-MIME-version: 1.0
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 09/13] mm: slub: add kernel address sanitizer support
- for slub allocator
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-10-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+a0DMk8vyCcesrsKt7rXVDD2LZsfnGemJAgeRiVbMxxxw@mail.gmail.com>
-In-reply-to: <CACT4Y+a0DMk8vyCcesrsKt7rXVDD2LZsfnGemJAgeRiVbMxxxw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsVy+t/xK7oVYqohBs8ealr83juT1WLO+jVs
-	FkeufWe3uP7tDaPFp5cPGC22XG9isnj+8CG7xYSHbewW0zaKW6zsbmaz2P7sLZPFys4HrBaX
-	d81hs7i35j+rRdvnf0BiyUYmi8VHbjNbvHs2mdni6qqD7BY/NjxmdRDxmL/zI6PHzll32T0W
-	bCr1WLznJZPHplWdbB6bPk1i9+h6e4XJ48SM3yweT65MZ/L4+PQWi8f7fVfZPD5vkvM40fKF
-	NYA3issmJTUnsyy1SN8ugSvjzqJWtoJLOhV73m5gaWC8q9DFyMkhIWAise71EzYIW0ziwr31
-	QDYXh5DAUkaJGZevMkI4zUwSex/MYgKp4hXQkvj1oJEFxGYRUJV4e+I6WDebgJ7Ev1nbwWxR
-	gQiJKfuXskLUC0r8mHwPrF5EQE2i8XUP2AZmgW2sEsdu/2QGSQgLJEo09rSxQ2xrZ5Jo2NkL
-	1sEpECzx5fFOsM3MAuoSk+YtYoaw5SU2r3nLPIFRYBaSJbOQlM1CUraAkXkVo2hqaXJBcVJ6
-	rpFecWJucWleul5yfu4mRkjkft3BuPSY1SFGAQ5GJR7eG+tUQoRYE8uKK3MPMUpwMCuJ8CqL
-	qoYI8aYkVlalFuXHF5XmpBYfYmTi4JRqYJw389aFyG/p1z9vvWroXDR/81yGd8fTbEIn80v5
-	R54xnvnjr5CNsk+GsmGA/rLCqVO2PApLSN989VtFlTl7mNPSBU8u7WB4/3r2FJ7AjW/YVr17
-	LOP+hLcg+PzGjbNcm24JnuqZcv98n9pdc4vln4XXGd/T371Q+mblw9M/sjVOxu+vOMc7NSFN
-	iaU4I9FQi7moOBEA0/nyMLoCAAA=
+	Fri, 26 Sep 2014 03:37:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140925172343.GX23693@e103034-lin>
+References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
+ <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com>
+ <CAKfTPtBXP7HQBHL_Z3aAfdsuLP44_0x_e_LmzEw8qVC-2g=M-w@mail.gmail.com> <20140925172343.GX23693@e103034-lin>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 26 Sep 2014 09:36:53 +0200
+Message-ID: <CAKfTPtDWyf_Y0Ga2D_i7QFEddfif7h+E+xZjK6iau7-6ngSrzA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 08:48 AM, Dmitry Vyukov wrote:
-> On Wed, Sep 24, 2014 at 5:44 AM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
->> --- a/lib/Kconfig.kasan
->> +++ b/lib/Kconfig.kasan
->> @@ -6,6 +6,7 @@ if HAVE_ARCH_KASAN
->>  config KASAN
->>         bool "AddressSanitizer: runtime memory debugger"
->>         depends on !MEMORY_HOTPLUG
->> +       depends on SLUB_DEBUG
-> 
-> 
-> What does SLUB_DEBUG do? I think that generally we don't want any
-> other *heavy* debug checks to be required for kasan.
-> 
+On 25 September 2014 19:23, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
 
-SLUB_DEBUG enables support for different debugging features.
-It doesn't enables this debugging features by default, it only allows
-you to switch them on/off in runtime.
-Generally SLUB_DEBUG option is enabled in most kernels. SLUB_DEBUG disabled
-only with intention to get minimal kernel.
+[snip]
 
-Without SLUB_DEBUG there will be no redzones, no user tracking info (allocation/free stacktraces).
-KASAN won't be so usefull without SLUB_DEBUG.
-
-
-[...]
-
->> --- a/mm/kasan/kasan.c
->> +++ b/mm/kasan/kasan.c
->> @@ -30,6 +30,7 @@
->>  #include <linux/kasan.h>
+>> >         /* Remainder of delta accrued against u_0` */
+>> >         if (runnable)
+>> > -               sa->runnable_avg_sum += delta;
+>> > +               sa->runnable_avg_sum += (delta * scale_cap)
+>> > +                               >> SCHED_CAPACITY_SHIFT;
 >>
->>  #include "kasan.h"
->> +#include "../slab.h"
->>
->>  /*
->>   * Poisons the shadow memory for 'size' bytes starting from 'addr'.
->> @@ -265,6 +266,102 @@ void kasan_free_pages(struct page *page, unsigned int order)
->>                                 KASAN_FREE_PAGE);
->>  }
->>
->> +void kasan_free_slab_pages(struct page *page, int order)
-> 
-> Doesn't this callback followed by actually freeing the pages, and so
-> kasan_free_pages callback that will poison the range? If so, I would
-> prefer to not double poison.
-> 
+>> If we take the example of an always running task, its runnable_avg_sum
+>> should stay at the LOAD_AVG_MAX value whatever the frequency of the
+>> CPU on which it runs. But your change links the max value of
+>> runnable_avg_sum with the current frequency of the CPU so an always
+>> running task will have a load contribution of 25%
+>> your proposed scaling is fine with usage_avg_sum which reflects the
+>> effective running time on the CPU but the runnable_avg_sum should be
+>> able to reach LOAD_AVG_MAX whatever the current frequency is
+>
+> I don't think it makes sense to scale one metric and not the other. You
+> will end up with two very different (potentially opposite) views of the
 
-Yes, this could be removed.
+you have missed my point, i fully agree that scaling in-variance is a
+good enhancement but IIUC your patchset doesn't solve the whole
+problem.
 
-> 
->> +{
->> +       kasan_poison_shadow(page_address(page),
->> +                       PAGE_SIZE << order, KASAN_SLAB_FREE);
->> +}
->> +
->> +void kasan_mark_slab_padding(struct kmem_cache *s, void *object)
->> +{
->> +       unsigned long object_end = (unsigned long)object + s->size;
->> +       unsigned long padding_end = round_up(object_end, PAGE_SIZE);
->> +       unsigned long padding_start = round_up(object_end,
->> +                                       KASAN_SHADOW_SCALE_SIZE);
->> +       size_t size = padding_end - padding_start;
->> +
->> +       if (size)
->> +               kasan_poison_shadow((void *)padding_start,
->> +                               size, KASAN_SLAB_PADDING);
->> +}
->> +
->> +void kasan_slab_alloc(struct kmem_cache *cache, void *object)
->> +{
->> +       kasan_kmalloc(cache, object, cache->object_size);
->> +}
->> +
->> +void kasan_slab_free(struct kmem_cache *cache, void *object)
->> +{
->> +       unsigned long size = cache->size;
->> +       unsigned long rounded_up_size = round_up(size, KASAN_SHADOW_SCALE_SIZE);
->> +
-> 
-> Add a comment saying that SLAB_DESTROY_BY_RCU objects can be "legally"
-> used after free.
-> 
+Let me try to explain with examples :
+- A task with a load of 10% on a CPU at max frequency will keep a load
+of  10% if the frequency of the CPU is divided by 2 which is fine
+- But an always running task with a load of 100% on a CPU at max
+frequency will have a load of 50% if the frequency of the CPU is
+divided by 2 which is not what we want; the load of such task should
+stay at 100%
+- if we have 2 identical always running tasks on CPUs with different
+frequency, their load will be different
 
-Ok.
+So your patchset adds scaling invariance for small tasks but add some
+scaling variances for heavy tasks
 
->> +       if (unlikely(cache->flags & SLAB_DESTROY_BY_RCU))
->> +               return;
->> +
->> +       kasan_poison_shadow(object, rounded_up_size, KASAN_KMALLOC_FREE);
->> +}
->> +
->> +void kasan_kmalloc(struct kmem_cache *cache, const void *object, size_t size)
->> +{
->> +       unsigned long redzone_start;
->> +       unsigned long redzone_end;
->> +
->> +       if (unlikely(object == NULL))
->> +               return;
->> +
->> +       redzone_start = round_up((unsigned long)(object + size),
->> +                               KASAN_SHADOW_SCALE_SIZE);
->> +       redzone_end = (unsigned long)object + cache->size;
->> +
->> +       kasan_unpoison_shadow(object, size);
->> +       kasan_poison_shadow((void *)redzone_start, redzone_end - redzone_start,
->> +               KASAN_KMALLOC_REDZONE);
->> +
->> +}
->> +EXPORT_SYMBOL(kasan_kmalloc);
->> +
->> +void kasan_kmalloc_large(const void *ptr, size_t size)
->> +{
->> +       struct page *page;
->> +       unsigned long redzone_start;
->> +       unsigned long redzone_end;
->> +
->> +       if (unlikely(ptr == NULL))
->> +               return;
->> +
->> +       page = virt_to_page(ptr);
->> +       redzone_start = round_up((unsigned long)(ptr + size),
->> +                               KASAN_SHADOW_SCALE_SIZE);
->> +       redzone_end = (unsigned long)ptr + (PAGE_SIZE << compound_order(page));
-> 
-> If size == N*PAGE_SIZE - KASAN_SHADOW_SCALE_SIZE - 1, the object does
-> not receive any redzone at all. 
-
-If size == N*PAGE_SIZE - KASAN_SHADOW_SCALE_SIZE - 1, there will be redzone
-KASAN_SHADOW_SCALE_SIZE + 1 bytes. There will be no readzone if and only if
-(size == PAGE_SIZE << compound_order(page))
-
-> Can we pass full memory block size
-> from above to fix it? Will compound_order(page) do?
-> 
-
-What is full memory block size?
-PAGE_SIZE << compound_order(page) is how much was really allocated.
+Regards,
+Vincent
 
 
-[..]
-
->>
->>  static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
->> @@ -1416,8 +1426,10 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
->>                 setup_object(s, page, p);
->>                 if (likely(idx < page->objects))
->>                         set_freepointer(s, p, p + s->size);
-> 
-> Sorry, I don't fully follow this code, so I will just ask some questions.
-> Can we have some slab padding after last object in this case as well?
-> 
-This case is for not the last object. Padding is the place after the last object.
-The last object initialized bellow in else case.
-
->> -               else
->> +               else {
->>                         set_freepointer(s, p, NULL);
->> +                       kasan_mark_slab_padding(s, p);
-> 
-> kasan_mark_slab_padding poisons only up to end of the page. Can there
-> be multiple pages that we need to poison?
-> 
-Yep, that's a good catch.
-
-Thanks.
+> cpu load/utilization situation in many scenarios. As I see it,
+> scale-invariance and load-balancing with scale-invariance present can be
+> done in two ways:
+>
+> 1. Leave runnable_avg_sum unscaled and scale running_avg_sum.
+> se->avg.load_avg_contrib will remain unscaled and so will
+> cfs_rq->runnable_load_avg, cfs_rq->blocked_load_avg, and
+> weighted_cpuload(). Essentially all the existing load-balancing code
+> will continue to use unscaled load. When we want to improve cpu
+> utilization and energy-awareness we will have to bypass most of this
+> code as it is likely to lead us on the wrong direction since it has a
+> potentially wrong view of the cpu load due to the lack of
+> scale-invariance.
+>
+> 2. Scale both runnable_avg_sum and running_avg_sum. All existing load
+> metrics including weighted_cpuload() are scaled and thus more accurate.
+> The difference between se->avg.load_avg_contrib and
+> se->avg.usage_avg_contrib is the priority scaling and whether or not
+> runqueue waiting time is counted. se->avg.load_avg_contrib can only
+> reach se->load.weight when running on the fastest cpu at the highest
+> frequency, but it is now scale-invariant so we have much better idea
+> about how much load we are pulling when load-balancing two cpus running
+> at different frequencies. The load-balance code-path still has to be
+> audited to see if anything blows up due to the scaling. I haven't
+> finished doing that yet. This patch set doesn't include patches to
+> address such issues (yet). IMHO, by scaling runnable_avg_sum we can more
+> easily make the existing load-balancing code do the right thing.
+>
+> For both options we have to go through the existing load-balancing code
+> to either change it to use the scale-invariant metric (running_avg_sum)
+> when appropriate or to fix bits that don't work properly with a
+> scale-invariant runnable_avg_sum and reuse the existing code. I think
+> the latter is less intrusive, but I might be wrong.
+>
+> Opinions?
+>
+> Morten
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
