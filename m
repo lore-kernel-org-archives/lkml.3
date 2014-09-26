@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaIZONb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:13:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34831 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754412AbaIZON3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:13:29 -0400
-Date: Fri, 26 Sep 2014 16:13:27 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 2/7] ARM: at91: introduce basic SAMA5D4 support
-Message-ID: <20140926141326.GB4408@piout.net>
-References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1410797759-18675-3-git-send-email-alexandre.belloni@free-electrons.com>
- <1411732023.7866.15.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411732023.7866.15.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755464AbaIZONn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:13:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:2158 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755537AbaIZONk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:13:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
+   d="scan'208";a="597276986"
+From: Loic Poulain <loic.poulain@intel.com>
+To: mika.westerberg@intel.com, linus.walleij@linaro.org
+Cc: linux-kernel@vger.kernel.org, samuel.ortiz@intel.com,
+        mathias.nyman@linux.intel.com, heikki.krogerus@linux.intel.com,
+        Loic Poulain <loic.poulain@intel.com>
+Subject: [PATCHv3] pinctrl: baytrail: Clear DIRECT_IRQ bit
+Date: Fri, 26 Sep 2014 16:14:51 +0200
+Message-Id: <1411740891-3311-1-git-send-email-loic.poulain@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/2014 at 13:47:03 +0200, Paul Bolle wrote :
-> On Mon, 2014-09-15 at 18:15 +0200, Alexandre Belloni wrote:
-> > From: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> This landed in next-20140926, as commit 2dc850b62e5b ("ARM: at91:
-> introduce basic SAMA5D4 support").
-> 
-> > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> > index b11ad54f8d17..7b44db208f10 100644
-> > --- a/arch/arm/Kconfig.debug
-> > +++ b/arch/arm/Kconfig.debug
-> > @@ -101,6 +101,10 @@ choice
-> >  		bool "Kernel low-level debugging on 9263 and 9g45"
-> >  		depends on HAVE_AT91_DBGU1
-> >  
-> > +	config AT91_DEBUG_LL_DBGU2
-> > +		bool "Kernel low-level debugging on sama5d4"
-> > +		depends on HAVE_AT91_DBGU2
-> > +
-> 
-> Why is this Kconfig symbol needed? Nothing in next-20140926 uses it. Are
-> future users perhaps queued somewhere (say, in commits that didn't
-> survive today's rather lively linux-next merges)?
-> 
+Direct irq en bit should be cleared for pads using io mode.
+If not, the io based irq will never be detected.
+However, this bit can sometimes be misconfigured (BIOS issue).
+Force clearing of this bit in io mode and trigger a WARN.
 
-There is no user because it conflicts with the previous one that is
-selected by default by the sama5_defconfig. This is for early print and
-it means that you can get earlyprintk either for sama5d3 or sama5d4.
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+---
+ v2: Apply over ff998356b644ebe723127bd9eec6040b59a4a4f6 + add Warning
+ v3: Update commit message & warn message
 
-My guess is that it will never be included in any defconfig.
+ drivers/pinctrl/pinctrl-baytrail.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 701a646..d1e9484 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -230,10 +230,14 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
+ 	spin_lock_irqsave(&vg->lock, flags);
+ 	value = readl(reg);
+
++	WARN(value & BYT_DIRECT_IRQ_EN,
++		"Bad pad config for io mode, force direct_irq_en bit clearing");
++
+ 	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
+ 	 * are used to indicate high and low level triggering
+ 	 */
+-	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
++	value &= ~(BYT_DIRECT_IRQ_EN | BYT_TRIG_POS | BYT_TRIG_NEG |
++		   BYT_TRIG_LVL);
+
+ 	switch (type) {
+ 	case IRQ_TYPE_LEVEL_HIGH:
+--
+1.8.3.2
+
