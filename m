@@ -1,201 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaIZKAN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:00:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755084AbaIZJqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:40 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 053/142] powerpc/thp: Don't recompute vsid and ssize in loop on invalidate
-Date: Fri, 26 Sep 2014 11:44:24 +0200
-Message-Id: <e828f5bc74b7950667f94cf1af488391ec43018d.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1755886AbaIZKBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:01:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56253 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464AbaIZKBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:01:07 -0400
+Date: Fri, 26 Sep 2014 12:01:03 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Sjoerd Simons <sjoerd@luon.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
+Message-ID: <20140926100052.GK31106@ulmo>
+References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
+ <20140925132717.GA13579@dusk.luon.net>
+ <54243931.6050804@wwwdotorg.org>
+ <20140925164109.GA30382@ulmo>
+ <1411668631.24948.9.camel@luon.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8SdtHY/0P4yzaavF"
+Content-Disposition: inline
+In-Reply-To: <1411668631.24948.9.camel@luon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--8SdtHY/0P4yzaavF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============
+On Thu, Sep 25, 2014 at 08:10:31PM +0200, Sjoerd Simons wrote:
+> On Thu, 2014-09-25 at 18:41 +0200, Thierry Reding wrote:
+> > On Thu, Sep 25, 2014 at 09:48:01AM -0600, Stephen Warren wrote:
+> > > On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
+> > > >Playing a bit with todays linux-next on my jetson, it seems this pat=
+ch is
+> > > >still required for enabling the GPU. Is there anything blocking it (=
+firmware
+> > > >not available yet in liux-firmware?)
+> > >=20
+> > > I think initially I was waiting for the DRM patch "drm/nouvea: suppor=
+t for
+> > > probing platform devices" to be applied, but it looks like that's been
+> > > applied already, so only patches 4 and 5 in this series are still
+> > > outstanding.
+> > >=20
+> > > Alex, wasn't there also some issue where the VPR register had to be
+> > > programmed, and if it wasn't there'd be a hang when the GPU registers=
+ were
+> > > touched? If we've added code to Nouveau/tegradrm to detect that and a=
+void
+> > > the problem, then I guess we can commit these last two patches for 3.=
+19. A
+> > > resend after the 3.18 merge window might help.
+> >=20
+> > A patch that programs VPR was merged into U-Boot (though I don't think
+> > it's made it into master yet).
+>=20
+> Assuming you're talking about "ARM: tegra: Disable VPR",that has landed
+> in u-boot master and released as part of v2014.10-rc2 [0]
 
-commit fa1f8ae80f8bb996594167ff4750a0b0a5a5bb5d upstream.
+Oh, good.
 
-The segment identifier and segment size will remain the same in
-the loop, So we can compute it outside. We also change the
-hugepage_invalidate interface so that we can use it the later patch
+> >  I'm not sure we can reasonably check for
+> > that in Nouveau, given that the register is somewhere completely
+> > unrelated. In fact I think the U-Boot patch was triggered by some
+> > discussion about how to solve this and it was decided that it shouldn't
+> > be done in the kernel, but U-Boot should set it up.
+> >=20
+> > That said, perhaps one solution would be to make U-Boot enable the gk20a
+> > device if it's set up the VPR and disable it otherwise?
+>=20
+> I guess in that case the vdd-supply should still be added to the dts
+> with u-boot toggling the status field of the node?
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/powerpc/include/asm/machdep.h    |  6 +++---
- arch/powerpc/mm/hash_native_64.c      | 19 +++++--------------
- arch/powerpc/mm/pgtable_64.c          | 24 ++++++++++++------------
- arch/powerpc/platforms/pseries/lpar.c | 20 ++++++--------------
- 4 files changed, 26 insertions(+), 43 deletions(-)
+Yes, if that's what we decide on then this patch should be modified to
+remove the status =3D "okay" line.
 
-diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
-index 8b480901165a..3a52b9b01133 100644
---- a/arch/powerpc/include/asm/machdep.h
-+++ b/arch/powerpc/include/asm/machdep.h
-@@ -57,10 +57,10 @@ struct machdep_calls {
- 	void            (*hpte_removebolted)(unsigned long ea,
- 					     int psize, int ssize);
- 	void		(*flush_hash_range)(unsigned long number, int local);
--	void		(*hugepage_invalidate)(struct mm_struct *mm,
-+	void		(*hugepage_invalidate)(unsigned long vsid,
-+					       unsigned long addr,
- 					       unsigned char *hpte_slot_array,
--					       unsigned long addr, int psize);
--
-+					       int psize, int ssize);
- 	/* special for kexec, to be called in real mode, linear mapping is
- 	 * destroyed as well */
- 	void		(*hpte_clear_all)(void);
-diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
-index c33d939120c9..9197691fd5d5 100644
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -413,18 +413,18 @@ static void native_hpte_invalidate(unsigned long slot, unsigned long vpn,
- 	local_irq_restore(flags);
- }
- 
--static void native_hugepage_invalidate(struct mm_struct *mm,
-+static void native_hugepage_invalidate(unsigned long vsid,
-+				       unsigned long addr,
- 				       unsigned char *hpte_slot_array,
--				       unsigned long addr, int psize)
-+				       int psize, int ssize)
- {
--	int ssize = 0, i;
--	int lock_tlbie;
-+	int i, lock_tlbie;
- 	struct hash_pte *hptep;
- 	int actual_psize = MMU_PAGE_16M;
- 	unsigned int max_hpte_count, valid;
- 	unsigned long flags, s_addr = addr;
- 	unsigned long hpte_v, want_v, shift;
--	unsigned long hidx, vpn = 0, vsid, hash, slot;
-+	unsigned long hidx, vpn = 0, hash, slot;
- 
- 	shift = mmu_psize_defs[psize].shift;
- 	max_hpte_count = 1U << (PMD_SHIFT - shift);
-@@ -438,15 +438,6 @@ static void native_hugepage_invalidate(struct mm_struct *mm,
- 
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
-diff --git a/arch/powerpc/mm/pgtable_64.c b/arch/powerpc/mm/pgtable_64.c
-index 536eec72c0f7..48bda6700404 100644
---- a/arch/powerpc/mm/pgtable_64.c
-+++ b/arch/powerpc/mm/pgtable_64.c
-@@ -726,12 +726,21 @@ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
- 	if (!hpte_slot_array)
- 		return;
- 
--	/* get the base page size */
-+	/* get the base page size,vsid and segment size */
- 	psize = get_slice_psize(mm, s_addr);
-+	if (!is_kernel_addr(s_addr)) {
-+		ssize = user_segment_size(s_addr);
-+		vsid = get_vsid(mm->context.id, s_addr, ssize);
-+		WARN_ON(vsid == 0);
-+	} else {
-+		vsid = get_kernel_vsid(s_addr, mmu_kernel_ssize);
-+		ssize = mmu_kernel_ssize;
-+	}
- 
- 	if (ppc_md.hugepage_invalidate)
--		return ppc_md.hugepage_invalidate(mm, hpte_slot_array,
--						  s_addr, psize);
-+		return ppc_md.hugepage_invalidate(vsid, s_addr,
-+						  hpte_slot_array,
-+						  psize, ssize);
- 	/*
- 	 * No bluk hpte removal support, invalidate each entry
- 	 */
-@@ -749,15 +758,6 @@ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
- 
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
-diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-index 356bc75ca74f..691a479f7d97 100644
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -412,16 +412,17 @@ static void __pSeries_lpar_hugepage_invalidate(unsigned long *slot,
- 		spin_unlock_irqrestore(&pSeries_lpar_tlbie_lock, flags);
- }
- 
--static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
--				       unsigned char *hpte_slot_array,
--				       unsigned long addr, int psize)
-+static void pSeries_lpar_hugepage_invalidate(unsigned long vsid,
-+					     unsigned long addr,
-+					     unsigned char *hpte_slot_array,
-+					     int psize, int ssize)
- {
--	int ssize = 0, i, index = 0;
-+	int i, index = 0;
- 	unsigned long s_addr = addr;
- 	unsigned int max_hpte_count, valid;
- 	unsigned long vpn_array[PPC64_HUGE_HPTE_BATCH];
- 	unsigned long slot_array[PPC64_HUGE_HPTE_BATCH];
--	unsigned long shift, hidx, vpn = 0, vsid, hash, slot;
-+	unsigned long shift, hidx, vpn = 0, hash, slot;
- 
- 	shift = mmu_psize_defs[psize].shift;
- 	max_hpte_count = 1U << (PMD_SHIFT - shift);
-@@ -434,15 +435,6 @@ static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
- 
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
--- 
-2.1.0
+Thierry
 
+--8SdtHY/0P4yzaavF
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUJTlUAAoJEN0jrNd/PrOhW8UP/1Fw3jyTPEPzb8Ek92frb80+
+NS38EG3/8XJSCBtTB+6eVwrgpezPQbEGE/X7Uw+SAnQzqsOv4/R6qz9riJDwRXx5
+bjbCq77qPUlKJVe0b1mctDvZzuWHtVrexF/ohkt6BVz4DNvtV+MktyTTAuKR33x6
+e7r/xNDgDXHt++bym6r5s2G6Wm0gGQfyCsn8EP/rOGENE+mEhA61tLdTlzzXxpPq
+vOkNDDIGNflzYmy5j8i5OsDhJCC91zf0032pFZcyCxZKk2J/0ZRnfEDrLtvrJ1Gr
+60pnjjeqARknW+3UjkBZP65oRDrA0IHWosmAKuaK41glq4B2LvzOdTOqI4eoD6xE
+M6xUwWqgAJ1gZH6h6Xa8vREsAHCWn+BETSk26GtHefL+4ARoZ5ReQc6hLLV3m8AU
+MTDgxYe6yoW/U1D9Fvb8TZkbnHP87Vnf+PEOY4HiDwSTRoZMVogcMqw9CzMAIFUs
+yw6xddlVnFc1Bz6T+KNzCVOeDLnuszE2wj91EXqfMzjCpKzIjeag+xLcYO5kRmtB
+P+Xr6Eq6vTbRX5bvTXEluOHlmPhshDvkHEybaIPQjoZON/N+wcoj6yEbMnNX0cLH
+cfHOUkLgC0UMybB5afgm/n99pPU8vpkiTA3Cyw9aSWNaZ4BYmV6peB0NccGWURY/
+MLLwOaGtnHs6bd4FwUCM
+=rgSB
+-----END PGP SIGNATURE-----
+
+--8SdtHY/0P4yzaavF--
