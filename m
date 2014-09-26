@@ -1,116 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaIZIKB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:10:01 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:47235 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbaIZIJx (ORCPT
+	id S1754080AbaIZIJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:09:59 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:45570 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaIZIJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:09:53 -0400
-Date: Fri, 26 Sep 2014 10:09:49 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 03/22] MSI: Remove the redundant irq_set_chip_data()
-Message-ID: <20140926080949.GF31106@ulmo>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
- <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
+	Fri, 26 Sep 2014 04:09:26 -0400
+Message-ID: <54251F30.8080303@collabora.com>
+Date: Fri, 26 Sep 2014 10:09:20 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5CUMAwwhRxlRszMD"
-Content-Disposition: inline
-In-Reply-To: <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v13 0/9] Per-user clock constraints
+References: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com> <5421DF46.2010107@codeaurora.org> <54228067.3090600@collabora.com> <5424C182.5000906@codeaurora.org>
+In-Reply-To: <5424C182.5000906@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/26/2014 03:29 AM, Stephen Boyd wrote:
+> On 09/24/14 01:27, Tomeu Vizoso wrote:
+>> On 09/23/2014 10:59 PM, Stephen Boyd wrote:
+>>>
+>>> Any thoughts on my comments on patch set #10[1]? It seems like we can
+>>> avoid having a flag day to support this.
+>> I cannot say that I fully understand your proposal, but IMO the most
+>> valuable thing in this patchset is precisely the API split (and thus,
+>> the flag day is inherent to it).
+>>
+>> I see a lot of value in clk consumers to use a defined set of functions
+>> that all take and/or return struct clk, and for providers to use the
+>> functions that take and/or return struct clk_core. Makes the API clearer
+>> and allows it to have a more scalable growth in the future.
+> 
+> I see a lot of non-value. It's hugely invasive needing every driver to
+> change.
 
---5CUMAwwhRxlRszMD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's obviously a trade-off to be made by the maintainer, and I don't
+think that Mike has taken this lightly. He has already stated what his
+opinion is and I have acted accordingly.
 
-On Thu, Sep 25, 2014 at 11:14:13AM +0800, Yijing Wang wrote:
-> Currently, pcie-designware, pcie-rcar, pci-tegra drivers
-> use irq chip_data to save the msi_chip pointer. They
-> already call irq_set_chip_data() in their own MSI irq map
-> functions. So irq_set_chip_data() in arch_setup_msi_irq()
-> is useless.
->=20
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/pci/msi.c |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
+> Invariably we're going to break something.
 
-Reviewed-by: Thierry Reding <treding@nvidia.com>
+Given all the build tests that these series have passed and the nature
+of the changes (you can also check the script that does the
+refactoring), I don't expect that much breakage.
 
->=20
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 51d7e62..50f67a3 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -41,14 +41,13 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, st=
-ruct msi_desc *desc)
->  	if (err < 0)
->  		return err;
-> =20
-> -	irq_set_chip_data(desc->irq, chip);
-> -
->  	return 0;
->  }
-> =20
->  void __weak arch_teardown_msi_irq(unsigned int irq)
->  {
-> -	struct msi_chip *chip =3D irq_get_chip_data(irq);
-> +	struct msi_desc *entry =3D irq_get_msi_desc(irq);
-> +	struct msi_chip *chip =3D entry->dev->bus->msi;
-> =20
->  	if (!chip || !chip->teardown_irq)
->  		return;
-> --=20
-> 1.7.1
->=20
+> Back porting things
+> across this is a real pain (good luck stable trees!). Reviewing the
+> patches aren't feasible given their size. There's a reason why we don't
+> do flag days. They suck.
 
---5CUMAwwhRxlRszMD
-Content-Type: application/pgp-signature
+Flag days are sometimes needed and is up to each maintainer to decide
+what is better for the subsystem since they are the ones dealing with
+the issues that may arise anyway.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> We already have the consumer/provider split in the struct clk_hw and
+> struct clk separation. Why don't we just use struct clk_hw throughout
+> the provider APIs? The only op that isn't doing this is determine_rate()
+> which might be able to accept a flag day. Otherwise we rename it to
+> something else and migrate everyone over to a different named function
+> that doesn't take a struct clk **. Then we introduce new APIs for the
+> providers to use that are struct clk_hw focused instead of struct clk
+> focused and migrate them too. The benefit being that we get proper
+> review of this stuff because the patches are small. We can let
+> coccinelle do it too.
 
-iQIcBAEBAgAGBQJUJR9NAAoJEN0jrNd/PrOh5cAP/2aYAkwGt796/z3rQsXfEXhG
-hPI6dXwueP4Re7P03WrSfn6JEowEsDYFLqLJJYQLwlDQa96WTd85jidBUhQRniqy
-GPHoUY+c4qiQjJak+b2y4jMMNqJnWoLw57Wd1Nmy2g2pocWKwiKA1VEem2ZZPaxR
-QxhYqhwK8IxOu092oPpVV8m2GtFSUzbuOoE0a3muYP+gExweDN6v485fm+PKfIVU
-rmCMnmkkT9oUVNYUlQDSf0xXb+t0PNJDbGZHPM3rKQFQA45Xhadzs2D/nk1CSwoj
-7EO8sq/qkfHnyXvxpvazxq2V1xsGkG63RTRmhIzP2VGDj/AI6G9AlM5dFOzPctSf
-8v8FNLESIHmHKyp9IKT1pCWg6jbRHFlhL9be5+uudiDYgvXiGjtco4Jta1hlgHNk
-Qd7zRsH6Y+ocewQ2sqDMrwkOEzetOfnGmjjtb3q6VaeahtwPdRKWhQcjfO//zIW3
-83yoON4lx7AS1aDMRywNXbk8A6ja8ndVS2amfm6TJCbIVy6A78AnCRx4n/ShluFl
-WD1TekKOyh2u2JtRagRSb0xxFwwsqzlYrOElj00zxCZJAKihIzjMf4ogfxnj2OOn
-ZEF1WTMpjTpy+QB7r22R0qFX9yVBBCgRM8heGbQXeVMPD/AvmVhx803Ry2r6SmcU
-iefPiqiqqocKKcpN4rMB
-=jw7p
------END PGP SIGNATURE-----
+Really, the bulk of it is just a plain function rename that is in its
+own commit. And we have a simple script that can be reviewed. And it has
+passed the kbuild tests. Given that, and if we don't focus on just the
+line count of that patch, I don't see your proposal as being
+significantly better.
 
---5CUMAwwhRxlRszMD--
+>> A less important feature of the patchset are per-user clocks, which (if
+>> I understand correctly) your proposal would address without requiring a
+>> flag day.
+> 
+> The subject of this thread seems to imply that it's the most important
+> part. I'm confused.
+
+Sorry about that, I agree that it could be improved.
+
+>> And then we have clock constraints, which is probably the least
+>> important feature in the grand scheme of things, but it's actually what
+>> I personally care about.
+>>
+>> If we wanted to add a way for clk users to specify clock constraints
+>> without any refactoring, we could easily do so by reusing the request
+>> pattern that pm_qos uses:
+>>
+>> void clk_add_constraint(struct clk_request *req,
+>>                         int constraint_type,
+>>                         unsigned long value);
+>>
+>> void clk_update_constraint(struct clk_request *req,
+>>                            unsigned long new_value);
+>>
+>> void clk_remove_constraint(struct clk_request *req);
+>>
+>> It wouldn't be that bad IMO, but the API refactoring was something that
+>> was long desired and this was seen as a good opportunity to tackle it
+>> before it gets worst.
+>>
+> 
+> Sure. Maybe we should just do that so we don't break things.
+
+That hasn't been what Mike has stated in the past, but I actually have
+such a patch somewhere that I can dust off and send for review.
+
+Cheers,
+
+Tomeu
+
