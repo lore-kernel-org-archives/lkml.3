@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaIZKmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:42:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:41966 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755167AbaIZKmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:42:07 -0400
-Date: Fri, 26 Sep 2014 20:42:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: linux-next: build warning after merge of the akpm-current tree
-Message-ID: <20140926204200.3e2175cc@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755180AbaIZKqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:46:00 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56798 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754276AbaIZKp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:45:59 -0400
+Message-ID: <542543D8.8020604@vmware.com>
+Date: Fri, 26 Sep 2014 12:45:44 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/jd3.swu3bv8WKJ4wmtv3GTe"; protocol="application/pgp-signature"
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+CC: Peter Hurley <peter@hurleysoftware.com>, Mel Gorman <mgorman@suse.de>,
+        Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
+        "Maarten Lankhorst" <maarten.lankhorst@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
+        Hugh Dickens <hughd@google.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: page allocator bug in 3.16?
+References: <54246506.50401@hurleysoftware.com>	<20140925143555.1f276007@as> <5424AAD0.9010708@hurleysoftware.com>	<542512AD.9070304@vmware.com> <20140926054005.5c7985c0@as>
+In-Reply-To: <20140926054005.5c7985c0@as>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.160.246]
+X-ClientProxiedBy: EX13-CAS-013.vmware.com (10.113.191.65) To
+ EX13-MBX-024.vmware.com (10.113.191.44)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jd3.swu3bv8WKJ4wmtv3GTe
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/26/2014 12:40 PM, Chuck Ebbert wrote:
+> On Fri, 26 Sep 2014 09:15:57 +0200
+> Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>
+>> On 09/26/2014 01:52 AM, Peter Hurley wrote:
+>>> On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
+>>>> There are six ttm patches queued for 3.16.4:
+>>>>
+>>>> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
+>>>> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
+>>>> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
+>>>> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
+>>>> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
+>>>> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
+>>> Thanks for info, Chuck.
+>>>
+>>> Unfortunately, none of these fix TTM dma allocation doing CMA dma allocation,
+>>> which is the root problem.
+>>>
+>>> Regards,
+>>> Peter Hurley
+>> The problem is not really in TTM but in CMA, There was a guy offering to
+>> fix this in the CMA code but I guess he didn't probably because he
+>> didn't receive any feedback.
+>>
+> Yeah, the "solution" to this problem seems to be "don't enable CMA on
+> x86". Maybe it should even be disabled in the config system.
+Or, as previously suggested, don't use CMA for order 0 (single page)
+allocations....
 
-Hi Andrew,
+/Thomas
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
-
-drivers/of/of_reserved_mem.c: In function 'of_reserved_mem_device_init':
-drivers/of/of_reserved_mem.c:253:3: warning: 'return' with no value, in fun=
-ction returning non-void [-Wreturn-type]
-   return;
-   ^
-drivers/of/of_reserved_mem.c:259:3: warning: 'return' with no value, in fun=
-ction returning non-void [-Wreturn-type]
-   return;
-   ^
-
-Caused by commit 1a29544cc8c9 ("drivers: of: add return value to
-of_reserved_mem_device_init").  This patch changed the return type of a
-function but did not update any or the return statements in that
-function.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/jd3.swu3bv8WKJ4wmtv3GTe
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUJUL9AAoJEMDTa8Ir7ZwV/ecQAI8BMSU1HwNrBCzpwhS0SK2+
-5nb6o5GilDnKCus/Q3m/WxSuE3KFdG8rzstPMG4r3AgnAVacv4aXQUrmsE7oTAo/
-n0I1HYG7v+l7+okWDPqh8ELShSr9zGBM5xZwwg/GGseN21JwxmWBe7yl9JcvjQYF
-ZJBE61iP5wWQgoQ5qnKQaJKR+WML2T4z0uE53F2v8x3vlhYNVoAH4pUjmWZ3qjdf
-M3PF1Genkb0v8dA3ul2BRCZekFqidOSpj0kaS0ObdkbqtFJWGJTlg8X3AXySJxiC
-rhRc3ssM2aasaC0EgSOkOA0wzGfn452sqiVcyFGm5IA17Wi4ym9G8RcbIZWZdcHa
-bjyOtjPVcOB3exfVQz9qxN+MSW7A+Fm0YP5V6/cRxfk1MGd5Kbbyw9sbHtxGKtAd
-RbhMT8mkj46VdCLwJWg2IJ6oCgYlxFgNitGmc/5bUXbUbNhOxKNC5n9MHXrK55H4
-8oHrICNWUiO8dU5hEM5fcQ+hE+Khx6l1uSIbYzpN+ChT5eGR/Hi1f7tPiocdnviv
-2jnQz8qyj+t8vB1KfSDkl7bD52gWBzWQ9j7ybHCvyl98Qhyp6hZgIZD4jkzQlVFa
-KFcfSD33UgBO62ncPTxkoctgC/YdJXHfKCpEpeyEI4etWnPar2zti6hNqZufSLJr
-/xTY9kqbsiC7ilmgjDY6
-=YeU2
------END PGP SIGNATURE-----
-
---Sig_/jd3.swu3bv8WKJ4wmtv3GTe--
