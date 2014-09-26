@@ -1,103 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515AbaIZCQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:16:12 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:31038 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaIZCQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:16:09 -0400
-Message-ID: <5424CC54.1040507@huawei.com>
-Date: Fri, 26 Sep 2014 10:15:48 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753361AbaIZCVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:21:00 -0400
+Received: from mga03.intel.com ([134.134.136.65]:49866 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752913AbaIZCU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:20:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,602,1406617200"; 
+   d="scan'208";a="579243446"
+Message-ID: <5424CD81.2030305@intel.com>
+Date: Fri, 26 Sep 2014 10:20:49 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 01/22] PCI/MSI: Clean up struct msi_chip argument
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-2-git-send-email-wangyijing@huawei.com> <20140925071536.GG12423@ulmo> <alpine.DEB.2.10.1409251208420.4604@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409251208420.4604@nanos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.5424CC65.00D5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5cd6542b35db9be32f3a78ca7be566a9
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude
+ E6440
+References: <201409232206.02819@pali> <201409242021.10107@pali> <542388D7.1010008@intel.com> <1481425.msp1jP3vqe@vostro.rjw.lan>
+In-Reply-To: <1481425.msp1jP3vqe@vostro.rjw.lan>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/25 18:20, Thomas Gleixner wrote:
-> On Thu, 25 Sep 2014, Thierry Reding wrote:
-> 
->> On Thu, Sep 25, 2014 at 11:14:11AM +0800, Yijing Wang wrote:
->>> Msi_chip functions setup_irq/teardown_irq rarely use msi_chip
->>> argument.
+On 09/26/2014 03:58 AM, Rafael J. Wysocki wrote:
+> On Thursday, September 25, 2014 11:15:35 AM Aaron Lu wrote:
+>> Hi Hans,
 >>
->> That's not true. Out of the four drivers that you modify two use the
->> parameter. And the two that don't probably should be using it too.
+>> Thanks for following up and explaining the situation to Pali.
 >>
->> 50% is not "rarely". =)
+>> On 09/25/2014 02:21 AM, Pali Rohár wrote:
+>>> On Wednesday 24 September 2014 16:34:21 Hans de Goede wrote:
+>>>> Ok, so the dell-laptop interface is just an obsolete wrapper
+>>>> around the i915 opregion code, which shows that the right
+>>>> interface to use is the i915 one, which we do if you don't
+>>>> specify any kernel commandline parameters, case closed.
+>>>>
+>>>> Regards,
+>>>>
+>>>> Hans
+>>>
+>>> Nope, its not closed.
+>>>
+>>> Still i915 interface has problem with setting backlight. It 
+>>> exports lot of levels which turning display off. Which breaking 
+>>> exiting applications for configuring display brightness. This is 
+>>> still big regression as black screen is not want people want to 
+>>> see.
+>>>
+>>> Driver dell-laptop has exported only few - not thousands level 
+>>> (which is insane) and only usefull levels (not lot of levels 
+>>> which turn display off).
+>>>
+>>> So for this reason using i915 backlight interface is not possible 
+>>> and also Dell (for E6440) set kernel param acpi_backlight=vendor 
+>>> to use dell_laptop module for controlling brightness.
+>>>
+>>> On my laptop E6440 is better for using dell-laptop and not acpi 
+>>> or i915.
 >>
->>>           We can look up msi_chip pointer by the device pointer
->>> or irq number, so clean up msi_chip argument.
+>> Hi Pali,
 >>
->> I don't like this particular change. The idea was to keep the API object
->> oriented so that drivers wouldn't have to know where to get the MSI chip
->> from. It also makes it more resilient against code reorganizations since
->> the core code is the only place that needs to know where to get the chip
->> from.
+>> Please test this patch:
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+>> index ca52ad2ae7d1..15534345bd57 100644
+>> --- a/drivers/gpu/drm/i915/intel_opregion.c
+>> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+>> @@ -396,6 +396,24 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
+>>  	return -EINVAL;
+>>  }
+>>  
+>> +/*
+>> + * Some of the Thinkpads' firmware will issue a backlight change operation
+>> + * region request unconditionally on AC plug/unplug, this is undesirable and
+>> + * should be ignored. Then there is a Dell laptop whose vendor backlight
+>> + * interface also makes use of operation region request to change backlight
+>> + * level and we have to keep it work. The rule used here is: if the vendor
+>> + * backlight interface is not in use and the ACPI backlight interface is
+>> + * broken, we ignore the requests; oterwise, we keep processing them.
+>> + */
+>> +static bool should_ignore_backlight_request(void)
+>> +{
+>> +	if (acpi_video_backlight_support() &&
+>> +	    !acpi_video_verify_backlight_support())
+>> +		return true;
+>> +
+>> +	return false;
+>> +}
 > 
-> Right. We have the same thing in the irq_chip callbacks. All of them
-> take "struct irq_data", because it's already available in the core
-> code and it gives easy access to all information (chip, chipdata ...)
-> which is necessary for the callback implementations.
+> Well, what about
+> 
+> 	return acpi_video_backlight_support() && !acpi_video_verify_backlight_support();
+> 
+> ?
 
-OK, I will drop this change, tglx, thanks for your review and comments!
+Yes that's better.
+Will send out a patch with this change, thanks for the suggestion.
 
-Thanks!
-Yijing.
-
+-Aaron
 
 > 
-> Thanks,
+>> +
+>>  static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>>  {
+>>  	struct drm_i915_private *dev_priv = dev->dev_private;
+>> @@ -404,11 +422,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>>  
+>>  	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
+>>  
+>> -	/*
+>> -	 * If the acpi_video interface is not supposed to be used, don't
+>> -	 * bother processing backlight level change requests from firmware.
+>> -	 */
+>> -	if (!acpi_video_verify_backlight_support()) {
+>> +	if (should_ignore_backlight_request()) {
+>>  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
+>>  		return 0;
+>>  	}
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
 
