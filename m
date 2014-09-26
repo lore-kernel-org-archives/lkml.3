@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaIZLeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:34:11 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:47060 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaIZLeJ (ORCPT
+	id S1754419AbaIZLfS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:35:18 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:64173 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782AbaIZLfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:34:09 -0400
-Message-ID: <54254F2E.2050804@linaro.org>
-Date: Fri, 26 Sep 2014 13:34:06 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Fri, 26 Sep 2014 07:35:15 -0400
+Date: Fri, 26 Sep 2014 13:35:10 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140926113510.GA14625@gmail.com>
+References: <20140925073133.GQ18635@console-pimps.org>
+ <20140925144127.GA3828@gmail.com>
+ <1411730854.7866.10.camel@x220>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Nathan Lynch <nathan_lynch@mentor.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource
- name if CP15 unavailable
-References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com> <54250FFE.2050605@linaro.org> <20140926092604.GC22293@arm.com>
-In-Reply-To: <20140926092604.GC22293@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411730854.7866.10.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 11:26 AM, Will Deacon wrote:
-> On Fri, Sep 26, 2014 at 08:04:30AM +0100, Daniel Lezcano wrote:
->> On 09/18/2014 04:59 PM, Nathan Lynch wrote:
->>> The arm and arm64 VDSOs need CP15 access to the architected counter.
->>> If this is unavailable (which is allowed by ARM v7), indicate this by
->>> changing the clocksource name to "arch_mem_counter" before registering
->>> the clocksource.
->>>
->>> Suggested by Stephen Boyd.
->>>
->>> Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
->>> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
->>
->> Hi Nathan,
->>
->> is it possible to have the acked-by of the different maintainers for the
->> other patches ?
->
-> FWIW: I acked the series:
->
->    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/289143.html
->
-> There's ongoing debate about whether or not we should have a vdso, but this
-> series still makes sense in isolation.
 
-Ok. Thanks for the clarification.
+* Paul Bolle <pebolle@tiscali.nl> wrote:
 
+> On Thu, 2014-09-25 at 16:41 +0200, Ingo Molnar wrote:
+> > * Matt Fleming <matt@console-pimps.org> wrote:
+> > 
+> > > Folks,
+> > > 
+> > > Please consider pulling the following fixes.
+> > > 
+> > > The first two are releated to the bug report I got from Linus and Josh
+> > > Boyer, whereby Fedora20 + grub2 systems were no longer booting. Linus
+> > > reverted the offending commit that broke grub2 boot, but that left us in
+> > > a state where Macbooks still didn't boot with EFI. This is fixed with
+> > > the below revert and I'm dropping a noisey boot time efi_printk() based
+> > > on Josh's request and Linus' OK.
+> > > 
+> > > The third patch fixes a 32-bit EFI boot stub bug where garbled text is
+> > > displayed on the screen if any of the efi_printk() statements run.
+> > > 
+> > > The following changes since commit 3eddc69ffeba092d288c386646bfa5ec0fce25fd:
+> > > 
+> > >   x86 early_ioremap: Increase FIX_BTMAPS_SLOTS to 8 (2014-09-14 15:24:31 +0100)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+> > > 
+> > > for you to fetch changes up to 115c6628a59044958c205f8468a1b3ba3d539e61:
+> > > 
+> > >   x86/efi: Truncate 64-bit values when calling 32-bit OutputString() (2014-09-24 21:56:46 +0100)
+> > > 
+> > > ----------------------------------------------------------------
+> > >  * Revert the static library changes from the merge window since they're
+> > >    causing issues for Macbooks and Fedora + Grub2 - Matt Fleming
+> > > 
+> > >  * Delete the misleading "setup_efi_pci() failed!" message which some
+> > >    people are seeing when booting EFI - Matt Fleming
+> > > 
+> > >  * Fix printing strings from the 32-bit EFI boot stub by only passing
+> > >    32-bit addresses to the firmware - Matt Fleming
+> > > 
+> > > ----------------------------------------------------------------
+> > > Matt Fleming (3):
+> > >       Revert "efi/x86: efistub: Move shared dependencies to <asm/efi.h>"
+> > >       x86/efi: Delete misleading efi_printk() error message
+> > >       x86/efi: Truncate 64-bit values when calling 32-bit OutputString()
+> > > 
+> > >  arch/x86/boot/compressed/Makefile |  3 +--
+> > >  arch/x86/boot/compressed/eboot.c  | 44 +++++++++++++++++++++++----------------
+> > >  arch/x86/boot/compressed/eboot.h  | 16 ++++++++++++++
+> > >  arch/x86/include/asm/efi.h        | 24 ---------------------
+> > >  drivers/firmware/efi/Makefile     |  2 +-
+> 
+> This Makefile was changed in the first patch. That became 84be880560fb
+> ("Revert "efi/x86: efistub: Move shared dependencies to <asm/efi.h>""),
+> which just landed in next-20140926.
+> 
+> It appears to have introduced a typo, because:
+>     CONFIG_EFI_ARM_STUB
+> 
+> should probably have been:
+>     CONFIG_EFI_ARMSTUB
 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+A delta fix would be nice at this point, I've got the x86 side 
+tested and besides this build bug it's ready to go to Linus.
 
+Thanks,
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+	Ingo
