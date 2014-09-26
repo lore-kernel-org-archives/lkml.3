@@ -1,159 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaIZPkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:40:09 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:56456 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541AbaIZPkH (ORCPT
+	id S1754929AbaIZPna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:43:30 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59819 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814AbaIZPn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:40:07 -0400
+	Fri, 26 Sep 2014 11:43:28 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:4883:f5eb:6eb5:6c26]
-In-Reply-To: <1411512059.24563.57.camel@ul30vt.home>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
- <1411483586-29304-7-git-send-email-a.motakis@virtualopensystems.com> <1411512059.24563.57.camel@ul30vt.home>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Fri, 26 Sep 2014 17:39:45 +0200
-Message-ID: <CAG8rG2z14gT28jec66o3UQ=z-omNv+bC43moJT-FhdUtd2OJDg@mail.gmail.com>
-Subject: Re: [PATCHv7 06/26] vfio/iommu_type1: implement the
- VFIO_DMA_MAP_FLAG_NOEXEC flag
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        KVM devel mailing list <kvm@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAJe_ZhdxZwrBsvRt7X0KN2+vnQVRDAJdUGOyNgq2rynwmsur9A@mail.gmail.com>
+References: <1406896194-4667-1-git-send-email-jaswinder.singh@linaro.org>
+	<1406896296-4863-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAJ5Y-eZ5gNMQ2YRN4iS5QTU7qUrgxGdTHXhQZ_2ut4iBsEZHGg@mail.gmail.com>
+	<5420675C.6040805@arm.com>
+	<54206B7C.60501@arm.com>
+	<CAJ5Y-ea7e1LCym49jGen-eXuw6tWOzTi3Rrd_K-4ZcZUwkv_jg@mail.gmail.com>
+	<CAJe_ZhdxZwrBsvRt7X0KN2+vnQVRDAJdUGOyNgq2rynwmsur9A@mail.gmail.com>
+Date: Fri, 26 Sep 2014 11:43:26 -0400
+Message-ID: <CAJ5Y-eZDHuHJpbZ8owYosR3gmqfEtTJeeMB_B_z6dxda+QyNnw@mail.gmail.com>
+Subject: Re: [PATCHv10 2/4] mailbox: Introduce framework for mailbox
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Matt Porter <mporter@linaro.org>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
+        "mollie.wu@linaro.org" <mollie.wu@linaro.org>,
+        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "andy.green@linaro.org" <andy.green@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 12:40 AM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
->> Some IOMMU drivers, such as the ARM SMMU driver, make available the
->> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
->> This affects devices such as the ARM PL330 DMA Controller, which respects
->> this flag and will refuse to fetch DMA instructions from memory where the
->> XN flag has been set.
->>
->> The flag can be used only if all IOMMU domains behind the container support
->> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
->> new domains with devices will have to support it as well.
->>
->> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->> ---
->>  drivers/vfio/vfio_iommu_type1.c | 38 +++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 37 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
->> index 0734fbe..09e5064 100644
->> --- a/drivers/vfio/vfio_iommu_type1.c
->> +++ b/drivers/vfio/vfio_iommu_type1.c
->> @@ -81,6 +81,26 @@ struct vfio_group {
->>  };
->>
->>  /*
->> + * This function returns true only if _all_ domains support the capability.
->> + */
->> +static int vfio_all_domains_have_iommu_noexec(struct vfio_iommu *iommu)
+On 25 September 2014 20:57, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> On 24 September 2014 09:14, Ashwin Chaugule <ashwin.chaugule@linaro.org> wrote:
+>> On 22 September 2014 14:33, Sudeep Holla <sudeep.holla@arm.com> wrote:
 >
-> Rename to vfio_domains_have_iommu_noexec() for consistency with the
-> cache version.
->
+>>>>>> +static void poll_txdone(unsigned long data)
+>>>>>> +{
+>>>>>> +       struct mbox_controller *mbox = (struct mbox_controller *)data;
+>>>>>> +       bool txdone, resched = false;
+>>>>>> +       int i;
+>>>>>> +
+>>>>>> +       for (i = 0; i < mbox->num_chans; i++) {
+>>>>>> +               struct mbox_chan *chan = &mbox->chans[i];
+>>>>>> +
+>>>>>> +               if (chan->active_req && chan->cl) {
+>>>>>> +                       resched = true;
+>>>>>> +                       txdone = chan->mbox->ops->last_tx_done(chan);
+>>>>>> +                       if (txdone)
+>>>>>> +                               tx_tick(chan, 0);
+>>>>>> +               }
+>>>>>> +       }
+>>>>>> +
+>>>>>> +       if (resched)
+>>>>>> +               mod_timer(&mbox->poll, jiffies +
+>>>>>> +                               msecs_to_jiffies(mbox->period));
+>>>>>
+>>>>>
+>>>>> While preparing a different patch which uses the Mbox framework, I
+>>>>> noticed that mbox->period might not be initialized anywhere. Also, how
+>>>>> is mbox->txpoll_period to be used? It appears from the description of
+>>>>> txpoll_period in mbox_controller.h that you'd want to use that value
+>>>>> in the mod_timer above, or equate the two somewhere in the controller
+>>>>> registration or eliminate one of the two. FWIW I also looked at your
+>>>>> code in [1].
+>>>>>
+>>>>
+>>>> IIUC the controller needs to set the txpoll_period if it sets
+>>>> txdone_poll, may be a sanity check for !0 would be good.
+>>>>
+>>>
+>>> Ah, sorry I confused mbox->period to txpoll_period.
+>>> You are right mbox->period is not set, the header claims it to be
+>>> private, and hence I assume it needs to be handled only in core mailbox
+>>> library. Not sure if we need both mbox->period and txpoll_period though.
+>>
+>> Right. I dont see the need for having both either. Unless the Mailbox
+>> maintainer wants to fix this in some other way, I can send a patch for
+>> replacing mbox->period with mbox->txpoll_period along with my PCC
+>> work.
+>>
+> Yeah, probably we should just get rid of mbox_controller.period  I
+> have updated the same in for-next.
 
-The logic here is a slightly different logic between the two. For
-IOMMU_CACHE we generally check if any domain includes it, for NOEXEC
-in contract we need all domains to support it, otherwise we can't
-expose the capability. Hence the _all_ addition in the name of the
-function.
+Looks like linux-next already has the older version[1]. Your for-next
+branch seems to have the fix squashed into the previous commit.
+Wouldnt you need to send this as a separate patch? Or ask for the
+patch to be reverted in linux-next and then pull again from your
+branch.
 
->> +{
->> +     struct vfio_domain *d;
->> +     int ret = 1;
->> +
->> +     mutex_lock(&iommu->lock);
->> +     list_for_each_entry(d, &iommu->domain_list, next) {
->> +             if (!iommu_domain_has_cap(d->domain, IOMMU_CAP_NOEXEC)) {
->
-> Should we cache this in domain->prot like we do for IOMMU_CACHE?
->
->> +                     ret = 0;
->> +                     break;
->> +             }
->> +     }
->> +     mutex_unlock(&iommu->lock);
->> +
->> +     return ret;
->> +}
->> +
->> +/*
->>   * This code handles mapping and unmapping of user data buffers
->>   * into DMA'ble space using the IOMMU
->>   */
->> @@ -546,6 +566,11 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
->>               prot |= IOMMU_WRITE;
->>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
->>               prot |= IOMMU_READ;
->> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
->> +             if (!vfio_all_domains_have_iommu_noexec(iommu))
->> +                     return -EINVAL;
->> +             prot |= IOMMU_NOEXEC;
->> +     }
->>
->>       if (!prot || !size || (size | iova | vaddr) & mask)
->>               return -EINVAL;
->> @@ -636,6 +661,12 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
->>               dma = rb_entry(n, struct vfio_dma, node);
->>               iova = dma->iova;
->>
->> +             /* if any of the mappings to be replayed has the NOEXEC flag
->> +              * set, then the new iommu domain must support it */
->
-> nit, please fix the comment style to match the rest of the file.
->
+Thanks,
+Ashwin
 
-Ack
-
->> +             if ((dma->prot | IOMMU_NOEXEC) &&
->> +                 !iommu_domain_has_cap(domain->domain, IOMMU_CAP_NOEXEC))
->> +                     return -EINVAL;
->> +
->>               while (iova < dma->iova + dma->size) {
->>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
->>                       size_t size;
->> @@ -890,6 +921,10 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->>                       if (!iommu)
->>                               return 0;
->>                       return vfio_domains_have_iommu_cache(iommu);
->> +             case VFIO_IOMMU_PROT_NOEXEC:
->> +                     if (!iommu)
->> +                             return 0;
->> +                     return vfio_all_domains_have_iommu_noexec(iommu);
->>               default:
->>                       return 0;
->>               }
->> @@ -913,7 +948,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
->>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
->>               struct vfio_iommu_type1_dma_map map;
->>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
->> -                             VFIO_DMA_MAP_FLAG_WRITE;
->> +                             VFIO_DMA_MAP_FLAG_WRITE |
->> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
->>
->>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
->>
->
->
->
-
-
-
--- 
-Antonios Motakis
-Virtual Open Systems
+[1] - http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/drivers/mailbox/mailbox.c
