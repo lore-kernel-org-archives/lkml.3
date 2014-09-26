@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaIZKEf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:04:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031AbaIZJqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755041AbaIZJqc (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 05:46:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33033 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754879AbaIZJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:15 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 102/142] xfs: don't zero partial page cache pages during O_DIRECT writes
-Date: Fri, 26 Sep 2014 11:45:13 +0200
-Message-Id: <a241067d53187f0b9bc06956da5f0152398a9405.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 079/142] ASoC: max98090: Fix missing free_irq
+Date: Fri, 26 Sep 2014 11:44:50 +0200
+Message-Id: <48e7ba73bbee8c13668389bc26b96a3bff6c9e28.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,53 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 834ffca6f7e345a79f6f2e2d131b0dfba8a4b67a upstream.
+commit 4adeb0ccf86a5af1825bbfe290dee9e60a5ab870 upstream.
 
-Similar to direct IO reads, direct IO writes are using
-truncate_pagecache_range to invalidate the page cache. This is
-incorrect due to the sub-block zeroing in the page cache that
-truncate_pagecache_range() triggers.
+max98090.c doesn't free the threaded interrupt it requests. This causes
+an oops when doing "cat /proc/interrupts" after snd-soc-max98090.ko is
+unloaded.
 
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
+Fix this by requesting the interrupt by using devm_request_threaded_irq().
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/xfs/xfs_file.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ sound/soc/codecs/max98090.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 4c749ab543d0..3e0fccf54ed5 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -678,7 +678,15 @@ xfs_file_dio_aio_write(
- 						    pos, -1);
- 		if (ret)
- 			goto out;
--		truncate_pagecache_range(VFS_I(ip), pos, -1);
-+		/*
-+		 * Invalidate whole pages. This can return an error if
-+		 * we fail to invalidate a page, but this should never
-+		 * happen on XFS. Warn if it does fail.
-+		 */
-+		ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+		WARN_ON_ONCE(ret);
-+		ret = 0;
- 	}
+diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
+index 9ad8f019adcd..764d0ea42e7c 100644
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -2250,7 +2250,7 @@ static int max98090_probe(struct snd_soc_codec *codec)
+ 	/* Register for interrupts */
+ 	dev_dbg(codec->dev, "irq = %d\n", max98090->irq);
  
- 	/*
+-	ret = request_threaded_irq(max98090->irq, NULL,
++	ret = devm_request_threaded_irq(codec->dev, max98090->irq, NULL,
+ 		max98090_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 		"max98090_interrupt", codec);
+ 	if (ret < 0) {
 -- 
 2.1.0
 
