@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaIZKE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:04:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33056 "EHLO mx2.suse.de"
+	id S1756081AbaIZKFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:05:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755020AbaIZJqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:31 -0400
+	id S1754997AbaIZJqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:30 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
-        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 101/142] xfs: don't dirty buffers beyond EOF
-Date: Fri, 26 Sep 2014 11:45:12 +0200
-Message-Id: <ff88bc8d71e4ac5143bb22dbe32ebd594f5fe4fe.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 111/142] CIFS: Fix wrong filename length for SMB2
+Date: Fri, 26 Sep 2014 11:45:22 +0200
+Message-Id: <47770ac167aec89d4743afee133ef9f6609ce768.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,136 +22,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 22e757a49cf010703fcb9c9b4ef793248c39b0c2 upstream.
+commit 1bbe4997b13de903c421c1cc78440e544b5f9064 upstream.
 
-generic/263 is failing fsx at this point with a page spanning
-EOF that cannot be invalidated. The operations are:
+The existing code uses the old MAX_NAME constant. This causes
+XFS test generic/013 to fail. Fix it by replacing MAX_NAME with
+PATH_MAX that SMB1 uses. Also remove an unused MAX_NAME constant
+definition.
 
-1190 mapwrite   0x52c00 thru    0x5e569 (0xb96a bytes)
-1191 mapread    0x5c000 thru    0x5d636 (0x1637 bytes)
-1192 write      0x5b600 thru    0x771ff (0x1bc00 bytes)
-
-where 1190 extents EOF from 0x54000 to 0x5e569. When the direct IO
-write attempts to invalidate the cached page over this range, it
-fails with -EBUSY and so any attempt to do page invalidation fails.
-
-The real question is this: Why can't that page be invalidated after
-it has been written to disk and cleaned?
-
-Well, there's data on the first two buffers in the page (1k block
-size, 4k page), but the third buffer on the page (i.e. beyond EOF)
-is failing drop_buffers because it's bh->b_state == 0x3, which is
-BH_Uptodate | BH_Dirty.  IOWs, there's dirty buffers beyond EOF. Say
-what?
-
-OK, set_buffer_dirty() is called on all buffers from
-__set_page_buffers_dirty(), regardless of whether the buffer is
-beyond EOF or not, which means that when we get to ->writepage,
-we have buffers marked dirty beyond EOF that we need to clean.
-So, we need to implement our own .set_page_dirty method that
-doesn't dirty buffers beyond EOF.
-
-This is messy because the buffer code is not meant to be shared
-and it has interesting locking issues on the buffer dirty bits.
-So just copy and paste it and then modify it to suit what we need.
-
-Note: the solutions the other filesystems and generic block code use
-of marking the buffers clean in ->writepage does not work for XFS.
-It still leaves dirty buffers beyond EOF and invalidations still
-fail. Hence rather than play whack-a-mole, this patch simply
-prevents those buffers from being dirtied in the first place.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/xfs/xfs_aops.c | 61 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 61 insertions(+)
+ fs/cifs/cifsglob.h  | 5 -----
+ fs/cifs/smb2file.c  | 2 +-
+ fs/cifs/smb2inode.c | 2 +-
+ fs/cifs/smb2ops.c   | 2 +-
+ fs/cifs/smb2pdu.c   | 2 +-
+ 5 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
-index be9a1fa2721b..0415a628b2ab 100644
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -1657,11 +1657,72 @@ xfs_vm_readpages(
- 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index 465b65488b27..d13f77ea0034 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -70,11 +70,6 @@
+ #define SERVER_NAME_LENGTH 40
+ #define SERVER_NAME_LEN_WITH_NULL     (SERVER_NAME_LENGTH + 1)
+ 
+-/* used to define string lengths for reversing unicode strings */
+-/*         (256+1)*2 = 514                                     */
+-/*           (max path length + 1 for null) * 2 for unicode    */
+-#define MAX_NAME 514
+-
+ /* SMB echo "timeout" -- FIXME: tunable? */
+ #define SMB_ECHO_INTERVAL (60 * HZ)
+ 
+diff --git a/fs/cifs/smb2file.c b/fs/cifs/smb2file.c
+index 3f17b4550831..45992944e238 100644
+--- a/fs/cifs/smb2file.c
++++ b/fs/cifs/smb2file.c
+@@ -50,7 +50,7 @@ smb2_open_file(const unsigned int xid, struct cifs_open_parms *oparms,
+ 		goto out;
+ 	}
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL) {
+ 		rc = -ENOMEM;
+diff --git a/fs/cifs/smb2inode.c b/fs/cifs/smb2inode.c
+index 84c012a6aba0..215f8d3e3e53 100644
+--- a/fs/cifs/smb2inode.c
++++ b/fs/cifs/smb2inode.c
+@@ -131,7 +131,7 @@ smb2_query_path_info(const unsigned int xid, struct cifs_tcon *tcon,
+ 	*adjust_tz = false;
+ 	*symlink = false;
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL)
+ 		return -ENOMEM;
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index 4ac88f89a5e5..8956cf67299b 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -251,7 +251,7 @@ smb2_query_file_info(const unsigned int xid, struct cifs_tcon *tcon,
+ 	int rc;
+ 	struct smb2_file_all_info *smb2_data;
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL)
+ 		return -ENOMEM;
+diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
+index 7cf843b976fd..fb0c67372a90 100644
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -1489,7 +1489,7 @@ SMB2_query_info(const unsigned int xid, struct cifs_tcon *tcon,
+ {
+ 	return query_info(xid, tcon, persistent_fid, volatile_fid,
+ 			  FILE_ALL_INFORMATION,
+-			  sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++			  sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			  sizeof(struct smb2_file_all_info), data);
  }
  
-+/*
-+ * This is basically a copy of __set_page_dirty_buffers() with one
-+ * small tweak: buffers beyond EOF do not get marked dirty. If we mark them
-+ * dirty, we'll never be able to clean them because we don't write buffers
-+ * beyond EOF, and that means we can't invalidate pages that span EOF
-+ * that have been marked dirty. Further, the dirty state can leak into
-+ * the file interior if the file is extended, resulting in all sorts of
-+ * bad things happening as the state does not match the underlying data.
-+ *
-+ * XXX: this really indicates that bufferheads in XFS need to die. Warts like
-+ * this only exist because of bufferheads and how the generic code manages them.
-+ */
-+STATIC int
-+xfs_vm_set_page_dirty(
-+	struct page		*page)
-+{
-+	struct address_space	*mapping = page->mapping;
-+	struct inode		*inode = mapping->host;
-+	loff_t			end_offset;
-+	loff_t			offset;
-+	int			newly_dirty;
-+
-+	if (unlikely(!mapping))
-+		return !TestSetPageDirty(page);
-+
-+	end_offset = i_size_read(inode);
-+	offset = page_offset(page);
-+
-+	spin_lock(&mapping->private_lock);
-+	if (page_has_buffers(page)) {
-+		struct buffer_head *head = page_buffers(page);
-+		struct buffer_head *bh = head;
-+
-+		do {
-+			if (offset < end_offset)
-+				set_buffer_dirty(bh);
-+			bh = bh->b_this_page;
-+			offset += 1 << inode->i_blkbits;
-+		} while (bh != head);
-+	}
-+	newly_dirty = !TestSetPageDirty(page);
-+	spin_unlock(&mapping->private_lock);
-+
-+	if (newly_dirty) {
-+		/* sigh - __set_page_dirty() is static, so copy it here, too */
-+		unsigned long flags;
-+
-+		spin_lock_irqsave(&mapping->tree_lock, flags);
-+		if (page->mapping) {	/* Race with truncate? */
-+			WARN_ON_ONCE(!PageUptodate(page));
-+			account_page_dirtied(page, mapping);
-+			radix_tree_tag_set(&mapping->page_tree,
-+					page_index(page), PAGECACHE_TAG_DIRTY);
-+		}
-+		spin_unlock_irqrestore(&mapping->tree_lock, flags);
-+		__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
-+	}
-+	return newly_dirty;
-+}
-+
- const struct address_space_operations xfs_address_space_operations = {
- 	.readpage		= xfs_vm_readpage,
- 	.readpages		= xfs_vm_readpages,
- 	.writepage		= xfs_vm_writepage,
- 	.writepages		= xfs_vm_writepages,
-+	.set_page_dirty		= xfs_vm_set_page_dirty,
- 	.releasepage		= xfs_vm_releasepage,
- 	.invalidatepage		= xfs_vm_invalidatepage,
- 	.write_begin		= xfs_vm_write_begin,
 -- 
 2.1.0
 
