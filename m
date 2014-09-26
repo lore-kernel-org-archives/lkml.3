@@ -1,82 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaIZNyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:54:24 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:32898 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbaIZNyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:54:23 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Eric Paris <eparis@redhat.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] next: openrisc: Fix build
-Date: Fri, 26 Sep 2014 06:54:15 -0700
-Message-Id: <1411739655-4715-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	id S1754489AbaIZN75 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:59:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41377 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753AbaIZN7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:59:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
+   d="scan'208";a="609109276"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [RFT Part2 v2 00/24] Enable hierarchy irqdomian on x86 platforms
+Date: Fri, 26 Sep 2014 22:02:01 +0800
+Message-Id: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-openrisc:defconfig fails to build in next-20140926 with the following error.
+We plan to restructure x86 interrupt code based on hierarchy irqdomain,
+that is to build irqdomains for CPU vector, interrupt remapping unit,
+IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
+Each irqdomain manages corresponding interrupt controller and talks to
+parent interrupt controller through public irqdomain interfaces. We also
+support stacked irq_chip based on hierarchy irqdomain. It will make the
+x86 interrupt architecture much more clear and more easy to maintain
+with hierarchy irqdomain and stacked irq_chip. It may also help ARM
+interrupt management architecture too.
 
-In file included from arch/openrisc/kernel/signal.c:31:0:
-./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
-./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
+This is the second patch set to enable support of hierarchy irqdomain
+on x86 platforms. It depends on the first part at:
+https://lkml.org/lkml/2014/9/26/501
+And you may access it at:
+https://github.com/jiangliu/linux.git irqdomain/p2v2
 
-Fix by moving EM_OPENRISC and EM_OR32 to include/uapi/linux/elf-em.h.
+And there will be a third patch set to convert IOAPIC driver to support
+hierarchy irqdomain and clean up code.
 
-Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Based Stefan's note. No idea if it is the correct fix.
+The first patch extends irqdomain interfaces to support hierarchy
+irqdomain. Hope this interface could be used by other architectures too,
+such as ARM/ARM64.
+The second patch introduces two helper functions to support stacked
+irq_chip.
+Patch 3-9 implements an irqdomain to manange CPU interrupt vectors, and
+it's the root irqdomain for x86 platforms.
+Patch 10-13 converts Intel and AMD interrupt remapping drivers to
+support hierarchy irqdomain.
+Patch 14-16 converts HPET and MSI to support hierarchy irqdomain.
+Patch 17-20 cleans up unsued code in x86 arch and interrupt remapping
+drivers.
+Patch 21-24 converts DMAR, HTIRQ and UV to support hierarchy irqdomain.
 
- arch/openrisc/include/uapi/asm/elf.h | 4 +---
- include/uapi/linux/elf-em.h          | 2 ++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+We have tested this patchset on Intel 32-bit and 64-bit systems. And it
+also passes Fengguang's 0day tests. But helps are need for testing:
+1) AMD interrupt remapping 
+2) AMD HT_IRQ
+3) UV platform
 
-diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
-index f02ea58..e75fdce 100644
---- a/arch/openrisc/include/uapi/asm/elf.h
-+++ b/arch/openrisc/include/uapi/asm/elf.h
-@@ -55,9 +55,7 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
- /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
- typedef unsigned long elf_fpregset_t;
- 
--/* This should be moved to include/linux/elf.h */
--#define EM_OR32         0x8472
--#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
-+/* EM_OPENRISC and EM_OR32 defined in linux/elf-em.h	*/
- 
- /*
-  * These are used to set parameters in the core dumps.
-diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-index 01529bd..c5d3948 100644
---- a/include/uapi/linux/elf-em.h
-+++ b/include/uapi/linux/elf-em.h
-@@ -32,11 +32,13 @@
- #define EM_V850		87	/* NEC v850 */
- #define EM_M32R		88	/* Renesas M32R */
- #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
-+#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
- #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
- #define EM_TI_C6000	140	/* TI C6X DSPs */
- #define EM_AARCH64	183	/* ARM 64 bit */
- #define EM_FRV		0x5441	/* Fujitsu FR-V */
- #define EM_AVR32	0x18ad	/* Atmel AVR32 */
-+#define EM_OR32         0x8472	/* OpenRISC, alternate */
- 
- /*
-  * This is an interim value that we will use until the committee comes
+V1->V2
+1) Add hierarchy iredomain support of DMAR IRQ and UV IRQ.
+2) Fix bugs reported by Joe C.
+3) Address all review comments from Thomas
+4) Fix a bug found during tests
+5) Fix errors and warning found by 0day tests
+
+Jiang Liu (24):
+  irqdomain: Introduce new interfaces to support hierarchy irqdomains
+  genirq: Introduce helper functions to support stacked irq_chip
+  x86, irq: Save destination CPU ID in irq_cfg
+  x86, irq: Use hierarchy irqdomain to manage CPU interrupt vectors
+  x86, hpet: Use new irqdomain interfaces to allocate/free IRQ
+  x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
+  x86, uv: Use new irqdomain interfaces to allocate/free IRQ
+  x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+  x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+  x86: irq_remapping: Introduce new interfaces to support hierarchy
+    irqdomain
+  iommu/vt-d: Change prototypes to prepare for enabling hierarchy
+    irqdomain
+  iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
+  iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
+  x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
+  x86, MSI: Use hierarchy irqdomain to manage MSI interrupts
+  x86, irq: Directly call native_compose_msi_msg() for DMAR IRQ
+  iommu/vt-d: Clean up unused MSI related code
+  iommu/amd: Clean up unused MSI related code
+  x86: irq_remapping: Clean up unused MSI related code
+  x86, irq: Clean up unused MSI related code and interfaces
+  iommu/vt-d: Refine the interfaces to create IRQ for DMAR unit
+  x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
+  x86, htirq: Use hierarchy irqdomain to manage Hypertransport
+    interrupts
+  x86, uv: Use hierarchy irqdomain to manage UV interrupts
+
+ Documentation/IRQ-domain.txt          |   71 +++++
+ arch/ia64/include/asm/irq_remapping.h |    2 -
+ arch/ia64/kernel/msi_ia64.c           |   30 +-
+ arch/x86/Kconfig                      |    3 +-
+ arch/x86/include/asm/hpet.h           |   16 +-
+ arch/x86/include/asm/hw_irq.h         |   81 +++++
+ arch/x86/include/asm/irq_remapping.h  |   84 ++++-
+ arch/x86/include/asm/pci.h            |    5 -
+ arch/x86/include/asm/x86_init.h       |    4 -
+ arch/x86/kernel/apic/htirq.c          |  178 ++++++++---
+ arch/x86/kernel/apic/io_apic.c        |    3 -
+ arch/x86/kernel/apic/msi.c            |  538 +++++++++++++++++++++++++--------
+ arch/x86/kernel/apic/vector.c         |  160 +++++++++-
+ arch/x86/kernel/hpet.c                |   57 +---
+ arch/x86/kernel/x86_init.c            |    2 -
+ arch/x86/platform/uv/uv_irq.c         |  301 +++++++-----------
+ drivers/iommu/amd_iommu.c             |  388 ++++++++++++++++++------
+ drivers/iommu/amd_iommu_init.c        |    4 +
+ drivers/iommu/amd_iommu_proto.h       |    9 +
+ drivers/iommu/amd_iommu_types.h       |    5 +
+ drivers/iommu/dmar.c                  |   19 +-
+ drivers/iommu/intel_irq_remapping.c   |  471 ++++++++++++++++++++---------
+ drivers/iommu/irq_remapping.c         |  221 +++++---------
+ drivers/iommu/irq_remapping.h         |   22 +-
+ drivers/pci/htirq.c                   |   48 +--
+ include/linux/dmar.h                  |    3 +-
+ include/linux/htirq.h                 |   22 +-
+ include/linux/intel-iommu.h           |    4 +
+ include/linux/irq.h                   |   10 +
+ include/linux/irqdomain.h             |   81 +++++
+ kernel/irq/Kconfig                    |    3 +
+ kernel/irq/chip.c                     |   20 ++
+ kernel/irq/irqdomain.c                |  372 ++++++++++++++++++++++-
+ 33 files changed, 2311 insertions(+), 926 deletions(-)
+
 -- 
-1.9.1
+1.7.10.4
 
