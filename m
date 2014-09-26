@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744AbaIZNqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:46:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53370 "HELO
+	id S1754619AbaIZNvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:51:04 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50585 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754101AbaIZNqp (ORCPT
+	with SMTP id S1753782AbaIZNvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:46:45 -0400
+	Fri, 26 Sep 2014 09:51:01 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
-Date: Fri, 26 Sep 2014 16:06:35 +0200
-Message-ID: <1911582.jhO9HBSx8Y@vostro.rjw.lan>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
+Date: Fri, 26 Sep 2014 16:10:51 +0200
+Message-ID: <2420500.gangrFEl78@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5424E382.6060403@linux.intel.com>
-References: <540E91F0.2060306@linux.intel.com> <2215516.KXo7vMZKRh@vostro.rjw.lan> <5424E382.6060403@linux.intel.com>
+In-Reply-To: <1411718040.6005.18.camel@marge.simpson.net>
+References: <20140924081845.572814794@infradead.org> <1411712697.6005.7.camel@marge.simpson.net> <1411718040.6005.18.camel@marge.simpson.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,110 +25,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 26, 2014 11:54:42 AM Li, Aubrey wrote:
-> On 2014/9/26 4:08, Rafael J. Wysocki wrote:
-> > On Thursday, September 25, 2014 10:07:44 AM Li, Aubrey wrote:
-> >> On 2014/9/25 4:32, Rafael J. Wysocki wrote:
-> >>> On Wednesday, September 24, 2014 11:19:22 PM Fu, Zhonghui wrote:
-> >>>> This is a multi-part message in MIME format.
-> >>>> --------------040808000309050202010005
-> >>>> Content-Type: text/plain; charset=UTF-8
-> >>>> Content-Transfer-Encoding: 7bit
-> >>>>
-> >>>>
-> >>>> On 2014/9/23 7:17, Rafael J. Wysocki wrote:
-> >>>>> On Monday, September 22, 2014 10:45:42 PM Fu, Zhonghui wrote:
-> >>>>> [cut]
-> >>>>>
-> >>>>>>>>> This operation is reading data from Operation Region of one operand object in name space. I don't know the reason of hang at this point. Could you please give out some explanation about this?
-> >>>>>>>> I don't know the exact reason why this particular read hangs, but this means
-> >>>>>>>> that, perhaps, instead of disabling async suspend/resume for all LPSS devices
-> >>>>>>>> altogether, perhaps we can serialize their acpi_dev_resume_early()?
-> >>>>>>>>
-> >>>>>>>> Rafael
-> >>>>>>> Do you mean keeping other phases(prepare, suspend, suspend_late, suspend_noirq, resume_noirq, resume, complete) of suspend/resume asynchronous, and only serializing "resume_early" phase for all LPSS devices?
-> >>>>>>>
-> >>>>>>> Thanks,
-> >>>>>>> Zhonghui
-> >>>>>> Hi, Rafael
-> >>>>>>
-> >>>>>> Could you please confirm my understanding?
-> >>>>> This is not what I meant.
-> >>>>>
-> >>>>> Since we have a PM domain for the LPSS devices already, why don't we add an
-> >>>>> internal lock to that PM domain and acquire it over executing either
-> >>>>> acpi_dev_suspend_late() (during suspend) or acpi_dev_resume_early() (during
-> >>>>> resume) for all of them?
-> >>>> I seem find the root cause of this issue. Because this "hang" issue is occurred on ASUS T100(Baytrail-T platform), so I checked its DSDT and found that URT and I2C controllers depend on(_DEP) PEPD device(description in Windows is "power engine plug-in"). That is, URT and I2C controllers can not transition to ACPI_STATE_D0 state until PEPD device has completed this transition during resuming. But, the ACPI subsystem in the 3.16 kernel doesn't support "_DEP" feature. So, if enabling async suspend/resume for LPSS devices, their "_DEP" relationship with PEPD device will be broken and incur "hang" during the transition to ACPI_STATE_D0, please see the following code, it is from dpm_resume_early function in drivers/base/power/main.c file:
-> >>>>
-> >>>> list_for_each_entry(dev, &dpm_late_early_list, power.entry) {
-> >>>>                 reinit_completion(&dev->power.completion);
-> >>>>                 if (is_async(dev)) {
-> >>>>                         get_device(dev);
-> >>>>                         async_schedule(async_resume_early, dev);
-> >>>>                 }
-> >>>>         }
-> >>>>
-> >>>>         while (!list_empty(&dpm_late_early_list)) {
-> >>>>                 dev = to_device(dpm_late_early_list.next);
-> >>>>                 get_device(dev);
-> >>>>                 list_move_tail(&dev->power.entry, &dpm_suspended_list);
-> >>>>                 mutex_unlock(&dpm_list_mtx);
-> >>>>
-> >>>>                 if (!is_async(dev)) {    // PEPD is not configured as async device now.
-> >>>>                         int error;
-> >>>>
-> >>>>                         error = device_resume_early(dev, state, false);
-> >>>>                         if (error) {
-> >>>>                                 suspend_stats.failed_resume_early++;
-> >>>>                                 dpm_save_failed_step(SUSPEND_RESUME_EARLY);
-> >>>>                                 dpm_save_failed_dev(dev_name(dev));
-> >>>>                                 pm_dev_err(dev, state, " early", error);
-> >>>>                         }
-> >>>>                 }
-> >>>>                 mutex_lock(&dpm_list_mtx);
-> >>>>                 put_device(dev);
-> >>>>         }
-> >>>>
-> >>>>
-> >>>> Based on the above analysis,I move the resume_early operation of PEPD device to head of dpm_resume_early function and "hang" did not occur any more during resuming(I tested this 10 times).
-> >>>>
-> >>>> If disabling async suspend/resume for LPSS devices, PEPD device will be prior to UART and I2C controllers in dpm_late_early_list list and the "_DEP" relationship can be kept. Maybe,the "_DEP" ACPI feature will be supported in future kernel, so, I think simply disabling async suspend/resume for LPSS devices is a acceptable workaround now, and need not add new mechanism to deal with this issue.
-> >>>>
-> >>>> BTW, I will take two week's leave and can't reply email during this time. Sorry.
-> >>>
-> >>> OK, thanks for the analysis.  In that case we really may be better off by
-> >>> disabling the runtime PM of LPSS devices for now until we figure out how this
-> >>> can be addressed properly.
-> >>
-> >> Please let me know if the patch need to be refined, I can do it before
-> >> October 1st, then one-week Chinese National holiday.
+On Friday, September 26, 2014 09:54:00 AM Mike Galbraith wrote:
+> On Fri, 2014-09-26 at 08:24 +0200, Mike Galbraith wrote: 
+> > (the hazards of multitasking.. post escaped early, and went to mostly
+> > the wrong folks)
 > > 
-> > The patch is fine.  In fact, I'm going to push it to Linus shortly.
 > > 
-> >> Besides this patch, we leave the non-LPSS devices as async
-> >> suspend/resume, the risk is unknown.
-> > 
-> > No, we don't in general.  That is an opt-in, usually on a per-subsystem basis.
-> > 
-> >> I wonder if we need to make
-> >> pm_async parameter configurable thru kernel command line to make android
-> >> userspace happy?
-> > 
-> > There is a sysfs switch for disabling async suspend/resume (/sys/power/pm_async).
-> > That has to suffice.
-> > 
-> Like what you did to pretend echo mem > /sys/power/state,
+> > While testing some scheduler patches, the below pcc-cpufreq
+> > might_sleep() gripe fell out.
+> 
+> Because the bits below from 8fec051e didn't make the lock go away first.
+> Reverting only pcc-cpufreq back to notifier.. works.
 
-That was supposed to be an exception.
+OK, thanks!
 
-> it's hard to
-> visit sysfs switch from android UI, we want to disable async
-> suspend/resume from kernel command line, so that we can bypass this
-> feature after boot.
+I may just apply the below, but I'd prefer to keep things consistent overall.
+I need to think about this for a while.
 
-Please feel free to submit a patch adding a command line switch to set the
-initial value of /sys/power/pm_async.  Maybe people won't complain about it.
+> --------------------- drivers/cpufreq/integrator-cpufreq.c ---------------------
+> index 0e27844e8c2d..e5122f1bfe78 100644
+> @@ -122,7 +122,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
+>  		return 0;
+>  	}
+>  
+> -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+> +	cpufreq_freq_transition_begin(policy, &freqs);
+>  
+>  	cm_osc = __raw_readl(cm_base + INTEGRATOR_HDR_OSC_OFFSET);
+>  
+> @@ -143,7 +143,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
+>  	 */
+>  	set_cpus_allowed(current, cpus_allowed);
+>  
+> -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+> +	cpufreq_freq_transition_end(policy, &freqs, 0);
+>  
+>  	return 0;
+>  }
+> 
+> > On Thu, 2014-09-25 at 15:59 +0200, Mike Galbraith wrote:
+> > 
+> > > pcc-cpufreq: spin_lock() -> wait_event() -> gripe() gripe() gripe()...
+> > > 
+> > > [   50.756280] BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
+> > > [   50.850582] in_atomic(): 1, irqs_disabled(): 0, pid: 2636, name: modprobe
+> > > [   50.926744] Preemption disabled at:[<ffffffffa04d74d7>] pcc_cpufreq_target+0x27/0x200 [pcc_cpufreq]
+> > > [   51.025044]
+> > > [   51.045454] CPU: 57 PID: 2636 Comm: modprobe Tainted: G            E  3.17.0-default #7
+> > > [   51.136727] Hardware name: Hewlett-Packard ProLiant DL980 G7, BIOS P66 07/07/2010
+> > > [   51.218484]  00000000ffffffff ffff88026c46b828 ffffffff81589dbd 0000000000000000
+> > > [   51.300293]  ffff880037978090 ffff88026c46b848 ffffffff8108e1df ffff880037978090
+> > > [   51.382666]  0000000000000000 ffff88026c46b878 ffffffff8108e298 ffff88026d73ec00
+> > > [   51.464884] Call Trace:
+> > > [   51.495159]  [<ffffffff81589dbd>] dump_stack+0x4d/0x90
+> > > [   51.555439]  [<ffffffff8108e1df>] ___might_sleep+0x10f/0x180
+> > > [   51.620610]  [<ffffffff8108e298>] __might_sleep+0x48/0xd0
+> > > [   51.684774]  [<ffffffff8145b905>] cpufreq_freq_transition_begin+0x75/0x140 drivers/cpufreq/cpufreq.c:370 wait_event(policy->transition_wait, !policy->transition_ongoing);
+> > > [   51.767992]  [<ffffffff8108fc99>] ? preempt_count_add+0xb9/0xc0
+> > > [   51.833294]  [<ffffffffa04d7513>] pcc_cpufreq_target+0x63/0x200 [pcc_cpufreq] drivers/cpufreq/pcc-cpufreq.c:207 spin_lock(&pcc_lock);
+> > > [   51.930204]  [<ffffffff810e0d0f>] ? update_ts_time_stats+0x7f/0xb0
+> > > [   52.009288]  [<ffffffff8145be55>] __cpufreq_driver_target+0x85/0x170
+> > > [   52.082479]  [<ffffffff8145e4c8>] od_check_cpu+0xa8/0xb0
+> > > [   52.143874]  [<ffffffff8145ef10>] dbs_check_cpu+0x180/0x1d0
+> > > [   52.207329]  [<ffffffff8145f310>] cpufreq_governor_dbs+0x3b0/0x720
+> > > [   52.276916]  [<ffffffff8145ebe3>] od_cpufreq_governor_dbs+0x33/0xe0
+> > > [   52.349048]  [<ffffffff814593d9>] __cpufreq_governor+0xa9/0x210
+> > > [   52.415040]  [<ffffffff81459fb2>] cpufreq_set_policy+0x1e2/0x2e0
+> > > [   52.480473]  [<ffffffff8145a6cc>] cpufreq_init_policy+0x8c/0x110
+> > > [   52.545829]  [<ffffffff8145c9a0>] ? cpufreq_update_policy+0x1b0/0x1b0
+> > > [   52.615796]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
+> > > [   52.681961]  [<ffffffff8145c6c6>] __cpufreq_add_dev+0x596/0x6b0
+> > > [   52.746288]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
+> > > [   52.830472]  [<ffffffff8145c7ee>] cpufreq_add_dev+0xe/0x10
+> > > [   52.894106]  [<ffffffff81408e81>] subsys_interface_register+0xc1/0xf0
+> > > [   52.970763]  [<ffffffff8108fb99>] ? preempt_count_sub+0xb9/0x100
+> > > [   53.038953]  [<ffffffff8145b3d7>] cpufreq_register_driver+0x117/0x2a0
+> > > [   53.110751]  [<ffffffffa016c65d>] pcc_cpufreq_init+0x55/0x9f8 [pcc_cpufreq]
+> > > [   53.186920]  [<ffffffffa016c608>] ? pcc_cpufreq_probe+0x4b4/0x4b4 [pcc_cpufreq]
+> > > [   53.267583]  [<ffffffff81000298>] do_one_initcall+0xc8/0x1f0
+> > > [   53.330601]  [<ffffffff811a731d>] ? __vunmap+0x9d/0x100
+> > > [   53.388285]  [<ffffffff810eb9a0>] do_init_module+0x30/0x1b0
+> > > [   53.451958]  [<ffffffff810edfa6>] load_module+0x686/0x710
+> > > [   53.514007]  [<ffffffff810ebb20>] ? do_init_module+0x1b0/0x1b0
+> > > [   53.581246]  [<ffffffff810ee1db>] SyS_init_module+0x9b/0xc0
+> > > [   53.644024]  [<ffffffff8158f7a9>] system_call_fastpath+0x16/0x1b
+> > > 
+> > 
+> > 
+> 
+> 
 
-Rafael
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
