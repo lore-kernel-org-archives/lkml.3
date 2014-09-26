@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608AbaIZRTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:19:08 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47132 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132AbaIZRTH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:19:07 -0400
-Message-ID: <5425A008.2030901@arm.com>
-Date: Fri, 26 Sep 2014 18:19:04 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1755752AbaIZRTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:19:53 -0400
+Received: from mga14.intel.com ([192.55.52.115]:48477 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755306AbaIZRTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:19:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="392112317"
+Date: Fri, 26 Sep 2014 20:19:47 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>,
+        tpmdd-devel@lists.sourceforge.net,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 12/12] tpm: TPM2 sysfs attributes
+Message-ID: <20140926171947.GA5611@intel.com>
+References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20140924190234.GB6801@intel.com>
+ <20140924201938.GC10887@obsidianresearch.com>
+ <201409242235.42286.PeterHuewe@gmx.de>
+ <20140924204627.GA12407@obsidianresearch.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, "acme@redhat.com" <acme@redhat.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>, Jiri Olsa <jolsa@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] perf tools: fix build breakage on arm and arm64 targets
-References: <1411750918-25220-1-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1411750918-25220-1-git-send-email-will.deacon@arm.com>
-X-OriginalArrivalTime: 26 Sep 2014 17:19:03.0871 (UTC) FILETIME=[F87F84F0:01CFD9AD]
-X-MC-Unique: 114092618190400401
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924204627.GA12407@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 24, 2014 at 02:46:27PM -0600, Jason Gunthorpe wrote:
+> > That would be 24*2 files only for pcrs...
+> 
+> Some subsystems do just that..
+> 
+> $ ls /sys/class/infiniband/qib0/ports/1/sl2vl/
+> 0  1  10  11  12  13  14  15  2  3  4  5  6  7  8  9
 
-On 26/09/14 18:01, Will Deacon wrote:
-> Attempting to build the perf tool on arm or arm64 targets results in the
-> following failure:
->
-> arch/arm/util/unwind-libunwind.c: In function ‘libunwind__arch_reg_id’:
-> arch/arm/util/unwind-libunwind.c:43:3: error: implicit declaration of function ‘pr_err’ [-Werror=implicit-function-declaration]
->     pr_err("unwind: invalid reg id %d\n", regnum);
->     ^
-> This is due to commit 84f5d36f4866 ("perf tools: Move pr_* debug macros
-> into debug object") moving the pr_* macros into a new header file, but
-> failing to update architectures other than x86.
->
-> This patch adds the missing includes, and fixes the build again.
->
+They use static structures in drivers/infiniband/hw/qib/qib_sysfs.c
+and it does not looks a mess. I would prefer to create struct attribute
+entries dynamically if there's clean and easy way to do that.
 
-For ARM64, we also need the patch[1] "perf tools: Fix arm64 build error" 
-which is already queued in linux-next.
-
-Regards,
-Sudeep
-
-[1] https://lkml.org/lkml/2014/6/24/1024
-
+/Jarkko
