@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903AbaIZTeo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:34:44 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:53026 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaIZTel (ORCPT
+	id S1755955AbaIZTfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:35:05 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:43027 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703AbaIZTfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:34:41 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: David Ahern <lxhacker68@gmail.com>
-Cc: nicolas.dichtel@6wind.com, Cong Wang <cwang@twopensource.com>,
-        netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
-	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
-	<54228D87.3070309@6wind.com>
-	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
-	<5422F0F4.6000709@6wind.com>
-	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>
-	<5423D80B.9060500@6wind.com>
-	<CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com>
-	<54256CCB.4000709@6wind.com> <5425BB3E.10700@gmail.com>
-Date: Fri, 26 Sep 2014 12:34:16 -0700
-In-Reply-To: <5425BB3E.10700@gmail.com> (David Ahern's message of "Fri, 26 Sep
-	2014 13:15:10 -0600")
-Message-ID: <87mw9myy4n.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 26 Sep 2014 15:35:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19U38EMx7rEYS9W6ViK4eMakoa9EoTOKzc=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3322]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Ahern <lxhacker68@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 26 Sep 2014 12:34:39 -0700
+Message-ID: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+Subject: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF syscall,
+ verifier, testsuite)
+To: David Miller <davem@davemloft.net>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Ahern <lxhacker68@gmail.com> writes:
-
-> On 9/26/14, 7:40 AM, Nicolas Dichtel wrote:
->>>
->>>
->>> No, I don't want to monitor anything. Even if I wanted, I would just
->>> start one
->>> daemon in each netns instead of one for all.
->> Ok you don't want, but some other people (not only me) want it! And
->> having one
->> daemon per netns does not scale: there are scenarii with thousand netns
->> which
->> are dynamically created and deleted.
+On Fri, Sep 26, 2014 at 12:06 PM, David Miller <davem@davemloft.net> wrote:
+> From: Alexei Starovoitov <ast@plumgrid.com>
+> Date: Fri, 26 Sep 2014 00:16:56 -0700
 >
-> An example of the scaling problem using quagga (old but still seems to be a
-> relevant data point):
+>> v14 -> v15:
+>> - got rid of macros with hidden control flow (suggested by David)
+>>   replaced macro with explicit goto or return and simplified
+>>   where possible (affected patches #9 and #10)
+>> - rebased, retested
 >
->
-> https://lists.quagga.net/pipermail/quagga-users/2010-February/011351.html
->
-> "2k VRFs that would be 2.6G"
->
-> And that does not include the overhead of each namespace -- roughly
-> 200kB/namespace on one kernel I checked (v3.10). So that's a ballpark of 3G of
-> memory.
+> Series applied to net-next, thanks.
 
-Resetting the conversation just a little bit.
+Hi all-
 
-When I wrote the "ip netns" support I never expected that all
-applications would want to run in a specific network namespace.  All
-that is needed is one socket per network namespace.
+I read through the verifier.  Sorry this email is a little bit late.
+Here are some thoughts, in no particular order.
 
-Furthermore one socket or one procesess per network namespaces is
-completely orthogonal to the patches presented.  I do not see a
-identifying where the far end of a veth pair or similar set of
-networking objects as anything that even closely resembles a path to a
-using only a single socket.
+Programs should IMO have feature flags.  One such feature would be
+"can use pointers as integers", for example.
 
-So I think this whole subthread is quite silly and grossly off track.
+UNKNOWN_VALUE is IMO a crappy type.  I think that it should renamed to
+INTEGER and that a bunch of the things that generate it should be
+errors.
 
-Eric
+ALU ops like adding two pointers should IMO be failures.  I don't
+think that they should result in UNKNOWN_VALUE.
+
+I don't like PTR_TO_MAP_VALUE as a type.  I think that there should
+instead be "pointer to (const?) buffer of N bytes".
+
+ARG_PTR_TO_MAP_KEY is odd.  Why do we care what a function does with a
+key?  It just needs to be a big enough buffer, right?
+
+All of the stack spill stuff seems overcomplicated.  Can you just
+disallow unaligned stack access?  Right off the bat, that will delete
+a bunch of code and cut down runtime memory use by nearly a factor of
+eight.
+
+Also, there are no calls to functions written eBPF, right?  If so, why
+not just give each stack slot a *fixed* type for the lifetime of the
+program?  That would be a huge time complexity win, not to mention
+being more comprehensible.  When function calls get added, they'll
+need a whole pile of new infrastructure anyway.
+
+check_call is a mess.  I predict that it will be unmaintainable.
+
+check_ld_abs is messy, IMO.  Can't there be a real type "pointer to
+object of type [type]", where skb would be a type?  Then you could use
+the normal function call logic for skb pointers instead of hardcoded
+crud.
+
+You're doing a depth-first search.  I don't like it.  You need complex
+pruning logic to avoid exponential behavior, and it's not obvious to
+me that pathological programs that cause exponential blowups in the
+verifier don't exist.  Wouldn't it make more sense to do a
+breadth-first search instead and to give each reg/stack slot a
+definite type at each point in the control flow?  You'd need a
+function to find the intersection of two types, but I think that would
+be preferable to the current code that tests whether one type is a
+subset of another.
+
+At some point someone will want loops, and that will open a huge can
+of worms involving explicit typing or type inference.  It might pay to
+add some kind of stack slot (and maybe even register slot) type
+declarations now to get things ready for that.
+
+NB: If this code is actually invoked in net-next when loading a
+filter, please don't push to Linus until there's a convincing argument
+that the verifier has acceptable asymptotic complexity.
+
+--Andy
