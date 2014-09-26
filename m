@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073AbaIZJni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:43:38 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:58217 "EHLO mail.kapsi.fi"
+	id S1754263AbaIZJn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:43:58 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:45742 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422AbaIZJng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:43:36 -0400
+	id S1753529AbaIZJnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:43:37 -0400
 From: Mikko Perttunen <cyndis@kapsi.fi>
 To: edubezval@gmail.com, swarren@wwwdotorg.org, thierry.reding@gmail.com
 Cc: linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         juha-matti.tilli@iki.fi, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v6 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
-Date: Fri, 26 Sep 2014 12:43:12 +0300
-Message-Id: <1411724593-4037-4-git-send-email-cyndis@kapsi.fi>
+Subject: [PATCH v6 1/4] of: Add bindings for nvidia,tegra124-soctherm
+Date: Fri, 26 Sep 2014 12:43:10 +0300
+Message-Id: <1411724593-4037-2-git-send-email-cyndis@kapsi.fi>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi>
 References: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi>
@@ -26,70 +26,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikko Perttunen <mperttunen@nvidia.com>
 
-This adds critical trip points to the Jetson TK1 device tree.
-The device will do a controlled shutdown when either the CPU, GPU
-or MEM thermal zone reaches 101 degrees Celsius.
+This adds binding documentation and headers for the Tegra124
+SOCTHERM device tree node.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Eduardo Valentin <edubezval@gmail.com>
 ---
-v6: added comments to cooling map nodes
+ .../devicetree/bindings/thermal/tegra-soctherm.txt | 53 ++++++++++++++++++++++
+ include/dt-bindings/thermal/tegra124-soctherm.h    | 13 ++++++
+ 2 files changed, 66 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+ create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
 
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 44 +++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
-
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index 0cdb5cf..66a5eaf 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -1876,4 +1876,48 @@
- 			 <&tegra_car TEGRA124_CLK_EXTERN1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
+diff --git a/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+new file mode 100644
+index 0000000..ecf3ed7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+@@ -0,0 +1,53 @@
++Tegra124 SOCTHERM thermal management system
 +
-+	thermal-zones {
-+		cpu {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
++The SOCTHERM IP block contains thermal sensors, support for polled
++or interrupt-based thermal monitoring, CPU and GPU throttling based
++on temperature trip points, and handling external overcurrent
++notifications. It is also used to manage emergency shutdown in an
++overheating situation.
 +
-+			cooling-maps {
-+				/* There are currently no cooling maps because there are no cooling devices */
-+			};
-+		};
++Required properties :
++- compatible : "nvidia,tegra124-soctherm".
++- reg : Should contain 1 entry:
++  - SOCTHERM register set
++- interrupts : Defines the interrupt used by SOCTHERM
++- clocks : Must contain an entry for each entry in clock-names.
++  See ../clocks/clock-bindings.txt for details.
++- clock-names : Must include the following entries:
++  - tsensor
++  - soctherm
++- resets : Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names : Must include the following entries:
++  - soctherm
++- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description
++    of this property. See <dt-bindings/thermal/tegra124-soctherm.h> for a
++    list of valid values when referring to thermal sensors.
 +
-+		mem {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
 +
-+			cooling-maps {
-+				/* There are currently no cooling maps because there are no cooling devices */
-+			};
-+		};
++Example :
 +
-+		gpu {
-+			trips {
-+				trip@0 {
-+					temperature = <101000>;
-+					hysteresis = <0>;
-+					type = "critical";
-+				};
-+			};
++	soctherm@0,700e2000 {
++		compatible = "nvidia,tegra124-soctherm";
++		reg = <0x0 0x700e2000 0x0 0x1000>;
++		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
++			<&tegra_car TEGRA124_CLK_SOC_THERM>;
++		clock-names = "tsensor", "soctherm";
++		resets = <&tegra_car 78>;
++		reset-names = "soctherm";
 +
-+			cooling-maps {
-+				/* There are currently no cooling maps because there are no cooling devices */
-+			};
-+		};
++		#thermal-sensor-cells = <1>;
 +	};
- };
++
++Example: referring to thermal sensors :
++
++       thermal-zones {
++                cpu {
++                        polling-delay-passive = <1000>;
++                        polling-delay = <1000>;
++
++                        thermal-sensors =
++                                <&soctherm TEGRA124_SOCTHERM_SENSOR_CPU>;
++                };
++	};
+diff --git a/include/dt-bindings/thermal/tegra124-soctherm.h b/include/dt-bindings/thermal/tegra124-soctherm.h
+new file mode 100644
+index 0000000..85aaf66
+--- /dev/null
++++ b/include/dt-bindings/thermal/tegra124-soctherm.h
+@@ -0,0 +1,13 @@
++/*
++ * This header provides constants for binding nvidia,tegra124-soctherm.
++ */
++
++#ifndef _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
++#define _DT_BINDINGS_THERMAL_TEGRA124_SOCTHERM_H
++
++#define TEGRA124_SOCTHERM_SENSOR_CPU 0
++#define TEGRA124_SOCTHERM_SENSOR_MEM 1
++#define TEGRA124_SOCTHERM_SENSOR_GPU 2
++#define TEGRA124_SOCTHERM_SENSOR_PLLX 3
++
++#endif
 -- 
 2.1.0
 
