@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaIZIn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:43:27 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:48154 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaIZInX (ORCPT
+	id S1754087AbaIZIoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:44:12 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43621 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753017AbaIZIoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:43:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-6-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-6-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:43:22 +0200
-Message-ID: <CAPDyKFpiTBKEJHTF9cK20GTqEgx=4UNt52sKi0dQ7NsZNhfFOA@mail.gmail.com>
-Subject: Re: [PATCH v3 05/13] PM / Domains: Add helper variable np = dev->of_node
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 26 Sep 2014 04:44:10 -0400
+Date: Fri, 26 Sep 2014 09:44:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Kconfig: Open force maximum zone order for all SoCs
+Message-ID: <20140926084403.GK5182@n2100.arm.linux.org.uk>
+References: <1409546541-4129-1-git-send-email-Li.Xiubo@freescale.com> <9dc024498c904d48b3a25430f8d31f29@BY2PR0301MB0613.namprd03.prod.outlook.com> <20140926082054.GI5182@n2100.arm.linux.org.uk> <de6767070ea644d5830778059770451f@BY2PR0301MB0613.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <de6767070ea644d5830778059770451f@BY2PR0301MB0613.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+On Fri, Sep 26, 2014 at 08:39:04AM +0000, Li.Xiubo@freescale.com wrote:
+> [...]
+> > On Fri, Sep 26, 2014 at 05:30:40AM +0000, Li.Xiubo@freescale.com wrote:
+> > > Hi Russell,
+> > >
+> > > I'd like to know the status of this patch.
+> > >
+> > > Our Platforms depend on it.
+> > 
+> > I'm not applying it.  This option should not be exposed for general
+> > use.  The usage pattern is clear from the existing users - propose
+> > an alternative default value for your platform rather than making it
+> > a user visible tweakable option.
+> > 
+> 
+> Okay.
+> 
+> Something like :
+> ++++++++++
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 1ad6fb6..5729a2c 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1802,7 +1802,7 @@ source "mm/Kconfig"
+>  config FORCE_MAX_ZONEORDER
+>         int "Maximum zone order" if ARCH_SHMOBILE
+>         range 11 64 if ARCH_SHMOBILE
+> -       default "12" if SOC_AM33XX
+> +       default "12" if SOC_AM33XX || SOC_LS1021A
+>         default "9" if SA1111
+>         default "11"
+>         help
+> ----------
+> 
+> Is okay ?
 
-Why?
+It's much better than exposing the option, but I'd like this patch to
+appear as a properly submitted change (including a change log which
+provides the reason why this is necessary.)
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Thanks.
 
-Normally I think this kind of cleanup patches is a bit unnecessary,
-but I don't have strong opinions.
-
-Kind regards
-Uffe
-
-> ---
-> v3:
->   - No changes
-> v2:
->   - New
->
->  drivers/base/power/domain.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-> index 6e36bb09e7d9c144..0ebc6bb31c9c227f 100644
-> --- a/drivers/base/power/domain.c
-> +++ b/drivers/base/power/domain.c
-> @@ -2171,17 +2171,18 @@ static void genpd_dev_pm_detach(struct device *dev, bool power_off)
->   */
->  int genpd_dev_pm_attach(struct device *dev)
->  {
-> +       struct device_node *np = dev->of_node;
->         struct of_phandle_args pd_args;
->         struct generic_pm_domain *pd;
->         int ret;
->
-> -       if (!dev->of_node)
-> +       if (!np)
->                 return -ENODEV;
->
->         if (dev->pm_domain)
->                 return -EEXIST;
->
-> -       ret = of_parse_phandle_with_args(dev->of_node, "power-domains",
-> +       ret = of_parse_phandle_with_args(np, "power-domains",
->                                         "#power-domain-cells", 0, &pd_args);
->         if (ret < 0) {
->                 if (ret != -ENOENT)
-> @@ -2192,8 +2193,7 @@ int genpd_dev_pm_attach(struct device *dev)
->                  * (for backwards compatibility of DT ABI)
->                  */
->                 pd_args.args_count = 0;
-> -               pd_args.np = of_parse_phandle(dev->of_node,
-> -                                               "samsung,power-domain", 0);
-> +               pd_args.np = of_parse_phandle(np, "samsung,power-domain", 0);
->                 if (!pd_args.np)
->                         return -ENOENT;
->         }
-> @@ -2202,7 +2202,7 @@ int genpd_dev_pm_attach(struct device *dev)
->         if (IS_ERR(pd)) {
->                 dev_dbg(dev, "%s() failed to find PM domain: %ld\n",
->                         __func__, PTR_ERR(pd));
-> -               of_node_put(dev->of_node);
-> +               of_node_put(np);
->                 return PTR_ERR(pd);
->         }
->
-> @@ -2218,7 +2218,7 @@ int genpd_dev_pm_attach(struct device *dev)
->         if (ret < 0) {
->                 dev_err(dev, "failed to add to PM domain %s: %d",
->                         pd->name, ret);
-> -               of_node_put(dev->of_node);
-> +               of_node_put(np);
->                 return ret;
->         }
->
-> --
-> 1.9.1
->
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
