@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbaIZP4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:56:54 -0400
-Received: from ring0.de ([5.45.105.125]:36018 "EHLO ring0.de"
+	id S1755682AbaIZP5k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:57:40 -0400
+Received: from ring0.de ([5.45.105.125]:36045 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321AbaIZP4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:56:52 -0400
+	id S1755268AbaIZP5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:57:39 -0400
 X-Spam-Report: *  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
 	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
 	*      for more information.
-	*      [URIs: ring0.de]
+	*      [URIs: linaro.org]
 	* -100 USER_IN_WHITELIST From: address is in the user's white-list
 	* -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
@@ -20,68 +20,89 @@ X-Spam-Report: *  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was
 	*      valid
 	* -0.1 DKIM_VALID Message has at least one valid DKIM or DK signature
 	* -0.0 NO_RECEIVED Informational: message has no Received headers
-Date: Fri, 26 Sep 2014 17:56:39 +0200
+Date: Fri, 26 Sep 2014 17:57:25 +0200
 From: Sebastian Reichel <sre@ring0.de>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         kernel@stlinux.com, dbaryshkov@gmail.com,
         Christophe Kerello <christophe.kerello@st.com>
-Subject: Re: [PATCH 1/5] power: reset: Add restart functionality for STiH41x
- platforms
-Message-ID: <20140926155638.GB21641@earth.universe>
+Subject: Re: [PATCH 2/5] power: reset: st: Provide DT bindings for ST's Power
+ Reset driver
+Message-ID: <20140926155724.GC21641@earth.universe>
 References: <1406040752-25229-1-git-send-email-lee.jones@linaro.org>
- <1406040752-25229-2-git-send-email-lee.jones@linaro.org>
- <20140926095628.GE4097@lee--X1>
+ <1406040752-25229-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
+	protocol="application/pgp-signature"; boundary="+nBD6E3TurpgldQp"
 Content-Disposition: inline
-In-Reply-To: <20140926095628.GE4097@lee--X1>
+In-Reply-To: <1406040752-25229-3-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---GID0FwUMdk1T2AWN
+--+nBD6E3TurpgldQp
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Lee,
+Hi,
 
-On Fri, Sep 26, 2014 at 10:56:28AM +0100, Lee Jones wrote:
-> Dmitry,
+On Tue, Jul 22, 2014 at 03:52:29PM +0100, Lee Jones wrote:
+> Signed-off-by: Christophe Kerello <christophe.kerello@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/power/reset/st-reset.txt | 11 ++++++++=
++++
+>  1 file changed, 11 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power/reset/st-rese=
+t.txt
 >=20
-> This patch-set has been on the list for some time (2 months) now.
->=20
-> How would you like me to proceed?
+> diff --git a/Documentation/devicetree/bindings/power/reset/st-reset.txt b=
+/Documentation/devicetree/bindings/power/reset/st-reset.txt
+> new file mode 100644
+> index 0000000..809af54
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power/reset/st-reset.txt
+> @@ -0,0 +1,11 @@
+> +*Device-Tree bindings for ST SW reset functionality
+> +
+> +Required properties:
+> +- compatible: should be "st,<chip>-restart".
+> +- st,syscfg: should be a phandle of the syscfg node.
+> +
+> +Example node:
+> +	restart {
+> +		compatible =3D "st,stih416-restart";
+> +		st,syscfg =3D <&syscfg_sbc>;
+> +	};
 
-http://git.infradead.org/battery-2.6.git/commit/f0745f3696e88b4055c6229e130=
-6a78fbe503066
+http://git.infradead.org/battery-2.6.git/commit/b08fec2262c8dbb349fe9456586=
+cf0724407e5ee
 
 -- Sebastian
 
---GID0FwUMdk1T2AWN
+--+nBD6E3TurpgldQp
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBCgAGBQJUJYy2AAoJENju1/PIO/qatboP/it7jX8cMkzMHM3EP73a/XEX
-j4Hxv9a6bSZrVhUDjqVFb/Ja7x6fKnj0W+E3erRchiEAS5yu9ctNnWdZRBtc08D6
-meT3Zj1/FyeIWRxsLFG+7DYd96Dp+tsKnVu5ovEg8yGdAP2f4OY6FB3PYpJXoUJP
-J5RBlE6RWxAChrl9Wdve3yk1/YM8a31VzTMJc+JdLZ67pSabZTmvG8CD0Qj1Ohip
-mAURN2j3A4aHXKtnM6WozMKj+TppSiP8ownEeSpXnWFzPMqECQnN6BQC7GK0ld1v
-AKBP2WyusSsWYOws4knG7j4xZFJFybR++kzti6snTukOdiUoJygoZWmh7GUPTf9z
-dBIPyVMV6S2BW2sjAjuPLgZN3NEU7VtmFRCg+nOA0rGwE44D8534J9/qSXfNJh/h
-0FQL9dw2X6kVfn0qq+V/h4fPxleez62OMuW7FzplAqx+Fc82I7ClXytjJbkFst2U
-GpGx62DpR+QHsLWHbdbIpqejgJbZeYe3MrOLdW/tKGot0Xeqt3Q3ozUNjQBi3TOp
-qZGX8QB9y5mCyQU2VRWXHFP/M4yFHM8aRyZaqvTg+3IPMixcX7DIa/ikQbOUAo09
-LXxbE3rJ6RX0UMRhDPx9ecwb7WyqsZK7RqjLsTZX0vHO3cnNMsk/qyw0FOiOOnf1
-qMBwg/ZcyGpsAWdeJ3Gw
-=mltv
+iQIcBAEBCgAGBQJUJYzkAAoJENju1/PIO/qaYwUP/RoxpvZD9VzkVjpT3F13xl4Y
+wUfmW/vQAPeMbGIPR1x85KFCDBDuTtY0gHfHDnKpppQnj6l6dOQIVjmO1Fw6jG/y
+oeV5+pUKLmBj3l9eeFBHWli76ksAVwnUzZ6zu2LY2DS6Qvn8oKJ46lIQ3LjDvWmf
+MRz0ErAtn+orR4jBlzdWdHfPTxrcQP3eKEarGQkPzRN6JwJLMTcHuwo+N/ncowCW
+T6kk63a6ivZsU8nngjORFNWeVhA+AssUV5Ne2ALDh/vXcIHsMH0DoyBH0Myic26a
+AqFFQjeDCLiALgUaiQUwzDZpJQ1J/TfpL4k2BdqlPSahYoeyPyfpEdk1/h9pqd7w
+tGeLYB0UxVGxECCikQYCSixjEjjW+jPARY624dJGC9hDCkjSnLX+AytcR1tzzDF6
+BuYwVn7AuiXcui7BfyYh39BcYNsizsKhxF85VEimInL+dgq12USPrDXrlb5gVFT6
+nI5JTKgv0XBwU+xKoqcv8wF1ZNYFHO3/ydBOgyS95t5Uyntrm9a2PZskn5OJ/PII
+99qfT36hKfZngn+s/XbLdS50dwdBjwEZ4I9FHM3gqTF+jpBAe3mVLZdduI8YNMLk
+Rwsi984nmiQ0aZAQSAMZXsL1UoykfNLXUcSckr80Z21Z6fG80ar5vZJAH9+vhLik
+PNbaI4lfjSkDnxWDx0f7
+=CWfB
 -----END PGP SIGNATURE-----
 
---GID0FwUMdk1T2AWN--
+--+nBD6E3TurpgldQp--
