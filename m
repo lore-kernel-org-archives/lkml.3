@@ -1,119 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaIYX4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 19:56:39 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:58388 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaIYX4g (ORCPT
+	id S1752814AbaIZAOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:14:33 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:57192 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312AbaIZAOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 19:56:36 -0400
+	Thu, 25 Sep 2014 20:14:31 -0400
+Message-ID: <5424AFD2.2070406@gmail.com>
+Date: Thu, 25 Sep 2014 17:14:10 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1411524746-14635-1-git-send-email-mark.yao@rock-chips.com>
-References: <1411524672-14524-1-git-send-email-mark.yao@rock-chips.com>
-	<1411524746-14635-1-git-send-email-mark.yao@rock-chips.com>
-Date: Thu, 25 Sep 2014 19:56:34 -0400
-Message-ID: <CAF6AEGu+EBtYyfpthk8NaPuh6cAQXDc+=hnNORRZqb4t=yO00g@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] drm/rockchip: Add basic drm driver
-From: Rob Clark <robdclark@gmail.com>
-To: Mark yao <mark.yao@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+To: Scott Branden <sbranden@broadcom.com>,
+        Jonathan Richardson <jonathar@broadcom.com>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        Douglas Anderson <dianders@chromium.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        dbehr@chromium.org, Olof Johansson <olof@lixom.net>,
-        Daniel Kurtz <djkurtz@chromium.org>, Jianqun Xu <xjq@rock-chips.com>,
-        kfx@rock-chips.com, jeff chen <cym@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
-        simon xue <xxm@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>, yxj@rock-chips.com,
-        =?UTF-8?B?546L5pmT6IW+?= <wxt@rock-chips.com>, xw@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
+        Kumar Gala <galak@codeaurora.org>, JD Zheng <jdzheng@broadcom.com>
+CC: devicetree@vger.kernel.org, bcm-kernel-feedback-list@broadcom.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Ray Jui <rjui@broadcom.com>, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v2 0/6] Add initial support for Broadcom Cygnus SoC
+References: <Jonathan Richardson <jonathar@broadcom.com> <1411507057-14771-1-git-send-email-jonathar@broadcom.com> <54248344.5030308@broadcom.com> <54248791.9060805@gmail.com>
+In-Reply-To: <54248791.9060805@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:12 PM, Mark yao <mark.yao@rock-chips.com> wrote:
-> This patch adds the basic structure of a DRM Driver for Rockchip Socs.
->
-> Signed-off-by: Mark yao <mark.yao@rock-chips.com>
+Scott, Jonathan,
 
-Looks like my comments are addressed, so:
+On 09/25/2014 02:22 PM, Florian Fainelli wrote:
+> Hi Scott,
+> 
+> On 09/25/2014 02:04 PM, Scott Branden wrote:
+>> Hi Matt/Christian (and others),
+>>
+>> We would like to move forward in getting our base Cygnus support into
+>> the mainline kernel.  From there we will be able to contribute
+>> additional drivers.
+>>
+>> Is somebody willing to accept this pull request to get this patchset
+>> accepted by the open source community?
+> 
+> I am fine with taking the ARM patches and putting them at
+> http://github/brcm/linux.git, with C code in cygnus/board and the Device
+> Tree files in cygnus/dt for instance?
+> 
+> The clock driver patch will have to go through Mike Turquette's tree
+> unless he wants to delegate that one.
 
-Reviewed-by: Rob Clark <robdclark@gmail.com>
+Could you resend patch 3 without the clock binding, patch 4 without the
+clocks node, and patch 6 without the drivers/clk changes? Once you do
+that, I can assemble these patches quickly and send a pull request which
+does only contain ARM SoC and DTS changes, and you can get the clock
+driver to be reviewed separately by its maintainer?
 
-> ---
-> Changes in v2:
-> - use the component framework to defer main drm driver probe
->   until all VOP devices have been probed.
-> - use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
->   master device and each vop device can shared the drm dma mapping.
-> - use drm_crtc_init_with_planes and drm_universal_plane_init.
-> - remove unnecessary middle layers.
-> - add cursor set, move funcs to rockchip drm crtc.
-> - use vop reset at first init
-> - reference framebuffer when used and unreference when swap out vop
->
-> Changes in v3:
-> - change "crtc->fb" to "crtc->primary-fb"
-> Adviced by Daniel Vetter
-> - init cursor plane with universal api, remove unnecessary cursor set,move
->
-> Changes in v4:
-> Adviced by David Herrmann
-> - remove drm_platform_*() usage, use register drm device directly.
-> Adviced by Rob Clark
-> - remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
->
-> Changes in v5:
-> Adviced by Arnd Bergmann
-> - doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
-> - fix some incorrect dependencies.
-> Adviced by Boris BREZILLON
-> - fix some mistake and bugs.
-> Adviced by Daniel Vetter
-> - drop all special ioctl and use generic kms ioctl instead.
-> Adviced by Rob Clark
-> - use unlocked api for drm_fb_helper_restore_fbdev_mode.
-> - remove unused rockchip_gem_prime_import_sg_table.
->
->  drivers/gpu/drm/Kconfig                       |    2 +
->  drivers/gpu/drm/Makefile                      |    1 +
->  drivers/gpu/drm/rockchip/Kconfig              |   17 +
->  drivers/gpu/drm/rockchip/Makefile             |    8 +
->  drivers/gpu/drm/rockchip/rockchip_drm_drv.c   |  509 +++++++++
->  drivers/gpu/drm/rockchip/rockchip_drm_drv.h   |  120 +++
->  drivers/gpu/drm/rockchip/rockchip_drm_fb.c    |  201 ++++
->  drivers/gpu/drm/rockchip/rockchip_drm_fb.h    |   28 +
->  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c |  230 +++++
->  drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h |   20 +
->  drivers/gpu/drm/rockchip/rockchip_drm_gem.c   |  341 ++++++
->  drivers/gpu/drm/rockchip/rockchip_drm_gem.h   |   55 +
->  drivers/gpu/drm/rockchip/rockchip_drm_vop.c   | 1373 +++++++++++++++++++++++++
->  drivers/gpu/drm/rockchip/rockchip_drm_vop.h   |  187 ++++
->  14 files changed, 3092 insertions(+)
->  create mode 100644 drivers/gpu/drm/rockchip/Kconfig
->  create mode 100644 drivers/gpu/drm/rockchip/Makefile
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.c
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_drv.h
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.c
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fb.h
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_gem.h
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.c
->  create mode 100644 drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+Thanks!
+
+> 
+>>
+>> Regards,
+>>  Scott
+>>
+>>
+>> On 14-09-23 02:17 PM, Jonathan Richardson wrote:
+>>> Hi,
+>>>
+>>> This patchset contains initial support for Broadcom's Cygnus SoC based
+>>> on our
+>>> iProc architecture. Initial support is minimal and includes just the mach
+>>> platform code, clock driver, and a basic device tree configuration.
+>>> Peripheral
+>>> drivers will be submitted soon, as will device tree configurations for
+>>> other
+>>> Cygnus board variants.
+>>>
+>>> Changes from v1:
+>>>   - Address code review comments as per previous responses.
+>>>   - Copyright headers updated to remove Broadcom URL.
+>>>   - mach platform code still contains hard coded adresses. These
+>>> address are
+>>>     the same for all Cygnus variants. Could you please provide
+>>> guidance on where
+>>>     they should go if you would still like them changed.
+>>>
+>>> Thanks,
+>>> Jon
+>>>
+>>> Jonathan Richardson (6):
+>>>    ARM: cygnus: Initial support for Broadcom Cygnus SoC
+>>>    clk: Clock driver support for Broadcom Cygnus SoC
+>>>    dt-bindings: Document Broadcom Cygnus SoC and clock driver
+>>>    ARM: dts: Enable Broadcom Cygnus SoC
+>>>    ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+>>>    MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
+>>>      drivers
+>>>
+>>>   Documentation/devicetree/bindings/arm/cygnus.txt   |   12 +
+>>>   .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
+>>>   .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
+>>>   MAINTAINERS                                        |   21 +
+>>>   arch/arm/boot/dts/Makefile                         |    1 +
+>>>   arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
+>>>   arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
+>>>   arch/arm/configs/bcm_cygnus_defconfig              |  223 ++++
+>>>   arch/arm/mach-bcm/Kconfig                          |   31 +
+>>>   arch/arm/mach-bcm/Makefile                         |    3 +
+>>>   arch/arm/mach-bcm/bcm_cygnus.c                     |  166 +++
+>>>   drivers/clk/Makefile                               |    1 +
+>>>   drivers/clk/bcm/Makefile                           |    2 +
+>>>   drivers/clk/bcm/clk-cygnus.c                       | 1186
+>>> ++++++++++++++++++++
+>>>   drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
+>>>   15 files changed, 2637 insertions(+)
+>>>   create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
+>>>   create mode 100644
+>>> Documentation/devicetree/bindings/clock/clk-cygnus.txt
+>>>   create mode 100644
+>>> Documentation/devicetree/bindings/clock/clk-iproc.txt
+>>>   create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+>>>   create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+>>>   create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
+>>>   create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+>>>   create mode 100644 drivers/clk/bcm/clk-cygnus.c
+>>>   create mode 100644 drivers/clk/bcm/clk-iproc.c
+>>>
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
