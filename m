@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaIZIT5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:19:57 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:49439 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877AbaIZITv (ORCPT
+	id S1754154AbaIZIVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:21:03 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43568 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753868AbaIZIVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:19:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411662520-22795-3-git-send-email-geert+renesas@glider.be>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
-	<1411662520-22795-3-git-send-email-geert+renesas@glider.be>
-Date: Fri, 26 Sep 2014 10:19:50 +0200
-Message-ID: <CAPDyKFrAv9oyBzX764+CWkOxfN1kN_MddB3ks1q69+TnmnHXuQ@mail.gmail.com>
-Subject: Re: [PATCH v3 02/13] PM / Domains: Add DT bindings for power-on/off latencies
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 26 Sep 2014 04:21:01 -0400
+Date: Fri, 26 Sep 2014 09:20:54 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: Kconfig: Open force maximum zone order for all
+	SoCs
+Message-ID: <20140926082054.GI5182@n2100.arm.linux.org.uk>
+References: <1409546541-4129-1-git-send-email-Li.Xiubo@freescale.com> <9dc024498c904d48b3a25430f8d31f29@BY2PR0301MB0613.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9dc024498c904d48b3a25430f8d31f29@BY2PR0301MB0613.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> PM domain power on/off-latencies are properties of the hardware.
-> In legacy code, they're specified from platform code.
-> On DT platforms, their values should come from DT.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Acked-by: Kevin Hilman <khilman@linaro.org>
+On Fri, Sep 26, 2014 at 05:30:40AM +0000, Li.Xiubo@freescale.com wrote:
+> Hi Russell,
+> 
+> I'd like to know the status of this patch.
+> 
+> Our Platforms depend on it.
 
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+I'm not applying it.  This option should not be exposed for general
+use.  The usage pattern is clear from the existing users - propose
+an alternative default value for your platform rather than making it
+a user visible tweakable option.
 
-> ---
-> v3:
->   - No changes
-> v2:
->   - Add Acked-by
->
->  Documentation/devicetree/bindings/power/power_domain.txt | 6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
-> index 98c16672ab5f49e0..7bc421d84367d636 100644
-> --- a/Documentation/devicetree/bindings/power/power_domain.txt
-> +++ b/Documentation/devicetree/bindings/power/power_domain.txt
-> @@ -19,12 +19,18 @@ Required properties:
->     providing multiple PM domains (e.g. power controllers), but can be any value
->     as specified by device tree binding documentation of particular provider.
->
-> +Optional properties:
-> + - power-on-latency: Power-on latency of the PM domain, in ns,
-> + - power-off-latency: Power-off latency of the PM domain, in ns.
-> +
->  Example:
->
->         power: power-controller@12340000 {
->                 compatible = "foo,power-controller";
->                 reg = <0x12340000 0x1000>;
->                 #power-domain-cells = <1>;
-> +               power-on-latency = <250000>;
-> +               power-off-latency = <250000>;
->         };
->
->  The node above defines a power controller that is a PM domain provider and
-> --
-> 1.9.1
->
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
