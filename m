@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352AbaIZKbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:31:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754776AbaIZJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:03 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Huang Rui <ray.huang@amd.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 021/142] usb: xhci: amd chipset also needs short TX quirk
-Date: Fri, 26 Sep 2014 11:43:52 +0200
-Message-Id: <6f5a9e2719ffc5f89640f0f267ca35610e4edce1.1411724723.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1756262AbaIZKbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:31:12 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58738 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778AbaIZJqE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:04 -0400
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: arm@kernel.org, linux-kernel@vger.kernel.org
+Cc: matthias.bgg@gmail.com, akpm@linux-foundation.org, davem@davemloft.net,
+        gregkh@linuxfoundation.org, joe@perches.com, m.chehab@samsung.com,
+        crope@iki.fi, jg1.han@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH resend] MAINTAINERS: Add maintainers entry for Mediatek SoCs
+Date: Fri, 26 Sep 2014 11:45:55 +0200
+Message-Id: <1411724755-9866-1-git-send-email-matthias.bgg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Rui <ray.huang@amd.com>
+I plan to stay with the Mediatek SoCs for the next future
+and hope to expand its support along the way with the help
+of a whole bunch of people.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
-
-AMD xHC also needs short tx quirk after tested on most of chipset
-generations. That's because there is the same incorrect behavior like
-Fresco Logic host. Please see below message with on USB webcam
-attached on xHC host:
-
-[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
-
-Reported-by: Arindam Nath <arindam.nath@amd.com>
-Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
 ---
- drivers/usb/host/xhci-pci.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ MAINTAINERS | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index f34b42e4c391..1cfe0c743092 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -101,6 +101,10 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 	/* AMD PLL quirk */
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
- 		xhci->quirks |= XHCI_AMD_PLL_FIX;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 65fd4db..2e4a030 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1156,6 +1156,16 @@ W:	http://www.digriz.org.uk/ts78xx/kernel
+ S:	Maintained
+ F:	arch/arm/mach-orion5x/ts78xx-*
+ 
++ARM/Mediatek SoC support
++M:	Matthias Brugger <matthias.bgg@gmail.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++S:	Maintained
++F:	arch/arm/boot/dts/mt6*
++F:	arch/arm/boot/dts/mt8*
++F:	arch/arm/mach-mediatek/
++N:	mtk
++K:	mediatek
 +
-+	if (pdev->vendor == PCI_VENDOR_ID_AMD)
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
-+
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
- 		xhci->quirks |= XHCI_LPM_SUPPORT;
- 		xhci->quirks |= XHCI_INTEL_HOST;
+ ARM/MICREL KS8695 ARCHITECTURE
+ M:	Greg Ungerer <gerg@uclinux.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 -- 
-2.1.0
+1.9.1
 
