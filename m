@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbaIZCFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:05:44 -0400
-Received: from [119.145.14.64] ([119.145.14.64]:41736 "EHLO
-	szxga01-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbaIZCFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:05:42 -0400
-Message-ID: <5424C9BD.3040506@huawei.com>
-Date: Fri, 26 Sep 2014 10:04:45 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753301AbaIZCIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:08:13 -0400
+Received: from mail-bn1bon0134.outbound.protection.outlook.com ([157.56.111.134]:7200
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751515AbaIZCIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:08:12 -0400
+Date: Fri, 26 Sep 2014 10:07:46 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Sanchayan Maity <maitysanchayan@gmail.com>
+CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: dts: vf610-colibri: Add ADC support
+Message-ID: <20140926020745.GH21077@dragon>
+References: <cover.1411122224.git.maitysanchayan@gmail.com>
+ <a0ecfce3f97fb6684657ae76b89f38108fcdf68f.1411122224.git.maitysanchayan@gmail.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 03/22] MSI: Remove the redundant irq_set_chip_data()
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-4-git-send-email-wangyijing@huawei.com> <20140925071919.GH12423@ulmo>
-In-Reply-To: <20140925071919.GH12423@ulmo>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <a0ecfce3f97fb6684657ae76b89f38108fcdf68f.1411122224.git.maitysanchayan@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(51704005)(199003)(87936001)(83072002)(74662003)(80022003)(85852003)(106466001)(90102001)(102836001)(79102003)(33716001)(77982003)(46406003)(57986006)(81342003)(85306004)(76176999)(33656002)(1411001)(83506001)(10300001)(95666004)(74502003)(81156004)(86362001)(97756001)(54356999)(92726001)(46102003)(81542003)(110136001)(64706001)(4396001)(83322001)(50466002)(104016003)(105606002)(97736003)(84676001)(47776003)(68736004)(44976005)(69596002)(23726002)(6806004)(19580395003)(76482002)(21056001)(92566001)(120916001)(99396003)(50986999)(107046002)(19580405001)(31966008)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/25 15:19, Thierry Reding wrote:
-> On Thu, Sep 25, 2014 at 11:14:13AM +0800, Yijing Wang wrote:
->> Currently, pcie-designware, pcie-rcar, pci-tegra drivers
->> use irq chip_data to save the msi_chip pointer. They
->> already call irq_set_chip_data() in their own MSI irq map
->> functions. So irq_set_chip_data() in arch_setup_msi_irq()
->> is useless.
+On Fri, Sep 19, 2014 at 04:56:13PM +0530, Sanchayan Maity wrote:
+> Enable ADC support for Colibri VF61 modules
 > 
-> Again, I think this should be the other way around. If drivers do
-> something that's already handled by the core, then the duplicate code
-> should be dropped from the drivers.
-
-Hi Thierry, this is different thing, because chip_data is specific to IRQ
-controller, and in other platform, like in x86, chip_data is used to save irq_cfg.
-So we can not call irq_set_chip_data() in core code.
-
-x86 irq piece code
-
-int arch_setup_hwirq(unsigned int irq, int node)
-{
-	struct irq_cfg *cfg;
-	unsigned long flags;
-	int ret;
-
-	cfg = alloc_irq_cfg(irq, node);
-	if (!cfg)
-		return -ENOMEM;
-
-	raw_spin_lock_irqsave(&vector_lock, flags);
-	ret = __assign_irq_vector(irq, cfg, apic->target_cpus());
-	raw_spin_unlock_irqrestore(&vector_lock, flags);
-
-	if (!ret)
-		irq_set_chip_data(irq, cfg);  ------------->Save irq_cfg
-	else
-		free_irq_cfg(irq, cfg);
-	return ret;
-}
-
-Thanks!
-Yijing.
-
+> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+> ---
+>  arch/arm/boot/dts/vf610-colibri.dtsi |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
 > 
-> Thierry
+> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
+> index 0cd8343..6fd099e 100644
+> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
+> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
+> @@ -27,6 +27,16 @@
+>  
+>  };
+>  
+> +&adc0 {
+> +	pinctrl-names = "default";
+
+Sorry for missing it, but I would expect properties pinctrl-names and
+pinctrl-0 appear as a couple.  Should we drop property pinctrl-names
+here?
+
+Shawn
+
+> +	status = "okay";
+> +};
+> +
+> +&adc1 {
+> +	pinctrl-names = "default";
+> +	status = "okay";
+> +};
+> +
+>  &esdhc1 {
+>  	pinctrl-names = "default";
+>  	pinctrl-0 = <&pinctrl_esdhc1>;
+> -- 
+> 1.7.9.5
 > 
-
-
--- 
-Thanks!
-Yijing
-
