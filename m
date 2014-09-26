@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaIZHlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:41:18 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:42388 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258AbaIZHlQ (ORCPT
+	id S1753908AbaIZHm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:42:59 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50353 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462AbaIZHm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:41:16 -0400
+	Fri, 26 Sep 2014 03:42:58 -0400
+Date: Fri, 26 Sep 2014 00:42:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [torture] BUG: unable to handle kernel NULL pointer dereference
+ at (null)
+Message-ID: <20140926074223.GN4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140913122412.GA10984@localhost>
+ <20140915202710.GG4723@linux.vnet.ibm.com>
+ <20140917023154.GA9519@localhost>
+ <20140917161704.GZ4723@linux.vnet.ibm.com>
+ <20140918131751.GA8797@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
-Content-Transfer-Encoding: 7bit
-Date: Fri, 26 Sep 2014 09:40:34 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: linus.walleij@linaro.org, gnurou@gmail.com, kernel@pengutronix.de,
-        linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, bpringlemeir@nbsps.com,
-        l.stach@pengutronix.de
-Subject: Re: [PATCH v3 4/5] ARM: dts: vf610: use new GPIO support
-In-Reply-To: <20140926012126.GC21077@dragon>
-References: <cover.1411662961.git.stefan@agner.ch>
- <590a5fbc4f8b552355a93c1002041765352cd1c3.1411662961.git.stefan@agner.ch>
- <20140926012126.GC21077@dragon>
-Message-ID: <f3bba83ea15d680c852eb7d6e45de08a@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140918131751.GA8797@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092607-3532-0000-0000-000004F0549F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-09-26 03:21, schrieb Shawn Guo:
-> On Thu, Sep 25, 2014 at 06:37:08PM +0200, Stefan Agner wrote:
->> Use GPIO support by adding SD card detection configuration and
->> GPIO pinmux for Colibri's standard GPIO pins. Attach the GPIO
->> pins to the iomuxc node to get the GPIO pin settings applied.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->>  arch/arm/boot/dts/vf610-colibri.dtsi | 9 +++++++++
->>  arch/arm/boot/dts/vf610-twr.dts      | 1 +
->>  arch/arm/boot/dts/vf610.dtsi         | 1 +
->>  3 files changed, 11 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
->> index 0cd8343..efd4322 100644
->> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
->> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
->> @@ -31,6 +31,7 @@
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&pinctrl_esdhc1>;
->>  	bus-width = <4>;
->> +	cd-gpios = <&gpio2 10 GPIO_ACTIVE_LOW>;
->>  };
->>
->>  &fec1 {
->> @@ -71,6 +72,14 @@
->>
->>  &iomuxc {
->>  	vf610-colibri {
->> +		pinctrl_gpio_ext: gpio_ext {
->> +			fsl,pins = <
->> +				VF610_PAD_PTD10__GPIO_89	0x22ed /* EXT_IO_0 */
->> +				VF610_PAD_PTD9__GPIO_88		0x22ed /* EXT_IO_1 */
->> +				VF610_PAD_PTD26__GPIO_68	0x22ed /* EXT_IO_2 */
->> +			>;
->> +		};
->> +
+On Thu, Sep 18, 2014 at 09:17:51PM +0800, Fengguang Wu wrote:
+> Hi Paul,
 > 
-> I'm not sure these GPIOs will be set up at anywhere.  To set them up,
-> you need to either have pinctrl_gpio_ext referenced by some client
-> device in its pinctrl-* property or put these pins into hog group (see
-> example in arch/arm/boot/dts/vf610-twr.dts).
+> > > > > plymouth-upstart-bridge: ply-event-loop.c:497: ply_event_loop_new: Assertion `loop->epoll_fd >= 0' failed.
+> > > > > /etc/lsb-base-logging.sh: line 5:  2580 Aborted                 plymouth --ping > /dev/null 2>&1
+> > > > > /etc/lsb-base-logging.sh: line 5:  2585 Aborted                 plymouth --ping > /dev/null 2>&1
+> > > > > mount: proc has wrong device number or fs type proc not supported
+> > > > > /etc/lsb-base-logging.sh: line 5:  2601 Aborted                 plymouth --ping > /dev/null 2>&1
+> > > > > /etc/rc6.d/S40umountfs: line 20: /proc/mounts: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > cat: /proc/1/maps: No such file or directory
+> > > > > umount: /var/run: not mounted
+> > > > > umount: /var/lock: not mounted
+> > > > > umount: /dev/shm: not mounted
+> > > > > mount: / is busy
+> > > > >  * Will now restart
+> > 
+> > Are these expected behavior?
 > 
-> Shawn
+> Yes, because it's randconfig boot tests, the user space may well
+> complain about random stuff and I'll ignore them all as long as it
+> will eventually call the shutdown command to finish the test in time.  :)
 > 
+> > So again, I can invoke this commit without losing much (sendkey
+> > alt-sysrq-z is after all my friend), but it is not clear to me that we
+> > have gotten to the root of this problem.
+> 
+> Sorry about that! If you see any debug tricks that I can try, or
+> information I can collect, please let me know.
 
-This GPIO's are meant to be used from user space by default. The latest
-implementation of imx_pmx_gpio_request_enable not only takes care of the
-muxing, but also applies the whole pad settings. Hence we do not need
-the pinctrl subsystem to apply it (through pinctrl-* dt properties).
+Hmmm...
 
-I changed this now in v3, in v2 I had still to use the pinctrl-*
-properties. I like that 3rd version much more, this way the pin only
-really gets muxed when the user uses it (e.g. we save power because the
-pad is disabled when the GPIO is not in use). If the pin needs to be in
-a defined state, then we would have to explicitly configure/enable it
-through a pinctrl-* properties, but this is not the case for these
-external GPIO's.
+Looks like rcutorture might be starting too soon.  With all the selftests,
+it is taking 3-4 minutes to boot.  One approach would be to set
+rcutorture.stat_interval=200 or whatever the duration of boot is.
+Another would be to set rcutorture.torture_runnable=0, and to change:
 
---
-Stefan
+	int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+	module_param(rcutorture_runnable, int, 0444);
+	MODULE_PARM_DESC(rcutorture_runnable, "Start rcutorture at boot");
 
->>  		pinctrl_esdhc1: esdhc1grp {
->>  			fsl,pins = <
->>  				VF610_PAD_PTA24__ESDHC1_CLK	0x31ef
->> diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
->> index 189b697..3fe8a8f 100644
->> --- a/arch/arm/boot/dts/vf610-twr.dts
->> +++ b/arch/arm/boot/dts/vf610-twr.dts
->> @@ -116,6 +116,7 @@
->>  	pinctrl-names = "default";
->>  	pinctrl-0 = <&pinctrl_esdhc1>;
->>  	bus-width = <4>;
->> +	cd-gpios = <&gpio5 6 GPIO_ACTIVE_LOW>;
->>  	status = "okay";
->>  };
->>
->> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
->> index 4d2ec32..467c97e 100644
->> --- a/arch/arm/boot/dts/vf610.dtsi
->> +++ b/arch/arm/boot/dts/vf610.dtsi
->> @@ -11,6 +11,7 @@
->>  #include "vf610-pinfunc.h"
->>  #include <dt-bindings/clock/vf610-clock.h>
->>  #include <dt-bindings/interrupt-controller/irq.h>
->> +#include <dt-bindings/gpio/gpio.h>
->>
->>  / {
->>  	aliases {
->> --
->> 2.1.0
->>
+To:
+
+	int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+	module_param(rcutorture_runnable, int, 0644);
+	MODULE_PARM_DESC(rcutorture_runnable, "Start rcutorture at boot");
+
+In kernel/rcu/rcutorture.c.
+
+Then have your scripts set rcutorture_runnable=1 from sysfs once boot
+completes.
+
+Alternatively, if poking sysfs is not reasonable (and it
+would not be in my test scripts), put a delay just after the
+rcutorture_record_test_transition() in rcu_torture_init().  For example,
+schedule_timeout_interruptible(200 * HZ) to delay 200 seconds.
+
+Another approach would be for me to figure out some way for rcutorture
+to figure out that boot was not far enough along for it to safely
+do much, probably enabled by a third value of rcutorture_runnable.
+
+One more approach would be to replace DUMP_ALL with DUMP_NONE in
+kernel/rcu/rcutorture.c's rcutorture_trace_dump() function.  Or
+to remove the ftrace_dump() statement entirely.  (The question that
+this might help answer is which part of rcutorture_trace_dump() is
+causing the problem.)
+
+Any of these approaches seem reasonable?
+
+							Thanx, Paul
+
