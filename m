@@ -1,146 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaIZNOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:14:35 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:34111 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468AbaIZNOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:14:33 -0400
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-To: kernel@pengutronix.de, a.zummo@towertech.it
-Cc: b35083@freescale.com, rtc-linux@googlegroups.com, shawn.guo@freescale.com,
-        stefan@agner.ch, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: [PATCH 3/3] drivers/rtc/rtc-snvs: Add clock support
-Date: Fri, 26 Sep 2014 18:44:01 +0530
-Message-Id: <8a1904a59f7b171a7cf1e71b9e80f0cf7b1061c0.1411736171.git.maitysanchayan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1411736171.git.maitysanchayan@gmail.com>
-References: <cover.1411736171.git.maitysanchayan@gmail.com>
-In-Reply-To: <cover.1411736171.git.maitysanchayan@gmail.com>
-References: <cover.1411736171.git.maitysanchayan@gmail.com>
+	id S1754970AbaIZNRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:17:52 -0400
+Received: from sym2.noone.org ([178.63.92.236]:38512 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671AbaIZNRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:17:49 -0400
+Date: Fri, 26 Sep 2014 15:17:46 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
+Message-ID: <20140926131746.GA3279@distanz.ch>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+ <12538756.JybTPMqFHj@wuerfel>
+ <CAFiDJ5-bo_WOz6JockX_BaX0_O0D=+8PjKx7gys-ySKA2KMOaw@mail.gmail.com>
+ <3608975.MxU44B73lk@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3608975.MxU44B73lk@wuerfel>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds clock enable and disable support
-for the SNVS peripheral which is required by the
-SNVS RTC.
+On 2014-09-24 at 13:10:00 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 24 September 2014 18:57:54 Ley Foon Tan wrote:
+> > On Wed, Sep 24, 2014 at 6:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > > On Wednesday 24 September 2014 18:18:50 Ley Foon Tan wrote:
+> > >> On Tue, Sep 23, 2014 at 6:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > >> > On Tuesday 23 September 2014 18:20:08 LF.Tan wrote:
+> > >> >> Hi Arnd
+> > >> >>
+> > >> >> Are you okay with this generic futex in asm-generic?
+> > >> >>
+> > >> >
+> > >> > Yes, this looks good. Remind me again who need this, would it make
+> > >> > sense to merge this through an architecture-specific tree for
+> > >> > whichever architecture can benefit from it?
+> > >> What is the common practice for this?
+> > >> Do you mean merge with nios2 or other arch, eg m68k?
+> > >
+> > > I mean do it as part of the nios2 patches.
+> > I am okay with this.
+> > Do I need to get ACK for all patches in order for nios2 merge into mainline?
+> > Thanks.
+> > 
+> 
+> Please add my 'Acked-by: Arnd Bergmann <arnd@arndb.de>' to this patch
+> once Thomas is ok with it. I think we had concluded already that it
+> was correct when we talked about it last time, but he doesn't seem
+> convinced yet so I want to wait for his reply.
+> 
+> You definitely need an Ack for all patches touching code outside of
+> arch/nios2, from the respective maintainers. For the nios2 code,
+> having as many acks as you can helps, and I should probably take
+> a last look so I can ack the pull request when you send it.
 
-Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
----
- drivers/rtc/rtc-snvs.c |   48 +++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 39 insertions(+), 9 deletions(-)
+Speaking of the nios2 part: I'm the author of some parts of this code,
+but now also reviewed this series (or rather, intend to do so for the
+few remaining patches I didn't review yet).
 
-diff --git a/drivers/rtc/rtc-snvs.c b/drivers/rtc/rtc-snvs.c
-index fa384fe..f3e8f05 100644
---- a/drivers/rtc/rtc-snvs.c
-+++ b/drivers/rtc/rtc-snvs.c
-@@ -17,6 +17,7 @@
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/rtc.h>
-+#include <linux/clk.h>
- 
- /* These register offsets are relative to LP (Low Power) range */
- #define SNVS_LPCR		0x04
-@@ -39,6 +40,7 @@ struct snvs_rtc_data {
- 	void __iomem *ioaddr;
- 	int irq;
- 	spinlock_t lock;
-+	struct clk *clk;
- };
- 
- static u32 rtc_read_lp_counter(void __iomem *ioaddr)
-@@ -260,8 +262,31 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 	if (data->irq < 0)
- 		return data->irq;
- 
-+	ret = devm_request_irq(&pdev->dev, data->irq, snvs_rtc_irq_handler,
-+			       IRQF_SHARED, "rtc alarm", &pdev->dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to request irq %d: %d\n",
-+			data->irq, ret);
-+		return ret;
-+	}
-+
-+	data->clk = devm_clk_get(&pdev->dev, "snvs");
-+	if (IS_ERR(data->clk)) {
-+		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
-+						PTR_ERR(data->clk));
-+		ret = PTR_ERR(data->clk);
-+		return ret;
-+	}
-+
- 	platform_set_drvdata(pdev, data);
- 
-+	ret = clk_prepare_enable(data->clk);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"Could not prepare or enable the snvs clock\n");
-+		return ret;
-+	}
-+
- 	spin_lock_init(&data->lock);
- 
- 	/* Initialize glitch detect */
-@@ -275,23 +300,20 @@ static int snvs_rtc_probe(struct platform_device *pdev)
- 
- 	device_init_wakeup(&pdev->dev, true);
- 
--	ret = devm_request_irq(&pdev->dev, data->irq, snvs_rtc_irq_handler,
--			       IRQF_SHARED, "rtc alarm", &pdev->dev);
--	if (ret) {
--		dev_err(&pdev->dev, "failed to request irq %d: %d\n",
--			data->irq, ret);
--		return ret;
--	}
--
- 	data->rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
- 					&snvs_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(data->rtc)) {
- 		ret = PTR_ERR(data->rtc);
- 		dev_err(&pdev->dev, "failed to register rtc: %d\n", ret);
--		return ret;
-+		goto error_rtc_device_register;
- 	}
- 
- 	return 0;
-+
-+error_rtc_device_register:
-+	clk_disable_unprepare(data->clk);
-+
-+	return ret;
- }
- 
- #ifdef CONFIG_PM_SLEEP
-@@ -302,16 +324,24 @@ static int snvs_rtc_suspend(struct device *dev)
- 	if (device_may_wakeup(dev))
- 		enable_irq_wake(data->irq);
- 
-+	clk_disable_unprepare(data->clk);
-+
- 	return 0;
- }
- 
- static int snvs_rtc_resume(struct device *dev)
- {
-+	int ret;
-+
- 	struct snvs_rtc_data *data = dev_get_drvdata(dev);
- 
- 	if (device_may_wakeup(dev))
- 		disable_irq_wake(data->irq);
- 
-+	ret = clk_prepare_enable(data->clk);
-+	if (ret)
-+		return ret;
-+
- 	return 0;
- }
- #endif
--- 
-1.7.9.5
+What is the appropriate way to account for this? Is Reviewed-By still OK? I
+guess I won't be considered an entirely neutral reviewer ;)
 
+Cheers
+Tobias
