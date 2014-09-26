@@ -1,180 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777AbaIZJ7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:59:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755090AbaIZJqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:43 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 054/142] powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
-Date: Fri, 26 Sep 2014 11:44:25 +0200
-Message-Id: <30da621f91f086da7964a3ad1233cfb722ba67f3.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1755816AbaIZJ7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:59:35 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:51367 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796AbaIZJ7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:59:33 -0400
+Date: Fri, 26 Sep 2014 11:59:29 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Sjoerd Simons <sjoerd@luon.net>, Alexandre Courbot <acourbot@nvidia.com>,
+        Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [5/5] ARM: tegra: jetson-tk1: enable GK20A GPU
+Message-ID: <20140926095928.GJ31106@ulmo>
+References: <1400491450-19223-6-git-send-email-acourbot@nvidia.com>
+ <20140925132717.GA13579@dusk.luon.net>
+ <54243931.6050804@wwwdotorg.org>
+ <20140925164109.GA30382@ulmo>
+ <542459C5.9060505@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRokNccIwvMzawGl"
+Content-Disposition: inline
+In-Reply-To: <542459C5.9060505@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+--wRokNccIwvMzawGl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-===============
+On Thu, Sep 25, 2014 at 12:07:01PM -0600, Stephen Warren wrote:
+> On 09/25/2014 10:41 AM, Thierry Reding wrote:
+> >On Thu, Sep 25, 2014 at 09:48:01AM -0600, Stephen Warren wrote:
+> >>On 09/25/2014 07:27 AM, Sjoerd Simons wrote:
+> >>>Playing a bit with todays linux-next on my jetson, it seems this patch=
+ is
+> >>>still required for enabling the GPU. Is there anything blocking it (fi=
+rmware
+> >>>not available yet in liux-firmware?)
+> >>
+> >>I think initially I was waiting for the DRM patch "drm/nouvea: support =
+for
+> >>probing platform devices" to be applied, but it looks like that's been
+> >>applied already, so only patches 4 and 5 in this series are still
+> >>outstanding.
+> >>
+> >>Alex, wasn't there also some issue where the VPR register had to be
+> >>programmed, and if it wasn't there'd be a hang when the GPU registers w=
+ere
+> >>touched? If we've added code to Nouveau/tegradrm to detect that and avo=
+id
+> >>the problem, then I guess we can commit these last two patches for 3.19=
+=2E A
+> >>resend after the 3.18 merge window might help.
+> >
+> >A patch that programs VPR was merged into U-Boot (though I don't think
+> >it's made it into master yet). I'm not sure we can reasonably check for
+> >that in Nouveau, given that the register is somewhere completely
+> >unrelated. In fact I think the U-Boot patch was triggered by some
+> >discussion about how to solve this and it was decided that it shouldn't
+> >be done in the kernel, but U-Boot should set it up.
+> >
+> >That said, perhaps one solution would be to make U-Boot enable the gk20a
+> >device if it's set up the VPR and disable it otherwise?
+>=20
+> For that to work, we'd need the DT to say status=3D"disabled" by default =
+for
+> the GPU, and for the fixed U-Boot (and indeed every other bootloader...) =
+to
+> enable the GPU node. This would allow people with old versions of U-Boot =
+(or
+> other bootloaders) to continue to boot. This means bootloaders would only
+> have to set status=3D"okay", but never have to set status=3D"disabled", w=
+hich at
+> least simplifies them a tiny bit.
 
-commit 629149fae478f0ac6bf705a535708b192e9c6b59 upstream.
+Sounds like a reasonable requirement on bootloaders to me. If it's clear
+that the device will not work without an initialized VPR region, part of
+the "boot protocol" should be for the bootloader to tell the kernel when
+it's safe to enable the GPU.
 
-If we changed base page size of the segment, either via sub_page_protect
-or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
-table entries. We do a lazy hash page table flush for all mapped pages
-in the demoted segment. This happens when we handle hash page fault
-for these pages.
+Thierry
 
-We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
-pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
-that implies that we could possibly have older 64K hash pte entries in
-the hash page table and we need to invalidate those entries.
+--wRokNccIwvMzawGl
+Content-Type: application/pgp-signature
 
-Handle this correctly for 16M pages
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/powerpc/mm/hugepage-hash64.c | 79 ++++++++++++++++++++++++++++++++++-----
- 1 file changed, 70 insertions(+), 9 deletions(-)
+iQIcBAEBAgAGBQJUJTkAAAoJEN0jrNd/PrOhLDMP/j2bvIxUrl4tn8PZWxxaypQ4
+cnMqIBWk1qulgTjtAvPcpb2PAODIK0cr1ZiyVWNBkICZ5nGLM8dlY5SsvKVCamaH
+2Khq5e/O8YqV+48e+mpoKB9erNr7V/p7U+6zN9/k9xk9cCLCQOwvC85dsViQfGB3
+e0VJj9wkwnaep6kfZBnY6NLQAVuSgepNaQdCswigY0eH8tFq16ugqYmvhpe89FYX
+JWYMMjMhsMclQ7Hic0tnyjH5qMgB/T/aT0b/6l5jw7Hx7KoeZ5InumYbrMSTIJPn
+bHNiQZcqTfv1A9nz0nEls/VXoiTKOJPPbw7jyqZf7NMP/6rmkPXJsxnBCuTTaWuy
+OiZs1vY2TUee7zopktkbanaQaYxOvkol83a1IVhjFZ0n2BOWEwGMr8mA30cYwfRl
+tCkz7AiI92dqCj5lRTzEJU0OH/hYi7dSfbhMR20kDSxyLjgfjkZYTm6qboXR6nHN
+hgx/hbmVG3vc/wMOxTeJKfNsAtO7AoKvjMPnX2IGotCnvIHAl+XFMcFemp7lcTZ8
+aQZQxfDFTmTdp8oIV8buKcSKa6RIFOcipd4d1nSXdiSgnPTMChF7z0s3JGylzcZr
+m/Pg/k1NgKuqERNbSri6TjQPGL7F+2pXw8v33VqSTZ2A8e7ZVeqIIjlFGSs3GOd1
+x4dfRN73arFv0jKCsTmd
+=VG5A
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/powerpc/mm/hugepage-hash64.c b/arch/powerpc/mm/hugepage-hash64.c
-index f50c4dfd1819..e0da84719b46 100644
---- a/arch/powerpc/mm/hugepage-hash64.c
-+++ b/arch/powerpc/mm/hugepage-hash64.c
-@@ -18,6 +18,57 @@
- #include <linux/mm.h>
- #include <asm/machdep.h>
- 
-+static void invalidate_old_hpte(unsigned long vsid, unsigned long addr,
-+				pmd_t *pmdp, unsigned int psize, int ssize)
-+{
-+	int i, max_hpte_count, valid;
-+	unsigned long s_addr;
-+	unsigned char *hpte_slot_array;
-+	unsigned long hidx, shift, vpn, hash, slot;
-+
-+	s_addr = addr & HPAGE_PMD_MASK;
-+	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	/*
-+	 * IF we try to do a HUGE PTE update after a withdraw is done.
-+	 * we will find the below NULL. This happens when we do
-+	 * split_huge_page_pmd
-+	 */
-+	if (!hpte_slot_array)
-+		return;
-+
-+	if (ppc_md.hugepage_invalidate)
-+		return ppc_md.hugepage_invalidate(vsid, s_addr, hpte_slot_array,
-+						  psize, ssize);
-+	/*
-+	 * No bluk hpte removal support, invalidate each entry
-+	 */
-+	shift = mmu_psize_defs[psize].shift;
-+	max_hpte_count = HPAGE_PMD_SIZE >> shift;
-+	for (i = 0; i < max_hpte_count; i++) {
-+		/*
-+		 * 8 bits per each hpte entries
-+		 * 000| [ secondary group (one bit) | hidx (3 bits) | valid bit]
-+		 */
-+		valid = hpte_valid(hpte_slot_array, i);
-+		if (!valid)
-+			continue;
-+		hidx =  hpte_hash_index(hpte_slot_array, i);
-+
-+		/* get the vpn */
-+		addr = s_addr + (i * (1ul << shift));
-+		vpn = hpt_vpn(addr, vsid, ssize);
-+		hash = hpt_hash(vpn, shift, ssize);
-+		if (hidx & _PTEIDX_SECONDARY)
-+			hash = ~hash;
-+
-+		slot = (hash & htab_hash_mask) * HPTES_PER_GROUP;
-+		slot += hidx & _PTEIDX_GROUP_IX;
-+		ppc_md.hpte_invalidate(slot, vpn, psize,
-+				       MMU_PAGE_16M, ssize, 0);
-+	}
-+}
-+
-+
- int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 		    pmd_t *pmdp, unsigned long trap, int local, int ssize,
- 		    unsigned int psize)
-@@ -85,6 +136,15 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 	vpn = hpt_vpn(ea, vsid, ssize);
- 	hash = hpt_hash(vpn, shift, ssize);
- 	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	if (psize == MMU_PAGE_4K) {
-+		/*
-+		 * invalidate the old hpte entry if we have that mapped via 64K
-+		 * base page size. This is because demote_segment won't flush
-+		 * hash page table entries.
-+		 */
-+		if ((old_pmd & _PAGE_HASHPTE) && !(old_pmd & _PAGE_COMBO))
-+			invalidate_old_hpte(vsid, ea, pmdp, MMU_PAGE_64K, ssize);
-+	}
- 
- 	valid = hpte_valid(hpte_slot_array, index);
- 	if (valid) {
-@@ -107,11 +167,8 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 			 * safely update this here.
- 			 */
- 			valid = 0;
--			new_pmd &= ~_PAGE_HPTEFLAGS;
- 			hpte_slot_array[index] = 0;
--		} else
--			/* clear the busy bits and set the hash pte bits */
--			new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		}
- 	}
- 
- 	if (!valid) {
-@@ -119,15 +176,13 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 
- 		/* insert new entry */
- 		pa = pmd_pfn(__pmd(old_pmd)) << PAGE_SHIFT;
--repeat:
--		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
--
--		/* clear the busy bits and set the hash pte bits */
--		new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		new_pmd |= _PAGE_HASHPTE;
- 
- 		/* Add in WIMG bits */
- 		rflags |= (new_pmd & (_PAGE_WRITETHRU | _PAGE_NO_CACHE |
- 				      _PAGE_COHERENT | _PAGE_GUARDED));
-+repeat:
-+		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
- 
- 		/* Insert into the hash table, primary slot */
- 		slot = ppc_md.hpte_insert(hpte_group, vpn, pa, rflags, 0,
-@@ -168,6 +223,12 @@ repeat:
- 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
- 	}
- 	/*
-+	 * Mark the pte with _PAGE_COMBO, if we are trying to hash it with
-+	 * base page size 4k.
-+	 */
-+	if (psize == MMU_PAGE_4K)
-+		new_pmd |= _PAGE_COMBO;
-+	/*
- 	 * The hpte valid is stored in the pgtable whose address is in the
- 	 * second half of the PMD. Order this against clearing of the busy bit in
- 	 * huge pmd.
--- 
-2.1.0
-
+--wRokNccIwvMzawGl--
