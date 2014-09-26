@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066AbaIZOiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:38:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35012 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755052AbaIZOeC (ORCPT
+	id S1755969AbaIZOih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:38:37 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:51691 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836AbaIZOif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:34:02 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 04/10] net: pxa168_eth: fix Ethernet flow control status
-Date: Fri, 26 Sep 2014 16:33:50 +0200
-Message-Id: <1411742036-23520-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
+	Fri, 26 Sep 2014 10:38:35 -0400
+Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
+From: Namhyung Kim <namhyung@kernel.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+In-Reply-To: <1411729103.3852.19.camel@hornet>
+References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
+	 <1411491787-25938-2-git-send-email-pawel.moll@arm.com>
+	 <87sijhk21x.fsf@sejong.aot.lge.com> <1411642198.4768.30.camel@hornet>
+	 <8738bekith.fsf@sejong.aot.lge.com>  <1411729103.3852.19.camel@hornet>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Sep 2014 23:38:26 +0900
+Message-ID: <1411742306.1669.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IEEE 802.3x Ethernet flow control is disabled when bit (1 << 2) is set
-in the port status register. Fix the flow control detection in the link
-event handling function which was relying on the opposite assumption.
+2014-09-26 (금), 11:58 +0100, Pawel Moll:
+> On Fri, 2014-09-26 at 07:16 +0100, Namhyung Kim wrote:
+> > > It would be doable, I guess, but what
+> > > if someone *wants* to have sched clock as the timestamps source (because
+> > > it's cheap) but still be able to correlate them with userspace? In this
+> > > case two separate timestamps are required to do the approximation.
+> > 
+> > But by collecting two timestamps, you'll loose the win of the first
+> > timestamp, no?
+> 
+> But I can ask for both timestamps only being collected on "low
+> bandwidth" events, in particular context switches and/or periodic (eg.
+> 10ms hrtimer) software events.
+> 
+> Then I have loads of normal normal samples, timestamped with sched clock
+> only, and every now and then one with both timestamps which then I can
+> use for time correlation. The whole point is that the frequency of such
+> "synchronisation" event can be much (much!) lower than of the normal
+> samples, but it still allows pretty good approximation (I was getting
+> accuracy of ~1 microsecond and better with sched_switch trace event
+> marked with additional raw monotonic timestamp).
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/net/ethernet/marvell/pxa168_eth.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Okay.  But in that case wouldn't it be enough to use just a single
+timestamp for each event - sched_clock for cpu-cycles and monotonic raw
+for sched_switch?
 
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 978f26198dd6..b9073e2f3623 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -163,7 +163,7 @@
- /* Bit definitions for Port status */
- #define PORT_SPEED_100		(1 << 0)
- #define FULL_DUPLEX		(1 << 1)
--#define FLOW_CONTROL_ENABLED	(1 << 2)
-+#define FLOW_CONTROL_DISABLED	(1 << 2)
- #define LINK_UP			(1 << 3)
- 
- /* Bit definitions for work to be done */
-@@ -885,7 +885,7 @@ static void handle_link_event(struct pxa168_eth_private *pep)
- 		speed = 10;
- 
- 	duplex = (port_status & FULL_DUPLEX) ? 1 : 0;
--	fc = (port_status & FLOW_CONTROL_ENABLED) ? 1 : 0;
-+	fc = (port_status & FLOW_CONTROL_DISABLED) ? 0 : 1;
- 	netdev_info(dev, "link up, %d Mb/s, %s duplex, flow control %sabled\n",
- 		    speed, duplex ? "full" : "half", fc ? "en" : "dis");
- 	if (!netif_carrier_ok(dev))
--- 
-1.9.1
+
+> 
+> Pawel
+> 
+> PS. Have you sent a couple of the messages via some kind of gmane's
+> proxy? All the mail addresses got rather messed up...
+> 
+
+Yes, I use gnus to communicate with lkml, but it seems it messed up mail
+addresses if it contains some list (like linux-api ?).  Sorry about
+that.
+
+Thanks,
+Namhyung
+
 
