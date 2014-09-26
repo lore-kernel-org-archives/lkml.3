@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaIZODD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:03:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5513 "EHLO mga09.intel.com"
+	id S1755808AbaIZODU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:03:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54485 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755654AbaIZOC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:02:59 -0400
+	id S1755740AbaIZODO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:03:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="609110342"
+   d="scan'208";a="609110503"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFT v2 17/24] iommu/vt-d: Clean up unused MSI related code
-Date: Fri, 26 Sep 2014 22:02:18 +0800
-Message-Id: <1411740145-30626-18-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFT v2 22/24] x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
+Date: Fri, 26 Sep 2014 22:02:23 +0800
+Message-Id: <1411740145-30626-23-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,183 +35,209 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now MSI interrupt has been converted to new hierarchy irqdomain
-interfaces, so kill legacy MSI related code.
+Enhance DMAR code to support hierarchy irqdomain, it helps to make
+the architecture more clear.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel_irq_remapping.c |  144 -----------------------------------
- 1 file changed, 144 deletions(-)
+ arch/x86/include/asm/hw_irq.h |    7 +++
+ arch/x86/kernel/apic/msi.c    |  129 +++++++++++++++++++++++++++++++----------
+ 2 files changed, 106 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 166a73a3b551..8be4f924cb7c 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -146,44 +146,6 @@ static int qi_flush_iec(struct intel_iommu *iommu, int index, int mask)
- 	return qi_submit_sync(&desc, iommu);
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index a5d3b1c46b30..7ed68ce5929a 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -121,6 +121,7 @@ enum irq_alloc_type {
+ 	X86_IRQ_ALLOC_TYPE_HPET,
+ 	X86_IRQ_ALLOC_TYPE_MSI,
+ 	X86_IRQ_ALLOC_TYPE_MSIX,
++	X86_IRQ_ALLOC_TYPE_DMAR,
+ };
+ 
+ struct irq_alloc_info {
+@@ -149,6 +150,12 @@ struct irq_alloc_info {
+ 			u32		ioapic_polarity : 1;
+ 		};
+ #endif
++#ifdef	CONFIG_DMAR_TABLE
++		struct {
++			int		dmar_id;
++			void		*dmar_data;
++		};
++#endif
+ 	};
+ };
+ 
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index 08b6d1987ea6..409638b3918a 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -69,6 +69,9 @@ static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
+ 	msg->data |= MSI_DATA_VECTOR(cfg->vector);
+ 	msg->address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+ 	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
++	if (x2apic_enabled())
++		msg->address_hi = MSI_ADDR_BASE_HI |
++				  MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
  }
  
--static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	unsigned long flags;
--	int index;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--	*sub_handle = irq_iommu->sub_handle;
--	index = irq_iommu->irte_index;
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--	return index;
--}
--
--static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
--{
--	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_cfg(irq);
--	unsigned long flags;
--
--	if (!irq_iommu)
--		return -1;
--
--	raw_spin_lock_irqsave(&irq_2_ir_lock, flags);
--
--	cfg->remapped = 1;
--	irq_iommu->iommu = iommu;
--	irq_iommu->irte_index = index;
--	irq_iommu->sub_handle = subhandle;
--	irq_iommu->irte_mask = 0;
--
--	raw_spin_unlock_irqrestore(&irq_2_ir_lock, flags);
--
--	return 0;
--}
--
- static int modify_irte(struct irq_2_iommu *irq_iommu,
- 		       struct irte *irte_modified)
+ static bool msi_irq_remapped(struct irq_data *irq_data)
+@@ -298,58 +301,124 @@ static int
+ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      bool force)
  {
-@@ -1072,108 +1034,6 @@ intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	return 0;
+-	struct irq_cfg *cfg = irqd_cfg(data);
+-	unsigned int dest, irq = data->irq;
++	struct irq_data *parent = data->parent_data;
+ 	struct msi_msg msg;
+ 	int ret;
+ 
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	dmar_msi_read(irq, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
+-
+-	dmar_msi_write(irq, &msg);
++	ret = parent->chip->irq_set_affinity(parent, mask, force);
++	if (ret >= 0) {
++		dmar_msi_read(data->irq, &msg);
++		msi_update_msg(&msg, data);
++		dmar_msi_write(data->irq, &msg);
++	}
+ 
+-	return IRQ_SET_MASK_OK_NOCOPY;
++	return ret;
  }
  
--static void intel_compose_msi_msg(struct pci_dev *pdev,
--				  unsigned int irq, unsigned int dest,
--				  struct msi_msg *msg, u8 hpet_id)
--{
--	struct irq_cfg *cfg;
--	struct irte irte;
--	u16 sub_handle = 0;
--	int ir_index;
--
--	cfg = irq_cfg(irq);
--
--	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
--	BUG_ON(ir_index == -1);
--
--	prepare_irte(&irte, cfg->vector, dest);
--
--	/* Set source-id of interrupt request */
--	if (pdev)
--		set_msi_sid(&irte, pdev);
--	else
--		set_hpet_sid(&irte, hpet_id);
--
--	modify_irte(irq_2_iommu(irq), &irte);
--
--	msg->address_hi = MSI_ADDR_BASE_HI;
--	msg->data = sub_handle;
--	msg->address_lo = MSI_ADDR_BASE_LO | MSI_ADDR_IR_EXT_INT |
--			  MSI_ADDR_IR_SHV |
--			  MSI_ADDR_IR_INDEX1(ir_index) |
--			  MSI_ADDR_IR_INDEX2(ir_index);
--}
--
--/*
-- * Map the PCI dev to the corresponding remapping hardware unit
-- * and allocate 'nvec' consecutive interrupt-remapping table entries
-- * in it.
-- */
--static int intel_msi_alloc_irq(struct pci_dev *dev, int irq, int nvec)
--{
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(dev);
--	if (!iommu) {
--		printk(KERN_ERR
--		       "Unable to map PCI %s to iommu\n", pci_name(dev));
--		index = -ENOENT;
--	} else {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), nvec);
--		if (index < 0) {
--			printk(KERN_ERR
--			       "Unable to allocate %d IRTE for PCI %s\n",
--			       nvec, pci_name(dev));
--			index = -ENOSPC;
--		}
--	}
--	up_read(&dmar_global_lock);
--
--	return index;
--}
--
--static int intel_msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
--			       int index, int sub_handle)
--{
--	struct intel_iommu *iommu;
--	int ret = -ENOENT;
--
--	down_read(&dmar_global_lock);
--	iommu = map_dev_to_ir(pdev);
--	if (iommu) {
--		/*
--		 * setup the mapping between the irq and the IRTE
--		 * base index, the sub_handle pointing to the
--		 * appropriate interrupt remap table entry.
--		 */
--		set_irte_irq(irq, iommu, index, sub_handle);
--		ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
--static int intel_setup_hpet_msi(unsigned int irq, unsigned int id)
--{
--	int ret = -1;
--	struct intel_iommu *iommu;
--	int index;
--
--	down_read(&dmar_global_lock);
--	iommu = map_hpet_to_ir(id);
--	if (iommu) {
--		index = alloc_irte(iommu, irq, irq_2_iommu(irq), 1);
--		if (index >= 0)
--			ret = 0;
--	}
--	up_read(&dmar_global_lock);
--
--	return ret;
--}
--
- static struct irq_domain *intel_get_ir_irq_domain(struct irq_alloc_info *info)
+ static struct irq_chip dmar_msi_type = {
+ 	.name			= "DMAR_MSI",
+ 	.irq_unmask		= dmar_msi_unmask,
+ 	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= apic_ack_edge,
++	.irq_ack		= irq_chip_ack_parent,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
++	.irq_retrigger		= irq_chip_retrigger_hierarchy,
+ };
+ 
+-int dmar_alloc_hwirq(int id, int node, void *arg)
++static int dmar_domain_alloc(struct irq_domain *domain, unsigned int virq,
++			     unsigned int nr_irqs, void *arg)
++{
++	struct irq_alloc_info *info = arg;
++	int ret;
++
++	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_DMAR)
++		return -EINVAL;
++	if (irq_find_mapping(domain, info->dmar_id)) {
++		pr_warn("IRQ for DMAR%d already exists.\n", info->dmar_id);
++		return -EEXIST;
++	}
++
++	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
++	if (ret >= 0) {
++		irq_domain_set_hwirq_and_chip(domain, virq, info->dmar_id,
++					      &dmar_msi_type, NULL);
++		irq_set_handler_data(virq, info->dmar_data);
++		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
++	}
++
++	return ret;
++}
++
++static void dmar_domain_free(struct irq_domain *domain, unsigned int virq,
++			     unsigned int nr_irqs)
++{
++	BUG_ON(nr_irqs > 1);
++	msi_reset_irq_data_and_handler(domain, virq);
++	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
++}
++
++static int dmar_domain_activate(struct irq_domain *domain,
++				struct irq_data *irq_data)
++{
++	struct msi_msg msg;
++
++	native_compose_msi_msg(irqd_cfg(irq_data), &msg);
++	dmar_msi_write(irq_data->irq, &msg);
++
++	return 0;
++}
++
++static int dmar_domain_deactivate(struct irq_domain *domain,
++				  struct irq_data *irq_data)
  {
- 	struct intel_iommu *iommu = NULL;
-@@ -1250,10 +1110,6 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.setup_ioapic_entry	= intel_setup_ioapic_entry,
- 	.set_affinity		= intel_ioapic_set_affinity,
- 	.free_irq		= free_irte,
--	.compose_msi_msg	= intel_compose_msi_msg,
--	.msi_alloc_irq		= intel_msi_alloc_irq,
--	.msi_setup_irq		= intel_msi_setup_irq,
--	.setup_hpet_msi		= intel_setup_hpet_msi,
- 	.get_ir_irq_domain	= intel_get_ir_irq_domain,
- 	.get_irq_domain		= intel_get_irq_domain,
- 	.get_ioapic_entry	= intel_get_ioapic_entry,
+-	int irq;
+ 	struct msi_msg msg;
+ 
+-	irq = irq_domain_alloc_irqs(NULL, 1, node, NULL);
+-	if (irq > 0) {
+-		irq_set_handler_data(irq, arg);
+-		irq_set_chip_and_handler_name(irq, &dmar_msi_type,
+-					      handle_edge_irq, "edge");
+-		native_compose_msi_msg(irq_cfg(irq), &msg);
+-		dmar_msi_write(irq, &msg);
++	memset(&msg, 0, sizeof(msg));
++	dmar_msi_write(irq_data->irq, &msg);
++
++	return 0;
++}
++
++static struct irq_domain_ops dmar_domain_ops = {
++	.alloc = dmar_domain_alloc,
++	.free = dmar_domain_free,
++	.activate = dmar_domain_activate,
++	.deactivate = dmar_domain_deactivate,
++};
++
++static struct irq_domain *dmar_get_irq_domain(void)
++{
++	static struct irq_domain *dmar_domain;
++	static DEFINE_MUTEX(dmar_lock);
++
++	mutex_lock(&dmar_lock);
++	if (dmar_domain == NULL) {
++		dmar_domain = irq_domain_add_tree(NULL, &dmar_domain_ops, NULL);
++		if (dmar_domain)
++			dmar_domain->parent = x86_vector_domain;
+ 	}
++	mutex_unlock(&dmar_lock);
++
++	return dmar_domain;
++}
++
++int dmar_alloc_hwirq(int id, int node, void *arg)
++{
++	struct irq_domain *domain = dmar_get_irq_domain();
++	struct irq_alloc_info info;
++
++	if (!domain)
++		return -1;
++
++	init_irq_alloc_info(&info, NULL);
++	info.type = X86_IRQ_ALLOC_TYPE_DMAR;
++	info.dmar_id = id;
++	info.dmar_data = arg;
+ 
+-	return irq;
++	return irq_domain_alloc_irqs(domain, 1, node, &info);
+ }
+ 
+ void dmar_free_hwirq(int irq)
+ {
+-	irq_set_handler_data(irq, NULL);
+-	irq_set_handler(irq, NULL);
+ 	irq_domain_free_irqs(irq, 1);
+ }
+ #endif
 -- 
 1.7.10.4
 
