@@ -1,18 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636AbaIZKWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:22:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
+	id S1755201AbaIZKWD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:22:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32933 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749AbaIZJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:15 -0400
+	id S1754898AbaIZJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:17 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Michael Welling <mwelling@emacinc.com>,
-        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 046/142] mfd: omap-usb-host: Fix improper mask use.
-Date: Fri, 26 Sep 2014 11:44:17 +0200
-Message-Id: <8a9f2a150ef49da8cfc8cde47aa1962a3bb72ed3.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 004/142] x86, cpu hotplug: Fix stack frame warning in check_irq_vectors_for_cpu_disable()
+Date: Fri, 26 Sep 2014 11:43:35 +0200
+Message-Id: <66acfbf79cf6f97b0935a5830703166fae3104c1.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,41 +29,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Welling <mwelling@emacinc.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 46de8ff8e80a6546aa3d2fdf58c6776666301a0c upstream.
+commit 39424e89d64661faa0a2e00c5ad1e6dbeebfa972 upstream.
 
-single-ulpi-bypass is a flag used for older OMAP3 silicon.
+Further discussion here: http://marc.info/?l=linux-kernel&m=139073901101034&w=2
 
-The flag when set, can excite code that improperly uses the
-OMAP_UHH_HOSTCONFIG_UPLI_BYPASS define to clear the corresponding bit.
-Instead it clears all of the other bits disabling all of the ports in
-the process.
+kbuild, 0day kernel build service, outputs the warning:
 
-Signed-off-by: Michael Welling <mwelling@emacinc.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+arch/x86/kernel/irq.c:333:1: warning: the frame size of 2056 bytes
+is larger than 2048 bytes [-Wframe-larger-than=]
+
+because check_irq_vectors_for_cpu_disable() allocates two cpumasks on the
+stack.   Fix this by moving the two cpumasks to a global file context.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1390915331-27375-1-git-send-email-prarit@redhat.com
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Janet Morgan <janet.morgan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Ruiv Wang <ruiv.wang@gmail.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/mfd/omap-usb-host.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/irq.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 29ee54d68512..5dd653f9b094 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -445,7 +445,7 @@ static unsigned omap_usbhs_rev1_hostconfig(struct usbhs_hcd_omap *omap,
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 4207e8d1a094..39100783cf26 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -262,6 +262,14 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
+ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
  
- 		for (i = 0; i < omap->nports; i++) {
- 			if (is_ehci_phy_mode(pdata->port_mode[i])) {
--				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
-+				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
- 				break;
- 			}
- 		}
+ #ifdef CONFIG_HOTPLUG_CPU
++
++/* These two declarations are only used in check_irq_vectors_for_cpu_disable()
++ * below, which is protected by stop_machine().  Putting them on the stack
++ * results in a stack frame overflow.  Dynamically allocating could result in a
++ * failure so declare these two cpumasks as global.
++ */
++static struct cpumask affinity_new, online_new;
++
+ /*
+  * This cpu is going to be removed and its vectors migrated to the remaining
+  * online cpus.  Check to see if there are enough vectors in the remaining cpus.
+@@ -273,7 +281,6 @@ int check_irq_vectors_for_cpu_disable(void)
+ 	unsigned int this_cpu, vector, this_count, count;
+ 	struct irq_desc *desc;
+ 	struct irq_data *data;
+-	struct cpumask affinity_new, online_new;
+ 
+ 	this_cpu = smp_processor_id();
+ 	cpumask_copy(&online_new, cpu_online_mask);
 -- 
 2.1.0
 
