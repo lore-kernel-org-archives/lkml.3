@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaIZOxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:53:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54226 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802AbaIZOxj (ORCPT
+	id S1755455AbaIZOy5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:54:57 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60452 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753908AbaIZOy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:53:39 -0400
-Date: Fri, 26 Sep 2014 16:53:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, paulus@samba.org,
-        mingo@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org,
-        stephen@networkplumber.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH] kernel: events: core: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140926145335.GI4140@worktop.programming.kicks-ass.net>
-References: <20140822132605.GA20130@ada>
- <20140909094235.GD19379@twins.programming.kicks-ass.net>
- <20140909161648.GE4704@linux.vnet.ibm.com>
- <20140910131251.GZ4783@worktop.ger.corp.intel.com>
- <20140912163055.GC4775@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912163055.GC4775@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Fri, 26 Sep 2014 10:54:56 -0400
+Message-ID: <1411743293.7866.62.camel@x220>
+Subject: Re: [PATCHv3 2/7] ARM: at91: introduce basic SAMA5D4 support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 26 Sep 2014 16:54:53 +0200
+In-Reply-To: <20140926141326.GB4408@piout.net>
+References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
+	 <1410797759-18675-3-git-send-email-alexandre.belloni@free-electrons.com>
+	 <1411732023.7866.15.camel@x220> <20140926141326.GB4408@piout.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Sep 2014 14:54:54.0476 (UTC) FILETIME=[D50E94C0:01CFD999]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 09:30:55AM -0700, Paul E. McKenney wrote:
-> On Wed, Sep 10, 2014 at 03:12:51PM +0200, Peter Zijlstra wrote:
-> > On Tue, Sep 09, 2014 at 09:16:48AM -0700, Paul E. McKenney wrote:
-> > > On Tue, Sep 09, 2014 at 11:42:35AM +0200, Peter Zijlstra wrote:
-> > 
-> > > > Paul, why not do something like the below and do away with all this
-> > > > nonsense?
+Hi Alexandre,
+
+On Fri, 2014-09-26 at 16:13 +0200, Alexandre Belloni wrote:
+> On 26/09/2014 at 13:47:03 +0200, Paul Bolle wrote :
+> > On Mon, 2014-09-15 at 18:15 +0200, Alexandre Belloni wrote:
+> > > From: Nicolas Ferre <nicolas.ferre@atmel.com>
 > > > 
-> > > We used to do that, but the compilers became uncooperative, despite
-> > > Stephen Hemminger's best efforts.
+> > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > > 
-> > Happen to have a link handy to that thread so I can educate myself?
+> > This landed in next-20140926, as commit 2dc850b62e5b ("ARM: at91:
+> > introduce basic SAMA5D4 support").
+> > 
+> > > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> > > index b11ad54f8d17..7b44db208f10 100644
+> > > --- a/arch/arm/Kconfig.debug
+> > > +++ b/arch/arm/Kconfig.debug
+> > > @@ -101,6 +101,10 @@ choice
+> > >  		bool "Kernel low-level debugging on 9263 and 9g45"
+> > >  		depends on HAVE_AT91_DBGU1
+> > >  
+> > > +	config AT91_DEBUG_LL_DBGU2
+> > > +		bool "Kernel low-level debugging on sama5d4"
+> > > +		depends on HAVE_AT91_DBGU2
+> > > +
+> > 
+> > Why is this Kconfig symbol needed? Nothing in next-20140926 uses it. Are
+> > future users perhaps queued somewhere (say, in commits that didn't
+> > survive today's rather lively linux-next merges)? 
 > 
-> After a bit of software archeology, here you go...
+> There is no user because it conflicts with the previous one that is
+> selected by default by the sama5_defconfig. This is for early print and
+> it means that you can get earlyprintk either for sama5d3 or sama5d4.
 > 
-> Commit d322f45ceed52 (rcu: Make rcu_assign_pointer() unconditionally
-> insert a memory barrier) made this change.  According to the commit
-> log:
-> 
->     Recent changes to gcc give warning messages on rcu_assign_pointers()'s
->     checks that allow it to determine when it is OK to omit the memory
->     barrier.  Stephen Hemminger tried a number of gcc tricks to silence
->     this warning, but #pragmas and CPP macros do not work together in the
->     way that would be required to make this work.
-> 
-> This was applied in 2011, and searching LKML during that time gives
-> the following:  https://lkml.org/lkml/2011/7/29/305
-> 
-> And in this LKML post, Stephen Hemminger wrote:
-> 
-> 	Gcc now generates warnings from rcu_assign_pointer when passed the
-> 	address of something for example:
-> 		rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
-> 	This warning is harmless and should be surpressed but there maybe
-> 	other cases where we want that Gcc warning.
-> 
-> 	I tried various combinations of in rcu_assign_pointer macro
-> 	  #pragma GCC diagnostic push
-> 	  #pragma GCC diagnostic ignored "-Wlogical-op"
-> 	  ...
-> 	  #pragma GCC diagnostic pop
-> 	but macro's and pragma's don't nest with the correct scope for
-> 	this.
-> 
-> 	Maybe some one with more Gcc foo and time to waste could take
-> 	a crack at it.
-> 
-> Adding Stephen on CC in case he remembers more.
+> My guess is that it will never be included in any defconfig.
 
-So I read all that and am still left wondering WTF the problem was :/
+I missed that this is inside a "choice" (which complicates matters quite
+a bit)!
 
-I googled a bit and found this thread:
+There are a number of cases where one of the configs inside the choice
+only serve to _not_ set anything. In those cases the Kconfig symbol is
+used nowhere else. I'll have to think about this particular symbol a bit
+more to see if it actually makes sense to not use it anywhere else.
 
-  https://lkml.org/lkml/2014/3/24/39
+Thinking about the "Kernel low-level debugging port" choice is
+complicated by the fact that it holds about a gazillion "config"
+entries, many of which only show up only if some dependency is met. So
+it might take me some time to say anything sensible about it, if I ever
+manage to do that at all...
 
-Where Michael actually has two 'fixes' to the problem. Instead we
-continue clutter the API with this silly RCU_INIT_POINTER stuff, totally
-sad.
+Thanks,
 
-But nowhere have I found the actual warning GCC gives, I suppose I can
-go change my local tree and compile some code to obtain it, but that
-seems backwards. The patch 'working' around that should have mentioned
-it and explained why the warning is bogus or not.
+
+Paul Bolle
+
