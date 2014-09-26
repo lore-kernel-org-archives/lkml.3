@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606AbaIZKYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:24:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842AbaIZJqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754850AbaIZJqM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 05:46:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33052 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754754AbaIZJqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:00 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Scott Jiang <scott.jiang.linux@gmail.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 076/142] ASoC: blackfin: use samples to set silence
-Date: Fri, 26 Sep 2014 11:44:47 +0200
-Message-Id: <4bb4582d96337d181a560838fc9192899abfafbb.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 020/142] xhci: Treat not finding the event_seg on COMP_STOP the same as COMP_STOP_INVAL
+Date: Fri, 26 Sep 2014 11:43:51 +0200
+Message-Id: <12434db6ddb3f56ecc025fb3f75744b385c82c4e.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,52 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Scott Jiang <scott.jiang.linux@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 30443408fd7201fd1911b09daccf92fae3cc700d upstream.
+commit 9a54886342e227433aebc9d374f8ae268a836475 upstream.
 
-The third parameter for snd_pcm_format_set_silence needs the number
-of samples instead of sample bytes.
+When using a Renesas uPD720231 chipset usb-3 uas to sata bridge with a 120G
+Crucial M500 ssd, model string: Crucial_ CT120M500SSD1, together with a
+the integrated Intel xhci controller on a Haswell laptop:
 
-Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+00:14.0 USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
+
+The following error gets logged to dmesg:
+
+xhci error: Transfer event TRB DMA ptr not part of current TD
+
+Treating COMP_STOP the same as COMP_STOP_INVAL when no event_seg gets found
+fixes this.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/blackfin/bf5xx-i2s-pcm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-ring.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/blackfin/bf5xx-i2s-pcm.c b/sound/soc/blackfin/bf5xx-i2s-pcm.c
-index 9cb4a80df98e..bc9983d38ff3 100644
---- a/sound/soc/blackfin/bf5xx-i2s-pcm.c
-+++ b/sound/soc/blackfin/bf5xx-i2s-pcm.c
-@@ -293,19 +293,19 @@ static int bf5xx_pcm_silence(struct snd_pcm_substream *substream,
- 	unsigned int sample_size = runtime->sample_bits / 8;
- 	void *buf = runtime->dma_area;
- 	struct bf5xx_i2s_pcm_data *dma_data;
--	unsigned int offset, size;
-+	unsigned int offset, samples;
- 
- 	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
- 
- 	if (dma_data->tdm_mode) {
- 		offset = pos * 8 * sample_size;
--		size = count * 8 * sample_size;
-+		samples = count * 8;
- 	} else {
- 		offset = frames_to_bytes(runtime, pos);
--		size = frames_to_bytes(runtime, count);
-+		samples = count * runtime->channels;
- 	}
- 
--	snd_pcm_format_set_silence(runtime->format, buf + offset, size);
-+	snd_pcm_format_set_silence(runtime->format, buf + offset, samples);
- 
- 	return 0;
- }
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 6118e292d5df..46ad9f3f589d 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2579,7 +2579,8 @@ static int handle_tx_event(struct xhci_hcd *xhci,
+ 		 * last TRB of the previous TD. The command completion handle
+ 		 * will take care the rest.
+ 		 */
+-		if (!event_seg && trb_comp_code == COMP_STOP_INVAL) {
++		if (!event_seg && (trb_comp_code == COMP_STOP ||
++				   trb_comp_code == COMP_STOP_INVAL)) {
+ 			ret = 0;
+ 			goto cleanup;
+ 		}
 -- 
 2.1.0
 
