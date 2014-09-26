@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990AbaIZENw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 00:13:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37491 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202AbaIZENu (ORCPT
+	id S1753275AbaIZE0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 00:26:23 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:32849 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaIZE0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 00:13:50 -0400
-Date: Fri, 26 Sep 2014 00:13:41 -0400 (EDT)
-Message-Id: <20140926.001341.1361691136914532479.davem@davemloft.net>
-To: b.galvani@gmail.com
-Cc: netdev@vger.kernel.org, peppe.cavallaro@st.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, carlo@caione.org,
-        jerry.cao@amlogic.com, victor.wan@amlogic.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: net: stmmac glue layer for Amlogic Meson SoCs
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
-References: <1411219757-9201-1-git-send-email-b.galvani@gmail.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 25 Sep 2014 21:13:44 -0700 (PDT)
+	Fri, 26 Sep 2014 00:26:21 -0400
+Date: Fri, 26 Sep 2014 00:26:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Zefan Li <lizefan@huawei.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH] Revert "cgroup: remove redundant variable in
+ cgroup_mount()"
+Message-ID: <20140926042617.GA14426@htj.dyndns.org>
+References: <1411704205-28995-1-git-send-email-lizefan@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411704205-28995-1-git-send-email-lizefan@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Beniamino Galvani <b.galvani@gmail.com>
-Date: Sat, 20 Sep 2014 15:29:15 +0200
+On Fri, Sep 26, 2014 at 12:03:25PM +0800, Zefan Li wrote:
+> This reverts commit 0c7bf3e8cab7900e17ce7f97104c39927d835469.
 > 
-> the Ethernet controller available in Amlogic Meson6 and Meson8 SoCs is
-> a Synopsys DesignWare MAC IP core, already supported by the stmmac
-> driver.
+> If there are child cgroups in the cgroupfs and then we umount it,
+> the superblock will be destroyed but the cgroup_root will be kept
+> around. When we mount it again, cgroup_mount() will find this
+> cgroup_root and allocate a new sb for it.
 > 
-> These patches add a glue layer to the driver for the platform-specific
-> settings required by the Amlogic variant.
+> So with this commit we will be trapped in a dead loop in the case
+> described above, because kernfs_pin_sb() keeps returning NULL.
 > 
-> This has been tested on a Amlogic S802 device with the initial Meson
-> support submitted by Carlo Caione [1].
+> Currently I don't see how we can avoid using both pinned_sb and
+> new_sb, so just revert it.
 > 
-> [1] http://lwn.net/Articles/612000/
+> Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> Reported-by: Andrey Wagin <avagin@gmail.com>
+> Signed-off-by: Zefan Li <lizefan@huawei.com>
 
-Series applied to net-next, thanks.
+Applied to cgroup/for-3.18.
+
+Thanks.
+
+-- 
+tejun
