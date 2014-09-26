@@ -1,113 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644AbaIZTXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:23:18 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:38871 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770AbaIZTXR (ORCPT
+	id S1755134AbaIZTZU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:25:20 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56789 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534AbaIZTZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:23:17 -0400
-Date: Fri, 26 Sep 2014 14:23:15 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v3] init: Add strictinit to disable init= fallbacks
-Message-ID: <20140926142315.49215fc5@as>
-In-Reply-To: <138a894f22366da4173c8a4f2bfb0e670c66dbec.1411758752.git.luto@amacapital.net>
-References: <138a894f22366da4173c8a4f2bfb0e670c66dbec.1411758752.git.luto@amacapital.net>
+	Fri, 26 Sep 2014 15:25:18 -0400
+Message-ID: <5425BD94.4030006@gmail.com>
+Date: Fri, 26 Sep 2014 13:25:08 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Pawel Moll <pawel.moll@arm.com>, Namhyung Kim <namhyung@kernel.org>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
+References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>	 <1411491787-25938-2-git-send-email-pawel.moll@arm.com>	 <87sijhk21x.fsf@sejong.aot.lge.com> <1411642198.4768.30.camel@hornet>	 <8738bekith.fsf@sejong.aot.lge.com>  <1411729103.3852.19.camel@hornet>	 <1411742306.1669.6.camel@leonhard> <1411743959.3852.45.camel@hornet>
+In-Reply-To: <1411743959.3852.45.camel@hornet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014 12:13:57 -0700
-Andy Lutomirski <luto@amacapital.net> wrote:
+On 9/26/14, 9:05 AM, Pawel Moll wrote:
+> To do the correlation you need both timestamps to be "taken"
+> simultaneously:
+>
+>          perf event     user event
+>         -----O--------------+-------------O------> t_mono
+>              :              |             :
+>              :              V             :
+>         -----O----------------------------O------> t_perf
+>
+> Of course it's not possible get both values literally at the same time,
+> but placing them in a atomic context a couple of instructions from each
+> other still gives pretty good results. The larger this distance is, the
 
-> If a user puts init=/whatever on the command line and /whatever
-> can't be run, then the kernel will try a few default options before
-> giving up.  If init=/whatever came from a bootloader prompt, then
-> this probably makes sense.  On the other hand, if it comes from a
-> script (e.g. a tool like virtme or perhaps a future kselftest
-> script), then the fallbacks are likely to exist, but they'll do the
-> wrong thing.  For example, they might unexpectedly invoke systemd.
-> 
-> This adds a new option called strictinit.  If init= and strictinit
-> are both set, and the init= binary is not executable, then the
-> kernel will panic immediately.  If strictinit is set but init= is
-> not set, then strictinit will have no effect, because the only real
-> alternative would be to panic regardless of the contents of the root
-> fs.
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  Documentation/kernel-parameters.txt |  8 ++++++++
->  init/main.c                         | 16 ++++++++++++++--
->  2 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 10d51c2f10d7..1576273edce6 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -3236,6 +3236,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  	stifb=		[HW]
->  			Format: bpp:<bpp1>[:<bpp2>[:<bpp3>...]]
->  
-> +	strictinit	[KNL,BOOT]
-> +			Normally, if the kernel can't find the init binary
-> +			specified by rdinit= and/or init=, then it will
-> +			try several fallbacks.  If strictinit is set
-> +			and the value specified by init= does not work,
-> +			then the kernel will panic instead.
-> +			This option makes no sense if init= is not specified.
-> +
->  	sunrpc.min_resvport=
->  	sunrpc.max_resvport=
->  			[NFS,SUNRPC]
-> diff --git a/init/main.c b/init/main.c
-> index bb1aed928f21..2ae0f2776155 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -131,6 +131,7 @@ static char *initcall_command_line;
->  
->  static char *execute_command;
->  static char *ramdisk_execute_command;
-> +static bool strictinit;
->  
->  /*
->   * Used to generate warnings if static_key manipulation functions are used
-> @@ -347,6 +348,13 @@ static int __init rdinit_setup(char *str)
->  }
->  __setup("rdinit=", rdinit_setup);
->  
-> +static int __init strictinit_setup(char *str)
-> +{
-> +	strictinit = true;
-> +	return 1;
-> +}
-> +__setup("strictinit", strictinit_setup);
-> +
->  #ifndef CONFIG_SMP
->  static const unsigned int setup_max_cpus = NR_CPUS;
->  #ifdef CONFIG_X86_LOCAL_APIC
-> @@ -960,8 +968,12 @@ static int __ref kernel_init(void *unused)
->  		ret = run_init_process(execute_command);
->  		if (!ret)
->  			return 0;
-> -		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
-> -			execute_command, ret);
-> +		if (strictinit)
-> +			panic("Requested init %s failed (error %d) and strictinit was set.",
-> +			      execute_command, ret);
-> +		else
-> +			pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
-> +			       execute_command, ret);
->  	}
->  	if (!try_to_run_init_process("/sbin/init") ||
->  	    !try_to_run_init_process("/etc/init") ||
+An early patchset on this topic added the realtime clock as an event and 
+an ioctl was used to push a sample into the event stream. In that case 
+you have wall clock and perf-clock samples taken in the same kernel 
+context and about as close together as you can get.
 
-Can't you just make it use "init=foo,strict" instead?
+https://lkml.org/lkml/2011/2/27/158
+https://lkml.org/lkml/2011/2/27/159
+
+David
