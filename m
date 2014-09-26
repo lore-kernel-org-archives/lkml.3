@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaIZRCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:02:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42581 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888AbaIZRCW (ORCPT
+	id S1755672AbaIZRCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:02:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49874 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755608AbaIZRCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:02:22 -0400
-Message-ID: <54259BD4.8090508@oracle.com>
-Date: Fri, 26 Sep 2014 13:01:08 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 26 Sep 2014 13:02:33 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: acme@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH] perf tools: fix build breakage on arm and arm64 targets
+Date: Fri, 26 Sep 2014 18:01:58 +0100
+Message-Id: <1411750918-25220-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory debugger.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 08:43 AM, Andrey Ryabinin wrote:
-> Hi.
-> 
-> This is a third iteration of kerenel address sanitizer (KASan).
-> 
-> KASan is a runtime memory debugger designed to find use-after-free
-> and out-of-bounds bugs.
-> 
-> Currently KASAN supported only for x86_64 architecture and requires kernel
-> to be build with SLUB allocator.
-> KASAN uses compile-time instrumentation for checking every memory access, therefore you
-> will need a fresh GCC >= v5.0.0.
+Attempting to build the perf tool on arm or arm64 targets results in the
+following failure:
 
-Hi Andrey,
+arch/arm/util/unwind-libunwind.c: In function ‘libunwind__arch_reg_id’:
+arch/arm/util/unwind-libunwind.c:43:3: error: implicit declaration of function ‘pr_err’ [-Werror=implicit-function-declaration]
+   pr_err("unwind: invalid reg id %d\n", regnum);
+   ^
+This is due to commit 84f5d36f4866 ("perf tools: Move pr_* debug macros
+into debug object") moving the pr_* macros into a new header file, but
+failing to update architectures other than x86.
 
-I tried this patchset, with the latest gcc, and I'm seeing the following:
+This patch adds the missing includes, and fixes the build again.
 
-arch/x86/kernel/head.o: In function `_GLOBAL__sub_I_00099_0_reserve_ebda_region':
-/home/sasha/linux-next/arch/x86/kernel/head.c:71: undefined reference to `__asan_init_v4'
-init/built-in.o: In function `_GLOBAL__sub_I_00099_0___ksymtab_system_state':
-/home/sasha/linux-next/init/main.c:1034: undefined reference to `__asan_init_v4'
-init/built-in.o: In function `_GLOBAL__sub_I_00099_0_init_uts_ns':
-/home/sasha/linux-next/init/version.c:50: undefined reference to `__asan_init_v4'
-init/built-in.o: In function `_GLOBAL__sub_I_00099_0_root_mountflags':
-/home/sasha/linux-next/init/do_mounts.c:638: undefined reference to `__asan_init_v4'
-init/built-in.o: In function `_GLOBAL__sub_I_00099_0_rd_prompt':
-/home/sasha/linux-next/init/do_mounts_rd.c:361: undefined reference to `__asan_init_v4'
-init/built-in.o:/home/sasha/linux-next/init/do_mounts_md.c:312: more undefined references to `__asan_init_v4' follow
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ tools/perf/arch/arm/tests/dwarf-unwind.c      | 1 +
+ tools/perf/arch/arm/util/unwind-libunwind.c   | 1 +
+ tools/perf/arch/arm64/util/unwind-libunwind.c | 1 +
+ 3 files changed, 3 insertions(+)
 
+diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
+index 9f870d27cb39..62eff847f91c 100644
+--- a/tools/perf/arch/arm/tests/dwarf-unwind.c
++++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
+@@ -3,6 +3,7 @@
+ #include "thread.h"
+ #include "map.h"
+ #include "event.h"
++#include "debug.h"
+ #include "tests/tests.h"
+ 
+ #define STACK_SIZE 8192
+diff --git a/tools/perf/arch/arm/util/unwind-libunwind.c b/tools/perf/arch/arm/util/unwind-libunwind.c
+index 729ed69a6664..62c397ed3d97 100644
+--- a/tools/perf/arch/arm/util/unwind-libunwind.c
++++ b/tools/perf/arch/arm/util/unwind-libunwind.c
+@@ -3,6 +3,7 @@
+ #include <libunwind.h>
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
++#include "../../util/debug.h"
+ 
+ int libunwind__arch_reg_id(int regnum)
+ {
+diff --git a/tools/perf/arch/arm64/util/unwind-libunwind.c b/tools/perf/arch/arm64/util/unwind-libunwind.c
+index 436ee43859dc..a87afa91a99e 100644
+--- a/tools/perf/arch/arm64/util/unwind-libunwind.c
++++ b/tools/perf/arch/arm64/util/unwind-libunwind.c
+@@ -3,6 +3,7 @@
+ #include <libunwind.h>
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
++#include "../../util/debug.h"
+ 
+ int libunwind__arch_reg_id(int regnum)
+ {
+-- 
+2.1.0
 
-What am I missing?
-
-
-Thanks,
-Sasha
