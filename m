@@ -1,140 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934AbaIZIGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:06:06 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:54542 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaIZIF4 (ORCPT
+	id S1754040AbaIZIJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:09:34 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:38468 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922AbaIZIJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:05:56 -0400
-Date: Fri, 26 Sep 2014 10:05:52 +0200
+	Fri, 26 Sep 2014 04:09:26 -0400
+Date: Fri, 26 Sep 2014 10:09:22 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140926080551.GD31106@ulmo>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <20140925145538.GN20043@arm.com>
- <3361270.4SkjDs5lox@wuerfel>
- <4240583.SJ4jiIW6Zy@wuerfel>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 03/22] MSI: Remove the redundant irq_set_chip_data()
+Message-ID: <20140926080921.GE31106@ulmo>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <1411614872-4009-4-git-send-email-wangyijing@huawei.com>
+ <20140925071919.GH12423@ulmo>
+ <5424C9BD.3040506@huawei.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
+	protocol="application/pgp-signature"; boundary="2qXFWqzzG3v1+95a"
 Content-Disposition: inline
-In-Reply-To: <4240583.SJ4jiIW6Zy@wuerfel>
+In-Reply-To: <5424C9BD.3040506@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Hf61M2y+wYpnELGG
+--2qXFWqzzG3v1+95a
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 25, 2014 at 05:15:14PM +0200, Arnd Bergmann wrote:
-> On Thursday 25 September 2014 17:07:47 Arnd Bergmann wrote:
->=20
-> > The current version doesn't let you do that, so I'll keel the #ifdef
-> > sections separate. This also means that I won't apply your patch 17:
-> > we will keep needing the #ifdef to support all three relevant combinati=
-ons:
+On Fri, Sep 26, 2014 at 10:04:45AM +0800, Yijing Wang wrote:
+> On 2014/9/25 15:19, Thierry Reding wrote:
+> > On Thu, Sep 25, 2014 at 11:14:13AM +0800, Yijing Wang wrote:
+> >> Currently, pcie-designware, pcie-rcar, pci-tegra drivers
+> >> use irq chip_data to save the msi_chip pointer. They
+> >> already call irq_set_chip_data() in their own MSI irq map
+> >> functions. So irq_set_chip_data() in arch_setup_msi_irq()
+> >> is useless.
 > >=20
-> > a) architectures that provide neither and want to get the defaults
-> >    from asm-generic
-> > b) architectures that provide the non-relaxed versions and want tog
-> >    to get just the relaxed version from asm-generic
-> > c) architectures that provide both
-> >=20
+> > Again, I think this should be the other way around. If drivers do
+> > something that's already handled by the core, then the duplicate code
+> > should be dropped from the drivers.
 >=20
-> And here is the new version I applied:
+> Hi Thierry, this is different thing, because chip_data is specific to IRQ
+> controller, and in other platform, like in x86, chip_data is used to save=
+ irq_cfg.
+> So we can not call irq_set_chip_data() in core code.
 >=20
-> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-> index 508a57257de5..3e976be3bdd4 100644
-> --- a/include/asm-generic/io.h
-> +++ b/include/asm-generic/io.h
-> @@ -174,6 +174,43 @@ static inline void writeq(u64 value, void __iomem *a=
-ddr)
->  #endif /* CONFIG_64BIT */
-> =20
->  /*
-> + * {read,write}{b,w,l,q}_relaxed() are like the regular version, but
-> + * are not guaranteed to provide ordering against spinlocks or memory
-> + * accesses.
-> + */
-> +#ifndef readb_relaxed
-> +#define readb_relaxed readb
-> +#endif
+> x86 irq piece code
+>=20
+> int arch_setup_hwirq(unsigned int irq, int node)
+> {
+> 	struct irq_cfg *cfg;
+> 	unsigned long flags;
+> 	int ret;
+>=20
+> 	cfg =3D alloc_irq_cfg(irq, node);
+> 	if (!cfg)
+> 		return -ENOMEM;
+>=20
+> 	raw_spin_lock_irqsave(&vector_lock, flags);
+> 	ret =3D __assign_irq_vector(irq, cfg, apic->target_cpus());
+> 	raw_spin_unlock_irqrestore(&vector_lock, flags);
+>=20
+> 	if (!ret)
+> 		irq_set_chip_data(irq, cfg);  ------------->Save irq_cfg
+> 	else
+> 		free_irq_cfg(irq, cfg);
+> 	return ret;
+> }
 
-My original patch to consolidate the read*/write*() and friends
-explicitly avoided the use of macros to do this. The reason was that if
-we have static inline functions in asm-generic/io.h it defines the
-canonical prototype of these functions, so that architectures that want
-to override them can just copy the prototype from there.
-
-So for consistency the above would become:
-
-	#ifndef readb_relaxed
-	#define readb_relaxed readb_relaxed
-	static inline u8 readb_relaxed(const void __iomem *addr)
-	{
-		return readb(addr);
-	}
-	#endif
-
-And analogously for the others. For the *_relaxed variants it's perhaps
-not as important because the signature is the same as for the plain
-variants, so I'm not objecting very strongly to the plain macros.
+Okay, makes sense to keep irq_set_chip_data() for driver-specific data
+then.
 
 Thierry
 
---Hf61M2y+wYpnELGG
+--2qXFWqzzG3v1+95a
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUJR5fAAoJEN0jrNd/PrOhXDEQAJASuQ1ZZOpReq+GOvsG1PVd
-g7cPitKlomR1SIi8YZIwg/04kgxegXJDvJarh+Xm4EhsQQTcQQB/7vDZ45mKA276
-G6nQyc9+gvglI3qaX6450dRDnYS12h5yM1TWAXCMwYOLV0etfiUDzYG6FJinWU01
-T9KLWXkOB9UaKgaS5d75kKJ1v9IgPZ0JlGqp0WcODYvl1NR9w7K5sTYeevPRE67Y
-/Y1IZe3dzc8E3AEU4sBPt0BP9gEzehEoj9fd/31CHtuy3PGD+WlOOiYtmYq/CwCn
-bMbxJqJh5EKVPgbRObD6IMNCFpvIyUoZx0JBkqdhfR8P2G4juFYudv7Mea5qk9FZ
-g0OjZ/nE32qliI0hPSWG+iVjTxBIDjEpPr1gUD+JApwc8VGM0nznaHgGwz2usNA0
-MvJOLl6HoFDw0AOWhm3Dq4qywtzJyAqvfyJ1Ed41sJiHrnUbRlm0cdOEGXDOBAN0
-kUrvxDsMhnpjod/DktHP9q3ac00sN2H4h0lZDnKduMwNH1xtwdEVKu5/gtz9LfYa
-Nw3AA3KOwk3nDePm8LBpCH+c0HTh5aynIMsXxPEZ8bA/bDS4e/L23KsEuEshd4Y/
-7ioprLVjOY8Xwn0Ea2sbJAVCvPsiyb9mpQ/Es9U9J/hsqyEeph8pmV7y2SSBkEKB
-cI29kXD4/20UJ/h+OdgX
-=nICm
+iQIcBAEBAgAGBQJUJR8xAAoJEN0jrNd/PrOhmZMP/0tFUjT9MXPrTuCEiBWtia+2
+ElYucD565UV4FjK6aINM4dHtmn0wUW+dDXB2YDSkAp10Ku534Tfi0zNfQd/xSe6M
+SLBNIW/EK67YANcL5AvN2W1wSUn/t24SBwWJIvsoZfNJbsAcETvYySMnmLZJ2L05
+k1v9mR+KAR52QhCs9nwga/dePFV/DBQ2bFrblq6Rxu/+hxki9EqgM9JtkRXS0F7d
+DU1BqMERPy9AtP+oX5Wih6+8P15JALo4n/SETOfeeToDkhN2Zbh8Y3AoAmVAL1l1
+ym3t6fPW7CFvJIX+Qpt02+wVvFu1amMpY8mXfzQmi18VccvTqQ9ylkaaVQ+ZsK/a
+M/8qEyiKUc4T8obwUr8qb484vw7QxAlFynvU5A6AX1zlHU+yUVEklTBlVY9Av5jj
+EW6MzXAPrhro6KKqu3m8h+P0O72K+oSZOT5bPri9/MfRfW3JCzMsCNIjeGXZ50fr
+Komek7HKSPDIaIoavV7Fym7j9zddKbLvAj8DfkztLT7jmQ7i8EVb6eHwy8uMDXI7
+cds9cH4RKRvE3ArNaHaOyEomxAD1fyAsQ3SPM2vuf92pJtiwoXpGc5qgrRusMjHw
+ZfggWh7lVNYq9TP1fXQalqNmFvATMz3s1HW7lCsIf8AeuNvDkAm3pQRojX1vKPvc
+uRsheVegzi0JliNoFkzC
+=m1fq
 -----END PGP SIGNATURE-----
 
---Hf61M2y+wYpnELGG--
+--2qXFWqzzG3v1+95a--
