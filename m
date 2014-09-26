@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaIZNaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:30:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11137 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321AbaIZN2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755350AbaIZN2l (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 09:28:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49154 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754321AbaIZN2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:28:34 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597257975"
+   d="scan'208";a="597257922"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v2 15/18] x86, irq: Use helpers to access irq_cfg data structure associated with IRQ
-Date: Fri, 26 Sep 2014 21:29:52 +0800
-Message-Id: <1411738196-29958-16-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v2 10/18] x86, irq: Move PCI MSI related code from io_apic.c into msi.c
+Date: Fri, 26 Sep 2014 21:29:47 +0800
+Message-Id: <1411738196-29958-11-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,165 +34,665 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helpers to access irq_cfg data structure associated with IRQ,
-instead of accessing irq_data->chip_data directly. Later we could
-rewrite those helpers to support hierarchy irqdomain.
+Create arch/x86/kernel/apic/msi.c to host MSI related code,
+preparing for enabling hierarchy irqdomain.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/htirq.c   |    2 +-
- arch/x86/kernel/apic/io_apic.c |   10 +++++-----
- arch/x86/kernel/apic/msi.c     |    6 +++---
- arch/x86/kernel/apic/vector.c  |    6 +++---
- arch/x86/platform/uv/uv_irq.c  |    4 ++--
- 5 files changed, 14 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/io_apic.h |    4 -
+ arch/x86/include/asm/pci.h     |    3 +
+ arch/x86/kernel/apic/Makefile  |    1 +
+ arch/x86/kernel/apic/io_apic.c |  269 --------------------------------------
+ arch/x86/kernel/apic/msi.c     |  283 ++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 287 insertions(+), 273 deletions(-)
+ create mode 100644 arch/x86/kernel/apic/msi.c
 
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-index 1cd879fe39d7..6f527b02ac4c 100644
---- a/arch/x86/kernel/apic/htirq.c
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -39,7 +39,7 @@ static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
- static int
- ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest;
- 	int ret;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index ca742d5249db..a2245cb5ca3f 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -148,9 +148,6 @@ extern int native_setup_ioapic_entry(int, struct IO_APIC_route_entry *,
+ 				     struct io_apic_irq_attr *);
+ extern void eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg);
  
+-extern void native_compose_msi_msg(struct pci_dev *pdev,
+-				   unsigned int irq, unsigned int dest,
+-				   struct msi_msg *msg, u8 hpet_id);
+ extern void native_eoi_ioapic_pin(int apic, int pin, int vector);
+ 
+ extern int save_ioapic_entries(void);
+@@ -264,7 +261,6 @@ static inline void disable_ioapic_support(void) { }
+ #define native_io_apic_print_entries	NULL
+ #define native_ioapic_set_affinity	NULL
+ #define native_setup_ioapic_entry	NULL
+-#define native_compose_msi_msg		NULL
+ #define native_eoi_ioapic_pin		NULL
+ #endif
+ 
+diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+index 0892ea0e683f..4e370a5d8117 100644
+--- a/arch/x86/include/asm/pci.h
++++ b/arch/x86/include/asm/pci.h
+@@ -96,12 +96,15 @@ extern void pci_iommu_alloc(void);
+ #ifdef CONFIG_PCI_MSI
+ /* implemented in arch/x86/kernel/apic/io_apic. */
+ struct msi_desc;
++void native_compose_msi_msg(struct pci_dev *pdev, unsigned int irq,
++			    unsigned int dest, struct msi_msg *msg, u8 hpet_id);
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+ void native_teardown_msi_irq(unsigned int irq);
+ void native_restore_msi_irqs(struct pci_dev *dev);
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ 		  unsigned int irq_base, unsigned int irq_offset);
+ #else
++#define native_compose_msi_msg		NULL
+ #define native_setup_msi_irqs		NULL
+ #define native_teardown_msi_irq		NULL
+ #endif
+diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+index 84299e5d10dc..aac300750f0e 100644
+--- a/arch/x86/kernel/apic/Makefile
++++ b/arch/x86/kernel/apic/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o ipi.o vector.o
+ obj-y				+= hw_nmi.o
+ 
+ obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
++obj-$(CONFIG_PCI_MSI)		+= msi.o
+ obj-$(CONFIG_SMP)		+= ipi.o
+ 
+ ifeq ($(CONFIG_X86_64),y)
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index b80dd6402647..2bfd38a12bfe 100644
+index 2932e39089b6..3d40049e5b18 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -501,7 +501,7 @@ static void mask_ioapic(struct irq_cfg *cfg)
+@@ -32,15 +32,12 @@
+ #include <linux/module.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/irqdomain.h>
+-#include <linux/msi.h>
+ #include <linux/htirq.h>
+ #include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <linux/jiffies.h>	/* time_after() */
+ #include <linux/slab.h>
+ #include <linux/bootmem.h>
+-#include <linux/dmar.h>
+-#include <linux/hpet.h>
  
- static void mask_ioapic_irq(struct irq_data *data)
- {
--	mask_ioapic(data->chip_data);
-+	mask_ioapic(irqd_cfg(data));
- }
+ #include <asm/idle.h>
+ #include <asm/io.h>
+@@ -52,11 +49,9 @@
+ #include <asm/dma.h>
+ #include <asm/timer.h>
+ #include <asm/i8259.h>
+-#include <asm/msidef.h>
+ #include <asm/hypertransport.h>
+ #include <asm/setup.h>
+ #include <asm/irq_remapping.h>
+-#include <asm/hpet.h>
+ #include <asm/hw_irq.h>
  
- static void __unmask_ioapic(struct irq_cfg *cfg)
-@@ -520,7 +520,7 @@ static void unmask_ioapic(struct irq_cfg *cfg)
- 
- static void unmask_ioapic_irq(struct irq_data *data)
- {
--	unmask_ioapic(data->chip_data);
-+	unmask_ioapic(irqd_cfg(data));
- }
+ #include <asm/apic.h>
+@@ -2455,270 +2450,6 @@ static int __init ioapic_init_ops(void)
+ device_initcall(ioapic_init_ops);
  
  /*
-@@ -1801,7 +1801,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
- 		if (legacy_pic->irq_pending(irq))
- 			was_pending = 1;
- 	}
--	__unmask_ioapic(data->chip_data);
-+	__unmask_ioapic(irqd_cfg(data));
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 
- 	return was_pending;
-@@ -1852,7 +1852,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
- 	if (!ret) {
- 		/* Only the high 8 bits are valid. */
- 		dest = SET_APIC_LOGICAL_ID(dest);
--		__target_IO_APIC_irq(irq, dest, data->chip_data);
-+		__target_IO_APIC_irq(irq, dest, irqd_cfg(data));
- 		ret = IRQ_SET_MASK_OK_NOCOPY;
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-@@ -1943,7 +1943,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
- 
- static void ack_ioapic_level(struct irq_data *data)
- {
+- * MSI message composition
+- */
+-void native_compose_msi_msg(struct pci_dev *pdev,
+-			    unsigned int irq, unsigned int dest,
+-			    struct msi_msg *msg, u8 hpet_id)
+-{
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	msg->address_hi = MSI_ADDR_BASE_HI;
+-
+-	if (x2apic_enabled())
+-		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
+-
+-	msg->address_lo =
+-		MSI_ADDR_BASE_LO |
+-		((apic->irq_dest_mode == 0) ?
+-			MSI_ADDR_DEST_MODE_PHYSICAL:
+-			MSI_ADDR_DEST_MODE_LOGICAL) |
+-		((apic->irq_delivery_mode != dest_LowestPrio) ?
+-			MSI_ADDR_REDIRECTION_CPU:
+-			MSI_ADDR_REDIRECTION_LOWPRI) |
+-		MSI_ADDR_DEST_ID(dest);
+-
+-	msg->data =
+-		MSI_DATA_TRIGGER_EDGE |
+-		MSI_DATA_LEVEL_ASSERT |
+-		((apic->irq_delivery_mode != dest_LowestPrio) ?
+-			MSI_DATA_DELIVERY_FIXED:
+-			MSI_DATA_DELIVERY_LOWPRI) |
+-		MSI_DATA_VECTOR(cfg->vector);
+-}
+-
+-#ifdef CONFIG_PCI_MSI
+-static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+-			   struct msi_msg *msg, u8 hpet_id)
+-{
+-	struct irq_cfg *cfg;
+-	int err;
+-	unsigned dest;
+-
+-	if (disable_apic)
+-		return -ENXIO;
+-
+-	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-
+-	return 0;
+-}
+-
+-static int
+-msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+-{
 -	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	int i, irq = data->irq;
- 	unsigned long v;
- 	bool masked;
+-	struct msi_msg msg;
+-	unsigned int dest;
+-	int ret;
+-
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	__get_cached_msi_msg(data->msi_desc, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-
+-	__write_msi_msg(data->msi_desc, &msg);
+-
+-	return IRQ_SET_MASK_OK_NOCOPY;
+-}
+-
+-/*
+- * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
+- * which implement the MSI or MSI-X Capability Structure.
+- */
+-static struct irq_chip msi_chip = {
+-	.name			= "PCI-MSI",
+-	.irq_unmask		= unmask_msi_irq,
+-	.irq_mask		= mask_msi_irq,
+-	.irq_ack		= apic_ack_edge,
+-	.irq_set_affinity	= msi_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
+-};
+-
+-int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+-		  unsigned int irq_base, unsigned int irq_offset)
+-{
+-	struct irq_chip *chip = &msi_chip;
+-	struct msi_msg msg;
+-	unsigned int irq = irq_base + irq_offset;
+-	int ret;
+-
+-	ret = msi_compose_msg(dev, irq, &msg, -1);
+-	if (ret < 0)
+-		return ret;
+-
+-	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
+-
+-	/*
+-	 * MSI-X message is written per-IRQ, the offset is always 0.
+-	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
+-	 */
+-	if (!irq_offset)
+-		write_msi_msg(irq, &msg);
+-
+-	setup_remapped_irq(irq, irq_cfg(irq), chip);
+-
+-	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+-
+-	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for MSI/MSI-X\n", irq);
+-
+-	return 0;
+-}
+-
+-int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+-{
+-	struct msi_desc *msidesc;
+-	unsigned int irq;
+-	int node, ret;
+-
+-	/* Multiple MSI vectors only supported with interrupt remapping */
+-	if (type == PCI_CAP_ID_MSI && nvec > 1)
+-		return 1;
+-
+-	node = dev_to_node(&dev->dev);
+-
+-	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-		irq = irq_alloc_hwirq(node);
+-		if (!irq)
+-			return -ENOSPC;
+-
+-		ret = setup_msi_irq(dev, msidesc, irq, 0);
+-		if (ret < 0) {
+-			irq_free_hwirq(irq);
+-			return ret;
+-		}
+-
+-	}
+-	return 0;
+-}
+-
+-void native_teardown_msi_irq(unsigned int irq)
+-{
+-	irq_free_hwirq(irq);
+-}
+-
+-#ifdef CONFIG_DMAR_TABLE
+-static int
+-dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+-		      bool force)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	unsigned int dest, irq = data->irq;
+-	struct msi_msg msg;
+-	int ret;
+-
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	dmar_msi_read(irq, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
+-
+-	dmar_msi_write(irq, &msg);
+-
+-	return IRQ_SET_MASK_OK_NOCOPY;
+-}
+-
+-static struct irq_chip dmar_msi_type = {
+-	.name			= "DMAR_MSI",
+-	.irq_unmask		= dmar_msi_unmask,
+-	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= apic_ack_edge,
+-	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= apic_retrigger_irq,
+-};
+-
+-int arch_setup_dmar_msi(unsigned int irq)
+-{
+-	int ret;
+-	struct msi_msg msg;
+-
+-	ret = msi_compose_msg(NULL, irq, &msg, -1);
+-	if (ret < 0)
+-		return ret;
+-	dmar_msi_write(irq, &msg);
+-	irq_set_chip_and_handler_name(irq, &dmar_msi_type, handle_edge_irq,
+-				      "edge");
+-	return 0;
+-}
+-#endif
+-
+-#ifdef CONFIG_HPET_TIMER
+-
+-static int hpet_msi_set_affinity(struct irq_data *data,
+-				 const struct cpumask *mask, bool force)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	struct msi_msg msg;
+-	unsigned int dest;
+-	int ret;
+-
+-	ret = apic_set_affinity(data, mask, &dest);
+-	if (ret)
+-		return ret;
+-
+-	hpet_msi_read(data->handler_data, &msg);
+-
+-	msg.data &= ~MSI_DATA_VECTOR_MASK;
+-	msg.data |= MSI_DATA_VECTOR(cfg->vector);
+-	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
+-	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
+-
+-	hpet_msi_write(data->handler_data, &msg);
+-
+-	return IRQ_SET_MASK_OK_NOCOPY;
+-}
+-
+-static struct irq_chip hpet_msi_type = {
+-	.name = "HPET_MSI",
+-	.irq_unmask = hpet_msi_unmask,
+-	.irq_mask = hpet_msi_mask,
+-	.irq_ack = apic_ack_edge,
+-	.irq_set_affinity = hpet_msi_set_affinity,
+-	.irq_retrigger = apic_retrigger_irq,
+-};
+-
+-int default_setup_hpet_msi(unsigned int irq, unsigned int id)
+-{
+-	struct irq_chip *chip = &hpet_msi_type;
+-	struct msi_msg msg;
+-	int ret;
+-
+-	ret = msi_compose_msg(NULL, irq, &msg, id);
+-	if (ret < 0)
+-		return ret;
+-
+-	hpet_msi_write(irq_get_handler_data(irq), &msg);
+-	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
+-	setup_remapped_irq(irq, irq_cfg(irq), chip);
+-
+-	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+-	return 0;
+-}
+-#endif
+-
+-#endif /* CONFIG_PCI_MSI */
+-/*
+  * Hypertransport interrupt support
+  */
+ #ifdef CONFIG_HT_IRQ
 diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 8ad0046849f3..fb45663395ca 100644
---- a/arch/x86/kernel/apic/msi.c
+new file mode 100644
+index 000000000000..8ad0046849f3
+--- /dev/null
 +++ b/arch/x86/kernel/apic/msi.c
-@@ -78,7 +78,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
- static int
- msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	struct msi_msg msg;
- 	unsigned int dest;
- 	int ret;
-@@ -179,7 +179,7 @@ static int
- dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		      bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest, irq = data->irq;
- 	struct msi_msg msg;
- 	int ret;
-@@ -233,7 +233,7 @@ int arch_setup_dmar_msi(unsigned int irq)
- static int hpet_msi_set_affinity(struct irq_data *data,
- 				 const struct cpumask *mask, bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	struct msi_msg msg;
- 	unsigned int dest;
- 	int ret;
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 2df1bff738b1..7562cb15b3bd 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -321,7 +321,7 @@ void setup_vector_irq(int cpu)
- 
- int apic_retrigger_irq(struct irq_data *data)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned long flags;
- 	int cpu;
- 
-@@ -335,7 +335,7 @@ int apic_retrigger_irq(struct irq_data *data)
- 
- void apic_ack_edge(struct irq_data *data)
- {
--	irq_complete_move(data->chip_data);
-+	irq_complete_move(irqd_cfg(data));
- 	irq_move_irq(data);
- 	ack_APIC_irq();
- }
-@@ -348,7 +348,7 @@ void apic_ack_edge(struct irq_data *data)
- int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		      unsigned int *dest_id)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int irq = data->irq;
- 	int err;
- 
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index 3e8fab740c1d..0ce673645432 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -131,7 +131,7 @@ arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
- 		       unsigned long mmr_offset, int limit)
- {
- 	const struct cpumask *eligible_cpu = cpumask_of(cpu);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
+@@ -0,0 +1,283 @@
++/*
++ * Support of MSI, HPET and DMAR interrupts.
++ *
++ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
++ *	Moved from arch/x86/kernel/apic/io_apic.c.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/mm.h>
++#include <linux/interrupt.h>
++#include <linux/pci.h>
++#include <linux/dmar.h>
++#include <linux/hpet.h>
++#include <linux/msi.h>
++#include <asm/msidef.h>
++#include <asm/hpet.h>
++#include <asm/hw_irq.h>
++#include <asm/apic.h>
++#include <asm/irq_remapping.h>
++
++void native_compose_msi_msg(struct pci_dev *pdev,
++			    unsigned int irq, unsigned int dest,
++			    struct msi_msg *msg, u8 hpet_id)
++{
 +	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long mmr_value;
- 	struct uv_IO_APIC_route_entry *entry;
- 	int mmr_pnode, err;
-@@ -198,7 +198,7 @@ static int
- uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 		    bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest;
- 	unsigned long mmr_value, mmr_offset;
- 	struct uv_IO_APIC_route_entry *entry;
++
++	msg->address_hi = MSI_ADDR_BASE_HI;
++
++	if (x2apic_enabled())
++		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
++
++	msg->address_lo =
++		MSI_ADDR_BASE_LO |
++		((apic->irq_dest_mode == 0) ?
++			MSI_ADDR_DEST_MODE_PHYSICAL :
++			MSI_ADDR_DEST_MODE_LOGICAL) |
++		((apic->irq_delivery_mode != dest_LowestPrio) ?
++			MSI_ADDR_REDIRECTION_CPU :
++			MSI_ADDR_REDIRECTION_LOWPRI) |
++		MSI_ADDR_DEST_ID(dest);
++
++	msg->data =
++		MSI_DATA_TRIGGER_EDGE |
++		MSI_DATA_LEVEL_ASSERT |
++		((apic->irq_delivery_mode != dest_LowestPrio) ?
++			MSI_DATA_DELIVERY_FIXED :
++			MSI_DATA_DELIVERY_LOWPRI) |
++		MSI_DATA_VECTOR(cfg->vector);
++}
++
++static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
++			   struct msi_msg *msg, u8 hpet_id)
++{
++	struct irq_cfg *cfg;
++	int err;
++	unsigned dest;
++
++	if (disable_apic)
++		return -ENXIO;
++
++	cfg = irq_cfg(irq);
++	err = assign_irq_vector(irq, cfg, apic->target_cpus());
++	if (err)
++		return err;
++
++	err = apic->cpu_mask_to_apicid_and(cfg->domain,
++					   apic->target_cpus(), &dest);
++	if (err)
++		return err;
++
++	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
++
++	return 0;
++}
++
++static int
++msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	struct msi_msg msg;
++	unsigned int dest;
++	int ret;
++
++	ret = apic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
++
++	__get_cached_msi_msg(data->msi_desc, &msg);
++
++	msg.data &= ~MSI_DATA_VECTOR_MASK;
++	msg.data |= MSI_DATA_VECTOR(cfg->vector);
++	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
++	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
++
++	__write_msi_msg(data->msi_desc, &msg);
++
++	return IRQ_SET_MASK_OK_NOCOPY;
++}
++
++/*
++ * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
++ * which implement the MSI or MSI-X Capability Structure.
++ */
++static struct irq_chip msi_chip = {
++	.name			= "PCI-MSI",
++	.irq_unmask		= unmask_msi_irq,
++	.irq_mask		= mask_msi_irq,
++	.irq_ack		= apic_ack_edge,
++	.irq_set_affinity	= msi_set_affinity,
++	.irq_retrigger		= apic_retrigger_irq,
++};
++
++int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
++		  unsigned int irq_base, unsigned int irq_offset)
++{
++	struct irq_chip *chip = &msi_chip;
++	struct msi_msg msg;
++	unsigned int irq = irq_base + irq_offset;
++	int ret;
++
++	ret = msi_compose_msg(dev, irq, &msg, -1);
++	if (ret < 0)
++		return ret;
++
++	irq_set_msi_desc_off(irq_base, irq_offset, msidesc);
++
++	/*
++	 * MSI-X message is written per-IRQ, the offset is always 0.
++	 * MSI message denotes a contiguous group of IRQs, written for 0th IRQ.
++	 */
++	if (!irq_offset)
++		write_msi_msg(irq, &msg);
++
++	setup_remapped_irq(irq, irq_cfg(irq), chip);
++
++	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
++
++	dev_dbg(&dev->dev, "irq %d for MSI/MSI-X\n", irq);
++
++	return 0;
++}
++
++int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++{
++	struct msi_desc *msidesc;
++	unsigned int irq;
++	int node, ret;
++
++	/* Multiple MSI vectors only supported with interrupt remapping */
++	if (type == PCI_CAP_ID_MSI && nvec > 1)
++		return 1;
++
++	node = dev_to_node(&dev->dev);
++
++	list_for_each_entry(msidesc, &dev->msi_list, list) {
++		irq = irq_alloc_hwirq(node);
++		if (!irq)
++			return -ENOSPC;
++
++		ret = setup_msi_irq(dev, msidesc, irq, 0);
++		if (ret < 0) {
++			irq_free_hwirq(irq);
++			return ret;
++		}
++
++	}
++	return 0;
++}
++
++void native_teardown_msi_irq(unsigned int irq)
++{
++	irq_free_hwirq(irq);
++}
++
++#ifdef CONFIG_DMAR_TABLE
++static int
++dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		      bool force)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	unsigned int dest, irq = data->irq;
++	struct msi_msg msg;
++	int ret;
++
++	ret = apic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
++
++	dmar_msi_read(irq, &msg);
++
++	msg.data &= ~MSI_DATA_VECTOR_MASK;
++	msg.data |= MSI_DATA_VECTOR(cfg->vector);
++	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
++	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
++	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
++
++	dmar_msi_write(irq, &msg);
++
++	return IRQ_SET_MASK_OK_NOCOPY;
++}
++
++static struct irq_chip dmar_msi_type = {
++	.name			= "DMAR_MSI",
++	.irq_unmask		= dmar_msi_unmask,
++	.irq_mask		= dmar_msi_mask,
++	.irq_ack		= apic_ack_edge,
++	.irq_set_affinity	= dmar_msi_set_affinity,
++	.irq_retrigger		= apic_retrigger_irq,
++};
++
++int arch_setup_dmar_msi(unsigned int irq)
++{
++	int ret;
++	struct msi_msg msg;
++
++	ret = msi_compose_msg(NULL, irq, &msg, -1);
++	if (ret < 0)
++		return ret;
++	dmar_msi_write(irq, &msg);
++	irq_set_chip_and_handler_name(irq, &dmar_msi_type, handle_edge_irq,
++				      "edge");
++	return 0;
++}
++#endif
++
++/*
++ * MSI message composition
++ */
++#ifdef CONFIG_HPET_TIMER
++
++static int hpet_msi_set_affinity(struct irq_data *data,
++				 const struct cpumask *mask, bool force)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	struct msi_msg msg;
++	unsigned int dest;
++	int ret;
++
++	ret = apic_set_affinity(data, mask, &dest);
++	if (ret)
++		return ret;
++
++	hpet_msi_read(data->handler_data, &msg);
++
++	msg.data &= ~MSI_DATA_VECTOR_MASK;
++	msg.data |= MSI_DATA_VECTOR(cfg->vector);
++	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
++	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
++
++	hpet_msi_write(data->handler_data, &msg);
++
++	return IRQ_SET_MASK_OK_NOCOPY;
++}
++
++static struct irq_chip hpet_msi_type = {
++	.name = "HPET_MSI",
++	.irq_unmask = hpet_msi_unmask,
++	.irq_mask = hpet_msi_mask,
++	.irq_ack = apic_ack_edge,
++	.irq_set_affinity = hpet_msi_set_affinity,
++	.irq_retrigger = apic_retrigger_irq,
++};
++
++int default_setup_hpet_msi(unsigned int irq, unsigned int id)
++{
++	struct irq_chip *chip = &hpet_msi_type;
++	struct msi_msg msg;
++	int ret;
++
++	ret = msi_compose_msg(NULL, irq, &msg, id);
++	if (ret < 0)
++		return ret;
++
++	hpet_msi_write(irq_get_handler_data(irq), &msg);
++	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
++	setup_remapped_irq(irq, irq_cfg(irq), chip);
++
++	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
++	return 0;
++}
++#endif
 -- 
 1.7.10.4
 
