@@ -1,90 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422656AbaIZV2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:28:54 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:62123 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030201AbaIZV2w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:28:52 -0400
+	id S1756200AbaIZVbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:31:07 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:40775 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755763AbaIZVbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 17:31:04 -0400
+Date: Fri, 26 Sep 2014 22:20:53 +0100
+From: liviu@dudau.co.uk
+To: Rob Herring <robherring2@gmail.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v12 08/12] PCI: OF: Introduce helper function for
+ retrieving PCI domain numbers
+Message-ID: <20140926212052.GA6030@borg.dudau.co.uk>
+Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
+	Liviu Dudau <Liviu.Dudau@arm.com>,
+	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+	Rob Herring <robh+dt@kernel.org>,
+	Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	Catalin Marinas <catalin.marinas@arm.com>,
+	Will Deacon <Will.Deacon@arm.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	linux-pci <linux-pci@vger.kernel.org>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+	Kukjin Kim <kgene.kim@samsung.com>,
+	Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+	linux-arch <linux-arch@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Device Tree ML <devicetree@vger.kernel.org>,
+	LAKML <linux-arm-kernel@lists.infradead.org>,
+	Grant Likely <grant.likely@linaro.org>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-9-git-send-email-Liviu.Dudau@arm.com>
+ <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140926205817.GQ7996@ZenIV.linux.org.uk>
-References: <20140914194738.GS7996@ZenIV.linux.org.uk>
-	<CAGhQ9Vx26RQWErODdJ_fV5UnAQ8wLre_x-4E6N_vuP0uExyKgw@mail.gmail.com>
-	<20140926205817.GQ7996@ZenIV.linux.org.uk>
-Date: Fri, 26 Sep 2014 23:28:50 +0200
-Message-ID: <CAGhQ9VzQf2Oa06hOP6MC-qR9F7xF_C7omuubkH+9GcLqxkfX3w@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-From: Joachim Eastwood <manabian@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Fri Sep 26 22:31:02 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,5425db153402009820393
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2014 22:58, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Fri, Sep 26, 2014 at 10:46:14PM +0200, Joachim Eastwood wrote:
->> On 14 September 2014 21:47, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> > double iput() on failure exit in lustre, racy removal of spliced dentries
->> > from ->s_anon in __d_materialise_dentry() plus a bunch of assorted RCU pathwalk
->> > fixes.  Please, pull from the usual place -
->> > git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
->> >
->> > Shortlog:
->> > Al Viro (5):
->> >       [fix] lustre: d_make_root() does iput() on dentry allocation failure
->> >       move the call of __d_drop(anon) into __d_materialise_unique(dentry, anon)
->> >       fix bogus read_seqretry() checks introduced in b37199e
->> >       don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
->> >       be careful with nd->inode in path_init() and follow_dotdot_rcu()
->>
->> Hi,
->>
->> Commit 4023bfc9f351a7994 "be careful with nd->inode in path_init() and
->> follow_dotdot_rcu(), seem to hang my ARM no-MMU platform when mounting
->> the ramdisk.
->>
->> 3.17-rc4 - works
->> 3.17-rc5 - works with 4023bfc9f351a7994 reverted.
->>
->> Boot log with from rc5:
->> [ 5.810000] TCP: cubic registered
->> [ 5.820000] NET: Registered protocol family 17
->> [ 5.860000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
->> [ 5.910000] mmc_host mmc0: Bus speed (slot 0) = 12000000Hz (slot req
->> 25000000Hz, actual 12000000HZ div = 0)
->> [ 5.930000] mmc0: new SDHC card at address 0007
->> [ 5.950000] mmcblk0: mmc0:0007 SD08G 7.42 GiB
->> [ 6.150000] clk: Not disabling unused clocks
->> [ 81.240000] random: nonblocking pool is initialized
->>
->> And there it just hangs it seems.
->>
->>
->> With patch reverted
->> [ 5.810000] TCP: cubic registered
->> [ 5.820000] NET: Registered protocol family 17
->> [ 5.850000] lpc2k-rtc 40046000.rtc: hctosys: unable to read the hardware clock
->> [ 6.100000] clk: Not disabling unused clocks
->> [ 6.110000] RAMDISK: gzip image found at block 0
->> [ 9.590000] VFS: Mounted root (ext2 filesystem) readonly on device 1:0.
->> [ 9.600000] devtmpfs: mounted
->> [ 9.610000] Freeing unused kernel memory: 68K (281e5000 - 281f6000)
->>
->> And then user space starts.
->
-> *blink*  What happens to mmc-related messages on successful boot?  And what
-> in that commit could've possibly lead to those not being produced?
+On Fri, Sep 26, 2014 at 01:20:39PM -0500, Rob Herring wrote:
+> On Tue, Sep 23, 2014 at 2:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > Add pci_get_new_domain_nr() to allocate a new domain number
+> > and of_get_pci_domain_nr() to retrieve the PCI domain number
+> > of a given device from DT. Host bridge drivers or architecture
+> > specific code can choose to implement their PCI domain number
+> > policy using these two functions.
+> >
+> > Using of_get_pci_domain_nr() guarantees a stable PCI domain
+> > number on every boot provided that all host bridge controllers
+> > are assigned a number in the device tree using "linux,pci-domain"
+> > property. Mix use of pci_get_new_domain_nr() and of_get_pci_domain_nr()
+> > is not recommended as it can lead to potentially conflicting
+> > domain numbers being assigned to root busses behind different
+> > host bridges.
+> >
+> > Cc: Bjorn Helgaas <bhelgaas@google.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <robh+dt@kernel.org>
+> > Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> 
+> Looks pretty good, but a couple of comments that can be addressed as
+> follow-up patches.
+> 
+> > ---
+> >  drivers/of/of_pci.c    | 25 +++++++++++++++++++++++++
+> >  drivers/pci/pci.c      |  9 +++++++++
+> >  include/linux/of_pci.h |  7 +++++++
+> >  include/linux/pci.h    |  3 +++
+> >  4 files changed, 44 insertions(+)
+> >
+> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> > index 8481996..82d172f 100644
+> > --- a/drivers/of/of_pci.c
+> > +++ b/drivers/of/of_pci.c
+> > @@ -89,6 +89,31 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
+> >  }
+> >  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
+> >
+> > +/**
+> > + * This function will try to obtain the host bridge domain number by
+> > + * finding a property called "linux,pci-domain" of the given device node.
+> > + *
+> > + * @node: device tree node with the domain information
+> > + *
+> > + * Returns the associated domain number from DT in the range [0-0xffff], or
+> > + * a negative value if the required property is not found.
+> > + */
+> > +int of_get_pci_domain_nr(struct device_node *node)
+> > +{
+> > +       const __be32 *value;
+> > +       int len;
+> > +       u16 domain;
+> > +
+> > +       value = of_get_property(node, "linux,pci-domain", &len);
+> 
+> This needs to be documented.
 
-Now I am puzzled too. I can not longer reproduce that hang.
+I would say needs agreed on *and* documented.
 
-I am guessing it was probably related to the mmc card being flaky or
-something random like that.
+> 
+> > +       if (!value || len < sizeof(*value))
+> > +               return -EINVAL;
+> > +
+> > +       domain = (u16)be32_to_cpup(value);
+> 
+> of_property_read_u32 would not work here?
 
-Sorry for noise!
+It should, I guess, but I want to limit the domain number range to 16 bits.
 
-regards,
-Joachim Eastwood
+Best regards,
+Liviu
+
+> 
+> > +
+> > +       return domain;
+> > +}
+> > +EXPORT_SYMBOL_GPL(of_get_pci_domain_nr);
+> > +
+> >  #ifdef CONFIG_PCI_MSI
+> >
+> >  static LIST_HEAD(of_pci_msi_chip_list);
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > index 2c9ac70..d36f35f 100644
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -4406,6 +4406,15 @@ static void pci_no_domains(void)
+> >  #endif
+> >  }
+> >
+> > +#ifdef CONFIG_PCI_DOMAINS
+> > +static atomic_t __domain_nr = ATOMIC_INIT(-1);
+> > +
+> > +int pci_get_new_domain_nr(void)
+> > +{
+> > +       return atomic_inc_return(&__domain_nr);
+> > +}
+> > +#endif
+> > +
+> >  /**
+> >   * pci_ext_cfg_avail - can we access extended PCI config space?
+> >   *
+> > diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+> > index dde3a4a..71062e9 100644
+> > --- a/include/linux/of_pci.h
+> > +++ b/include/linux/of_pci.h
+> > @@ -15,6 +15,7 @@ struct device_node *of_pci_find_child_device(struct device_node *parent,
+> >  int of_pci_get_devfn(struct device_node *np);
+> >  int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+> >  int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+> > +int of_get_pci_domain_nr(struct device_node *node);
+> >  #else
+> >  static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+> >  {
+> > @@ -43,6 +44,12 @@ of_pci_parse_bus_range(struct device_node *node, struct resource *res)
+> >  {
+> >         return -EINVAL;
+> >  }
+> > +
+> > +static inline int
+> > +of_get_pci_domain_nr(struct device_node *node)
+> > +{
+> > +       return -1;
+> > +}
+> >  #endif
+> >
+> >  #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index a494e5d..150da2d 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -1285,10 +1285,12 @@ void pci_cfg_access_unlock(struct pci_dev *dev);
+> >   */
+> >  #ifdef CONFIG_PCI_DOMAINS
+> >  extern int pci_domains_supported;
+> > +int pci_get_new_domain_nr(void);
+> >  #else
+> >  enum { pci_domains_supported = 0 };
+> >  static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
+> >  static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
+> > +static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
+> >  #endif /* CONFIG_PCI_DOMAINS */
+> >
+> >  /*
+> > @@ -1417,6 +1419,7 @@ static inline struct pci_dev *pci_get_bus_and_slot(unsigned int bus,
+> >
+> >  static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
+> >  static inline struct pci_dev *pci_dev_get(struct pci_dev *dev) { return NULL; }
+> > +static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
+> >
+> >  #define dev_is_pci(d) (false)
+> >  #define dev_is_pf(d) (false)
+> > --
+> > 2.1.0
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
