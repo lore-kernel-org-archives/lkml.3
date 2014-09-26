@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaIZTaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:30:08 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61229 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaIZTaG (ORCPT
+	id S1755605AbaIZTcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:32:17 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:43970 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754111AbaIZTcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:30:06 -0400
+	Fri, 26 Sep 2014 15:32:16 -0400
 MIME-Version: 1.0
-X-Originating-IP: [12.227.248.5]
 In-Reply-To: <20140926142315.49215fc5@as>
 References: <138a894f22366da4173c8a4f2bfb0e670c66dbec.1411758752.git.luto@amacapital.net>
-	<20140926142315.49215fc5@as>
-Date: Fri, 26 Sep 2014 14:30:04 -0500
-Message-ID: <CAOS_Y6QMVePeSwsqPEcK0EBu6mP=wVc7DA22utrk8TGSY_O3QA@mail.gmail.com>
+ <20140926142315.49215fc5@as>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 26 Sep 2014 12:31:54 -0700
+Message-ID: <CALCETrUyya2SvCc1At+xrxVprL2+-4bqyFSmRVB_8QaEqt7LmQ@mail.gmail.com>
 Subject: Re: [PATCH v3] init: Add strictinit to disable init= fallbacks
-From: Rob Landley <rob@landley.net>
 To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Randy Dunlap <rdunlap@infradead.org>,
         Shuah Khan <shuah.kh@samsung.com>,
         Rusty Russell <rusty@rustcorp.com.au>
@@ -28,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 2:23 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+On Fri, Sep 26, 2014 at 12:23 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
 > On Fri, 26 Sep 2014 12:13:57 -0700
 > Andy Lutomirski <luto@amacapital.net> wrote:
 >
@@ -116,10 +114,8 @@ On Fri, Sep 26, 2014 at 2:23 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
 >
 > Can't you just make it use "init=foo,strict" instead?
 
-Can't we just change the default behavior and add a
-CONFIG_INIT_FALLBACK that defaults to "n" which you can switch on to
-get the old behavior? (And then immediately deprecate it?)
+I don't think so.  Old kernels will wonder why "foo,strict" doesn't exist.
 
-If you're specifying an init, you probably want that init...
-
-Rob
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
