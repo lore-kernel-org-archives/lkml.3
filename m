@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672AbaIZRCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:02:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49874 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755608AbaIZRCd (ORCPT
+	id S1755776AbaIZRC5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:02:57 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:53252 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257AbaIZRCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:02:33 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH] perf tools: fix build breakage on arm and arm64 targets
-Date: Fri, 26 Sep 2014 18:01:58 +0100
-Message-Id: <1411750918-25220-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 26 Sep 2014 13:02:55 -0400
+Message-ID: <54259C3D.4040207@gmail.com>
+Date: Fri, 26 Sep 2014 13:02:53 -0400
+From: nick <yocto6@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Ivo Van Doorn <IvDoorn@gmail.com>, helmut.schaa@googlemail.com,
+        John Linville <linville@tuxdriver.com>, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
+        "julia.lawall@lip6.fr oneukum@suse.de" <linux-kernel@vger.kernel.org>
+Subject: Re: FIXMEs in rt2800lib.c
+References: <5424566B.6000206@gmail.com>	<20140926122207.GA27809@redhat.com> <CAAxn8J=gKVdNt3+Ayx-XdEki7V8sg-M7C=kK7sGADBO3L-PTQw@mail.gmail.com>
+In-Reply-To: <CAAxn8J=gKVdNt3+Ayx-XdEki7V8sg-M7C=kK7sGADBO3L-PTQw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting to build the perf tool on arm or arm64 targets results in the
-following failure:
 
-arch/arm/util/unwind-libunwind.c: In function ‘libunwind__arch_reg_id’:
-arch/arm/util/unwind-libunwind.c:43:3: error: implicit declaration of function ‘pr_err’ [-Werror=implicit-function-declaration]
-   pr_err("unwind: invalid reg id %d\n", regnum);
-   ^
-This is due to commit 84f5d36f4866 ("perf tools: Move pr_* debug macros
-into debug object") moving the pr_* macros into a new header file, but
-failing to update architectures other than x86.
 
-This patch adds the missing includes, and fixes the build again.
-
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- tools/perf/arch/arm/tests/dwarf-unwind.c      | 1 +
- tools/perf/arch/arm/util/unwind-libunwind.c   | 1 +
- tools/perf/arch/arm64/util/unwind-libunwind.c | 1 +
- 3 files changed, 3 insertions(+)
-
-diff --git a/tools/perf/arch/arm/tests/dwarf-unwind.c b/tools/perf/arch/arm/tests/dwarf-unwind.c
-index 9f870d27cb39..62eff847f91c 100644
---- a/tools/perf/arch/arm/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/arm/tests/dwarf-unwind.c
-@@ -3,6 +3,7 @@
- #include "thread.h"
- #include "map.h"
- #include "event.h"
-+#include "debug.h"
- #include "tests/tests.h"
- 
- #define STACK_SIZE 8192
-diff --git a/tools/perf/arch/arm/util/unwind-libunwind.c b/tools/perf/arch/arm/util/unwind-libunwind.c
-index 729ed69a6664..62c397ed3d97 100644
---- a/tools/perf/arch/arm/util/unwind-libunwind.c
-+++ b/tools/perf/arch/arm/util/unwind-libunwind.c
-@@ -3,6 +3,7 @@
- #include <libunwind.h>
- #include "perf_regs.h"
- #include "../../util/unwind.h"
-+#include "../../util/debug.h"
- 
- int libunwind__arch_reg_id(int regnum)
- {
-diff --git a/tools/perf/arch/arm64/util/unwind-libunwind.c b/tools/perf/arch/arm64/util/unwind-libunwind.c
-index 436ee43859dc..a87afa91a99e 100644
---- a/tools/perf/arch/arm64/util/unwind-libunwind.c
-+++ b/tools/perf/arch/arm64/util/unwind-libunwind.c
-@@ -3,6 +3,7 @@
- #include <libunwind.h>
- #include "perf_regs.h"
- #include "../../util/unwind.h"
-+#include "../../util/debug.h"
- 
- int libunwind__arch_reg_id(int regnum)
- {
--- 
-2.1.0
-
+On 14-09-26 09:32 AM, Nicholas Krause wrote:
+> On Fri, Sep 26, 2014 at 8:22 AM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+>> On Thu, Sep 25, 2014 at 01:52:43PM -0400, nick wrote:
+>>> I seem to be hitting to fix mes in the file I listed in the subject. Would someone tell me if it's Ok to remove
+>>> the lines that over write certain registers.
+>>
+>> No, as long you prove that they are not needed.
+>>
+>> Stanislaw
+> Sure Stanislw,
+> I will remove the lines as needed and send it a patch.
+> Nick
+> 
+Is that a typo and a yes or not?
+Nick 
