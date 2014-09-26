@@ -1,122 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030234AbaIZVZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:25:31 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:62365 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755763AbaIZVZ3 (ORCPT
+	id S1756117AbaIZV1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:27:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53270 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755763AbaIZV1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:25:29 -0400
+	Fri, 26 Sep 2014 17:27:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Eric Caruso <ejcaruso@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dmitry Torokhov <dtor@google.com>,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@google.com>
+Subject: Re: irq mask swapping during suspend/resume
+Date: Fri, 26 Sep 2014 23:47:44 +0200
+Message-ID: <1504067.HVYFD6YvcK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <14556491.5ApW8OU2l5@vostro.rjw.lan>
+References: <CAA9CXT07f01KW4UeoPPy4k1NM6qfxdtsOQXXSPjTKx7mG_v7Rw@mail.gmail.com> <CAA9CXT0p+J2aHE0uLcHdaX5xurV-==5h_bCg--NWxRMwO2b0tA@mail.gmail.com> <14556491.5ApW8OU2l5@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
-References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
-	<CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
-	<CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
-Date: Fri, 26 Sep 2014 14:25:27 -0700
-Message-ID: <CAMEtUux-WFOGABTrWW=BGUstE=Zz6agXTGCGrRJtNXDfRmx-5A@mail.gmail.com>
-Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
- syscall, verifier, testsuite)
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 1:39 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> not quite. there is a distinction between key and value.
->> They both come from map definition and correspond to key_size
->> and value_size, so they have to have two different corresponding
->> _internal_ types 'ptr_to_map_key' and 'ptr_to_map_value'
->> This distinction is needed to properly describe function
->> arguments constraints.
->
-> But they're still just pointers to buffers of some size known to the
-> verifier, right?  By calling them "pointer to map key" and "pointer to
-> map value" you're tying them to map objects in a way that makes little
-> sense to me.
+On Friday, September 26, 2014 11:39:28 PM Rafael J. Wysocki wrote:
+> On Friday, September 26, 2014 09:58:39 AM Eric Caruso wrote:
+> > I was putting together a prototype for this, and ran into a design
+> > issue. It's not obvious how to get from the struct wakeup_source to
+> > places where we hold all of the relevant device information or irq
+> > information. If we were to walk the list of wakeup source objects,
+> > where would we actually get the irq information to call
+> > enable_irq_wake()?
+> > 
+> > Does this just require a bunch of extra plumbing we don't have right
+> > now, and this is what you meant by changes to wakeup_source_create()
+> > and friends?
+> 
+> Yes, that's it.
+> 
+> But at least some drivers call enable_irq_wake() today, so it should just
+> work for devices handled by them.  That may not be all devices you want,
+> though.
 
-'pointer_to_map_key' is internal argument constraint of the
-in-kernel helper function. It tells verifier how to check the values
-passed into function.
-Just pointer + size abstraction is not enough here.
-verifier has to know the type of what it's checking.
+Ah, I've confused threads.  So the paragraph above doesn't make sense, but
+the one below does. :-)  Please don't top-post, it makes things rather
+difficult to follow.
 
-> So what's "spill part"?  Unless I misunderstood the stack tracking
-> code, you're tracking each byte separately.
->
-> You're also tracking the type for each stack slot separately for each
-> instruction.  That looks like it'll account for the considerable
-> majority of total memory usage.
+> And BTW, there is a problem with the approach I was talking about which is
+> the sysfs interface for enabling wakeup, so we actually need to put wakeup
+> IRQ information into struct dev_pm_info and point to that from the
+> associated wakeup source object.  It still should be doable though.
+> 
+> > On Sat, Sep 20, 2014 at 5:48 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > > On Thursday, September 18, 2014 01:32:06 PM Thomas Gleixner wrote:
+> > >> On Wed, 17 Sep 2014, Dmitry Torokhov wrote:
+> > >> > Hi Thomas,
+> > >> >
+> > >> > On Wednesday, September 17, 2014 12:05:42 PM Thomas Gleixner wrote:
+> > >> > > On Tue, 16 Sep 2014, Eric Caruso wrote:
+> > >> > > > We would like to be able to set different irq masks for triggers during
+> > >> > > > normal operation and for waking up the system. For example, while a laptop
+> > >> > > > is awake, closing the lid and opening the lid should both fire an
+> > >> > > > interrupt, but when the system is asleep, we would like to stay asleep
+> > >> > > > when
+> > >> > > > closing the lid.
+> > >> > > >
+> > >> > > > We are thinking about stashing the irq mask used specifically for waking
+> > >> > > > the system up in the irq_desc struct, and then swapping it during
+> > >> > > > enable_irq_wake and disable_irq_wake calls. Devices that do not specify a
+> > >> > > > different wake mask will use their normal trigger mask for both
+> > >> > > > situations.
+> > >> > > >
+> > >> > > > Is this acceptable?
+> > >> > >
+> > >> > > Not really. Why should irq_desc provide storage for random
+> > >> > > configurations and bind them to some random system state?
+> > >> > >
+> > >> > > What's wrong with calling
+> > >> > >
+> > >> > >        irq_set_type(irq, B);
+> > >> > >        enable_irq_wake(irq);
+> > >> > >
+> > >> > >        disable_irq_wake(irq);
+> > >> > >        irq_set_type(irq, A);
+> > >> >
+> > >> > The desire is to avoid doing it in [every] driver but rather have it done
+> > >> > centrally by device/PM core. It does not have to be irq_desc though,
+> > >> > maybe you can suggest a better place for it (aside of the individual driver
+> > >> > code that is)?
+> > >>
+> > >> Well, if it should be done by the device/pm core then you want to
+> > >> store that information in the device related data structure.
+> > >>
+> > >> struct dev_pm_info might be the right place for it, but that's up to
+> > >> Rafael.
+> > >>
+> > >> So driver would set
+> > >>
+> > >>    dev->power.update_wakeirq_type = true;
+> > >>    dev->power.irq_type_normal = IRQ_TYPE_EDGE_BOTH;
+> > >>    dev->power.irq_type_sleep = IRQ_TYPE_EDGE_LOW;
+> > >>
+> > >> And the dev/PM core can issue the calls on suspend/resume.
+> > >
+> > > So I'd rather put that into the struct wakeup_source pointed to by
+> > > the wakeup pointer in struct dev_pm_info.  That would give us a mapping
+> > > between wakeup source objects and wakeup interrupts and which would make
+> > > a fair amount of sense in my view.
+> > >
+> > > Then, we could simply walk the list of wakeup source objects before
+> > > suspend_device_irqs() and call enable_irq_wake() etc. for all of the
+> > > interrupts in question without drivers having to worry about that.
+> > > We also could save the current IRQ type for them at that point and
+> > > restore it during resume.
+> > >
+> > > Of course, that would require some changes to wakeup_source_create()
+> > > and friends, but is probably worth doing.
+> > >
+> > > Still, before we start making those changes, here's a bunch of questions
+> > > to answer:
+> > >
+> > > (1) Say a wakeup interrupt is shared between two drivers and one of them
+> > >     asks for a different "IRQ type for sleep" than the other one.  How are
+> > >     we going to resolve such conflicts?
+> > >
+> > > (2) Can platforms place restrictions on the IRQ type to be used with a given
+> > >     line?  If so, how do we handle situations in which the requested
+> > >     "IRQ type for sleep" is different from what the given line can use?
+> > >     Do we need to resolve that at the struct wakeup_source creation time or
+> > >     can we do that later (during suspend?) and how?
+> > >
+> > > Rafael
+> > >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-verifier has to track each byte separately, because
-malicious program may write a pointer into stack with 8-byte
-write, then modify single byte with 1-byte write and then
-try to read 8-byte back. Verifier has to catch that and
-that's why it's tracking every byte-sized slot independently.
-
-> I don't like the fact that the function proto comes from the
-> environment instead of from the program.
-
-that's must have.
-in-kernel function argument constraints must come from
-kernel. where else?
-User program says I want to call function foo() and here
-is my code that invokes it. Kernel sees prototype of this
-foo() and checks arguments.
-There is no point for user space program to also
-pass foo() constraints. The only thing kernel can do
-with this extra info is to check that it matches what
-kernel already knows.
-
->> nope. breadth-first just doesn't work at all.
->
-> Sorry, I didn't actually mean BFS.  I meant to order the search such
-> that all incoming control flow edges to an insn are visited before any
-> of the outgoing edges are visited.
-
-hmm. I'm not sure how exactly you plan on achieving that.
-I don't think we want to see real control/data flow graph
-analysis in the kernel the way compilers do things.
-It will be tens of thousands lines of code.
-The algorithm you see in this verifier is straight forward and
-tiny. I guess when time passes by when may get enough
-courage to attempt something like this, but
-today 'kiss' principle rules.
-
->> complexity is actually described in the doc.
->> There are several limits. Verifier will be aborted if it walks
->> more then 32k instructions or more then 1k branches.
->> So the very worst case takes micro seconds to reject
->> the program. So I don't see your concern.
->
-> That this will randomly fail, then.  For all I know, there are
-> existing valid BPF programs with vastly more than 32k "instructions"
-> as counted by the verifier.
-
-you need to double check your data :)
-classic bpf limit is 4k instructions per program.
-We're keeping the same limit for eBPF.
-32k limit says that verifier will visit each instruction
-no more than 8 times.
-if we have a program full of branches, then yes, 32k limit will
-be reached and that's exactly what 'state pruning' patch is
-addressing! As I already said, I dropped it out of this set
-to ease review and to keep patch set size minimal.
-You can see it my tree:
-https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/commit/?h=v14&id=1d9529ae4ce24bc31ca245a156299aa9e59a29f0
-I was planning to send it next.
-It's small incremental patch on top of existing things.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
