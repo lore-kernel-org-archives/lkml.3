@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaIZA5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:57:48 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:38848 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752525AbaIZA5r (ORCPT
+	id S1753059AbaIZBCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 21:02:04 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:21242 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384AbaIZBCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:57:47 -0400
+	Thu, 25 Sep 2014 21:02:01 -0400
+Message-ID: <5424BB01.8040305@huawei.com>
+Date: Fri, 26 Sep 2014 09:01:53 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAJ5Y-ea7e1LCym49jGen-eXuw6tWOzTi3Rrd_K-4ZcZUwkv_jg@mail.gmail.com>
-References: <1406896194-4667-1-git-send-email-jaswinder.singh@linaro.org>
-	<1406896296-4863-1-git-send-email-jaswinder.singh@linaro.org>
-	<CAJ5Y-eZ5gNMQ2YRN4iS5QTU7qUrgxGdTHXhQZ_2ut4iBsEZHGg@mail.gmail.com>
-	<5420675C.6040805@arm.com>
-	<54206B7C.60501@arm.com>
-	<CAJ5Y-ea7e1LCym49jGen-eXuw6tWOzTi3Rrd_K-4ZcZUwkv_jg@mail.gmail.com>
-Date: Thu, 25 Sep 2014 17:57:46 -0700
-Message-ID: <CAJe_ZhdxZwrBsvRt7X0KN2+vnQVRDAJdUGOyNgq2rynwmsur9A@mail.gmail.com>
-Subject: Re: [PATCHv10 2/4] mailbox: Introduce framework for mailbox
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <Mark.Rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Matt Porter <mporter@linaro.org>,
-        Craig McGeachie <slapdau@yahoo.com.au>,
-        LeyFoon Tan <lftan.linux@gmail.com>,
-        Loic Pallardy <loic.pallardy@st.com>, "Anna, Suman" <s-anna@ti.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Patch Tracking <patches@linaro.org>,
-        "mollie.wu@linaro.org" <mollie.wu@linaro.org>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "andy.green@linaro.org" <andy.green@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+CC: <lwn@lwn.net>
+Subject: Linux 3.4.104
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 September 2014 09:14, Ashwin Chaugule <ashwin.chaugule@linaro.org> wrote:
-> On 22 September 2014 14:33, Sudeep Holla <sudeep.holla@arm.com> wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
->>>>> +static void poll_txdone(unsigned long data)
->>>>> +{
->>>>> +       struct mbox_controller *mbox = (struct mbox_controller *)data;
->>>>> +       bool txdone, resched = false;
->>>>> +       int i;
->>>>> +
->>>>> +       for (i = 0; i < mbox->num_chans; i++) {
->>>>> +               struct mbox_chan *chan = &mbox->chans[i];
->>>>> +
->>>>> +               if (chan->active_req && chan->cl) {
->>>>> +                       resched = true;
->>>>> +                       txdone = chan->mbox->ops->last_tx_done(chan);
->>>>> +                       if (txdone)
->>>>> +                               tx_tick(chan, 0);
->>>>> +               }
->>>>> +       }
->>>>> +
->>>>> +       if (resched)
->>>>> +               mod_timer(&mbox->poll, jiffies +
->>>>> +                               msecs_to_jiffies(mbox->period));
->>>>
->>>>
->>>> While preparing a different patch which uses the Mbox framework, I
->>>> noticed that mbox->period might not be initialized anywhere. Also, how
->>>> is mbox->txpoll_period to be used? It appears from the description of
->>>> txpoll_period in mbox_controller.h that you'd want to use that value
->>>> in the mod_timer above, or equate the two somewhere in the controller
->>>> registration or eliminate one of the two. FWIW I also looked at your
->>>> code in [1].
->>>>
->>>
->>> IIUC the controller needs to set the txpoll_period if it sets
->>> txdone_poll, may be a sanity check for !0 would be good.
->>>
->>
->> Ah, sorry I confused mbox->period to txpoll_period.
->> You are right mbox->period is not set, the header claims it to be
->> private, and hence I assume it needs to be handled only in core mailbox
->> library. Not sure if we need both mbox->period and txpoll_period though.
->
-> Right. I dont see the need for having both either. Unless the Mailbox
-> maintainer wants to fix this in some other way, I can send a patch for
-> replacing mbox->period with mbox->txpoll_period along with my PCC
-> work.
->
-Yeah, probably we should just get rid of mbox_controller.period  I
-have updated the same in for-next.
+I'm announcing the release of the 3.4.104 kernel.
 
-Thanks
-Jassi
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+
+- ----------------------------------------------------------------
+
+Aaro Koskinen (1):
+      MIPS: OCTEON: make get_system_type() thread-safe
+
+Alan Douglas (1):
+      xtensa: fix address checks in dma_{alloc,free}_coherent
+
+Andi Kleen (1):
+      slab/mempolicy: always use local policy from interrupt context
+
+Anton Blanchard (1):
+      ibmveth: Fix endian issues with rx_no_buffer statistic
+
+Arjun Sreedharan (1):
+      pata_scc: propagate return value of scc_wait_after_reset
+
+Benjamin Tissoires (1):
+      HID: logitech-dj: prevent false errors to be shown
+
+Brennan Ashton (1):
+      USB: option: add VIA Telecom CDS7 chipset device id
+
+Daniel Mack (1):
+      ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
+
+Dave Chiluk (1):
+      stable_kernel_rules: Add pointer to netdev-FAQ for network patches
+
+Fengguang Wu (1):
+      unicore32: select generic atomic64_t support
+
+Florian Fainelli (1):
+      MIPS: perf: Fix build error caused by unused counters_per_cpu_to_total()
+
+Greg KH (1):
+      USB: serial: pl2303: add device id for ztek device
+
+Guan Xuetao (2):
+      UniCore32-bugfix: Remove definitions in asm/bug.h to solve difference between native and cross compiler
+      UniCore32-bugfix: fix mismatch return value of __xchg_bad_pointer
+
+Hans de Goede (1):
+      xhci: Treat not finding the event_seg on COMP_STOP the same as COMP_STOP_INVAL
+
+Huang Rui (1):
+      usb: xhci: amd chipset also needs short TX quirk
+
+James Forshaw (1):
+      USB: whiteheat: Added bounds checking for bulk command response
+
+Jan Kara (2):
+      isofs: Fix unbounded recursion when processing relocated directories
+      ext2: Fix fs corruption in ext2_get_xip_mem()
+
+Ja
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlQkuwEACgkQWyV2+h1UztNI2QCgjdz894R+7HCEozS+rP/LZIWQ
+oOMAniLGoXrPt4qKVfoH4/uvVMS+KgDW
+=y055
+-----END PGP SIGNATURE-----
