@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaIZKPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:15:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
+	id S1756578AbaIZKSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:18:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918AbaIZJqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:23 -0400
+	id S1754911AbaIZJqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 087/142] ring-buffer: Always reset iterator to reader page
-Date: Fri, 26 Sep 2014 11:44:58 +0200
-Message-Id: <a5471186126c6c4e24ba0a72c74421e917a62e72.1411724724.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 093/142] md/raid1,raid10: always abort recover on write error.
+Date: Fri, 26 Sep 2014 11:45:04 +0200
+Message-Id: <8c74345afe07978d0b7efdaf561183bdd888a3e1.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,137 +22,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: NeilBrown <neilb@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 651e22f2701b4113989237c3048d17337dd2185c upstream.
+commit 2446dba03f9dabe0b477a126cbeb377854785b47 upstream.
 
-When performing a consuming read, the ring buffer swaps out a
-page from the ring buffer with a empty page and this page that
-was swapped out becomes the new reader page. The reader page
-is owned by the reader and since it was swapped out of the ring
-buffer, writers do not have access to it (there's an exception
-to that rule, but it's out of scope for this commit).
+Currently we don't abort recovery on a write error if the write error
+to the recovering device was triggerd by normal IO (as opposed to
+recovery IO).
 
-When reading the "trace" file, it is a non consuming read, which
-means that the data in the ring buffer will not be modified.
-When the trace file is opened, a ring buffer iterator is allocated
-and writes to the ring buffer are disabled, such that the iterator
-will not have issues iterating over the data.
+This means that for one bitmap region, the recovery might write to the
+recovering device for a few sectors, then not bother for subsequent
+sectors (as it never writes to failed devices).  In this case
+the bitmap bit will be cleared, but it really shouldn't.
 
-Although the ring buffer disabled writes, it does not disable other
-reads, or even consuming reads. If a consuming read happens, then
-the iterator is reset and starts reading from the beginning again.
+The result is that if the recovering device fails and is then re-added
+(after fixing whatever hardware problem triggerred the failure),
+the second recovery won't redo the region it was in the middle of,
+so some of the device will not be recovered properly.
 
-My tests would sometimes trigger this bug on my i386 box:
+If we abort the recovery, the region being processes will be cancelled
+(bit not cleared) and the whole region will be retried.
 
-WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
-Modules linked in:
-CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
- 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
- f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
- ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
-Call Trace:
- [<c18796b3>] dump_stack+0x4b/0x75
- [<c103a0e3>] warn_slowpath_common+0x7e/0x95
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c103a185>] warn_slowpath_fmt+0x33/0x35
- [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
- [<c10bed04>] trace_find_cmdline+0x40/0x64
- [<c10c3c16>] trace_print_context+0x27/0xec
- [<c10c4360>] ? trace_seq_printf+0x37/0x5b
- [<c10c0b15>] print_trace_line+0x319/0x39b
- [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
- [<c10c13b1>] s_show+0x192/0x1ab
- [<c10bfd9a>] ? s_next+0x5a/0x7c
- [<c112e76e>] seq_read+0x267/0x34c
- [<c1115a25>] vfs_read+0x8c/0xef
- [<c112e507>] ? seq_lseek+0x154/0x154
- [<c1115ba2>] SyS_read+0x54/0x7f
- [<c188488e>] syscall_call+0x7/0xb
----[ end trace 3f507febd6b4cc83 ]---
->>>> ##### CPU 1 buffer started ####
+As the bug can result in data corruption the patch is suitable for
+-stable.  For kernels prior to 3.11 there is a conflict in raid10.c
+which will require care.
 
-Which was the __trace_find_cmdline() function complaining about the pid
-in the event record being negative.
-
-After adding more test cases, this would trigger more often. Strangely
-enough, it would never trigger on a single test, but instead would trigger
-only when running all the tests. I believe that was the case because it
-required one of the tests to be shutting down via delayed instances while
-a new test started up.
-
-After spending several days debugging this, I found that it was caused by
-the iterator becoming corrupted. Debugging further, I found out why
-the iterator became corrupted. It happened with the rb_iter_reset().
-
-As consuming reads may not read the full reader page, and only part
-of it, there's a "read" field to know where the last read took place.
-The iterator, must also start at the read position. In the rb_iter_reset()
-code, if the reader page was disconnected from the ring buffer, the iterator
-would start at the head page within the ring buffer (where writes still
-happen). But the mistake there was that it still used the "read" field
-to start the iterator on the head page, where it should always start
-at zero because readers never read from within the ring buffer where
-writes occur.
-
-I originally wrote a patch to have it set the iter->head to 0 instead
-of iter->head_page->read, but then I questioned why it wasn't always
-setting the iter to point to the reader page, as the reader page is
-still valid.  The list_empty(reader_page->list) just means that it was
-successful in swapping out. But the reader_page may still have data.
-
-There was a bug report a long time ago that was not reproducible that
-had something about trace_pipe (consuming read) not matching trace
-(iterator read). This may explain why that happened.
-
-Anyway, the correct answer to this bug is to always use the reader page
-an not reset the iterator to inside the writable ring buffer.
-
-Fixes: d769041f8653 "ring_buffer: implement new locking"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Original-from: jiao hui <jiaohui@bwstor.com.cn>
+Reported-and-tested-by: jiao hui <jiaohui@bwstor.com.cn>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/trace/ring_buffer.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/md/raid1.c  |  8 ++++----
+ drivers/md/raid10.c | 11 +++++------
+ 2 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index a758ec217bc0..c9b4f81959fc 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3354,21 +3354,16 @@ static void rb_iter_reset(struct ring_buffer_iter *iter)
- 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
- 
- 	/* Iterator usage is expected to have record disabled */
--	if (list_empty(&cpu_buffer->reader_page->list)) {
--		iter->head_page = rb_set_head_page(cpu_buffer);
--		if (unlikely(!iter->head_page))
--			return;
--		iter->head = iter->head_page->read;
--	} else {
--		iter->head_page = cpu_buffer->reader_page;
--		iter->head = cpu_buffer->reader_page->read;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 66c4aee20c72..9b582c9444f2 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1406,12 +1406,12 @@ static void error(struct mddev *mddev, struct md_rdev *rdev)
+ 		mddev->degraded++;
+ 		set_bit(Faulty, &rdev->flags);
+ 		spin_unlock_irqrestore(&conf->device_lock, flags);
+-		/*
+-		 * if recovery is running, make sure it aborts.
+-		 */
+-		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	} else
+ 		set_bit(Faulty, &rdev->flags);
++	/*
++	 * if recovery is running, make sure it aborts.
++	 */
++	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	printk(KERN_ALERT
+ 	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 308575d23550..867a8b67d5b9 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1698,13 +1698,12 @@ static void error(struct mddev *mddev, struct md_rdev *rdev)
+ 		spin_unlock_irqrestore(&conf->device_lock, flags);
+ 		return;
+ 	}
+-	if (test_and_clear_bit(In_sync, &rdev->flags)) {
++	if (test_and_clear_bit(In_sync, &rdev->flags))
+ 		mddev->degraded++;
+-			/*
+-		 * if recovery is running, make sure it aborts.
+-		 */
+-		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
 -	}
-+	iter->head_page = cpu_buffer->reader_page;
-+	iter->head = cpu_buffer->reader_page->read;
-+
-+	iter->cache_reader_page = iter->head_page;
-+	iter->cache_read = iter->head;
-+
- 	if (iter->head)
- 		iter->read_stamp = cpu_buffer->read_stamp;
- 	else
- 		iter->read_stamp = iter->head_page->page->time_stamp;
--	iter->cache_reader_page = cpu_buffer->reader_page;
--	iter->cache_read = cpu_buffer->read;
- }
- 
- /**
++	/*
++	 * If recovery is running, make sure it aborts.
++	 */
++	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	set_bit(Blocked, &rdev->flags);
+ 	set_bit(Faulty, &rdev->flags);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
 -- 
 2.1.0
 
