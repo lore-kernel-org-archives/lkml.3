@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaIZN2r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:28:47 -0400
+	id S1755457AbaIZN3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:29:46 -0400
 Received: from mga01.intel.com ([192.55.52.88]:11137 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373AbaIZN2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:28:43 -0400
+	id S1754930AbaIZN2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:28:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597257996"
+   d="scan'208";a="597257982"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v2 17/18] iommu/vt-d: Use helpers to access irq_cfg data structure associated with IRQ
-Date: Fri, 26 Sep 2014 21:29:54 +0800
-Message-Id: <1411738196-29958-18-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v2 16/18] x86: irq_remapping: Use helpers to access irq_cfg data structure associated with IRQ
+Date: Fri, 26 Sep 2014 21:29:53 +0800
+Message-Id: <1411738196-29958-17-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
@@ -40,58 +40,40 @@ rewrite those helpers to support hierarchy irqdomain.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/intel_irq_remapping.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/iommu/irq_remapping.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 0df41f6264f5..319b39edcf7e 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -55,7 +55,7 @@ static int __init parse_ioapics_under_ir(void);
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 33c439524080..34d01de91bd7 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -305,7 +305,7 @@ static int set_remapped_irq_affinity(struct irq_data *data,
  
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
+ void free_remapped_irq(int irq)
  {
 -	struct irq_cfg *cfg = irq_get_chip_data(irq);
 +	struct irq_cfg *cfg = irq_cfg(irq);
- 	return cfg ? &cfg->irq_2_iommu : NULL;
+ 
+ 	if (!remap_ops || !remap_ops->free_irq)
+ 		return;
+@@ -318,7 +318,7 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 			      unsigned int irq, unsigned int dest,
+ 			      struct msi_msg *msg, u8 hpet_id)
+ {
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 
+ 	if (!irq_remapped(cfg))
+ 		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+@@ -365,7 +365,7 @@ static void ir_ack_apic_edge(struct irq_data *data)
+ static void ir_ack_apic_level(struct irq_data *data)
+ {
+ 	ack_APIC_irq();
+-	eoi_ioapic_irq(data->irq, data->chip_data);
++	eoi_ioapic_irq(data->irq, irqd_cfg(data));
  }
  
-@@ -86,7 +86,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned int mask = 0;
- 	unsigned long flags;
- 	int index;
-@@ -154,7 +154,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long flags;
- 
- 	if (!irq_iommu)
-@@ -1009,7 +1009,7 @@ static int
- intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			  bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest, irq = data->irq;
- 	struct irte irte;
- 	int err;
-@@ -1064,7 +1064,7 @@ static void intel_compose_msi_msg(struct pci_dev *pdev,
- 	u16 sub_handle = 0;
- 	int ir_index;
- 
--	cfg = irq_get_chip_data(irq);
-+	cfg = irq_cfg(irq);
- 
- 	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
- 	BUG_ON(ir_index == -1);
+ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
 -- 
 1.7.10.4
 
