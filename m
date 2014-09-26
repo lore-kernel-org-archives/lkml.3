@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaIZKXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:23:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
+	id S932077AbaIZKXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:23:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33029 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754754AbaIZJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754856AbaIZJqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:13 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 077/142] ASoC: samsung: Correct I2S DAI suspend/resume ops
-Date: Fri, 26 Sep 2014 11:44:48 +0200
-Message-Id: <109275a6d60b1212965ffbb1fcd3d99bb2cefb58.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Holger Paradies <retabell@gmx.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 018/142] staging/rtl8188eu: add 0df6:0076 Sitecom Europe B.V.
+Date: Fri, 26 Sep 2014 11:43:49 +0200
+Message-Id: <09357cf4c4696205fe6c8e8131fa7c6c3241cfc1.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,61 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Holger Paradies <retabell@gmx.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d3d4e5247b013008a39e4d5f69ce4c60ed57f997 upstream.
+commit 8626d524ef08f10fccc0c41e5f75aef8235edf47 upstream.
 
-We should save/restore relevant I2S registers regardless of
-the dai->active flag, otherwise some settings are being lost
-after system suspend/resume cycle. E.g. I2S slave mode set only
-during dai initialization is not preserved and the device ends
-up in master mode after system resume.
+The stick is not recognized.
+This dongle uses r8188eu but usb-id is missing.
+3.16.0
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Holger Paradies <retabell@gmx.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/samsung/i2s.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index b302f3b7a587..2ac8d88fe7eb 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -922,11 +922,9 @@ static int i2s_suspend(struct snd_soc_dai *dai)
- {
- 	struct i2s_dai *i2s = to_info(dai);
+diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+index 85f692ddd992..899c91bd1ad1 100644
+--- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
++++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
+@@ -56,6 +56,7 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
+ 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
+ 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
+ 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
++	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
+ 	{}	/* Terminating entry */
+ };
  
--	if (dai->active) {
--		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
--		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
--		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
--	}
-+	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
-+	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
-+	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
- 
- 	return 0;
- }
-@@ -935,11 +933,9 @@ static int i2s_resume(struct snd_soc_dai *dai)
- {
- 	struct i2s_dai *i2s = to_info(dai);
- 
--	if (dai->active) {
--		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
--		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
--		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
--	}
-+	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
-+	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
-+	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
- 
- 	return 0;
- }
 -- 
 2.1.0
 
