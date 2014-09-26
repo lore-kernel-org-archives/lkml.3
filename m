@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbaIZKPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:15:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33029 "EHLO mx2.suse.de"
+	id S1756458AbaIZKPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:15:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754914AbaIZJqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754916AbaIZJqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:22 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Roger Quadros <rogerq@ti.com>, Michael Welling <mwelling@emacinc.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 031/142] USB: fix build error with CONFIG_PM_RUNTIME disabled
-Date: Fri, 26 Sep 2014 11:44:02 +0200
-Message-Id: <a6c8b5b4fe09fe235aa7089caf7d4c000f26cd41.1411724723.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 068/142] MIPS: GIC: Prevent array overrun
+Date: Fri, 26 Sep 2014 11:44:39 +0200
+Message-Id: <41c6ebd1c89fd33d9d55fe5307626b35503d87db.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -24,43 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Jeffrey Deans <jeffrey.deans@imgtec.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a9ef803d740bfadf5e505fbc57efa57692e27025 upstream.
+commit ffc8415afab20bd97754efae6aad1f67b531132b upstream.
 
-commit bdd405d2a528 ("usb: hub: Prevent hub autosuspend if
-usbcore.autosuspend is -1") causes a build error if CONFIG_PM_RUNTIME is
-disabled.  Fix that by doing a simple #ifdef guard around it.
+A GIC interrupt which is declared as having a GIC_MAP_TO_NMI_MSK
+mapping causes the cpu parameter to gic_setup_intr() to be increased
+to 32, causing memory corruption when pcpu_masks[] is written to again
+later in the function.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Cc: Roger Quadros <rogerq@ti.com>
-Cc: Michael Welling <mwelling@emacinc.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Jeffrey Deans <jeffrey.deans@imgtec.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7375/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/core/hub.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/kernel/irq-gic.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 156fe93fb3d9..721de375c543 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1708,8 +1708,10 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 * - If user has indicated to prevent autosuspend by passing
- 	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
-+#ifdef CONFIG_PM_RUNTIME
- 	if (hdev->dev.power.autosuspend_delay >= 0)
- 		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+#endif
+diff --git a/arch/mips/kernel/irq-gic.c b/arch/mips/kernel/irq-gic.c
+index 5b5ddb231f26..78f18436cdf2 100644
+--- a/arch/mips/kernel/irq-gic.c
++++ b/arch/mips/kernel/irq-gic.c
+@@ -255,11 +255,13 @@ static void __init gic_setup_intr(unsigned int intr, unsigned int cpu,
  
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
+ 	/* Setup Intr to Pin mapping */
+ 	if (pin & GIC_MAP_TO_NMI_MSK) {
++		int i;
++
+ 		GICWRITE(GIC_REG_ADDR(SHARED, GIC_SH_MAP_TO_PIN(intr)), pin);
+ 		/* FIXME: hack to route NMI to all cpu's */
+-		for (cpu = 0; cpu < NR_CPUS; cpu += 32) {
++		for (i = 0; i < NR_CPUS; i += 32) {
+ 			GICWRITE(GIC_REG_ADDR(SHARED,
+-					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, cpu)),
++					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, i)),
+ 				 0xffffffff);
+ 		}
+ 	} else {
 -- 
 2.1.0
 
