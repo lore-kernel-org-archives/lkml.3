@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaIZG7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 02:59:33 -0400
-Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:18230
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752976AbaIZG7b convert rfc822-to-8bit (ORCPT
+	id S1753589AbaIZHA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:00:28 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:35469 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976AbaIZHA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 02:59:31 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Sep 2014 02:59:31 EDT
-X-AuditID: ac14203a-f79496d000007675-0d-54250b4388b8
-To: undisclosed-recipients:;
-From: "Charlemagne, James" <James.Charlemagne@compass-usa.com>
-Subject: IT-beveiliging Service Desk.
-Thread-Topic: IT-beveiliging Service Desk.
-Thread-Index: Ac/ZVU49mFTdTgcvSjCpyvOE8E6Ktw==
-Date: Fri, 26 Sep 2014 06:44:22 +0000
-Message-ID: <10817CFA8910CA4FB3FE097B8EE155466A6475@CGUSCHP623VM.NA.CompassGroup.Corp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.20.32.3]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 26 Sep 2014 03:00:27 -0400
+Date: Fri, 26 Sep 2014 09:00:23 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <treding@nvidia.com>, Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: linux-next: manual merge of the pci tree with the asm-generic
+ tree
+Message-ID: <20140926070022.GA31002@ulmo>
+References: <20140926132902.603fb9f8@canb.auug.org.au>
 MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0ybZRTHfd47bE1eC3NPUOOs48sW2SVozowSYoy+LotOwbnMGNZBA0Sg
-	TbsSNmNSkSFWliEVWDtuY6VQBrJ1XDomIzbrbAsGEWYpTCprGZSqG8GNEumwXTXh2++c/+U8
-	Hx6OFP/OJHH5RcdlyiJpgYSJpzqf5QIvvrEpOXP38hc8hKxfsXDtuo6A8LyZggehNhbm3YMM
-	LLsDLPSUrbNg0F9goHL2Mg1lPy5QML/upMA1ZmJB0zjHwFiThwXrrAKGvKMk1PcHCbg3Ok3B
-	ZLgaQYs9YgvVNlCw8peFgKvtGhI8lTUU+LzbwXDpJgU3Ksw0OO98BPeCxXBHf5UEk6eRAVfX
-	AAMB3xAFi+VDDJgddRSYv+xjYcTUQUD18BIDjnEM1gkVuPsiDT2djTT8cGaIhsXJ2wisxkNg
-	MW6G8YF6BmqCx+C31m4a+ifaSRjU9SKosthIqNV/CvYLvxJQsd7CwM05GwMjS1UMzLj0FExY
-	zAysV/xDwsPpWQJKHxgp6BqsZKHr4SMy3Y6E23/Lha7PjazQ61ULf7RbWGHYtFdoOPWuMPWd
-	gxXunp0mhFvaOkrQldXTgsc3wggTF92s8OdZNyWsrQaQ0O26wQjLun0HT6Ej8a/myAryi2XK
-	XWlH4/OqteO0op8sud/iRBp0n9CiOA7zqfjuigvF+Cn880w3o0XxnJifQfh0Ty8bFRL5Z3DD
-	OR8dE0wI65bcdFRg+DTc0Wp83JTAJ+Ov+/RkLLADz12pjYS5CKfgsfKs6JqKWOxLzUyURfwh
-	PDZXTkUZRQ6vuDof15D8Vjzlb/rvcTw2fj9KxngLDvge0TF+Dq84S+mYPwVP1nzLxHgnNp0P
-	krH+J7FT76eqUIJhQ61hQ8SwIWLYEGlGVAeSZOeqVdl5J/em7kstLkwpkqZkywsVUpUqVylX
-	KyKDUmFB0X+fuO0VK/IH9tgQzyHJZlGzY3ummJYWq04U2hDmSEmi6DKXnCkW5UhPnJQp5VlK
-	dYFMZUNPc5RkqyjVHs4Q87nS47JPZDKFTPm/SnBxSRr02pW+aS9hOLJ68NI3cWtH05IaEjS1
-	Hem2pgoI5/1U31b3nrjx+gHJ28aS0NrrC8Pz2xL9ppA8K2i59v7+XW+dyxzNfoEkPmjd+YR2
-	VQPe53MGMkrzX97i/8zzYf6b6Xk1v9xyLpxv3y0rDH+cHD7j2D9SsumljKkDh4+1LZ5OI95R
-	D0goVZ50zw5SqZL+C3Ltv7nzAwAA
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:208.82.3.112;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(50466002)(4396001)(31966008)(6806004)(15975445006)(566704002)(83072002)(85852003)(92726001)(16796002)(86362001)(92566001)(44976005)(83322001)(87936001)(19580395003)(23756003)(107886001)(109986003)(2656002)(110136001)(81342003)(74662003)(81542003)(79102003)(99396003)(46102003)(77982003)(77096002)(85306004)(47776003)(64706001)(20776003)(21056001)(101416001)(881003)(105586002)(15202345003)(33656002)(107046002)(229853001)(90102001)(54356999)(95666004)(120916001)(10300001)(55846006)(106466001)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR02MB483;H:cguschz2494vm.na.compassgroup.corp;FPR:;MLV:sfv;PTR:cgptr.foodbuy.com,cgptr.restaurantassociates.com,cgptr.compass-usa.com;MX:1;A:1;LANG:nl;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR02MB483;
-X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=none (sender IP is 208.82.3.112)
- smtp.mailfrom=James.Charlemagne@compass-usa.com; 
-X-OriginatorOrg: compass-usa.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="liOOAslEiF7prFVr"
+Content-Disposition: inline
+In-Reply-To: <20140926132902.603fb9f8@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uw e-mail account is de opslag limiet overschreden. U zult niet in staat zijn om te ontvangen of te verzenden message.In om uw account te herstellen Klik op deze link: http://libertadorhoy.com.ar/web/ en uw web-mail indienen vereiste informatie.
 
-Bedankt.
-IT-beveiliging Service Desk
-This email is subject to certain disclaimers, which may be reviewed via the following link. http://compass-usa.com/Pages/Disclaimer.aspx.
+--liOOAslEiF7prFVr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Sep 26, 2014 at 01:29:02PM +1000, Stephen Rothwell wrote:
+> Hi Bjorn,
+>=20
+> Today's linux-next merge of the pci tree got a conflict in
+> include/asm-generic/io.h between commit 4005bfe0aa45
+> ("asm-generic/io.h: Implement generic {read,write}s*()") from the
+> asm-generic tree and commit 3aad9c969c09 ("asm-generic/io.h: Fix
+> ioport_map() for !CONFIG_GENERIC_IOMAP") from the pci tree.
+>=20
+> I fixed it up (the only difference is that the latter castes the result
+> to void __iomem * - see below) and can carry the fix as necessary (no
+> action is required).
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc include/asm-generic/io.h
+> index 3e976be3bdd4,2e2161b0c795..000000000000
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@@ -756,16 -329,11 +756,16 @@@ static inline void iounmap(void __iome
+>  =20
+>   #ifdef CONFIG_HAS_IOPORT_MAP
+>   #ifndef CONFIG_GENERIC_IOMAP
+>  +#ifndef ioport_map
+>  +#define ioport_map ioport_map
+>   static inline void __iomem *ioport_map(unsigned long port, unsigned int=
+ nr)
+>   {
+> - 	return PCI_IOBASE + (port & IO_SPACE_LIMIT);
+> + 	return (void __iomem *)(PCI_IOBASE + (port & IO_SPACE_LIMIT));
+
+I don't think that cast is necessary. All instances of PCI_IOBASE are
+already defined to be void __iomem *.
+
+Or at least they were until a few days ago. Commit f3dfddf7bd85 (ARM:
+Define PCI_IOBASE as the base of virtual PCI IO space) introduces one
+variant for ARM which isn't actually void __iomem *. I think what we
+should do is standardize the type of PCI_IOBASE.
+
+So how about we remove commit 3aad9c969c09 (asm-generic/io.h: Fix
+ioport_map() for !CONFIG_GENERIC_IOMAP) and move the cast to void
+__iomem * to Liviu's definition of PCI_IOBASE for ARM?
+
+Thierry
+
+--liOOAslEiF7prFVr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUJQ8GAAoJEN0jrNd/PrOhgp0P/iQfL2lRP/iNpYWCp2t2RP05
+1UO2XizDoFE6IBJva2t4pSHLDXkEXP8b6nF09hu82Jv7sT1ppHJ0IGLGs+xNMt0T
+kODdqDhUEeRcSztcQ0CzsigFktwgJswPxZhtk8HV4/iitsF6YFUBaJumRA7pNXqG
+T/sJdXmu2THvR6WOnOJH3at53Hy8mkuxlSYAm988fK7Hq7voF3nzVtrhuU8vxwku
+Ie3Kbu6XHvpdhKEpoWFhDiZZsJ0pyLDfqmfgRJf97mqVGIuvnZVFQ9fU4FFz7VTZ
+l89s3Cbydl7r9HmW4uKHa0MadS5blKO1xtNfofgmhmzrVQcCZPBgS7TKmuypTqlV
+SyAvE5tyQw5g2Pnz2CQHio9liajnnUDPIcyZJ7fKiZKc/c60b9JvC0GYy0oPUVeC
+S9rtDUH6gBWm6hTQRqQrbEInH/gWfc4O1XUzAT79YMRszWkTbPeAMxFqCJujAq0m
+79OIvYY+urSK0XFtzLDCrBYiGBbrx+EE7Une0Udk6pkqzGZZK7AMlt9DbDnazgb5
+IXq1AJ0F4UCPmWTkoECAORWhZjLtrqrjJWNGzuzNuTQvx9vCH4pNq4Y1z89GWnx2
+uuAhpmnCUxH8J7jzXPiB5E1DXqRmU+OS31UCNpNV5HK36laC8RWZXkGGNjU8wTb3
+RX8C0n5ETYVd28ELDGxh
+=DXqC
+-----END PGP SIGNATURE-----
+
+--liOOAslEiF7prFVr--
