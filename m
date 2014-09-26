@@ -1,78 +1,302 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbaIZDOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:14:32 -0400
-Received: from mail-by2on0138.outbound.protection.outlook.com ([207.46.100.138]:35053
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752437AbaIZDOb convert rfc822-to-8bit (ORCPT
+	id S1753409AbaIZDSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:18:55 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:60475 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbaIZDSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:14:31 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Shengchao Guo <Shawn.Guo@freescale.com>
-CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v3] ARM: ls1021a: add gating clocks to IP blocks.
-Thread-Topic: [PATCH v3] ARM: ls1021a: add gating clocks to IP blocks.
-Thread-Index: AQHP1yw1xpt6riX400mCXn9hhSG2j5wRjisAgAAB8dCAARvuAIAAAOlQ
-Date: Fri, 26 Sep 2014 03:14:26 +0000
-Message-ID: <eb17fb36d1a04812836ad46bace8c4bf@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1411476275-9164-1-git-send-email-Li.Xiubo@freescale.com>
- <20140925085403.GG6405@dragon>
- <e44a1930e8de43ec8beb6e60fa9c1e9e@BY2PR0301MB0613.namprd03.prod.outlook.com>
- <20140926015713.GG21077@dragon>
-In-Reply-To: <20140926015713.GG21077@dragon>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB339;UriScan:;
-x-forefront-prvs: 03468CBA43
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(164054003)(51704005)(189002)(199003)(20776003)(64706001)(83072002)(85852003)(74316001)(33646002)(66066001)(99396003)(83322001)(110136001)(107046002)(76176999)(50986999)(54356999)(101416001)(77096002)(85306004)(31966008)(93886004)(21056001)(46102003)(77982003)(76576001)(4396001)(106356001)(120916001)(105586002)(95666004)(92566001)(86362001)(106116001)(87936001)(97736003)(10300001)(99286002)(79102003)(81342003)(90102001)(76482002)(108616004)(74662003)(2656002)(74502003)(80022003)(81542003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB339;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 25 Sep 2014 23:18:53 -0400
+Message-ID: <5424DB15.2010300@roeck-us.net>
+Date: Thu, 25 Sep 2014 20:18:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB403;
-X-OriginatorOrg: freescale.com
+To: Josh Cartwright <joshc@codeaurora.org>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+CC: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 1/3] watchdog: qcom: add support for KPSS WDT
+References: <cover.1411684967.git.joshc@codeaurora.org> <f294b9c41eb418fa5842f549bf557fce96bb5b7c.1411684967.git.joshc@codeaurora.org>
+In-Reply-To: <f294b9c41eb418fa5842f549bf557fce96bb5b7c.1411684967.git.joshc@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5424DB1D.0078,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > As the parent of the clocks registered by this function is "dummy" from
-> > > what I see, what is the point of setting flag CLK_SET_RATE_PARENT then?
-> > >
-> > > > +			CLK_IGNORE_UNUSED, reg,	shift,
-> > >
-> > > Why flag CLK_IGNORE_UNUSED?
-> > >
-> >
-> > As the SoC reference manual all the IP blocks will be enabled when powered
-> up.
-> > But the Linux OS will disable all the IP blocks' clocks as default without
-> this.
-> >
-> > For now, this gate driver will only used for PM support of some IP blocks.
-> For the
-> > Others needed to be enabled as default.
-> 
-> Ok, got it. I'm fine with the flag then, and we can remove it after all
-> those client devices manage their clocks well.
-> 
+On 09/25/2014 03:51 PM, Josh Cartwright wrote:
+> Add a driver for the watchdog timer block found in the Krait Processor
+> Subsystem (KPSS) on the MSM8960, APQ8064, and IPQ8064.
+>
+> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
 
-Okay.
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-Thanks,
-
-BRs
-Xiubo
-
-
-> Shawn
-
+> ---
+>   drivers/watchdog/Kconfig    |  13 ++++
+>   drivers/watchdog/Makefile   |   1 +
+>   drivers/watchdog/qcom-wdt.c | 186 ++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 200 insertions(+)
+>   create mode 100644 drivers/watchdog/qcom-wdt.c
+>
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 1d1330a..0479e3f 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -443,6 +443,19 @@ config TEGRA_WATCHDOG
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called tegra_wdt.
+>
+> +config QCOM_WDT
+> +	tristate "QCOM watchdog"
+> +	depends on HAS_IOMEM
+> +	depends on ARCH_QCOM
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Say Y here to include Watchdog timer support for the watchdog found
+> +	  on QCOM chipsets.  Currently supported targets are the MSM8960,
+> +	  APQ8064, and IPQ8064.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called qcom_wdt.
+> +
+>   # AVR32 Architecture
+>
+>   config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..d645448 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -57,6 +57,7 @@ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+>   obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+>   obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+>   obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+> +obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
+>   obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>   obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>
+> diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
+> new file mode 100644
+> index 0000000..68db322
+> --- /dev/null
+> +++ b/drivers/watchdog/qcom-wdt.c
+> @@ -0,0 +1,186 @@
+> +/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define WDT_RST		0x0
+> +#define WDT_EN		0x8
+> +#define WDT_BITE_TIME	0x24
+> +
+> +struct qcom_wdt {
+> +	struct watchdog_device	wdd;
+> +	struct clk		*clk;
+> +	unsigned long		rate;
+> +	void __iomem		*base;
+> +};
+> +
+> +static inline
+> +struct qcom_wdt *to_qcom_wdt(struct watchdog_device *wdd)
+> +{
+> +	return container_of(wdd, struct qcom_wdt, wdd);
+> +}
+> +
+> +static int qcom_wdt_start(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(0, wdt->base + WDT_EN);
+> +	writel(1, wdt->base + WDT_RST);
+> +	writel(wdd->timeout * wdt->rate, wdt->base + WDT_BITE_TIME);
+> +	writel(1, wdt->base + WDT_EN);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_stop(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(0, wdt->base + WDT_EN);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_ping(struct watchdog_device *wdd)
+> +{
+> +	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
+> +
+> +	writel(1, wdt->base + WDT_RST);
+> +	return 0;
+> +}
+> +
+> +static int qcom_wdt_set_timeout(struct watchdog_device *wdd,
+> +				unsigned int timeout)
+> +{
+> +	wdd->timeout = timeout;
+> +	return qcom_wdt_start(wdd);
+> +}
+> +
+> +static const struct watchdog_ops qcom_wdt_ops = {
+> +	.start		= qcom_wdt_start,
+> +	.stop		= qcom_wdt_stop,
+> +	.ping		= qcom_wdt_ping,
+> +	.set_timeout	= qcom_wdt_set_timeout,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static const struct watchdog_info qcom_wdt_info = {
+> +	.options	= WDIOF_KEEPALIVEPING
+> +			| WDIOF_MAGICCLOSE
+> +			| WDIOF_SETTIMEOUT,
+> +	.identity	= KBUILD_MODNAME,
+> +};
+> +
+> +static int qcom_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct qcom_wdt *wdt;
+> +	struct resource *res;
+> +	int ret;
+> +
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(*wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	wdt->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(wdt->base))
+> +		return PTR_ERR(wdt->base);
+> +
+> +	wdt->clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR(wdt->clk)) {
+> +		dev_err(&pdev->dev, "failed to get input clock\n");
+> +		return PTR_ERR(wdt->clk);
+> +	}
+> +
+> +	ret = clk_prepare_enable(wdt->clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to setup clock\n");
+> +		return ret;
+> +	}
+> +
+> +	/*
+> +	 * We use the clock rate to calculate the max timeout, so ensure it's
+> +	 * not zero to avoid a divide-by-zero exception.
+> +	 *
+> +	 * WATCHDOG_CORE assumes units of seconds, if the WDT is clocked such
+> +	 * that it would bite before a second elapses it's usefulness is
+> +	 * limited.  Bail if this is the case.
+> +	 */
+> +	wdt->rate = clk_get_rate(wdt->clk);
+> +	if (wdt->rate == 0 ||
+> +	    wdt->rate > 0x10000000U) {
+> +		dev_err(&pdev->dev, "invalid clock rate\n");
+> +		ret = -EINVAL;
+> +		goto err_clk_unprepare;
+> +	}
+> +
+> +	wdt->wdd.dev = &pdev->dev;
+> +	wdt->wdd.info = &qcom_wdt_info;
+> +	wdt->wdd.ops = &qcom_wdt_ops;
+> +	wdt->wdd.min_timeout = 1;
+> +	wdt->wdd.max_timeout = 0x10000000U / wdt->rate;
+> +
+> +	/*
+> +	 * If 'timeout-sec' unspecified in devicetree, assume a 30 second
+> +	 * default, unless the max timeout is less than 30 seconds, then use
+> +	 * the max instead.
+> +	 */
+> +	wdt->wdd.timeout = min(wdt->wdd.max_timeout, 30U);
+> +	watchdog_init_timeout(&wdt->wdd, 0, &pdev->dev);
+> +
+> +	ret = watchdog_register_device(&wdt->wdd);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed to register watchdog\n");
+> +		goto err_clk_unprepare;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, wdt);
+> +	return 0;
+> +
+> +err_clk_unprepare:
+> +	clk_disable_unprepare(wdt->clk);
+> +	return ret;
+> +}
+> +
+> +static int qcom_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct qcom_wdt *wdt = platform_get_drvdata(pdev);
+> +
+> +	watchdog_unregister_device(&wdt->wdd);
+> +	clk_disable_unprepare(wdt->clk);
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id qcom_wdt_of_table[] = {
+> +	{ .compatible = "qcom,kpss-wdt-msm8960", },
+> +	{ .compatible = "qcom,kpss-wdt-apq8064", },
+> +	{ .compatible = "qcom,kpss-wdt-ipq8064", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_wdt_of_table);
+> +
+> +static struct platform_driver qcom_watchdog_driver = {
+> +	.probe	= qcom_wdt_probe,
+> +	.remove	= qcom_wdt_remove,
+> +	.driver	= {
+> +		.name		= KBUILD_MODNAME,
+> +		.of_match_table	= qcom_wdt_of_table,
+> +	},
+> +};
+> +module_platform_driver(qcom_watchdog_driver);
+> +
+> +MODULE_DESCRIPTION("QCOM KPSS Watchdog Driver");
+> +MODULE_LICENSE("GPL v2");
+>
 
