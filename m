@@ -1,143 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaIZT5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:57:48 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37765 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719AbaIZT5r convert rfc822-to-8bit (ORCPT
+	id S1756052AbaIZT6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:58:13 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35126 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208AbaIZT6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:57:47 -0400
-Message-ID: <5425C537.6050507@arm.com>
-Date: Fri, 26 Sep 2014 20:57:43 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 26 Sep 2014 15:58:10 -0400
+Date: Fri, 26 Sep 2014 12:58:03 -0700
+From: josh@joshtriplett.org
+To: "Rustad, Mark D" <mark.d.rustad@intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "sparse@chrisli.org" <sparse@chrisli.org>,
+        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
+Message-ID: <20140926195803.GB19952@cloud>
+References: <20140922184049.GB4709@pd.tnic>
+ <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
+ <20140922192152.GD4709@pd.tnic>
+ <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922195737.GE4709@pd.tnic>
+ <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
+ <20140922203336.GF4709@pd.tnic>
+ <1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
+ <CAMuHMdU7VO01_qRGc0TV2K+nJJCu4sm0zbH773_zBWdaxSR1aQ@mail.gmail.com>
+ <4C887554-FB5F-4634-ABE6-20F41583ABA2@intel.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Subject: Re: [PATCH v6 4/6] sched: get CPU's usage statistic
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org> <1411488485-10025-5-git-send-email-vincent.guittot@linaro.org> <54246791.9050101@arm.com> <CAKfTPtCzVRY4q184nqHSL7zFh1CvF009p8q8EPFCZxDFMx9TeQ@mail.gmail.com>
-In-Reply-To: <CAKfTPtCzVRY4q184nqHSL7zFh1CvF009p8q8EPFCZxDFMx9TeQ@mail.gmail.com>
-X-OriginalArrivalTime: 26 Sep 2014 19:57:43.0494 (UTC) FILETIME=[22A2B660:01CFD9C4]
-X-MC-Unique: 114092620574400201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C887554-FB5F-4634-ABE6-20F41583ABA2@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/09/14 13:17, Vincent Guittot wrote:
-> On 25 September 2014 21:05, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->> On 23/09/14 17:08, Vincent Guittot wrote:
+On Fri, Sep 26, 2014 at 07:37:19PM +0000, Rustad, Mark D wrote:
+> Most of the others come from null-entry table initializations, i.e. {
+> 0 }, which give missing field initializer warnings.
 
-[...]
+I'd suggest that such initializers should just be {}, not { 0 }, and we
+should teach compilers to specifically *not* complain about empty
+initializers even when otherwise complaining about missing fields.
+Initializing a structure to 0 is completely sensible.
 
->>>
->>> +static int get_cpu_usage(int cpu)
->>> +{
->>> +     unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
->>> +     unsigned long capacity = capacity_orig_of(cpu);
->>> +
->>> +     if (usage >= SCHED_LOAD_SCALE)
->>> +             return capacity + 1;
->>
->> Why you are returning rq->cpu_capacity_orig + 1 (1025) in case
->> utilization_load_avg is greater or equal than 1024 and not usage or
->> (usage * capacity) >> SCHED_LOAD_SHIFT too?
-> 
-> The usage can't be higher than the full capacity of the CPU because
-> it's about the running time on this CPU. Nevertheless, usage can be
-> higher than SCHED_LOAD_SCALE because of unfortunate rounding in
-> avg_period and running_load_avg or just after migrating tasks until
-> the average stabilizes with the new running time.
-
-Ok, I got it now, thanks!
-
-
-When running 'hackbench -p -T -s 10 -l 1' on TC2, the usage for a cpu
-goes occasionally also much higher than SCHED_LOAD_SCALE. After all,
-p->se.avg.running_avg_sum is initialized to slice in
-init_task_runnable_average.
-
-> 
->>
->> In case the weight of a sched group is greater than 1, you might loose
->> the information that the whole sched group is over-utilized too.
-> 
-> that's exactly for sched_group with more than 1 CPU that we need to
-> cap the usage of a CPU to 100%. Otherwise, the group could be seen as
-> overloaded (CPU0 usage at 121% + CPU1 usage at 80%) whereas CPU1 has
-> 20% of available capacity
-
-Makes sense, we don't want to do anything in this case on a sched level
-(e.g. DIE), the appropriate level below (e.g. MC) should balance this
-out first. Got it!
-
-> 
->>
->> You add up the individual cpu usage values for a group by
->> sgs->group_usage += get_cpu_usage(i) in update_sg_lb_stats and later use
->> sgs->group_usage in group_is_overloaded to compare it against
->> sgs->group_capacity (taking imbalance_pct into consideration).
->>
->>> +
->>> +     return (usage * capacity) >> SCHED_LOAD_SHIFT;
->>
->> Nit-pick: Since you're multiplying by a capacity value
->> (rq->cpu_capacity_orig) you should shift by SCHED_CAPACITY_SHIFT.
-> 
-> we want to compare the output of the function with some capacity
-> figures so i think that >> SCHED_LOAD_SHIFT is the right operation.
-> 
->>
->> Just to make sure: You do this scaling of usage by cpu_capacity_orig
->> here only to cater for the fact that cpu_capacity_orig might be uarch
->> scaled (by arch_scale_cpu_capacity, !SMT) in update_cpu_capacity while
-> 
-> I do this for any system with CPUs that have an original capacity that
-> is different from SCHED_CAPACITY_SCALE so it's for both uArch and SMT.
-
-Understood so your current patch-set is doing uArch scaling for capacity
-and since you're not doing uArch scaling for utilization, you do this '*
-capacity) >> SCHED_LOAD_SHIFT' thing. Correct?
-
-> 
->> utilization_load_avg is currently not.
->> We don't even uArch scale on ARM TC2 big.LITTLE platform in mainline
->> today due to the missing clock-frequency property in the device tree.
-> 
-> sorry i don't catch your point
-
-With mainline dts file for ARM TC2, the rq->cpu_capacity-orig is 1024
-for all 5 cpus (A15's and A7's). The arm topology shim layer barfs a
-
-  /cpus/cpu@x missing clock-frequency property
-
-per cpu in this case and doesn't scale the capacity. Only when I add
-
- clock-frequency = <xxxxxxxxx>;
-
-per cpuX node into the dts file, I get a system with asymmetric
-rq->cpu_capacity_orig values (606 for an A7 and 1441 for an A15).
-
-> 
->>
->> I think it's hard for people to grasp that your patch-set takes uArch
->> scaling of capacity into consideration but not frequency scaling of
->> capacity (via arch_scale_freq_capacity, not used at the moment).
-
-[...]
-
+- Josh Triplett
