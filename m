@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244AbaIZK2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:28:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
+	id S1756930AbaIZK2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:28:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783AbaIZJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754777AbaIZJqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:04 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Christoph Hellwig <hch@lst.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 058/142] Drivers: scsi: storvsc: Implement a eh_timed_out handler
-Date: Fri, 26 Sep 2014 11:44:29 +0200
-Message-Id: <9d063b6fb4c1b2c68e7a20378882bbb171e36f66.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 039/142] spi: orion: fix incorrect handling of cell-index DT property
+Date: Fri, 26 Sep 2014 11:44:10 +0200
+Message-Id: <16f6aabf953b586ddc88bdcb0c29548d04877f80.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,64 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 56b26e69c8283121febedd12b3cc193384af46b9 upstream.
+commit e06871cd2c92e5c65d7ca1d32866b4ca5dd4ac30 upstream.
 
-On Azure, we have seen instances of unbounded I/O latencies. To deal with
-this issue, implement handler that can reset the timeout. Note that the
-host gaurantees that it will respond to each command that has been issued.
+In commit f814f9ac5a81 ("spi/orion: add device tree binding"), Device
+Tree support was added to the spi-orion driver. However, this commit
+reads the "cell-index" property, without taking into account the fact
+that DT properties are big-endian encoded.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-[hch: added a better comment explaining the issue]
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Since most of the platforms using spi-orion with DT have apparently
+not used anything but cell-index = <0>, the problem was not
+visible. But as soon as one starts using cell-index = <1>, the problem
+becomes clearly visible, as the master->bus_num gets a wrong value
+(actually it gets the value 0, which conflicts with the first bus that
+has cell-index = <0>).
+
+This commit fixes that by using of_property_read_u32() to read the
+property value, which does the appropriate endianness conversion when
+needed.
+
+Fixes: f814f9ac5a81 ("spi/orion: add device tree binding")
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/scsi/storvsc_drv.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/spi/spi-orion.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 9969fa1ef7c4..a14a1f7cd577 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -33,6 +33,7 @@
- #include <linux/device.h>
- #include <linux/hyperv.h>
- #include <linux/mempool.h>
-+#include <linux/blkdev.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_host.h>
-@@ -1518,6 +1519,16 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- 	return SUCCESS;
- }
+diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
+index 1d1d321d90c4..72006e63d513 100644
+--- a/drivers/spi/spi-orion.c
++++ b/drivers/spi/spi-orion.c
+@@ -404,8 +404,6 @@ static int orion_spi_probe(struct platform_device *pdev)
+ 	struct resource *r;
+ 	unsigned long tclk_hz;
+ 	int status = 0;
+-	const u32 *iprop;
+-	int size;
  
-+/*
-+ * The host guarantees to respond to each command, although I/O latencies might
-+ * be unbounded on Azure.  Reset the timer unconditionally to give the host a
-+ * chance to perform EH.
-+ */
-+static enum blk_eh_timer_return storvsc_eh_timed_out(struct scsi_cmnd *scmnd)
-+{
-+	return BLK_EH_RESET_TIMER;
-+}
-+
- static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
- {
- 	bool allowed = true;
-@@ -1687,6 +1698,7 @@ static struct scsi_host_template scsi_driver = {
- 	.bios_param =		storvsc_get_chs,
- 	.queuecommand =		storvsc_queuecommand,
- 	.eh_host_reset_handler =	storvsc_host_reset_handler,
-+	.eh_timed_out =		storvsc_eh_timed_out,
- 	.slave_alloc =		storvsc_device_alloc,
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
+ 	master = spi_alloc_master(&pdev->dev, sizeof *spi);
+ 	if (master == NULL) {
+@@ -416,10 +414,10 @@ static int orion_spi_probe(struct platform_device *pdev)
+ 	if (pdev->id != -1)
+ 		master->bus_num = pdev->id;
+ 	if (pdev->dev.of_node) {
+-		iprop = of_get_property(pdev->dev.of_node, "cell-index",
+-					&size);
+-		if (iprop && size == sizeof(*iprop))
+-			master->bus_num = *iprop;
++		u32 cell_index;
++		if (!of_property_read_u32(pdev->dev.of_node, "cell-index",
++					  &cell_index))
++			master->bus_num = cell_index;
+ 	}
+ 
+ 	/* we support only mode 0, and no options */
 -- 
 2.1.0
 
