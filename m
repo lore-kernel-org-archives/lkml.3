@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708AbaIZKUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:20:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38777 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011AbaIZKUx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:20:53 -0400
-Message-ID: <54253E02.3080209@suse.cz>
-Date: Fri, 26 Sep 2014 12:20:50 +0200
+	id S1756658AbaIZKUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:20:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32950 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754903AbaIZJqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 3.12 040/142] s390/locking: Reenable optimistic spinning
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz> <f008331068945523ff12ff13f6d07d7303e0e8a9.1411724723.git.jslaby@suse.cz> <54253AB3.7000307@de.ibm.com>
-In-Reply-To: <54253AB3.7000307@de.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Christoph Lameter <cl@gentwo.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Tejun Heo <htejun@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 045/142] kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
+Date: Fri, 26 Sep 2014 11:44:16 +0200
+Message-Id: <758ce2b3fcfb97cb0b1962a4e6e7aad4e6b921cb.1411724724.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014, 12:06 PM, Christian Borntraeger wrote:
-> On 09/26/2014 11:44 AM, Jiri Slaby wrote:
->> From: Christian Borntraeger <borntraeger@de.ibm.com>
->>
->> 3.12-stable review patch.  If anyone has any objections, please let me know.
-> 
-> I just checked.
-> 
-> It seems that the referenced commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc
-> (locking/mutex: Disable optimistic spinning on some architectures)
-> is not part of 3.12-stable. So this fix is not (yet) necessary.
+From: Sasha Levin <sasha.levin@oracle.com>
 
-Hi, thanks for checking. However as far as I can see, 4badad352a6 is in
-3.12.26 already, right?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-thanks,
+===============
+
+commit 618fde872163e782183ce574c77f1123e2be8887 upstream.
+
+The rarely-executed memry-allocation-failed callback path generates a
+WARN_ON_ONCE() when smp_call_function_single() succeeds.  Presumably
+it's supposed to warn on failures.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@gentwo.org>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Tejun Heo <htejun@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/smp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/smp.c b/kernel/smp.c
+index 0564571dcdf7..7d1187c0c2b6 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -650,7 +650,7 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+ 			if (cond_func(cpu, info)) {
+ 				ret = smp_call_function_single(cpu, func,
+ 								info, wait);
+-				WARN_ON_ONCE(!ret);
++				WARN_ON_ONCE(ret);
+ 			}
+ 		preempt_enable();
+ 	}
 -- 
-js
-suse labs
+2.1.0
+
