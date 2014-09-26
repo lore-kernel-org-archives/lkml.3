@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaIZH36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:29:58 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61045 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048AbaIZH35 (ORCPT
+	id S1753841AbaIZHbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:31:31 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61289 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584AbaIZHb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:29:57 -0400
-From: Omar Sandoval <osandov@osandov.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lustre: fix gfp_t/int coercion
-Date: Fri, 26 Sep 2014 00:30:49 -0700
-Message-Id: <1411716649-22526-1-git-send-email-osandov@osandov.com>
-X-Mailer: git-send-email 2.1.0
+	Fri, 26 Sep 2014 03:31:29 -0400
+Date: Fri, 26 Sep 2014 00:31:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: Re: mmotm 2014-09-25-16-28 uploaded
+Message-ID: <20140926073123.GA3033@roeck-us.net>
+References: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5424a53b.o+nym6SX0Tg7EdW6%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a few implicit casts between int and gfp_t which were caught by sparse.
+On Thu, Sep 25, 2014 at 04:28:59PM -0700, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2014-09-25-16-28 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
+> mmotm-readme.txt says
+> 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
+> 
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
----
-This patch applies to v3.17-rc6.
- drivers/staging/lustre/lustre/llite/lloop.c            | 4 ++--
- drivers/staging/lustre/lustre/ptlrpc/client.c          | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+Build results:
+	total: 133 pass: 10 fail: 123
 
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index 8086638..b0d8de5 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -126,7 +126,7 @@ struct lloop_device {
- 	struct block_device *lo_device;
- 	unsigned	     lo_blocksize;
- 
--	int		  old_gfp_mask;
-+	gfp_t		  old_gfp_mask;
- 
- 	spinlock_t		lo_lock;
- 	struct bio		*lo_bio;
-@@ -546,7 +546,7 @@ static int loop_clr_fd(struct lloop_device *lo, struct block_device *bdev,
- 		       int count)
- {
- 	struct file *filp = lo->lo_backing_file;
--	int gfp = lo->old_gfp_mask;
-+	gfp_t gfp = lo->old_gfp_mask;
- 
- 	if (lo->lo_state != LLOOP_BOUND)
- 		return -ENXIO;
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
-index 4146e8b..c4debbc 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/client.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
-@@ -394,7 +394,7 @@ void ptlrpc_request_cache_fini(void)
- 	kmem_cache_destroy(request_cache);
- }
- 
--struct ptlrpc_request *ptlrpc_request_cache_alloc(int flags)
-+struct ptlrpc_request *ptlrpc_request_cache_alloc(gfp_t flags)
- {
- 	struct ptlrpc_request *req;
- 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-index f7be007..7fe2e58 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-+++ b/drivers/staging/lustre/lustre/ptlrpc/ptlrpc_internal.h
-@@ -57,7 +57,7 @@ struct ptlrpc_bulk_desc *ptlrpc_new_bulk(unsigned npages, unsigned max_brw,
- 					 unsigned type, unsigned portal);
- int ptlrpc_request_cache_init(void);
- void ptlrpc_request_cache_fini(void);
--struct ptlrpc_request *ptlrpc_request_cache_alloc(int flags);
-+struct ptlrpc_request *ptlrpc_request_cache_alloc(gfp_t flags);
- void ptlrpc_request_cache_free(struct ptlrpc_request *req);
- void ptlrpc_init_xid(void);
- 
--- 
-2.1.0
+I won't list all the broken builds.
 
+problem is due to
+
+include/linux/signal.h: In function 'sigisemptyset':
+include/linux/signal.h:79:3: error: implicit declaration of function 'BUILD_BUG'
+
+as far as I can see.
+
+Detailed build results are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
