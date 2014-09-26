@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290AbaIZVcT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:32:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60467 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755763AbaIZVcS convert rfc822-to-8bit (ORCPT
+	id S1756292AbaIZVh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:37:57 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:54682 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755881AbaIZVhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:32:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] ACPI / i915: Update the condition to ignore firmware backlight change request
-Date: Fri, 26 Sep 2014 23:52:09 +0200
-Message-ID: <5560330.d2v72ZBmJs@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5424CFB0.4080102@intel.com>
-References: <201409232206.02819@pali> <201409251623.45636@pali> <5424CFB0.4080102@intel.com>
+	Fri, 26 Sep 2014 17:37:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
+        "broonie@linaro.org" <broonie@linaro.org>
+Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
+Date: Fri, 26 Sep 2014 23:36:13 +0200
+Message-ID: <3359318.XmOCYLZHTV@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140926134608.GT5182@n2100.arm.linux.org.uk>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <9197976.uQdLmtvIl1@wuerfel> <20140926134608.GT5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:bM3Q1b8/aU2pCNY2r/Lg3Tc9zXJw3fgugz4QWaVIaev
+ DFHp5aHG8GZ6z3Nsa5tWnVnJbrLv36JOwaFzjVtUGJY/nf6UKU
+ RvYiQX9gwRUQFJGlLN6b89a1HpuFIigp9Gmubt2RPqRXQV+5AL
+ B94/RzNj5YUhchZ4MYyycOjgbbemmou0JV2PA/SN9qvm/+LOBO
+ me650cgTc3oC+qIxoONUiyIe5RtBEijKqaOQJTHqdTZWIAelW2
+ XKAo6v7zalkDtqjBo7ThsfdPWySnAxLXd012h+jlFEM9m8IcI1
+ 0qLUde78VpdH1Q5vnpFkI6wjil7wTBEBar204mq5b4s6PuBgGK
+ 7p/3L3G3eLgBZ/fuWFc8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 26, 2014 10:30:08 AM Aaron Lu wrote:
-> Some of the Thinkpads' firmware will issue a backlight change request
-> through i915 operation region unconditionally on AC plug/unplug, the
-> backlight level used is arbitrary and thus should be ignored. This is
-> handled by commit 0b9f7d93ca61 (ACPI / i915: ignore firmware requests
-> for backlight change). Then there is a Dell laptop whose vendor backlight
-> interface also makes use of operation region to change backlight level
-> and with the above commit, that interface no long works. The condition
-> used to ignore the backlight change request from firmware is thus
-> changed to: if the vendor backlight interface is not in use and the ACPI
-> backlight interface is broken, we ignore the requests; oterwise, we keep
-> processing them.
+On Friday 26 September 2014 14:46:08 Russell King - ARM Linux wrote:
 > 
-> Reference: https://lkml.org/lkml/2014/9/23/854
-> Reported-and-tested-by: Pali Rohár <pali.rohar@gmail.com>
-> Cc: <stable@vger.kernel.org> # v3.16 and later
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-
-Daniel, any objections?
-
-> ---
->  drivers/gpu/drm/i915/intel_opregion.c | 16 +++++++++++-----
->  1 file changed, 11 insertions(+), 5 deletions(-)
+> Obviously, this does nothing for the:
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
-> index ca52ad2ae7d1..d8de1d5140a7 100644
-> --- a/drivers/gpu/drm/i915/intel_opregion.c
-> +++ b/drivers/gpu/drm/i915/intel_opregion.c
-> @@ -396,6 +396,16 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
->  	return -EINVAL;
->  }
->  
-> +/*
-> + * If the vendor backlight interface is not in use and ACPI backlight interface
-> + * is broken, do not bother processing backlight change requests from firmware.
-> + */
-> +static bool should_ignore_backlight_request(void)
-> +{
-> +	return acpi_video_backlight_support() &&
-> +	       !acpi_video_verify_backlight_support();
-> +}
-> +
->  static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
->  {
->  	struct drm_i915_private *dev_priv = dev->dev_private;
-> @@ -404,11 +414,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
->  
->  	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
->  
-> -	/*
-> -	 * If the acpi_video interface is not supposed to be used, don't
-> -	 * bother processing backlight level change requests from firmware.
-> -	 */
-> -	if (!acpi_video_verify_backlight_support()) {
-> +	if (should_ignore_backlight_request()) {
->  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
->  		return 0;
->  	}
+> include/asm-generic/io.h:804:29: error: redefinition of 'virt_to_bus'
+> include/asm-generic/io.h:809:21: error: redefinition of 'bus_to_virt'
 > 
+> errors which are also reported in Olof's build system.
+> 
+> Given how close we are to the merge window, I'd suggest this stuff gets
+> reverted so that it can have a better period of testing, rather than
+> stuffing it into -next at such a critical time.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Right, I've fixed these all up locally, but then found new warnings on
+allmodconfig builds that I haven't been able to track down yet.
+
+I've dropped everything from the asm-generic tree now, so we can get
+a clean linux-next tree.
+
+	Arnd
