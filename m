@@ -1,104 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaIZRv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:51:57 -0400
-Received: from mail.southpole.se ([37.247.8.11]:39572 "EHLO mail.southpole.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755042AbaIZRvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:51:55 -0400
-Message-ID: <5425A7B5.10209@southpole.se>
-Date: Fri, 26 Sep 2014 19:51:49 +0200
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755917AbaIZRwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:52:34 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51143 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543AbaIZRwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 13:52:32 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-next@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v2] next: openrisc: Fix build
-References: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.4.3(14246) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 53909-04742
-X-Assp-Session: 7F9384502718 (mail 1)
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
+In-Reply-To: <20140926152835.GK10233@codeaurora.org>
+References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
+	<1411662520-22795-3-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFrAv9oyBzX764+CWkOxfN1kN_MddB3ks1q69+TnmnHXuQ@mail.gmail.com>
+	<20140926152835.GK10233@codeaurora.org>
+Date: Fri, 26 Sep 2014 19:52:29 +0200
+X-Google-Sender-Auth: t7HMV5J8e0vqBKgR4fJOFhxFoD8
+Message-ID: <CAMuHMdU+4MX-XYe9rHmyPN3=-VQRg+CrnxWEaU2M_Jg+1Psw8A@mail.gmail.com>
+Subject: Re: [PATCH v3 02/13] PM / Domains: Add DT bindings for power-on/off latencies
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 06:05 PM, Guenter Roeck wrote:
-> openrisc:defconfig fails to build in next-20140926 with the following error.
->
-> In file included from arch/openrisc/kernel/signal.c:31:0:
-> ./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
-> ./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
->
-> Fix by moving EM_OPENRISC to include/uapi/linux/elf-em.h.
->
-> Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v2: Only move EM_OPENRISC.
->
-> Another possible solution for the problem would be to include asm/elf.h
-> in arch/openrisc/kernel/signal.c. I had actually submitted a patch with
-> that fix back in August (maybe that is where I remembered the problem from).
-> Wonder what happened with that patch.
->
-> Would it make sense to drop EM_OR32 and replace it with EM_OPENRISC where
-> it is used ? binutils seems to suggest that EM_OPENRISC is the "official"
-> definition.
+Hi Stephen,
 
-Do we even use EM_OR32?  Will the kernel build with the old toolchain if
-we drop it?  If yes, drop it altogether... I don't recall the details as
-to why we kept that define around at all.  And really, why bother
-supporting the old toolchain at all... it's been at least two or three
-years since EM_OPENRISC was added, hopefully people have moved on.  If
-users want to upgrade their kernel, they can update the toolchain, too,
-at this point.
-
-/Jonas
-
+On Fri, Sep 26, 2014 at 5:28 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+>> > +Optional properties:
+>> > + - power-on-latency: Power-on latency of the PM domain, in ns,
+>> > + - power-off-latency: Power-off latency of the PM domain, in ns.
+>> > +
+>> >  Example:
+>> >
+>> >         power: power-controller@12340000 {
+>> >                 compatible = "foo,power-controller";
+>> >                 reg = <0x12340000 0x1000>;
+>> >                 #power-domain-cells = <1>;
+>> > +               power-on-latency = <250000>;
+>> > +               power-off-latency = <250000>;
 >
->  arch/openrisc/include/uapi/asm/elf.h | 3 +--
->  include/uapi/linux/elf-em.h          | 1 +
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
-> index f02ea58..8884276 100644
-> --- a/arch/openrisc/include/uapi/asm/elf.h
-> +++ b/arch/openrisc/include/uapi/asm/elf.h
-> @@ -55,9 +55,8 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
->  /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
->  typedef unsigned long elf_fpregset_t;
->  
-> -/* This should be moved to include/linux/elf.h */
-> +/* EM_OPENRISC is defined in linux/elf-em.h */
->  #define EM_OR32         0x8472
-> -#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
->  
->  /*
->   * These are used to set parameters in the core dumps.
-> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-> index 01529bd..aa90bc9 100644
-> --- a/include/uapi/linux/elf-em.h
-> +++ b/include/uapi/linux/elf-em.h
-> @@ -32,6 +32,7 @@
->  #define EM_V850		87	/* NEC v850 */
->  #define EM_M32R		88	/* Renesas M32R */
->  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
-> +#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
->  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
->  #define EM_TI_C6000	140	/* TI C6X DSPs */
->  #define EM_AARCH64	183	/* ARM 64 bit */
+> This assumes every power domain within a power controller has the
+> same latencies? That isn't always true. This should be an array
+> of values corresponding to the number of power domains if
+> #power-domain-cells is 1, or just one value if the cell count is
+> 0.
 
+Thanks, you're right. Will update.
+
+However, I'd still like to allow just one value in the #power-domain-cells = <1>
+case if the latencies are the same. Is that OK for you?
+
+Thanks again.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
