@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaIZCJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:09:41 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44114 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096AbaIZCJi convert rfc822-to-8bit (ORCPT
+	id S1753507AbaIZCKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:10:47 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:44975 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964AbaIZCKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:09:38 -0400
+	Thu, 25 Sep 2014 22:10:45 -0400
+Message-ID: <5424CB0F.2030406@huawei.com>
+Date: Fri, 26 Sep 2014 10:10:23 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <5423D80B.9060500@6wind.com>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
-	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>
-	<54228D87.3070309@6wind.com>
-	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>
-	<5422F0F4.6000709@6wind.com>
-	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>
-	<5423D80B.9060500@6wind.com>
-Date: Thu, 25 Sep 2014 19:09:37 -0700
-Message-ID: <CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-From: Cong Wang <cwang@twopensource.com>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 06/22] PCI/MSI: Introduce weak arch_find_msi_chip()
+ to find MSI chip
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-7-git-send-email-wangyijing@huawei.com> <20140925072619.GI12423@ulmo>
+In-Reply-To: <20140925072619.GI12423@ulmo>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 1:53 AM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
-> Le 24/09/2014 18:45, Cong Wang a écrit :
->>
->> On Wed, Sep 24, 2014 at 9:27 AM, Nicolas Dichtel
->> <nicolas.dichtel@6wind.com> wrote:
->>>
->>> Now informations got with 'ip link' are wrong and incomplete:
->>>    - the link dev is now tunl0 instead of eth0, because we only got an
->>> ifindex
->>>      from the kernel without any netns informations.
->>
->>
->> This is not new, macvlan has the same problem. This is why I said
->> it is mostly a display problem, maybe just mark the ifindex as -1 or
->> something when it is not in this netns. At least I don't expect the inner
->> netns know anything outside, and I don't think I am the only one using
->> netns in this way.
->
-> I understand your point but there is several use of netns. Netns can be used
-> also to instantiate virtual routers. In this case, administrators or daemons
-> need to be able to monitor and dump the configuration on all netns
-> (particularly beeing able to identify fully x-netns interfaces). We start to
-> discuss this in one of the two thread pointed in my cover letter and get the
-> conclusion that checking user ns is a good way to know if an id should be
-> disclosed or not for a peer netns.
+On 2014/9/25 15:26, Thierry Reding wrote:
+> On Thu, Sep 25, 2014 at 11:14:16AM +0800, Yijing Wang wrote:
+>> Introduce weak arch_find_msi_chip() to find the match msi_chip.
+>> Currently, MSI chip associates pci bus to msi_chip. Because in
+>> ARM platform, there may be more than one MSI controller in system.
+>> Associate pci bus to msi_chip help pci device to find the match
+>> msi_chip and setup MSI/MSI-X irq correctly. But in other platform,
+>> like in x86. we only need one MSI chip, because all device use
+>> the same MSI address/data and irq etc. So it's no need to associate
+>> pci bus to MSI chip, just use a arch function, arch_find_msi_chip()
+>> to return the MSI chip for simplicity. The default weak
+>> arch_find_msi_chip() used in ARM platform, find the MSI chip
+>> by pci bus.
+> 
+> Can't x86 simply set the bus' .msi field anyway? It would seem to be
+> easy to do and unifies the code rather than driving it further apart
+> using even more of the __weak functions.
 
-Then you are leaking information, this breaks isolation.
+As mentioned in the first reply, I will rework this one when we find a better solution.
 
-> Can you describe your use case?
+Thanks!
+Yijing.
 
-Yes, too simple: isolation networking, different netns's don't see each other
-(including anything inside) and only communicate via veth.
+> 
+> Thierry
+> 
 
 
-> If you only play with netns, you may want to monitor all activies in all
-> netns
-> (this is already possible) and beeing able to link information between netns
-> (this is what I'm trying to solve).
+-- 
+Thanks!
+Yijing
 
-
-No, I don't want to monitor anything. Even if I wanted, I would just start one
-daemon in each netns instead of one for all.
-
-On the other hand, why not exchange the configuration via veth
-between different netns? There are many ways to do so with TCP HTTP etc.
-This doesn't have to be solved in kernel.
