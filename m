@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaIZJqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:46:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33033 "EHLO mx2.suse.de"
+	id S1756050AbaIZKE6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:04:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33057 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879AbaIZJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:15 -0400
+	id S1755017AbaIZJqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 079/142] ASoC: max98090: Fix missing free_irq
-Date: Fri, 26 Sep 2014 11:44:50 +0200
-Message-Id: <48e7ba73bbee8c13668389bc26b96a3bff6c9e28.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>,
+        Dave Chinner <david@fromorbit.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 100/142] xfs: quotacheck leaves dquot buffers without verifiers
+Date: Fri, 26 Sep 2014 11:45:11 +0200
+Message-Id: <38f069a3522ee05fdf53c29a5c1400a3b0c477d2.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,40 +22,118 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Dave Chinner <dchinner@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4adeb0ccf86a5af1825bbfe290dee9e60a5ab870 upstream.
+commit 5fd364fee81a7888af806e42ed8a91c845894f2d upstream.
 
-max98090.c doesn't free the threaded interrupt it requests. This causes
-an oops when doing "cat /proc/interrupts" after snd-soc-max98090.ko is
-unloaded.
+When running xfs/305, I noticed that quotacheck was flushing dquot
+buffers that did not have the xfs_dquot_buf_ops verifiers attached:
 
-Fix this by requesting the interrupt by using devm_request_threaded_irq().
+XFS (vdb): _xfs_buf_ioapply: no ops on block 0x1dc8/0x1dc8
+ffff880052489000: 44 51 01 04 00 00 65 b8 00 00 00 00 00 00 00 00  DQ....e.........
+ffff880052489010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+CPU: 1 PID: 2376 Comm: mount Not tainted 3.16.0-rc2-dgc+ #306
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+ ffff88006fe38000 ffff88004a0ffae8 ffffffff81cf1cca 0000000000000001
+ ffff88004a0ffb88 ffffffff814d50ca 000010004a0ffc70 0000000000000000
+ ffff88006be56dc4 0000000000000021 0000000000001dc8 ffff88007c773d80
+Call Trace:
+ [<ffffffff81cf1cca>] dump_stack+0x45/0x56
+ [<ffffffff814d50ca>] _xfs_buf_ioapply+0x3ca/0x3d0
+ [<ffffffff810db520>] ? wake_up_state+0x20/0x20
+ [<ffffffff814d51f5>] ? xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d513b>] xfs_buf_iorequest+0x6b/0xd0
+ [<ffffffff814d51f5>] xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d53ab>] __xfs_buf_delwri_submit+0x15b/0x220
+ [<ffffffff814d6040>] ? xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff814d6040>] xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff8150f89d>] xfs_qm_quotacheck+0x17d/0x3c0
+ [<ffffffff81510591>] xfs_qm_mount_quotas+0x151/0x1e0
+ [<ffffffff814ed01c>] xfs_mountfs+0x56c/0x7d0
+ [<ffffffff814f0f12>] xfs_fs_fill_super+0x2c2/0x340
+ [<ffffffff811c9fe4>] mount_bdev+0x194/0x1d0
+ [<ffffffff814f0c50>] ? xfs_finish_flags+0x170/0x170
+ [<ffffffff814ef0f5>] xfs_fs_mount+0x15/0x20
+ [<ffffffff811ca8c9>] mount_fs+0x39/0x1b0
+ [<ffffffff811e4d67>] vfs_kern_mount+0x67/0x120
+ [<ffffffff811e757e>] do_mount+0x23e/0xad0
+ [<ffffffff8117abde>] ? __get_free_pages+0xe/0x50
+ [<ffffffff811e71e6>] ? copy_mount_options+0x36/0x150
+ [<ffffffff811e8103>] SyS_mount+0x83/0xc0
+ [<ffffffff81cfd40b>] tracesys+0xdd/0xe2
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This was caused by dquot buffer readahead not attaching a verifier
+structure to the buffer when readahead was issued, resulting in the
+followup read of the buffer finding a valid buffer and so not
+attaching new verifiers to the buffer as part of the read.
+
+Also, when a verifier failure occurs, we then read the buffer
+without verifiers. Attach the verifiers manually after this read so
+that if the buffer is then written it will be verified that the
+corruption has been repaired.
+
+Further, when flushing a dquot we don't ask for a verifier when
+reading in the dquot buffer the dquot belongs to. Most of the time
+this isn't an issue because the buffer is still cached, but when it
+is not cached it will result in writing the dquot buffer without
+having the verfier attached.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- sound/soc/codecs/max98090.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/xfs_dquot.c | 3 ++-
+ fs/xfs/xfs_qm.c    | 8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index 9ad8f019adcd..764d0ea42e7c 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -2250,7 +2250,7 @@ static int max98090_probe(struct snd_soc_codec *codec)
- 	/* Register for interrupts */
- 	dev_dbg(codec->dev, "irq = %d\n", max98090->irq);
+diff --git a/fs/xfs/xfs_dquot.c b/fs/xfs/xfs_dquot.c
+index 1ee776d477c3..895db7a88412 100644
+--- a/fs/xfs/xfs_dquot.c
++++ b/fs/xfs/xfs_dquot.c
+@@ -1121,7 +1121,8 @@ xfs_qm_dqflush(
+ 	 * Get the buffer containing the on-disk dquot
+ 	 */
+ 	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dqp->q_blkno,
+-				   mp->m_quotainfo->qi_dqchunklen, 0, &bp, NULL);
++				   mp->m_quotainfo->qi_dqchunklen, 0, &bp,
++				   &xfs_dquot_buf_ops);
+ 	if (error)
+ 		goto out_unlock;
  
--	ret = request_threaded_irq(max98090->irq, NULL,
-+	ret = devm_request_threaded_irq(codec->dev, max98090->irq, NULL,
- 		max98090_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 		"max98090_interrupt", codec);
- 	if (ret < 0) {
+diff --git a/fs/xfs/xfs_qm.c b/fs/xfs/xfs_qm.c
+index 4688a622b373..794aa2fb9c69 100644
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -1193,6 +1193,12 @@ xfs_qm_dqiter_bufs(
+ 		if (error)
+ 			break;
+ 
++		/*
++		 * A corrupt buffer might not have a verifier attached, so
++		 * make sure we have the correct one attached before writeback
++		 * occurs.
++		 */
++		bp->b_ops = &xfs_dquot_buf_ops;
+ 		xfs_qm_reset_dqcounts(mp, bp, firstid, type);
+ 		xfs_buf_delwri_queue(bp, buffer_list);
+ 		xfs_buf_relse(bp);
+@@ -1276,7 +1282,7 @@ xfs_qm_dqiterate(
+ 					xfs_buf_readahead(mp->m_ddev_targp,
+ 					       XFS_FSB_TO_DADDR(mp, rablkno),
+ 					       mp->m_quotainfo->qi_dqchunklen,
+-					       NULL);
++					       &xfs_dquot_buf_ops);
+ 					rablkno++;
+ 				}
+ 			}
 -- 
 2.1.0
 
