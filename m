@@ -1,104 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaIZKxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:53:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43492 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753770AbaIZKxg (ORCPT
+	id S1754468AbaIZKyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:54:39 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:58532 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650AbaIZKyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:53:36 -0400
-Date: Fri, 26 Sep 2014 11:53:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the asm-generic tree
-Message-ID: <20140926105333.GG22293@arm.com>
-References: <20140926200251.78f0d713@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140926200251.78f0d713@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 26 Sep 2014 06:54:36 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <2e868dbb6765e41eac4e9f0942e0964d>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: [RESENT PATCH v7 0/3] Add drm driver for Rockchip Socs
+Date: Fri, 26 Sep 2014 18:53:20 +0800
+Message-Id: <1411728800-25112-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 11:02:51AM +0100, Stephen Rothwell wrote:
-> After merging the asm-generic tree, today's linux-next build (sparc
-> defconfig) failed like this:
-> 
-> In file included from /scratch/sfr/next/include/linux/clocksource.h:19:0,
->                  from /scratch/sfr/next/arch/sparc/include/asm/timer_32.h:11,
->                  from /scratch/sfr/next/arch/sparc/include/asm/timer.h:6,
->                  from /scratch/sfr/next/arch/sparc/kernel/sun4m_irq.c:14:
-> /scratch/sfr/next/arch/sparc/include/asm/io.h:14:0: error: "readb_relaxed" redefined [-Werror]
->  #define readb_relaxed(__addr)  readb(__addr)
->  ^
-> In file included from /scratch/sfr/next/arch/sparc/include/asm/io_32.h:13:0,
->                  from /scratch/sfr/next/arch/sparc/include/asm/io.h:6,
->                  from /scratch/sfr/next/include/linux/clocksource.h:19,
->                  from /scratch/sfr/next/arch/sparc/include/asm/timer_32.h:11,
->                  from /scratch/sfr/next/arch/sparc/include/asm/timer.h:6,
->                  from /scratch/sfr/next/arch/sparc/kernel/sun4m_irq.c:14:
-> /scratch/sfr/next/include/asm-generic/io.h:182:0: note: this is the location of the previous definition
->  #define readb_relaxed readb
->  ^
-> 
-> And so on several hundred times ... :-(
-> 
-> Caused by commits 95a668b0452e ("sparc: io: implement dummy relaxed
-> accessor macros for writes") and 4c255791ffd6 ("asm-generic: io:
-> implement relaxed accessor macros as conditional wrappers").
-> 
-> arch/sparc/include/asm_32.h includes asm-generic/io.h which means it is
-> include before the arch specific versions of the relaxed functions are
-> defined ...
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-Ah yes, Sam recently moved sparc32 over to asm-generic/io.h.
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-> I have added this patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 26 Sep 2014 19:57:03 +1000
-> Subject: [PATCH] sparc: io: fix for asm-generic: io: implement relaxed
->  accessor macros as conditional wrappers
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/sparc/include/asm/io.h | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/sparc/include/asm/io.h b/arch/sparc/include/asm/io.h
-> index 493f22c4684f..79b167674010 100644
-> --- a/arch/sparc/include/asm/io.h
-> +++ b/arch/sparc/include/asm/io.h
-> @@ -1,10 +1,5 @@
->  #ifndef ___ASM_SPARC_IO_H
->  #define ___ASM_SPARC_IO_H
-> -#if defined(__sparc__) && defined(__arch64__)
-> -#include <asm/io_64.h>
-> -#else
-> -#include <asm/io_32.h>
-> -#endif
->  
->  /*
->   * Defines used for both SPARC32 and SPARC64
-> @@ -19,6 +14,12 @@
->  #define writew_relaxed(__w, __addr)	writew(__w, __addr)
->  #define writel_relaxed(__l, __addr)	writel(__l, __addr)
->  
-> +#if defined(__sparc__) && defined(__arch64__)
-> +#include <asm/io_64.h>
-> +#else
-> +#include <asm/io_32.h>
-> +#endif
-> +
+Resent v7 email to fix mail style.
 
-This patch looks fine to me. Arnd, can you pick this up please?
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
 
-Thanks,
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
 
-Will
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
+
+Changes in v7:
+- fix memory leakage problem.
+
+Mark yao (3):
+  drm: rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  516 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   61 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  201 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  230 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  345 +++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1422 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3179 insertions(+)
+
+-- 
+1.7.9.5
+
+
