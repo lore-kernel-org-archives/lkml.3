@@ -1,63 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaIZP2k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:28:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38019 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160AbaIZP2i (ORCPT
+	id S1755244AbaIZPac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:30:32 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:55466 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152AbaIZPaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:28:38 -0400
-Date: Fri, 26 Sep 2014 08:28:35 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 02/13] PM / Domains: Add DT bindings for power-on/off
- latencies
-Message-ID: <20140926152835.GK10233@codeaurora.org>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be>
- <1411662520-22795-3-git-send-email-geert+renesas@glider.be>
- <CAPDyKFrAv9oyBzX764+CWkOxfN1kN_MddB3ks1q69+TnmnHXuQ@mail.gmail.com>
+	Fri, 26 Sep 2014 11:30:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFrAv9oyBzX764+CWkOxfN1kN_MddB3ks1q69+TnmnHXuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2a01:e35:2434:4600:4883:f5eb:6eb5:6c26]
+In-Reply-To: <1411513277.24563.61.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-11-git-send-email-a.motakis@virtualopensystems.com> <1411513277.24563.61.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Fri, 26 Sep 2014 17:30:09 +0200
+Message-ID: <CAG8rG2wECWL2w9Xyvs7tZx8bqdMqk2SP8gfYpq=ZY0_Jk0Q+-g@mail.gmail.com>
+Subject: Re: [PATCHv7 10/26] vfio: platform: probe to devices on the platform bus
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 25 September 2014 18:28, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> > +Optional properties:
-> > + - power-on-latency: Power-on latency of the PM domain, in ns,
-> > + - power-off-latency: Power-off latency of the PM domain, in ns.
-> > +
-> >  Example:
+On Wed, Sep 24, 2014 at 1:01 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+>
+> On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+> > Driver to bind to Linux platform devices, and callbacks to discover their
+> > resources to be used by the main VFIO PLATFORM code.
 > >
-> >         power: power-controller@12340000 {
-> >                 compatible = "foo,power-controller";
-> >                 reg = <0x12340000 0x1000>;
-> >                 #power-domain-cells = <1>;
-> > +               power-on-latency = <250000>;
-> > +               power-off-latency = <250000>;
+> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> > ---
+> >  drivers/vfio/platform/vfio_platform.c | 96 +++++++++++++++++++++++++++++++++++
+> >  include/uapi/linux/vfio.h             |  1 +
+> >  2 files changed, 97 insertions(+)
+> >  create mode 100644 drivers/vfio/platform/vfio_platform.c
+> >
+> > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> > new file mode 100644
+> > index 0000000..024c026
+> > --- /dev/null
+> > +++ b/drivers/vfio/platform/vfio_platform.c
+> > @@ -0,0 +1,96 @@
+> > +/*
+> > + * Copyright (C) 2013 - Virtual Open Systems
+> > + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License, version 2, as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/device.h>
+> > +#include <linux/eventfd.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/iommu.h>
+> > +#include <linux/module.h>
+> > +#include <linux/mutex.h>
+> > +#include <linux/notifier.h>
+> > +#include <linux/pm_runtime.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/types.h>
+> > +#include <linux/uaccess.h>
+> > +#include <linux/vfio.h>
+> > +#include <linux/io.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/irq.h>
+> > +
+> > +#include "vfio_platform_private.h"
+> > +
+> > +#define DRIVER_VERSION  "0.7"
+> > +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+> > +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
+> > +
+> > +/* probing devices from the linux platform bus */
+> > +
+> > +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
+> > +                                             int i)
+> > +{
+> > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
+> > +
+> > +     return platform_get_resource(pdev, IORESOURCE_MEM, i);
+>
+> ARM may only support IORESOURCE_MEM, but I don't think platform devices
+> are limited to MMIO, right?  vfio-platform shouldn't be either.
+>
 
-This assumes every power domain within a power controller has the
-same latencies? That isn't always true. This should be an array
-of values corresponding to the number of power domains if
-#power-domain-cells is 1, or just one value if the cell count is
-0.
+Indeed. Should we however implement this lacking a target to verify it
+is working correctly?
+
+Leaving it out would mean PIO resources for those devices would not be
+exposed before an update to VFIO, but we wouldn't have to break
+backward compatibility I think.
+
+Would you prefer to have it implemented regardless?
+
+> > +}
+> > +
+> > +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
+> > +{
+> > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
+> > +
+> > +     return platform_get_irq(pdev, i);
+> > +}
+> > +
+> > +
+> > +static int vfio_platform_probe(struct platform_device *pdev)
+> > +{
+> > +     struct vfio_platform_device *vdev;
+> > +     int ret;
+> > +
+> > +     vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
+> > +     if (!vdev)
+> > +             return -ENOMEM;
+> > +
+> > +     vdev->opaque = (void *) pdev;
+> > +     vdev->name = pdev->name;
+> > +     vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
+> > +     vdev->get_resource = get_platform_resource;
+> > +     vdev->get_irq = get_platform_irq;
+> > +
+> > +     ret = vfio_platform_probe_common(vdev, &pdev->dev);
+> > +     if (ret)
+> > +             kfree(vdev);
+> > +
+> > +     return ret;
+> > +}
+> > +
+> > +static int vfio_platform_remove(struct platform_device *pdev)
+> > +{
+> > +     return vfio_platform_remove_common(&pdev->dev);
+> > +}
+> > +
+> > +static struct platform_driver vfio_platform_driver = {
+> > +     .probe          = vfio_platform_probe,
+> > +     .remove         = vfio_platform_remove,
+> > +     .driver = {
+> > +             .name   = "vfio-platform",
+> > +             .owner  = THIS_MODULE,
+> > +     },
+> > +};
+> > +
+> > +module_platform_driver(vfio_platform_driver);
+> > +
+> > +MODULE_VERSION(DRIVER_VERSION);
+> > +MODULE_LICENSE("GPL v2");
+> > +MODULE_AUTHOR(DRIVER_AUTHOR);
+> > +MODULE_DESCRIPTION(DRIVER_DESC);
+> > diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> > index 30f630c..b022a25 100644
+> > --- a/include/uapi/linux/vfio.h
+> > +++ b/include/uapi/linux/vfio.h
+> > @@ -158,6 +158,7 @@ struct vfio_device_info {
+> >       __u32   flags;
+> >  #define VFIO_DEVICE_FLAGS_RESET      (1 << 0)        /* Device supports reset */
+> >  #define VFIO_DEVICE_FLAGS_PCI        (1 << 1)        /* vfio-pci device */
+> > +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)  /* vfio-platform device */
+> >       __u32   num_regions;    /* Max region index + 1 */
+> >       __u32   num_irqs;       /* Max IRQ index + 1 */
+> >  };
+>
+>
+>
+
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Antonios Motakis
+Virtual Open Systems
