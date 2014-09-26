@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbaIZN2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:28:32 -0400
-Received: from mga14.intel.com ([192.55.52.115]:61783 "EHLO mga14.intel.com"
+	id S1755380AbaIZN2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:28:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49154 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935AbaIZN23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:28:29 -0400
+	id S1754742AbaIZN2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:28:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597257906"
+   d="scan'208";a="597257941"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch v2 09/18] x86, irq: Replace printk(KERN_LVL) with pr_lvl() utilities
-Date: Fri, 26 Sep 2014 21:29:46 +0800
-Message-Id: <1411738196-29958-10-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v2 12/18] x86, irq: Move IOAPIC related declarations from hw_irq.h into io_apic.h
+Date: Fri, 26 Sep 2014 21:29:49 +0800
+Message-Id: <1411738196-29958-13-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411738196-29958-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,177 +34,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace printk(KENR_LVL) with pr_lvl() to keep checkpatch script silent.
+Clean up code by moving IOAPIC related declarations from hw_irq.h into
+io_apic.h.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/vector.c |   69 ++++++++++++++++++++---------------------
- 1 file changed, 34 insertions(+), 35 deletions(-)
+ arch/x86/include/asm/hw_irq.h      |   33 ---------------------------------
+ arch/x86/include/asm/io_apic.h     |   23 ++++++++++++++++++++---
+ arch/x86/kernel/apic/io_apic.c     |   10 ++++++++++
+ arch/x86/kernel/crash.c            |    1 +
+ arch/x86/kernel/machine_kexec_32.c |    1 +
+ arch/x86/kernel/machine_kexec_64.c |    1 +
+ arch/x86/kernel/reboot.c           |    1 +
+ 7 files changed, 34 insertions(+), 36 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
-index 248ad962c09a..f728cbfc29a9 100644
---- a/arch/x86/kernel/apic/vector.c
-+++ b/arch/x86/kernel/apic/vector.c
-@@ -506,27 +506,26 @@ static void __init print_local_APIC(void *dummy)
- 	unsigned int i, v, ver, maxlvt;
- 	u64 icr;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index dca760e9cd12..7624fffc2822 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -154,39 +154,6 @@ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
+ #endif	/* CONFIG_X86_LOCAL_APIC */
  
--	printk(KERN_DEBUG "printing local APIC contents on CPU#%d/%d:\n",
--		smp_processor_id(), hard_smp_processor_id());
-+	pr_debug("printing local APIC contents on CPU#%d/%d:\n",
-+		 smp_processor_id(), hard_smp_processor_id());
- 	v = apic_read(APIC_ID);
--	printk(KERN_INFO "... APIC ID:      %08x (%01x)\n", v, read_apic_id());
-+	pr_info("... APIC ID:      %08x (%01x)\n", v, read_apic_id());
- 	v = apic_read(APIC_LVR);
--	printk(KERN_INFO "... APIC VERSION: %08x\n", v);
-+	pr_info("... APIC VERSION: %08x\n", v);
- 	ver = GET_APIC_VERSION(v);
- 	maxlvt = lapic_get_maxlvt();
+-/* IOAPIC */
+-#ifdef CONFIG_X86_IO_APIC
+-struct io_apic_irq_attr {
+-	int ioapic;
+-	int ioapic_pin;
+-	int trigger;
+-	int polarity;
+-};
+-
+-static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+-					int ioapic, int ioapic_pin,
+-					int trigger, int polarity)
+-{
+-	irq_attr->ioapic	= ioapic;
+-	irq_attr->ioapic_pin	= ioapic_pin;
+-	irq_attr->trigger	= trigger;
+-	irq_attr->polarity	= polarity;
+-}
+-
+-extern void setup_IO_APIC(void);
+-extern void enable_IO_APIC(void);
+-extern void disable_IO_APIC(void);
+-extern void setup_ioapic_dest(void);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+-extern void print_IO_APICs(void);
+-
+-extern unsigned long io_apic_irqs;
+-#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
+-#else	/* CONFIG_X86_IO_APIC */
+-#define IO_APIC_IRQ(x)	0
+-static inline void print_IO_APICs(void) {}
+-#endif	/* CONFIG_X86_IO_APIC */
+-
+ /* Statistics */
+ extern atomic_t irq_err_count;
+ extern atomic_t irq_mis_count;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index a2245cb5ca3f..533803dc3733 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -132,6 +132,10 @@ extern int noioapicquirk;
+ /* -1 if "noapic" boot option passed */
+ extern int noioapicreroute;
  
- 	v = apic_read(APIC_TASKPRI);
--	printk(KERN_DEBUG "... APIC TASKPRI: %08x (%02x)\n",
--	       v, v & APIC_TPRI_MASK);
-+	pr_debug("... APIC TASKPRI: %08x (%02x)\n", v, v & APIC_TPRI_MASK);
++extern unsigned long io_apic_irqs;
++
++#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
++
+ /*
+  * If we use the IO-APIC for IRQ routing, disable automatic
+  * assignment of PCI IRQ's.
+@@ -139,7 +143,6 @@ extern int noioapicreroute;
+ #define io_apic_assign_pci_irqs \
+ 	(mp_irq_entries && !skip_ioapic_setup && io_apic_irqs)
  
- 	if (APIC_INTEGRATED(ver)) {                     /* !82489DX */
- 		if (!APIC_XAPIC(ver)) {
- 			v = apic_read(APIC_ARBPRI);
--			printk(KERN_DEBUG "... APIC ARBPRI: %08x (%02x)\n", v,
--			       v & APIC_ARBPRI_MASK);
-+			pr_debug("... APIC ARBPRI: %08x (%02x)\n",
-+				 v, v & APIC_ARBPRI_MASK);
- 		}
- 		v = apic_read(APIC_PROCPRI);
--		printk(KERN_DEBUG "... APIC PROCPRI: %08x\n", v);
-+		pr_debug("... APIC PROCPRI: %08x\n", v);
- 	}
+-struct io_apic_irq_attr;
+ struct irq_cfg;
+ extern void ioapic_insert_resources(void);
  
- 	/*
-@@ -535,23 +534,23 @@ static void __init print_local_APIC(void *dummy)
- 	 */
- 	if (!APIC_INTEGRATED(ver) || maxlvt == 3) {
- 		v = apic_read(APIC_RRR);
--		printk(KERN_DEBUG "... APIC RRR: %08x\n", v);
-+		pr_debug("... APIC RRR: %08x\n", v);
- 	}
+@@ -157,6 +160,13 @@ extern int restore_ioapic_entries(void);
+ extern void setup_ioapic_ids_from_mpc(void);
+ extern void setup_ioapic_ids_from_mpc_nocheck(void);
  
- 	v = apic_read(APIC_LDR);
--	printk(KERN_DEBUG "... APIC LDR: %08x\n", v);
-+	pr_debug("... APIC LDR: %08x\n", v);
- 	if (!x2apic_enabled()) {
- 		v = apic_read(APIC_DFR);
--		printk(KERN_DEBUG "... APIC DFR: %08x\n", v);
-+		pr_debug("... APIC DFR: %08x\n", v);
- 	}
- 	v = apic_read(APIC_SPIV);
--	printk(KERN_DEBUG "... APIC SPIV: %08x\n", v);
-+	pr_debug("... APIC SPIV: %08x\n", v);
++struct io_apic_irq_attr {
++	int ioapic;
++	int ioapic_pin;
++	int trigger;
++	int polarity;
++};
++
+ enum ioapic_domain_type {
+ 	IOAPIC_DOMAIN_INVALID,
+ 	IOAPIC_DOMAIN_LEGACY,
+@@ -196,6 +206,7 @@ extern int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node);
+ extern void __init pre_init_apic_IRQ0(void);
  
--	printk(KERN_DEBUG "... APIC ISR field:\n");
-+	pr_debug("... APIC ISR field:\n");
- 	print_APIC_field(APIC_ISR);
--	printk(KERN_DEBUG "... APIC TMR field:\n");
-+	pr_debug("... APIC TMR field:\n");
- 	print_APIC_field(APIC_TMR);
--	printk(KERN_DEBUG "... APIC IRR field:\n");
-+	pr_debug("... APIC IRR field:\n");
- 	print_APIC_field(APIC_IRR);
+ extern void mp_save_irq(struct mpc_intsrc *m);
++extern bool mp_should_keep_irq(struct device *dev);
  
- 	if (APIC_INTEGRATED(ver)) {             /* !82489DX */
-@@ -559,46 +558,46 @@ static void __init print_local_APIC(void *dummy)
- 			apic_write(APIC_ESR, 0);
+ extern void disable_ioapic_support(void);
  
- 		v = apic_read(APIC_ESR);
--		printk(KERN_DEBUG "... APIC ESR: %08x\n", v);
-+		pr_debug("... APIC ESR: %08x\n", v);
- 	}
+@@ -226,13 +237,19 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
  
- 	icr = apic_icr_read();
--	printk(KERN_DEBUG "... APIC ICR: %08x\n", (u32)icr);
--	printk(KERN_DEBUG "... APIC ICR2: %08x\n", (u32)(icr >> 32));
-+	pr_debug("... APIC ICR: %08x\n", (u32)icr);
-+	pr_debug("... APIC ICR2: %08x\n", (u32)(icr >> 32));
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
  
- 	v = apic_read(APIC_LVTT);
--	printk(KERN_DEBUG "... APIC LVTT: %08x\n", v);
-+	pr_debug("... APIC LVTT: %08x\n", v);
+-extern bool mp_should_keep_irq(struct device *dev);
+-
++extern void setup_IO_APIC(void);
++extern void enable_IO_APIC(void);
++extern void disable_IO_APIC(void);
++extern void setup_ioapic_dest(void);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
++extern void print_IO_APICs(void);
+ #else  /* !CONFIG_X86_IO_APIC */
  
- 	if (maxlvt > 3) {                       /* PC is LVT#4. */
- 		v = apic_read(APIC_LVTPC);
--		printk(KERN_DEBUG "... APIC LVTPC: %08x\n", v);
-+		pr_debug("... APIC LVTPC: %08x\n", v);
- 	}
- 	v = apic_read(APIC_LVT0);
--	printk(KERN_DEBUG "... APIC LVT0: %08x\n", v);
-+	pr_debug("... APIC LVT0: %08x\n", v);
- 	v = apic_read(APIC_LVT1);
--	printk(KERN_DEBUG "... APIC LVT1: %08x\n", v);
-+	pr_debug("... APIC LVT1: %08x\n", v);
- 
- 	if (maxlvt > 2) {			/* ERR is LVT#3. */
- 		v = apic_read(APIC_LVTERR);
--		printk(KERN_DEBUG "... APIC LVTERR: %08x\n", v);
-+		pr_debug("... APIC LVTERR: %08x\n", v);
- 	}
- 
- 	v = apic_read(APIC_TMICT);
--	printk(KERN_DEBUG "... APIC TMICT: %08x\n", v);
-+	pr_debug("... APIC TMICT: %08x\n", v);
- 	v = apic_read(APIC_TMCCT);
--	printk(KERN_DEBUG "... APIC TMCCT: %08x\n", v);
-+	pr_debug("... APIC TMCCT: %08x\n", v);
- 	v = apic_read(APIC_TDCR);
--	printk(KERN_DEBUG "... APIC TDCR: %08x\n", v);
-+	pr_debug("... APIC TDCR: %08x\n", v);
- 
- 	if (boot_cpu_has(X86_FEATURE_EXTAPIC)) {
- 		v = apic_read(APIC_EFEAT);
- 		maxlvt = (v >> 16) & 0xff;
--		printk(KERN_DEBUG "... APIC EFEAT: %08x\n", v);
-+		pr_debug("... APIC EFEAT: %08x\n", v);
- 		v = apic_read(APIC_ECTRL);
--		printk(KERN_DEBUG "... APIC ECTRL: %08x\n", v);
-+		pr_debug("... APIC ECTRL: %08x\n", v);
- 		for (i = 0; i < maxlvt; i++) {
- 			v = apic_read(APIC_EILVTn(i));
--			printk(KERN_DEBUG "... APIC EILVT%d: %08x\n", i, v);
-+			pr_debug("... APIC EILVT%d: %08x\n", i, v);
- 		}
- 	}
- 	pr_cont("\n");
-@@ -628,15 +627,15 @@ static void __init print_PIC(void)
- 	if (!nr_legacy_irqs())
- 		return;
- 
--	printk(KERN_DEBUG "\nprinting PIC contents\n");
-+	pr_debug("\nprinting PIC contents\n");
- 
- 	raw_spin_lock_irqsave(&i8259A_lock, flags);
- 
- 	v = inb(0xa1) << 8 | inb(0x21);
--	printk(KERN_DEBUG "... PIC  IMR: %04x\n", v);
-+	pr_debug("... PIC  IMR: %04x\n", v);
- 
- 	v = inb(0xa0) << 8 | inb(0x20);
--	printk(KERN_DEBUG "... PIC  IRR: %04x\n", v);
-+	pr_debug("... PIC  IRR: %04x\n", v);
- 
- 	outb(0x0b, 0xa0);
- 	outb(0x0b, 0x20);
-@@ -646,10 +645,10 @@ static void __init print_PIC(void)
- 
- 	raw_spin_unlock_irqrestore(&i8259A_lock, flags);
- 
--	printk(KERN_DEBUG "... PIC  ISR: %04x\n", v);
-+	pr_debug("... PIC  ISR: %04x\n", v);
- 
- 	v = inb(0x4d1) << 8 | inb(0x4d0);
--	printk(KERN_DEBUG "... PIC ELCR: %04x\n", v);
-+	pr_debug("... PIC ELCR: %04x\n", v);
++#define IO_APIC_IRQ(x)		0
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static inline void ioapic_insert_resources(void) { }
++static inline void print_IO_APICs(void) {}
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 0741d864612a..3fc4f540ef0f 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3014,6 +3014,16 @@ int mp_ioapic_registered(u32 gsi_base)
+ 	return 0;
  }
  
- static int show_lapic __initdata = 1;
++static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
++					int ioapic, int ioapic_pin,
++					int trigger, int polarity)
++{
++	irq_attr->ioapic	= ioapic;
++	irq_attr->ioapic_pin	= ioapic_pin;
++	irq_attr->trigger	= trigger;
++	irq_attr->polarity	= polarity;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
+ {
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index a618fcd2c07d..71bdb8cf8ba1 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -28,6 +28,7 @@
+ #include <asm/nmi.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/hpet.h>
+ #include <linux/kdebug.h>
+ #include <asm/cpu.h>
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index 1667b1de8d5d..aad1a49e69c3 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -20,6 +20,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/cpufeature.h>
+ #include <asm/desc.h>
+ #include <asm/cacheflush.h>
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 485981059a40..415480d3ea84 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -22,6 +22,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
++#include <asm/io_apic.h>
+ #include <asm/debugreg.h>
+ #include <asm/kexec-bzimage64.h>
+ 
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 17962e667a91..bae6c609888e 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -12,6 +12,7 @@
+ #include <acpi/reboot.h>
+ #include <asm/io.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/desc.h>
+ #include <asm/hpet.h>
+ #include <asm/pgtable.h>
 -- 
 1.7.10.4
 
