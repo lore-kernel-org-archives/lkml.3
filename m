@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaIZToz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:44:55 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:54212 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315AbaIZTox (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:44:53 -0400
-Message-ID: <5425C22F.7050301@gmail.com>
-Date: Fri, 26 Sep 2014 13:44:47 -0600
-From: David Ahern <lxhacker68@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: nicolas.dichtel@6wind.com, Cong Wang <cwang@twopensource.com>,
-        netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>	<5422F0F4.6000709@6wind.com>	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>	<5423D80B.9060500@6wind.com>	<CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com>	<54256CCB.4000709@6wind.com> <5425BB3E.10700@gmail.com> <87mw9myy4n.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87mw9myy4n.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755779AbaIZTpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:45:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51378 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754884AbaIZTpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 15:45:34 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org, Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH] sched/nohz: add debugfs control over sched_tick_max_deferment
+Date: Fri, 26 Sep 2014 12:45:32 -0700
+Message-Id: <1411760732-14102-1-git-send-email-khilman@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/26/14, 1:34 PM, Eric W. Biederman wrote:
-> When I wrote the "ip netns" support I never expected that all
-> applications would want to run in a specific network namespace.  All
-> that is needed is one socket per network namespace.
+From: Kevin Hilman <khilman@linaro.org>
 
-Sure that is another option. But for a process to create a socket or 
-thread in a second namespace it has to run as root -- CAP_SYS_ADMIN is 
-needed for setns (or perhaps there is another way to create the socket 
-or thread in the namespace).
+Allow debugfs override of sched_tick_max_deferment in order to ease
+finding/fixing the remaining issues with full nohz.
 
-Second, it still does not address the scalability problem. For example a 
-single daemon providing service across 2k namespaces means it needs 2k 
-listen sockets. From there a system could have 20, 30 or 50 services 
-running. Certainly lighter than a process per namespace, but not even 
-close to ideal when talking about something like VRFs.
+The value to be written is in jiffies, and -1 means the max deferment
+is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
 
-David
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+ kernel/sched/core.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index bc1638b33449..dee044a5d447 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2514,6 +2514,8 @@ void scheduler_tick(void)
+ }
+ 
+ #ifdef CONFIG_NO_HZ_FULL
++static u32 sched_tick_max_deferment = HZ;
++
+ /**
+  * scheduler_tick_max_deferment
+  *
+@@ -2532,13 +2534,25 @@ u64 scheduler_tick_max_deferment(void)
+ 	struct rq *rq = this_rq();
+ 	unsigned long next, now = ACCESS_ONCE(jiffies);
+ 
+-	next = rq->last_sched_tick + HZ;
++	if (sched_tick_max_deferment == -1)
++		return KTIME_MAX;
++
++	next = rq->last_sched_tick + sched_tick_max_deferment;
+ 
+ 	if (time_before_eq(next, now))
+ 		return 0;
+ 
+ 	return jiffies_to_nsecs(next - now);
+ }
++
++static __init int sched_nohz_full_init_debug(void)
++{
++	debugfs_create_u32("sched_tick_max_deferment", 0644, NULL,
++			   &sched_tick_max_deferment);
++
++	return 0;
++}
++late_initcall(sched_nohz_full_init_debug);
+ #endif
+ 
+ notrace unsigned long get_parent_ip(unsigned long addr)
+-- 
+2.1.0
+
