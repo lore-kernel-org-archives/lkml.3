@@ -1,130 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673AbaIZDys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:54:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56256 "EHLO mga09.intel.com"
+	id S1753527AbaIZD5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:57:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:52655 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752961AbaIZDyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:54:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,603,1406617200"; 
-   d="scan'208";a="579270480"
-Message-ID: <5424E382.6060403@linux.intel.com>
-Date: Fri, 26 Sep 2014 11:54:42 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753016AbaIZD5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 23:57:07 -0400
+Date: Fri, 26 Sep 2014 13:57:03 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH 01/15] powerpc/cell: Move spu_handle_mm_fault() out of
+ cell platform
+Message-ID: <20140926135703.3f94a7e1@kryten>
+In-Reply-To: <1411028820-29933-2-git-send-email-mikey@neuling.org>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
+	<1411028820-29933-2-git-send-email-mikey@neuling.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / platform / LPSS: disable async suspend/resume
- of LPSS devices
-References: <540E91F0.2060306@linux.intel.com> <13208235.eyDL0NsKvo@vostro.rjw.lan> <542378F0.6070303@linux.intel.com> <2215516.KXo7vMZKRh@vostro.rjw.lan>
-In-Reply-To: <2215516.KXo7vMZKRh@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/26 4:08, Rafael J. Wysocki wrote:
-> On Thursday, September 25, 2014 10:07:44 AM Li, Aubrey wrote:
->> On 2014/9/25 4:32, Rafael J. Wysocki wrote:
->>> On Wednesday, September 24, 2014 11:19:22 PM Fu, Zhonghui wrote:
->>>> This is a multi-part message in MIME format.
->>>> --------------040808000309050202010005
->>>> Content-Type: text/plain; charset=UTF-8
->>>> Content-Transfer-Encoding: 7bit
->>>>
->>>>
->>>> On 2014/9/23 7:17, Rafael J. Wysocki wrote:
->>>>> On Monday, September 22, 2014 10:45:42 PM Fu, Zhonghui wrote:
->>>>> [cut]
->>>>>
->>>>>>>>> This operation is reading data from Operation Region of one operand object in name space. I don't know the reason of hang at this point. Could you please give out some explanation about this?
->>>>>>>> I don't know the exact reason why this particular read hangs, but this means
->>>>>>>> that, perhaps, instead of disabling async suspend/resume for all LPSS devices
->>>>>>>> altogether, perhaps we can serialize their acpi_dev_resume_early()?
->>>>>>>>
->>>>>>>> Rafael
->>>>>>> Do you mean keeping other phases(prepare, suspend, suspend_late, suspend_noirq, resume_noirq, resume, complete) of suspend/resume asynchronous, and only serializing "resume_early" phase for all LPSS devices?
->>>>>>>
->>>>>>> Thanks,
->>>>>>> Zhonghui
->>>>>> Hi, Rafael
->>>>>>
->>>>>> Could you please confirm my understanding?
->>>>> This is not what I meant.
->>>>>
->>>>> Since we have a PM domain for the LPSS devices already, why don't we add an
->>>>> internal lock to that PM domain and acquire it over executing either
->>>>> acpi_dev_suspend_late() (during suspend) or acpi_dev_resume_early() (during
->>>>> resume) for all of them?
->>>> I seem find the root cause of this issue. Because this "hang" issue is occurred on ASUS T100(Baytrail-T platform), so I checked its DSDT and found that URT and I2C controllers depend on(_DEP) PEPD device(description in Windows is "power engine plug-in"). That is, URT and I2C controllers can not transition to ACPI_STATE_D0 state until PEPD device has completed this transition during resuming. But, the ACPI subsystem in the 3.16 kernel doesn't support "_DEP" feature. So, if enabling async suspend/resume for LPSS devices, their "_DEP" relationship with PEPD device will be broken and incur "hang" during the transition to ACPI_STATE_D0, please see the following code, it is from dpm_resume_early function in drivers/base/power/main.c file:
->>>>
->>>> list_for_each_entry(dev, &dpm_late_early_list, power.entry) {
->>>>                 reinit_completion(&dev->power.completion);
->>>>                 if (is_async(dev)) {
->>>>                         get_device(dev);
->>>>                         async_schedule(async_resume_early, dev);
->>>>                 }
->>>>         }
->>>>
->>>>         while (!list_empty(&dpm_late_early_list)) {
->>>>                 dev = to_device(dpm_late_early_list.next);
->>>>                 get_device(dev);
->>>>                 list_move_tail(&dev->power.entry, &dpm_suspended_list);
->>>>                 mutex_unlock(&dpm_list_mtx);
->>>>
->>>>                 if (!is_async(dev)) {    // PEPD is not configured as async device now.
->>>>                         int error;
->>>>
->>>>                         error = device_resume_early(dev, state, false);
->>>>                         if (error) {
->>>>                                 suspend_stats.failed_resume_early++;
->>>>                                 dpm_save_failed_step(SUSPEND_RESUME_EARLY);
->>>>                                 dpm_save_failed_dev(dev_name(dev));
->>>>                                 pm_dev_err(dev, state, " early", error);
->>>>                         }
->>>>                 }
->>>>                 mutex_lock(&dpm_list_mtx);
->>>>                 put_device(dev);
->>>>         }
->>>>
->>>>
->>>> Based on the above analysis,I move the resume_early operation of PEPD device to head of dpm_resume_early function and "hang" did not occur any more during resuming(I tested this 10 times).
->>>>
->>>> If disabling async suspend/resume for LPSS devices, PEPD device will be prior to UART and I2C controllers in dpm_late_early_list list and the "_DEP" relationship can be kept. Maybe,the "_DEP" ACPI feature will be supported in future kernel, so, I think simply disabling async suspend/resume for LPSS devices is a acceptable workaround now, and need not add new mechanism to deal with this issue.
->>>>
->>>> BTW, I will take two week's leave and can't reply email during this time. Sorry.
->>>
->>> OK, thanks for the analysis.  In that case we really may be better off by
->>> disabling the runtime PM of LPSS devices for now until we figure out how this
->>> can be addressed properly.
->>
->> Please let me know if the patch need to be refined, I can do it before
->> October 1st, then one-week Chinese National holiday.
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> The patch is fine.  In fact, I'm going to push it to Linus shortly.
+> Currently spu_handle_mm_fault() is in the cell platform.
 > 
->> Besides this patch, we leave the non-LPSS devices as async
->> suspend/resume, the risk is unknown.
+> This code is generically useful for other non-cell co-processors on
+> powerpc.
 > 
-> No, we don't in general.  That is an opt-in, usually on a per-subsystem basis.
+> This patch moves this function out of the cell platform into
+> arch/powerpc/mm so that others may use it.
 > 
->> I wonder if we need to make
->> pm_async parameter configurable thru kernel command line to make android
->> userspace happy?
-> 
-> There is a sysfs switch for disabling async suspend/resume (/sys/power/pm_async).
-> That has to suffice.
-> 
-Like what you did to pretend echo mem > /sys/power/state, it's hard to
-visit sysfs switch from android UI, we want to disable async
-suspend/resume from kernel command line, so that we can bypass this
-feature after boot.
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
 
-Thanks,
--Aubrey
+Reviewed-by: Anton Blanchard <anton@samba.org>
+
+Anton
