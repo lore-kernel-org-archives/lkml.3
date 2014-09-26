@@ -1,256 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaIZHRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:17:50 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:62413 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049AbaIZHRk (ORCPT
+	id S1754173AbaIZHSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:18:00 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:49527 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136AbaIZHRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:17:40 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v15 net-next 09/11] bpf: verifier (add branch/goto checks)
-Date: Fri, 26 Sep 2014 00:17:05 -0700
-Message-Id: <1411715827-10430-10-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411715827-10430-1-git-send-email-ast@plumgrid.com>
-References: <1411715827-10430-1-git-send-email-ast@plumgrid.com>
+	Fri, 26 Sep 2014 03:17:47 -0400
+Date: Fri, 26 Sep 2014 08:17:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>, Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v6 0/2] Initial support for XPowers AXP288 PMIC
+Message-ID: <20140926071738.GD31272@lee--X1>
+References: <1411643739-21205-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20140925113004.582367d1@jacob-VirtualBox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140925113004.582367d1@jacob-VirtualBox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check that control flow graph of eBPF program is a directed acyclic graph
+> Can you consider taking this for 3.18 if there are no other issues?
 
-check_cfg() does:
-- detect loops
-- detect unreachable instructions
-- check that program terminates with BPF_EXIT insn
-- check that all branches are within program boundary
+I'm afraid not.  Linus is opening the v3.18 merge-window early this
+cycle, so I have stopped applying patches.  This will be re-considered
+for v3.19.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- kernel/bpf/verifier.c |  189 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 189 insertions(+)
+> On Thu, 25 Sep 2014 04:15:39 -0700
+> Jacob Pan <jacob.jun.pan@linux.intel.com> wrote:
+> 
+> > X-Powers AXP288 is a customized PMIC found on some Intel Baytrail-CR
+> > platforms. It comes with sub-functions such as USB charging, fuel
+> > gauge, ADC, and many LDO and BUCK channels.
+> > 
+> > By extending the existing AXP20x driver, this patchset adds basic
+> > support for AXP288 PMIC with ADC as one MFD cell device driver.
+> > 
+> > Currently, the PMIC driver in this patchset does not support platform
+> > data enumeration. But when ACPI _DSD and unified device properties
+> > become available, cell devices with platform data will be added.
+> > 
+> > This patch does not use intel_soc_pmic core for i2c and regmap
+> > handling in that axp288 shares similar programming interface with
+> > other X-Power PMICs supported in axp20x.c. Therefore, extending
+> > axp20x.c to include axp288 makes more sense.
+> > 
+> > Changes
+> >  v6:	- change axp20x_match_device() flow to give more specific
+> > error messages.
+> > 	- remove unnecessary cast
+> > 
+> >  v5:	- excluded iio documentation patch, already applied to
+> > iio.git
+> >  	- restructured axp288_adc read_raw code to make it more
+> > readable
+> > 	- renamed adc_enable to adc_set_state and add comment about
+> > why adc has to be always on and there is no disable function.
+> > 	- axp20x use const as needed for regmap structures
+> > 
+> >  v4:	- removed rename patch, use Kconfig description to list
+> > supported devices
+> >  	- misc clean up in ADC code, use regmap_bulk_read and
+> > improve error handling, etc.
+> > 	- remove IIO ADC scale, treat raw data as processed since the
+> > unit is already in IIO expected milliamps.
+> > 
+> >  v3:	- put all file rename changes in 1/5
+> >  	- add iio documentation for in_current_raw/scale
+> > 	- removed global variables in axp2xx
+> > 	- removed pm callbacks from GPADC
+> > 	- removed ACPI opregion cell device
+> > 	- added scales to ADC current and voltage
+> > 	- removed ADC thermal sensor from sysfs, kernel internal use
+> > only
+> > 
+> >  v2:
+> > 	- use format -M for 1/4
+> > 	- minor tweak based on Maxime's review
+> > 
+> > 
+> > Jacob Pan (2):
+> >   mfd/axp20x: extend axp20x to support axp288 pmic
+> >   iio/adc: add support for axp288 adc
+> > 
+> >  drivers/iio/adc/Kconfig      |   8 +
+> >  drivers/iio/adc/Makefile     |   1 +
+> >  drivers/iio/adc/axp288_adc.c | 253 ++++++++++++++++++++++++++++++
+> >  drivers/mfd/Kconfig          |   3 +-
+> >  drivers/mfd/axp20x.c         | 361
+> > ++++++++++++++++++++++++++++++++++++-------
+> > include/linux/mfd/axp20x.h   |  59 +++++++ 6 files changed, 629
+> > insertions(+), 56 deletions(-) create mode 100644
+> > drivers/iio/adc/axp288_adc.c
+> > 
+> 
+> [Jacob Pan]
 
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index 7227543e474b..c689ab8e2713 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -313,6 +313,191 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
- 	return (struct bpf_map *) (unsigned long) imm64;
- }
- 
-+/* non-recursive DFS pseudo code
-+ * 1  procedure DFS-iterative(G,v):
-+ * 2      label v as discovered
-+ * 3      let S be a stack
-+ * 4      S.push(v)
-+ * 5      while S is not empty
-+ * 6            t <- S.pop()
-+ * 7            if t is what we're looking for:
-+ * 8                return t
-+ * 9            for all edges e in G.adjacentEdges(t) do
-+ * 10               if edge e is already labelled
-+ * 11                   continue with the next edge
-+ * 12               w <- G.adjacentVertex(t,e)
-+ * 13               if vertex w is not discovered and not explored
-+ * 14                   label e as tree-edge
-+ * 15                   label w as discovered
-+ * 16                   S.push(w)
-+ * 17                   continue at 5
-+ * 18               else if vertex w is discovered
-+ * 19                   label e as back-edge
-+ * 20               else
-+ * 21                   // vertex w is explored
-+ * 22                   label e as forward- or cross-edge
-+ * 23           label t as explored
-+ * 24           S.pop()
-+ *
-+ * convention:
-+ * 0x10 - discovered
-+ * 0x11 - discovered and fall-through edge labelled
-+ * 0x12 - discovered and fall-through and branch edges labelled
-+ * 0x20 - explored
-+ */
-+
-+enum {
-+	DISCOVERED = 0x10,
-+	EXPLORED = 0x20,
-+	FALLTHROUGH = 1,
-+	BRANCH = 2,
-+};
-+
-+static int *insn_stack;	/* stack of insns to process */
-+static int cur_stack;	/* current stack index */
-+static int *insn_state;
-+
-+/* t, w, e - match pseudo-code above:
-+ * t - index of current instruction
-+ * w - next instruction
-+ * e - edge
-+ */
-+static int push_insn(int t, int w, int e, struct verifier_env *env)
-+{
-+	if (e == FALLTHROUGH && insn_state[t] >= (DISCOVERED | FALLTHROUGH))
-+		return 0;
-+
-+	if (e == BRANCH && insn_state[t] >= (DISCOVERED | BRANCH))
-+		return 0;
-+
-+	if (w < 0 || w >= env->prog->len) {
-+		verbose("jump out of range from insn %d to %d\n", t, w);
-+		return -EINVAL;
-+	}
-+
-+	if (insn_state[w] == 0) {
-+		/* tree-edge */
-+		insn_state[t] = DISCOVERED | e;
-+		insn_state[w] = DISCOVERED;
-+		if (cur_stack >= env->prog->len)
-+			return -E2BIG;
-+		insn_stack[cur_stack++] = w;
-+		return 1;
-+	} else if ((insn_state[w] & 0xF0) == DISCOVERED) {
-+		verbose("back-edge from insn %d to %d\n", t, w);
-+		return -EINVAL;
-+	} else if (insn_state[w] == EXPLORED) {
-+		/* forward- or cross-edge */
-+		insn_state[t] = DISCOVERED | e;
-+	} else {
-+		verbose("insn state internal bug\n");
-+		return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+/* non-recursive depth-first-search to detect loops in BPF program
-+ * loop == back-edge in directed graph
-+ */
-+static int check_cfg(struct verifier_env *env)
-+{
-+	struct bpf_insn *insns = env->prog->insnsi;
-+	int insn_cnt = env->prog->len;
-+	int ret = 0;
-+	int i, t;
-+
-+	insn_state = kcalloc(insn_cnt, sizeof(int), GFP_KERNEL);
-+	if (!insn_state)
-+		return -ENOMEM;
-+
-+	insn_stack = kcalloc(insn_cnt, sizeof(int), GFP_KERNEL);
-+	if (!insn_stack) {
-+		kfree(insn_state);
-+		return -ENOMEM;
-+	}
-+
-+	insn_state[0] = DISCOVERED; /* mark 1st insn as discovered */
-+	insn_stack[0] = 0; /* 0 is the first instruction */
-+	cur_stack = 1;
-+
-+peek_stack:
-+	if (cur_stack == 0)
-+		goto check_state;
-+	t = insn_stack[cur_stack - 1];
-+
-+	if (BPF_CLASS(insns[t].code) == BPF_JMP) {
-+		u8 opcode = BPF_OP(insns[t].code);
-+
-+		if (opcode == BPF_EXIT) {
-+			goto mark_explored;
-+		} else if (opcode == BPF_CALL) {
-+			ret = push_insn(t, t + 1, FALLTHROUGH, env);
-+			if (ret == 1)
-+				goto peek_stack;
-+			else if (ret < 0)
-+				goto err_free;
-+		} else if (opcode == BPF_JA) {
-+			if (BPF_SRC(insns[t].code) != BPF_K) {
-+				ret = -EINVAL;
-+				goto err_free;
-+			}
-+			/* unconditional jump with single edge */
-+			ret = push_insn(t, t + insns[t].off + 1,
-+					FALLTHROUGH, env);
-+			if (ret == 1)
-+				goto peek_stack;
-+			else if (ret < 0)
-+				goto err_free;
-+		} else {
-+			/* conditional jump with two edges */
-+			ret = push_insn(t, t + 1, FALLTHROUGH, env);
-+			if (ret == 1)
-+				goto peek_stack;
-+			else if (ret < 0)
-+				goto err_free;
-+
-+			ret = push_insn(t, t + insns[t].off + 1, BRANCH, env);
-+			if (ret == 1)
-+				goto peek_stack;
-+			else if (ret < 0)
-+				goto err_free;
-+		}
-+	} else {
-+		/* all other non-branch instructions with single
-+		 * fall-through edge
-+		 */
-+		ret = push_insn(t, t + 1, FALLTHROUGH, env);
-+		if (ret == 1)
-+			goto peek_stack;
-+		else if (ret < 0)
-+			goto err_free;
-+	}
-+
-+mark_explored:
-+	insn_state[t] = EXPLORED;
-+	if (cur_stack-- <= 0) {
-+		verbose("pop stack internal bug\n");
-+		ret = -EFAULT;
-+		goto err_free;
-+	}
-+	goto peek_stack;
-+
-+check_state:
-+	for (i = 0; i < insn_cnt; i++) {
-+		if (insn_state[i] != EXPLORED) {
-+			verbose("unreachable insn %d\n", i);
-+			ret = -EINVAL;
-+			goto err_free;
-+		}
-+	}
-+	ret = 0; /* cfg looks good */
-+
-+err_free:
-+	kfree(insn_state);
-+	kfree(insn_stack);
-+	return ret;
-+}
-+
- /* look for pseudo eBPF instructions that access map FDs and
-  * replace them with actual map pointers
-  */
-@@ -462,6 +647,10 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
- 	if (ret < 0)
- 		goto skip_full_check;
- 
-+	ret = check_cfg(env);
-+	if (ret < 0)
-+		goto skip_full_check;
-+
- 	/* ret = do_check(env); */
- 
- skip_full_check:
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
