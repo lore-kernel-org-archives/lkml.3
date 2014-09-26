@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaIZO5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:57:13 -0400
-Received: from mga14.intel.com ([192.55.52.115]:48078 "EHLO mga14.intel.com"
+	id S1756146AbaIZO5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:57:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58972 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756060AbaIZO5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:57:09 -0400
+	id S1754654AbaIZO5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:57:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
-   d="scan'208";a="597292578"
+   d="scan'208";a="597292711"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,9 +24,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [RFC v1 22/28] x86, irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
-Date: Fri, 26 Sep 2014 22:57:52 +0800
-Message-Id: <1411743478-31435-23-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC v1 25/28] x86, irq: Change functions only used in vector.c as static
+Date: Fri, 26 Sep 2014 22:57:55 +0800
+Message-Id: <1411743478-31435-26-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
@@ -34,108 +34,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86_io_apic_ops.write is always set to native_io_apic_write(),
-and nobody overrides it. So get rid of the indirection by changing
-native_io_apic_write() as io_apic_write() and killing
-x86_io_apic_ops.write.
-
-Do the same for x86_io_apic_ops.modify and native_io_apic_modify().
+Function {assign|clear}_irq_vector() and apic_retrigger_irq() are only
+used in file vector.c, so change them as static.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/io_apic.h  |   13 -------------
- arch/x86/include/asm/x86_init.h |    2 --
- arch/x86/kernel/apic/io_apic.c  |    6 ++++--
- arch/x86/kernel/x86_init.c      |    2 --
- 4 files changed, 4 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/hw_irq.h |    3 ---
+ arch/x86/kernel/apic/vector.c |    7 ++++---
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index c2c1a8b7f39d..e978dc335eea 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -209,8 +209,6 @@ extern void disable_ioapic_support(void);
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 9f8436fb3770..fdf8300dcc29 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -180,13 +180,10 @@ extern struct irq_cfg *irq_cfg(unsigned int irq);
+ extern struct irq_cfg *irqd_cfg(struct irq_data *irq_data);
+ extern void lock_vector_lock(void);
+ extern void unlock_vector_lock(void);
+-extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
+-extern void clear_irq_vector(int irq, struct irq_cfg *cfg);
+ extern void setup_vector_irq(int cpu);
+ extern void send_cleanup_vector(struct irq_cfg *);
+ extern void irq_complete_move(struct irq_cfg *cfg);
  
- extern void __init native_io_apic_init_mappings(void);
- extern unsigned int native_io_apic_read(unsigned int apic, unsigned int reg);
--extern void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int val);
--extern void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int val);
- extern void native_disable_io_apic(void);
- 
- static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
-@@ -218,15 +216,6 @@ static inline unsigned int io_apic_read(unsigned int apic, unsigned int reg)
- 	return x86_io_apic_ops.read(apic, reg);
+-extern int apic_retrigger_irq(struct irq_data *data);
+ extern void apic_ack_edge(struct irq_data *data);
+ extern int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 			     unsigned int *dest_id);
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index f21820622edf..ec2b991884f2 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -185,7 +185,8 @@ next:
+ 	return err;
  }
  
--static inline void io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
--{
--	x86_io_apic_ops.write(apic, reg, value);
--}
--static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
--{
--	x86_io_apic_ops.modify(apic, reg, value);
--}
--
- extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
- extern void disable_IO_APIC(void);
-@@ -268,8 +257,6 @@ static inline void mp_save_irq(struct mpc_intsrc *m) { };
- static inline void disable_ioapic_support(void) { }
- #define native_io_apic_init_mappings	NULL
- #define native_io_apic_read		NULL
--#define native_io_apic_write		NULL
--#define native_io_apic_modify		NULL
- #define native_disable_io_apic		NULL
- #endif
- 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 3755cd2bbb94..398717e7493d 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -185,8 +185,6 @@ struct x86_msi_ops {
- struct x86_io_apic_ops {
- 	void		(*init)   (void);
- 	unsigned int	(*read)   (unsigned int apic, unsigned int reg);
--	void		(*write)  (unsigned int apic, unsigned int reg, unsigned int value);
--	void		(*modify) (unsigned int apic, unsigned int reg, unsigned int value);
- 	void		(*disable)(void);
- };
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 2ccccfdbb682..f55ab3a8de08 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -299,7 +299,8 @@ unsigned int native_io_apic_read(unsigned int apic, unsigned int reg)
- 	return readl(&io_apic->data);
+-int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
++static int assign_irq_vector(int irq, struct irq_cfg *cfg,
++			     const struct cpumask *mask)
+ {
+ 	int err;
+ 	unsigned long flags;
+@@ -196,7 +197,7 @@ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	return err;
  }
  
--void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int value)
-+static void io_apic_write(unsigned int apic, unsigned int reg,
-+			  unsigned int value)
+-void clear_irq_vector(int irq, struct irq_cfg *cfg)
++static void clear_irq_vector(int irq, struct irq_cfg *cfg)
  {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
+ 	int cpu, vector;
+ 	unsigned long flags;
+@@ -435,7 +436,7 @@ void setup_vector_irq(int cpu)
+ 	__setup_vector_irq(cpu);
+ }
  
-@@ -313,7 +314,8 @@ void native_io_apic_write(unsigned int apic, unsigned int reg, unsigned int valu
-  *
-  * Older SiS APIC requires we rewrite the index register
-  */
--void native_io_apic_modify(unsigned int apic, unsigned int reg, unsigned int value)
-+static void io_apic_modify(unsigned int apic, unsigned int reg,
-+			   unsigned int value)
+-int apic_retrigger_irq(struct irq_data *data)
++static int apic_retrigger_irq(struct irq_data *data)
  {
- 	struct io_apic __iomem *io_apic = io_apic_base(apic);
- 
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index ac2b604c00ec..30140bdf6d62 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -151,7 +151,5 @@ u32 arch_msix_mask_irq(struct msi_desc *desc, u32 flag)
- struct x86_io_apic_ops x86_io_apic_ops = {
- 	.init			= native_io_apic_init_mappings,
- 	.read			= native_io_apic_read,
--	.write			= native_io_apic_write,
--	.modify			= native_io_apic_modify,
- 	.disable		= native_disable_io_apic,
- };
+ 	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned long flags;
 -- 
 1.7.10.4
 
