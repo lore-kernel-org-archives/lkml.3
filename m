@@ -1,234 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaIZVbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 17:31:07 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:40775 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755763AbaIZVbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 17:31:04 -0400
-Date: Fri, 26 Sep 2014 22:20:53 +0100
-From: liviu@dudau.co.uk
-To: Rob Herring <robherring2@gmail.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v12 08/12] PCI: OF: Introduce helper function for
- retrieving PCI domain numbers
-Message-ID: <20140926212052.GA6030@borg.dudau.co.uk>
-Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
-	Liviu Dudau <Liviu.Dudau@arm.com>,
-	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-	Rob Herring <robh+dt@kernel.org>,
-	Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	Catalin Marinas <catalin.marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-	Kukjin Kim <kgene.kim@samsung.com>,
-	Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-	linux-arch <linux-arch@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Device Tree ML <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Grant Likely <grant.likely@linaro.org>
-References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
- <1411498874-9864-9-git-send-email-Liviu.Dudau@arm.com>
- <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
+	id S1756290AbaIZVcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 17:32:19 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60467 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755763AbaIZVcS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 17:32:18 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] ACPI / i915: Update the condition to ignore firmware backlight change request
+Date: Fri, 26 Sep 2014 23:52:09 +0200
+Message-ID: <5560330.d2v72ZBmJs@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5424CFB0.4080102@intel.com>
+References: <201409232206.02819@pali> <201409251623.45636@pali> <5424CFB0.4080102@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Fri Sep 26 22:31:02 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,5425db153402009820393
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 01:20:39PM -0500, Rob Herring wrote:
-> On Tue, Sep 23, 2014 at 2:01 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > Add pci_get_new_domain_nr() to allocate a new domain number
-> > and of_get_pci_domain_nr() to retrieve the PCI domain number
-> > of a given device from DT. Host bridge drivers or architecture
-> > specific code can choose to implement their PCI domain number
-> > policy using these two functions.
-> >
-> > Using of_get_pci_domain_nr() guarantees a stable PCI domain
-> > number on every boot provided that all host bridge controllers
-> > are assigned a number in the device tree using "linux,pci-domain"
-> > property. Mix use of pci_get_new_domain_nr() and of_get_pci_domain_nr()
-> > is not recommended as it can lead to potentially conflicting
-> > domain numbers being assigned to root busses behind different
-> > host bridges.
-> >
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Grant Likely <grant.likely@linaro.org>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+On Friday, September 26, 2014 10:30:08 AM Aaron Lu wrote:
+> Some of the Thinkpads' firmware will issue a backlight change request
+> through i915 operation region unconditionally on AC plug/unplug, the
+> backlight level used is arbitrary and thus should be ignored. This is
+> handled by commit 0b9f7d93ca61 (ACPI / i915: ignore firmware requests
+> for backlight change). Then there is a Dell laptop whose vendor backlight
+> interface also makes use of operation region to change backlight level
+> and with the above commit, that interface no long works. The condition
+> used to ignore the backlight change request from firmware is thus
+> changed to: if the vendor backlight interface is not in use and the ACPI
+> backlight interface is broken, we ignore the requests; oterwise, we keep
+> processing them.
 > 
-> Looks pretty good, but a couple of comments that can be addressed as
-> follow-up patches.
-> 
-> > ---
-> >  drivers/of/of_pci.c    | 25 +++++++++++++++++++++++++
-> >  drivers/pci/pci.c      |  9 +++++++++
-> >  include/linux/of_pci.h |  7 +++++++
-> >  include/linux/pci.h    |  3 +++
-> >  4 files changed, 44 insertions(+)
-> >
-> > diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> > index 8481996..82d172f 100644
-> > --- a/drivers/of/of_pci.c
-> > +++ b/drivers/of/of_pci.c
-> > @@ -89,6 +89,31 @@ int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
-> >  }
-> >  EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
-> >
-> > +/**
-> > + * This function will try to obtain the host bridge domain number by
-> > + * finding a property called "linux,pci-domain" of the given device node.
-> > + *
-> > + * @node: device tree node with the domain information
-> > + *
-> > + * Returns the associated domain number from DT in the range [0-0xffff], or
-> > + * a negative value if the required property is not found.
-> > + */
-> > +int of_get_pci_domain_nr(struct device_node *node)
-> > +{
-> > +       const __be32 *value;
-> > +       int len;
-> > +       u16 domain;
-> > +
-> > +       value = of_get_property(node, "linux,pci-domain", &len);
-> 
-> This needs to be documented.
+> Reference: https://lkml.org/lkml/2014/9/23/854
+> Reported-and-tested-by: Pali Rohár <pali.rohar@gmail.com>
+> Cc: <stable@vger.kernel.org> # v3.16 and later
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-I would say needs agreed on *and* documented.
+Daniel, any objections?
 
+> ---
+>  drivers/gpu/drm/i915/intel_opregion.c | 16 +++++++++++-----
+>  1 file changed, 11 insertions(+), 5 deletions(-)
 > 
-> > +       if (!value || len < sizeof(*value))
-> > +               return -EINVAL;
-> > +
-> > +       domain = (u16)be32_to_cpup(value);
-> 
-> of_property_read_u32 would not work here?
-
-It should, I guess, but I want to limit the domain number range to 16 bits.
-
-Best regards,
-Liviu
-
-> 
-> > +
-> > +       return domain;
-> > +}
-> > +EXPORT_SYMBOL_GPL(of_get_pci_domain_nr);
-> > +
-> >  #ifdef CONFIG_PCI_MSI
-> >
-> >  static LIST_HEAD(of_pci_msi_chip_list);
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index 2c9ac70..d36f35f 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -4406,6 +4406,15 @@ static void pci_no_domains(void)
-> >  #endif
-> >  }
-> >
-> > +#ifdef CONFIG_PCI_DOMAINS
-> > +static atomic_t __domain_nr = ATOMIC_INIT(-1);
-> > +
-> > +int pci_get_new_domain_nr(void)
-> > +{
-> > +       return atomic_inc_return(&__domain_nr);
-> > +}
-> > +#endif
-> > +
-> >  /**
-> >   * pci_ext_cfg_avail - can we access extended PCI config space?
-> >   *
-> > diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-> > index dde3a4a..71062e9 100644
-> > --- a/include/linux/of_pci.h
-> > +++ b/include/linux/of_pci.h
-> > @@ -15,6 +15,7 @@ struct device_node *of_pci_find_child_device(struct device_node *parent,
-> >  int of_pci_get_devfn(struct device_node *np);
-> >  int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
-> >  int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
-> > +int of_get_pci_domain_nr(struct device_node *node);
-> >  #else
-> >  static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
-> >  {
-> > @@ -43,6 +44,12 @@ of_pci_parse_bus_range(struct device_node *node, struct resource *res)
-> >  {
-> >         return -EINVAL;
-> >  }
-> > +
-> > +static inline int
-> > +of_get_pci_domain_nr(struct device_node *node)
-> > +{
-> > +       return -1;
-> > +}
-> >  #endif
-> >
-> >  #if defined(CONFIG_OF) && defined(CONFIG_PCI_MSI)
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index a494e5d..150da2d 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -1285,10 +1285,12 @@ void pci_cfg_access_unlock(struct pci_dev *dev);
-> >   */
-> >  #ifdef CONFIG_PCI_DOMAINS
-> >  extern int pci_domains_supported;
-> > +int pci_get_new_domain_nr(void);
-> >  #else
-> >  enum { pci_domains_supported = 0 };
-> >  static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
-> >  static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
-> > +static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
-> >  #endif /* CONFIG_PCI_DOMAINS */
-> >
-> >  /*
-> > @@ -1417,6 +1419,7 @@ static inline struct pci_dev *pci_get_bus_and_slot(unsigned int bus,
-> >
-> >  static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
-> >  static inline struct pci_dev *pci_dev_get(struct pci_dev *dev) { return NULL; }
-> > +static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
-> >
-> >  #define dev_is_pci(d) (false)
-> >  #define dev_is_pf(d) (false)
-> > --
-> > 2.1.0
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+> index ca52ad2ae7d1..d8de1d5140a7 100644
+> --- a/drivers/gpu/drm/i915/intel_opregion.c
+> +++ b/drivers/gpu/drm/i915/intel_opregion.c
+> @@ -396,6 +396,16 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
+>  	return -EINVAL;
+>  }
+>  
+> +/*
+> + * If the vendor backlight interface is not in use and ACPI backlight interface
+> + * is broken, do not bother processing backlight change requests from firmware.
+> + */
+> +static bool should_ignore_backlight_request(void)
+> +{
+> +	return acpi_video_backlight_support() &&
+> +	       !acpi_video_verify_backlight_support();
+> +}
+> +
+>  static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>  {
+>  	struct drm_i915_private *dev_priv = dev->dev_private;
+> @@ -404,11 +414,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+>  
+>  	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
+>  
+> -	/*
+> -	 * If the acpi_video interface is not supposed to be used, don't
+> -	 * bother processing backlight level change requests from firmware.
+> -	 */
+> -	if (!acpi_video_verify_backlight_support()) {
+> +	if (should_ignore_backlight_request()) {
+>  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
+>  		return 0;
+>  	}
 > 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
