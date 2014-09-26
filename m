@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317AbaIZJrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:47:22 -0400
-Received: from mail-by2on0141.outbound.protection.outlook.com ([207.46.100.141]:41906
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754170AbaIZJrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:47:19 -0400
-From: Thomas Shao <huishao@microsoft.com>
-To: Mike Surcouf <mps.surcouf.lkml@gmail.com>
-CC: Sitsofe Wheeler <sitsofe@gmail.com>, Olaf Hering <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "KY Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: Time keeps on slipping... on Hyper-V
-Thread-Topic: Time keeps on slipping... on Hyper-V
-Thread-Index: AQHP2MSs3f6Dn2FF4EqEMJgPvPUmjJwS92OggAAuT4CAAAVtwA==
-Date: Fri, 26 Sep 2014 09:46:27 +0000
-Message-ID: <CD2CABCB2C0A0D4682C5F8AD84014154097C10@HKXPRD3002MB006.064d.mgd.msft.net>
-References: <1411451081-13423-1-git-send-email-huishao@microsoft.com>
-	<20140923075610.GA10933@aepfle.de>	<20140925060745.GA9450@sucs.org>
-	<CD2CABCB2C0A0D4682C5F8AD84014154094643@HKXPRD3002MB006.064d.mgd.msft.net>
-	<20140925132055.GA13108@sucs.org>
-	<CD2CABCB2C0A0D4682C5F8AD8401415409741D@HKXPRD3002MB006.064d.mgd.msft.net>
- <CAL7Bo8EP8he+OycqAnnNOD+W9eZ=qYfUNXFJ5zffUHq_0GUxYQ@mail.gmail.com>
-In-Reply-To: <CAL7Bo8EP8he+OycqAnnNOD+W9eZ=qYfUNXFJ5zffUHq_0GUxYQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.4]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(438002)(13464003)(51704005)(51714002)(189002)(199003)(377454003)(90102001)(69596002)(68736004)(83072002)(44976005)(20776003)(47776003)(83322001)(10300001)(120916001)(19580395003)(19580405001)(86362001)(23676002)(92566001)(21056001)(99396003)(85852003)(6806004)(54356999)(106116001)(50986999)(55846006)(4396001)(64706001)(76176999)(84676001)(95666004)(106466001)(81156004)(86146001)(92726001)(87936001)(2656002)(110136001)(93886004)(85306004)(79102003)(77096002)(77982003)(66066001)(46102003)(50466002)(74662003)(80022003)(74502003)(81342003)(81542003)(76482002)(107046002)(33656002)(31966008)(97736003)(16796002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1210;H:mail.microsoft.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1210;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=huishao@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1755288AbaIZJrF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:47:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755208AbaIZJqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:54 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 142/142] arm64: flush TLS registers during exec
+Date: Fri, 26 Sep 2014 11:45:53 +0200
+Message-Id: <7bcae251a2dfb6c0aa2c34dc505a5796c7c39426.1411724724.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8Q9lQOu029569
 
+From: Will Deacon <will.deacon@arm.com>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> -----Original Message-----
-> From: Mike Surcouf [mailto:mps.surcouf.lkml@gmail.com]
-> Sent: Friday, September 26, 2014 5:24 PM
-> To: Thomas Shao
-> Cc: Sitsofe Wheeler; Olaf Hering; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; driverdev-devel@linuxdriverproject.org;
-> apw@canonical.com; jasowang@redhat.com; KY Srinivasan; Haiyang Zhang
-> Subject: Re: Time keeps on slipping... on Hyper-V
-> 
-> > We still recommend user to configure NTP in the guest VM. With the new
-> > time sync feature in this patch, you could have one more option to enable
-> the guest-host sync, if the NTP didn't work in the environment.
-> > For example the guest VM didn't have network connection.
-> 
-> Microsoft used to use host time-samples in their older drivers but this was
-> dropped (when I don't know).
-> Now we must use NTP to correct hyperv_clocksource which suffers from the
-> usual problems associated with virtual environment  cpu loading.
-> 
-> Host time-samples in conjunction with an effective clock stability algorithm
-> with slews rather than steps should be the default.
-> NTP is a workaround and should not be the primary solution.
-> 
-> I have seen a lots of posts for RHEL CENTOS  Linux that have a
-> FAST.hyper_clocksource confirmed by myself on CENTOS 6.5 and 7.0 (also
-> confirmed by Olaf on SLES).
-> 
-> If this patch steps the clock once in a while without any form of slewing then
-> it has the potential to break things as files and logs travel BACK in time.
-> 
-> Apologies Thomas could you send me the patch via email as lkml.org does
-> not have it in the archives.
-> 
-Sure. I'll send the package again. It's strange that this patch didn't in the archives. And in my patch, it will slew the time, if the time drift is less than 1 s. It only steps the clock if the drift is larger than 1 s.
+===============
 
-> Regards Mike
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
+
+Nathan reports that we leak TLS information from the parent context
+during an exec, as we don't clear the TLS registers when flushing the
+thread state.
+
+This patch updates the flushing code so that we:
+
+  (1) Unconditionally zero the tpidr_el0 register (since this is fully
+      context switched for native tasks and zeroed for compat tasks)
+
+  (2) Zero the tp_value state in thread_info before clearing the
+      tpidrr0_el0 register for compat tasks (since this is only writable
+      by the set_tls compat syscall and therefore not fully switched).
+
+A missing compiler barrier is also added to the compat set_tls syscall.
+
+Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/arm64/kernel/process.c    | 18 ++++++++++++++++++
+ arch/arm64/kernel/sys_compat.c |  6 ++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 7ae8a1f00c3c..7af6183daa2e 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -183,9 +183,27 @@ void exit_thread(void)
+ {
+ }
+ 
++static void tls_thread_flush(void)
++{
++	asm ("msr tpidr_el0, xzr");
++
++	if (is_compat_task()) {
++		current->thread.tp_value = 0;
++
++		/*
++		 * We need to ensure ordering between the shadow state and the
++		 * hardware state, so that we don't corrupt the hardware state
++		 * with a stale shadow state during context switch.
++		 */
++		barrier();
++		asm ("msr tpidrro_el0, xzr");
++	}
++}
++
+ void flush_thread(void)
+ {
+ 	fpsimd_flush_thread();
++	tls_thread_flush();
+ 	flush_ptrace_hw_breakpoint(current);
+ }
+ 
+diff --git a/arch/arm64/kernel/sys_compat.c b/arch/arm64/kernel/sys_compat.c
+index 26e9c4eeaba8..78039927c807 100644
+--- a/arch/arm64/kernel/sys_compat.c
++++ b/arch/arm64/kernel/sys_compat.c
+@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *regs)
+ 
+ 	case __ARM_NR_compat_set_tls:
+ 		current->thread.tp_value = regs->regs[0];
++
++		/*
++		 * Protect against register corruption from context switch.
++		 * See comment in tls_thread_flush.
++		 */
++		barrier();
+ 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
+ 		return 0;
+ 
+-- 
+2.1.0
+
