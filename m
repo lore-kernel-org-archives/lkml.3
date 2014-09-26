@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaIZJVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:21:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57065 "EHLO
+	id S1754294AbaIZJVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:21:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57081 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059AbaIZJVB (ORCPT
+	with ESMTP id S1753714AbaIZJVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:21:01 -0400
-Date: Fri, 26 Sep 2014 02:20:38 -0700
+	Fri, 26 Sep 2014 05:21:12 -0400
+Date: Fri, 26 Sep 2014 02:20:51 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-smflpyta146bzog7z0effjss@git.kernel.org>
+Message-ID: <tip-2hvp9iromiheh6rl4oaa08x5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
         hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
-        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
         jean.pihet@linaro.org, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add pollfd growing test
-Git-Commit-ID: 9ae28035b8677b82e1d71cea4f793cb5504ec104
+Subject: [tip:perf/core] perf kvm stat live: Use perf_evlist__add_pollfd()
+  instead of local equivalent
+Git-Commit-ID: 0a04c9e0b2181aff8348b5e80d9d96ec8df1ffb3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,30 +36,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9ae28035b8677b82e1d71cea4f793cb5504ec104
-Gitweb:     http://git.kernel.org/tip/9ae28035b8677b82e1d71cea4f793cb5504ec104
+Commit-ID:  0a04c9e0b2181aff8348b5e80d9d96ec8df1ffb3
+Gitweb:     http://git.kernel.org/tip/0a04c9e0b2181aff8348b5e80d9d96ec8df1ffb3
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 18 Aug 2014 16:49:00 -0300
+AuthorDate: Mon, 18 Aug 2014 17:12:30 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Thu, 25 Sep 2014 16:46:54 -0300
 
-perf tests: Add pollfd growing test
+perf kvm stat live: Use perf_evlist__add_pollfd() instead of local equivalent
 
-  [acme@ssdandy linux]$ perf test "Add fd"
-  34: Add fd to pollfd array, making it autogrow             : Ok
-  [acme@ssdandy linux]$ perf test -v "Add fd"
-  34: Add fd to pollfd array, making it autogrow             :
-  --- start ---
-  test child forked, pid 19817
+Since we can add file descriptors to the evlist pollfd and it will
+autogrow, no need to copy all events to a local pollfd array, just add
+the timer and stdin file descriptors.
 
-  before growing array:   2 [ 1, 2 ]
-  after 3rd add_pollfd:   3 [ 1, 2, 35 ]
-  after 4th add_pollfd:   4 [ 1, 2, 35, 88 ]
-  test child finished with 0
-  ---- end ----
-  Add fd to pollfd array, making it autogrow: Ok
-  [acme@ssdandy linux]$
-
+Reviewed-by: David Ahern <dsahern@gmail.com>
 Acked-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -70,163 +61,64 @@ Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-smflpyta146bzog7z0effjss@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2hvp9iromiheh6rl4oaa08x5@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/builtin-test.c |   4 ++
- tools/perf/tests/evlist.c       | 111 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 3 files changed, 116 insertions(+)
+ tools/perf/builtin-kvm.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 41e556e..174c3ff 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -162,6 +162,10 @@ static struct test {
- 		.func = test__perf_evlist__filter_pollfd,
- 	},
- 	{
-+		.desc = "Add fd to pollfd array, making it autogrow",
-+		.func = test__perf_evlist__add_pollfd,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/evlist.c b/tools/perf/tests/evlist.c
-index 7757915..99d7dfd 100644
---- a/tools/perf/tests/evlist.c
-+++ b/tools/perf/tests/evlist.c
-@@ -1,5 +1,7 @@
- #include "util/evlist.h"
- #include "util/debug.h"
-+#include "util/thread_map.h"
-+#include "util/cpumap.h"
- #include "tests/tests.h"
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index f5d3ae4..a440219 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -919,15 +919,8 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGTERM, sig_handler);
  
- static void perf_evlist__init_pollfd(struct perf_evlist *evlist,
-@@ -101,3 +103,112 @@ int test__perf_evlist__filter_pollfd(void)
+-	/* copy pollfds -- need to add timerfd and stdin */
++	/* use pollfds -- need to add timerfd and stdin */
+ 	nr_fds = kvm->evlist->nr_fds;
+-	pollfds = zalloc(sizeof(struct pollfd) * (nr_fds + 2));
+-	if (!pollfds) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	memcpy(pollfds, kvm->evlist->pollfd,
+-		sizeof(struct pollfd) * kvm->evlist->nr_fds);
  
- 	return 0;
+ 	/* add timer fd */
+ 	if (perf_kvm__timerfd_create(kvm) < 0) {
+@@ -935,17 +928,21 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
+ 		goto out;
+ 	}
+ 
+-	pollfds[nr_fds].fd = kvm->timerfd;
+-	pollfds[nr_fds].events = POLLIN;
++	if (perf_evlist__add_pollfd(kvm->evlist, kvm->timerfd))
++		goto out;
++
+ 	nr_fds++;
+ 
+-	pollfds[nr_fds].fd = fileno(stdin);
+-	pollfds[nr_fds].events = POLLIN;
++	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)))
++		goto out;
++
+ 	nr_stdin = nr_fds;
+ 	nr_fds++;
+ 	if (fd_set_nonblock(fileno(stdin)) != 0)
+ 		goto out;
+ 
++	pollfds	 = kvm->evlist->pollfd;
++
+ 	/* everything is good - enable the events and process */
+ 	perf_evlist__enable(kvm->evlist);
+ 
+@@ -979,7 +976,6 @@ out:
+ 		close(kvm->timerfd);
+ 
+ 	tcsetattr(0, TCSAFLUSH, &save);
+-	free(pollfds);
+ 	return err;
  }
-+
-+int test__perf_evlist__add_pollfd(void)
-+{
-+	struct perf_evsel evsel = {
-+		.system_wide = false,
-+	};
-+	struct thread_map threads = {
-+		.nr = 2,
-+	};
-+	struct perf_evlist evlist_alloc = {
-+		.pollfd	 = NULL,
-+		.threads = &threads,
-+	}, *evlist = &evlist_alloc;
-+
-+	INIT_LIST_HEAD(&evlist->entries);
-+	list_add(&evsel.node, &evlist->entries);
-+
-+	if (perf_evlist__alloc_pollfd(evlist) < 0) {
-+		pr_debug("\nperf_evlist__alloc_pollfd(evlist) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds_alloc != threads.nr) {
-+		pr_debug("\n_evlist__alloc_pollfd: nr_fds_alloc=%d != (threads->nr(%d) * cpu_map->nr(%d))=%d",
-+			 evlist->nr_fds_alloc, thread_map__nr(evlist->threads), cpu_map__nr(evlist->cpus),
-+			 thread_map__nr(evlist->threads) * cpu_map__nr(evlist->cpus));
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 1) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 1) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 1) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 1)=%d != 1", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 2) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 2) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 2) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 2)=%d != 2", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "before growing array", stderr);
-+
-+	if (perf_evlist__add_pollfd(evlist, 35) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 3) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35)=%d != 3", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd == NULL) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 35) should have allocated evlist->pollfd!");
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "after 3rd add_pollfd", stderr);
-+
-+	if (evlist->pollfd[2].fd != 35) {
-+		pr_debug("\nevlist->pollfd[2](%d) != 35!", evlist->pollfd[2].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (perf_evlist__add_pollfd(evlist, 88) < 0) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 88) failed!");
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->nr_fds != 4) {
-+		pr_debug("\nperf_evlist__add_pollfd(evlist, 88)=%d != 2", evlist->nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__fprintf_pollfd(evlist, "after 4th add_pollfd", stderr);
-+
-+	if (evlist->pollfd[0].fd != 1) {
-+		pr_debug("\nevlist->pollfd[0](%d) != 1!", evlist->pollfd[0].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[1].fd != 2) {
-+		pr_debug("\nevlist->pollfd[1](%d) != 2!", evlist->pollfd[1].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[2].fd != 35) {
-+		pr_debug("\nevlist->pollfd[2](%d) != 35!", evlist->pollfd[2].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	if (evlist->pollfd[3].fd != 88) {
-+		pr_debug("\nevlist->pollfd[3](%d) != 88!", evlist->pollfd[3].fd);
-+		return TEST_FAIL;
-+	}
-+
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 72c4c03..699d4bb 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -50,6 +50,7 @@ int test__hists_output(void);
- int test__hists_cumulate(void);
- int test__switch_tracking(void);
- int test__perf_evlist__filter_pollfd(void);
-+int test__perf_evlist__add_pollfd(void);
  
- #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
