@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714AbaIZJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:58:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
+	id S1755697AbaIZJ6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:58:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33030 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755094AbaIZJqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755095AbaIZJqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 052/142] powerpc/thp: Add write barrier after updating the valid bit
-Date: Fri, 26 Sep 2014 11:44:23 +0200
-Message-Id: <4cd682a176e4972805bc10ad04a95642daa6d3dd.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Roger Quadros <rogerq@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 114/142] mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
+Date: Fri, 26 Sep 2014 11:45:25 +0200
+Message-Id: <20223b44368a373892a5b730cef6765720de77c5.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -24,43 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Roger Quadros <rogerq@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b0aa44a3dfae3d8f45bd1264349aa87f87b7774f upstream.
+commit 40ddbf5069bd4e11447c0088fc75318e0aac53f0 upstream.
 
-With hugepages, we store the hpte valid information in the pte page
-whose address is stored in the second half of the PMD. Use a
-write barrier to make sure clearing pmd busy bit and updating
-hpte valid info are ordered properly.
+commit 65b97cf6b8de introduced in v3.7 caused a regression
+by using a reversed CS_MASK thus causing omap_calculate_ecc to
+always fail. As the NAND base driver never checks for .calculate()'s
+return value, the zeroed ECC values are used as is without showing
+any error to the user. However, this won't work and the NAND device
+won't be guarded by any error code.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Fix the issue by using the correct mask.
+
+Code was tested on omap3beagle using the following procedure
+- flash the primary bootloader (MLO) from the kernel to the first
+NAND partition using nandwrite.
+- boot the board from NAND. This utilizes OMAP ROM loader that
+relies on 1-bit Hamming code ECC.
+
+Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/powerpc/mm/hugepage-hash64.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/omap2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/mm/hugepage-hash64.c b/arch/powerpc/mm/hugepage-hash64.c
-index 34de9e0cdc34..f50c4dfd1819 100644
---- a/arch/powerpc/mm/hugepage-hash64.c
-+++ b/arch/powerpc/mm/hugepage-hash64.c
-@@ -168,8 +168,11 @@ repeat:
- 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
- 	}
- 	/*
--	 * No need to use ldarx/stdcx here
-+	 * The hpte valid is stored in the pgtable whose address is in the
-+	 * second half of the PMD. Order this against clearing of the busy bit in
-+	 * huge pmd.
- 	 */
-+	smp_wmb();
- 	*pmdp = __pmd(new_pmd & ~_PAGE_BUSY);
- 	return 0;
- }
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index 0332d0b2d73a..854662826272 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -948,7 +948,7 @@ static int omap_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
+ 	u32 val;
+ 
+ 	val = readl(info->reg.gpmc_ecc_config);
+-	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
++	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
+ 		return -EINVAL;
+ 
+ 	/* read ecc result */
 -- 
 2.1.0
 
