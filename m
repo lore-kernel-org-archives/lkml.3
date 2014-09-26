@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaIZCIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:08:13 -0400
-Received: from mail-bn1bon0134.outbound.protection.outlook.com ([157.56.111.134]:7200
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751515AbaIZCIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:08:12 -0400
-Date: Fri, 26 Sep 2014 10:07:46 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sanchayan Maity <maitysanchayan@gmail.com>
-CC: <stefan@agner.ch>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: vf610-colibri: Add ADC support
-Message-ID: <20140926020745.GH21077@dragon>
-References: <cover.1411122224.git.maitysanchayan@gmail.com>
- <a0ecfce3f97fb6684657ae76b89f38108fcdf68f.1411122224.git.maitysanchayan@gmail.com>
+	id S1753380AbaIZCIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:08:23 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:41346 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaIZCIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:08:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <a0ecfce3f97fb6684657ae76b89f38108fcdf68f.1411122224.git.maitysanchayan@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(51704005)(199003)(87936001)(83072002)(74662003)(80022003)(85852003)(106466001)(90102001)(102836001)(79102003)(33716001)(77982003)(46406003)(57986006)(81342003)(85306004)(76176999)(33656002)(1411001)(83506001)(10300001)(95666004)(74502003)(81156004)(86362001)(97756001)(54356999)(92726001)(46102003)(81542003)(110136001)(64706001)(4396001)(83322001)(50466002)(104016003)(105606002)(97736003)(84676001)(47776003)(68736004)(44976005)(69596002)(23726002)(6806004)(19580395003)(76482002)(21056001)(92566001)(120916001)(99396003)(50986999)(107046002)(19580405001)(31966008)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
-X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <5424C41F.8030508@rock-chips.com>
+References: <1411523743-3444-1-git-send-email-addy.ke@rock-chips.com>
+	<CAD=FV=WiHR+KcTWHnma6TdPQcc3oc4wqAofj5kF=Sgec_5kGAQ@mail.gmail.com>
+	<54227F93.7000507@rock-chips.com>
+	<CAD=FV=Uq9AteUcpMvcU5tmyGZbVYWM6PNmevZXSVCkYB8rqSsQ@mail.gmail.com>
+	<5423765B.8000706@rock-chips.com>
+	<CAD=FV=Uuk1zBYn4NgcpDSHVfKeyw3MONO7roUNVSPSDDEyD=8Q@mail.gmail.com>
+	<CAD=FV=UkAcR8b+T_Dvoy9STDfzyC8QVSawihoHLYyHFJ6bfXxQ@mail.gmail.com>
+	<5424C41F.8030508@rock-chips.com>
+Date: Thu, 25 Sep 2014 19:08:18 -0700
+X-Google-Sender-Auth: EhraGV0zHEEwWdv2Wx5lPZUOXVA
+Message-ID: <CAD=FV=WhBhmCO=GamNr7yyXvLmOFDro8zWVwrj1zQVYogzeyVA@mail.gmail.com>
+Subject: Re: [PATCH] i2c: rk3x: adjust the LOW divison based on
+ characteristics of SCL
+From: Doug Anderson <dianders@chromium.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 19, 2014 at 04:56:13PM +0530, Sanchayan Maity wrote:
-> Enable ADC support for Colibri VF61 modules
-> 
-> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
-> ---
->  arch/arm/boot/dts/vf610-colibri.dtsi |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-> index 0cd8343..6fd099e 100644
-> --- a/arch/arm/boot/dts/vf610-colibri.dtsi
-> +++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-> @@ -27,6 +27,16 @@
->  
->  };
->  
-> +&adc0 {
-> +	pinctrl-names = "default";
+Addy,
 
-Sorry for missing it, but I would expect properties pinctrl-names and
-pinctrl-0 appear as a couple.  Should we drop property pinctrl-names
-here?
+On Thu, Sep 25, 2014 at 6:40 PM, addy ke <addy.ke@rock-chips.com> wrote:
+> Hi, Doug
+>
+> On 2014/9/26 5:52, Doug Anderson wrote:
+>> Addy,
+>>
+>> On Wed, Sep 24, 2014 at 9:36 PM, Doug Anderson <dianders@chromium.org> wrote:
+>>> Addy,
+>>>
+>>> On Wed, Sep 24, 2014 at 6:56 PM, addy ke <addy.ke@rock-chips.com> wrote:
+>>>> In my measurement,all paramter but "Data hold time" are match the characteristics of SCL bus line.
+>>>> the measured value is 0.928us("data hold time on RK3X"  ~=  "the low period / 2")
+>>>> but the maximum value described in table is 0.9us
+>>>>
+>>>> About "Data hold time", there are described in I2C specification:
+>>>> - for CBUS compatible masters for I2C-bus deivices
+>>>> - the maximum data hold time has only be met if the device does not stretch the LOW period of the SCL signal.
+>>>>
+>>>> I have tested on RK3288-Pinky board, there are no error.
+>>>> But I don't known whether this paramter will affect i2c communications.
+>>>
+>>> I'll have to spend more time tomorrow to really understand this, but
+>>> if changing the code to bias towards slightly longer "high" times
+>>> instead of "low" times helps fix it then that's fine with me.
+>>
+>> So what you're saying is that you're seeing a case where the clock
+>> goes low and the data is not valid until .928us.  Is this data that is
+>> being driven by the master or data that is being driven by the slave?
+>>
+> It is driven by the master and will be release at half of LOW period in our IC design.
 
-Shawn
+Ah, I didn't know this.  Is that in the TRM somewhere?
 
-> +	status = "okay";
-> +};
-> +
-> +&adc1 {
-> +	pinctrl-names = "default";
-> +	status = "okay";
-> +};
-> +
->  &esdhc1 {
->  	pinctrl-names = "default";
->  	pinctrl-0 = <&pinctrl_esdhc1>;
-> -- 
-> 1.7.9.5
-> 
+...so does it work to just replace:
+
+    ideal_low_div = DIV_ROUND_UP(clk_rate * min_low_ns,
+                                 scl_rate * 8 * min_total_ns)
+
+...with:
+
+    ideal_low_div = min_low_div
+
+
+That will assign all "extra" time to the "high" part.
+
+-Doug
