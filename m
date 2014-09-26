@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109AbaIZKbT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:31:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33054 "EHLO mx2.suse.de"
+	id S932097AbaIZKbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:31:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754771AbaIZJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754772AbaIZJqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:46:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 040/142] s390/locking: Reenable optimistic spinning
-Date: Fri, 26 Sep 2014 11:44:11 +0200
-Message-Id: <f008331068945523ff12ff13f6d07d7303e0e8a9.1411724723.git.jslaby@suse.cz>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, Chris Mason <clm@fb.com>,
+        linux-fsdevel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 008/142] vfs: fix bad hashing of dentries
+Date: Fri, 26 Sep 2014 11:43:39 +0200
+Message-Id: <be2378cbffe50ce0161f0fdee914adee98af53dc.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -26,43 +25,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 36e7fdaa1a04fcf65b864232e1af56a51c7814d6 upstream.
+commit 99d263d4c5b2f541dfacb5391e22e8c91ea982a6 upstream.
 
-commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc (locking/mutex: Disable
-optimistic spinning on some architectures) fenced spinning for
-architectures without proper cmpxchg.
-There is no need to disable mutex spinning on s390, though:
-The instructions CS,CSG and friends provide the proper guarantees.
-(We dont implement cmpxchg with locks).
+Josef Bacik found a performance regression between 3.2 and 3.10 and
+narrowed it down to commit bfcfaa77bdf0 ("vfs: use 'unsigned long'
+accesses for dcache name comparison and hashing"). He reports:
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+ "The test case is essentially
+
+      for (i = 0; i < 1000000; i++)
+              mkdir("a$i");
+
+  On xfs on a fio card this goes at about 20k dir/sec with 3.2, and 12k
+  dir/sec with 3.10.  This is because we spend waaaaay more time in
+  __d_lookup on 3.10 than in 3.2.
+
+  The new hashing function for strings is suboptimal for <
+  sizeof(unsigned long) string names (and hell even > sizeof(unsigned
+  long) string names that I've tested).  I broke out the old hashing
+  function and the new one into a userspace helper to get real numbers
+  and this is what I'm getting:
+
+      Old hash table had 1000000 entries, 0 dupes, 0 max dupes
+      New hash table had 12628 entries, 987372 dupes, 900 max dupes
+      We had 11400 buckets with a p50 of 30 dupes, p90 of 240 dupes, p99 of 567 dupes for the new hash
+
+  My test does the hash, and then does the d_hash into a integer pointer
+  array the same size as the dentry hash table on my system, and then
+  just increments the value at the address we got to see how many
+  entries we overlap with.
+
+  As you can see the old hash function ended up with all 1 million
+  entries in their own bucket, whereas the new one they are only
+  distributed among ~12.5k buckets, which is why we're using so much
+  more CPU in __d_lookup".
+
+The reason for this hash regression is two-fold:
+
+ - On 64-bit architectures the down-mixing of the original 64-bit
+   word-at-a-time hash into the final 32-bit hash value is very
+   simplistic and suboptimal, and just adds the two 32-bit parts
+   together.
+
+   In particular, because there is no bit shuffling and the mixing
+   boundary is also a byte boundary, similar character patterns in the
+   low and high word easily end up just canceling each other out.
+
+ - the old byte-at-a-time hash mixed each byte into the final hash as it
+   hashed the path component name, resulting in the low bits of the hash
+   generally being a good source of hash data.  That is not true for the
+   word-at-a-time case, and the hash data is distributed among all the
+   bits.
+
+The fix is the same in both cases: do a better job of mixing the bits up
+and using as much of the hash data as possible.  We already have the
+"hash_32|64()" functions to do that.
+
+Reported-by: Josef Bacik <jbacik@fb.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Chris Mason <clm@fb.com>
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/s390/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ fs/dcache.c | 3 +--
+ fs/namei.c  | 4 ++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 6671e8db1861..faa97bd4948e 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -93,6 +93,7 @@ config S390
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
- 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 5859bc5c981d..87b70fe7eccc 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -135,8 +135,7 @@ static inline struct hlist_bl_head *d_hash(const struct dentry *parent,
+ 					unsigned int hash)
+ {
+ 	hash += (unsigned long) parent / L1_CACHE_BYTES;
+-	hash = hash + (hash >> d_hash_shift);
+-	return dentry_hashtable + (hash & d_hash_mask);
++	return dentry_hashtable + hash_32(hash, d_hash_shift);
+ }
+ 
+ /* Statistics gathering. */
+diff --git a/fs/namei.c b/fs/namei.c
+index e3249d565c95..227c78ae70b4 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -34,6 +34,7 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
+ #include <linux/posix_acl.h>
++#include <linux/hash.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -1661,8 +1662,7 @@ static inline int can_lookup(struct inode *inode)
+ 
+ static inline unsigned int fold_hash(unsigned long hash)
+ {
+-	hash += hash >> (8*sizeof(int));
+-	return hash;
++	return hash_64(hash, 32);
+ }
+ 
+ #else	/* 32-bit case */
 -- 
 2.1.0
 
