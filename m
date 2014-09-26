@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaIZKqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:46:00 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56798 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754276AbaIZKp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:45:59 -0400
-Message-ID: <542543D8.8020604@vmware.com>
-Date: Fri, 26 Sep 2014 12:45:44 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Peter Hurley <peter@hurleysoftware.com>, Mel Gorman <mgorman@suse.de>,
-        Shaohua Li <shli@kernel.org>, Rik van Riel <riel@redhat.com>,
-        "Maarten Lankhorst" <maarten.lankhorst@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Ingo Molnar <mingo@kernel.org>,
-        Hugh Dickens <hughd@google.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: page allocator bug in 3.16?
-References: <54246506.50401@hurleysoftware.com>	<20140925143555.1f276007@as> <5424AAD0.9010708@hurleysoftware.com>	<542512AD.9070304@vmware.com> <20140926054005.5c7985c0@as>
-In-Reply-To: <20140926054005.5c7985c0@as>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1755681AbaIZKqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:46:16 -0400
+Received: from mga03.intel.com ([134.134.136.65]:23408 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755053AbaIZKqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:46:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
+   d="scan'208";a="609023773"
+Message-ID: <1411728368.23429.64.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/3] UBI: ubi_eba_read_leb: Remove in vain variable
+ assignment
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 26 Sep 2014 13:46:08 +0300
+In-Reply-To: <1411375536-20067-1-git-send-email-richard@nod.at>
+References: <1411375536-20067-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.160.246]
-X-ClientProxiedBy: EX13-CAS-013.vmware.com (10.113.191.65) To
- EX13-MBX-024.vmware.com (10.113.191.44)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 12:40 PM, Chuck Ebbert wrote:
-> On Fri, 26 Sep 2014 09:15:57 +0200
-> Thomas Hellstrom <thellstrom@vmware.com> wrote:
->
->> On 09/26/2014 01:52 AM, Peter Hurley wrote:
->>> On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
->>>> There are six ttm patches queued for 3.16.4:
->>>>
->>>> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
->>>> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
->>>> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
->>>> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
->>>> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
->>>> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
->>> Thanks for info, Chuck.
->>>
->>> Unfortunately, none of these fix TTM dma allocation doing CMA dma allocation,
->>> which is the root problem.
->>>
->>> Regards,
->>> Peter Hurley
->> The problem is not really in TTM but in CMA, There was a guy offering to
->> fix this in the CMA code but I guess he didn't probably because he
->> didn't receive any feedback.
->>
-> Yeah, the "solution" to this problem seems to be "don't enable CMA on
-> x86". Maybe it should even be disabled in the config system.
-Or, as previously suggested, don't use CMA for order 0 (single page)
-allocations....
+On Mon, 2014-09-22 at 10:45 +0200, Richard Weinberger wrote:
+> There is no need to set err, it will be overwritten in any case
+> later at:
+>         if (scrub)
+>                 err = ubi_wl_scrub_peb(ubi, pnum);
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-/Thomas
+Pushed the first 2 patches, thanks!
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
