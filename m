@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbaIZKSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:18:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32952 "EHLO mx2.suse.de"
+	id S1756591AbaIZKST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:18:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754905AbaIZJqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:20 -0400
+	id S1754910AbaIZJqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:21 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: linux-kernel@vger.kernel.org, NeilBrown <neilb@suse.de>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 086/142] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
-Date: Fri, 26 Sep 2014 11:44:57 +0200
-Message-Id: <4cdd9a72256c461874df095fde4a6b96bd7f426d.1411724724.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 095/142] md/raid10: fix memory leak when reshaping a RAID10.
+Date: Fri, 26 Sep 2014 11:45:06 +0200
+Message-Id: <9fdaa2cdfcc03ae10c27863d601dccaac184403a.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,77 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
+commit ce0b0a46955d1bb389684a2605dbcaa990ba0154 upstream.
 
-There is a following AB-BA dependency between cpu_hotplug.lock and
-cpuidle_lock:
+raid10 reshape clears unwanted bits from a bio->bi_flags using
+a method which, while clumsy, worked until 3.10 when BIO_OWNS_VEC
+was added.
+Since then it clears that bit but shouldn't.  This results in a
+memory leak.
 
-1) cpu_hotplug.lock -> cpuidle_lock
-enable_nonboot_cpus()
- _cpu_up()
-  cpu_hotplug_begin()
-   LOCK(cpu_hotplug.lock)
- cpu_notify()
-  ...
-  acpi_processor_hotplug()
-   cpuidle_pause_and_lock()
-    LOCK(cpuidle_lock)
+So change to used the approved method of clearing unwanted bits.
 
-2) cpuidle_lock -> cpu_hotplug.lock
-acpi_os_execute_deferred() workqueue
- ...
- acpi_processor_cst_has_changed()
-  cpuidle_pause_and_lock()
-   LOCK(cpuidle_lock)
-  get_online_cpus()
-   LOCK(cpu_hotplug.lock)
+As this causes a memory leak which can consume all of memory
+the fix is suitable for -stable.
 
-Fix this by reversing the order acpi_processor_cst_has_changed() does
-thigs -- let it first execute the protection against CPU hotplug by
-calling get_online_cpus() and obtain the cpuidle lock only after that (and
-perform the symmentric change when allowing CPUs hotplug again and
-dropping cpuidle lock).
-
-Spotted by lockdep.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: a38352e0ac02dbbd4fa464dc22d1352b5fbd06fd
+Reported-by: mdraid.pkoch@dfgh.net (Peter Koch)
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/acpi/processor_idle.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/raid10.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index c7414a545a4f..2a4ae32c4b97 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1099,9 +1099,9 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 
- 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
- 
--		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
- 		get_online_cpus();
-+		cpuidle_pause_and_lock();
- 
- 		/* Disable all cpuidle devices */
- 		for_each_online_cpu(cpu) {
-@@ -1128,8 +1128,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
- 				cpuidle_enable_device(dev);
- 			}
- 		}
--		put_online_cpus();
- 		cpuidle_resume_and_unlock();
-+		put_online_cpus();
- 	}
- 
- 	return 0;
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 867a8b67d5b9..d1cf7734e55e 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -4419,7 +4419,7 @@ read_more:
+ 	read_bio->bi_private = r10_bio;
+ 	read_bio->bi_end_io = end_sync_read;
+ 	read_bio->bi_rw = READ;
+-	read_bio->bi_flags &= ~(BIO_POOL_MASK - 1);
++	read_bio->bi_flags &= (~0UL << BIO_RESET_BITS);
+ 	read_bio->bi_flags |= 1 << BIO_UPTODATE;
+ 	read_bio->bi_vcnt = 0;
+ 	read_bio->bi_size = 0;
 -- 
 2.1.0
 
