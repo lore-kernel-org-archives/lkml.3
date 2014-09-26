@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaIZTO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:14:27 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52612 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874AbaIZTOZ (ORCPT
+	id S1755693AbaIZTPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 15:15:18 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58869 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501AbaIZTPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:14:25 -0400
-Date: Fri, 26 Sep 2014 12:14:21 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [git pull] Input updates for 3.17-rc6
-Message-ID: <20140926191421.GA14589@core.coreip.homeip.net>
-References: <20140926180111.GA3911@core.coreip.homeip.net>
- <CA+55aFzD0Vo2c74_M-k-0Q6kGRd8btYDM34vnYA-UOP6Mko2QA@mail.gmail.com>
+	Fri, 26 Sep 2014 15:15:16 -0400
+Message-ID: <5425BB3E.10700@gmail.com>
+Date: Fri, 26 Sep 2014 13:15:10 -0600
+From: David Ahern <lxhacker68@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzD0Vo2c74_M-k-0Q6kGRd8btYDM34vnYA-UOP6Mko2QA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: nicolas.dichtel@6wind.com, Cong Wang <cwang@twopensource.com>
+CC: netdev <netdev@vger.kernel.org>, containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Miller <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<CAHA+R7NnBJ=T3sukzzp-OD2am1nd318XbrXCX84LfSL=nu9ojw@mail.gmail.com>	<54228D87.3070309@6wind.com>	<CAHA+R7NfJYzCsZx0E9YVXKVCQbCm_thPSi+80tix8Z9nVA82Ug@mail.gmail.com>	<5422F0F4.6000709@6wind.com>	<CAHA+R7Ot2kLHb+ne5AW3bFNc87qkFOiEHEyDh9sFrsHqXgrY3g@mail.gmail.com>	<5423D80B.9060500@6wind.com> <CAHA+R7Ooyam2L-QfP-TjMEZEOqrQcQDxYiebmw760kgEji4G=g@mail.gmail.com> <54256CCB.4000709@6wind.com>
+In-Reply-To: <54256CCB.4000709@6wind.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 11:19:51AM -0700, Linus Torvalds wrote:
-> On Fri, Sep 26, 2014 at 11:01 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> > to receive updates for the input subsystem. You will get a small fixup to
-> > i8042 adding Asus X450LCP to the nomux list.
-> 
-> Side note: I'm wondering how painful it would be to just make nomux
-> the default.
-> 
-> I think it's getting to be a legacy issue, since the traditional
-> reason for it (afaik) is just having both an external PS/2 port _and_
-> a touchpad connnected to the same controller. And even when that
-> happens, it seems that as often as not, the bug reports in this area
-> have been about the touchpad _not_ working due to us incorrectly
-> thinking it's muxed.
-> 
-> I dunno. Maybe mux mode is used more than I think it is, and it would
-> cause tons of problems. But I do find myself wondering whether we'd be
-> better off not doing mux by default, and making the DMI check instead
-> check for systems that *do* want muxing.
-> 
-> Hmm? Am I just being crazy?
+On 9/26/14, 7:40 AM, Nicolas Dichtel wrote:
+>>
+>>
+>> No, I don't want to monitor anything. Even if I wanted, I would just
+>> start one
+>> daemon in each netns instead of one for all.
+> Ok you don't want, but some other people (not only me) want it! And
+> having one
+> daemon per netns does not scale: there are scenarii with thousand netns
+> which
+> are dynamically created and deleted.
 
-Not a all. In fact, we've been discussing it recently and I am going to flip
-the flag for 3.18. I really think that number users with laptops correctly
-implementing MUX and who are also using docking stations with external PS/2
-mice) is miniscule (note that we are not talking about users who prefer
-external mouse - you don't need MUX for that - we are talking about users who
-want native touchpad protocol and also external mouse - at the same time).
+An example of the scaling problem using quagga (old but still seems to 
+be a relevant data point):
 
-Thanks.
+ 
+https://lists.quagga.net/pipermail/quagga-users/2010-February/011351.html
 
--- 
-Dmitry
+"2k VRFs that would be 2.6G"
+
+And that does not include the overhead of each namespace -- roughly 
+200kB/namespace on one kernel I checked (v3.10). So that's a ballpark of 
+3G of memory.
+
+David
