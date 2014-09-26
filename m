@@ -1,95 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbaIZJPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:15:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6364 "EHLO mga01.intel.com"
+	id S1753898AbaIZJPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:15:08 -0400
+Received: from plane.gmane.org ([80.91.229.3]:59260 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753610AbaIZJO7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:14:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="391923473"
-From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-To: "'Mika Westerberg'" <mika.westerberg@linux.intel.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Thread-Topic: [PATCH 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Thread-Index: AQHP0zQSih2TMGVJkkyH0NU8qSMEqpwTJk7A
-Date: Fri, 26 Sep 2014 09:14:48 +0000
-Message-ID: <50B33AC5ED75F74F991980326F1C438D0FBE89AD@PGSMSX108.gar.corp.intel.com>
-References: <1410943745-9354-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1410943745-9354-4-git-send-email-rebecca.swee.fun.chang@intel.com>
- <20140918113122.GO10854@lahna.fi.intel.com>
-In-Reply-To: <20140918113122.GO10854@lahna.fi.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753714AbaIZJPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:15:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Marcel Ziswiler <marcel@ziswiler.com>
+Subject: Re: [PATCH v3 1/2] ARM: dts: vf610-colibri: Add PWM support
+Date: Fri, 26 Sep 2014 08:54:35 +0000 (UTC)
+Message-ID: <loom.20140926T105322-359@post.gmane.org>
+References: <cover.1411378369.git.bhuvanchandra.dv@toradex.com> <d508a6ad39e07d5489c4b5110784902ab0241c44.1411378369.git.bhuvanchandra.dv@toradex.com> <20140926022232.GI21077@dragon>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 85.5.191.190 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.120 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -203,6 +376,17 @@ static int sch_gpio_probe(struct platform_device
-> *pdev)
-> >  				 pdev->name))
-> >  		return -EBUSY;
-> >
-> > +	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> > +	sch->irq_support = !!irq;
-> > +	if (sch->irq_support) {
-> > +		sch->irq_num = irq->start;
-> > +		if (sch->irq_num < 0) {
-> > +			dev_warn(&pdev->dev,
-> > +				 "failed to obtain irq number for device\n");
-> > +			sch->irq_support = 0;
-> > +		}
-> > +	}
-> > +
-> >  	spin_lock_init(&sch->lock);
-> >  	sch->iobase = res->start;
-> >  	sch->chip = sch_gpio_chip;
-> > @@ -251,17 +435,72 @@ static int sch_gpio_probe(struct platform_device
-> *pdev)
-> >  		return -ENODEV;
-> >  	}
-> >
-> > +	err = gpiochip_add(&sch->chip);
-> > +	if (err < 0)
-> > +		goto err_sch_gpio;
-> > +
-> > +	if (sch->irq_support) {
-> > +		sch->irq_base = irq_alloc_descs(-1, 0, sch->chip.ngpio,
-> > +						NUMA_NO_NODE);
-> > +		if (sch->irq_base < 0) {
-> > +			dev_err(&pdev->dev,
-> > +				"failed to add GPIO IRQ descs\n");
-> > +			sch->irq_base = -1;
-> > +			goto err_sch_intr_chip;
-> > +		}
-> 
-> Was there some reason why you can't use gpiochip_irqchip_* helpers here?
+Shawn Guo <shawn.guo <at> freescale.com> writes:
 
-I will look into the helpers function and see what I can change here.
+> I was trying to apply the patches, but found pwm1 is not available in
+> vf610.dtsi at all.  What tree is your patch generated against?  Or did I
+> miss any prerequisite patches?
 
-> 
-> > +
-> > +		/* disable interrupts */
-> > +		sch_gpio_irq_disable_all(sch, sch->chip.ngpio);
-> > +
-> > +		err = request_irq(sch->irq_num, sch_gpio_irq_handler,
-> > +				  IRQF_SHARED, KBUILD_MODNAME, sch);
-> 
-> This seems weird, typically irqchip drivers don't call request_irq() directly but
-> instead irq_set_chained_handler() or similar. With
-> gpiochip_irqchip_* stuff you don't need even that.
-> 
-Regarding this, gpio-sch is actually using shared interrupts and the IRQ resources are from ACPI SCI. As per my understanding, resources from ACPI SCI might be shared for power management purposes. In this case, irq_set_chained_handler() might not be able to use here. What do you think?
+Yes, I guess for some reason he dropped that one from v3:
 
-Rebecca
+http://article.gmane.org/gmane.linux.ports.arm.kernel/357293
+
