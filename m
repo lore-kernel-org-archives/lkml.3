@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630AbaIZKi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:38:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60971 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672AbaIZJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:45:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Liu Bo <bo.li.liu@oracle.com>,
-        Chris Mason <clm@fb.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 013/142] Btrfs: fix crash on endio of reading corrupted block
-Date: Fri, 26 Sep 2014 11:43:44 +0200
-Message-Id: <8f543e8182632771ed610a88a7b8594b3c6f6820.1411724723.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1757230AbaIZKjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:39:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39354 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672AbaIZKjT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 06:39:19 -0400
+Date: Fri, 26 Sep 2014 12:38:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yijing Wang <wangyijing@huawei.com>
+cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 06/22] PCI/MSI: Introduce weak arch_find_msi_chip()
+ to find MSI chip
+In-Reply-To: <5424D30A.6040900@huawei.com>
+Message-ID: <alpine.DEB.2.11.1409261236160.4567@nanos>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <1411614872-4009-7-git-send-email-wangyijing@huawei.com> <alpine.DEB.2.10.1409251220570.4604@nanos> <5424D30A.6040900@huawei.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Bo <bo.li.liu@oracle.com>
+On Fri, 26 Sep 2014, Yijing Wang wrote:
+> On 2014/9/25 18:38, Thomas Gleixner wrote:
+> > On Thu, 25 Sep 2014, Yijing Wang wrote:
+> > 
+> >> Introduce weak arch_find_msi_chip() to find the match msi_chip.
+> >> Currently, MSI chip associates pci bus to msi_chip. Because in
+> >> ARM platform, there may be more than one MSI controller in system.
+> >> Associate pci bus to msi_chip help pci device to find the match
+> >> msi_chip and setup MSI/MSI-X irq correctly. But in other platform,
+> >> like in x86. we only need one MSI chip, because all device use
+> >> the same MSI address/data and irq etc. So it's no need to associate
+> >> pci bus to MSI chip, just use a arch function, arch_find_msi_chip()
+> >> to return the MSI chip for simplicity. The default weak
+> >> arch_find_msi_chip() used in ARM platform, find the MSI chip
+> >> by pci bus.
+> > 
+> > This is really backwards. On one hand you try to get rid of the weak
+> > arch functions zoo and then you invent new ones for no good
+> > reason. Why can't x86 store the chip in the pci bus?
+> > 
+> > Looking deeper, I'm questioning the whole notion of different
+> > msi_chips. Are this really different MSI controllers with a different
+> > feature set or are this defacto multiple instances of the same
+> > controller which just need a different data set?
+> 
+> MSI chip in this series is to setup MSI irq, including IRQ allocation, Map,
+> compose MSI msg ..., in different platform, many arch specific MSI irq details in it.
+> It's difficult to extract the common data and code.
+> 
+> I have a plan to rework MSI related irq_chips in kernel, PCI and Non-PCI, currently,
+> HPET, DMAR and PCI have their own irq_chip and MSI related functions, write_msi_msg(),
+> mask_msi_irq(), etc... I want to extract the common data set for that, so we can
+> remove lots of unnecessary MSI code.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+That makes sense. Can you please make sure that this does not conflict
+with the ongoing work Jiang is doing in the x86 irq area with
+hierarchical irqdomains to distangle layered levels like MSI from the
+underlying vector/irqremap mechanics.
 
-===============
+Thanks,
 
-commit 38c1c2e44bacb37efd68b90b3f70386a8ee370ee upstream.
-
-The crash is
-
-------------[ cut here ]------------
-kernel BUG at fs/btrfs/extent_io.c:2124!
-[...]
-Workqueue: btrfs-endio normal_work_helper [btrfs]
-RIP: 0010:[<ffffffffa02d6055>]  [<ffffffffa02d6055>] end_bio_extent_readpage+0xb45/0xcd0 [btrfs]
-
-This is in fact a regression.
-
-It is because we forgot to increase @offset properly in reading corrupted block,
-so that the @offset remains, and this leads to checksum errors while reading
-left blocks queued up in the same bio, and then ends up with hiting the above
-BUG_ON.
-
-Reported-by: Chris Murphy <lists@colorremedies.com>
-Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/btrfs/extent_io.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index b395791dd923..594bbfd4996e 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2485,6 +2485,7 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
- 					test_bit(BIO_UPTODATE, &bio->bi_flags);
- 				if (err)
- 					uptodate = 0;
-+				offset += len;
- 				continue;
- 			}
- 		}
--- 
-2.1.0
-
+	tglx
