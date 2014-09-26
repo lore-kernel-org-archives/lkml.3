@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193AbaIZKhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:37:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32932 "EHLO mx2.suse.de"
+	id S1756616AbaIZKhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:37:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32933 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687AbaIZJp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754688AbaIZJp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Sep 2014 05:45:56 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 007/142] dcache.c: get rid of pointless macros
-Date: Fri, 26 Sep 2014 11:43:38 +0200
-Message-Id: <c9258b208f7e5ad213449a83468d3be2ad09d266.1411724723.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "Darrick J. Wong" <darrick.wong@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 016/142] jbd2: fix infinite loop when recovering corrupt journal blocks
+Date: Fri, 26 Sep 2014 11:43:47 +0200
+Message-Id: <9a8bd0aadcc9ba76c897696df51300a77d32f109.1411724723.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -22,48 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 482db9066199813d6b999b65a3171afdbec040b6 upstream.
+commit 022eaa7517017efe4f6538750c2b59a804dc7df7 upstream.
 
-D_HASH{MASK,BITS} are used once each, both in the same function (d_hash()).
-At this point they are actively misguiding - they imply that values are
-compiler constants, which is no longer true.
+When recovering the journal, don't fall into an infinite loop if we
+encounter a corrupt journal block.  Instead, just skip the block and
+return an error, which fails the mount and thus forces the user to run
+a full filesystem fsck.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/dcache.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ fs/jbd2/recovery.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 8ef74f3d8fe5..5859bc5c981d 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -125,8 +125,6 @@ static inline void done_seqretry(seqlock_t *lock, int seq)
-  * This hash-function tries to avoid losing too many bits of hash
-  * information, yet avoid using a prime hash-size or similar.
-  */
--#define D_HASHBITS     d_hash_shift
--#define D_HASHMASK     d_hash_mask
+diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+index 3929c50428b1..9070e485e9e6 100644
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -426,6 +426,7 @@ static int do_one_pass(journal_t *journal,
+ 	int			tag_bytes = journal_tag_bytes(journal);
+ 	__u32			crc32_sum = ~0; /* Transactional Checksums */
+ 	int			descr_csum_size = 0;
++	int			block_error = 0;
  
- static unsigned int d_hash_mask __read_mostly;
- static unsigned int d_hash_shift __read_mostly;
-@@ -137,8 +135,8 @@ static inline struct hlist_bl_head *d_hash(const struct dentry *parent,
- 					unsigned int hash)
- {
- 	hash += (unsigned long) parent / L1_CACHE_BYTES;
--	hash = hash + (hash >> D_HASHBITS);
--	return dentry_hashtable + (hash & D_HASHMASK);
-+	hash = hash + (hash >> d_hash_shift);
-+	return dentry_hashtable + (hash & d_hash_mask);
- }
+ 	/*
+ 	 * First thing is to establish what we expect to find in the log
+@@ -598,7 +599,8 @@ static int do_one_pass(journal_t *journal,
+ 						       "checksum recovering "
+ 						       "block %llu in log\n",
+ 						       blocknr);
+-						continue;
++						block_error = 1;
++						goto skip_write;
+ 					}
  
- /* Statistics gathering. */
+ 					/* Find a buffer for the new
+@@ -797,7 +799,8 @@ static int do_one_pass(journal_t *journal,
+ 				success = -EIO;
+ 		}
+ 	}
+-
++	if (block_error && success == 0)
++		success = -EIO;
+ 	return success;
+ 
+  failed:
 -- 
 2.1.0
 
