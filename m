@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030184AbaIZWYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 18:24:34 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60349 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755644AbaIZWYc (ORCPT
+	id S1756131AbaIZW0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 18:26:46 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:47300 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755763AbaIZW0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 18:24:32 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
-Date: Sat, 27 Sep 2014 00:44:23 +0200
-Message-ID: <2457441.tHFXzSCneW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411718040.6005.18.camel@marge.simpson.net>
-References: <20140924081845.572814794@infradead.org> <1411712697.6005.7.camel@marge.simpson.net> <1411718040.6005.18.camel@marge.simpson.net>
+	Fri, 26 Sep 2014 18:26:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CALCETrWcmZVmRZARM_s9S-zZ4Xm_TcxRrzJWGwL0O9ySmVgr5A@mail.gmail.com>
+References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+	<CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
+	<CALCETrXS5KBHm-3Fz031VFPpTHC_BDOLd_zNB6DjCidZa5-x2A@mail.gmail.com>
+	<CAMEtUux-WFOGABTrWW=BGUstE=Zz6agXTGCGrRJtNXDfRmx-5A@mail.gmail.com>
+	<CALCETrVLtJOYkHwsmwueZ7jsSgrNED564W+m4FmMZJZL-836mg@mail.gmail.com>
+	<CAMEtUuxq7oNmDAHZ+1t4Vd-QhW6SV7eoM_juxXGEDJBF3Nfu6A@mail.gmail.com>
+	<CALCETrWcmZVmRZARM_s9S-zZ4Xm_TcxRrzJWGwL0O9ySmVgr5A@mail.gmail.com>
+Date: Fri, 26 Sep 2014 15:26:40 -0700
+Message-ID: <CAMEtUuzQF+3uWFWmj5nSdYoJfo0W2F0wkvoyc4pP--EH3O_jYA@mail.gmail.com>
+Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
+ syscall, verifier, testsuite)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 26, 2014 09:54:00 AM Mike Galbraith wrote:
-> On Fri, 2014-09-26 at 08:24 +0200, Mike Galbraith wrote: 
-> > (the hazards of multitasking.. post escaped early, and went to mostly
-> > the wrong folks)
-> > 
-> > 
-> > While testing some scheduler patches, the below pcc-cpufreq
-> > might_sleep() gripe fell out.
-> 
-> Because the bits below from 8fec051e didn't make the lock go away first.
-> Reverting only pcc-cpufreq back to notifier.. works.
-> 
-> --------------------- drivers/cpufreq/integrator-cpufreq.c ---------------------
+On Fri, Sep 26, 2014 at 3:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Sep 26, 2014 at 3:03 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Fri, Sep 26, 2014 at 2:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>
+>>> Can't you just disallow the 1-byte write to the stack?
+>>
+>> of course not.
+>> That would be extremely limiting to users.
+>> Can you actually see yourself living with stack that only
+>> allows 8-byte writes/reads?
+>> The stack usage will increase a lot, since all char/short
+>> stack variables will become 8-byte...
+>
+> How about requiring that sub-8-byte stack accesses only be to integer slots?
 
-Are you sure this is the right file?
-
-Shouldn't that be pcc-cpufreq.c rather?
-
-Also moving the spin_lock(&pcc_lock) after the cpufreq_freq_transition_begin()
-should fix the problem too (like the below).  Have you tried that?
-
-
----
- drivers/cpufreq/pcc-cpufreq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-pm/drivers/cpufreq/pcc-cpufreq.c
-===================================================================
---- linux-pm.orig/drivers/cpufreq/pcc-cpufreq.c
-+++ linux-pm/drivers/cpufreq/pcc-cpufreq.c
-@@ -204,7 +204,6 @@ static int pcc_cpufreq_target(struct cpu
- 	u32 input_buffer;
- 	int cpu;
- 
--	spin_lock(&pcc_lock);
- 	cpu = policy->cpu;
- 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
- 
-@@ -216,6 +215,7 @@ static int pcc_cpufreq_target(struct cpu
- 	freqs.old = policy->cur;
- 	freqs.new = target_freq;
- 	cpufreq_freq_transition_begin(policy, &freqs);
-+	spin_lock(&pcc_lock);
- 
- 	input_buffer = 0x1 | (((target_freq * 100)
- 			       / (ioread32(&pcch_hdr->nominal) * 1000)) << 8);
-
+you mean to reject the sub-8-byte write early if it's going
+into space where pointers were stored?
+That will limit stack reuse.
+gcc/llvm generate code where the same stack location
+is used by different variables during life of the function.
+So if I reject the write early, it will break otherwise valid
+programs.
