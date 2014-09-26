@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaIZHRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 03:17:31 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:37453 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932AbaIZHR1 (ORCPT
+	id S1754029AbaIZHRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 03:17:35 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:40180 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaIZHRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 03:17:27 -0400
+	Fri, 26 Sep 2014 03:17:31 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v15 net-next 04/11] bpf: expand BPF syscall with program load/unload
-Date: Fri, 26 Sep 2014 00:17:00 -0700
-Message-Id: <1411715827-10430-5-git-send-email-ast@plumgrid.com>
+Subject: [PATCH v15 net-next 06/11] bpf: verifier (add docs)
+Date: Fri, 26 Sep 2014 00:17:02 -0700
+Message-Id: <1411715827-10430-7-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1411715827-10430-1-git-send-email-ast@plumgrid.com>
 References: <1411715827-10430-1-git-send-email-ast@plumgrid.com>
@@ -31,448 +31,446 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eBPF programs are similar to kernel modules. They are loaded by the user
-process and automatically unloaded when process exits. Each eBPF program is
-a safe run-to-completion set of instructions. eBPF verifier statically
-determines that the program terminates and is safe to execute.
+this patch adds all of eBPF verfier documentation and empty bpf_check()
 
-The following syscall wrapper can be used to load the program:
-int bpf_prog_load(enum bpf_prog_type prog_type,
-                  const struct bpf_insn *insns, int insn_cnt,
-                  const char *license)
-{
-    union bpf_attr attr = {
-        .prog_type = prog_type,
-        .insns = ptr_to_u64(insns),
-        .insn_cnt = insn_cnt,
-        .license = ptr_to_u64(license),
-    };
+The end goal for the verifier is to statically check safety of the program.
 
-    return bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
-}
-where 'insns' is an array of eBPF instructions and 'license' is a string
-that must be GPL compatible to call helper functions marked gpl_only
+Verifier will catch:
+- loops
+- out of range jumps
+- unreachable instructions
+- invalid instructions
+- uninitialized register access
+- uninitialized stack access
+- misaligned stack access
+- out of range stack access
+- invalid calling convention
 
-Upon succesful load the syscall returns prog_fd.
-Use close(prog_fd) to unload the program.
-
-User space tests and examples follow in the later patches
+More details in Documentation/networking/filter.txt
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/linux/bpf.h      |   38 +++++++++++
- include/linux/filter.h   |    8 +--
- include/uapi/linux/bpf.h |   26 ++++++++
- kernel/bpf/core.c        |   29 ++++----
- kernel/bpf/syscall.c     |  165 ++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 246 insertions(+), 20 deletions(-)
+ Documentation/networking/filter.txt |  224 +++++++++++++++++++++++++++++++++++
+ include/linux/bpf.h                 |    2 +
+ kernel/bpf/Makefile                 |    2 +-
+ kernel/bpf/syscall.c                |    2 +-
+ kernel/bpf/verifier.c               |  133 +++++++++++++++++++++
+ 5 files changed, 361 insertions(+), 2 deletions(-)
+ create mode 100644 kernel/bpf/verifier.c
 
+diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
+index 4a01d71785e9..5ce4d07406a5 100644
+--- a/Documentation/networking/filter.txt
++++ b/Documentation/networking/filter.txt
+@@ -1001,6 +1001,99 @@ instruction that loads 64-bit immediate value into a dst_reg.
+ Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
+ 32-bit immediate value into a register.
+ 
++eBPF verifier
++-------------
++The safety of the eBPF program is determined in two steps.
++
++First step does DAG check to disallow loops and other CFG validation.
++In particular it will detect programs that have unreachable instructions.
++(though classic BPF checker allows them)
++
++Second step starts from the first insn and descends all possible paths.
++It simulates execution of every insn and observes the state change of
++registers and stack.
++
++At the start of the program the register R1 contains a pointer to context
++and has type PTR_TO_CTX.
++If verifier sees an insn that does R2=R1, then R2 has now type
++PTR_TO_CTX as well and can be used on the right hand side of expression.
++If R1=PTR_TO_CTX and insn is R2=R1+R1, then R2=UNKNOWN_VALUE,
++since addition of two valid pointers makes invalid pointer.
++(In 'secure' mode verifier will reject any type of pointer arithmetic to make
++sure that kernel addresses don't leak to unprivileged users)
++
++If register was never written to, it's not readable:
++  bpf_mov R0 = R2
++  bpf_exit
++will be rejected, since R2 is unreadable at the start of the program.
++
++After kernel function call, R1-R5 are reset to unreadable and
++R0 has a return type of the function.
++
++Since R6-R9 are callee saved, their state is preserved across the call.
++  bpf_mov R6 = 1
++  bpf_call foo
++  bpf_mov R0 = R6
++  bpf_exit
++is a correct program. If there was R1 instead of R6, it would have
++been rejected.
++
++load/store instructions are allowed only with registers of valid types, which
++are PTR_TO_CTX, PTR_TO_MAP, FRAME_PTR. They are bounds and alignment checked.
++For example:
++ bpf_mov R1 = 1
++ bpf_mov R2 = 2
++ bpf_xadd *(u32 *)(R1 + 3) += R2
++ bpf_exit
++will be rejected, since R1 doesn't have a valid pointer type at the time of
++execution of instruction bpf_xadd.
++
++At the start R1 type is PTR_TO_CTX (a pointer to generic 'struct bpf_context')
++A callback is used to customize verifier to restrict eBPF program access to only
++certain fields within ctx structure with specified size and alignment.
++
++For example, the following insn:
++  bpf_ld R0 = *(u32 *)(R6 + 8)
++intends to load a word from address R6 + 8 and store it into R0
++If R6=PTR_TO_CTX, via is_valid_access() callback the verifier will know
++that offset 8 of size 4 bytes can be accessed for reading, otherwise
++the verifier will reject the program.
++If R6=FRAME_PTR, then access should be aligned and be within
++stack bounds, which are [-MAX_BPF_STACK, 0). In this example offset is 8,
++so it will fail verification, since it's out of bounds.
++
++The verifier will allow eBPF program to read data from stack only after
++it wrote into it.
++Classic BPF verifier does similar check with M[0-15] memory slots.
++For example:
++  bpf_ld R0 = *(u32 *)(R10 - 4)
++  bpf_exit
++is invalid program.
++Though R10 is correct read-only register and has type FRAME_PTR
++and R10 - 4 is within stack bounds, there were no stores into that location.
++
++Pointer register spill/fill is tracked as well, since four (R6-R9)
++callee saved registers may not be enough for some programs.
++
++Allowed function calls are customized with bpf_verifier_ops->get_func_proto()
++The eBPF verifier will check that registers match argument constraints.
++After the call register R0 will be set to return type of the function.
++
++Function calls is a main mechanism to extend functionality of eBPF programs.
++Socket filters may let programs to call one set of functions, whereas tracing
++filters may allow completely different set.
++
++If a function made accessible to eBPF program, it needs to be thought through
++from safety point of view. The verifier will guarantee that the function is
++called with valid arguments.
++
++seccomp vs socket filters have different security restrictions for classic BPF.
++Seccomp solves this by two stage verifier: classic BPF verifier is followed
++by seccomp verifier. In case of eBPF one configurable verifier is shared for
++all use cases.
++
++See details of eBPF verifier in kernel/bpf/verifier.c
++
+ eBPF maps
+ ---------
+ 'maps' is a generic storage of different types for sharing data between kernel
+@@ -1040,6 +1133,137 @@ The map is defined by:
+   . key size in bytes
+   . value size in bytes
+ 
++Understanding eBPF verifier messages
++------------------------------------
++
++The following are few examples of invalid eBPF programs and verifier error
++messages as seen in the log:
++
++Program with unreachable instructions:
++static struct bpf_insn prog[] = {
++  BPF_EXIT_INSN(),
++  BPF_EXIT_INSN(),
++};
++Error:
++  unreachable insn 1
++
++Program that reads uninitialized register:
++  BPF_MOV64_REG(BPF_REG_0, BPF_REG_2),
++  BPF_EXIT_INSN(),
++Error:
++  0: (bf) r0 = r2
++  R2 !read_ok
++
++Program that doesn't initialize R0 before exiting:
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_1),
++  BPF_EXIT_INSN(),
++Error:
++  0: (bf) r2 = r1
++  1: (95) exit
++  R0 !read_ok
++
++Program that accesses stack out of bounds:
++  BPF_ST_MEM(BPF_DW, BPF_REG_10, 8, 0),
++  BPF_EXIT_INSN(),
++Error:
++  0: (7a) *(u64 *)(r10 +8) = 0
++  invalid stack off=8 size=8
++
++Program that doesn't initialize stack before passing its address into function:
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++  BPF_LD_MAP_FD(BPF_REG_1, 0),
++  BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++  BPF_EXIT_INSN(),
++Error:
++  0: (bf) r2 = r10
++  1: (07) r2 += -8
++  2: (b7) r1 = 0x0
++  3: (85) call 1
++  invalid indirect read from stack off -8+0 size 8
++
++Program that uses invalid map_fd=0 while calling to map_lookup_elem() function:
++  BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++  BPF_LD_MAP_FD(BPF_REG_1, 0),
++  BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++  BPF_EXIT_INSN(),
++Error:
++  0: (7a) *(u64 *)(r10 -8) = 0
++  1: (bf) r2 = r10
++  2: (07) r2 += -8
++  3: (b7) r1 = 0x0
++  4: (85) call 1
++  fd 0 is not pointing to valid bpf_map
++
++Program that doesn't check return value of map_lookup_elem() before accessing
++map element:
++  BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++  BPF_LD_MAP_FD(BPF_REG_1, 0),
++  BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++  BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
++  BPF_EXIT_INSN(),
++Error:
++  0: (7a) *(u64 *)(r10 -8) = 0
++  1: (bf) r2 = r10
++  2: (07) r2 += -8
++  3: (b7) r1 = 0x0
++  4: (85) call 1
++  5: (7a) *(u64 *)(r0 +0) = 0
++  R0 invalid mem access 'map_value_or_null'
++
++Program that correctly checks map_lookup_elem() returned value for NULL, but
++accesses the memory with incorrect alignment:
++  BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++  BPF_LD_MAP_FD(BPF_REG_1, 0),
++  BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++  BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
++  BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
++  BPF_EXIT_INSN(),
++Error:
++  0: (7a) *(u64 *)(r10 -8) = 0
++  1: (bf) r2 = r10
++  2: (07) r2 += -8
++  3: (b7) r1 = 1
++  4: (85) call 1
++  5: (15) if r0 == 0x0 goto pc+1
++   R0=map_ptr R10=fp
++  6: (7a) *(u64 *)(r0 +4) = 0
++  misaligned access off 4 size 8
++
++Program that correctly checks map_lookup_elem() returned value for NULL and
++accesses memory with correct alignment in one side of 'if' branch, but fails
++to do so in the other side of 'if' branch:
++  BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
++  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++  BPF_LD_MAP_FD(BPF_REG_1, 0),
++  BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++  BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 2),
++  BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 0),
++  BPF_EXIT_INSN(),
++  BPF_ST_MEM(BPF_DW, BPF_REG_0, 0, 1),
++  BPF_EXIT_INSN(),
++Error:
++  0: (7a) *(u64 *)(r10 -8) = 0
++  1: (bf) r2 = r10
++  2: (07) r2 += -8
++  3: (b7) r1 = 1
++  4: (85) call 1
++  5: (15) if r0 == 0x0 goto pc+2
++   R0=map_ptr R10=fp
++  6: (7a) *(u64 *)(r0 +0) = 0
++  7: (95) exit
++
++  from 5 to 8: R0=imm0 R10=fp
++  8: (7a) *(u64 *)(r0 +0) = 1
++  R0 invalid mem access 'imm'
++
+ Testing
+ -------
+ 
 diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-index 2887f3f9da59..92979182be81 100644
+index 92979182be81..9dfeb36f8971 100644
 --- a/include/linux/bpf.h
 +++ b/include/linux/bpf.h
-@@ -46,4 +46,42 @@ void bpf_register_map_type(struct bpf_map_type_list *tl);
- void bpf_map_put(struct bpf_map *map);
- struct bpf_map *bpf_map_get(struct fd f);
+@@ -83,5 +83,7 @@ struct bpf_prog_aux {
  
-+/* eBPF function prototype used by verifier to allow BPF_CALLs from eBPF programs
-+ * to in-kernel helper functions and for adjusting imm32 field in BPF_CALL
-+ * instructions after verifying
-+ */
-+struct bpf_func_proto {
-+	u64 (*func)(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
-+	bool gpl_only;
-+};
-+
-+struct bpf_verifier_ops {
-+	/* return eBPF function prototype for verification */
-+	const struct bpf_func_proto *(*get_func_proto)(enum bpf_func_id func_id);
-+};
-+
-+struct bpf_prog_type_list {
-+	struct list_head list_node;
-+	struct bpf_verifier_ops *ops;
-+	enum bpf_prog_type type;
-+};
-+
-+void bpf_register_prog_type(struct bpf_prog_type_list *tl);
-+
-+struct bpf_prog;
-+
-+struct bpf_prog_aux {
-+	atomic_t refcnt;
-+	bool is_gpl_compatible;
-+	enum bpf_prog_type prog_type;
-+	struct bpf_verifier_ops *ops;
-+	struct bpf_map **used_maps;
-+	u32 used_map_cnt;
-+	struct bpf_prog *prog;
-+	struct work_struct work;
-+};
-+
-+void bpf_prog_put(struct bpf_prog *prog);
-+struct bpf_prog *bpf_prog_get(u32 ufd);
-+
+ void bpf_prog_put(struct bpf_prog *prog);
+ struct bpf_prog *bpf_prog_get(u32 ufd);
++/* verify correctness of eBPF program */
++int bpf_check(struct bpf_prog *fp, union bpf_attr *attr);
+ 
  #endif /* _LINUX_BPF_H */
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index 1a0bc6d134d7..4ffc0958d85e 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -21,6 +21,7 @@
- struct sk_buff;
- struct sock;
- struct seccomp_data;
-+struct bpf_prog_aux;
- 
- /* ArgX, context and stack frame pointer register positions. Note,
-  * Arg1, Arg2, Arg3, etc are used as argument mappings of function
-@@ -300,17 +301,12 @@ struct bpf_binary_header {
- 	u8 image[];
- };
- 
--struct bpf_work_struct {
--	struct bpf_prog *prog;
--	struct work_struct work;
--};
--
- struct bpf_prog {
- 	u16			pages;		/* Number of allocated pages */
- 	bool			jited;		/* Is our filter JIT'ed? */
- 	u32			len;		/* Number of filter blocks */
- 	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
--	struct bpf_work_struct	*work;		/* Deferred free work struct */
-+	struct bpf_prog_aux	*aux;		/* Auxiliary fields */
- 	unsigned int		(*bpf_func)(const struct sk_buff *skb,
- 					    const struct bpf_insn *filter);
- 	/* Instructions for interpreter */
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 395cabd2ca0a..424f442016e7 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -99,12 +99,23 @@ enum bpf_cmd {
- 	 * returns zero and stores next key or negative error
- 	 */
- 	BPF_MAP_GET_NEXT_KEY,
-+
-+	/* verify and load eBPF program
-+	 * prog_fd = bpf(BPF_PROG_LOAD, union bpf_attr *attr, u32 size)
-+	 * Using attr->prog_type, attr->insns, attr->license
-+	 * returns fd or negative error
-+	 */
-+	BPF_PROG_LOAD,
- };
- 
- enum bpf_map_type {
- 	BPF_MAP_TYPE_UNSPEC,
- };
- 
-+enum bpf_prog_type {
-+	BPF_PROG_TYPE_UNSPEC,
-+};
-+
- union bpf_attr {
- 	struct { /* anonymous struct used by BPF_MAP_CREATE command */
- 		__u32	map_type;	/* one of enum bpf_map_type */
-@@ -121,6 +132,21 @@ union bpf_attr {
- 			__aligned_u64 next_key;
- 		};
- 	};
-+
-+	struct { /* anonymous struct used by BPF_PROG_LOAD command */
-+		__u32		prog_type;	/* one of enum bpf_prog_type */
-+		__u32		insn_cnt;
-+		__aligned_u64	insns;
-+		__aligned_u64	license;
-+	};
- } __attribute__((aligned(8)));
- 
-+/* integer value in 'imm' field of BPF_CALL instruction selects which helper
-+ * function eBPF program intends to call
-+ */
-+enum bpf_func_id {
-+	BPF_FUNC_unspec,
-+	__BPF_FUNC_MAX_ID,
-+};
-+
- #endif /* _UAPI__LINUX_BPF_H__ */
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
-index 8b7002488251..f0c30c59b317 100644
---- a/kernel/bpf/core.c
-+++ b/kernel/bpf/core.c
-@@ -27,6 +27,7 @@
- #include <linux/random.h>
- #include <linux/moduleloader.h>
- #include <asm/unaligned.h>
-+#include <linux/bpf.h>
- 
- /* Registers */
- #define BPF_R0	regs[BPF_REG_0]
-@@ -71,7 +72,7 @@ struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags)
- {
- 	gfp_t gfp_flags = GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO |
- 			  gfp_extra_flags;
--	struct bpf_work_struct *ws;
-+	struct bpf_prog_aux *aux;
- 	struct bpf_prog *fp;
- 
- 	size = round_up(size, PAGE_SIZE);
-@@ -79,14 +80,14 @@ struct bpf_prog *bpf_prog_alloc(unsigned int size, gfp_t gfp_extra_flags)
- 	if (fp == NULL)
- 		return NULL;
- 
--	ws = kmalloc(sizeof(*ws), GFP_KERNEL | gfp_extra_flags);
--	if (ws == NULL) {
-+	aux = kzalloc(sizeof(*aux), GFP_KERNEL | gfp_extra_flags);
-+	if (aux == NULL) {
- 		vfree(fp);
- 		return NULL;
- 	}
- 
- 	fp->pages = size / PAGE_SIZE;
--	fp->work = ws;
-+	fp->aux = aux;
- 
- 	return fp;
- }
-@@ -110,10 +111,10 @@ struct bpf_prog *bpf_prog_realloc(struct bpf_prog *fp_old, unsigned int size,
- 		memcpy(fp, fp_old, fp_old->pages * PAGE_SIZE);
- 		fp->pages = size / PAGE_SIZE;
- 
--		/* We keep fp->work from fp_old around in the new
-+		/* We keep fp->aux from fp_old around in the new
- 		 * reallocated structure.
- 		 */
--		fp_old->work = NULL;
-+		fp_old->aux = NULL;
- 		__bpf_prog_free(fp_old);
- 	}
- 
-@@ -123,7 +124,7 @@ EXPORT_SYMBOL_GPL(bpf_prog_realloc);
- 
- void __bpf_prog_free(struct bpf_prog *fp)
- {
--	kfree(fp->work);
-+	kfree(fp->aux);
- 	vfree(fp);
- }
- EXPORT_SYMBOL_GPL(__bpf_prog_free);
-@@ -638,19 +639,19 @@ EXPORT_SYMBOL_GPL(bpf_prog_select_runtime);
- 
- static void bpf_prog_free_deferred(struct work_struct *work)
- {
--	struct bpf_work_struct *ws;
-+	struct bpf_prog_aux *aux;
- 
--	ws = container_of(work, struct bpf_work_struct, work);
--	bpf_jit_free(ws->prog);
-+	aux = container_of(work, struct bpf_prog_aux, work);
-+	bpf_jit_free(aux->prog);
- }
- 
- /* Free internal BPF program */
- void bpf_prog_free(struct bpf_prog *fp)
- {
--	struct bpf_work_struct *ws = fp->work;
-+	struct bpf_prog_aux *aux = fp->aux;
- 
--	INIT_WORK(&ws->work, bpf_prog_free_deferred);
--	ws->prog = fp;
--	schedule_work(&ws->work);
-+	INIT_WORK(&aux->work, bpf_prog_free_deferred);
-+	aux->prog = fp;
-+	schedule_work(&aux->work);
- }
- EXPORT_SYMBOL_GPL(bpf_prog_free);
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index e9f7334ed07a..3c726b0995b7 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1 +1 @@
+-obj-y := core.o syscall.o
++obj-y := core.o syscall.o verifier.o
 diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-index f94349ecaf61..0afb4eaa1887 100644
+index b513659d120f..74b3628c5fdb 100644
 --- a/kernel/bpf/syscall.c
 +++ b/kernel/bpf/syscall.c
-@@ -14,6 +14,8 @@
- #include <linux/slab.h>
- #include <linux/anon_inodes.h>
- #include <linux/file.h>
-+#include <linux/license.h>
-+#include <linux/filter.h>
+@@ -507,7 +507,7 @@ static int bpf_prog_load(union bpf_attr *attr)
+ 		goto free_prog;
  
- static LIST_HEAD(bpf_map_types);
+ 	/* run eBPF verifier */
+-	/* err = bpf_check(prog, tb); */
++	err = bpf_check(prog, attr);
  
-@@ -334,6 +336,166 @@ err_put:
- 	return err;
- }
- 
-+static LIST_HEAD(bpf_prog_types);
-+
-+static int find_prog_type(enum bpf_prog_type type, struct bpf_prog *prog)
-+{
-+	struct bpf_prog_type_list *tl;
-+
-+	list_for_each_entry(tl, &bpf_prog_types, list_node) {
-+		if (tl->type == type) {
-+			prog->aux->ops = tl->ops;
-+			prog->aux->prog_type = type;
-+			return 0;
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
-+void bpf_register_prog_type(struct bpf_prog_type_list *tl)
-+{
-+	list_add(&tl->list_node, &bpf_prog_types);
-+}
-+
-+/* drop refcnt on maps used by eBPF program and free auxilary data */
-+static void free_used_maps(struct bpf_prog_aux *aux)
-+{
-+	int i;
-+
-+	for (i = 0; i < aux->used_map_cnt; i++)
-+		bpf_map_put(aux->used_maps[i]);
-+
-+	kfree(aux->used_maps);
-+}
-+
-+void bpf_prog_put(struct bpf_prog *prog)
-+{
-+	if (atomic_dec_and_test(&prog->aux->refcnt)) {
-+		free_used_maps(prog->aux);
-+		bpf_prog_free(prog);
-+	}
-+}
-+
-+static int bpf_prog_release(struct inode *inode, struct file *filp)
-+{
-+	struct bpf_prog *prog = filp->private_data;
-+
-+	bpf_prog_put(prog);
-+	return 0;
-+}
-+
-+static const struct file_operations bpf_prog_fops = {
-+        .release = bpf_prog_release,
-+};
-+
-+static struct bpf_prog *get_prog(struct fd f)
-+{
-+	struct bpf_prog *prog;
-+
-+	if (!f.file)
-+		return ERR_PTR(-EBADF);
-+
-+	if (f.file->f_op != &bpf_prog_fops) {
-+		fdput(f);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	prog = f.file->private_data;
-+
-+	return prog;
-+}
-+
-+/* called by sockets/tracing/seccomp before attaching program to an event
-+ * pairs with bpf_prog_put()
+ 	if (err < 0)
+ 		goto free_used_maps;
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+new file mode 100644
+index 000000000000..d6f9c3d6b4d7
+--- /dev/null
++++ b/kernel/bpf/verifier.c
+@@ -0,0 +1,133 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
 + */
-+struct bpf_prog *bpf_prog_get(u32 ufd)
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/slab.h>
++#include <linux/bpf.h>
++#include <linux/filter.h>
++#include <net/netlink.h>
++#include <linux/file.h>
++#include <linux/vmalloc.h>
++
++/* bpf_check() is a static code analyzer that walks eBPF program
++ * instruction by instruction and updates register/stack state.
++ * All paths of conditional branches are analyzed until 'bpf_exit' insn.
++ *
++ * The first pass is depth-first-search to check that the program is a DAG.
++ * It rejects the following programs:
++ * - larger than BPF_MAXINSNS insns
++ * - if loop is present (detected via back-edge)
++ * - unreachable insns exist (shouldn't be a forest. program = one function)
++ * - out of bounds or malformed jumps
++ * The second pass is all possible path descent from the 1st insn.
++ * Since it's analyzing all pathes through the program, the length of the
++ * analysis is limited to 32k insn, which may be hit even if total number of
++ * insn is less then 4K, but there are too many branches that change stack/regs.
++ * Number of 'branches to be analyzed' is limited to 1k
++ *
++ * On entry to each instruction, each register has a type, and the instruction
++ * changes the types of the registers depending on instruction semantics.
++ * If instruction is BPF_MOV64_REG(BPF_REG_1, BPF_REG_5), then type of R5 is
++ * copied to R1.
++ *
++ * All registers are 64-bit.
++ * R0 - return register
++ * R1-R5 argument passing registers
++ * R6-R9 callee saved registers
++ * R10 - frame pointer read-only
++ *
++ * At the start of BPF program the register R1 contains a pointer to bpf_context
++ * and has type PTR_TO_CTX.
++ *
++ * Verifier tracks arithmetic operations on pointers in case:
++ *    BPF_MOV64_REG(BPF_REG_1, BPF_REG_10),
++ *    BPF_ALU64_IMM(BPF_ADD, BPF_REG_1, -20),
++ * 1st insn copies R10 (which has FRAME_PTR) type into R1
++ * and 2nd arithmetic instruction is pattern matched to recognize
++ * that it wants to construct a pointer to some element within stack.
++ * So after 2nd insn, the register R1 has type PTR_TO_STACK
++ * (and -20 constant is saved for further stack bounds checking).
++ * Meaning that this reg is a pointer to stack plus known immediate constant.
++ *
++ * Most of the time the registers have UNKNOWN_VALUE type, which
++ * means the register has some value, but it's not a valid pointer.
++ * (like pointer plus pointer becomes UNKNOWN_VALUE type)
++ *
++ * When verifier sees load or store instructions the type of base register
++ * can be: PTR_TO_MAP_VALUE, PTR_TO_CTX, FRAME_PTR. These are three pointer
++ * types recognized by check_mem_access() function.
++ *
++ * PTR_TO_MAP_VALUE means that this register is pointing to 'map element value'
++ * and the range of [ptr, ptr + map's value_size) is accessible.
++ *
++ * registers used to pass values to function calls are checked against
++ * function argument constraints.
++ *
++ * ARG_PTR_TO_MAP_KEY is one of such argument constraints.
++ * It means that the register type passed to this function must be
++ * PTR_TO_STACK and it will be used inside the function as
++ * 'pointer to map element key'
++ *
++ * For example the argument constraints for bpf_map_lookup_elem():
++ *   .ret_type = RET_PTR_TO_MAP_VALUE_OR_NULL,
++ *   .arg1_type = ARG_CONST_MAP_PTR,
++ *   .arg2_type = ARG_PTR_TO_MAP_KEY,
++ *
++ * ret_type says that this function returns 'pointer to map elem value or null'
++ * function expects 1st argument to be a const pointer to 'struct bpf_map' and
++ * 2nd argument should be a pointer to stack, which will be used inside
++ * the helper function as a pointer to map element key.
++ *
++ * On the kernel side the helper function looks like:
++ * u64 bpf_map_lookup_elem(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++ * {
++ *    struct bpf_map *map = (struct bpf_map *) (unsigned long) r1;
++ *    void *key = (void *) (unsigned long) r2;
++ *    void *value;
++ *
++ *    here kernel can access 'key' and 'map' pointers safely, knowing that
++ *    [key, key + map->key_size) bytes are valid and were initialized on
++ *    the stack of eBPF program.
++ * }
++ *
++ * Corresponding eBPF program may look like:
++ *    BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),  // after this insn R2 type is FRAME_PTR
++ *    BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -4), // after this insn R2 type is PTR_TO_STACK
++ *    BPF_LD_MAP_FD(BPF_REG_1, map_fd),      // after this insn R1 type is CONST_PTR_TO_MAP
++ *    BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_map_lookup_elem),
++ * here verifier looks at prototype of map_lookup_elem() and sees:
++ * .arg1_type == ARG_CONST_MAP_PTR and R1->type == CONST_PTR_TO_MAP, which is ok,
++ * Now verifier knows that this map has key of R1->map_ptr->key_size bytes
++ *
++ * Then .arg2_type == ARG_PTR_TO_MAP_KEY and R2->type == PTR_TO_STACK, ok so far,
++ * Now verifier checks that [R2, R2 + map's key_size) are within stack limits
++ * and were initialized prior to this call.
++ * If it's ok, then verifier allows this BPF_CALL insn and looks at
++ * .ret_type which is RET_PTR_TO_MAP_VALUE_OR_NULL, so it sets
++ * R0->type = PTR_TO_MAP_VALUE_OR_NULL which means bpf_map_lookup_elem() function
++ * returns ether pointer to map value or NULL.
++ *
++ * When type PTR_TO_MAP_VALUE_OR_NULL passes through 'if (reg != 0) goto +off'
++ * insn, the register holding that pointer in the true branch changes state to
++ * PTR_TO_MAP_VALUE and the same register changes state to CONST_IMM in the false
++ * branch. See check_cond_jmp_op().
++ *
++ * After the call R0 is set to return type of the function and registers R1-R5
++ * are set to NOT_INIT to indicate that they are no longer readable.
++ */
++
++int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
 +{
-+	struct fd f = fdget(ufd);
-+	struct bpf_prog *prog;
++	int ret = -EINVAL;
 +
-+	prog = get_prog(f);
-+
-+	if (IS_ERR(prog))
-+		return prog;
-+
-+	atomic_inc(&prog->aux->refcnt);
-+	fdput(f);
-+	return prog;
++	return ret;
 +}
-+
-+/* last field in 'union bpf_attr' used by this command */
-+#define	BPF_PROG_LOAD_LAST_FIELD license
-+
-+static int bpf_prog_load(union bpf_attr *attr)
-+{
-+	enum bpf_prog_type type = attr->prog_type;
-+	struct bpf_prog *prog;
-+	int err;
-+	char license[128];
-+	bool is_gpl;
-+
-+	if (CHECK_ATTR(BPF_PROG_LOAD))
-+		return -EINVAL;
-+
-+	/* copy eBPF program license from user space */
-+	if (strncpy_from_user(license, u64_to_ptr(attr->license),
-+			      sizeof(license) - 1) < 0)
-+		return -EFAULT;
-+	license[sizeof(license) - 1] = 0;
-+
-+	/* eBPF programs must be GPL compatible to use GPL-ed functions */
-+	is_gpl = license_is_gpl_compatible(license);
-+
-+	if (attr->insn_cnt >= BPF_MAXINSNS)
-+		return -EINVAL;
-+
-+	/* plain bpf_prog allocation */
-+	prog = bpf_prog_alloc(bpf_prog_size(attr->insn_cnt), GFP_USER);
-+	if (!prog)
-+		return -ENOMEM;
-+
-+	prog->len = attr->insn_cnt;
-+
-+	err = -EFAULT;
-+	if (copy_from_user(prog->insns, u64_to_ptr(attr->insns),
-+			   prog->len * sizeof(struct bpf_insn)) != 0)
-+		goto free_prog;
-+
-+	prog->orig_prog = NULL;
-+	prog->jited = false;
-+
-+	atomic_set(&prog->aux->refcnt, 1);
-+	prog->aux->is_gpl_compatible = is_gpl;
-+
-+	/* find program type: socket_filter vs tracing_filter */
-+	err = find_prog_type(type, prog);
-+	if (err < 0)
-+		goto free_prog;
-+
-+	/* run eBPF verifier */
-+	/* err = bpf_check(prog, tb); */
-+
-+	if (err < 0)
-+		goto free_used_maps;
-+
-+	/* eBPF program is ready to be JITed */
-+	bpf_prog_select_runtime(prog);
-+
-+	err = anon_inode_getfd("bpf-prog", &bpf_prog_fops, prog, O_RDWR | O_CLOEXEC);
-+
-+	if (err < 0)
-+		/* failed to allocate fd */
-+		goto free_used_maps;
-+
-+	return err;
-+
-+free_used_maps:
-+	free_used_maps(prog->aux);
-+free_prog:
-+	bpf_prog_free(prog);
-+	return err;
-+}
-+
- SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, size)
- {
- 	union bpf_attr attr = {};
-@@ -395,6 +557,9 @@ SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, siz
- 	case BPF_MAP_GET_NEXT_KEY:
- 		err = map_get_next_key(&attr);
- 		break;
-+	case BPF_PROG_LOAD:
-+		err = bpf_prog_load(&attr);
-+		break;
- 	default:
- 		err = -EINVAL;
- 		break;
 -- 
 1.7.9.5
 
