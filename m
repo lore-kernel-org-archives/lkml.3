@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaIZJkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:40:21 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43724 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753438AbaIZJkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:40:19 -0400
-Date: Fri, 26 Sep 2014 10:40:03 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kevin Hilman <khilman@kernel.org>, ulf.hansson@linaro.org,
-        linux-pm@vger.kernel.org, daniel.lezcano@linaro.org, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org, Lina Iyer <lina.iyer@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq
-	affinity notification
-Message-ID: <20140926094003.GL5182@n2100.arm.linux.org.uk>
-References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org> <1409170479-29955-4-git-send-email-lina.iyer@linaro.org> <alpine.DEB.2.10.1408272239190.3323@nanos> <20140902184305.GB91995@ilina-mac.local> <alpine.DEB.2.10.1409022109050.3333@nanos> <7htx3vbfqr.fsf@deeprootsystems.com> <alpine.DEB.2.11.1409261129220.4567@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409261129220.4567@nanos>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754206AbaIZJnj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:43:39 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:51535 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753493AbaIZJng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:43:36 -0400
+From: Mikko Perttunen <cyndis@kapsi.fi>
+To: edubezval@gmail.com, swarren@wwwdotorg.org, thierry.reding@gmail.com
+Cc: linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        juha-matti.tilli@iki.fi, Mikko Perttunen <cyndis@kapsi.fi>
+Subject: [PATCH v6 0/4] Tegra124 soctherm driver
+Date: Fri, 26 Sep 2014 12:43:09 +0300
+Message-Id: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi>
+X-Mailer: git-send-email 2.1.0
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: cyndis@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 11:29:56AM +0200, Thomas Gleixner wrote:
-> On Thu, 25 Sep 2014, Kevin Hilman wrote:
-> > Maybe I'm missing something, or maybe we're just lucky and nobody uses
-> > them together, but irq_set_affinity_notifier() only allows a single
-> > notifier to be registered at any given time.  So if you had a system
-> 
-> A single notifier per irq .....
+Hi,
 
-So what about two drivers wanting to use this notifier, but sharing an
-interrupt?
+this series adds support for the thermal monitoring features of the
+soctherm unit on the Tegra124 SoC. 
 
-It sounds to me like this notifier was misdesigned from the very start,
-and it should always have supported multiple notifiers.
+The branch is also available in my github repo,
+  git://github.com/cyndis/linux.git soctherm-v6
+
+Thanks,
+Mikko
+
+Mikko Perttunen (4):
+  of: Add bindings for nvidia,tegra124-soctherm
+  ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
+  ARM: tegra: Add thermal trip points for Jetson TK1
+  thermal: Add Tegra SOCTHERM thermal management driver
+
+ .../devicetree/bindings/thermal/tegra-soctherm.txt |  53 +++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  44 ++
+ arch/arm/boot/dts/tegra124.dtsi                    |  47 ++
+ drivers/thermal/Kconfig                            |  10 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/tegra_soctherm.c                   | 471 +++++++++++++++++++++
+ include/dt-bindings/thermal/tegra124-soctherm.h    |  13 +
+ 7 files changed, 639 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/tegra-soctherm.txt
+ create mode 100644 drivers/thermal/tegra_soctherm.c
+ create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.0
+
