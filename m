@@ -1,49 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaIZT6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 15:58:13 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35126 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbaIZT6K (ORCPT
+	id S1756054AbaIZUAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 16:00:25 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:36347 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaIZUAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 15:58:10 -0400
-Date: Fri, 26 Sep 2014 12:58:03 -0700
-From: josh@joshtriplett.org
-To: "Rustad, Mark D" <mark.d.rustad@intel.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "sparse@chrisli.org" <sparse@chrisli.org>,
-        "linux-sparse@vger.kernel.org" <linux-sparse@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] Silence even more W=2 warnings
-Message-ID: <20140926195803.GB19952@cloud>
-References: <20140922184049.GB4709@pd.tnic>
- <3199350A-89CE-4BE7-8FE4-CA8CE4F87622@intel.com>
- <20140922192152.GD4709@pd.tnic>
- <1411415057.2513.8.camel@jtkirshe-mobl.jf.intel.com>
- <20140922195737.GE4709@pd.tnic>
- <1411416573.2513.19.camel@jtkirshe-mobl.jf.intel.com>
- <20140922203336.GF4709@pd.tnic>
- <1411420912.2513.32.camel@jtkirshe-mobl.jf.intel.com>
- <CAMuHMdU7VO01_qRGc0TV2K+nJJCu4sm0zbH773_zBWdaxSR1aQ@mail.gmail.com>
- <4C887554-FB5F-4634-ABE6-20F41583ABA2@intel.com>
+	Fri, 26 Sep 2014 16:00:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C887554-FB5F-4634-ABE6-20F41583ABA2@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+References: <CALCETrVrHHxGo1RkPu+9LVnPo9XY9yYnJzg2ot0zOgoBspzbOQ@mail.gmail.com>
+Date: Fri, 26 Sep 2014 13:00:21 -0700
+Message-ID: <CAMEtUuyt9RASKZ4NeqK_OUYNN8QT6P20+kjcwywchur6QXSt0A@mail.gmail.com>
+Subject: Re: eBPF verifier thoughts (Re: [PATCH v15 net-next 00/11] eBPF
+ syscall, verifier, testsuite)
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 07:37:19PM +0000, Rustad, Mark D wrote:
-> Most of the others come from null-entry table initializations, i.e. {
-> 0 }, which give missing field initializer warnings.
+On Fri, Sep 26, 2014 at 12:34 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Sep 26, 2014 at 12:06 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Alexei Starovoitov <ast@plumgrid.com>
+>> Date: Fri, 26 Sep 2014 00:16:56 -0700
+>>
+>>> v14 -> v15:
+>>> - got rid of macros with hidden control flow (suggested by David)
+>>>   replaced macro with explicit goto or return and simplified
+>>>   where possible (affected patches #9 and #10)
+>>> - rebased, retested
+>>
+>> Series applied to net-next, thanks.
+>
+> Hi all-
+>
+> I read through the verifier.  Sorry this email is a little bit late.
+> Here are some thoughts, in no particular order.
+>
+> Programs should IMO have feature flags.  One such feature would be
+> "can use pointers as integers", for example.
 
-I'd suggest that such initializers should just be {}, not { 0 }, and we
-should teach compilers to specifically *not* complain about empty
-initializers even when otherwise complaining about missing fields.
-Initializing a structure to 0 is completely sensible.
+of course.
+I believe we discussed it in the past.
+programs will have flags. I'm not sure why you insist on this in
+the first version.
 
-- Josh Triplett
+> UNKNOWN_VALUE is IMO a crappy type.  I think that it should renamed to
+> INTEGER and that a bunch of the things that generate it should be
+> errors.
+
+it's an internal type.
+Sure, I'm ok renaming it, but 'integer' name doesn't fit.
+It's not integer type.
+When I post a patch for "can use pointers as integers" flag
+you'll see that this 'unknown_value' will be broken down
+into more precise types.
+
+> ALU ops like adding two pointers should IMO be failures.  I don't
+> think that they should result in UNKNOWN_VALUE.
+
+they will be failures for unprivileged programs.
+In this patch the whole thing is for root only and root programs need
+arithmetic on pointers to compute hashes and so on.
+I wish we spent more time chatting, so I could explain this better.
+
+> I don't like PTR_TO_MAP_VALUE as a type.  I think that there should
+> instead be "pointer to (const?) buffer of N bytes".
+>
+> ARG_PTR_TO_MAP_KEY is odd.  Why do we care what a function does with a
+> key?  It just needs to be a big enough buffer, right?
+
+not quite. there is a distinction between key and value.
+They both come from map definition and correspond to key_size
+and value_size, so they have to have two different corresponding
+_internal_ types 'ptr_to_map_key' and 'ptr_to_map_value'
+This distinction is needed to properly describe function
+arguments constraints.
+
+> All of the stack spill stuff seems overcomplicated.  Can you just
+> disallow unaligned stack access?  Right off the bat, that will delete
+> a bunch of code and cut down runtime memory use by nearly a factor of
+> eight.
+
+not quite. stack spill/fill is not for unaligned access.
+unaligned access is disallowed first.
+See line 663 in check_mem_access().
+Often enough gcc/llvm ran out of registers and have to spill
+them into stack. This spill/fill tracking mechanism keeps
+track of what is stored into stack. Otherwise type violation will be
+possible. We cannot get rid of it. It essential for safety.
+
+> Also, there are no calls to functions written eBPF, right?  If so, why
+> not just give each stack slot a *fixed* type for the lifetime of the
+> program?  That would be a huge time complexity win, not to mention
+> being more comprehensible.  When function calls get added, they'll
+> need a whole pile of new infrastructure anyway.
+
+you cannot. stack cannot be fixed. It's very small and valuable
+resources. Programs will be using differently.
+
+> check_call is a mess.  I predict that it will be unmaintainable.
+
+why? care to provide details?
+
+> check_ld_abs is messy, IMO.  Can't there be a real type "pointer to
+> object of type [type]", where skb would be a type?  Then you could use
+> the normal function call logic for skb pointers instead of hardcoded
+> crud.
+>
+> You're doing a depth-first search.  I don't like it.  You need complex
+> pruning logic to avoid exponential behavior, and it's not obvious to
+
+there was in patch in previous series that did the prunning.
+I dropped out of this set to simplify things.
+
+> me that pathological programs that cause exponential blowups in the
+> verifier don't exist.  Wouldn't it make more sense to do a
+> breadth-first search instead and to give each reg/stack slot a
+> definite type at each point in the control flow?  You'd need a
+> function to find the intersection of two types, but I think that would
+> be preferable to the current code that tests whether one type is a
+> subset of another.
+
+nope. breadth-first just doesn't work at all.
+
+> At some point someone will want loops, and that will open a huge can
+> of worms involving explicit typing or type inference.  It might pay to
+> add some kind of stack slot (and maybe even register slot) type
+> declarations now to get things ready for that.
+
+sure. As discussed we may allow loops in the future.
+
+> NB: If this code is actually invoked in net-next when loading a
+> filter, please don't push to Linus until there's a convincing argument
+> that the verifier has acceptable asymptotic complexity.
+
+complexity is actually described in the doc.
+There are several limits. Verifier will be aborted if it walks
+more then 32k instructions or more then 1k branches.
+So the very worst case takes micro seconds to reject
+the program. So I don't see your concern.
