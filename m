@@ -1,107 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857AbaIZRcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 13:32:12 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:54761 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaIZRcL (ORCPT
+	id S1755881AbaIZRde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 13:33:34 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:62172 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755368AbaIZRdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 13:32:11 -0400
-Date: Fri, 26 Sep 2014 12:32:04 -0500
-From: Michael Welling <mwelling@emacinc.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        linus.walleij@linaro.org, rjw@rjwysocki.net,
-        gregkh@linuxfoundation.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: GPIO registration for external Ethernet PHY oscillator
- enable/disable
-Message-ID: <20140926173203.GA4459@sysresccd>
-References: <20140925191722.GA2481@sysresccd>
- <54247372.40803@gmail.com>
- <20140926165919.GA3518@sysresccd>
- <54259F83.5020006@gmail.com>
+	Fri, 26 Sep 2014 13:33:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54259F83.5020006@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACT4Y+bTXPzYH+TMjM9-NyVajZms8zKdEMMLDPvOKvRSoD8tog@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+	<1411562649-28231-14-git-send-email-a.ryabinin@samsung.com>
+	<CACT4Y+bTXPzYH+TMjM9-NyVajZms8zKdEMMLDPvOKvRSoD8tog@mail.gmail.com>
+Date: Fri, 26 Sep 2014 21:33:32 +0400
+Message-ID: <CAPAsAGzDWQ6LKN1RN6u0cv6eTVfxgRT6NCpGA08dC6dnDiUKmA@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 13/13] kasan: introduce inline instrumentation
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:16:51AM -0700, Florian Fainelli wrote:
-> On 09/26/2014 09:59 AM, Michael Welling wrote:
-> > On Thu, Sep 25, 2014 at 12:56:34PM -0700, Florian Fainelli wrote:
-> >> So, PHY drivers are allowed to provide specialized implementations for
-> >> suspend/resume operations that are called by phy_suspend() and
-> >> phy_resume(), the current Micrel PHY driver uses the generic
-> >> suspend/resume implementation and it is best if we can keep doing that.
-> >>
-> > 
-> > In my situation the defualt phy_suspend is not sufficient. We are
-> > looking to use the board for an application that requires a low sleep
-> > current. The KZS8081 has a slow oscillator low power mode that is 
-> > required to meet the requirements.
-> > 
-> > So I have already overwritten the suspend/resume to send the required
-> > commands to the PHY to achieve the slow clock mode.
-> > 
-> > If you are interested the sequence is explained in the datasheet pg 34:
-> > http://www.micrel.com/_PDF/Ethernet/datasheets/KSZ8081MNX-RNB.pdf
-> > 
-> >>> Can it be handled outside of the PHY driver?
-> >>
-> >> I see a few possible options:
-> >>
-> >> - hook a pm_runtime callbacks for your platform, check the device
-> >> pointer to make sure this is the PHY device, and when that is the case,
-> >> toggle the GPIO accordingly
-> > 
-> > Not too familiar with the pm_runtime callbacks.
-> > 
-> > Can you point me to a similar example that is already in the kernel?
-> 
-> drivers/sh/pm_runtime.c is a simple example, there might others in the
-> OMAP code.
-> 
-> > 
-> >>
-> >> - add an additional "osc_gpio" configuration parameter passed to the
-> >> Ethernet MAC driver (presumably drivers/net/ethernet/cadence/macb.c?)
-> >> and toggle the GPIO before and after the calls to the PHY state machine
-> >> (phy_suspend, phy_resume, phy_start, phy_stop), that might be simpler
-> >>
-> > 
-> > This seems the wrong place as the oscillator is specific to the PHY.
-> 
-> Yes and no, this might feel like the wrong place, but ultimately, the
-> Ethernet MAC is a consumer of the PHY device, and is in control, through
-> the PHY library of how and when the PHY gets to be powered off.
+2014-09-26 21:18 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
+>
+> Yikes!
+> So this works during bootstrap, for user memory accesses, valloc
+> memory, etc, right?
+>
 
-This is a good point. This driver also has the added advantage that it
-is a platform driver so the GPIO could more easily be registered via
-the device tree.
+Yes, this works. Userspace memory access in instrumented code will
+produce general protection fault,
+so it won't be unnoticed.
 
-Lets try this option first and see how it works out.
 
-> 
-> > 
-> >> - last but not least, make the PHY driver aware of that optional GPIO,
-> >> create customized PHY suspend/resume/config_aneg callbacks
-> >>
-> > 
-> > This to me feels like the path of least resistance. Though the driver
-> > does not appear to be a platform driver so I am not sure how to pass
-> > GPIOs to it. Maybe I am missing something.
-> 
-> If your platform uses Device Tree, you need to add a probe() and
-> remove() callbacks to the micrel PHY driver, and fetch the gpio resource
-> from there.
-> 
-> For non-Device Tree, we might have to find an another to specify such
-> auxiliary information, but traditionally, people have been using the
-> help of the Ethernet MAC driver to provide additional information down
-> to the PHY driver.
-> --
-> Florian
-> 
+-- 
+Best regards,
+Andrey Ryabinin
