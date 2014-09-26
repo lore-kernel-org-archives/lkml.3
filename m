@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaIZOKr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:10:47 -0400
-Received: from mail.southpole.se ([37.247.8.11]:39443 "EHLO mail.southpole.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754581AbaIZOKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:10:46 -0400
-Message-ID: <542573DF.3040405@southpole.se>
-Date: Fri, 26 Sep 2014 16:10:39 +0200
-From: Jonas Bonn <jonas@southpole.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755709AbaIZOLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:11:05 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54920 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755398AbaIZOLC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:11:02 -0400
+Message-ID: <542573EE.8070103@hurleysoftware.com>
+Date: Fri, 26 Sep 2014 10:10:54 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux@openrisc.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] next: openrisc: Fix build
-References: <1411739655-4715-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1411739655-4715-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
+To: Rik van Riel <riel@redhat.com>, Rob Clark <robdclark@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+CC: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickens <hughd@google.com>,
+        Linux kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: page allocator bug in 3.16?
+References: <54246506.50401@hurleysoftware.com>	<20140925143555.1f276007@as>	<5424AAD0.9010708@hurleysoftware.com>	<542512AD.9070304@vmware.com>	<20140926054005.5c7985c0@as>	<542543D8.8020604@vmware.com> <CAF6AEGvOkPq5LQR76-VbspYyCvUxL1=W-dLc4g_aWX2wkUmRpg@mail.gmail.com> <54255EA5.3030207@redhat.com>
+In-Reply-To: <54255EA5.3030207@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Assp-Version: 2.4.3(14246) on assp.southpole.se
-X-Assp-ID: assp.southpole.se 40641-05174
-X-Assp-Session: 7F9384B4DF70 (mail 1)
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 03:54 PM, Guenter Roeck wrote:
-> openrisc:defconfig fails to build in next-20140926 with the following error.
->
-> In file included from arch/openrisc/kernel/signal.c:31:0:
-> ./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
-> ./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
->
-> Fix by moving EM_OPENRISC and EM_OR32 to include/uapi/linux/elf-em.h.
->
-> Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> Based Stefan's note. No idea if it is the correct fix.
->
->  arch/openrisc/include/uapi/asm/elf.h | 4 +---
->  include/uapi/linux/elf-em.h          | 2 ++
->  2 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/openrisc/include/uapi/asm/elf.h b/arch/openrisc/include/uapi/asm/elf.h
-> index f02ea58..e75fdce 100644
-> --- a/arch/openrisc/include/uapi/asm/elf.h
-> +++ b/arch/openrisc/include/uapi/asm/elf.h
-> @@ -55,9 +55,7 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
->  /* A placeholder; OR32 does not have fp support yes, so no fp regs for now.  */
->  typedef unsigned long elf_fpregset_t;
->  
-> -/* This should be moved to include/linux/elf.h */
-> -#define EM_OR32         0x8472
-> -#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
-> +/* EM_OPENRISC and EM_OR32 defined in linux/elf-em.h	*/
->  
->  /*
->   * These are used to set parameters in the core dumps.
-> diff --git a/include/uapi/linux/elf-em.h b/include/uapi/linux/elf-em.h
-> index 01529bd..c5d3948 100644
-> --- a/include/uapi/linux/elf-em.h
-> +++ b/include/uapi/linux/elf-em.h
-> @@ -32,11 +32,13 @@
->  #define EM_V850		87	/* NEC v850 */
->  #define EM_M32R		88	/* Renesas M32R */
->  #define EM_MN10300	89	/* Panasonic/MEI MN10300, AM33 */
-> +#define EM_OPENRISC     92     /* OpenRISC 32-bit embedded processor */
->  #define EM_BLACKFIN     106     /* ADI Blackfin Processor */
->  #define EM_TI_C6000	140	/* TI C6X DSPs */
->  #define EM_AARCH64	183	/* ARM 64 bit */
->  #define EM_FRV		0x5441	/* Fujitsu FR-V */
->  #define EM_AVR32	0x18ad	/* Atmel AVR32 */
-> +#define EM_OR32         0x8472	/* OpenRISC, alternate */
-Have these codes hit upstream binutils yet?  Did they both go upstream
-of only one of them?  Is there any chance they are going to change
-again?  I think that's the reason these have been lingering in
-arch/openrisc instead of the generic header.
+[ +cc Leann Ogasawara, Marek Szyprowski, Kyungmin Park, Arnd Bergmann ]
 
-/Jonas
->  
->  /*
->   * This is an interim value that we will use until the committee comes
+On 09/26/2014 08:40 AM, Rik van Riel wrote:
+> On 09/26/2014 08:28 AM, Rob Clark wrote:
+>> On Fri, Sep 26, 2014 at 6:45 AM, Thomas Hellstrom
+>> <thellstrom@vmware.com> wrote:
+>>> On 09/26/2014 12:40 PM, Chuck Ebbert wrote:
+>>>> On Fri, 26 Sep 2014 09:15:57 +0200 Thomas Hellstrom
+>>>> <thellstrom@vmware.com> wrote:
+>>>>
+>>>>> On 09/26/2014 01:52 AM, Peter Hurley wrote:
+>>>>>> On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
+>>>>>>> There are six ttm patches queued for 3.16.4:
+>>>>>>>
+>>>>>>> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
+>>>>>>>
+>>>>>>>
+> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
+>>>>>>> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
+>>>>>>>
+>>>>>>>
+> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
+>>>>>>> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch 
+>>>>>>> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
+>>>>>>
+>>>>>>>
+> Thanks for info, Chuck.
+>>>>>>
+>>>>>> Unfortunately, none of these fix TTM dma allocation doing
+>>>>>> CMA dma allocation, which is the root problem.
+>>>>>>
+>>>>>> Regards, Peter Hurley
+>>>>> The problem is not really in TTM but in CMA, There was a guy
+>>>>> offering to fix this in the CMA code but I guess he didn't
+>>>>> probably because he didn't receive any feedback.
+>>>>>
+>>>> Yeah, the "solution" to this problem seems to be "don't enable
+>>>> CMA on x86". Maybe it should even be disabled in the config
+>>>> system.
+>>> Or, as previously suggested, don't use CMA for order 0 (single
+>>> page) allocations....
+>>
+>> On devices that actually need CMA pools to arrange for memory to be
+>> in certain ranges, I think you probably do want to have order 0
+>> pages come from the CMA pool.
+>>
+>> Seems like disabling CMA on x86 (where it should be unneeded) is
+>> the better way, IMO
+> 
+> CMA has its uses on x86. For example, CMA is used to allocate 1GB huge
+> pages.
+> 
+> There may also be people with devices that do not scatter-gather, and
+> need a large physically contiguous buffer, though there should be
+> relatively few of those on x86.
+> 
+> I suspect it makes most sense to do DMA allocations up to PAGE_ORDER
+> through the normal allocator on x86, and only invoking CMA for larger
+> allocations.
+
+The code that uses CMA to satisfy DMA allocations on x86 is
+specific to the x86 arch and was added in 2011 as a means of _testing_
+CMA in KVM:
+
+commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
+Author: Marek Szyprowski <m.szyprowski@samsung.com>
+Date:   Thu Dec 29 13:09:51 2011 +0100
+
+    X86: integrate CMA with DMA-mapping subsystem
+    
+    This patch adds support for CMA to dma-mapping subsystem for x86
+    architecture that uses common pci-dma/pci-nommu implementation. This
+    allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+    
+    Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+    CC: Michal Nazarewicz <mina86@mina86.com>
+    Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+(no x86 maintainer acks?).
+
+Unfortunately, this code is enabled whenever CMA is enabled, rather
+than as a separate test configuration.
+
+So, while enabling CMA may have other purposes on x86, using it for
+x86 swiotlb and nommu dma allocations is not one of the them.
+
+And Ubuntu should not be enabling CONFIG_DMA_CMA for their i386
+and amd64 configurations, as this is trying to drive _all_ dma mapping
+allocations through a _very_ small window (which is killing GPU
+performance).
+
+Regards,
+Peter Hurley
+
 
