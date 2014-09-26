@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaIZDqm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 23:46:42 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:37265
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753059AbaIZDql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 23:46:41 -0400
-x-originating-ip: 72.167.245.219
-From: Dexuan Cui <decui@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Cc: kys@microsoft.com, haiyangz@microsoft.com
-Subject: [PATCH v3] Tools: hv: vssdaemon: ignore the EBUSY on multiple freezing the same partition
-Date: Thu, 25 Sep 2014 21:52:04 -0700
-Message-Id: <1411707124-26037-1-git-send-email-decui@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753314AbaIZDwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 23:52:38 -0400
+Received: from mail-by2on0104.outbound.protection.outlook.com ([207.46.100.104]:5857
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752893AbaIZDwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 23:52:36 -0400
+From: Robin Gong <b38343@freescale.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <LW@KARO-electronics.de>, <sre@kernel.org>, <dbaryshkov@gmail.com>,
+        <dwmw2@infradead.org>, <grant.likely@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v4 0/3] add power off driver for i.mx6
+Date: Fri, 26 Sep 2014 11:59:04 +0800
+Message-ID: <1411703947-31956-1-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(89996001)(102836001)(76482002)(85852003)(48376002)(4396001)(105606002)(83322001)(31966008)(81156004)(85306004)(50986999)(87286001)(87936001)(84676001)(106466001)(21056001)(120916001)(19580395003)(10300001)(50466002)(50226001)(97736003)(99396003)(36756003)(107046002)(93916002)(47776003)(92566001)(64706001)(2201001)(81342003)(83072002)(77156001)(92726001)(104166001)(20776003)(80022003)(90102001)(74502003)(81542003)(44976005)(62966002)(95666004)(6806004)(88136002)(74662003)(69596002)(229853001)(79102003)(68736004)(104016003)(46102003)(33646002)(77982003)(1121002)(921003)(42262002)(83996005)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB337;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB337;
+X-Forefront-PRVS: 03468CBA43
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a partition appears mounted more than once in /proc/mounts, vss_do_freeze()
-succeeds only for the first time and gets EBUSY (on freeze) or EINVAL (on
-thaw) for the second time. The patch ignores these to make the backup feature
-work.
+Add simple power off driver for i.mx6, including:
+- add basic imx-snvs-poweroff driver in drivers/power/reset
+- add device node in all dts files of i.mx6.
+- enable in config file
 
-Also improved the error handling in case a freeze operation fails.
+Change from v3:
+- disable poweroff driver in soc level dts and enable it in board level dts
+- replace 'EIO' with 'ENODEV' while of_iomap fail.
+Change from v2:
+- remove useless included head files
+- split device binding doc from dts patch
+- add description for the case that PMIC_ON_REQ not used as external power
+  control
 
-Signed-off-by: Dexuan Cui <decui@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
+Robin Gong (3):
+  ARM: dts: imx6: add pm_power_off support for i.mx6 chips
+  power: reset: imx-snvs-poweroff: add power off driver for i.mx6
+  ARM: configs: imx_v6_v7_defconfig: add power off driver
 
-v2: Add "errno = 0;" before the ioctl()
-(Unnecessary and removed now since we remove syslog() in vss_do_freeze() in v3)
+ arch/arm/boot/dts/imx6qdl.dtsi          |  5 +++
+ arch/arm/boot/dts/imx6sl.dtsi           |  5 +++
+ arch/arm/boot/dts/imx6sx.dtsi           |  5 +++
+ arch/arm/configs/imx_v6_v7_defconfig    |  3 ++
+ drivers/power/reset/Kconfig             |  5 +++
+ drivers/power/reset/Makefile            |  1 +
+ drivers/power/reset/imx-snvs-poweroff.c | 69 +++++++++++++++++++++++++++++++++
+ 7 files changed, 93 insertions(+)
+ create mode 100644 drivers/power/reset/imx-snvs-poweroff.c
 
-v3: Remove the unsafe syslog() in vss_do_freeze(): that could write the disk.
-    Thaw the filesystems in case the freezing operation fails.
-    In main(), add syslog() when we check the return value of vss_operate().
-
- tools/hv/hv_vss_daemon.c | 48 ++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 40 insertions(+), 8 deletions(-)
-
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 6a213b8..1db9430 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -44,21 +44,39 @@ static struct sockaddr_nl addr;
- #endif
- 
- 
--static int vss_do_freeze(char *dir, unsigned int cmd, char *fs_op)
-+/* Don't use syslog() in the function since that can cause write to disk */
-+static int vss_do_freeze(char *dir, unsigned int cmd)
- {
- 	int ret, fd = open(dir, O_RDONLY);
- 
- 	if (fd < 0)
- 		return 1;
-+
- 	ret = ioctl(fd, cmd, 0);
--	syslog(LOG_INFO, "VSS: %s of %s: %s\n", fs_op, dir, strerror(errno));
-+
-+	/*
-+	 * If a partition is mounted more than once, only the first
-+	 * FREEZE/THAW can succeed and the later ones will get
-+	 * EBUSY/EINVAL respectively: there could be 2 cases:
-+	 * 1) a user may mount the same partition to differnt directories
-+	 *  by mistake or on purpose;
-+	 * 2) The subvolume of btrfs appears to have the same partition
-+	 * mounted more than once.
-+	 */
-+	if (ret) {
-+		if ((cmd == FIFREEZE && errno == EBUSY) ||
-+		    (cmd == FITHAW && errno == EINVAL)) {
-+			close(fd);
-+			return 0;
-+		}
-+	}
-+
- 	close(fd);
- 	return !!ret;
- }
- 
- static int vss_operate(int operation)
- {
--	char *fs_op;
- 	char match[] = "/dev/";
- 	FILE *mounts;
- 	struct mntent *ent;
-@@ -68,11 +86,9 @@ static int vss_operate(int operation)
- 	switch (operation) {
- 	case VSS_OP_FREEZE:
- 		cmd = FIFREEZE;
--		fs_op = "freeze";
- 		break;
- 	case VSS_OP_THAW:
- 		cmd = FITHAW;
--		fs_op = "thaw";
- 		break;
- 	default:
- 		return -1;
-@@ -93,15 +109,23 @@ static int vss_operate(int operation)
- 			root_seen = 1;
- 			continue;
- 		}
--		error |= vss_do_freeze(ent->mnt_dir, cmd, fs_op);
-+		error |= vss_do_freeze(ent->mnt_dir, cmd);
-+		if (error && operation == VSS_OP_FREEZE)
-+			goto err;
- 	}
- 	endmntent(mounts);
- 
- 	if (root_seen) {
--		error |= vss_do_freeze("/", cmd, fs_op);
-+		error |= vss_do_freeze("/", cmd);
-+		if (error && operation == VSS_OP_FREEZE)
-+			goto err;
- 	}
- 
- 	return error;
-+err:
-+	endmntent(mounts);
-+	vss_operate(VSS_OP_THAW);
-+	return error;
- }
- 
- static int netlink_send(int fd, struct cn_msg *msg)
-@@ -249,8 +273,16 @@ int main(void)
- 		case VSS_OP_FREEZE:
- 		case VSS_OP_THAW:
- 			error = vss_operate(op);
--			if (error)
-+			syslog(LOG_INFO, "VSS: op=%s: %s\n",
-+				op == VSS_OP_FREEZE ? "FREEZE" : "THAW",
-+				error ? "failed" : "succeeded");
-+
-+			if (error) {
- 				error = HV_E_FAIL;
-+				syslog(LOG_ERR, "op=%d failed!", op);
-+				syslog(LOG_ERR, "report it with these files:");
-+				syslog(LOG_ERR, "/etc/fstab and /proc/mounts");
-+			}
- 			break;
- 		default:
- 			syslog(LOG_ERR, "Illegal op:%d\n", op);
 -- 
 1.9.1
 
