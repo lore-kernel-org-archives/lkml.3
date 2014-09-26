@@ -1,132 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291AbaIZI6g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:58:36 -0400
-Received: from ou.quest-ce.net ([195.154.187.82]:58074 "EHLO ou.quest-ce.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957AbaIZI6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:58:32 -0400
-Message-ID: <1411721898.7778.18.camel@localhost.localdomain>
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Heinrich Schuchardt <xypron.debian@gmx.de>
-Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, linux-api@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Date: Fri, 26 Sep 2014 10:58:18 +0200
-In-Reply-To: <542481B3.8070300@gmx.de>
-References: <cover.1411562410.git.ydroneaud@opteya.com>
-	 <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-	 <542481B3.8070300@gmx.de>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:450:1e:232:8e70:5aff:fe2f:2d74
-X-SA-Exim-Mail-From: ydroneaud@opteya.com
-Subject: Re: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when
- requested in fanotify_init()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
+	id S1754642AbaIZI7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:59:11 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:60510 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753967AbaIZIzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 04:55:49 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: [PATCH v3 7/8] phy: miphy28lp: Tune tx impedance across Soc cuts
+Date: Fri, 26 Sep 2014 10:54:16 +0200
+Message-Id: <1411721657-9924-8-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-26_04:2014-09-26,2014-09-26,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch to compensate tx impedance (Sata, PCIe)
+depending on Soc cuts the kernel is built for.
 
-Le jeudi 25 septembre 2014 à 22:57 +0200, Heinrich Schuchardt a écrit :
-> On 24.09.2014 15:11, Yann Droneaud wrote:
-> > According to commit 80af258867648 ('fanotify: groups can specify
-> > their f_flags for new fd'), file descriptors created as part of
-> > file access notification events inherit flags from the
-> > event_f_flags argument passed to syscall fanotify_init(2).
-> >
-> > So while it is legal for userspace to call fanotify_init() with
-> > O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
-> > silently ignored.
-> >
-> > Indeed event_f_flags are only given to dentry_open(), which only
-> > seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
-> > O_DIRECT in open_check_o_direct() and O_LARGEFILE in
-> > generic_file_open().
-> 
-> I tested on kernel 3.17.0-rc5. I passed O_CLOEXEC in event_f_flags.
-> When I called fcnt(event_metadata->fd, F_GETFD) it did not return 
-> FD_CLOEXEC. So I can confirm your observation that O_CLOEXEC is not 
-> working as expected.
-> 
-> I found this definition
-> #define get_unused_fd() get_unused_fd_flags(0)
-> 
-> So essentially when get_unused_fd() is called for a fanotify event 
-> O_CLOEXEC is ignored.
-> 
-> This is what your patch fixes.
-> 
-> >
-> > More, there's no effective check on event_f_flags value that
-> > would catch unknown / unsupported values, unlike the one on
-> > f_flags argument of the syscall (see FAN_ALL_INIT_FLAGS in
-> > include/uapi/linux/fanotify.h).
-> 
-> The fanotify_init(2) man page describes which flags are allowable in 
-> event_f_flags.
-> 
-> Could you, please, explain why the following code in fanotify_user.c is 
-> not to be considered an effective check:
-> 
->      if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_BITS)
->          return -EINVAL;
-> 
->      switch (event_f_flags & O_ACCMODE) {
->      case O_RDONLY:
->      case O_RDWR:
->      case O_WRONLY:
->          break;
->      default:
->          return -EINVAL;
->      }
-> 
-> I CC Jan Kara as he reviewed the code.
-> 
+Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ Documentation/devicetree/bindings/phy/phy-miphy28lp.txt |  1 +
+ drivers/phy/phy-miphy28lp.c                             | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
 
-I missed the opportunity to update my commit message.
-
-I've sent my initial version of the patch (with the same wording) on
-5th, January, 2014:
-
-http://mid.gmane.org/3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com
-http://lkml.kernel.org/r/3d9591f81e62a78a726721c8052b3910870db35e.1388952061.git.ydroneaud@opteya.com
-
-The patch was sent again on March, 11:
-
-http://lkml.kernel.org/r/baab31b572b216d13f2149bdf07e0f79a1bae660.1394532336.git.ydroneaud@opteya.com
-http://mid.gmane.org/baab31b572b216d13f2149bdf07e0f79a1bae660.1394532336.git.ydroneaud@opteya.com
-
-And another time, on June, 1st:
-
-http://lkml.kernel.org/r/2c6ab28980f0007ea3b9afa7ecd7497806a6a451.1401630396.git.ydroneaud@opteya.com
-http://mid.gmane.org/2c6ab28980f0007ea3b9afa7ecd7497806a6a451.1401630396.git.ydroneaud@opteya.com
-
-So as you can see, my patch predate yours:
-
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=48149e9d3a7e924010a0daab30a6197b7d7b6580
-
-But I have to apologize: I haven't noticed your patch was merged between
-my previous submission and the current one. My bad.
-
-I will update the commit message to remove my obsolete comment on the
-input parameter check.
-
-Thanks again for review and testing.
-
-Regards.
-
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+index daa8310..17f7eec 100644
+--- a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
++++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+@@ -40,6 +40,7 @@ Optional properties (port (child) node):
+ - st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
+ 			  line).
+ - st,scc-on		: enable ssc to reduce effects of EMI (only for sata or PCIe).
++- st,tx-impedance-comp	: to compensate tx impedance avoiding out of range values.
+ 
+ example:
+ 
+diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
+index b6574e8..ac3fdf9 100644
+--- a/drivers/phy/phy-miphy28lp.c
++++ b/drivers/phy/phy-miphy28lp.c
+@@ -201,6 +201,7 @@ struct miphy28lp_phy {
+ 	bool osc_rdy;
+ 	bool px_rx_pol_inv;
+ 	bool ssc;
++	bool tx_impedance;
+ 
+ 	struct reset_control *miphy_rst;
+ 
+@@ -608,6 +609,12 @@ static void miphy_pcie_tune_ssc(struct miphy28lp_phy *miphy_phy)
+ 	}
+ }
+ 
++static inline void miphy_tune_tx_impedance(struct miphy28lp_phy *miphy_phy)
++{
++	/* Compensate Tx impedance to avoid out of range values */
++	writeb_relaxed(0x02, miphy_phy->base + MIPHY_COMP_POSTP);
++}
++
+ static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
+ {
+ 	void __iomem *base = miphy_phy->base;
+@@ -646,6 +653,9 @@ static inline int miphy28lp_configure_sata(struct miphy28lp_phy *miphy_phy)
+ 	if (miphy_phy->ssc)
+ 		miphy_sata_tune_ssc(miphy_phy);
+ 
++	if (miphy_phy->tx_impedance)
++		miphy_tune_tx_impedance(miphy_phy);
++
+ 	return 0;
+ }
+ 
+@@ -679,6 +689,9 @@ static inline int miphy28lp_configure_pcie(struct miphy28lp_phy *miphy_phy)
+ 	if (miphy_phy->ssc)
+ 		miphy_pcie_tune_ssc(miphy_phy);
+ 
++	if (miphy_phy->tx_impedance)
++		miphy_tune_tx_impedance(miphy_phy);
++
+ 	return 0;
+ }
+ 
+@@ -1117,6 +1130,9 @@ static int miphy28lp_of_probe(struct device_node *np,
+ 
+ 	miphy_phy->ssc = of_property_read_bool(np, "st,ssc-on");
+ 
++	miphy_phy->tx_impedance =
++		of_property_read_bool(np, "st,tx-impedance-comp");
++
+ 	of_property_read_u32(np, "st,sata-gen", &miphy_phy->sata_gen);
+ 	if (!miphy_phy->sata_gen)
+ 		miphy_phy->sata_gen = SATA_GEN1;
 -- 
-Yann Droneaud
-OPTEYA
-
+1.9.1
 
