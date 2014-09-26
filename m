@@ -1,96 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052AbaIZS0s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 14:26:48 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:61075 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635AbaIZS0e (ORCPT
+	id S1755053AbaIZSh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 14:37:26 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:15396 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754361AbaIZShY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 14:26:34 -0400
+	Fri, 26 Sep 2014 14:37:24 -0400
+Date: Fri, 26 Sep 2014 14:37:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] seq_file: Fix seq_putc() to be consistent with seq_puts()
+Message-ID: <20140926143721.52206f95@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <87ppei45ig.fsf@x220.int.ebiederm.org>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com> <87ppei45ig.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 11:26:13 -0700
-Message-ID: <CALCETrX5e0cp4QFCv1eAqR1hjoROU9Rh=cRos9U35DaR-py3Eg@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <cwang@twopensource.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 11:10 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
->
->> The goal of this serie is to be able to multicast netlink messages with an
->> attribute that identify a peer netns.
->> This is needed by the userland to interpret some informations contained in
->> netlink messages (like IFLA_LINK value, but also some other attributes in case
->> of x-netns netdevice (see also
->> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
->> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
->
-> I want say that the problem addressed by patch 3/5 of this series is a
-> fundamentally valid problem.  We have network objects spanning network
-> namespaces and it would be very nice to be able to talk about them in
-> netlink, and file descriptors are too local and argubably too heavy
-> weight for netlink quires and especially for netlink broadcast messages.
->
-> Furthermore the concept of ineternal concept of peernet2id seems valid.
->
-> However what you do not address is a way for CRIU (aka process
-> migration) to be able to restore these ids after process migration.
-> Going farther it looks like you are actively breaking process migration
-> at this time, making this set of patches a no-go.
->
-> When adding a new form of namespace id CRIU patches are just about
-> as necessary as iproute patches.
->
->> Ids are stored in the parent user namespace. These ids are valid only inside
->> this user namespace. The user can retrieve these ids via a new netlink messages,
->> but only if peer netns are in the same user namespace.
->
-> That does not describe what you have actually implemented in the
-> patches.
->
-> I see two ways to go with this.
->
-> - A per network namespace table to that you can store ids for ``peer''
->   network namespaces.  The table would need to be populated manually by
->   the likes of ip netns add.
->
->   That flips the order of assignment and makes this idea solid.
->
->   Unfortunately in the case of a fully referencing mesh of N network
->   namespaces such a mesh winds up taking O(N^2) space, which seems
->   undesirable.
->
-> - Add a netlink attribute that says this network element is in a peer
->   network namespace.
->
->   Add a unicast query message that let's you ask if the remote
->   end of a tunnel is in a network namespace specified by file
->   descriptor.
->
-> I personally lean towards the second version as it is fundamentally
-> simpler, and generally scales better, and the visibility controls are
-> the existing visibility controls.  The only downside is it requires
-> a query after receiving a netlink broadcast message for the times that
-> we care.
+I noticed that seq_putc() is not consistent with the way seq_puts() is
+when it comes to filling the buffer.
 
-The downside of that approach, and all the similar kcmp stuff, is that
-it scales poorly for applications using it.  This is probably not the
-end of the world, but it's not ideal.
+Lets look at the two functions doing basically the same thing:
 
---Andy
+	seq_putc('A');
+
+and
+
+	seq_puts("A");
+
+Now if m->count is 1 less than m->size, the two do different things.
+The seq_putc() will write the character, return success, but if a
+seq_overflow() is called on the seq_file *m, it will return true.
+
+For seq_puts(), the character is not written, count is set to size, it
+returns failure (-1), and like seq_putc(), seq_overflow() will
+also return true.
+
+Note, technically, both should act the exact same way, because
+seq_puts() does not add the ending null character:
+
+int seq_puts(struct seq_file *m, const char *s)
+{
+        int len = strlen(s);
+        if (m->count + len < m->size) {
+                memcpy(m->buf + m->count, s, len);
+                m->count += len;
+                return 0;
+        }
+        seq_set_overflow(m);
+        return -1;
+}
+
+len is just the number of characters in "A" and does not include the
+nul terminator. The memcpy, would only copy one character for the
+example above. But if m->count is 1 less than m->size, it would not do
+the copy and would set the overflow and return failure.
+
+Looking at seq_putc():
+
+int seq_putc(struct seq_file *m, char c)
+{
+        if (m->count < m->size) {
+                m->buf[m->count++] = c;
+                return 0;
+        }
+        return -1;
+}
+
+If m->count is one less than m->size, the if condition will succeed,
+the buffer will be updated, and success would be returned. But as
+overflow is determined by m->count == m->size, that would be true.
+
+Note, I also noticed that seq_puts() behaves slightly different than
+other seq_*() functions, in that it does not fill the buffer when it
+overflows, but just sets the m->count to size. I'm not sure if this is
+incorrect or not as there's bogus data within the buffer that is
+encompassed by m->count. This isn't that important as the seq_file()
+which uses this code, on overflow, simply frees the entire contents of
+m->buf, and updates the size by a power of two the next go around, and
+it doesn't care if there's bogus data in an overflowed buffer or not.
+
+But, I'm trying to write code that both the seq_file and trace_seq can
+share and these issues will come to the surface and make a difference.
+
+Anyway, this patch is just to make seq_putc() match the behavior of
+seq_puts() which does have visibility to the other subsystems.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 3857b720cb1b..4cdd900c6a0c 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -686,10 +686,11 @@ EXPORT_SYMBOL(seq_open_private);
+ 
+ int seq_putc(struct seq_file *m, char c)
+ {
+-	if (m->count < m->size) {
++	if (m->count + 1 < m->size) {
+ 		m->buf[m->count++] = c;
+ 		return 0;
+ 	}
++	seq_set_overflow(m);
+ 	return -1;
+ }
+ EXPORT_SYMBOL(seq_putc);
