@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaIZPGM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:06:12 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38144 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431AbaIZPGJ (ORCPT
+	id S1755856AbaIZOzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:55:36 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48488 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaIZOzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:06:09 -0400
-Message-ID: <1411743959.3852.45.camel@hornet>
-Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
-From: Pawel Moll <pawel.moll@arm.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Fri, 26 Sep 2014 16:05:59 +0100
-In-Reply-To: <1411742306.1669.6.camel@leonhard>
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
-	 <1411491787-25938-2-git-send-email-pawel.moll@arm.com>
-	 <87sijhk21x.fsf@sejong.aot.lge.com> <1411642198.4768.30.camel@hornet>
-	 <8738bekith.fsf@sejong.aot.lge.com>  <1411729103.3852.19.camel@hornet>
-	 <1411742306.1669.6.camel@leonhard>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Fri, 26 Sep 2014 10:55:32 -0400
+Message-ID: <54257E5D.5060600@mentor.com>
+Date: Fri, 26 Sep 2014 09:55:25 -0500
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Will Deacon <will.deacon@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource
+ name if CP15 unavailable
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com> <54250FFE.2050605@linaro.org>
+In-Reply-To: <54250FFE.2050605@linaro.org>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-26 at 15:38 +0100, Namhyung Kim wrote:
-> > Then I have loads of normal normal samples, timestamped with sched clock
-> > only, and every now and then one with both timestamps which then I can
-> > use for time correlation. The whole point is that the frequency of such
-> > "synchronisation" event can be much (much!) lower than of the normal
-> > samples, but it still allows pretty good approximation (I was getting
-> > accuracy of ~1 microsecond and better with sched_switch trace event
-> > marked with additional raw monotonic timestamp).
+Hi Daniel,
+
+On 09/26/2014 02:04 AM, Daniel Lezcano wrote:
+> On 09/18/2014 04:59 PM, Nathan Lynch wrote:
+>> The arm and arm64 VDSOs need CP15 access to the architected counter.
+>> If this is unavailable (which is allowed by ARM v7), indicate this by
+>> changing the clocksource name to "arch_mem_counter" before registering
+>> the clocksource.
+>>
+>> Suggested by Stephen Boyd.
+>>
+>> Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+>> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 > 
-> Okay.  But in that case wouldn't it be enough to use just a single
-> timestamp for each event - sched_clock for cpu-cycles and monotonic raw
-> for sched_switch?
+> Hi Nathan,
+> 
+> is it possible to have the acked-by of the different maintainers for the
+> other patches ?
 
-To do the correlation you need both timestamps to be "taken"
-simultaneously:
+As Will said, he acked the series.
 
-        perf event     user event
-       -----O--------------+-------------O------> t_mono
-            :              |             :
-            :              V             :
-       -----O----------------------------O------> t_perf
+> Are these patches targeted to be merged for 3.18 ?
 
-Of course it's not possible get both values literally at the same time,
-but placing them in a atomic context a couple of instructions from each
-other still gives pretty good results. The larger this distance is, the
-lower the accuracy will be. I must admit I haven't done such
-experiments, but let me remind that I in my test I was getting results
-in the range of 1000ns, with a single cycle of a 2GHz taking 0.5ns, so
-moving the t_mono/t_perf value sampling further aside will reduce it
-significantly...
+3.18 is preferable, if it's not too late.  But nothing will break if it
+needs to wait.
 
-Pawel
-
-Pawel
+Thanks,
+Nathan
 
