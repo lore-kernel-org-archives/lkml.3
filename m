@@ -1,137 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaIZCVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 22:21:00 -0400
-Received: from mga03.intel.com ([134.134.136.65]:49866 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913AbaIZCU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 22:20:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,602,1406617200"; 
-   d="scan'208";a="579243446"
-Message-ID: <5424CD81.2030305@intel.com>
-Date: Fri, 26 Sep 2014 10:20:49 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1753509AbaIZCWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 22:22:54 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:49959 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195AbaIZCWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 22:22:52 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: =?windows-1252?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: ACPI/i915: Cannot configure display brightness on Dell Latitude
- E6440
-References: <201409232206.02819@pali> <201409242021.10107@pali> <542388D7.1010008@intel.com> <1481425.msp1jP3vqe@vostro.rjw.lan>
-In-Reply-To: <1481425.msp1jP3vqe@vostro.rjw.lan>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <11277081.DWgcnnZv54@wuerfel>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+	<3608975.MxU44B73lk@wuerfel>
+	<CAFiDJ58h4VKrr-wHe6iD+aPB8QU=xLo03kW5k6QDpLW5Et0DGw@mail.gmail.com>
+	<11277081.DWgcnnZv54@wuerfel>
+Date: Fri, 26 Sep 2014 10:22:50 +0800
+X-Google-Sender-Auth: CBH7HdumGQyYnYyOD-oZ01rQScg
+Message-ID: <CAFiDJ58Y1iQhkkS-OVwMBdowJnXKKbYfHttQibmBh_qa5vgOmQ@mail.gmail.com>
+Subject: Re: [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 03:58 AM, Rafael J. Wysocki wrote:
-> On Thursday, September 25, 2014 11:15:35 AM Aaron Lu wrote:
->> Hi Hans,
+On Thu, Sep 25, 2014 at 6:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 25 September 2014 16:33:33 Ley Foon Tan wrote:
+>> There are 4 patches that touching code outside of arch/nios2,
+>> including this patch.
+>> Do we have maintainers for common files for patch #15, #27 and #28
+>> below? Can't find this info from MAINTAINERS file.
+>> It is good if you can take a look this v3 patchset so I can send pull
+>> request if no further issue. Thanks!
 >>
->> Thanks for following up and explaining the situation to Pali.
->>
->> On 09/25/2014 02:21 AM, Pali Rohár wrote:
->>> On Wednesday 24 September 2014 16:34:21 Hans de Goede wrote:
->>>> Ok, so the dell-laptop interface is just an obsolete wrapper
->>>> around the i915 opregion code, which shows that the right
->>>> interface to use is the i915 one, which we do if you don't
->>>> specify any kernel commandline parameters, case closed.
->>>>
->>>> Regards,
->>>>
->>>> Hans
->>>
->>> Nope, its not closed.
->>>
->>> Still i915 interface has problem with setting backlight. It 
->>> exports lot of levels which turning display off. Which breaking 
->>> exiting applications for configuring display brightness. This is 
->>> still big regression as black screen is not want people want to 
->>> see.
->>>
->>> Driver dell-laptop has exported only few - not thousands level 
->>> (which is insane) and only usefull levels (not lot of levels 
->>> which turn display off).
->>>
->>> So for this reason using i915 backlight interface is not possible 
->>> and also Dell (for E6440) set kernel param acpi_backlight=vendor 
->>> to use dell_laptop module for controlling brightness.
->>>
->>> On my laptop E6440 is better for using dell-laptop and not acpi 
->>> or i915.
->>
->> Hi Pali,
->>
->> Please test this patch:
->>
->> diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
->> index ca52ad2ae7d1..15534345bd57 100644
->> --- a/drivers/gpu/drm/i915/intel_opregion.c
->> +++ b/drivers/gpu/drm/i915/intel_opregion.c
->> @@ -396,6 +396,24 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
->>  	return -EINVAL;
->>  }
->>  
->> +/*
->> + * Some of the Thinkpads' firmware will issue a backlight change operation
->> + * region request unconditionally on AC plug/unplug, this is undesirable and
->> + * should be ignored. Then there is a Dell laptop whose vendor backlight
->> + * interface also makes use of operation region request to change backlight
->> + * level and we have to keep it work. The rule used here is: if the vendor
->> + * backlight interface is not in use and the ACPI backlight interface is
->> + * broken, we ignore the requests; oterwise, we keep processing them.
->> + */
->> +static bool should_ignore_backlight_request(void)
->> +{
->> +	if (acpi_video_backlight_support() &&
->> +	    !acpi_video_verify_backlight_support())
->> +		return true;
->> +
->> +	return false;
->> +}
-> 
-> Well, what about
-> 
-> 	return acpi_video_backlight_support() && !acpi_video_verify_backlight_support();
-> 
-> ?
+>> [PATCH v3 01/29] asm-generic: add generic futex for !CONFIG_SMP
+>
+> You already have my Ack, which is sufficient here.
+Okay, thanks.
+>
+>> [PATCH v3 15/29] Add ELF machine define for Nios2
+>
+> I'm not maintaining this one, but it looks very obvious, please
+> add my Ack as well. I don't think you need to wait for anybody's
+> input here.
+Will add your ACK.
+>
+>> [PATCH v3 27/29] MAINTAINERS: Add nios2 maintainer
+>
+> This one is fine to go in. You basically own the entry though, so if
+> anybody wants to change the text for nios2 later, they should ask
+> for your Ack.
+Okay.
+>
+>> [PATCH v3 28/29] Documentation: Add documentation for Nios2 architecture
+>
+> Randy Dunlap <rdunlap@infradead.org> is the maintainer listed for
+> Documentation, and I see you already have linux-doc@vger.kernel.org
+> on Cc here. Please make sure that Randy is on Cc for the documentation
+> patches as well. A lot of documentation patches go in without his
+> Ack, which I think is fine as long as someone else (i.e. you) is
+> responsible for maintaining that documentation later.
+Okay, will add Randy to CC list for Documentation patch.
 
-Yes that's better.
-Will send out a patch with this change, thanks for the suggestion.
 
--Aaron
+Let me know if you done the review for v3 patchset. Thanks.
 
-> 
->> +
->>  static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
->>  {
->>  	struct drm_i915_private *dev_priv = dev->dev_private;
->> @@ -404,11 +422,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
->>  
->>  	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
->>  
->> -	/*
->> -	 * If the acpi_video interface is not supposed to be used, don't
->> -	 * bother processing backlight level change requests from firmware.
->> -	 */
->> -	if (!acpi_video_verify_backlight_support()) {
->> +	if (should_ignore_backlight_request()) {
->>  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
->>  		return 0;
->>  	}
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Regards
+Ley Foon
