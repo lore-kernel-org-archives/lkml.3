@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754753AbaIZPep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:34:45 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:43458 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaIZPeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:34:44 -0400
-Message-ID: <54258785.4070803@gmail.com>
-Date: Fri, 26 Sep 2014 23:34:29 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755205AbaIZPf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:35:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:40886 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754590AbaIZPf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 11:35:57 -0400
+Date: Fri, 26 Sep 2014 12:35:53 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Arun Sharma <asharma@fb.com>
+Subject: Re: [PATCH 1/2] perf callchain: Create an address space per thread
+Message-ID: <20140926153553.GD3879@kernel.org>
+References: <1411453828-14832-1-git-send-email-namhyung@kernel.org>
+ <20140923122437.GE2979@krava.brq.redhat.com>
+ <CAM9d7cjY9HwRSKJvuUfbQPmi6se1H7+vONGxDTBdv=xNR-EOUQ@mail.gmail.com>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] xen/xenbus: Correct the comments for xenbus_grant_ring()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM9d7cjY9HwRSKJvuUfbQPmi6se1H7+vONGxDTBdv=xNR-EOUQ@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A grant reference (which is a positive number) can indicate success, so
-the original comments need be improved.
+Em Tue, Sep 23, 2014 at 09:49:22PM +0900, Namhyung Kim escreveu:
+> On Tue, Sep 23, 2014 at 9:24 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> >>               list_add(&comm->list, &thread->comm_list);
+> >> +
+> >> +             if (unwind__prepare_access(thread) < 0) {
+> >
+> > you could call list_add below this call and thus save
+> > the list_del call below in error path
+> >
+> > looks like you dont need comm to be on comm_list within
+> > the unwind__prepare_access call
+> 
+> Right.  Will change.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/xen/xenbus/xenbus_client.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Ok, waiting for v2 then.
 
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index 439c9dc..aa9b2fc 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -361,8 +361,8 @@ static void xenbus_switch_fatal(struct xenbus_device *dev, int depth, int err,
-  * @ring_mfn: mfn of ring to grant
- 
-  * Grant access to the given @ring_mfn to the peer of the given device.  Return
-- * 0 on success, or -errno on error.  On error, the device will switch to
-- * XenbusStateClosing, and the error will be saved in the store.
-+ * a grant reference on success, or -errno on error. On error, the device will
-+ * switch to XenbusStateClosing, and the error will be saved in the store.
-  */
- int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn)
- {
--- 
-1.9.3
+- Arnaldo
