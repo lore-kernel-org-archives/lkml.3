@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaIZLnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:43:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35802 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753619AbaIZLnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:43:13 -0400
-Date: Fri, 26 Sep 2014 13:43:10 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Gilles.Muller@lip6.fr, nicolas.palix@imag.fr, cocci@systeme.lip6.fr,
-        linux-kernel@vger.kernel.org, u.kleine-koenig@pengutronix.de,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] coccinelle: misc: semantic patch to delete overly
-	complex return code processing
-Message-ID: <20140926114309.GA31096@pobox.suse.cz>
-References: <1408772085-28818-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754664AbaIZLo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:44:59 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56772 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453AbaIZLo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 07:44:57 -0400
+Date: Fri, 26 Sep 2014 12:44:54 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140926114454.GV18635@console-pimps.org>
+References: <20140925073133.GQ18635@console-pimps.org>
+ <20140925144127.GA3828@gmail.com>
+ <1411730854.7866.10.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408772085-28818-1-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1411730854.7866.10.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 07:34:45AM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Fri, 26 Sep, at 01:27:34PM, Paul Bolle wrote:
 > 
-> This semantic patch simplifies cases where the effect of the processing of
-> a function call's return code is just to return the result of the function
-> directly.  It may also delete a local return flag variable, if this is no
-> longer used.
+> This Makefile was changed in the first patch. That became 84be880560fb
+> ("Revert "efi/x86: efistub: Move shared dependencies to <asm/efi.h>""),
+> which just landed in next-20140926.
 > 
-> This was proposed by Uwe Kleine-König.
+> It appears to have introduced a typo, because:
+>     CONFIG_EFI_ARM_STUB
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> should probably have been:
+>     CONFIG_EFI_ARMSTUB
 
-Applied to kbuild.git#misc, thanks.
+Crap. Thanks for catching that Paul. I'm wondering how this slipped
+through because that commit has an explicit Tested-by from Leif.
 
-Michal
+Hell, even I built an arm64 EFI kernel before sending that commit.
+
+Ohh.. I see why no one caught this. From arch/arm64/Makefile,
+
+  libs-$(CONFIG_EFI_STUB) += drivers/firmware/efi/libstub/
+
+so libstub will be built for arm64 regardless of the broken logic in
+drivers/firmware/efi/Makefile.
+
+Paul, how did you notice the typo? Did you hit an explicit build
+failure? It's definitely wrong and I'm trying to figure out whether I
+need to add some more testing to my build infrastructure to catch this
+kind of problem in the future.
+
+The next question is: should we fix this up at this point in the merge
+cycle? It's basically just dead code.
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
