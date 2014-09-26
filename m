@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaIZLdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:33:32 -0400
-Received: from ozlabs.org ([103.22.144.67]:54227 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865AbaIZLda convert rfc822-to-8bit (ORCPT
+	id S1754339AbaIZLeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:34:11 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:47060 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933AbaIZLeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:33:30 -0400
-Message-ID: <1411731209.1733.51.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH 10/15] powerpc/mm: Add hooks for cxl
-From: Michael Neuling <mikey@neuling.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Date: Fri, 26 Sep 2014 21:33:29 +1000
-In-Reply-To: <20140926143309.33c0eeac@kryten>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
-	 <1411028820-29933-11-git-send-email-mikey@neuling.org>
-	 <20140926143309.33c0eeac@kryten>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Fri, 26 Sep 2014 07:34:09 -0400
+Message-ID: <54254F2E.2050804@linaro.org>
+Date: Fri, 26 Sep 2014 13:34:06 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Nathan Lynch <nathan_lynch@mentor.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] clocksource: arm_arch_timer: change clocksource
+ name if CP15 unavailable
+References: <1411052390-27238-1-git-send-email-nathan_lynch@mentor.com> <1411052390-27238-2-git-send-email-nathan_lynch@mentor.com> <54250FFE.2050605@linaro.org> <20140926092604.GC22293@arm.com>
+In-Reply-To: <20140926092604.GC22293@arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-26 at 14:33 +1000, Anton Blanchard wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > This add a hook into tlbie() so that we use global invalidations when
-> > there are cxl contexts active.
-> > 
-> > Normally cxl snoops broadcast tlbie.  cxl can have TLB entries
-> > invalidated via MMIO, but we aren't doing that yet.  So for now we
-> > are just disabling local tlbies when cxl contexts are active.  In
-> > future we can make tlbie() local mode smarter so that it invalidates
-> > cxl contexts explicitly when it needs to.
-> > 
-> > This also adds a hooks for when SLBs are invalidated to ensure any
-> > corresponding SLBs in cxl are also invalidated at the same time.
-> > 
-> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> > Signed-off-by: Michael Neuling <mikey@neuling.org>
-> 
-> > +	use_local = local && mmu_has_feature(MMU_FTR_TLBIEL) && !cxl_ctx_in_use();
-> 
-> Seems reasonable until we can get the MMIO based optimisation in.
-> 
-> Will all CAPI cached translations be invalidated before we finish using
-> a CAPI context? 
+On 09/26/2014 11:26 AM, Will Deacon wrote:
+> On Fri, Sep 26, 2014 at 08:04:30AM +0100, Daniel Lezcano wrote:
+>> On 09/18/2014 04:59 PM, Nathan Lynch wrote:
+>>> The arm and arm64 VDSOs need CP15 access to the architected counter.
+>>> If this is unavailable (which is allowed by ARM v7), indicate this by
+>>> changing the clocksource name to "arch_mem_counter" before registering
+>>> the clocksource.
+>>>
+>>> Suggested by Stephen Boyd.
+>>>
+>>> Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+>>> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> Hi Nathan,
+>>
+>> is it possible to have the acked-by of the different maintainers for the
+>> other patches ?
+>
+> FWIW: I acked the series:
+>
+>    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/289143.html
+>
+> There's ongoing debate about whether or not we should have a vdso, but this
+> series still makes sense in isolation.
 
-I'm not sure I understand. Can you elaborate?
+Ok. Thanks for the clarification.
 
-> And conversely, could CAPI cache any translations when a
-> context isn't active? 
 
-The kernel invalidates all translations when the file descriptor is
-closed.  So no, unless the PSL was badly behaving and ignoring the
-invalidations.... but if we can't trust the PSL we're screwed.
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-> I'm mostly concerned that we can't have a
-> situation where badly behaving userspace could result in a stale
-> translation.
 
-We only map what a user processes maps and we tear it down when the
-process is teared down (on the file descriptor release).  So I think we
-are ok.  
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Unless there's some lazy teardown you're alluding to that I'm missing?
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-> 
-> >  	spu_flush_all_slbs(mm);
-> >  #endif
-> > +	cxl_slbia(mm);
-> 
-> >  			spu_flush_all_slbs(mm);
-> >  #endif
-> > +			cxl_slbia(mm);
-> 
-> >  	spu_flush_all_slbs(mm);
-> >  #endif
-> > +	cxl_slbia(mm);
-> 
-> >  	spu_flush_all_slbs(mm);
-> >  #endif
-> > +	cxl_slbia(mm);
-> 
-> Should we combine the SPU vs CXL callouts into something common -
-> perhaps copro_flush_all_slbs()?
-
-Sounds good.  I'll update.
-
-Mikey
