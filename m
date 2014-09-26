@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355AbaIZWId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 18:08:33 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55700 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756311AbaIZWIc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 18:08:32 -0400
-Message-ID: <1411769309.15241.37.camel@x220>
-Subject: [PATCH 1/1] [RFC] kconfig: warn if an unknown symbol is selected
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 27 Sep 2014 00:08:29 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 22:08:29.0605 (UTC) FILETIME=[67483D50:01CFD9D6]
-X-RcptDomain: vger.kernel.org
+	id S1030199AbaIZWLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 18:11:45 -0400
+Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:22304
+	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751503AbaIZWLo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 18:11:44 -0400
+From: Anish Bhatt <anish@chelsio.com>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "sebastian@fds-team.de" <sebastian@fds-team.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: RE: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+Thread-Topic: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+Thread-Index: AQHP2PjujZWZAPWsuEKdVk/F+NXXnJwUbgaA//+NHWA=
+Date: Fri, 26 Sep 2014 22:10:30 +0000
+Message-ID: <525DB349B3FB5444AE057A887CB2A8D88F4B57@nice.asicdesigners.com>
+References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
+ <20140926170041.700f44bd@as>
+In-Reply-To: <20140926170041.700f44bd@as>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.161.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A select of an unknown symbol is basically treated as a nop and is
-silently skipped. This is annoying if the selected symbol contains a
-typo. It can also hide the fact that a treewide symbol cleanup was only
-done partially.
+> -----Original Message-----
+> From: Chuck Ebbert [mailto:cebbert.lkml@gmail.com]
+> Sent: Friday, September 26, 2014 3:01 PM
+> To: Anish Bhatt
+> Cc: linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de;
+> mingo@redhat.com; hpa@zytor.com; sebastian@fds-team.de; Linus
+> Torvalds
+> Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+> 
+> On Thu, 25 Sep 2014 12:42:51 -0700
+> Anish Bhatt <anish@chelsio.com> wrote:
+> 
+> > The MSR_SYSCALL_MASK, which is responsible for clearing specific
+> > EFLAGS on  syscall entry, should also clear the nested task (NT) flag
+> > to be safe from  userspace injection. Without this fix the application
+> > segmentation  faults on syscall return because of the changed meaning
+> > of the IRET  instruction.
+> >
+> > Further details can be seen here
+> > https://bugs.winehq.org/show_bug.cgi?id=33275
+> >
+> > Signed-off-by: Anish Bhatt <anish@chelsio.com>
+> > Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
+> > ---
+> >  arch/x86/kernel/cpu/common.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/arch/x86/kernel/cpu/common.c
+> > b/arch/x86/kernel/cpu/common.c index e4ab2b4..3126558 100644
+> > --- a/arch/x86/kernel/cpu/common.c
+> > +++ b/arch/x86/kernel/cpu/common.c
+> > @@ -1184,7 +1184,7 @@ void syscall_init(void)
+> >  	/* Flags to clear on syscall */
+> >  	wrmsrl(MSR_SYSCALL_MASK,
+> >  	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+> > -	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
+> > +	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+> >  }
+> >
+> >  /*
+> 
+> I don't get it. Why isn't this patch acceptable, at least on x86-64 where NT is
+> never valid?
+> 
+> Bueller?
 
-There are also a few cases were this might have been done on purpose.
-But that anti-pattern should be discouraged. Almost all select
-statements point to a known and reachable symbol. So people will likely
-assume that any selected symbol is actually set. Violating that
-assumption might lead to (subtle) bugs.
-
-So let's warn when we notice a select of a symbol that is not known in
-the configuration we're creating.
-
-Rfced-by: Paul Bolle <pebolle@tiscali.nl>
----
- scripts/kconfig/conf.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
-
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index fef75fc756f4..de8406287531 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -446,6 +446,45 @@ static void check_conf(struct menu *menu)
- 		check_conf(child);
- }
- 
-+static void check_selects(struct menu *menu)
-+{
-+	struct symbol *sym, *sel;
-+	struct property *prop;
-+
-+	while (menu) {
-+		sym = menu->sym;
-+
-+		if (sym && !sym_is_choice(sym) &&
-+		    sym->type != S_UNKNOWN &&
-+		    sym->flags & SYMBOL_WRITE) {
-+			for_all_properties(sym, prop, P_SELECT) {
-+				sel = prop->expr->left.sym;
-+				if (sel->type == S_UNKNOWN &&
-+				    expr_calc_value(prop->visible.expr) != no) {
-+					fprintf(stderr, "%s:%d:warning: ",
-+						prop->file->name,
-+						prop->lineno);
-+					fprintf(stderr,
-+						"'%s' selects unknown symbol '%s'\n",
-+						sym->name,
-+						sel->name);
-+				}
-+			}
-+		}
-+
-+		if (menu->list) {
-+			menu = menu->list;
-+		} else if (menu->next) {
-+			menu = menu->next;
-+		} else while ((menu = menu->parent)) {
-+			if (menu->next) {
-+				menu = menu->next;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
- static struct option long_opts[] = {
- 	{"oldaskconfig",    no_argument,       NULL, oldaskconfig},
- 	{"oldconfig",       no_argument,       NULL, oldconfig},
-@@ -681,6 +720,8 @@ int main(int ac, char **av)
- 		break;
- 	}
- 
-+	check_selects(rootmenu.list);
-+
- 	if (sync_kconfig) {
- 		/* silentoldconfig is used during the build so we shall update autoconf.
- 		 * All other commands are only used to generate a config.
--- 
-1.9.3
-
+Chuck, I don't think anyone has gotten around to reviewing, accepting or 
+ rejecting this patch yet.
+-Anish
