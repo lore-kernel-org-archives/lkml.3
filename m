@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067AbaIZXBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 19:01:50 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61869 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751542AbaIZXBs (ORCPT
+	id S1756168AbaIZXDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 19:03:21 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:55303 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaIZXDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 19:01:48 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance states
-Date: Sat, 27 Sep 2014 01:21:39 +0200
-Message-ID: <2075276.PKjjuvNeys@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53F589C3.4050504@huawei.com>
-References: <53F589C3.4050504@huawei.com>
+	Fri, 26 Sep 2014 19:03:19 -0400
+Date: Fri, 26 Sep 2014 16:03:14 -0700
+From: josh@joshtriplett.org
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia.lawall@lip6.fr>,
+        tapaswenipathak@gmail.com, opw-kernel@googlegroups.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [OPW kernel] checkpatch: Does anyone care that comments are
+ freeform aligned?
+Message-ID: <20140926230314.GN20632@cloud>
+References: <alpine.DEB.2.02.1409240745160.2051@localhost6.localdomain6>
+ <1411584074.3594.17.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411584074.3594.17.camel@joe-AO725>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
-> As the initialized freq_tables maybe different from the p-states
-> values, so the array index is different as well.
+On Wed, Sep 24, 2014 at 11:41:14AM -0700, Joe Perches wrote:
+> On Wed, 2014-09-24 at 07:47 +0200, Julia Lawall wrote:
+> > In the following patch extract, one line is indented with spaces rather 
+> > than tabs.  Is it intentional that checkpatch doesn't complain about this, 
+> > I guess due to the line being a comment?
+> []
+> >  struct bcm_hdr_suppression_contextinfo {
+> > -	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS]; /* Intermediate buffer to accumulate pkt Header for PHS */
+> > -	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN]; /* Intermediate buffer containing pkt Header after PHS */
+> > +    /* Intermediate buffer to accumulate pkt Header for PHS */
+> > +	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS];
+> > +	/* Intermediate buffer containing pkt Header after PHS */
+> > +	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN];
+> >  };
 > 
-> p-states value: [2400 2400 2000 ...], while the freq_tables:
-> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
-> the perf->state is 3 while the freqs_table's index should be 2.
-> So when call the get_cur_freq_on_cpu, the freqs value we get
-> is 2400.
+> checkpatch does not care when comments start in any
+> particular position or ensure comments have tabs
+> preceding them.
 > 
-> So, fix the problem with the correct tables.
+> Does anyone care?
 
-What you're saying is basically that freq_table and perf->states
-diverge at one point.  Shouldn't we re-generate freq_table in that
-case instead of fixing up get_cur_freq_on_cpu() only in a quite
-indirect way? 
+This should have already been caught by other whitespace checks that
+check for indentations of 8 or more spaces.  Similarly, mixed tab/space
+indentations would get caught by those same checks.  I don't think
+checkpatch needs to check those.
 
-> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
-> ---
->  drivers/cpufreq/acpi-cpufreq.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-> index b0c18ed..ac93885 100644
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
->  static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->  {
->  	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
-> +	struct acpi_processor_performance *perf;
->  	unsigned int freq;
->  	unsigned int cached_freq;
->  
-> @@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->  		return 0;
->  	}
->  
-> -	cached_freq = data->freq_table[data->acpi_data->state].frequency;
-> +	perf = data->acpi_data;
-> +	cached_freq = perf->states[perf->state].core_frequency * 1000;
->  	freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
->  	if (freq != cached_freq) {
->  		/*
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+- Josh Triplett
