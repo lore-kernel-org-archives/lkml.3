@@ -1,88 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaIZKU3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:20:29 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:14763 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756072AbaIZKUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756688AbaIZKUY (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Sep 2014 06:20:24 -0400
-X-IronPort-AV: E=Sophos;i="5.04,603,1406563200"; 
-   d="scan'208";a="36518164"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: RE: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
- to ns
-Thread-Topic: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
- to ns
-Thread-Index: AQHP195u16fgq2K+Ek2axoqmdIkT2JwTNPWA
-Date: Fri, 26 Sep 2014 10:20:02 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5C7377@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+Received: from cantor2.suse.de ([195.135.220.15]:33044 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754744AbaIZJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:17 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Michel Lespinasse <walken@google.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        Yang Zhang <yang.z.zhang@Intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Janet Morgan <janet.morgan@Intel.com>, Tony Luck <tony.luck@Intel.com>,
+        Ruiv Wang <ruiv.wang@gmail.com>, Gong Chen <gong.chen@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 003/142] x86: Add check for number of available vectors before CPU down
+Date: Fri, 26 Sep 2014 11:43:34 +0200
+Message-Id: <26a01cb8adbd71b0f0b2f460a651c46b2246e9db.1411724723.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8QAKbAm030827
 
-Hi,
+From: Prarit Bhargava <prarit@redhat.com>
 
-> -----Original Message-----
-> From: containers-bounces@lists.linux-foundation.org
-> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
-> Hanxiao
-> Sent: Wednesday, September 24, 2014 6:00 PM
-> To: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Cc: Richard Weinberger; Serge Hallyn; Oleg Nesterov; Mateusz Guzik; David Howells;
-> Eric W. Biederman
-> Subject: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according to ns
-> 
-> If some issues occurred inside a container guest, host user
-> could not know which process is in trouble just by guest pid:
-> the users of container guest only knew the pid inside containers.
-> This will bring obstacle for trouble shooting.
-> 
-> This patch adds four fields: NStgid, NSpid, NSpgid and NSsid:
-> a) In init_pid_ns, nothing changed;
-> 
-> b) In one pidns, will tell the pid inside containers:
-> NStgid:	21776   5       1
-> NSpid:  21776   5       1
-> NSpgid:	21776   5       1
-> NSsid:  21729   1       0
-> ** Process id is 21776 in level 0, 5 in level 1, 1 in level 2.
-> 
-> c) If pidns is nested, it depends on which pidns are you in.
-> NStgid: 5       1
-> NSpid:  5       1
-> NSpgid: 5       1
-> NSsid:  1       0
-> ** Views from level 1
-> 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-This patch is simple, useful and safe.
-But currently there is not any feedbacks.
+===============
 
-Any comments or ideas? 
+commit da6139e49c7cb0f4251265cb5243b8d220adb48d upstream.
 
-Thanks,
-- Chen
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=64791
+
+When a cpu is downed on a system, the irqs on the cpu are assigned to
+other cpus.  It is possible, however, that when a cpu is downed there
+aren't enough free vectors on the remaining cpus to account for the
+vectors from the cpu that is being downed.
+
+This results in an interesting "overflow" condition where irqs are
+"assigned" to a CPU but are not handled.
+
+For example, when downing cpus on a 1-64 logical processor system:
+
+<snip>
+[  232.021745] smpboot: CPU 61 is now offline
+[  238.480275] smpboot: CPU 62 is now offline
+[  245.991080] ------------[ cut here ]------------
+[  245.996270] WARNING: CPU: 0 PID: 0 at net/sched/sch_generic.c:264 dev_watchdog+0x246/0x250()
+[  246.005688] NETDEV WATCHDOG: p786p1 (ixgbe): transmit queue 0 timed out
+[  246.013070] Modules linked in: lockd sunrpc iTCO_wdt iTCO_vendor_support sb_edac ixgbe microcode e1000e pcspkr joydev edac_core lpc_ich ioatdma ptp mdio mfd_core i2c_i801 dca pps_core i2c_core wmi acpi_cpufreq isci libsas scsi_transport_sas
+[  246.037633] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.12.0+ #14
+[  246.044451] Hardware name: Intel Corporation S4600LH ........../SVRBD-ROW_T, BIOS SE5C600.86B.01.08.0003.022620131521 02/26/2013
+[  246.057371]  0000000000000009 ffff88081fa03d40 ffffffff8164fbf6 ffff88081fa0ee48
+[  246.065728]  ffff88081fa03d90 ffff88081fa03d80 ffffffff81054ecc ffff88081fa13040
+[  246.074073]  0000000000000000 ffff88200cce0000 0000000000000040 0000000000000000
+[  246.082430] Call Trace:
+[  246.085174]  <IRQ>  [<ffffffff8164fbf6>] dump_stack+0x46/0x58
+[  246.091633]  [<ffffffff81054ecc>] warn_slowpath_common+0x8c/0xc0
+[  246.098352]  [<ffffffff81054fb6>] warn_slowpath_fmt+0x46/0x50
+[  246.104786]  [<ffffffff815710d6>] dev_watchdog+0x246/0x250
+[  246.110923]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.119097]  [<ffffffff8106092a>] call_timer_fn+0x3a/0x110
+[  246.125224]  [<ffffffff8106280f>] ? update_process_times+0x6f/0x80
+[  246.132137]  [<ffffffff81570e90>] ? dev_deactivate_queue.constprop.31+0x80/0x80
+[  246.140308]  [<ffffffff81061db0>] run_timer_softirq+0x1f0/0x2a0
+[  246.146933]  [<ffffffff81059a80>] __do_softirq+0xe0/0x220
+[  246.152976]  [<ffffffff8165fedc>] call_softirq+0x1c/0x30
+[  246.158920]  [<ffffffff810045f5>] do_softirq+0x55/0x90
+[  246.164670]  [<ffffffff81059d35>] irq_exit+0xa5/0xb0
+[  246.170227]  [<ffffffff8166062a>] smp_apic_timer_interrupt+0x4a/0x60
+[  246.177324]  [<ffffffff8165f40a>] apic_timer_interrupt+0x6a/0x70
+[  246.184041]  <EOI>  [<ffffffff81505a1b>] ? cpuidle_enter_state+0x5b/0xe0
+[  246.191559]  [<ffffffff81505a17>] ? cpuidle_enter_state+0x57/0xe0
+[  246.198374]  [<ffffffff81505b5d>] cpuidle_idle_call+0xbd/0x200
+[  246.204900]  [<ffffffff8100b7ae>] arch_cpu_idle+0xe/0x30
+[  246.210846]  [<ffffffff810a47b0>] cpu_startup_entry+0xd0/0x250
+[  246.217371]  [<ffffffff81646b47>] rest_init+0x77/0x80
+[  246.223028]  [<ffffffff81d09e8e>] start_kernel+0x3ee/0x3fb
+[  246.229165]  [<ffffffff81d0989f>] ? repair_env_string+0x5e/0x5e
+[  246.235787]  [<ffffffff81d095a5>] x86_64_start_reservations+0x2a/0x2c
+[  246.242990]  [<ffffffff81d0969f>] x86_64_start_kernel+0xf8/0xfc
+[  246.249610] ---[ end trace fb74fdef54d79039 ]---
+[  246.254807] ixgbe 0000:c2:00.0 p786p1: initiating reset due to tx timeout
+[  246.262489] ixgbe 0000:c2:00.0 p786p1: Reset adapter
+Last login: Mon Nov 11 08:35:14 from 10.18.17.119
+[root@(none) ~]# [  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+[  246.792676] ixgbe 0000:c2:00.0 p786p1: detected SFP+: 5
+[  249.231598] ixgbe 0000:c2:00.0 p786p1: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+
+(last lines keep repeating.  ixgbe driver is dead until module reload.)
+
+If the downed cpu has more vectors than are free on the remaining cpus on the
+system, it is possible that some vectors are "orphaned" even though they are
+assigned to a cpu.  In this case, since the ixgbe driver had a watchdog, the
+watchdog fired and notified that something was wrong.
+
+This patch adds a function, check_vectors(), to compare the number of vectors
+on the CPU going down and compares it to the number of vectors available on
+the system.  If there aren't enough vectors for the CPU to go down, an
+error is returned and propogated back to userspace.
+
+v2: Do not need to look at percpu irqs
+v3: Need to check affinity to prevent counting of MSIs in IOAPIC Lowest
+    Priority Mode
+v4: Additional changes suggested by Gong Chen.
+v5/v6/v7/v8: Updated comment text
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1389613861-3853-1-git-send-email-prarit@redhat.com
+Reviewed-by: Gong Chen <gong.chen@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Yang Zhang <yang.z.zhang@Intel.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Janet Morgan <janet.morgan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Ruiv Wang <ruiv.wang@gmail.com>
+Cc: Gong Chen <gong.chen@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/x86/include/asm/irq.h |  1 +
+ arch/x86/kernel/irq.c      | 70 ++++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/smpboot.c  |  6 ++++
+ 3 files changed, 77 insertions(+)
+
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index 0ea10f27d613..cb6cfcd034cf 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -25,6 +25,7 @@ extern void irq_ctx_init(int cpu);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ #include <linux/cpumask.h>
++extern int check_irq_vectors_for_cpu_disable(void);
+ extern void fixup_irqs(void);
+ extern void irq_force_complete_move(int);
+ #endif
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 22d0687e7fda..4207e8d1a094 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -262,6 +262,76 @@ __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs)
+ EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++/*
++ * This cpu is going to be removed and its vectors migrated to the remaining
++ * online cpus.  Check to see if there are enough vectors in the remaining cpus.
++ * This function is protected by stop_machine().
++ */
++int check_irq_vectors_for_cpu_disable(void)
++{
++	int irq, cpu;
++	unsigned int this_cpu, vector, this_count, count;
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct cpumask affinity_new, online_new;
++
++	this_cpu = smp_processor_id();
++	cpumask_copy(&online_new, cpu_online_mask);
++	cpu_clear(this_cpu, online_new);
++
++	this_count = 0;
++	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
++		irq = __this_cpu_read(vector_irq[vector]);
++		if (irq >= 0) {
++			desc = irq_to_desc(irq);
++			data = irq_desc_get_irq_data(desc);
++			cpumask_copy(&affinity_new, data->affinity);
++			cpu_clear(this_cpu, affinity_new);
++
++			/* Do not count inactive or per-cpu irqs. */
++			if (!irq_has_action(irq) || irqd_is_per_cpu(data))
++				continue;
++
++			/*
++			 * A single irq may be mapped to multiple
++			 * cpu's vector_irq[] (for example IOAPIC cluster
++			 * mode).  In this case we have two
++			 * possibilities:
++			 *
++			 * 1) the resulting affinity mask is empty; that is
++			 * this the down'd cpu is the last cpu in the irq's
++			 * affinity mask, or
++			 *
++			 * 2) the resulting affinity mask is no longer
++			 * a subset of the online cpus but the affinity
++			 * mask is not zero; that is the down'd cpu is the
++			 * last online cpu in a user set affinity mask.
++			 */
++			if (cpumask_empty(&affinity_new) ||
++			    !cpumask_subset(&affinity_new, &online_new))
++				this_count++;
++		}
++	}
++
++	count = 0;
++	for_each_online_cpu(cpu) {
++		if (cpu == this_cpu)
++			continue;
++		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
++		     vector++) {
++			if (per_cpu(vector_irq, cpu)[vector] < 0)
++				count++;
++		}
++	}
++
++	if (count < this_count) {
++		pr_warn("CPU %d disable failed: CPU has %u vectors assigned and there are only %u available.\n",
++			this_cpu, this_count, count);
++		return -ERANGE;
++	}
++	return 0;
++}
++
+ /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
+ void fixup_irqs(void)
+ {
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 42c26a485533..b17dfe212233 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1317,6 +1317,12 @@ void cpu_disable_common(void)
+ 
+ int native_cpu_disable(void)
+ {
++	int ret;
++
++	ret = check_irq_vectors_for_cpu_disable();
++	if (ret)
++		return ret;
++
+ 	clear_local_APIC();
+ 
+ 	cpu_disable_common();
+-- 
+2.1.0
+
