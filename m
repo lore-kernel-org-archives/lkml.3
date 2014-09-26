@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260AbaIZJrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:47:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33005 "EHLO mx2.suse.de"
+	id S1755324AbaIZJsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:48:32 -0400
+Received: from 8bytes.org ([81.169.241.247]:37273 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211AbaIZJqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>,
-        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 124/142] drm/tilcdc: fix release order on exit
-Date: Fri, 26 Sep 2014 11:45:35 +0200
-Message-Id: <a643641609ae76e8d1628ce72b40d826912f7b5a.1411724724.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-References: <cover.1411724723.git.jslaby@suse.cz>
+	id S1753941AbaIZJs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:48:29 -0400
+Date: Fri, 26 Sep 2014 11:48:27 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
+        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, eric.auger@linaro.org,
+        marc.zyngier@arm.com, Joerg Roedel <jroedel@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>, Thierry Reding <treding@nvidia.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        "Upinder Malhi (umalhi)" <umalhi@cisco.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv7 02/26] iommu: add capability IOMMU_CAP_NOEXEC
+Message-ID: <20140926094827.GE28786@8bytes.org>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-3-git-send-email-a.motakis@virtualopensystems.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411483586-29304-3-git-send-email-a.motakis@virtualopensystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guido Martínez <guido@vanguardiasur.com.ar>
+On Tue, Sep 23, 2014 at 04:46:01PM +0200, Antonios Motakis wrote:
+> Some IOMMUs accept an IOMMU_NOEXEC protection flag in addition to
+> IOMMU_READ and IOMMU_WRITE. Expose this as an IOMMU capability.
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  include/linux/iommu.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+> index e1a644c..0433553 100644
+> --- a/include/linux/iommu.h
+> +++ b/include/linux/iommu.h
+> @@ -59,6 +59,7 @@ struct iommu_domain {
+>  
+>  #define IOMMU_CAP_CACHE_COHERENCY	0x1
+>  #define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
+> +#define IOMMU_CAP_NOEXEC		0x3	/* IOMMU_NOEXEC flag */
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+This changed recently to an enum, please rebase to latest iommu/next
+branch.
 
-===============
 
-commit eb565a2bbadc6a5030a6dbe58db1aa52453e7edf upstream.
+With that change:
 
-Unregister resources in the correct order on tilcdc_drm_fini, which is
-the reverse order they were registered during tilcdc_drm_init.
+	Acked-by: Joerg Roedel <jroedel@suse.de>
 
-This also means unregistering the driver before releasing its resources.
-
-Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/gpu/drm/tilcdc/tilcdc_drv.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-index 247ab5d60df0..af1b17a0db66 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -629,10 +629,10 @@ static int __init tilcdc_drm_init(void)
- static void __exit tilcdc_drm_fini(void)
- {
- 	DBG("fini");
--	tilcdc_tfp410_fini();
--	tilcdc_slave_fini();
--	tilcdc_panel_fini();
- 	platform_driver_unregister(&tilcdc_platform_driver);
-+	tilcdc_panel_fini();
-+	tilcdc_slave_fini();
-+	tilcdc_tfp410_fini();
- }
- 
- late_initcall(tilcdc_drm_init);
--- 
-2.1.0
+for patches 1 and 2.
 
