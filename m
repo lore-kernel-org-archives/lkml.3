@@ -1,91 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaIZJAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:00:34 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13177 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbaIZJAa (ORCPT
+	id S1754569AbaIZI7F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:59:05 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42623 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753996AbaIZIzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:00:30 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-a2-54252b2bbda1
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'NeilBrown'" <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
- <20140926103620.7c397832@notabene.brown>
-In-reply-to: <20140926103620.7c397832@notabene.brown>
-Subject: RE: [PATCH] md: avoid potential long delay under pers_lock
-Date: Fri, 26 Sep 2014 16:59:47 +0800
-Message-id: <004d01cfd968$513d6d00$f3b84700$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGG4wNqX+f5TUFyB86IvHjUIwy0SgJOudLmnJKTzfA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t9jAV1tbdUQg8nnZC0u75rDZtE+fxej
-	xd75DSwOzB6bT1d7fN4kF8AUxWWTkpqTWZZapG+XwJVxb1ITc8EN3oru34/YGxg/cXUxcnJI
-	CJhIXJzSxgxhi0lcuLeerYuRi0NIYBGjxPd/k5ghnB+MEt2zlrKDVLEJqEgs7/jPBGKLCMhL
-	rOo7xghiMwvYSNx5MI0FxBYSSJFo3LsMbCqngKnEn0/3WEFsYQFniTnr2sDqWQRUJU6194PV
-	8ApYSqzcvZ4RwhaU+DH5HgvETC2J9TuPM0HY8hKb17yFulRBYsfZ14wQN1hJTJjRxg5RIy6x
-	8cgtlgmMQrOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4zJ9J
-	72Bc1WBxiFGAg1GJh7dhjUqIEGtiWXFl7iFGCQ5mJRFeIwXVECHelMTKqtSi/Pii0pzU4kOM
-	0hwsSuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2Ma2xZquxfX2i4Hl7i/STwh6zd7LsTejkS
-	xFLWpggve/NRyyhMeb5uGmd+meiRPXXJP5ZqcHVEFP6O3f7uh4Wh3b+N3D8SQmTFqvSuLX23
-	RPmnBMvMY498NLxS52euFozycc9ief1mkevi5hXxHzXZwubyeJ7bvaLtwa2e7OYH78/JeQht
-	7oxRYinOSDTUYi4qTgQAhIhwKG8CAAA=
+	Fri, 26 Sep 2014 04:55:50 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: [PATCH v3 1/8] phy: miphy28lp: Add Device Tree bindings for the MiPHY28lp
+Date: Fri, 26 Sep 2014 10:54:10 +0200
+Message-Id: <1411721657-9924-2-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1411721657-9924-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-26_04:2014-09-26,2014-09-26,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: NeilBrown [mailto:neilb@suse.de]
-> Sent: Friday, September 26, 2014 8:36 AM
-> To: Chao Yu
-> Cc: linux-raid@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] md: avoid potential long delay under pers_lock
-> 
-> On Thu, 25 Sep 2014 15:28:34 +0800 Chao Yu <chao2.yu@samsung.com> wrote:
-> 
-> > printk may cause long time lapse if value of printk_delay in sysctl is
-> > configured large by user. If register_md_personality takes long time to print in
-> > spinlock pers_lock, we may encounter high CPU usage rate when there are other
-> > pers_lock competitors who may be blocked to spin.
-> > We can avoid this condition by moving printk out of coverage of pers_lock
-> > spinlock.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  drivers/md/md.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/md/md.c b/drivers/md/md.c
-> > index e02de05..5fcf215 100644
-> > --- a/drivers/md/md.c
-> > +++ b/drivers/md/md.c
-> > @@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops = {
-> >
-> >  int register_md_personality(struct md_personality *p)
-> >  {
-> > +	printk(KERN_INFO "md: %s personality registered for level %d\n",
-> > +						p->name, p->level);
-> >  	spin_lock(&pers_lock);
-> >  	list_add_tail(&p->list, &pers_list);
-> > -	printk(KERN_INFO "md: %s personality registered for level %d\n", p->name, p->level);
-> >  	spin_unlock(&pers_lock);
-> >  	return 0;
-> >  }
-> 
-> I'm not sure I see the pressing need for this - have you noticed actual
-> problems?
+The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
+or USB3 devices.
 
-Haven't, I found this by code review.
+Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
 
-Thanks,
-Yu
-
-> However it seems to make sense so I've applied it.
-> 
-> Thanks,
-> NeilBrown
+diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+new file mode 100644
+index 0000000..f7cfc5f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+@@ -0,0 +1,126 @@
++STMicroelectronics STi MIPHY28LP PHY binding
++============================================
++
++This binding describes a miphy device that is used to control PHY hardware
++for SATA, PCIe or USB3.
++
++Required properties (controller (parent) node):
++- compatible	: Should be "st,miphy28lp-phy".
++- st,syscfg	: Should be a phandle of the system configuration register group
++		  which contain the SATA, PCIe or USB3 mode setting bits.
++
++Required nodes	:  A sub-node is required for each channel the controller
++		   provides. Address range information including the usual
++		   'reg' and 'reg-names' properties are used inside these
++		   nodes to describe the controller's topology. These nodes
++		   are translated by the driver's .xlate() function.
++
++Required properties (port (child) node):
++- #phy-cells	: Should be 1 (See second example)
++		  Cell after port phandle is device type from:
++			- MIPHY_TYPE_SATA
++			- MIPHY_TYPE_PCI
++			- MIPHY_TYPE_USB3
++- reg		: Address and length of the register set for the device.
++- reg-names	: The names of the register addresses corresponding to the registers
++		  filled in "reg". Is can also contain the offset of the system configuration
++		  registers used as glue-logic to setup the device for SATA/PCIe or USB3
++		  devices.
++- resets	: phandle to the parent reset controller.
++- reset-names	: Associated name must be "miphy-sw-rst".
++
++Optional properties (port (child) node):
++- st,osc-rdy		: to check the MIPHY0_OSC_RDY status in the glue-logic. This
++			  is not available in all the MiPHY. For example, for STiH407, only the
++			  MiPHY0 has this bit.
++- st,osc-force-ext	: to select the external oscillator. This can change from
++			  different MiPHY inside the same SoC.
++- st,sata_gen		: to select which SATA_SPDMODE has to be set in the SATA system config
++			  register.
++- st,px_rx_pol_inv	: to invert polarity of RXn/RXp (respectively negative line and positive
++			  line).
++
++example:
++
++		miphy28lp_phy: miphy28lp@9b22000 {
++			compatible = "st,miphy28lp-phy";
++			st,syscfg = <&syscfg_core>;
++			#address-cells	= <1>;
++			#size-cells	= <1>;
++			ranges;
++
++			phy_port0: port@9b22000 {
++				reg = <0x9b22000 0xff>,
++				      <0x9b09000 0xff>,
++				      <0x9b04000 0xff>,
++				      <0x114 0x4>, /* sysctrl MiPHY cntrl */
++				      <0x818 0x4>, /* sysctrl MiPHY status*/
++				      <0xe0  0x4>, /* sysctrl PCIe */
++				      <0xec  0x4>; /* sysctrl SATA */
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++				st,osc-rdy;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY0_SOFTRESET>;
++			};
++
++			phy_port1: port@9b2a000 {
++				reg = <0x9b2a000 0xff>,
++				      <0x9b19000 0xff>,
++				      <0x9b14000 0xff>,
++				      <0x118 0x4>,
++				      <0x81c 0x4>,
++				      <0xe4  0x4>,
++				      <0xf0  0x4>;
++				reg-names = "sata-up",
++					    "pcie-up",
++					    "pipew",
++					    "miphy-ctrl-glue",
++					    "miphy-status-glue",
++					    "pcie-glue",
++					    "sata-glue";
++				#phy-cells = <1>;
++				st,osc-force-ext;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY1_SOFTRESET>;
++			};
++
++			phy_port2: port@8f95000 {
++				reg = <0x8f95000 0xff>,
++				      <0x8f90000 0xff>,
++				      <0x11c 0x4>,
++				      <0x820 0x4>;
++				reg-names = "pipew",
++				    "usb3-up",
++				    "miphy-ctrl-glue",
++				    "miphy-status-glue";
++				#phy-cells = <1>;
++				reset-names = "miphy-sw-rst";
++				resets = <&softreset STIH407_MIPHY2_SOFTRESET>;
++			};
++		};
++
++
++Specifying phy control of devices
++=================================
++
++Device nodes should specify the configuration required in their "phys"
++property, containing a phandle to the miphy device node and an index
++specifying which configuration to use, as described in phy-bindings.txt.
++
++example:
++		sata0: sata@9b20000  {
++			...
++			phys		= <&phy_port0 MIPHY_TYPE_SATA>;
++			...
++		};
++
++Macro definitions for the supported miphy configuration can be found in:
++
++include/dt-bindings/phy/phy-miphy28lp.h
+-- 
+1.9.1
 
