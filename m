@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030199AbaIZWLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 18:11:45 -0400
-Received: from 99-65-72-228.uvs.sntcca.sbcglobal.net ([99.65.72.228]:22304
-	"EHLO stargate.chelsio.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751503AbaIZWLo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 18:11:44 -0400
-From: Anish Bhatt <anish@chelsio.com>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "sebastian@fds-team.de" <sebastian@fds-team.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: RE: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-Thread-Topic: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-Thread-Index: AQHP2PjujZWZAPWsuEKdVk/F+NXXnJwUbgaA//+NHWA=
-Date: Fri, 26 Sep 2014 22:10:30 +0000
-Message-ID: <525DB349B3FB5444AE057A887CB2A8D88F4B57@nice.asicdesigners.com>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
- <20140926170041.700f44bd@as>
-In-Reply-To: <20140926170041.700f44bd@as>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.161.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1030184AbaIZWYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 18:24:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60349 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755644AbaIZWYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 18:24:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: BUG: sleeping function called from invalid context at drivers/cpufreq/cpufreq.c:370
+Date: Sat, 27 Sep 2014 00:44:23 +0200
+Message-ID: <2457441.tHFXzSCneW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411718040.6005.18.camel@marge.simpson.net>
+References: <20140924081845.572814794@infradead.org> <1411712697.6005.7.camel@marge.simpson.net> <1411718040.6005.18.camel@marge.simpson.net>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Chuck Ebbert [mailto:cebbert.lkml@gmail.com]
-> Sent: Friday, September 26, 2014 3:01 PM
-> To: Anish Bhatt
-> Cc: linux-kernel@vger.kernel.org; x86@kernel.org; tglx@linutronix.de;
-> mingo@redhat.com; hpa@zytor.com; sebastian@fds-team.de; Linus
-> Torvalds
-> Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+On Friday, September 26, 2014 09:54:00 AM Mike Galbraith wrote:
+> On Fri, 2014-09-26 at 08:24 +0200, Mike Galbraith wrote: 
+> > (the hazards of multitasking.. post escaped early, and went to mostly
+> > the wrong folks)
+> > 
+> > 
+> > While testing some scheduler patches, the below pcc-cpufreq
+> > might_sleep() gripe fell out.
 > 
-> On Thu, 25 Sep 2014 12:42:51 -0700
-> Anish Bhatt <anish@chelsio.com> wrote:
+> Because the bits below from 8fec051e didn't make the lock go away first.
+> Reverting only pcc-cpufreq back to notifier.. works.
 > 
-> > The MSR_SYSCALL_MASK, which is responsible for clearing specific
-> > EFLAGS on  syscall entry, should also clear the nested task (NT) flag
-> > to be safe from  userspace injection. Without this fix the application
-> > segmentation  faults on syscall return because of the changed meaning
-> > of the IRET  instruction.
-> >
-> > Further details can be seen here
-> > https://bugs.winehq.org/show_bug.cgi?id=33275
-> >
-> > Signed-off-by: Anish Bhatt <anish@chelsio.com>
-> > Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
-> > ---
-> >  arch/x86/kernel/cpu/common.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/arch/x86/kernel/cpu/common.c
-> > b/arch/x86/kernel/cpu/common.c index e4ab2b4..3126558 100644
-> > --- a/arch/x86/kernel/cpu/common.c
-> > +++ b/arch/x86/kernel/cpu/common.c
-> > @@ -1184,7 +1184,7 @@ void syscall_init(void)
-> >  	/* Flags to clear on syscall */
-> >  	wrmsrl(MSR_SYSCALL_MASK,
-> >  	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
-> > -	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-> > +	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
-> >  }
-> >
-> >  /*
-> 
-> I don't get it. Why isn't this patch acceptable, at least on x86-64 where NT is
-> never valid?
-> 
-> Bueller?
+> --------------------- drivers/cpufreq/integrator-cpufreq.c ---------------------
 
-Chuck, I don't think anyone has gotten around to reviewing, accepting or 
- rejecting this patch yet.
--Anish
+Are you sure this is the right file?
+
+Shouldn't that be pcc-cpufreq.c rather?
+
+Also moving the spin_lock(&pcc_lock) after the cpufreq_freq_transition_begin()
+should fix the problem too (like the below).  Have you tried that?
+
+
+---
+ drivers/cpufreq/pcc-cpufreq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-pm/drivers/cpufreq/pcc-cpufreq.c
+===================================================================
+--- linux-pm.orig/drivers/cpufreq/pcc-cpufreq.c
++++ linux-pm/drivers/cpufreq/pcc-cpufreq.c
+@@ -204,7 +204,6 @@ static int pcc_cpufreq_target(struct cpu
+ 	u32 input_buffer;
+ 	int cpu;
+ 
+-	spin_lock(&pcc_lock);
+ 	cpu = policy->cpu;
+ 	pcc_cpu_data = per_cpu_ptr(pcc_cpu_info, cpu);
+ 
+@@ -216,6 +215,7 @@ static int pcc_cpufreq_target(struct cpu
+ 	freqs.old = policy->cur;
+ 	freqs.new = target_freq;
+ 	cpufreq_freq_transition_begin(policy, &freqs);
++	spin_lock(&pcc_lock);
+ 
+ 	input_buffer = 0x1 | (((target_freq * 100)
+ 			       / (ioread32(&pcch_hdr->nominal) * 1000)) << 8);
+
