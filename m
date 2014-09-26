@@ -1,110 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaIZPiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 11:38:14 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44245 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755169AbaIZPiM (ORCPT
+	id S1755218AbaIZPkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 11:40:09 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56456 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541AbaIZPkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 11:38:12 -0400
-Date: Fri, 26 Sep 2014 16:37:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org, tech@virtualopensystems.com,
-        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
-        kim.phillips@freescale.com, eric.auger@linaro.org,
-        marc.zyngier@arm.com, open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7 07/26] driver core: amba: add device binding path
-	'driver_override'
-Message-ID: <20140926153751.GW5182@n2100.arm.linux.org.uk>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com> <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com>
+	Fri, 26 Sep 2014 11:40:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [2a01:e35:2434:4600:4883:f5eb:6eb5:6c26]
+In-Reply-To: <1411512059.24563.57.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-7-git-send-email-a.motakis@virtualopensystems.com> <1411512059.24563.57.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Fri, 26 Sep 2014 17:39:45 +0200
+Message-ID: <CAG8rG2z14gT28jec66o3UQ=z-omNv+bC43moJT-FhdUtd2OJDg@mail.gmail.com>
+Subject: Re: [PATCHv7 06/26] vfio/iommu_type1: implement the
+ VFIO_DMA_MAP_FLAG_NOEXEC flag
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 04:46:06PM +0200, Antonios Motakis wrote:
-> As already demonstrated with PCI [1] and the platform bus [2], a
-> driver_override property in sysfs can be used to bypass the id matching
-> of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
-> device requested by the user.
-> 
-> [1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
-> [2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+On Wed, Sep 24, 2014 at 12:40 AM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+>> Some IOMMU drivers, such as the ARM SMMU driver, make available the
+>> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
+>> This affects devices such as the ARM PL330 DMA Controller, which respects
+>> this flag and will refuse to fetch DMA instructions from memory where the
+>> XN flag has been set.
+>>
+>> The flag can be used only if all IOMMU domains behind the container support
+>> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
+>> new domains with devices will have to support it as well.
+>>
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> ---
+>>  drivers/vfio/vfio_iommu_type1.c | 38 +++++++++++++++++++++++++++++++++++++-
+>>  1 file changed, 37 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+>> index 0734fbe..09e5064 100644
+>> --- a/drivers/vfio/vfio_iommu_type1.c
+>> +++ b/drivers/vfio/vfio_iommu_type1.c
+>> @@ -81,6 +81,26 @@ struct vfio_group {
+>>  };
+>>
+>>  /*
+>> + * This function returns true only if _all_ domains support the capability.
+>> + */
+>> +static int vfio_all_domains_have_iommu_noexec(struct vfio_iommu *iommu)
+>
+> Rename to vfio_domains_have_iommu_noexec() for consistency with the
+> cache version.
+>
 
-I have to ask why this is even needed in the first place.  To take the
-example in [2], what's wrong with:
+The logic here is a slightly different logic between the two. For
+IOMMU_CACHE we generally check if any domain includes it, for NOEXEC
+in contract we need all domains to support it, otherwise we can't
+expose the capability. Hence the _all_ addition in the name of the
+function.
 
-echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
-echo fff51000.ethernet > /sys/bus/platform/drivers/vfio-platform/bind
+>> +{
+>> +     struct vfio_domain *d;
+>> +     int ret = 1;
+>> +
+>> +     mutex_lock(&iommu->lock);
+>> +     list_for_each_entry(d, &iommu->domain_list, next) {
+>> +             if (!iommu_domain_has_cap(d->domain, IOMMU_CAP_NOEXEC)) {
+>
+> Should we cache this in domain->prot like we do for IOMMU_CACHE?
+>
+>> +                     ret = 0;
+>> +                     break;
+>> +             }
+>> +     }
+>> +     mutex_unlock(&iommu->lock);
+>> +
+>> +     return ret;
+>> +}
+>> +
+>> +/*
+>>   * This code handles mapping and unmapping of user data buffers
+>>   * into DMA'ble space using the IOMMU
+>>   */
+>> @@ -546,6 +566,11 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>>               prot |= IOMMU_WRITE;
+>>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+>>               prot |= IOMMU_READ;
+>> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
+>> +             if (!vfio_all_domains_have_iommu_noexec(iommu))
+>> +                     return -EINVAL;
+>> +             prot |= IOMMU_NOEXEC;
+>> +     }
+>>
+>>       if (!prot || !size || (size | iova | vaddr) & mask)
+>>               return -EINVAL;
+>> @@ -636,6 +661,12 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
+>>               dma = rb_entry(n, struct vfio_dma, node);
+>>               iova = dma->iova;
+>>
+>> +             /* if any of the mappings to be replayed has the NOEXEC flag
+>> +              * set, then the new iommu domain must support it */
+>
+> nit, please fix the comment style to match the rest of the file.
+>
 
-and similar for AMBA.
+Ack
 
-All we would need to do is to introduce a way of having a driver accept
-explicit bind requests.
+>> +             if ((dma->prot | IOMMU_NOEXEC) &&
+>> +                 !iommu_domain_has_cap(domain->domain, IOMMU_CAP_NOEXEC))
+>> +                     return -EINVAL;
+>> +
+>>               while (iova < dma->iova + dma->size) {
+>>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
+>>                       size_t size;
+>> @@ -890,6 +921,10 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>>                       if (!iommu)
+>>                               return 0;
+>>                       return vfio_domains_have_iommu_cache(iommu);
+>> +             case VFIO_IOMMU_PROT_NOEXEC:
+>> +                     if (!iommu)
+>> +                             return 0;
+>> +                     return vfio_all_domains_have_iommu_noexec(iommu);
+>>               default:
+>>                       return 0;
+>>               }
+>> @@ -913,7 +948,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
+>>               struct vfio_iommu_type1_dma_map map;
+>>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+>> -                             VFIO_DMA_MAP_FLAG_WRITE;
+>> +                             VFIO_DMA_MAP_FLAG_WRITE |
+>> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
+>>
+>>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+>>
+>
+>
+>
 
-In any case:
 
-> +static ssize_t driver_override_store(struct device *_dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
-> +{
-> +	struct amba_device *dev = to_amba_device(_dev);
-> +	char *driver_override, *old = dev->driver_override, *cp;
-> +
-> +	if (count > PATH_MAX)
-> +		return -EINVAL;
-> +
-> +	driver_override = kstrndup(buf, count, GFP_KERNEL);
-> +	if (!driver_override)
-> +		return -ENOMEM;
-> +
-> +	cp = strchr(driver_override, '\n');
-> +	if (cp)
-> +		*cp = '\0';
-
-I hope that is not replicated everywhere.  This allows up to a page to be
-allocated, even when the first byte may be a newline.  This is wasteful.
-
-How about:
-
-	if (count > PATH_MAX)
-		return -EINVAL;
-
-	cp = strnchr(buf, count, '\n');
-	if (cp)
-		count = cp - buf - 1;
-
-	if (count) {
-		driver_override = kstrndup(buf, count, GFP_KERNEL);
-		if (!driver_override)
-			return -ENOMEM;
-	} else {
-		driver_override = NULL;
-	}
-
-	kfree(dev->driver_override);
-	dev->driver_override = driver_override;
-
-Also:
-
-> +static ssize_t driver_override_show(struct device *_dev,
-> +				    struct device_attribute *attr, char *buf)
-> +{
-> +	struct amba_device *dev = to_amba_device(_dev);
-> +
-> +	return sprintf(buf, "%s\n", dev->driver_override);
-> +}
-
-Do we really want to do a NULL pointer dereference here?
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Antonios Motakis
+Virtual Open Systems
