@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644AbaIZKUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:20:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33053 "EHLO mx2.suse.de"
+	id S1755636AbaIZKWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:22:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33058 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754904AbaIZJqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:46:19 -0400
+	id S1754749AbaIZJqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:15 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 085/142] spi/pxa2xx: Add ACPI ID for Intel Braswell
-Date: Fri, 26 Sep 2014 11:44:56 +0200
-Message-Id: <05c1545f82f257383b7212f0d5b8bfd7c34957be.1411724724.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Michael Welling <mwelling@emacinc.com>,
+        Lee Jones <lee.jones@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 046/142] mfd: omap-usb-host: Fix improper mask use.
+Date: Fri, 26 Sep 2014 11:44:17 +0200
+Message-Id: <8a9f2a150ef49da8cfc8cde47aa1962a3bb72ed3.1411724724.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
 References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
@@ -23,37 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Michael Welling <mwelling@emacinc.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit aca26364689e00e3b2052072424682231bdae6ae upstream.
+commit 46de8ff8e80a6546aa3d2fdf58c6776666301a0c upstream.
 
-The SPI host controller is the same as used in Baytrail, only the ACPI ID
-is different so add this new ID to the list.
+single-ulpi-bypass is a flag used for older OMAP3 silicon.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The flag when set, can excite code that improperly uses the
+OMAP_UHH_HOSTCONFIG_UPLI_BYPASS define to clear the corresponding bit.
+Instead it clears all of the other bits disabling all of the ports in
+the process.
+
+Signed-off-by: Michael Welling <mwelling@emacinc.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/spi/spi-pxa2xx.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/omap-usb-host.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 7b69e93d8448..fa28c75c6d04 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1082,6 +1082,7 @@ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
- 	{ "INT3430", 0 },
- 	{ "INT3431", 0 },
- 	{ "80860F0E", 0 },
-+	{ "8086228E", 0 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 29ee54d68512..5dd653f9b094 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -445,7 +445,7 @@ static unsigned omap_usbhs_rev1_hostconfig(struct usbhs_hcd_omap *omap,
+ 
+ 		for (i = 0; i < omap->nports; i++) {
+ 			if (is_ehci_phy_mode(pdata->port_mode[i])) {
+-				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
++				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
+ 				break;
+ 			}
+ 		}
 -- 
 2.1.0
 
