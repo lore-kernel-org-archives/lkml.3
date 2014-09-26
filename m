@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaIZJOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 05:14:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41626 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaIZJOD convert rfc822-to-8bit (ORCPT
+	id S1753593AbaIZJOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 05:14:54 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:56265 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122AbaIZJOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 05:14:03 -0400
-Date: Fri, 26 Sep 2014 10:13:57 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	Fri, 26 Sep 2014 05:14:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Joachim Eastwood <manabian@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Douglas Anderson <dianders@chromium.org>, kgene.kim@samsung.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        naushad@samsung.com, Li.Xiubo@freescale.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: linux-next: manual merge of the pci tree with the asm-generic
- tree
-Message-ID: <20140926091357.GL841@e106497-lin.cambridge.arm.com>
-References: <20140926132902.603fb9f8@canb.auug.org.au>
- <20140926070022.GA31002@ulmo>
+        Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
+        thomas.ab@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com,
+        Lee Jones <lee.jones@linaro.org>, sunil joshi <joshi@samsung.com>,
+        b29396@freescale.com
+Subject: Re: [PATCH v5] mfd: syscon: Decouple syscon interface from platform devices
+Date: Fri, 26 Sep 2014 11:14:30 +0200
+Message-ID: <3291391.H71MjevFsA@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAGhQ9VwAe7d7fX1Lw22ocxDSXjOZbvXdmG1u6_d5v7ptmYMYeg@mail.gmail.com>
+References: <1411360807-7750-1-git-send-email-pankaj.dubey@samsung.com> <2553182.6YgvmDLuEA@wuerfel> <CAGhQ9VwAe7d7fX1Lw22ocxDSXjOZbvXdmG1u6_d5v7ptmYMYeg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140926070022.GA31002@ulmo>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 26 Sep 2014 09:13:58.0229 (UTC) FILETIME=[342F0050:01CFD96A]
-X-MC-Unique: 114092610140000201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Ax3vjhMVdQsMVEh8r/KDI63SLWzzMOZiltaeN53c3cd
+ 9gJS//sN6gZi1JFsT2GOv0I9fKLc4fe6Ooqzrl0nb7rzhpCf8y
+ gxw+FXsLRUuKDDAgYyroQyHu+3I1P2yyDzsQWjGKTkhS2xKKN6
+ 3ov1mLmZtIUpg86ZZJT8gzP3pRGYCdXUSNTC0qr4aTTqqwXacI
+ 1mFGF77opmeBGPpeD9pZxgFNIsw8ToUpj7vOnE8lJZ5otATX8k
+ mCKuvw2qZezLN7B843R3DI3VkrI0nFnKE3Zw/Mw3yiTn0UNvr/
+ K7qtGaydyq8vTdyYbR3ucKc3vkkYXNMdPDhdwZDEohXTLhH6Pl
+ 1Ozp3QyrtT4Ze+WTCdE4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 08:00:23AM +0100, Thierry Reding wrote:
-> On Fri, Sep 26, 2014 at 01:29:02PM +1000, Stephen Rothwell wrote:
-> > Hi Bjorn,
-> > 
-> > Today's linux-next merge of the pci tree got a conflict in
-> > include/asm-generic/io.h between commit 4005bfe0aa45
-> > ("asm-generic/io.h: Implement generic {read,write}s*()") from the
-> > asm-generic tree and commit 3aad9c969c09 ("asm-generic/io.h: Fix
-> > ioport_map() for !CONFIG_GENERIC_IOMAP") from the pci tree.
-> > 
-> > I fixed it up (the only difference is that the latter castes the result
-> > to void __iomem * - see below) and can carry the fix as necessary (no
-> > action is required).
-> > 
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > 
-> > diff --cc include/asm-generic/io.h
-> > index 3e976be3bdd4,2e2161b0c795..000000000000
-> > --- a/include/asm-generic/io.h
-> > +++ b/include/asm-generic/io.h
-> > @@@ -756,16 -329,11 +756,16 @@@ static inline void iounmap(void __iome
-> >   
-> >   #ifdef CONFIG_HAS_IOPORT_MAP
-> >   #ifndef CONFIG_GENERIC_IOMAP
-> >  +#ifndef ioport_map
-> >  +#define ioport_map ioport_map
-> >   static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-> >   {
-> > - 	return PCI_IOBASE + (port & IO_SPACE_LIMIT);
-> > + 	return (void __iomem *)(PCI_IOBASE + (port & IO_SPACE_LIMIT));
+On Friday 26 September 2014 09:48:24 Joachim Eastwood wrote:
+> On 26 September 2014 09:16, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 26 September 2014 07:34:12 Joachim Eastwood wrote:
+> >> I am working on Cortex-M4 no-MMU platform that isn't upstream yet, btw.
+> >>
+> >
+> > Sorry for drifting off-topic, but this is very interesting to me. Can you
+> > say which one you are working on and what your timeline is for submitting
+> > it upstream?
 > 
-> I don't think that cast is necessary. All instances of PCI_IOBASE are
-> already defined to be void __iomem *.
+> It's NXP LPC18xx/43xx which is Cortex-M3/M4.
 > 
-> Or at least they were until a few days ago. Commit f3dfddf7bd85 (ARM:
-> Define PCI_IOBASE as the base of virtual PCI IO space) introduces one
-> variant for ARM which isn't actually void __iomem *. I think what we
-> should do is standardize the type of PCI_IOBASE.
+> 3.19 or 3.20 might be target.
+
+Ah, very nice!
+
+> Right now everything is in a github repository here:
+> https://github.com/manabian/linux-lpc
 > 
-> So how about we remove commit 3aad9c969c09 (asm-generic/io.h: Fix
-> ioport_map() for !CONFIG_GENERIC_IOMAP) and move the cast to void
-> __iomem * to Liviu's definition of PCI_IOBASE for ARM?
-> 
-> Thierry
+> Most stuff are working now and I am in the process of clean it up and
+> adding documentation.
 
-Hi Stephen,
+Ok, looks like you are making good progress. I noticed three high-level
+issues that you may want to address:
 
-I agree with Thierry's solution.
+- the watchdog driver should use the generic watchdog framework rather
+  than registering a misc device.
+- the ehci glue can probably go away if you make very small changes
+  to the generic ehci platform driver
+- I don't like the way that the stmmac glue drivers are added, I thought
+  we had fixed this before but I think I need to dig up old emails.
+  The driver should really be a loadable module that hooks calls into
+  the common code rather than being linked into one module.
 
-I don't know how these cases are handled. Should I send Bjorn a patch for his tree?
+I also have a plan for doing multiplatform builds of nommu kernels, 
+for build testing mostly, I wouldn't expect you to run that configuration.
+No need for you to address that yourself though, we'll get there.
 
-Best regards,
-Liviu
-
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+	Arnd
