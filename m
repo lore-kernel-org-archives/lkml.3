@@ -1,93 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaIZAgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:36:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53603 "EHLO mx2.suse.de"
+	id S1752968AbaIZAil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:38:41 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54440 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315AbaIZAga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:36:30 -0400
-Date: Fri, 26 Sep 2014 10:36:20 +1000
-From: NeilBrown <neilb@suse.de>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: avoid potential long delay under pers_lock
-Message-ID: <20140926103620.7c397832@notabene.brown>
-In-Reply-To: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
-References: <002801cfd892$696e39d0$3c4aad70$@samsung.com>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752312AbaIZAij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 20:38:39 -0400
+Date: Thu, 25 Sep 2014 19:37:50 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
+        <jszhang@marvell.com>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140926003750.GA12770@saruman>
+Reply-To: <balbi@ti.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <2923729.dtX0WmHSV0@wuerfel>
+ <20140924112902.GA23331@peterchendt>
+ <2786668.t3YLqX5enD@wuerfel>
+ <20140925141553.GC28045@saruman>
+ <20140925233932.GA3026@peterchendt>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/jASjM37T=RQ9pDhaA_8U+Al"; protocol="application/pgp-signature"
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+In-Reply-To: <20140925233932.GA3026@peterchendt>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jASjM37T=RQ9pDhaA_8U+Al
-Content-Type: text/plain; charset=US-ASCII
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 25 Sep 2014 15:28:34 +0800 Chao Yu <chao2.yu@samsung.com> wrote:
+HI,
 
-> printk may cause long time lapse if value of printk_delay in sysctl is
-> configured large by user. If register_md_personality takes long time to p=
-rint in
-> spinlock pers_lock, we may encounter high CPU usage rate when there are o=
-ther
-> pers_lock competitors who may be blocked to spin.
-> We can avoid this condition by moving printk out of coverage of pers_lock
-> spinlock.
+On Fri, Sep 26, 2014 at 07:39:34AM +0800, Peter Chen wrote:
+> On Thu, Sep 25, 2014 at 09:15:53AM -0500, Felipe Balbi wrote:
+> > On Wed, Sep 24, 2014 at 02:23:38PM +0200, Arnd Bergmann wrote:
+> > > On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
+> > > >=20
+> > > > So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
+> > > > (dwc3, musb, chipidea) you are talking about, right? Except for
+> > > > creating another platform driver as well as related DT node (option=
+al),
+> > > > are there any advantages compared to current IP core driver structu=
+re?
+> > >=20
+> > > Having a library module usually requires less code, and is more
+> > > consistent with other drivers, which helps new developers understand
+> > > what the driver is doing.
+> >=20
+> > I beg to differ. You end-up having to pass function pointers through
+> > platform_data to handle differences which could be handled by the core
+> > IP.
+> >=20
+> > > The most important aspect though is the DT binding: once the structure
+> > > with separate kernel drivers leaks out into the DT format, you can't
+> > > easily change the driver any more, e.g. to make a property that was
+> > > introduced for one glue driver more general so it can get handled by
+> > > the common part. Having a single node lets us convert to the library
+> > > model later, so that would be a strong reason to keep the DT binding
+> > > simple, without child nodes.
+> > >=20
+> > > Following that logic, it turns into another reason for using the libr=
+ary
+> > > model to start with, because otherwise the child device does not have
+> > > any DT properties itself and has to rely on the parent device propert=
+ies,
+> > > which somewhat complicates the driver structure.
+> >=20
+> > this is bullcrap. Take a look at
+> > Documentation/devicetree/bindings/usb/dwc3.txt:
+> >=20
+> > synopsys DWC3 CORE
+> >=20
+> > DWC3- USB3 CONTROLLER
+> >=20
+> > Required properties:
+> >  - compatible: must be "snps,dwc3"
+> >  - reg : Address and length of the register set for the device
+> >  - interrupts: Interrupts used by the dwc3 controller.
+> >=20
+> > Optional properties:
+> >  - usb-phy : array of phandle for the PHY device.  The first element
+> >    in the array is expected to be a handle to the USB2/HS PHY and
+> >    the second element is expected to be a handle to the USB3/SS PHY
+> >  - phys: from the *Generic PHY* bindings
+> >  - phy-names: from the *Generic PHY* bindings
+> >  - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+> >=20
+> > This is usually a subnode to DWC3 glue to which it is connected.
+> >=20
+> > dwc3@4a030000 {
+> > 	compatible =3D "snps,dwc3";
+> > 	reg =3D <0x4a030000 0xcfff>;
+> > 	interrupts =3D <0 92 4>
+> > 	usb-phy =3D <&usb2_phy>, <&usb3,phy>;
+> > 	tx-fifo-resize;
+> > };
+> >=20
+> > This contains all the attributes it needs to work. In fact, this could
+> > be used without any glue.
+> >=20
 >=20
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  drivers/md/md.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index e02de05..5fcf215 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -7200,9 +7200,10 @@ static const struct file_operations md_seq_fops =
-=3D {
-> =20
->  int register_md_personality(struct md_personality *p)
->  {
-> +	printk(KERN_INFO "md: %s personality registered for level %d\n",
-> +						p->name, p->level);
->  	spin_lock(&pers_lock);
->  	list_add_tail(&p->list, &pers_list);
-> -	printk(KERN_INFO "md: %s personality registered for level %d\n", p->nam=
-e, p->level);
->  	spin_unlock(&pers_lock);
->  	return 0;
->  }
+> If you want to add "vbus-supply" core node to support ID switch, what's
+> the plan for that?
 
-I'm not sure I see the pressing need for this - have you noticed actual
-problems?
-However it seems to make sense so I've applied it.
+send a patch ? Just make sure it's optional because not everybody needs
+a vbus-supply. Also, DRD will still take a few merge windows to become a
+reality. I don't want to merge something before considering it carefuly,
+otherwise we will having which is broken and doesn't work for everybody
+;-)
 
-Thanks,
-NeilBrown
+> Is it possible that the glue layer needs to access core register
+> (eg, portsc.phcd during suspend)? The wrapper IP may wait some signals
+> at core IP to change.
 
---Sig_/jASjM37T=RQ9pDhaA_8U+Al
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+why would a glue layer need to access registers from the core ? That
+sounds very odd. I haven't seen that and will, definitely, NACK such a
+patch :-)
+
+can you further describe why you think a glue layer might need to access
+core IP's registers ?
+
+--=20
+balbi
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIUAwUBVCS1BDnsnt1WYoG5AQLr6A/4gQrk0LUF0nzgvvq3Id2C0AFmx8zuoXFt
-PbT3zTlEMNqOXurdy63KMnM21OmMkl+N+SeQtrqWiodjtJGvGpwnvsgyI/Tvugnw
-RJ6uIk9HdsmfwOZ7/6e4thTq5xp8uQtblqrMQbKwjAbN0u6R4JVr7qF2sxZO1UGa
-3WThI4vii4le5UjGjoDD3ImWIpBoFCBbBTYU20E2Y6nokUaZNenE2VEFj3ZNP6cH
-wIJeK/Lji+Q58tpjlHTzkslsWwsLsGYhTr2C11Fkcil4gQ/x5D46a90FgP5g70aC
-wYNdM/2oGIkkbByg1CZg1qA3H5CN3y29/FT+otVDgz+aCmfwe60h6kDkwsa2P5by
-m9fmdVe0/ncPgRPAT0fyKXRXmRG/aFazwrZRmJTplnZ7bmb64PYWzjqica1XnLVC
-WYMNPentmLfbzWehTSyoB321kvVk/ylqk99I0n2NjVbPoYrH0oo/mJoPJhmBjrEh
-znddy9iOgbhCEX6gzYsllMeyO3dVaM/9F0lcfAN1e+WG+Ttotcrr820Zb4//24wl
-QfAJSUN+SXUGvhs+mC1JIoroLWrN4PKUghKnqgSByMGTqM3EXJJOjHrLRbbOiwdi
-RicFpwyiayko0ZjpSOOh2kIAv9usTr9YZfvhZKOGe2IjJER+qT5z/4OzLypX3YJF
-7/V86MkR2Q==
-=7zVt
+iQIcBAEBAgAGBQJUJLVdAAoJEIaOsuA1yqRE8wwQAIax1t4tanR/L3I605+N30G6
+8+g1fiqZ3ALt3BI5Pq+m1bSdQ3KuAB/LcmNScjl4sO1ekZq5fRh4baA9wJDH3bNy
+qsDTqULQxanpzxXdCH+n1xTjAW+PLtaJwuPw+EZ9mkf4kiD4eIrqOyNEITkDf0h2
+OV2d2zLxnMyRR86bdmOrXw8Z27AxA7/hnDbVYgDlqx1isr0F2SoV8jXKNkzgvMbR
+apXejsFIN+m2rPGrxdvLEKX+AsLKrwRUS+8WDVv5sqqphsAuR+VE9hdtjHtUP1r+
+FDRkPm5H7sN57YWqWQgw5ngBx6PABzHBVcayqMI7aMWylYIK14iWvJwZf7lApqfa
++Lv20l4oiDcWCuU5A/LztO9/+WL/JwMuGXzvWf3kUH69NzHpWg3zM3IJMSM/NfnP
+EyeXNfLYmoorO8MoS6UppdRXsnRtnvWW7a/IyXZsnZPKSFG40hWTIs2f2jCfWKZX
+MoN6V0QeM7B4v8MAlB8oVj9o06vWoUHUkFGY4X0lTqXAIceafyaGGDmuJbiBbk77
+Gzwbb3eymoQZmxj3kbH4FsrL2dwpGoHrjQ4m+BZavCqXHY0Hqr/qJmrKWMWBriCv
+hftEG8ROPSK0bR4RaU+jpZnbL/VPKi98k39DZJG5UWEaIrtB7hW27p5JZKWR39z1
+VpEilFsBy+L6ruuWRs4L
+=OHmG
 -----END PGP SIGNATURE-----
 
---Sig_/jASjM37T=RQ9pDhaA_8U+Al--
+--+QahgC5+KEYLbs62--
