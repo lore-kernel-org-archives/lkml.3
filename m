@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195AbaIZIwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:52:41 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:47396 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaIZIwi (ORCPT
+	id S1754248AbaIZIyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:54:12 -0400
+Received: from outbound-smtp04.blacknight.com ([81.17.249.35]:38527 "EHLO
+	outbound-smtp04.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753988AbaIZIyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:52:38 -0400
+	Fri, 26 Sep 2014 04:54:09 -0400
+Message-ID: <542529AF.3050601@nexus-software.ie>
+Date: Fri, 26 Sep 2014 09:54:07 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <cover.1411662961.git.stefan@agner.ch>
-References: <cover.1411662961.git.stefan@agner.ch>
-Date: Fri, 26 Sep 2014 10:52:37 +0200
-Message-ID: <CACRpkdaOZ-mN3LrGKWzmtm0+SJaWdaz5LG5H9UYi_e9GQRvaDg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] vf610: Add GPIO support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stefan Agner <stefan@agner.ch>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bpringlemeir@nbsps.com, Lucas Stach <l.stach@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Ong Boon Leong <boon.leong.ong@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] x86, setup: add __flush_tlb() for Intel Quark X1000
+References: <1411705827-2522-1-git-send-email-boon.leong.ong@intel.com> <1411705827-2522-2-git-send-email-boon.leong.ong@intel.com>
+In-Reply-To: <1411705827-2522-2-git-send-email-boon.leong.ong@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 6:37 PM, Stefan Agner <stefan@agner.ch> wrote:
 
-> This 3rd version of the GPIO support for Vybrid now also includes
-> the wakeup support which was part of the suspend/resume patchset
-> I sent earlier this week.
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 41ead8d..90e0b85 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -880,6 +880,13 @@ void __init setup_arch(char **cmdline_p)
 >
-> Changes in v3:
+>   	load_cr3(swapper_pg_dir);
+>   	__flush_tlb_all();
+> +	/*
+> +	 * Quark X1000 wrongly advertises PGE, add __flush_tlb()
+> +	 * below to make sure TLB is flushed correctly in the early stage
+> +	 * of setup_arch() for Quark X1000.
+> +	 * X86_FEATURE_PGE flag is only setup later stage at early_cpu_init();
+> +	 */
+> +	__flush_tlb();
+>   #else
+>   	printk(KERN_INFO "Command line: %s\n", boot_command_line);
+>   #endif
 
-I've already applied patch 1/5.
+Sorry guys.
 
-However I had to fix conflicts against the development branch and
-from patch 2/5 and onward there are even more conflicts, the most
-obvious is that the driver is moved to drivers/pinctrl/freescale, but
-there are other conflicts as well.
+Just actually *read* the patch now.
 
-Can you please rebase patches 2-5 onto my "devel" branch from
-the pin control tree and resend, also collect ACKs.
-https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-pinctrl.git/log/?h=devel
+If the above text works for Ingo and Henrique then it works for me too.
 
-I saw there was still discussion on 2/5 as well, but I'm ready
-to merge anything ACKed by Shawn.
 
-Yours,
-Linus Walleij
+--
+BOD
+
+
