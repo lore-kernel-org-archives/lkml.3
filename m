@@ -1,202 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaIZSCw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 14:02:52 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:64768 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405AbaIZSCu (ORCPT
+	id S1755810AbaIZSE2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 14:04:28 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:50094 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268AbaIZSE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 14:02:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140924154737.50db90eb@canb.auug.org.au>
-References: <20140924154737.50db90eb@canb.auug.org.au>
+	Fri, 26 Sep 2014 14:04:26 -0400
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Sep 2014 11:02:27 -0700
-Message-ID: <CALCETrUFHZuhG5qHaJ3yi8P06hLYSo+76y5ZcqXwHahQSUZt-A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the tip tree with the audit tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Eric Paris <eparis@redhat.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@infradead.org>, Shuah Khan <shuah.kh@samsung.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v2] init: Add strictinit to disable init= fallbacks
+Date: Fri, 26 Sep 2014 11:04:17 -0700
+Message-Id: <f93b6d019337edb73c13d80f8c2495d238922538.1411754556.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/x86/kernel/ptrace.c between commit 91397401bb50 ("ARCH: AUDIT:
-> audit_syscall_entry() should not require the arch") from the audit tree
-> and commit e0ffbaabc46d ("x86: Split syscall_trace_enter into two
-> phases") from the tip tree.
->
-> I fixed it up (see below - there is more cleanup possible since
-> do_audit_syscall_entry() no longer needs its "arch" argument) and can
-> carry the fix as necessary (no action is required).
+If a user puts init=/whatever on the command line and /whatever
+can't be run, then the kernel will try a few default options before
+giving up.  If init=/whatever came from a bootloader prompt, then
+this probably makes sense.  On the other hand, if it comes from a
+script (e.g. a tool like virtme or perhaps a future kselftest
+script), then the fallbacks are likely to exist, but they'll do the
+wrong thing.  For example, they might unexpectedly invoke systemd.
 
-I don't think that more cleanup is possible after all.
-do_audit_syscall_entry may not need to pass the arch parameter to the
-audit code, but it still needs it to choose the set of registers to
-use.
+This adds a new option called strictinit.  If init= and strictinit
+are both set, and the init= binary is not executable, then the
+kernel will panic immediately.  If strictinit is set but init= is
+not set, then strictinit will have no effect, because the only real
+alternative would be to panic regardless of the contents of the root
+fs.
 
---Andy
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->
-> diff --cc arch/x86/kernel/ptrace.c
-> index eb1c87f0b03b,29576c244699..000000000000
-> --- a/arch/x86/kernel/ptrace.c
-> +++ b/arch/x86/kernel/ptrace.c
-> @@@ -1441,24 -1441,126 +1441,126 @@@ void send_sigtrap(struct task_struct *t
->         force_sig_info(SIGTRAP, &info, tsk);
->   }
->
-> -
-> - #ifdef CONFIG_X86_32
-> - # define IS_IA32      1
-> - #elif defined CONFIG_IA32_EMULATION
-> - # define IS_IA32      is_compat_task()
-> - #else
-> - # define IS_IA32      0
-> + static void do_audit_syscall_entry(struct pt_regs *regs, u32 arch)
-> + {
-> + #ifdef CONFIG_X86_64
-> +       if (arch == AUDIT_ARCH_X86_64) {
->  -              audit_syscall_entry(arch, regs->orig_ax, regs->di,
-> ++              audit_syscall_entry(regs->orig_ax, regs->di,
-> +                                   regs->si, regs->dx, regs->r10);
-> +       } else
->   #endif
-> +       {
->  -              audit_syscall_entry(arch, regs->orig_ax, regs->bx,
-> ++              audit_syscall_entry(regs->orig_ax, regs->bx,
-> +                                   regs->cx, regs->dx, regs->si);
-> +       }
-> + }
->
->   /*
-> -  * We must return the syscall number to actually look up in the table.
-> -  * This can be -1L to skip running any syscall at all.
-> +  * We can return 0 to resume the syscall or anything else to go to phase
-> +  * 2.  If we resume the syscall, we need to put something appropriate in
-> +  * regs->orig_ax.
-> +  *
-> +  * NB: We don't have full pt_regs here, but regs->orig_ax and regs->ax
-> +  * are fully functional.
-> +  *
-> +  * For phase 2's benefit, our return value is:
-> +  * 0:                 resume the syscall
-> +  * 1:                 go to phase 2; no seccomp phase 2 needed
-> +  * anything else:     go to phase 2; pass return value to seccomp
->    */
-> - long syscall_trace_enter(struct pt_regs *regs)
-> + unsigned long syscall_trace_enter_phase1(struct pt_regs *regs, u32 arch)
-> + {
-> +       unsigned long ret = 0;
-> +       u32 work;
-> +
-> +       BUG_ON(regs != task_pt_regs(current));
-> +
-> +       work = ACCESS_ONCE(current_thread_info()->flags) &
-> +               _TIF_WORK_SYSCALL_ENTRY;
-> +
-> +       /*
-> +        * If TIF_NOHZ is set, we are required to call user_exit() before
-> +        * doing anything that could touch RCU.
-> +        */
-> +       if (work & _TIF_NOHZ) {
-> +               user_exit();
-> +               work &= ~TIF_NOHZ;
-> +       }
-> +
-> + #ifdef CONFIG_SECCOMP
-> +       /*
-> +        * Do seccomp first -- it should minimize exposure of other
-> +        * code, and keeping seccomp fast is probably more valuable
-> +        * than the rest of this.
-> +        */
-> +       if (work & _TIF_SECCOMP) {
-> +               struct seccomp_data sd;
-> +
-> +               sd.arch = arch;
-> +               sd.nr = regs->orig_ax;
-> +               sd.instruction_pointer = regs->ip;
-> + #ifdef CONFIG_X86_64
-> +               if (arch == AUDIT_ARCH_X86_64) {
-> +                       sd.args[0] = regs->di;
-> +                       sd.args[1] = regs->si;
-> +                       sd.args[2] = regs->dx;
-> +                       sd.args[3] = regs->r10;
-> +                       sd.args[4] = regs->r8;
-> +                       sd.args[5] = regs->r9;
-> +               } else
-> + #endif
-> +               {
-> +                       sd.args[0] = regs->bx;
-> +                       sd.args[1] = regs->cx;
-> +                       sd.args[2] = regs->dx;
-> +                       sd.args[3] = regs->si;
-> +                       sd.args[4] = regs->di;
-> +                       sd.args[5] = regs->bp;
-> +               }
-> +
-> +               BUILD_BUG_ON(SECCOMP_PHASE1_OK != 0);
-> +               BUILD_BUG_ON(SECCOMP_PHASE1_SKIP != 1);
-> +
-> +               ret = seccomp_phase1(&sd);
-> +               if (ret == SECCOMP_PHASE1_SKIP) {
-> +                       regs->orig_ax = -1;
-> +                       ret = 0;
-> +               } else if (ret != SECCOMP_PHASE1_OK) {
-> +                       return ret;  /* Go directly to phase 2 */
-> +               }
-> +
-> +               work &= ~_TIF_SECCOMP;
-> +       }
-> + #endif
-> +
-> +       /* Do our best to finish without phase 2. */
-> +       if (work == 0)
-> +               return ret;  /* seccomp and/or nohz only (ret == 0 here) */
-> +
-> + #ifdef CONFIG_AUDITSYSCALL
-> +       if (work == _TIF_SYSCALL_AUDIT) {
-> +               /*
-> +                * If there is no more work to be done except auditing,
-> +                * then audit in phase 1.  Phase 2 always audits, so, if
-> +                * we audit here, then we can't go on to phase 2.
-> +                */
-> +               do_audit_syscall_entry(regs, arch);
-> +               return 0;
-> +       }
-> + #endif
-> +
-> +       return 1;  /* Something is enabled that we can't handle in phase 1 */
-> + }
-> +
-> + /* Returns the syscall nr to run (which should match regs->orig_ax). */
-> + long syscall_trace_enter_phase2(struct pt_regs *regs, u32 arch,
-> +                               unsigned long phase1_result)
->   {
->         long ret = 0;
-> +       u32 work = ACCESS_ONCE(current_thread_info()->flags) &
-> +               _TIF_WORK_SYSCALL_ENTRY;
->
-> -       user_exit();
-> +       BUG_ON(regs != task_pt_regs(current));
->
->         /*
->          * If we stepped into a sysenter/syscall insn, it trapped in
+Now cc-ing Rusty (who probably cares more about startup options than
+anyone else) and Shuah (who might want to use this at some point).
 
+Changes from v1:
+ - Add missing "if" to the docs (Randy Dunlap)
 
+ Documentation/kernel-parameters.txt |  8 ++++++++
+ init/main.c                         | 10 ++++++++++
+ 2 files changed, 18 insertions(+)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 10d51c2f10d7..3dc921714002 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3236,6 +3236,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	stifb=		[HW]
+ 			Format: bpp:<bpp1>[:<bpp2>[:<bpp3>...]]
+ 
++	strictinit	[KNL,BOOT]
++			Normally, if the kernel can't find the init binary
++			specified by rdinit= and/or init=, then it will
++			try several fallbacks.  If strictinit is set
++			and the value specified by init= does not work,
++			then the kernel will panic instead.
++			This has no effect if init= is not specified.
++
+ 	sunrpc.min_resvport=
+ 	sunrpc.max_resvport=
+ 			[NFS,SUNRPC]
+diff --git a/init/main.c b/init/main.c
+index bb1aed928f21..4fd80dcef9d0 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -131,6 +131,7 @@ static char *initcall_command_line;
+ 
+ static char *execute_command;
+ static char *ramdisk_execute_command;
++static bool strictinit;
+ 
+ /*
+  * Used to generate warnings if static_key manipulation functions are used
+@@ -347,6 +348,13 @@ static int __init rdinit_setup(char *str)
+ }
+ __setup("rdinit=", rdinit_setup);
+ 
++static int __init strictinit_setup(char *str)
++{
++	strictinit = true;
++	return 1;
++}
++__setup("strictinit", strictinit_setup);
++
+ #ifndef CONFIG_SMP
+ static const unsigned int setup_max_cpus = NR_CPUS;
+ #ifdef CONFIG_X86_LOCAL_APIC
+@@ -962,6 +970,8 @@ static int __ref kernel_init(void *unused)
+ 			return 0;
+ 		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+ 			execute_command, ret);
++		if (strictinit)
++			panic("Requested init failed and strictinit was set.");
+ 	}
+ 	if (!try_to_run_init_process("/sbin/init") ||
+ 	    !try_to_run_init_process("/etc/init") ||
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.3
+
