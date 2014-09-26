@@ -1,127 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaIZLs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 07:48:59 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46210 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821AbaIZLs5 (ORCPT
+	id S1754657AbaIZLuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 07:50:52 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:37198 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453AbaIZLut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 07:48:57 -0400
-Date: Fri, 26 Sep 2014 13:48:53 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Mikko Perttunen <cyndis@kapsi.fi>, edubezval@gmail.com,
-        swarren@wwwdotorg.org, linux-pm@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v6 0/4] Tegra124 soctherm driver
-Message-ID: <20140926114852.GO31106@ulmo>
-References: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi>
- <20140926101918.GM31106@ulmo>
- <54253E7C.9080704@kapsi.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qcTtWMBd/uZDG7+Y"
-Content-Disposition: inline
-In-Reply-To: <54253E7C.9080704@kapsi.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 26 Sep 2014 07:50:49 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-0a-54255317d852
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Sangjung Woo <sangjung.woo@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: [RFC PATCH] extcon: Fix sleeping in atomic context after connecting
+ USB cable
+Date: Fri, 26 Sep 2014 13:50:41 +0200
+Message-id: <1411732241-5212-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1411732241-5212-1-git-send-email-k.kozlowski@samsung.com>
+References: <1411732241-5212-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmluLIzCtJLcpLzFFi42I5/e/4NV3xYNUQg/PTmSw2zljPanHwfr3F
+	9S/PWS2aF69ns7i88BKrxesXhhZnm96wW1zeNYfNYu2Ru+wWtxtXsFks2FPiwO2xf+4ado++
+	LasYPY7f2M7k8XmTXABLFJdNSmpOZllqkb5dAlfGnIcT2Av2GlUcnn6NrYFxtVYXIweHhICJ
+	xPrjsl2MnECmmMSFe+vZuhi5OIQEljJKdE2aBuX0MUmcPnePGaSKTcBYYvPyJWAJEYGDTBKz
+	T25mAnGYBaYwSjRPWsoEUiUsECGx6vsTsA4WAVWJb8tWsoDYvAJuEvdm32eG2CcncfLYZFYQ
+	m1PAXeLi8bVgNUJANVumzGOawMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIwH3Z
+	wbj4mNUhRgEORiUe3hvrVEKEWBPLiitzDzFKcDArifBe8lYNEeJNSaysSi3Kjy8qzUktPsTI
+	xMEp1cCozPq97ErpH/Yby//onDrSVPRX4YRVcJx173ZN/rSldxye/DsV5sDqdPFawxuh7VF6
+	B87Y6P6fKOLFuPioVpk6m+1cG8kXM5ofcN8u6av9qzPxF9fT1+8+5a44xtMnduRY3ZUtnMUZ
+	Nh+K5wQ90N+3M17R1GDpg70fbijb9Ea86EurnyP0j49FiaU4I9FQi7moOBEAPtaTZxYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kernel built with extcon and charger-manager.
 
---qcTtWMBd/uZDG7+Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+After connecting the USB cable sleeping function was called from atomic
+context:
+[   63.328648] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+[   63.331449] in_atomic(): 1, irqs_disabled(): 128, pid: 906, name: kworker/1:2
+[   63.338562] INFO: lockdep is turned off.
+[   63.342468] irq event stamp: 0
+[   63.345507] hardirqs last  enabled at (0): [<  (null)>]   (null)
+[   63.351495] hardirqs last disabled at (0): [<c00246c8>] copy_process.part.46+0x4a0/0x1684
+[   63.359654] softirqs last  enabled at (0): [<c00246c8>] copy_process.part.46+0x4a0/0x1684
+[   63.367813] softirqs last disabled at (0): [<  (null)>]   (null)
+[   63.373802] Preemption disabled at:[<  (null)>]   (null)
+[   63.379097]
+[   63.380581] CPU: 1 PID: 906 Comm: kworker/1:2 Not tainted 3.16.2-00822-g691a2ac4e574 #954
+[   63.388743] Workqueue: events max14577_muic_irq_work
+[   63.393707] [<c00167a4>] (unwind_backtrace) from [<c0012c08>] (show_stack+0x10/0x14)
+[   63.401422] [<c0012c08>] (show_stack) from [<c06232ec>] (dump_stack+0x70/0xbc)
+[   63.408625] [<c06232ec>] (dump_stack) from [<c0629d0c>] (mutex_lock_nested+0x24/0x410)
+[   63.416525] [<c0629d0c>] (mutex_lock_nested) from [<c0354474>] (regmap_read+0x30/0x60)
+[   63.424424] [<c0354474>] (regmap_read) from [<c0406b84>] (max14577_charger_get_property+0x1e4/0x250)
+[   63.433535] [<c0406b84>] (max14577_charger_get_property) from [<c0403834>] (is_ext_pwr_online+0x30/0x6c)
+[   63.442994] [<c0403834>] (is_ext_pwr_online) from [<c0404a54>] (charger_extcon_notifier+0x40/0x70)
+[   63.451934] [<c0404a54>] (charger_extcon_notifier) from [<c044cbe4>] (_call_per_cable+0x40/0x4c)
+[   63.460704] [<c044cbe4>] (_call_per_cable) from [<c0051560>] (notifier_call_chain+0x64/0x128)
+[   63.469209] [<c0051560>] (notifier_call_chain) from [<c0051640>] (raw_notifier_call_chain+0x18/0x20)
+[   63.478321] [<c0051640>] (raw_notifier_call_chain) from [<c044d0fc>] (extcon_update_state+0xa8/0x204)
+[   63.487522] [<c044d0fc>] (extcon_update_state) from [<c044e5f8>] (max14577_muic_chg_handler+0xdc/0x180)
+[   63.496897] [<c044e5f8>] (max14577_muic_chg_handler) from [<c044e924>] (max14577_muic_irq_work+0x7c/0xd8)
+[   63.506445] [<c044e924>] (max14577_muic_irq_work) from [<c004480c>] (process_one_work+0x198/0x66c)
+[   63.515385] [<c004480c>] (process_one_work) from [<c0044d4c>] (worker_thread+0x38/0x564)
+[   63.523455] [<c0044d4c>] (worker_thread) from [<c004c4ec>] (kthread+0xcc/0xe8)
+[   63.530661] [<c004c4ec>] (kthread) from [<c000f1f8>] (ret_from_fork+0x14/0x3c)
+[   63.543926] charger_manager: Set current limit of CHARGER : 450000uA ~ 450000uA
+[   63.548870] extcon-port jack: jack event CHGDET=usb
+[   63.550592] extcon-port jack: jack event CHGDET=charger
+[   64.188607] charger-manager charger-manager@0: Failed to get battery temperature
+[   64.200684] charger-manager charger-manager@0: CHARGING
 
-On Fri, Sep 26, 2014 at 01:22:52PM +0300, Mikko Perttunen wrote:
-> On 09/26/2014 01:19 PM, Thierry Reding wrote:
-> >On Fri, Sep 26, 2014 at 12:43:09PM +0300, Mikko Perttunen wrote:
-> >>Hi,
-> >>
-> >>this series adds support for the thermal monitoring features of the
-> >>soctherm unit on the Tegra124 SoC.
-> >>
-> >>The branch is also available in my github repo,
-> >>   git://github.com/cyndis/linux.git soctherm-v6
-> >>
-> >>Thanks,
-> >>Mikko
-> >>
-> >>Mikko Perttunen (4):
-> >>   of: Add bindings for nvidia,tegra124-soctherm
-> >>   ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
-> >>   ARM: tegra: Add thermal trip points for Jetson TK1
-> >>   thermal: Add Tegra SOCTHERM thermal management driver
-> >>
-> >>  .../devicetree/bindings/thermal/tegra-soctherm.txt |  53 +++
-> >>  arch/arm/boot/dts/tegra124-jetson-tk1.dts          |  44 ++
-> >>  arch/arm/boot/dts/tegra124.dtsi                    |  47 ++
-> >>  drivers/thermal/Kconfig                            |  10 +
-> >>  drivers/thermal/Makefile                           |   1 +
-> >>  drivers/thermal/tegra_soctherm.c                   | 471 ++++++++++++=
-+++++++++
-> >>  include/dt-bindings/thermal/tegra124-soctherm.h    |  13 +
-> >>  7 files changed, 639 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/thermal/tegra-so=
-ctherm.txt
-> >>  create mode 100644 drivers/thermal/tegra_soctherm.c
-> >>  create mode 100644 include/dt-bindings/thermal/tegra124-soctherm.h
-> >
-> >One thing that I've wanted to start doing for a while now is request
-> >patch submissions like this to come accompanied with a way on how to
-> >test them. Ideally this would be in a scripted way that can test for
-> >success programatically, but it doesn't necessarily have to be if it
-> >turns out too difficult or impractical to do.
->=20
-> Indeed, that would be very useful.
->=20
-> >
-> >The goal is to eventually come up with a test suite that can run the
-> >majority of test cases automatically to make it easy to test for any
-> >regressions. And even if tests can't be run automatically it'd still
-> >be an advantage to have them all collected in some repository, since
-> >it saves a lot of typing and time to run tests, and it will give us
-> >a standard set of tests that everybody can verify changes against.
-> >
-> >I realize that it's somewhat unfair to start requesting this from you
-> >now, but we've got to start somewhere. Could you give a short summary
-> >of how you test this? What are the interfaces that the kernel exposes
-> >for these thermal drivers?
->=20
-> You need to enable the driver in Device Drivers -> Generic Thermal sysfs
-> driver -> Tegra SOCTHERM thermal management. Then, you should see
-> directories appear in /sys/class/thermal. You can also use the `tmon' tool
-> included in the kernel tree to quickly see values; that's what I use for
-> testing.
+The first sleeping function is is_ext_pwr_online()
+(drivers/power/charger-manager.c). The atomic context initiating the
+flow is set up in extcon_update_state() (drivers/extcon/extcon-class.c).
 
-Okay. So what are expected values for these temperatures? It's going to
-be pretty much impossible to say what the correct value is on a given
-board at any time, but perhaps a "test" could consist of checking that
-all temperatures are within a reasonable range.
+The extcon_update_state() uses spin locks which are not necessary
+because the function is not called from interrupt service routines.
+Instead, the extcon_update_state() is called from:
+1. Threaded interrupt handlers.
+2. Work queues.
 
-Thierry
+Replace the spin lock with mutex and update the documentation of this
+function.
 
---qcTtWMBd/uZDG7+Y
-Content-Type: application/pgp-signature
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/extcon/extcon-class.c | 15 ++++++++-------
+ include/linux/extcon.h        |  3 ++-
+ 2 files changed, 10 insertions(+), 8 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 4c2f2c543bb7..7485600baeff 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -201,6 +201,8 @@ static ssize_t cable_state_show(struct device *dev,
+  *
+  * Note that the notifier provides which bits are changed in the state
+  * variable with the val parameter (second) to the callback.
++ *
++ * The function may sleep thus may not be called from atomic context.
+  */
+ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ {
+@@ -210,16 +212,15 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 	char *envp[3];
+ 	int env_offset = 0;
+ 	int length;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&edev->lock, flags);
++	mutex_lock(&edev->lock);
+ 
+ 	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
+ 		u32 old_state = edev->state;
+ 
+ 		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
+ 						   (state & mask))) {
+-			spin_unlock_irqrestore(&edev->lock, flags);
++			mutex_unlock(&edev->lock);
+ 			return -EPERM;
+ 		}
+ 
+@@ -248,20 +249,20 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
+ 			}
+ 			envp[env_offset] = NULL;
+ 			/* Unlock early before uevent */
+-			spin_unlock_irqrestore(&edev->lock, flags);
++			mutex_unlock(&edev->lock);
+ 
+ 			kobject_uevent_env(&edev->dev.kobj, KOBJ_CHANGE, envp);
+ 			free_page((unsigned long)prop_buf);
+ 		} else {
+ 			/* Unlock early before uevent */
+-			spin_unlock_irqrestore(&edev->lock, flags);
++			mutex_unlock(&edev->lock);
+ 
+ 			dev_err(&edev->dev, "out of memory in extcon_set_state\n");
+ 			kobject_uevent(&edev->dev.kobj, KOBJ_CHANGE);
+ 		}
+ 	} else {
+ 		/* No changes */
+-		spin_unlock_irqrestore(&edev->lock, flags);
++		mutex_unlock(&edev->lock);
+ 	}
+ 
+ 	return 0;
+@@ -834,7 +835,7 @@ int extcon_dev_register(struct extcon_dev *edev)
+ 		ret = class_compat_create_link(switch_class, &edev->dev, NULL);
+ #endif /* CONFIG_ANDROID */
+ 
+-	spin_lock_init(&edev->lock);
++	mutex_init(&edev->lock);
+ 
+ 	RAW_INIT_NOTIFIER_HEAD(&edev->nh);
+ 
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index 36f49c405dfb..166f42cecd5a 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -26,6 +26,7 @@
+ #include <linux/device.h>
+ #include <linux/notifier.h>
+ #include <linux/sysfs.h>
++#include <linux/mutex.h>
+ 
+ #define SUPPORTED_CABLE_MAX	32
+ #define CABLE_NAME_MAX		30
+@@ -125,7 +126,7 @@ struct extcon_dev {
+ 	struct raw_notifier_head nh;
+ 	struct list_head entry;
+ 	int max_supported;
+-	spinlock_t lock;	/* could be called by irq handler */
++	struct mutex lock;
+ 	u32 state;
+ 
+ 	/* /sys/class/extcon/.../cable.n/... */
+-- 
+1.9.1
 
-iQIcBAEBAgAGBQJUJVKkAAoJEN0jrNd/PrOhcBQP/05pvp1Sfw3Jt8lW8+ZVEVY3
-OsgKUZqecwRLHFtSB28rWGSS5DdDbNsLav89qW7SAQstN5pb/y454rc1mha/Y56+
-LxYb25pFN492CuvAiWfkmzr1MWS0ytGvc/IAUyld0vpzvsmDPCELMS2WoNJQwLPM
-KNnlqsLRGvgbfrsjdRTHUmCgjGHU6iP4UtBgHPNcUMUmHmuCadjbJ2J/jJ6a6Saf
-HPbAjOgI6pHiwjg5k+mig9DCBGUioCiTK1FWvYReS8uY0CgUJKZDR/1iY4bKsDs6
-NEiTqXN14WJp8Ai6sQlz4GiA0J72LxNHY1o+rv2yUuJACtG7aKf6lqkY04o6y5tY
-7bY8OcE/Pl/2DWkfKagXbREzZVAOLr1jy1fzp0M1k9vgYzutGGgf+KuzuQ54D+fC
-S06WaOwgFr+i0bskhOWAHyJWYapYj/MDA9n+5ygCFG+RExKWXtqx0C7eVWLCq/Gf
-AsJ6Pppg8JlXVh3+6PygE83ac1rPIuJBvmDeIwyRcZV2JBnXbklVB1nz3nR9AHzG
-bnXlwe+95MnP4vEWvW7ews00worfugxBubUor/2O0SVnxqsn/qIE/fRI2+0yyqoA
-wyeBKkNmSWeGPH9bXuXE4VKdYRP3wwDcTy857aGcGAZLfXQhkqz5/+bJhVni29Rk
-j4XdQCCC3ct1qG5ycXKI
-=2bSu
------END PGP SIGNATURE-----
-
---qcTtWMBd/uZDG7+Y--
