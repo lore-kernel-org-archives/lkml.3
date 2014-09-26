@@ -1,72 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921AbaIZAnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 20:43:42 -0400
-Received: from ozlabs.org ([103.22.144.67]:41242 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312AbaIZAnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 20:43:41 -0400
-Date: Fri, 26 Sep 2014 10:43:34 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: "Kukjin Kim" <kgene@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>
-Subject: Re: linux-next: build failure after merge of the samsung tree
-Message-ID: <20140926104334.5252e513@canb.auug.org.au>
-In-Reply-To: <20140925230124.19023.33551@quantum>
-References: <20140924110836.209bc8e2@canb.auug.org.au>
-	<00fb01cfd7a4$45eb4a50$d1c1def0$@kernel.org>
-	<20140924155336.6e64b952@canb.auug.org.au>
-	<20140925230124.19023.33551@quantum>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752515AbaIZApw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 20:45:52 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44601 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384AbaIZApu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 20:45:50 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Ir1Ne.yFFw2Cc0L_UJ2IsyT"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 8BIT
+To: Kiran Padwal <kiran.padwal@smartplayin.com>, ben-linux@fluff.org,
+        kgene.kim@samsung.com, s.nawrocki@samsung.com, tomasz.figa@gmail.com,
+        emilio@elopez.com.ar, maxime.ripard@free-electrons.com,
+        t-kristo@ti.com, sboyd@codeaurora.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1411551929-27868-1-git-send-email-kiran.padwal@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        "Kiran Padwal" <kiran.padwal@smartplayin.com>
+References: <1411551929-27868-1-git-send-email-kiran.padwal@smartplayin.com>
+Message-ID: <20140926004527.19023.81899@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 3/5] clk: Remove .owner field for driver
+Date: Thu, 25 Sep 2014 17:45:27 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Ir1Ne.yFFw2Cc0L_UJ2IsyT
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Quoting Kiran Padwal (2014-09-24 02:45:29)
+> There is no need to init .owner field.
+> 
+> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+> "mmc: remove .owner field for drivers using module_platform_driver"
+> 
+> This patch removes the superflous .owner field for drivers which
+> use the module_platform_driver API, as this is overriden in
+> platform_driver_register anyway."
+> 
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 
-Hi Mike,
+Applied to clk-next.
 
-On Thu, 25 Sep 2014 16:01:24 -0700 Mike Turquette <mturquette@linaro.org> w=
-rote:
->
->=20
-> I saw in another thread that Kukjin merged the clk tree into his -next
-> branch. Is there anything left to do on this one?
+Regards,
+Mike
 
-No, that fixed it.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Ir1Ne.yFFw2Cc0L_UJ2IsyT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUJLa6AAoJEMDTa8Ir7ZwV71cP/AtqV1XdraAPUWSEvLZlds26
-8V33kMecdAevjkYi74HbJnnps8vLeLWBUcuNIGWKz56xb9PgFtv1pBvC63M/HPPc
-rWPNG/Bi5Fgc9N/XlF768BqsN9jOs5h8lIgRKBzNce+gW6d14VhYmdPd+1hFsfCC
-D+C+/hM5EMV7/WCnzSgHpbEN4UJxTFC89mQs9tuJbW8rPR1LIGWsgwki9z6q+vES
-xSQ1mHiZG+XlKRksh5KipN4ymoNWNMU2436LQ9ktTlKOxl/jbSQtlmsfpiOkBjZX
-aDb0zLSkyk0+A6RMAMJS+76/2TXrxjI6/p7RNh42zp07gdOCEpBcVU9qb+jhunhI
-bi9nSUDZZtNsxPA4cABlSnRDaj6WJf6EmkiwXjuQ+n4/ZxOMp1YlxNOheHobnNrX
-YLs4NffrEcfit47KNDEOozlimQnDFic/v5sgRVlQBUMcJk1z9a9zdwbbd3MJnkqY
-4LAApTH0IO8ZBEDvCRbL2Ez1w8QbJV/y8pnSGZZYDi4EvsO5b21K5FSBOczzt2PA
-JKjJPxq3KIC9qPHLoMOD3ibqBVRtzKkEfh4kcPvlzVMhSH15ZRT9kDTFAekHZy6Q
-RRgjGL/CdOJ7xVMC4d4VzhG+/mn52+TQ9DgJzoSxaQ98lQRINLC/lkY6i5c3vDGV
-3xkXKuqFKcKXlC3IeH2L
-=G73R
------END PGP SIGNATURE-----
-
---Sig_/Ir1Ne.yFFw2Cc0L_UJ2IsyT--
+> ---
+>  drivers/clk/clk-axi-clkgen.c             |    1 -
+>  drivers/clk/clk-max77686.c               |    1 -
+>  drivers/clk/clk-max77802.c               |    1 -
+>  drivers/clk/clk-palmas.c                 |    1 -
+>  drivers/clk/clk-twl6040.c                |    1 -
+>  drivers/clk/clk-wm831x.c                 |    1 -
+>  drivers/clk/qcom/mmcc-apq8084.c          |    1 -
+>  drivers/clk/qcom/mmcc-msm8960.c          |    1 -
+>  drivers/clk/qcom/mmcc-msm8974.c          |    1 -
+>  drivers/clk/samsung/clk-s3c2410-dclk.c   |    1 -
+>  drivers/clk/sunxi/clk-sun6i-apb0-gates.c |    1 -
+>  drivers/clk/sunxi/clk-sun6i-apb0.c       |    1 -
+>  drivers/clk/sunxi/clk-sun6i-ar100.c      |    1 -
+>  drivers/clk/sunxi/clk-sun8i-apb0.c       |    1 -
+>  drivers/clk/ti/clk-dra7-atl.c            |    1 -
+>  15 files changed, 15 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-axi-clkgen.c b/drivers/clk/clk-axi-clkgen.c
+> index 1127ee4..e619285 100644
+> --- a/drivers/clk/clk-axi-clkgen.c
+> +++ b/drivers/clk/clk-axi-clkgen.c
+> @@ -544,7 +544,6 @@ static int axi_clkgen_remove(struct platform_device *pdev)
+>  static struct platform_driver axi_clkgen_driver = {
+>         .driver = {
+>                 .name = "adi-axi-clkgen",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = axi_clkgen_ids,
+>         },
+>         .probe = axi_clkgen_probe,
+> diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
+> index ed0beb4..86cdb3a 100644
+> --- a/drivers/clk/clk-max77686.c
+> +++ b/drivers/clk/clk-max77686.c
+> @@ -73,7 +73,6 @@ MODULE_DEVICE_TABLE(platform, max77686_clk_id);
+>  static struct platform_driver max77686_clk_driver = {
+>         .driver = {
+>                 .name  = "max77686-clk",
+> -               .owner = THIS_MODULE,
+>         },
+>         .probe = max77686_clk_probe,
+>         .remove = max77686_clk_remove,
+> diff --git a/drivers/clk/clk-max77802.c b/drivers/clk/clk-max77802.c
+> index 8e480c5..0729dc7 100644
+> --- a/drivers/clk/clk-max77802.c
+> +++ b/drivers/clk/clk-max77802.c
+> @@ -84,7 +84,6 @@ MODULE_DEVICE_TABLE(platform, max77802_clk_id);
+>  static struct platform_driver max77802_clk_driver = {
+>         .driver = {
+>                 .name  = "max77802-clk",
+> -               .owner = THIS_MODULE,
+>         },
+>         .probe = max77802_clk_probe,
+>         .remove = max77802_clk_remove,
+> diff --git a/drivers/clk/clk-palmas.c b/drivers/clk/clk-palmas.c
+> index 781630e..8d45992 100644
+> --- a/drivers/clk/clk-palmas.c
+> +++ b/drivers/clk/clk-palmas.c
+> @@ -292,7 +292,6 @@ static int palmas_clks_remove(struct platform_device *pdev)
+>  static struct platform_driver palmas_clks_driver = {
+>         .driver = {
+>                 .name = "palmas-clk",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = palmas_clks_of_match,
+>         },
+>         .probe = palmas_clks_probe,
+> diff --git a/drivers/clk/clk-twl6040.c b/drivers/clk/clk-twl6040.c
+> index 1ada79a..4a75513 100644
+> --- a/drivers/clk/clk-twl6040.c
+> +++ b/drivers/clk/clk-twl6040.c
+> @@ -112,7 +112,6 @@ static int twl6040_clk_remove(struct platform_device *pdev)
+>  static struct platform_driver twl6040_clk_driver = {
+>         .driver = {
+>                 .name = "twl6040-clk",
+> -               .owner = THIS_MODULE,
+>         },
+>         .probe = twl6040_clk_probe,
+>         .remove = twl6040_clk_remove,
+> diff --git a/drivers/clk/clk-wm831x.c b/drivers/clk/clk-wm831x.c
+> index b131041..ef67719 100644
+> --- a/drivers/clk/clk-wm831x.c
+> +++ b/drivers/clk/clk-wm831x.c
+> @@ -395,7 +395,6 @@ static struct platform_driver wm831x_clk_driver = {
+>         .probe = wm831x_clk_probe,
+>         .driver         = {
+>                 .name   = "wm831x-clk",
+> -               .owner  = THIS_MODULE,
+>         },
+>  };
+>  
+> diff --git a/drivers/clk/qcom/mmcc-apq8084.c b/drivers/clk/qcom/mmcc-apq8084.c
+> index 751eea3..dab988a 100644
+> --- a/drivers/clk/qcom/mmcc-apq8084.c
+> +++ b/drivers/clk/qcom/mmcc-apq8084.c
+> @@ -3341,7 +3341,6 @@ static struct platform_driver mmcc_apq8084_driver = {
+>         .remove         = mmcc_apq8084_remove,
+>         .driver         = {
+>                 .name   = "mmcc-apq8084",
+> -               .owner  = THIS_MODULE,
+>                 .of_match_table = mmcc_apq8084_match_table,
+>         },
+>  };
+> diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
+> index 2e80a21..68da36c 100644
+> --- a/drivers/clk/qcom/mmcc-msm8960.c
+> +++ b/drivers/clk/qcom/mmcc-msm8960.c
+> @@ -2679,7 +2679,6 @@ static struct platform_driver mmcc_msm8960_driver = {
+>         .remove         = mmcc_msm8960_remove,
+>         .driver         = {
+>                 .name   = "mmcc-msm8960",
+> -               .owner  = THIS_MODULE,
+>                 .of_match_table = mmcc_msm8960_match_table,
+>         },
+>  };
+> diff --git a/drivers/clk/qcom/mmcc-msm8974.c b/drivers/clk/qcom/mmcc-msm8974.c
+> index bc8f519..be94c54 100644
+> --- a/drivers/clk/qcom/mmcc-msm8974.c
+> +++ b/drivers/clk/qcom/mmcc-msm8974.c
+> @@ -2570,7 +2570,6 @@ static struct platform_driver mmcc_msm8974_driver = {
+>         .remove         = mmcc_msm8974_remove,
+>         .driver         = {
+>                 .name   = "mmcc-msm8974",
+> -               .owner  = THIS_MODULE,
+>                 .of_match_table = mmcc_msm8974_match_table,
+>         },
+>  };
+> diff --git a/drivers/clk/samsung/clk-s3c2410-dclk.c b/drivers/clk/samsung/clk-s3c2410-dclk.c
+> index 0449cc0..f4f29ed6 100644
+> --- a/drivers/clk/samsung/clk-s3c2410-dclk.c
+> +++ b/drivers/clk/samsung/clk-s3c2410-dclk.c
+> @@ -426,7 +426,6 @@ MODULE_DEVICE_TABLE(platform, s3c24xx_dclk_driver_ids);
+>  static struct platform_driver s3c24xx_dclk_driver = {
+>         .driver = {
+>                 .name           = "s3c24xx-dclk",
+> -               .owner          = THIS_MODULE,
+>                 .pm             = &s3c24xx_dclk_pm_ops,
+>         },
+>         .probe = s3c24xx_dclk_probe,
+> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
+> index e10d052..64f3e46 100644
+> --- a/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
+> +++ b/drivers/clk/sunxi/clk-sun6i-apb0-gates.c
+> @@ -99,7 +99,6 @@ static int sun6i_a31_apb0_gates_clk_probe(struct platform_device *pdev)
+>  static struct platform_driver sun6i_a31_apb0_gates_clk_driver = {
+>         .driver = {
+>                 .name = "sun6i-a31-apb0-gates-clk",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = sun6i_a31_apb0_gates_clk_dt_ids,
+>         },
+>         .probe = sun6i_a31_apb0_gates_clk_probe,
+> diff --git a/drivers/clk/sunxi/clk-sun6i-apb0.c b/drivers/clk/sunxi/clk-sun6i-apb0.c
+> index 1fa2337..7076360 100644
+> --- a/drivers/clk/sunxi/clk-sun6i-apb0.c
+> +++ b/drivers/clk/sunxi/clk-sun6i-apb0.c
+> @@ -65,7 +65,6 @@ static const struct of_device_id sun6i_a31_apb0_clk_dt_ids[] = {
+>  static struct platform_driver sun6i_a31_apb0_clk_driver = {
+>         .driver = {
+>                 .name = "sun6i-a31-apb0-clk",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = sun6i_a31_apb0_clk_dt_ids,
+>         },
+>         .probe = sun6i_a31_apb0_clk_probe,
+> diff --git a/drivers/clk/sunxi/clk-sun6i-ar100.c b/drivers/clk/sunxi/clk-sun6i-ar100.c
+> index eca8ca0..acca532 100644
+> --- a/drivers/clk/sunxi/clk-sun6i-ar100.c
+> +++ b/drivers/clk/sunxi/clk-sun6i-ar100.c
+> @@ -221,7 +221,6 @@ static const struct of_device_id sun6i_a31_ar100_clk_dt_ids[] = {
+>  static struct platform_driver sun6i_a31_ar100_clk_driver = {
+>         .driver = {
+>                 .name = "sun6i-a31-ar100-clk",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = sun6i_a31_ar100_clk_dt_ids,
+>         },
+>         .probe = sun6i_a31_ar100_clk_probe,
+> diff --git a/drivers/clk/sunxi/clk-sun8i-apb0.c b/drivers/clk/sunxi/clk-sun8i-apb0.c
+> index 1f5ba9b..155d002 100644
+> --- a/drivers/clk/sunxi/clk-sun8i-apb0.c
+> +++ b/drivers/clk/sunxi/clk-sun8i-apb0.c
+> @@ -56,7 +56,6 @@ static const struct of_device_id sun8i_a23_apb0_clk_dt_ids[] = {
+>  static struct platform_driver sun8i_a23_apb0_clk_driver = {
+>         .driver = {
+>                 .name = "sun8i-a23-apb0-clk",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = sun8i_a23_apb0_clk_dt_ids,
+>         },
+>         .probe = sun8i_a23_apb0_clk_probe,
+> diff --git a/drivers/clk/ti/clk-dra7-atl.c b/drivers/clk/ti/clk-dra7-atl.c
+> index af29359..990e1d9 100644
+> --- a/drivers/clk/ti/clk-dra7-atl.c
+> +++ b/drivers/clk/ti/clk-dra7-atl.c
+> @@ -301,7 +301,6 @@ MODULE_DEVICE_TABLE(of, of_dra7_atl_clk_match_tbl);
+>  static struct platform_driver dra7_atl_clk_driver = {
+>         .driver = {
+>                 .name = "dra7-atl",
+> -               .owner = THIS_MODULE,
+>                 .of_match_table = of_dra7_atl_clk_match_tbl,
+>         },
+>         .probe = of_dra7_atl_clk_probe,
+> -- 
+> 1.7.9.5
+> 
