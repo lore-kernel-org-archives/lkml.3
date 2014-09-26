@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaIZBpm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Sep 2014 21:45:42 -0400
-Received: from mail-bn1bbn0108.outbound.protection.outlook.com ([157.56.111.108]:15392
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752384AbaIZBpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Sep 2014 21:45:41 -0400
-Date: Fri, 26 Sep 2014 09:45:14 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: <kernel@pengutronix.de>, <daniel.lezcano@linaro.org>, <tglx@linutronix.de>,
-        <festevam@gmail.com>, <jingchang.lu@freescale.com>,
-        <bpringlemeir@nbsps.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] ARM: vf610: Add ARM Global Timer clocksource
- option
-Message-ID: <20140926014513.GF21077@dragon>
-References: <1411575610-20895-1-git-send-email-stefan@agner.ch>
- <1411575610-20895-4-git-send-email-stefan@agner.ch>
+	id S1752961AbaIZBzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Sep 2014 21:55:47 -0400
+Received: from ozlabs.org ([103.22.144.67]:57192 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752672AbaIZBzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Sep 2014 21:55:46 -0400
+Date: Fri, 26 Sep 2014 11:55:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Jiancheng Xue <xuejiancheng@huawei.com>, Wei Xu <xuwei5@hisilicon.com>
+Subject: linux-next: build failure after merge of the arm-soc tree
+Message-ID: <20140926115539.6873630b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1411575610-20895-4-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(199003)(51704005)(189002)(92726001)(4396001)(50466002)(23726002)(110136001)(86362001)(97736003)(102836001)(92566001)(99396003)(69596002)(87936001)(54356999)(33716001)(76176999)(68736004)(50986999)(76482002)(104016003)(84676001)(6806004)(85306004)(106466001)(46406003)(81156004)(107046002)(83506001)(120916001)(10300001)(31966008)(46102003)(74662003)(90102001)(74502003)(81542003)(79102003)(64706001)(33656002)(80022003)(77982003)(95666004)(81342003)(85852003)(19580405001)(97756001)(44976005)(47776003)(83322001)(20776003)(21056001)(83072002)(57986006)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB472;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB472;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03468CBA43
-Authentication-Results: spf=temperror (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/POjXz5pledPf3.4rRcoCSvW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 06:20:10PM +0200, Stefan Agner wrote:
-> Add the ARM Global Timer as clocksource/scheduler clock option and
-> use it as default scheduler clock. This leaves the PIT timer for
-> other users e.g. the secondary Cortex-M4 core. Also, the Global Timer
-> has double the precission (running at pheripheral clock compared to
-> IPG clock) and a 64-bit incrementing counter register. We still keep
-> the PIT timer as an secondary option in case the ARM Global Timer is
-> not available.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
+--Sig_/POjXz5pledPf3.4rRcoCSvW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Applied, thanks.
+Hi all,
+
+After merging the arm-soc tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
+
+Error: arch/arm/boot/dts/hisi-x5hd2.dtsi:374.22-23 syntax error
+FATAL ERROR: Unable to parse input tree
+
+There are a series of new commits to this file today and I have no idea
+which one caused the problem.
+
+I reverted:
+
+610bd8722ef4	"ARM: dts: hix5hd2: add wdg node"
+6868feb6dd97	"ARM: dts: hix5hd2: add gpio node"
+420a2d55f046	"ARM: dts: hix5hd2: add sata node"
+f16c7fb2f3ff	"ARM: dts: hix5hd2: add usb node"
+b196e1ca400d	"ARM: dts: hix5hd2: add mmc node"
+de8b6054780e	"ARM: dts: hix5hd2: add gmac node"
+
+which fixed the build problem.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/POjXz5pledPf3.4rRcoCSvW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUJMefAAoJEMDTa8Ir7ZwVUDEP/0hBYdLNrUoqm2CwnmmDB1B2
+c1F+Rx9LehDEne3LOE3e5WHFOmNuN3Xs7KOeNBSTUfxR5OIK+ovM1cb9BRULHj/H
+wL+c58//Hve/FIMdP7ou0s5xtLUOYhWv21rzuvH5TBFG6C3j+0c0OnsKAJgET8ue
+qxsvh/6zuTHWwtRhEqMBFBzUJZreVJXJVexE4o7Jmtsz90hDZoeFdv0j3U8iW8wI
+akVK5gTzANswe59DerS8aWs+1pgcbOWoS5MM3Sam7LlIEsw5Qtn6cOabF3BBUEAX
+fsrWwAxtSh+2wvykEJ6saveEovwy5X35WEchRDo5u8m2xm0ofqRLPosbns7gg86R
+rx/FB67rKoP976l67TlFNeqbv/SSy1yYAhKcPa59fTFVKV8GGle++hBmSHAhlO7r
++8wEQErpzg4WwbxKIuNReNpbVh31QxxcQElDjcHTu5OVnz7t5hvvqAbmYqkknz2C
+aOzcQxARF0g9TbFt3n6jC8PUJ+MSOWh43jnegy0kxfI6mNspKtF3BMnzL52kUS58
+wMr4LFkOGjRgEy56VhCQA4s00KtSulUX5KyMxTC2sAp8aGB5hBvn0glqslN+sXvS
+dM0lQfLWBGFRysA3s3NjUbaR/FiMylsRIRxIjM0lsPdkVESvgQmbKiZ1R803oTSs
+4cDL5WEfqp41r4r9tpSM
+=9Ps4
+-----END PGP SIGNATURE-----
+
+--Sig_/POjXz5pledPf3.4rRcoCSvW--
