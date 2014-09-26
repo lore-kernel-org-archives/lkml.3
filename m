@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaIZNXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 09:23:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48751 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119AbaIZNXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 09:23:37 -0400
-Date: Fri, 26 Sep 2014 15:23:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sergey Oboguev <oboguev.public@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
-Subject: Re: [PATCH 1/2] sched: deferred set priority (dprio) -- rebased for
- the tip
-Message-ID: <20140926132330.GF4140@worktop.programming.kicks-ass.net>
-References: <CA+80gGaC5tutmFiTCyL-zoBY4BcbZnh63wXhO-g5UetP+w5g4w@mail.gmail.com>
+	id S1754768AbaIZNYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 09:24:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:34758 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754008AbaIZNYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 09:24:49 -0400
+Date: Fri, 26 Sep 2014 23:24:47 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH 10/15] powerpc/mm: Add hooks for cxl
+Message-ID: <20140926232447.30bdcddb@kryten>
+In-Reply-To: <1411731209.1733.51.camel@ale.ozlabs.ibm.com>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org>
+	<1411028820-29933-11-git-send-email-mikey@neuling.org>
+	<20140926143309.33c0eeac@kryten>
+	<1411731209.1733.51.camel@ale.ozlabs.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+80gGaC5tutmFiTCyL-zoBY4BcbZnh63wXhO-g5UetP+w5g4w@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 12:26:04PM -0700, Sergey Oboguev wrote:
-> This is a replica of "[PATCH 1/2] dprio" (posted yesterday for 3.16.3)
-> rebased now for the current tip (3.17.0-rc6).
-> 
-> Signed-off-by: Sergey Oboguev <oboguev@yahoo.com>
-> 
-> ---
->  Documentation/sysctl/kernel.txt |  14 +
->  fs/exec.c                       |   8 +
->  include/linux/dprio.h           | 129 +++++++++
->  include/linux/init_task.h       |  17 ++
->  include/linux/sched.h           |  19 ++
->  include/uapi/linux/Kbuild       |   1 +
->  include/uapi/linux/capability.h |   5 +-
->  include/uapi/linux/dprio_api.h  | 137 +++++++++
->  include/uapi/linux/prctl.h      |   2 +
->  init/Kconfig                    |   2 +
->  kernel/Kconfig.dprio            |  68 +++++
->  kernel/exit.c                   |   6 +
->  kernel/fork.c                   |  88 +++++-
->  kernel/sched/Makefile           |   1 +
->  kernel/sched/core.c             | 195 ++++++++++++-
->  kernel/sched/dprio.c            | 617 ++++++++++++++++++++++++++++++++++++++++
->  kernel/sys.c                    |   6 +
->  kernel/sysctl.c                 |  12 +
->  18 files changed, 1315 insertions(+), 12 deletions(-)
 
-2 lines of changelog for a ~1300 line patch, you must be kidding, right?
+Hi Mikey,
 
-What problem is it solving and why do I care?
+> We only map what a user processes maps and we tear it down when the
+> process is teared down (on the file descriptor release).  So I think
+> we are ok.  
+> 
+> Unless there's some lazy teardown you're alluding to that I'm missing?
+
+I was trying to make sure things like the TLB batching code won't allow
+a tlbie to be postponed until after a CAPI mapping is destroyed. It's
+been ages since I looked at that part of the mm code.
+
+Anton
