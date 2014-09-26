@@ -1,142 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaIZKAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 06:00:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42284 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751789AbaIZKA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 06:00:28 -0400
-Date: Fri, 26 Sep 2014 11:00:25 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-Message-ID: <20140926100025.GC4476@leverpostej>
-References: <1410454801-14231-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410454801-14231-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755889AbaIZKAN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 06:00:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33055 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755084AbaIZJqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 05:46:40 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 053/142] powerpc/thp: Don't recompute vsid and ssize in loop on invalidate
+Date: Fri, 26 Sep 2014 11:44:24 +0200
+Message-Id: <e828f5bc74b7950667f94cf1af488391ec43018d.1411724724.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+References: <406eb8e630446eff74211cba53a536f232bbefd1.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+References: <cover.1411724723.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 06:00:01PM +0100, Doug Anderson wrote:
-> Some 32-bit (ARMv7) systems are architected like this:
-> 
-> * The firmware doesn't know and doesn't care about hypervisor mode and
->   we don't want to add the complexity of hypervisor there.
-> 
-> * The firmware isn't involved in SMP bringup or resume.
-> 
-> * The ARCH timer come up with an uninitialized offset between the
->   virtual and physical counters.  Each core gets a different random
->   offset.
-> 
-> * The device boots in "Secure SVC" mode.
-> 
-> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
->   CNTHCTL.PL1PCTEN (both default to 1 at reset)
-> 
-> On systems like the above, it doesn't make sense to use the virtual
-> counter.  There's nobody managing the offset and each time a core goes
-> down and comes back up it will get reinitialized to some other random
-> value.
-> 
-> Let's add a property to the device tree to say that we shouldn't use
-> the virtual timer.  Firmware could potentially remove this property
-> before passing the device tree to the kernel if it really wants the
-> kernel to use a virtual timer.
-> 
-> Note that it's been said that ARM64 (ARMv8) systems the firmware and
-> kernel really can't be architected as described above.  That means
-> using the physical timer like this really only makes sense for ARMv7
-> systems.
-> 
-> In order for this patch to do anything useful, we also need Sonny's
-> patch at <https://patchwork.kernel.org/patch/4790921/>
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> ---
-> Changes in v3:
-> - Wording changes to bindings and patch desc as per Will Deacon
-> 
-> Changes in v2:
-> - Add "#ifdef CONFIG_ARM" as per Will Deacon
-> 
->  Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
->  drivers/clocksource/arm_arch_timer.c                 | 5 +++++
->  2 files changed, 11 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 37b2caf..e28fced 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
->  - always-on : a boolean property. If present, the timer is powered through an
->    always-on power domain, therefore it never loses context.
->  
-> +** Optional properties:
-> +
-> +- arm,use-physical-timer : Don't ever use the virtual timer, just use the
-> +  physical one.  Only supported for ARM (not ARM64).
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-I'm still not keen on telling the kernel what to do rather than
-describing the actual state of affairs and having the kernel decide what
-to do. Perhaps what we actually need is:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-- cntvoff-not-fw-configured: Firmware does not configure CNTVOFF, which
-  may reset to (different) arbitrary values on each CPU.
+===============
 
-This also doesn't describe that CNTHCTL.PL1PC(T)EN must both be 1. While
-that is the reset state, it still feels dodbgy to me to rely on that.
+commit fa1f8ae80f8bb996594167ff4750a0b0a5a5bb5d upstream.
 
-Mark.
+The segment identifier and segment size will remain the same in
+the loop, So we can compute it outside. We also change the
+hugepage_invalidate interface so that we can use it the later patch
 
-> +
-> +
->  Example:
->  
->  	timer {
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 5163ec1..e7aa256 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -649,6 +649,11 @@ static void __init arch_timer_init(struct device_node *np)
->  		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
->  	arch_timer_detect_rate(NULL, np);
->  
-> +#ifdef CONFIG_ARM
-> +	if (of_property_read_bool(np, "arm,use-physical-timer"))
-> +		arch_timer_use_virtual = false;
-> +#endif
-> +
->  	/*
->  	 * If HYP mode is available, we know that the physical timer
->  	 * has been configured to be accessible from PL1. Use it, so
-> -- 
-> 2.1.0.rc2.206.gedb03e5
-> 
-> 
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/powerpc/include/asm/machdep.h    |  6 +++---
+ arch/powerpc/mm/hash_native_64.c      | 19 +++++--------------
+ arch/powerpc/mm/pgtable_64.c          | 24 ++++++++++++------------
+ arch/powerpc/platforms/pseries/lpar.c | 20 ++++++--------------
+ 4 files changed, 26 insertions(+), 43 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
+index 8b480901165a..3a52b9b01133 100644
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -57,10 +57,10 @@ struct machdep_calls {
+ 	void            (*hpte_removebolted)(unsigned long ea,
+ 					     int psize, int ssize);
+ 	void		(*flush_hash_range)(unsigned long number, int local);
+-	void		(*hugepage_invalidate)(struct mm_struct *mm,
++	void		(*hugepage_invalidate)(unsigned long vsid,
++					       unsigned long addr,
+ 					       unsigned char *hpte_slot_array,
+-					       unsigned long addr, int psize);
+-
++					       int psize, int ssize);
+ 	/* special for kexec, to be called in real mode, linear mapping is
+ 	 * destroyed as well */
+ 	void		(*hpte_clear_all)(void);
+diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
+index c33d939120c9..9197691fd5d5 100644
+--- a/arch/powerpc/mm/hash_native_64.c
++++ b/arch/powerpc/mm/hash_native_64.c
+@@ -413,18 +413,18 @@ static void native_hpte_invalidate(unsigned long slot, unsigned long vpn,
+ 	local_irq_restore(flags);
+ }
+ 
+-static void native_hugepage_invalidate(struct mm_struct *mm,
++static void native_hugepage_invalidate(unsigned long vsid,
++				       unsigned long addr,
+ 				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++				       int psize, int ssize)
+ {
+-	int ssize = 0, i;
+-	int lock_tlbie;
++	int i, lock_tlbie;
+ 	struct hash_pte *hptep;
+ 	int actual_psize = MMU_PAGE_16M;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long flags, s_addr = addr;
+ 	unsigned long hpte_v, want_v, shift;
+-	unsigned long hidx, vpn = 0, vsid, hash, slot;
++	unsigned long hidx, vpn = 0, hash, slot;
+ 
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -438,15 +438,6 @@ static void native_hugepage_invalidate(struct mm_struct *mm,
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+diff --git a/arch/powerpc/mm/pgtable_64.c b/arch/powerpc/mm/pgtable_64.c
+index 536eec72c0f7..48bda6700404 100644
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -726,12 +726,21 @@ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
+ 	if (!hpte_slot_array)
+ 		return;
+ 
+-	/* get the base page size */
++	/* get the base page size,vsid and segment size */
+ 	psize = get_slice_psize(mm, s_addr);
++	if (!is_kernel_addr(s_addr)) {
++		ssize = user_segment_size(s_addr);
++		vsid = get_vsid(mm->context.id, s_addr, ssize);
++		WARN_ON(vsid == 0);
++	} else {
++		vsid = get_kernel_vsid(s_addr, mmu_kernel_ssize);
++		ssize = mmu_kernel_ssize;
++	}
+ 
+ 	if (ppc_md.hugepage_invalidate)
+-		return ppc_md.hugepage_invalidate(mm, hpte_slot_array,
+-						  s_addr, psize);
++		return ppc_md.hugepage_invalidate(vsid, s_addr,
++						  hpte_slot_array,
++						  psize, ssize);
+ 	/*
+ 	 * No bluk hpte removal support, invalidate each entry
+ 	 */
+@@ -749,15 +758,6 @@ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
+index 356bc75ca74f..691a479f7d97 100644
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -412,16 +412,17 @@ static void __pSeries_lpar_hugepage_invalidate(unsigned long *slot,
+ 		spin_unlock_irqrestore(&pSeries_lpar_tlbie_lock, flags);
+ }
+ 
+-static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
+-				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++static void pSeries_lpar_hugepage_invalidate(unsigned long vsid,
++					     unsigned long addr,
++					     unsigned char *hpte_slot_array,
++					     int psize, int ssize)
+ {
+-	int ssize = 0, i, index = 0;
++	int i, index = 0;
+ 	unsigned long s_addr = addr;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long vpn_array[PPC64_HUGE_HPTE_BATCH];
+ 	unsigned long slot_array[PPC64_HUGE_HPTE_BATCH];
+-	unsigned long shift, hidx, vpn = 0, vsid, hash, slot;
++	unsigned long shift, hidx, vpn = 0, hash, slot;
+ 
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -434,15 +435,6 @@ static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+-- 
+2.1.0
+
