@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaIZOy5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 10:54:57 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:60452 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753908AbaIZOy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 10:54:56 -0400
-Message-ID: <1411743293.7866.62.camel@x220>
-Subject: Re: [PATCHv3 2/7] ARM: at91: introduce basic SAMA5D4 support
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 26 Sep 2014 16:54:53 +0200
-In-Reply-To: <20140926141326.GB4408@piout.net>
-References: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
-	 <1410797759-18675-3-git-send-email-alexandre.belloni@free-electrons.com>
-	 <1411732023.7866.15.camel@x220> <20140926141326.GB4408@piout.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Sep 2014 14:54:54.0476 (UTC) FILETIME=[D50E94C0:01CFD999]
-X-RcptDomain: vger.kernel.org
+	id S1755822AbaIZOza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 10:55:30 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3489 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754944AbaIZOz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Sep 2014 10:55:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,604,1406617200"; 
+   d="scan'208";a="597291895"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [RFC Part3 v1 00/28] Enable hierarchy irqdomian on x86 platforms
+Date: Fri, 26 Sep 2014 22:57:30 +0800
+Message-Id: <1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+This is the last part to enable support of hierarchy domain on x86
+platforms.
 
-On Fri, 2014-09-26 at 16:13 +0200, Alexandre Belloni wrote:
-> On 26/09/2014 at 13:47:03 +0200, Paul Bolle wrote :
-> > On Mon, 2014-09-15 at 18:15 +0200, Alexandre Belloni wrote:
-> > > From: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > > 
-> > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > 
-> > This landed in next-20140926, as commit 2dc850b62e5b ("ARM: at91:
-> > introduce basic SAMA5D4 support").
-> > 
-> > > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> > > index b11ad54f8d17..7b44db208f10 100644
-> > > --- a/arch/arm/Kconfig.debug
-> > > +++ b/arch/arm/Kconfig.debug
-> > > @@ -101,6 +101,10 @@ choice
-> > >  		bool "Kernel low-level debugging on 9263 and 9g45"
-> > >  		depends on HAVE_AT91_DBGU1
-> > >  
-> > > +	config AT91_DEBUG_LL_DBGU2
-> > > +		bool "Kernel low-level debugging on sama5d4"
-> > > +		depends on HAVE_AT91_DBGU2
-> > > +
-> > 
-> > Why is this Kconfig symbol needed? Nothing in next-20140926 uses it. Are
-> > future users perhaps queued somewhere (say, in commits that didn't
-> > survive today's rather lively linux-next merges)? 
-> 
-> There is no user because it conflicts with the previous one that is
-> selected by default by the sama5_defconfig. This is for early print and
-> it means that you can get earlyprintk either for sama5d3 or sama5d4.
-> 
-> My guess is that it will never be included in any defconfig.
+It first converts IOAPIC to support hierarchy irqdomain, then cleans
+up all unused code and interfaces. It also introduces a kernel boot
+parameter to configure CPU vector allocation policies.
 
-I missed that this is inside a "choice" (which complicates matters quite
-a bit)!
+It's based on my previous patch set at:
+https://lkml.org/lkml/2014/9/26/538
+And you may access it at:
+https://github.com/jiangliu/linux.git irqdomain/p3v1
 
-There are a number of cases where one of the configs inside the choice
-only serve to _not_ set anything. In those cases the Kconfig symbol is
-used nowhere else. I'll have to think about this particular symbol a bit
-more to see if it actually makes sense to not use it anywhere else.
+It has been tested on Intel 64-bit server and 32-bit laptop. It also
+passes Fengguang's 0day tests. Helps are welcomed for testing:
+1) Intel MID platform
+2) Intel CE or OLPC platforms
 
-Thinking about the "Kernel low-level debugging port" choice is
-complicated by the fact that it holds about a gazillion "config"
-entries, many of which only show up only if some dependency is met. So
-it might take me some time to say anything sensible about it, if I ever
-manage to do that at all...
+Patch 1-6 convert IOAPIC to support hierarchy irqdomain.
+Patch 7-16,22 clean up unused code, x86_io_apic_ops and header files.
+Patch 17-20 simplify struct irq_cfg.
+Patch 21, 23-26 clean up code and interfaces further.
+Patch 27-28 introduces a mechanism to configure CPU vector allocation
+	policies.
 
-Thanks,
+Jiang Liu (28):
+  x86, irq: Kill unused setup_timer_IRQ0_pin()
+  x86, irq: Prepare IOAPIC interfaces to support hierarchy irqdomain
+  x86, irq: Implement callbacks to enable hierarchy irqdomain on
+    IOAPICs
+  x86, irq: Refine the way to allocate irq_cfg for legacy IRQs
+  x86, irq: Convert IOAPIC to use hierarchy irqdomain interfaces
+  x86, irq: Kill unused old IOAPIC irqdomain interfaces
+  x86, irq: Kill x86_io_apic_ops.print_entries and related interfaces
+  x86, irq: Kill x86_io_apic_ops.setup_entry and related interfaces
+  x86, irq: Kill x86_io_apic_ops.set_affinity and related interfaces
+  x86, irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
+  x86, irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+  x86: Clean up unused forward declarations in x86_init.h
+  x86: irq_remapping: Clean up unsued code
+  iommu/vt-d: Clean up unsued code
+  iommu/amd: Clean up unsued code
+  x86: irq_remapping: Clean up unused interfaces
+  x86, irq: Kill irq_cfg.irq_remapped
+  iommu/vt-d: Move struct irq_2_iommu into intel_irq_remapping.c
+  iommu/amd: Move struct irq_2_irte into amd_iommu.c
+  x86, irq: Move irq_cfg.irq_2_pin into io_apic.c
+  x86, irq: Kill struct io_apic_irq_attr
+  x86, irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
+  x86, irq: Clean up io_apic.h
+  x86, irq: Kill unused alloc_irq_and_cfg_at()
+  x86, irq: Change functions only used in vector.c as static
+  x86, irq: Kill function apic_set_affinity()
+  x86, irq: Introduce mechanism to support different vector allocation
+    policies
+  x86, irq: Add kernel parameter vector_alloc to set CPU vector
+    allocation policy
 
+ Documentation/kernel-parameters.txt                |    6 +
+ arch/x86/Kconfig                                   |    1 -
+ arch/x86/include/asm/hw_irq.h                      |   50 +-
+ arch/x86/include/asm/io_apic.h                     |   81 +-
+ arch/x86/include/asm/irq_remapping.h               |   36 -
+ arch/x86/include/asm/x86_init.h                    |   16 -
+ arch/x86/kernel/acpi/boot.c                        |   19 +-
+ arch/x86/kernel/apic/io_apic.c                     |  926 +++++++++++---------
+ arch/x86/kernel/apic/vector.c                      |  226 ++---
+ arch/x86/kernel/devicetree.c                       |   39 +-
+ arch/x86/kernel/mpparse.c                          |    6 +-
+ arch/x86/kernel/x86_init.c                         |    6 -
+ arch/x86/pci/intel_mid_pci.c                       |    6 +-
+ .../platform/intel-mid/device_libs/platform_wdt.c  |    5 +-
+ arch/x86/platform/intel-mid/intel-mid.c            |    2 +
+ arch/x86/platform/intel-mid/sfi.c                  |    6 +-
+ arch/x86/platform/sfi/sfi.c                        |    5 +-
+ drivers/iommu/amd_iommu.c                          |  150 +---
+ drivers/iommu/intel_irq_remapping.c                |  202 +----
+ drivers/iommu/irq_remapping.c                      |   84 --
+ drivers/iommu/irq_remapping.h                      |   16 -
+ 21 files changed, 709 insertions(+), 1179 deletions(-)
 
-Paul Bolle
+-- 
+1.7.10.4
 
