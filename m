@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344AbaIZIkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 04:40:36 -0400
-Received: from mailout.micron.com ([137.201.242.129]:57768 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbaIZIk2 convert rfc822-to-8bit (ORCPT
+	id S1754353AbaIZIky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 04:40:54 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43593 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754354AbaIZIkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 04:40:28 -0400
-From: bpqw <bpqw@micron.com>
-To: Marek Vasut <marex@denx.de>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Topic: [PATCH 1/1] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTCHzA
-Date: Fri, 26 Sep 2014 08:39:38 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
-In-Reply-To: <201409251211.57183.marex@denx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20976.005
-X-TM-AS-Result: No--1.831700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Sep 2014 04:40:52 -0400
+Date: Fri, 26 Sep 2014 09:40:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "chris@zankel.net" <chris@zankel.net>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
+        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "sam@ravnborg.org" <sam@ravnborg.org>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "starvik@axis.com" <starvik@axis.com>,
+        "takata@linux-m32r.org" <takata@linux-m32r.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>
+Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed
+	MMIO accessors
+Message-ID: <20140926084019.GJ5182@n2100.arm.linux.org.uk>
+References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <4240583.SJ4jiIW6Zy@wuerfel> <54243395.902@linaro.org> <201409252117.19754.arnd@arndb.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201409252117.19754.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +	/* set EVCR ,enable quad I/O */
->> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
->> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
->> +	if (ret < 0) {
->> +		dev_err(nor->dev,
->> +			"error while writing EVCR register\n");
->> +		return -EINVAL;
->> +	}
->> +
->> +	if (wait_till_ready(nor))
->> +		return 1;
+On Thu, Sep 25, 2014 at 09:17:19PM +0200, Arnd Bergmann wrote:
+> On Thursday 25 September 2014, Daniel Thompson wrote:
+> > > +
+> > > +#ifndef readq_relaxed
+> > > +#define readq_relaxed readq
+> > > +#endif
+> > 
+> > Not really sure if it matters but this gives a rather surprising
+> > behaviour to #ifdef readq_relaxed given that readq may not be defined.
+> > 
+> 
+> It was intentional. I could have written this as
+> 
+> #if !defined(readq_relaxed) && defined(readq)
+> 
+> but the effect would be almost the same, and the version I picked looks
+> simpler. Note that 32-bit architectures could provide readq, it's just
+> the generic code that doesn't, because most you typically don't get
+> atomic 64-bit accesses from dereferencing a 64-bit pointer as the
+> generic readq() function does.
 
->Why does this not return proper error code or even better, return value from
->wait_till_ready() ?
->
->Other than that, there's nothing wrong with the patch I think.
+32-bit architectures should *not* provide readq().  Remember, we are
+talking about devices here, and reading registers on devices *may* have
+side effects.
 
-Hi,Marek
-Thanks for your review,you can find the same usage in the spi-nor.c.
-Below method is OK? Or you can give me some suggestion.
+Side effects such as clearing the pending interrupt status.
 
-if (wait_till_ready(nor))
-	return - EINVAL;
+How would a 32-bit architecture know whether it should read the least
+significant 32-bit or the most significant 32-bit part of the 64-bit
+register first.  What would be right for one driver may not ben correct
+for another.  Hence, this decision should only be made by the driver
+wanting the accessor, and not having the accessor symbol defined should
+be the trigger for the driver to handle the problem themselves.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
