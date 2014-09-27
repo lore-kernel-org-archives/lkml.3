@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaI0IjX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 04:39:23 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:36157 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaI0IjT (ORCPT
+	id S1752515AbaI0IlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 04:41:09 -0400
+Received: from forward1l.mail.yandex.net ([84.201.143.144]:58467 "EHLO
+	forward1l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaI0IlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 04:39:19 -0400
-Message-ID: <542677B2.70506@samsung.com>
-Date: Sat, 27 Sep 2014 10:39:14 +0200
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sat, 27 Sep 2014 04:41:03 -0400
+X-Yandex-Uniq: 9c25fd92-2837-4a2e-b9ab-ba2f183b845d
+Authentication-Results: smtp3o.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH 1/2] sched/dl: Implement cancel_dl_timer() to use in
+ switched_from_dl()
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Date: Sat, 27 Sep 2014 12:40:58 +0400
+Message-ID: <20140927084044.1634.60573.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-CC: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v5 RESEND 1/3] ARM: EXYNOS: Move code from hotplug.c to
- platsmp.c
-References: <1409920495-16533-1-git-send-email-k.kozlowski@samsung.com> <201409262313.26272.arnd@arndb.de>
-In-Reply-To: <201409262313.26272.arnd@arndb.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 26.09.2014 o 23:13, Arnd Bergmann pisze:
-> On Friday 05 September 2014, Krzysztof Kozlowski wrote:
->> The commit only moves code around with one additional observable change:
->> the hotplug.c was compiled with custom CFLAGS (-march=armv7-a). These
->> CFLAGS are not necessary any more.
->
-> This turns out to be wrong, and your change broke 'allmodconfig' builds
-> in linux-next. Please apply this patch on top.
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-My patch definitely needed more testing.
-I posted a fix here:
-https://lkml.org/lkml/2014/9/24/163
-However it seems that it wasn't picked up by anyone yet.
+hrtimer_try_to_cancel() may bring a suprise, and even two its calls
+may fail.
 
-Russell, could you pick up the patch (with acks from Nicolas and Kukjin)?
+So, let's implement 100% guaranteed way to cancel the timer and let's
+be sure we are safe even in very unlikely situations.
 
-Best regards,
-Krzysztof
+We do not create any problem with rq unlocking, because it already
+may happed below in pull_dl_task(). No problem with deadline tasks
+balancing too.
 
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/deadline.c |   33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
 
->
-> 	Arnd
->
-> 8<----------
->  From 4ba6bf8806caec386e35930314dbad071284c837 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Fri, 26 Sep 2014 23:09:38 +0200
-> Subject: [PATCH] ARM: EXYNOS: fix build error in platsmp.c
->
-> /tmp/ccYeWL3V.s: Assembler messages:
-> /tmp/ccYeWL3V.s:659: Error: selected processor does not support ARM mode `isb '
-> /tmp/ccYeWL3V.s:664: Error: selected processor does not support ARM mode `isb '
-> /tmp/ccYeWL3V.s:665: Error: selected processor does not support ARM mode `dsb '
-> make[3]: *** [arch/arm/mach-exynos/platsmp.o] Error 1
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 17342534e1d932 ("ARM: EXYNOS: Move code from hotplug.c to platsmp.c")
->
-> diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-> index 4e49d4efb264..64324bf5edb4 100644
-> --- a/arch/arm/mach-exynos/Makefile
-> +++ b/arch/arm/mach-exynos/Makefile
-> @@ -21,6 +21,7 @@ obj-$(CONFIG_PM_SLEEP)		+= suspend.o
->   obj-$(CONFIG_PM_GENERIC_DOMAINS) += pm_domains.o
->
->   obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
-> +CFLAGS_platsmp.o		:= -march=armv7-a
->
->   plus_sec := $(call as-instr,.arch_extension sec,+sec)
->   AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index abfaf3d..63f8b4a 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
+ {
+ 	struct hrtimer *timer = &dl_se->dl_timer;
+ 
+-	if (hrtimer_active(timer)) {
+-		hrtimer_try_to_cancel(timer);
+-		return;
+-	}
+-
+ 	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	timer->function = dl_task_timer;
+ }
+@@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
+ 
+ #endif /* CONFIG_SMP */
+ 
++/*
++ *  Surely cancel task's dl_timer. May drop rq->lock.
++ */
++static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
++{
++	struct hrtimer *dl_timer = &p->dl.dl_timer;
++
++	/* Nobody will change task's class if pi_lock is held */
++	lockdep_assert_held(&p->pi_lock);
++
++	if (hrtimer_active(dl_timer)) {
++		int ret = hrtimer_try_to_cancel(dl_timer);
++
++		if (unlikely(ret == -1)) {
++			/*
++			 * Note, p may migrate OR new deadline tasks
++			 * may appear in rq when we are unlocking it.
++			 */
++			raw_spin_unlock(&rq->lock);
++			hrtimer_cancel(dl_timer);
++			raw_spin_lock(&rq->lock);
++		}
++	}
++}
++
+ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+ {
+-	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
+-		hrtimer_try_to_cancel(&p->dl.dl_timer);
++	cancel_dl_timer(rq, p);
+ 
+ 	__dl_clear_params(p);
+ 
 
