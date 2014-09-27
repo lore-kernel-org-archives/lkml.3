@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaI0H22 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 03:28:28 -0400
-Received: from mout.gmx.net ([212.227.15.19]:52493 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739AbaI0H20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 03:28:26 -0400
-Message-ID: <542666B2.9080700@gmx.de>
-Date: Sat, 27 Sep 2014 09:26:42 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1751817AbaI0Ho7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 03:44:59 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48652 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaI0Ho5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 03:44:57 -0400
+Date: Sat, 27 Sep 2014 00:45:59 -0700
+From: Omar Sandoval <osandov@osandov.com>
+To: Joe Perches <joe@perches.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] Return a value from printk_ratelimited
+Message-ID: <20140927074559.GA30196@molino.home.network>
+References: <cover.1411796033.git.osandov@osandov.com>
+ <a4437b89bc5684ea1d6f978039bd255d1f5b26f9.1411796033.git.osandov@osandov.com>
+ <1411796891.21874.14.camel@joe-AO725>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Yann Droneaud <ydroneaud@opteya.com>, Eric Paris <eparis@redhat.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, linux-api@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>
-Subject: Re: [PATCHv8 1/6] fanotify: enable close-on-exec on events' fd when
- requested in fanotify_init()
-References: <cover.1411562410.git.ydroneaud@opteya.com>	 <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>	 <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain>
-In-Reply-To: <1411721898.7778.18.camel@localhost.localdomain>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:CFjx7XRCGeXy/jaCSJNzTQBxKDqyDerMAwog+rCHtslUvxLBHwm
- AYSKrbIBdXHUcPdWuwGDlnJlWheRLDFWBpatLxA5A1bgFCx1nVVysRVf9Nhejt6zwuJJFct
- fQ2cITG8fl0Ttq2R8t9IFX+TxoSleuLwW1+0etyFy9YMP2tb5KqG4CwiVsvVeqj+4/qkh0q
- YKPGkgaAylWWlEksVgWDQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411796891.21874.14.camel@joe-AO725>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Fri, Sep 26, 2014 at 10:48:11PM -0700, Joe Perches wrote:
+> I'd prefer to keep it the way it is actually.
+> 
+> I've submitted several patches to convert the int return
+> to void for printk derived functions recently.
 
-please, add the patch described in
-https://lkml.org/lkml/2014/9/24/967
-to the MM tree.
+Alright, it doesn't seem like anyone feels strongly for keeping the return
+values, so I'll go ahead and submit a v4 that doesn't modify printk_ratelimited
+and doesn't return anything from the printk functions in rcustring.h unless
+there are any objections.
 
-I have tested kernel 3.17.0-rc6 with and without the patch and it fixes 
-the described error.
-As the patch is valid independent of the rest of the patch set, there is 
-no reason to wait for the rest to be merged.
-
-You may add
-Reviewed by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-
-Best regards
-
-Heinrich Schuchardt
-
-
-
-
-On 26.09.2014 10:58, Yann Droneaud wrote:
-> Hi,
->
-> Le jeudi 25 septembre 2014 à 22:57 +0200, Heinrich Schuchardt a écrit :
->> On 24.09.2014 15:11, Yann Droneaud wrote:
->>> According to commit 80af258867648 ('fanotify: groups can specify
->>> their f_flags for new fd'), file descriptors created as part of
->>> file access notification events inherit flags from the
->>> event_f_flags argument passed to syscall fanotify_init(2).
->>>
->>> So while it is legal for userspace to call fanotify_init() with
->>> O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
->>> silently ignored.
->>>
->>> Indeed event_f_flags are only given to dentry_open(), which only
->>> seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
->>> O_DIRECT in open_check_o_direct() and O_LARGEFILE in
->>> generic_file_open().
->>
->> I tested on kernel 3.17.0-rc5. I passed O_CLOEXEC in event_f_flags.
->> When I called fcnt(event_metadata->fd, F_GETFD) it did not return
->> FD_CLOEXEC. So I can confirm your observation that O_CLOEXEC is not
->> working as expected.
->>
->> I found this definition
->> #define get_unused_fd() get_unused_fd_flags(0)
->>
->> So essentially when get_unused_fd() is called for a fanotify event
->> O_CLOEXEC is ignored.
->>
->> This is what your patch fixes.
->>
-
+-- 
+Omar
