@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaI0SKi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 14:10:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42394 "EHLO mx1.redhat.com"
+	id S1752686AbaI0SVo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 14:21:44 -0400
+Received: from svenfoo.org ([82.94.215.22]:44983 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980AbaI0SKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 14:10:37 -0400
-Date: Sat, 27 Sep 2014 20:07:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] fork.c: copy_process(): fix cleanup WRT
-	perf_event_free_task()
-Message-ID: <20140927180725.GA15594@redhat.com>
-References: <20140926210652.GA27199@erable>
+	id S1750980AbaI0SVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 14:21:42 -0400
+Message-ID: <54270032.5010204@zonque.org>
+Date: Sat, 27 Sep 2014 20:21:38 +0200
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140926210652.GA27199@erable>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Matt Ranostay <mranostay@gmail.com>, galak@codeaurora.org,
+        dmitry.torokhov@gmail.com, zonque@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org
+CC: devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] cap11xx: make driver generic for variant support
+References: <1411622662-16581-1-git-send-email-mranostay@gmail.com> <1411622662-16581-2-git-send-email-mranostay@gmail.com>
+In-Reply-To: <1411622662-16581-2-git-send-email-mranostay@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26, Sylvain 'ythier' Hitier wrote:
->
->     retval = sched_fork(clone_flags, p);
->     if (retval)
-> //                                      // mustn't perf_event_free_task()
->         goto bad_fork_cleanup_policy;
+On 09/25/2014 07:24 AM, Matt Ranostay wrote:
+> cap1106 driver can support much more one device make the driver
+> generic for support of similiar parts.
+> 
+> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> ---
+>  .../devicetree/bindings/input/cap1106.txt          |  53 ----
+>  .../devicetree/bindings/input/cap11xx.txt          |  54 ++++
+>  drivers/input/keyboard/Kconfig                     |   8 +-
+>  drivers/input/keyboard/Makefile                    |   2 +-
+>  drivers/input/keyboard/cap1106.c                   | 341 ---------------------
+>  drivers/input/keyboard/cap11xx.c                   | 340 ++++++++++++++++++++
+>  6 files changed, 399 insertions(+), 399 deletions(-)
 
-Agreed, this is wrong. Good catch.
+As I've said, such a patch is really a whole lot more readable if you
+use the -M switch for git format-patch to detect renames.
 
-but, unless I missed something,
+Other than that, the series now looks good to me. I can't test it,
+however, as I don't have access to the hardware anymore.
 
->     retval = perf_event_init_task(p);
->     if (retval)
-> //                                      // mustn't perf_event_free_task()
-                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Reviewed-by: Daniel Mack <daniel@zonque.org>
 
-this is not right and thus the patch is not right too.
 
-Suppose that perf_event_init_task() -> perf_event_init_context(ctxn => 0)
-succeeds and then perf_event_init_context(ctxn => 1) fails, we need
-perf_event_free_task() to cleanup ->perf_event_ctxp[0].
 
-So if perf_event_init_task() fails, we still need "goto bad_fork_cleanup_perf".
-
-No?
-
-Or, probably better, we need to change perf_event_init_context() to call
-perf_event_free_task() on failure.
-
-Or. We can simply move memset(child->perf_event_ctxp, 0, ...) from
-perf_event_init_context() up. This reminds that we really need to cleanup
-copy_process(), in particular I think it asks for the new copy_xxx() helper
-which should do misc simple initializations which can't fail.
-
-What do you think?
-
-Oleg.
+Thanks,
+Daniel
 
