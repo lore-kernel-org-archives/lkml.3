@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaI0BMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 21:12:00 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:57470 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414AbaI0BL5 (ORCPT
+	id S1751532AbaI0BfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 21:35:15 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:64405 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaI0BfN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 21:11:57 -0400
-From: Behan Webster <behanw@converseincode.com>
-To: archit@ti.com, b.zolnierkie@samsung.com, m.chehab@samsung.com
-Cc: behanw@converseincode.com, hans.verkuil@cisco.com, k.debski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] media, platform, LLVMLinux: Remove nested function from ti-vpe
-Date: Fri, 26 Sep 2014 18:11:45 -0700
-Message-Id: <1411780305-5685-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 26 Sep 2014 21:35:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1409261302520.22196@pobox.suse.cz>
+References: <1411488489-10625-1-git-send-email-benjamin.tissoires@redhat.com>
+	<alpine.LNX.2.00.1409261302520.22196@pobox.suse.cz>
+Date: Fri, 26 Sep 2014 18:35:11 -0700
+Message-ID: <CANRwn3Sng5nxc7YZEUYQVgFhidSMQCBdDsiWebs_zFZ7s=gsiQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] HID: wacom: introduce generic HID handling
+From: Jason Gerecke <killertofu@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Ping Cheng <pinglinux@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the use of nested functions where a normal function will suffice.
+On Fri, Sep 26, 2014 at 4:03 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 23 Sep 2014, Benjamin Tissoires wrote:
+>
+>> Hi guys,
+>>
+>> So, this patch series aims at supporting natively any future HID compliant wacom
+>> tablet. Those found on the various laptops (ISDv4/5) already are HID compliant
+>> and they should work in the future without any modification of the kernel.
+>>
+>> Few things to note here:
+>> - I used the PID 0x00E6 found on the Lenovo X230 for the tests
+>> - I did not removed its entry in the list because there is a slightly different
+>>   behavior while using this patch set: when more than two fingers are on the
+>>   screen, the tablet stops sending finger events, while with the wacom
+>>   proprietary bits, it continues to send them. Besides that, the events emitted
+>>   before and after the patch series are the same (at least on the E6)
+>> - I can not rely on hid-input directly because wacom wants to be in control of
+>>   the input devices it creates. This might be solved in the future, but for now
+>>   it is just easier to rewrite the few mapping/events handling than trying to
+>>   fit in the hid-input model.
+>> - there will still be more specific use cases to handle later (see the joke of
+>>   the MS surface 3 pen[1] for instance), but this should give a roughly working
+>>   pen/touch support for those future devices.
+>>
+>> Jason, I would be very glad if you could conduct a few tests for this on the
+>> ISDv4/5 sensors you have.
+>
+> I am waiting with this one for testing results from Jason, but if you guys
+> want this to go in the next merge window, I'd like to ask you not to
+> postpone the testing too much.
+>
+> Thanks.
+>
 
-Nested functions are not liked by upstream kernel developers in general. Their
-use breaks the use of clang as a compiler, and doesn't make the code any
-better.
+I'm in the process of capturing traces from hid-record for multiple
+tablet PCs both pre- and post-patch to locate any obvious issues. My
+initial results are promising on the pen side (the only things I've
+noticed so far is the 2nd barrel switch not being supported -- as
+might be suspected) but less so on the touch side (single-finger
+devices seem to work fine, but the new code doesn't seem to handle any
+of the multitouch devices I've tried).
 
-This code now works for both gcc and clang.
+Expect more news next week :)
 
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
+
+PS: I'm pretty sure ISDv5 shouldn't be relied on for HID data :| The
+descriptor for the Cintiq Companion Hybrid, at least, is like our
+branded sensors with useful data only in the touchscreen descriptor
+(the pen descriptor is a bunch of opaque vendor-defined reports). Not
+sure if the Cintiq Companion is the same though since it runs
+Windows...
+
+Jason
 ---
- drivers/media/platform/ti-vpe/csc.c | 8 ++------
- drivers/media/platform/ti-vpe/sc.c  | 8 ++------
- 2 files changed, 4 insertions(+), 12 deletions(-)
+Now instead of four in the eights place /
+you’ve got three, ‘Cause you added one  /
+(That is to say, eight) to the two,     /
+But you can’t take seven from three,    /
+So you look at the sixty-fours....
 
-diff --git a/drivers/media/platform/ti-vpe/csc.c b/drivers/media/platform/ti-vpe/csc.c
-index 940df40..44fbf41 100644
---- a/drivers/media/platform/ti-vpe/csc.c
-+++ b/drivers/media/platform/ti-vpe/csc.c
-@@ -93,12 +93,8 @@ void csc_dump_regs(struct csc_data *csc)
- {
- 	struct device *dev = &csc->pdev->dev;
- 
--	u32 read_reg(struct csc_data *csc, int offset)
--	{
--		return ioread32(csc->base + offset);
--	}
--
--#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, read_reg(csc, CSC_##r))
-+#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, \
-+	ioread32(csc->base + CSC_##r))
- 
- 	DUMPREG(CSC00);
- 	DUMPREG(CSC01);
-diff --git a/drivers/media/platform/ti-vpe/sc.c b/drivers/media/platform/ti-vpe/sc.c
-index 6314171..1088381 100644
---- a/drivers/media/platform/ti-vpe/sc.c
-+++ b/drivers/media/platform/ti-vpe/sc.c
-@@ -24,12 +24,8 @@ void sc_dump_regs(struct sc_data *sc)
- {
- 	struct device *dev = &sc->pdev->dev;
- 
--	u32 read_reg(struct sc_data *sc, int offset)
--	{
--		return ioread32(sc->base + offset);
--	}
--
--#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, read_reg(sc, CFG_##r))
-+#define DUMPREG(r) dev_dbg(dev, "%-35s %08x\n", #r, \
-+	ioread32(sc->base + CFG_##r))
- 
- 	DUMPREG(SC0);
- 	DUMPREG(SC1);
--- 
-1.9.1
-
+>>
+>> Cheers,
+>> Benjamin
+>>
+>> [1] http://who-t.blogspot.com/2014/09/stylus-behaviour-on-microsoft-surface-3.html
+>>
+>> Benjamin Tissoires (5):
+>>   HID: wacom: rename failN with some meaningful information
+>>   HID: wacom: split out input allocation and registration
+>>   HID: wacom: move allocation of inputs earlier
+>>   HID: wacom: implement generic HID handling for pen generic devices
+>>   HID: wacom: implement the finger part of the HID generic handling
+>>
+>>  drivers/hid/hid-core.c  |   3 +
+>>  drivers/hid/wacom.h     |   6 +
+>>  drivers/hid/wacom_sys.c | 184 +++++++++++++++++++++--------
+>>  drivers/hid/wacom_wac.c | 299 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/hid/wacom_wac.h |  17 +++
+>>  include/linux/hid.h     |   2 +
+>>  6 files changed, 462 insertions(+), 49 deletions(-)
+>>
+>> --
+>> 2.1.0
+>>
+>
+> --
+> Jiri Kosina
+> SUSE Labs
