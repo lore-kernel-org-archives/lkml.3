@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaI0GOx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 02:14:53 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:54062 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144AbaI0GOv (ORCPT
+	id S1751531AbaI0GZy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 02:25:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38222 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750949AbaI0GZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 02:14:51 -0400
-Message-ID: <1411798486.5097.46.camel@marge.simpson.net>
-Subject: Re: BUG: sleeping function called from invalid context at
- drivers/cpufreq/cpufreq.c:370
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Date: Sat, 27 Sep 2014 08:14:46 +0200
-In-Reply-To: <2457441.tHFXzSCneW@vostro.rjw.lan>
-References: <20140924081845.572814794@infradead.org>
-	 <1411712697.6005.7.camel@marge.simpson.net>
-	 <1411718040.6005.18.camel@marge.simpson.net>
-	 <2457441.tHFXzSCneW@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 27 Sep 2014 02:25:53 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com
+Cc: linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] s390: remove unused Kconfig params
+Date: Sat, 27 Sep 2014 08:25:30 +0200
+Message-Id: <1411799130-17875-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-09-27 at 00:44 +0200, Rafael J. Wysocki wrote:
+Remove the below Kconfig parameters, which are no longer
+used anywhere in the source code and Makefiles:
 
-> Shouldn't that be pcc-cpufreq.c rather?
+HAVE_MARCH_Z900_FEATURES
+HAVE_MARCH_Z990_FEATURES
 
-Yeah, silly mouse copy/pasted the wrong gitk bits.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/s390/Kconfig | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-> Also moving the spin_lock(&pcc_lock) after the cpufreq_freq_transition_begin()
-> should fix the problem too (like the below).  Have you tried that?
-
-Have now.  Yup, works and is prettier.
-
--Mike
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 05c78bb5f570..d8085a9e9ebd 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -156,16 +156,8 @@ source "kernel/Kconfig.freezer"
+ 
+ menu "Processor type and features"
+ 
+-config HAVE_MARCH_Z900_FEATURES
+-	def_bool n
+-
+-config HAVE_MARCH_Z990_FEATURES
+-	def_bool n
+-	select HAVE_MARCH_Z900_FEATURES
+-
+ config HAVE_MARCH_Z9_109_FEATURES
+ 	def_bool n
+-	select HAVE_MARCH_Z990_FEATURES
+ 
+ config HAVE_MARCH_Z10_FEATURES
+ 	def_bool n
+@@ -192,7 +184,6 @@ config MARCH_G5
+ 
+ config MARCH_Z900
+ 	bool "IBM zSeries model z800 and z900"
+-	select HAVE_MARCH_Z900_FEATURES if 64BIT
+ 	help
+ 	  Select this to enable optimizations for model z800/z900 (2064 and
+ 	  2066 series). This will enable some optimizations that are not
+@@ -200,7 +191,6 @@ config MARCH_Z900
+ 
+ config MARCH_Z990
+ 	bool "IBM zSeries model z890 and z990"
+-	select HAVE_MARCH_Z990_FEATURES if 64BIT
+ 	help
+ 	  Select this to enable optimizations for model z890/z990 (2084 and
+ 	  2086 series). The kernel will be slightly faster but will not work
+-- 
+1.9.1
 
