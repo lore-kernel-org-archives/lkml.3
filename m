@@ -1,166 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaI0OP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 10:15:26 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:54530 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752084AbaI0OPZ (ORCPT
+	id S1753122AbaI0O3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 10:29:16 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:40067 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaI0O3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 10:15:25 -0400
-Message-ID: <5426C666.7000801@hurleysoftware.com>
-Date: Sat, 27 Sep 2014 10:15:02 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sat, 27 Sep 2014 10:29:15 -0400
 MIME-Version: 1.0
-To: Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Rik van Riel <riel@redhat.com>, Rob Clark <robdclark@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickens <hughd@google.com>,
-        Linux kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
-        Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: page allocator bug in 3.16?
-References: <54246506.50401@hurleysoftware.com>	<20140925143555.1f276007@as>	<5424AAD0.9010708@hurleysoftware.com>	<542512AD.9070304@vmware.com>	<20140926054005.5c7985c0@as>	<542543D8.8020604@vmware.com>	<CAF6AEGvOkPq5LQR76-VbspYyCvUxL1=W-dLc4g_aWX2wkUmRpg@mail.gmail.com>	<54255EA5.3030207@redhat.com>	<542573EE.8070103@hurleysoftware.com> <CAAE8-r+52KWP8BkDatwUoZfOMBBSDVqLZqunff9+L-Ac109Bxg@mail.gmail.com>
-In-Reply-To: <CAAE8-r+52KWP8BkDatwUoZfOMBBSDVqLZqunff9+L-Ac109Bxg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <tip-f7f084f4d3c29b0f9877a32fc6e2feacd47695b9@git.kernel.org>
+References: <1411434104-5307-4-git-send-email-namhyung@kernel.org>
+	<tip-f7f084f4d3c29b0f9877a32fc6e2feacd47695b9@git.kernel.org>
+Date: Sat, 27 Sep 2014 16:29:13 +0200
+Message-ID: <CAFTL4hxeanhFqrcd1sqHHPqi1DmcTKLZwT9QCTksCSEQdaLWRQ@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf callchain: Move some parser functions to callchain.c
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, mail@milianw.de,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 11:12 AM, Leann Ogasawara wrote:
-> On Fri, Sep 26, 2014 at 7:10 AM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> [ +cc Leann Ogasawara, Marek Szyprowski, Kyungmin Park, Arnd Bergmann ]
->>
->> On 09/26/2014 08:40 AM, Rik van Riel wrote:
->>> On 09/26/2014 08:28 AM, Rob Clark wrote:
->>>> On Fri, Sep 26, 2014 at 6:45 AM, Thomas Hellstrom
->>>> <thellstrom@vmware.com> wrote:
->>>>> On 09/26/2014 12:40 PM, Chuck Ebbert wrote:
->>>>>> On Fri, 26 Sep 2014 09:15:57 +0200 Thomas Hellstrom
->>>>>> <thellstrom@vmware.com> wrote:
->>>>>>
->>>>>>> On 09/26/2014 01:52 AM, Peter Hurley wrote:
->>>>>>>> On 09/25/2014 03:35 PM, Chuck Ebbert wrote:
->>>>>>>>> There are six ttm patches queued for 3.16.4:
->>>>>>>>>
->>>>>>>>> drm-ttm-choose-a-pool-to-shrink-correctly-in-ttm_dma_pool_shrink_scan.patch
->>>>>>>>>
->>>>>>>>>
->>> drm-ttm-fix-handling-of-ttm_pl_flag_topdown-v2.patch
->>>>>>>>> drm-ttm-fix-possible-division-by-0-in-ttm_dma_pool_shrink_scan.patch
->>>>>>>>>
->>>>>>>>>
->>> drm-ttm-fix-possible-stack-overflow-by-recursive-shrinker-calls.patch
->>>>>>>>> drm-ttm-pass-gfp-flags-in-order-to-avoid-deadlock.patch
->>>>>>>>> drm-ttm-use-mutex_trylock-to-avoid-deadlock-inside-shrinker-functions.patch
->>>>>>>>
->>>>>>>>>
->>> Thanks for info, Chuck.
->>>>>>>>
->>>>>>>> Unfortunately, none of these fix TTM dma allocation doing
->>>>>>>> CMA dma allocation, which is the root problem.
->>>>>>>>
->>>>>>>> Regards, Peter Hurley
->>>>>>> The problem is not really in TTM but in CMA, There was a guy
->>>>>>> offering to fix this in the CMA code but I guess he didn't
->>>>>>> probably because he didn't receive any feedback.
->>>>>>>
->>>>>> Yeah, the "solution" to this problem seems to be "don't enable
->>>>>> CMA on x86". Maybe it should even be disabled in the config
->>>>>> system.
->>>>> Or, as previously suggested, don't use CMA for order 0 (single
->>>>> page) allocations....
->>>>
->>>> On devices that actually need CMA pools to arrange for memory to be
->>>> in certain ranges, I think you probably do want to have order 0
->>>> pages come from the CMA pool.
->>>>
->>>> Seems like disabling CMA on x86 (where it should be unneeded) is
->>>> the better way, IMO
->>>
->>> CMA has its uses on x86. For example, CMA is used to allocate 1GB huge
->>> pages.
->>>
->>> There may also be people with devices that do not scatter-gather, and
->>> need a large physically contiguous buffer, though there should be
->>> relatively few of those on x86.
->>>
->>> I suspect it makes most sense to do DMA allocations up to PAGE_ORDER
->>> through the normal allocator on x86, and only invoking CMA for larger
->>> allocations.
->>
->> The code that uses CMA to satisfy DMA allocations on x86 is
->> specific to the x86 arch and was added in 2011 as a means of _testing_
->> CMA in KVM:
->>
->> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
->> Author: Marek Szyprowski <m.szyprowski@samsung.com>
->> Date:   Thu Dec 29 13:09:51 2011 +0100
->>
->>     X86: integrate CMA with DMA-mapping subsystem
->>
->>     This patch adds support for CMA to dma-mapping subsystem for x86
->>     architecture that uses common pci-dma/pci-nommu implementation. This
->>     allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
->>
->>     Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->>     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>     CC: Michal Nazarewicz <mina86@mina86.com>
->>     Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->> (no x86 maintainer acks?).
->>
->> Unfortunately, this code is enabled whenever CMA is enabled, rather
->> than as a separate test configuration.
->>
->> So, while enabling CMA may have other purposes on x86, using it for
->> x86 swiotlb and nommu dma allocations is not one of the them.
->>
->> And Ubuntu should not be enabling CONFIG_DMA_CMA for their i386
->> and amd64 configurations, as this is trying to drive _all_ dma mapping
->> allocations through a _very_ small window (which is killing GPU
->> performance).
-> 
-> Thanks for the note Peter.  We do have this disabled for our upcoming
-> Ubuntu 14.10 release.  It is however still enabled in the previous 14.04
-> release.  We have been tracking this in
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1362261 but users
-> able to reproduce performance impacts in 14.10 were unable to reproduce
-> in 14.04 which is why we hadn't yet disabled it there.
+Hi Namhyung,
 
-Leann,
+2014-09-27 9:26 GMT+02:00 tip-bot for Namhyung Kim <tipbot@zytor.com>:
+> Commit-ID:  f7f084f4d3c29b0f9877a32fc6e2feacd47695b9
+> Gitweb:     http://git.kernel.org/tip/f7f084f4d3c29b0f9877a32fc6e2feacd47695b9
+> Author:     Namhyung Kim <namhyung@kernel.org>
+> AuthorDate: Tue, 23 Sep 2014 10:01:42 +0900
+> Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+> CommitDate: Fri, 26 Sep 2014 12:41:57 -0300
+>
+> perf callchain: Move some parser functions to callchain.c
 
-Thanks for that important clue.
+Please Cc me on callchain stuff. I may not be very verbose but I still
+keep an eye on evolutions there.
 
-The missing piece specific to 3.16+ is these patches which impact every
-iommu config:
-
-Akinobu Mita (5):
-  x86: make dma_alloc_coherent() return zeroed memory if CMA is enabled
-  x86: enable DMA CMA with swiotlb
-  intel-iommu: integrate DMA CMA
-  memblock: introduce memblock_alloc_range()
-  cma: add placement specifier for "cma=" kernel parameter
-
-These patches take the pre-existing nommu CMA test configuration and
-hook it up to all the x86 iommus, effectively reducing 10GB of DMA-able
-memory to 64MB, and hooks it all up to an allocator that's not nearly as
-effective as the page allocator.
-
-All to enable DMA allocation below 4GB which is already supported with the
-GFP_DMA32 flag to dma_alloc_coherent().
-
-Regards,
-Peter Hurley
-
-
+Thanks.
