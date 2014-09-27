@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaI0BAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 21:00:22 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41307 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaI0A5h (ORCPT
+	id S1751558AbaI0BJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 21:09:42 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:39888 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaI0BJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 20:57:37 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Loc Ho <lho@apm.com>
-Subject: [PATCH 02/10] power/reset: xgene: Return -ENOMEM if out of memory
-Date: Fri, 26 Sep 2014 17:57:10 -0700
-Message-Id: <1411779438-23127-3-git-send-email-linux@roeck-us.net>
+	Fri, 26 Sep 2014 21:09:40 -0400
+From: Behan Webster <behanw@converseincode.com>
+To: kmo@daterainc.com
+Cc: behanw@converseincode.com, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        neilb@suse.de, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] md, sysfs, LLVMLinux: Remove nested function from bcache sysfs
+Date: Fri, 26 Sep 2014 18:09:29 -0700
+Message-Id: <1411780169-3260-1-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411779438-23127-1-git-send-email-linux@roeck-us.net>
-References: <1411779438-23127-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is customary to return an error code of -ENOMEM if the system
-is out of memory. Also, in that case, the infrastructure will report
-an error, so it is unnecessary to report it again.
+Replace the use of nested functions where a normal function will suffice.
 
-Cc: Loc Ho <lho@apm.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Nested functions are not liked by upstream kernel developers in general. Their
+use breaks the use of clang as a compiler, and doesn't make the code any
+better.
+
+This code now works for both gcc and clang.
+
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/power/reset/xgene-reboot.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/md/bcache/sysfs.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/power/reset/xgene-reboot.c b/drivers/power/reset/xgene-reboot.c
-index ecd55f8..20cf7c3 100644
---- a/drivers/power/reset/xgene-reboot.c
-+++ b/drivers/power/reset/xgene-reboot.c
-@@ -61,10 +61,8 @@ static int xgene_reboot_probe(struct platform_device *pdev)
- 	struct xgene_reboot_context *ctx;
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b3ff57d..53d8baa 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -731,6 +731,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
+ };
+ KTYPE(bch_cache_set_internal);
  
- 	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
--	if (!ctx) {
--		dev_err(&pdev->dev, "out of memory for context\n");
--		return -ENODEV;
--	}
-+	if (!ctx)
-+		return -ENOMEM;
++static int __bch_cache_cmp(const void *l, const void *r)
++{
++	return *((uint16_t *) r) - *((uint16_t *) l);
++}
++
+ SHOW(__bch_cache)
+ {
+ 	struct cache *ca = container_of(kobj, struct cache, kobj);
+@@ -755,9 +760,6 @@ SHOW(__bch_cache)
+ 					       CACHE_REPLACEMENT(&ca->sb));
  
- 	ctx->csr = of_iomap(pdev->dev.of_node, 0);
- 	if (!ctx->csr) {
+ 	if (attr == &sysfs_priority_stats) {
+-		int cmp(const void *l, const void *r)
+-		{	return *((uint16_t *) r) - *((uint16_t *) l); }
+-
+ 		struct bucket *b;
+ 		size_t n = ca->sb.nbuckets, i;
+ 		size_t unused = 0, available = 0, dirty = 0, meta = 0;
+@@ -786,7 +788,7 @@ SHOW(__bch_cache)
+ 			p[i] = ca->buckets[i].prio;
+ 		mutex_unlock(&ca->set->bucket_lock);
+ 
+-		sort(p, n, sizeof(uint16_t), cmp, NULL);
++		sort(p, n, sizeof(uint16_t), __bch_cache_cmp, NULL);
+ 
+ 		while (n &&
+ 		       !cached[n - 1])
 -- 
 1.9.1
 
