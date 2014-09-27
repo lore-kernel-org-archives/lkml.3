@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbaI0QTg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 12:19:36 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:39284 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaI0QTF (ORCPT
+	id S1753429AbaI0QUt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 12:20:49 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:64169 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751985AbaI0QUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 12:19:05 -0400
-From: Romain Perier <romain.perier@gmail.com>
-To: heiko@sntech.de
-Cc: linux-rockchip@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v1 2/3] ARM: dts: rockchip: Enable power off in pmic for Radxa Rock
-Date: Sat, 27 Sep 2014 16:21:45 +0000
-Message-Id: <1411834906-9533-2-git-send-email-romain.perier@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1411834906-9533-1-git-send-email-romain.perier@gmail.com>
-References: <1411834906-9533-1-git-send-email-romain.perier@gmail.com>
+	Sat, 27 Sep 2014 12:20:48 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqISAAPjJlRXQy06/2dsb2JhbABfgw62CwUBcppRBAJ9FwF7hGAjgRo3iEIBryuPeoYSigwdhDUFkT2La4xAiR2DZTsvgkoBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1 linux-next] fs/hfs/hfs_fs.h: remove redundant sys_tz declaration
+Date: Sat, 27 Sep 2014 18:20:44 +0200
+Message-Id: <1411834844-17845-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add "active-semi,system-power-controller" property to act8846 node.
-shutdown/poweroff commands are now handled for this board.
+sys_tz is already declared in include/linux/time.h
 
-Signed-off-by: Romain Perier <romain.perier@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/arm/boot/dts/rk3188-radxarock.dts | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/hfs/hfs_fs.h | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/rk3188-radxarock.dts b/arch/arm/boot/dts/rk3188-radxarock.dts
-index e04bf8f..5b6a937 100644
---- a/arch/arm/boot/dts/rk3188-radxarock.dts
-+++ b/arch/arm/boot/dts/rk3188-radxarock.dts
-@@ -115,6 +115,8 @@
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&act8846_dvs0_ctl>;
+diff --git a/fs/hfs/hfs_fs.h b/fs/hfs/hfs_fs.h
+index 0524cda..95d2552 100644
+--- a/fs/hfs/hfs_fs.h
++++ b/fs/hfs/hfs_fs.h
+@@ -242,8 +242,6 @@ extern int hfs_mac2asc(struct super_block *, char *, const struct hfs_name *);
+ /* super.c */
+ extern void hfs_mark_mdb_dirty(struct super_block *sb);
  
-+		active-semi,system-power-controller;
-+
- 		regulators {
- 			vcc_ddr: REG1 {
- 				regulator-name = "VCC_DDR";
+-extern struct timezone sys_tz;
+-
+ /*
+  * There are two time systems.  Both are based on seconds since
+  * a particular time/date.
 -- 
-1.9.1
+1.9.3
 
