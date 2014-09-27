@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaI0MRg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 08:17:36 -0400
-Received: from venev.name ([95.111.59.253]:57169 "EHLO venev.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595AbaI0MRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 08:17:35 -0400
-X-Greylist: delayed 514 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Sep 2014 08:17:35 EDT
-From: hristo@hristo.venev.name
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Hristo Venev <hristo@venev.name>
-Subject: [PATCH] init: Mount devtmpfs before mounting root.
-Date: Sat, 27 Sep 2014 15:08:42 +0300
-Message-Id: <1411819722-10684-1-git-send-email-hristo@venev.name>
-X-Mailer: git-send-email 2.1.1
+	id S1752785AbaI0MuX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 08:50:23 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:42962 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783AbaI0MuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 08:50:21 -0400
+Message-ID: <5426B289.7070802@gmail.com>
+Date: Sat, 27 Sep 2014 14:50:17 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 0/5] pinctrl: samsung: Data structure clean-up
+References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com> <CACRpkdZCMD4x+wrvTOrrWK-Dy4_rg6bD2xUAA4jtTGTbT1uDag@mail.gmail.com> <5423C904.60708@gmail.com>
+In-Reply-To: <5423C904.60708@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs may require /dev in case there are multiple devices
+Hi Linus,
 
-Example:
-root=/dev/sda1 rootfstype=btrfs rootflags=device=/dev/sdb1
----
- init/do_mounts.c | 2 ++
- 1 file changed, 2 insertions(+)
+On 25.09.2014 09:49, Tomasz Figa wrote:
+> On 25.09.2014 09:47, Linus Walleij wrote:
+>> On Tue, Sep 23, 2014 at 9:05 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>
+>>> This series intends to clean up data structures used by pinctrl-samsung driver.
+>>> More specifically, it separates initial compile time constants from data used
+>>> at runtime, allowing unused variant data to be dropped and selected structures
+>>> constified to improve safety.
+>>
+>> I like the patch set, tried to apply it but patch 3/5 failed to apply to the
+>> devel branch for pinctrl.
+>>
+>> Can you rebase this on my "devel" branch, include Marek's Tested-by
+>> tag and resend, and I'll take it for v3.18.
+> 
+> Sure. Will do that today evening. Probably clashed with some other
+> changes queued in the meantime.
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 82f2288..9612958 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -527,8 +527,10 @@ void __init mount_root(void)
- 	}
- #endif
- #ifdef CONFIG_BLOCK
-+	sys_mount(NULL, "/dev", "devtmpfs", 0, NULL);
- 	create_dev("/dev/root", ROOT_DEV);
- 	mount_block_root("/dev/root", root_mountflags);
-+	sys_umount("/dev", 0);
- #endif
- }
- 
--- 
-2.1.1
+Uhm. I went back home and forgot about this series until now. Sorry.
 
+I have rebased it on your "devel" branch, although it seems like this
+branch is missing [1], which in turn seems to be already present in your
+"for-next" branch and is going to cause a merge conflict with this
+series. Should I still proceed with posting the series based on "devel"?
+
+[1] f6a8249f9e55d pinctrl: exynos: Lock GPIOs as interrupts when used as
+EINTs
+
+Best regards,
+Tomasz
