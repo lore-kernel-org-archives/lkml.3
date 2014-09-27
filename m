@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195AbaIZXyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 19:54:18 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47375 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756007AbaIZXyQ convert rfc822-to-8bit (ORCPT
+	id S1756234AbaI0APE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Sep 2014 20:15:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42522 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944AbaI0APD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 19:54:16 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 26 Sep 2014 20:15:03 -0400
+Message-ID: <54260184.2040704@codeaurora.org>
+Date: Fri, 26 Sep 2014 17:15:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Jyri Sarha <jsarha@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        bcousson@baylibre.com
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <541160E8.5070701@ti.com>
-Cc: t-kristo@ti.com, mark.rutland@arm.com, detheridge@ti.com
-References: <1409919694-26941-1-git-send-email-jsarha@ti.com>
- <20140909221408.19023.12081@quantum> <541160E8.5070701@ti.com>
-Message-ID: <20140926235353.19023.31514@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: add gpio gated clock
-Date: Fri, 26 Sep 2014 16:53:53 -0700
+To: Mike Turquette <mturquette@linaro.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-kernel@vger.kernel.org, tomasz.figa@gmail.com, rabin@rab.in,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v13 0/9] Per-user clock constraints
+References: <1411497613-24049-1-git-send-email-tomeu.vizoso@collabora.com> <5421DF46.2010107@codeaurora.org> <54228067.3090600@collabora.com> <5424C182.5000906@codeaurora.org> <54251F30.8080303@collabora.com> <20140926232009.19023.15825@quantum>
+In-Reply-To: <20140926232009.19023.15825@quantum>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Jyri Sarha (2014-09-11 01:44:24)
-> On 09/10/2014 01:14 AM, Mike Turquette wrote:
-> > Quoting Jyri Sarha (2014-09-05 05:21:34)
-> >> The added gpio-gate-clock is a basic clock that can be enabled and
-> >> disabled trough a gpio output. The DT binding document for the clock
-> >> is also added. For EPROBE_DEFER handling the registering of the clock
-> >> has to be delayed until of_clk_get() call time.
-> >>
-> >> Signed-off-by: Jyri Sarha <jsarha@ti.com>
-> >> ---
-> >>
-> >> This is my final attempt to get this generic gpio controlled basic
-> >> clock into mainline. Of course I gladly fix any issues that the patch
-> >> may have. However, if there is no response, I give up and move it to TI
-> >> specific clocks.
-> >>
-> >
-> > I searched through my archives and found a post from January. You Cc'd
-> > me as "<mturquette@linaro.org>". Note that the address is wrapped in
-> > chevrons but there is no name string (e.g. "Mike Turquette").
-> >
-> > My mailer doesn't parse this well it was not flagged as to:me in my
-> > filters. Maybe other mailers handle this better? If you leave out the
-> > name string in the future then it would probably be best to drop the
-> > chevrons.
-> >
-> 
-> Then git send-email adds the chevrons, but in the future I'll put the 
-> name string there too.
-> 
-> >> I've been sending this patch as a part of Beaglebone-Black HDMI audio
-> >> patch series since last autumn. Since the previous version I have done
-> >> some minor cleanups and changed the clock's compatible property from
-> >> "gpio-clock" to "gpio-gate-clock". All the file names, comments,
-> >> etc. have also been changed accordingly.
-> >
-> > Is your platform the only one to take advantage of this clock type so
-> > far? I feel that it is esoteric enough that it shouldn't be made
-> > generic.
-> >
-> > The main reason is that all of the generic clock types needs to be
-> > overhauled at some point. E.g. the clk-gate should have its
-> > machine-specific logic separated from its machine-independent logic. If
-> > the gate clock were to populate .enable and .disable callbacks and then
-> > leave the actual register banging, or regmap'ing, or gpio'ing up to your
-> > backend driver then that would be a big improvement and would avoid the
-> > need to create this new clock type outright.
-> >
-> > So that's on my todo list, but it's not done yet. For your patch I think
-> > that putting this code into drivers/clk/ti would probably be best,
-> > unless other folks could use it as-is. Even if others could use it today
-> > I would want to remove it eventually for the reasons stated in the
-> > paragraph above.
-> >
-> 
-> Ok, I see. I do not know of anybody else needing a gpio gate clock at 
-> the moment. I'll put the driver under drivers/clk/ti unless someone 
-> comes forward soon.
+On 09/26/14 16:20, Mike Turquette wrote:
+> Quoting Tomeu Vizoso (2014-09-26 01:09:20)
+>> On 09/26/2014 03:29 AM, Stephen Boyd wrote:
+>>
+>>> We already have the consumer/provider split in the struct clk_hw and
+>>> struct clk separation. Why don't we just use struct clk_hw throughout
+>>> the provider APIs? The only op that isn't doing this is determine_rate()
+>>> which might be able to accept a flag day. Otherwise we rename it to
+>>> something else and migrate everyone over to a different named function
+>>> that doesn't take a struct clk **. Then we introduce new APIs for the
+>>> providers to use that are struct clk_hw focused instead of struct clk
+>>> focused and migrate them too. The benefit being that we get proper
+>>> review of this stuff because the patches are small. We can let
+>>> coccinelle do it too.
+> I have been opposed to mucking with clk_hw before, but that was because
+> the goal was never clear. Now that we know that we're trying to split
+> the API then it might be reasonable to use it.
+>
+> Stephen, does your above proposal still allow for unique struct clk
+> cookies for each user of a clock?
+>
+>
 
-Well nobody came forward but after thinking about it I've seen this
-design elsewhere, so it should probably be generic. And the underlying
-machine-specific ops are less relevant to this type since most of that
-is abstracted away behind the GPIO api.
+Yes. The clkdev code would know that it's getting clk_hw pointers back
+from the provider instead of struct clk pointers because it uses a
+different callback:
 
-Applied to clk-next. Let me know if that causes a problem for you if you
-have merged this into the TI clk stuff.
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index bacc06ff939b..76c356b779d1 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2337,6 +2337,7 @@ struct of_clk_provider {
+ 
+        struct device_node *node;
+        struct clk *(*get)(struct of_phandle_args *clkspec, void *data);
++       struct clk_hw *(*get_hw)(struct of_phandle_args *clkspec, void *data);
+        void *data;
+ };
+ 
 
-Regards,
-Mike
+ 
 
-> 
-> Thanks,
-> Jyri
-> 
+It would test for the presence of the get_hw callback and then fall back
+to the get callback. Similarly we would have a clk_hw pointer in the
+clkdev lookup structure. Once clkdev has the hw pointer it can ask the
+ccf to generate a struct clk cookie. This would happen either in
+__of_clk_get_from_provider() or clk_get_sys() depending on if we're
+using DT or not.
+
+The clk_hw structure will need to be updated to have a pointer to
+clk_core. During the transition we would have struct clk and struct
+clk_core next to each other in struct clk_hw. Eventually once we convert
+all drivers we can remove struct clk from clk_hw. This would require
+getting rid of the DEFINE_CLK macro in clk-private.h though.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
