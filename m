@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaI0HZv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 03:25:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41203 "EHLO
+	id S1752450AbaI0H0A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 03:26:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41211 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaI0HZu (ORCPT
+	with ESMTP id S1752247AbaI0HZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 03:25:50 -0400
-Date: Sat, 27 Sep 2014 00:25:23 -0700
-From: tip-bot for Pranith Kumar <tipbot@zytor.com>
-Message-ID: <tip-1da34daf24823f19cfd56c97973334cd95635926@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        bobby.prani@gmail.com, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, bobby.prani@gmail.com,
-        jolsa@kernel.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
-        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <1411484109-10442-1-git-send-email-bobby.prani@gmail.com>
-References: <1411484109-10442-1-git-send-email-bobby.prani@gmail.com>
+	Sat, 27 Sep 2014 03:25:57 -0400
+Date: Sat, 27 Sep 2014 00:24:55 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-a5c2a4c9561cbbd374231bd341936dae716df9dd@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1411594794-7229-1-git-send-email-andi@firstfloor.org>
+References: <1411594794-7229-1-git-send-email-andi@firstfloor.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Use ACCESS_ONCE()
-  instead of volatile cast
-Git-Commit-ID: 1da34daf24823f19cfd56c97973334cd95635926
+Subject: [tip:perf/core] perf tools:
+  Fix perf record as non root with kptr_restrict == 1
+Git-Commit-ID: a5c2a4c9561cbbd374231bd341936dae716df9dd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,41 +34,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1da34daf24823f19cfd56c97973334cd95635926
-Gitweb:     http://git.kernel.org/tip/1da34daf24823f19cfd56c97973334cd95635926
-Author:     Pranith Kumar <bobby.prani@gmail.com>
-AuthorDate: Tue, 23 Sep 2014 10:55:08 -0400
+Commit-ID:  a5c2a4c9561cbbd374231bd341936dae716df9dd
+Gitweb:     http://git.kernel.org/tip/a5c2a4c9561cbbd374231bd341936dae716df9dd
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Wed, 24 Sep 2014 14:39:54 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 26 Sep 2014 12:36:03 -0300
+CommitDate: Fri, 26 Sep 2014 10:51:41 -0300
 
-perf tools: Use ACCESS_ONCE() instead of volatile cast
+perf tools: Fix perf record as non root with kptr_restrict == 1
 
-Use ACCESS_ONCE() instead of the cast to volatile and read. This is just
-a style change which is reader friendly.
+Currently perf record always errors out when you run it as non-root with
+kptr_restrict == 1, which is often the default.
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
+Make it only warn instead and fix the kernel resolve code to not
+segfault later. Profiling works still fine, except kernel symbols are
+not resolved.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1411484109-10442-1-git-send-email-bobby.prani@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411594794-7229-1-git-send-email-andi@firstfloor.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/event.c   | 8 ++++++--
+ tools/perf/util/session.c | 2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 8dd41ca..ffb4404 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -126,5 +126,5 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index ed55819..4af6b27 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -558,13 +558,17 @@ int perf_event__synthesize_kernel_mmap(struct perf_tool *tool,
+ 	struct map *map;
+ 	struct kmap *kmap;
+ 	int err;
++	union perf_event *event;
++
++	if (machine->vmlinux_maps[0] == NULL)
++		return -1;
++
+ 	/*
+ 	 * We should get this from /sys/kernel/sections/.text, but till that is
+ 	 * available use this, and after it is use this as a fallback for older
+ 	 * kernels.
+ 	 */
+-	union perf_event *event = zalloc((sizeof(event->mmap) +
+-					  machine->id_hdr_size));
++	event = zalloc((sizeof(event->mmap) + machine->id_hdr_size));
+ 	if (event == NULL) {
+ 		pr_debug("Not enough memory synthesizing mmap event "
+ 			 "for kernel modules\n");
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6d2d50d..883406f 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -119,7 +119,7 @@ struct perf_session *perf_session__new(struct perf_data_file *file,
+ 		 * kernel MMAP event, in perf_event__process_mmap().
+ 		 */
+ 		if (perf_session__create_kernel_maps(session) < 0)
+-			goto out_delete;
++			pr_warning("Cannot read kernel map\n");
+ 	}
  
- extern volatile int session_done;
- 
--#define session_done()	(*(volatile int *)(&session_done))
-+#define session_done()	ACCESS_ONCE(session_done)
- #endif /* __PERF_SESSION_H */
+ 	if (tool && tool->ordering_requires_timestamps &&
