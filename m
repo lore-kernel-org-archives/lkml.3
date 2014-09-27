@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaI0Tlz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 15:41:55 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55987 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751828AbaI0Tlx (ORCPT
+	id S1752743AbaI0TqD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 15:46:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49886 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaI0TqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 15:41:53 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Wang Weidong <wangweidong1@huawei.com>
-Cc: viresh.kumar@linaro.org, linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance states
-Date: Sat, 27 Sep 2014 22:01:46 +0200
-Message-ID: <2361937.mQR3H5xj3F@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54264C0B.1000607@huawei.com>
-References: <53F589C3.4050504@huawei.com> <2075276.PKjjuvNeys@vostro.rjw.lan> <54264C0B.1000607@huawei.com>
+	Sat, 27 Sep 2014 15:46:01 -0400
+Date: Sat, 27 Sep 2014 20:45:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mikhail Efremov <sem@altlinux.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+Message-ID: <20140927194558.GV7996@ZenIV.linux.org.uk>
+References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
+ <20140924185521.GC7996@ZenIV.linux.org.uk>
+ <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
+ <20140924201813.GI7996@ZenIV.linux.org.uk>
+ <20140925044601.GL7996@ZenIV.linux.org.uk>
+ <20140926164442.GA26897@ZenIV.linux.org.uk>
+ <20140927044555.GS7996@ZenIV.linux.org.uk>
+ <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+ <20140927183139.GT7996@ZenIV.linux.org.uk>
+ <20140927191657.GU7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140927191657.GU7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 27, 2014 01:32:59 PM Wang Weidong wrote:
-> On 2014/9/27 7:21, Rafael J. Wysocki wrote:
-> > On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
-> >> As the initialized freq_tables maybe different from the p-states
-> >> values, so the array index is different as well.
-> >>
-> >> p-states value: [2400 2400 2000 ...], while the freq_tables:
-> >> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
-> >> the perf->state is 3 while the freqs_table's index should be 2.
-> >> So when call the get_cur_freq_on_cpu, the freqs value we get
-> >> is 2400.
-> >>
-> >> So, fix the problem with the correct tables.
-> > 
-> > What you're saying is basically that freq_table and perf->states
-> > diverge at one point.  Shouldn't we re-generate freq_table in that
-> > case instead of fixing up get_cur_freq_on_cpu() only in a quite
-> > indirect way? 
-> > 
-> Hi Rafael,
+On Sat, Sep 27, 2014 at 08:16:57PM +0100, Al Viro wrote:
+> On Sat, Sep 27, 2014 at 07:31:39PM +0100, Al Viro wrote:
 > 
-> Thanks for your reply.
+> > We can get the long name cases right, and I agree that it'll make the
+> > things nicer, but it might take a couple of days to get right.  The thing
+> > I'm concerned about is not screwing DCACHE_RCUACCESS up.
 > 
-> You mean that we should re-generate the freq_table in that case?
-> Could we fix the table init like this:
+> FWIW, I suspect that the right approach is to put refcount + rcu_head in
+> front of external name and do the following:
+> 	* __d_free() checks if we have an external name, gets its containing
+> structure and does if (atomic_dec_and_test(&name->count)) kfree(name);
+> 	* switch_names() in non-exchange case (I'd probably call it copy_name,
+> not move_names, but anyway) sets DCACHE_RCUACCESS on target (source has
+> already gotten it from __d_rehash()), increments refcount on target's name
+> if external and, if the source old name is external, decrements its refcount
+> and calls kfree_rcu() if it has hit zero.
 > 
-> --- a/drivers/cpufreq/acpi-cpufreq.c
-> +++ b/drivers/cpufreq/acpi-cpufreq.c
-> @@ -779,7 +779,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
-> 
->         /* table init */
->         for (i = 0; i < perf->state_count; i++) {
-> -               if (i > 0 && perf->states[i].core_frequency >=
-> +               if (i > 0 && perf->states[i].core_frequency >
->                     data->freq_table[valid_states-1].frequency / 1000)
->                         continue;
-> 
-> when the value is same, we just keep the value into the freq_table.
+> AFAICS, it guarantees that we'll schedule an RCU callback on name's rch_head
+> at most once, that we won't free it while RCU callback on it is scheduled
+> and we won't free it until a grace period has expired since the last time
+> it had been referenced by observable dentries.  Do you see any holes in that?
 
-That would only be OK if it is guaranteed that the set of available
-states hasn't changed, which I'm not sure is the case.
+We probably want to put a union of refcount and rcu_head there, actually...
+Gives the right alignment without padding.  As in
+struct ext_name {
+	union {
+		atomic_t count;
+		struct rcu_head head;
+	};
+	char name[0];
+};
+->count corresponds to the number of dentries that have ->d_name.name
+pointing to the sucker's ->name.  And we use ->head only when it reaches
+zero in __d_move().  That's 2 words per external name; somewhat unpleasant
+on 64bit, but I don't see how to avoid an rcu_head in there...  The cutoff
+for external names is 32 bytes on 64bit boxen.  That way we get 16 bytes
+of overhead per long-named dentry...  OTOH, we allocate them with kmalloc(),
+so it means that 32-character names lead to 64-bytes actual allocation.
 
-Rafael
+Hmmm...  So the old behaviour is
+ 32--63 	=> 64 byte allocation
+ 64--95 	=> 96
+ 96--127	=> 128
+and the new one
+ 32--47 	=> 64 byte allocation
+ 48--79 	=> 96
+ 80--111	=> 128
+112--127	=> 192
+(components longer than 128 characters are definitely too rare to worry about)
+IOW, the main worry is about the names in range from 48 to 64 characters;
+for those we push the allocation from size-64 to size-96...
 
+Note, BTW, that git hits external name case on everything except 32-bit UP;
+a _lot_ of 38-character names there.  And IIRC there had been some plans for
+possible replacement of SHA1 with something wider, right?
