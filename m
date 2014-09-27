@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaI0LUk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 07:20:40 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45263 "EHLO
+	id S1753054AbaI0LWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 07:22:05 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45270 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaI0LUj (ORCPT
+	with ESMTP id S1752483AbaI0LWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 07:20:39 -0400
-Date: Sat, 27 Sep 2014 12:20:19 +0100
+	Sat, 27 Sep 2014 07:22:03 -0400
+Date: Sat, 27 Sep 2014 12:21:44 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Pankaj Dubey <pankaj.dubey@samsung.com>
 Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         Li.Xiubo@freescale.com, naushad@samsung.com
-Message-ID: <20140927112019.GJ27755@sirena.org.uk>
+Message-ID: <20140927112144.GK27755@sirena.org.uk>
 References: <1411791475-27031-1-git-send-email-pankaj.dubey@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ry3qE+viRNtbc3l7"
+	protocol="application/pgp-signature"; boundary="hm39DdI+xc+0zcX9"
 Content-Disposition: inline
 In-Reply-To: <1411791475-27031-1-git-send-email-pankaj.dubey@samsung.com>
 X-Cookie: You are magnetic in your bearing.
@@ -32,7 +32,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Ry3qE+viRNtbc3l7
+--hm39DdI+xc+0zcX9
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
@@ -41,23 +41,23 @@ On Sat, Sep 27, 2014 at 09:47:55AM +0530, Pankaj Dubey wrote:
 > pointer dereference. This patch fixes this issue by adding check for
 > dev->NULL in all such places in regmap.c
 
-This doesn't apply against current code since the same fix has already
-been made.
+Oops, sorry - actually it hadn't, git generated a confusing warning
+which caused me to try to apply twice.
 
---Ry3qE+viRNtbc3l7
+--hm39DdI+xc+0zcX9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUJp1yAAoJECTWi3JdVIfQ/CgH/2a2RsXRTim5MLKQv/SnljIe
-yb3PgeDzrU7Gwc0BJYM9hzpVSUn4ihtBm7J/C1ER9jkfUJKxnVZ+wHvMT//4qc22
-9PRN3HxHRhdSg8mlqcS1txm7JjJ1ZooreoqEuj5ie/5iSiCGmNyIkkIDnlJgtp7+
-V2smMCNDXhep43xM7K1LCcR/NnWoP5Q2p5pd9Hmt9W4NLGy2d9XFwvp+aEuGP9ZO
-5rYS7OAUQ5YIjOv8zIv2S+fZsC8ahxe8MXqx4zXcFXcVIvOwn2bgfcvIsH4y+7WQ
-tRAmsn9sBlxqBSkYlsHjxGMZ5ubqJI1RcYat3xF2K0pg/syUB1itU0Xjc84JaTw=
-=rPTR
+iQEcBAEBAgAGBQJUJp3HAAoJECTWi3JdVIfQqjoH/2bDf6qN9alqdYwWHhqp6GNu
+rtO/DlCc9Az5gcaFqAEB5WZIZSvPtQOcu1ufesxfpMaUhPN9x+akfpsg2Jz5sFpk
+4mXwUhbRDEtx+pQ22v4oYweYx+zwY7QRpt88kt9ez5XUQYZqNqcR92MuoNSUyERN
+6acQtPzvAHblu1wVOsdYYW25pdd0Wc6pA2qxHfhnCbLxKxvXjSGn3/9kRuIRmb7G
+RV0P9ZEnzJy8QpYChaxOK8JveFybCL+VuJZprFpBTiNgtn+wAdrjBHdnHfX1hIsv
+zzM4sC/ce6QEokG06PoN/Tr+Bs8gcE+AEpCohJfsOqi9m7aRrk5pxpYPvGwZHUY=
+=um/r
 -----END PGP SIGNATURE-----
 
---Ry3qE+viRNtbc3l7--
+--hm39DdI+xc+0zcX9--
