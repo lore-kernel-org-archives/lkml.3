@@ -1,111 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaI0J4r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 05:56:47 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:62326 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752103AbaI0J4p (ORCPT
+	id S1752782AbaI0J52 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 05:57:28 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35901 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaI0J51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 05:56:45 -0400
-Message-ID: <1411811803.15241.50.camel@x220>
-Subject: Re: [PATCH] mm/slab: use IS_ENABLED() instead of ZONE_DMA_FLAG
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 27 Sep 2014 11:56:43 +0200
-In-Reply-To: <20140925185047.GA21089@cmpxchg.org>
-References: <1411667851.2020.6.camel@x41>
-	 <20140925185047.GA21089@cmpxchg.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	Sat, 27 Sep 2014 05:57:27 -0400
+Message-ID: <54268A04.8080804@kernel.org>
+Date: Sat, 27 Sep 2014 10:57:24 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: David Barksdale <dbarksdale@uplogix.com>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Subject: Re: [PATCH v3] IIO: add si7020 driver
+References: <1411570979-19473-1-git-send-email-dbarksdale@uplogix.com>
+In-Reply-To: <1411570979-19473-1-git-send-email-dbarksdale@uplogix.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Sep 2014 09:56:43.0496 (UTC) FILETIME=[579D6E80:01CFDA39]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+On 24/09/14 16:02, David Barksdale wrote:
+> This patch adds support to the Industrial IO subsystem
+> for the Silicon Labs Si7013/20/21 Relative Humidity and
+> Temperature Sensors.
+>
+> Website: http://www.silabs.com/products/sensors/humidity-sensors/Pages/si7013-20-21.aspx
+>
+> These are i2c devices which measure relative humidity
+> and temperature and all use the same protocol. The
+> Si7013 has an additional input with programmable
+> linearization which is not supported because that's
+> complicated and I didn't need it.
+>
+> Signed-off-by: David Barksdale <dbarksdale@uplogix.com>
+One little point inline where you have a set of fairly
+unconnected constants blugeoned into an enum.  Just use defines.
 
-On Thu, 2014-09-25 at 14:50 -0400, Johannes Weiner wrote:
-> On Thu, Sep 25, 2014 at 07:57:31PM +0200, Paul Bolle wrote:
-> > The Kconfig symbol ZONE_DMA_FLAG probably predates the introduction of
-> > IS_ENABLED(). Remove it and replace its two uses with the equivalent
-> > IS_ENABLED(CONFIG_ZONE_DMA).
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Build tested on x86_64 (on top of next-20140925).
-> > 
-> > Run tested on i686 (on top of v3.17-rc6). That test required me to
-> > switch from SLUB (Fedora's default) to SLAB. That makes running this
-> > patch both more scary and less informative. Besides, I have no idea how
-> > to hit the codepaths I just changed. You'd expect this to not actually
-> > change slab.o, but I'm not sure how to check that. So, in short: review
-> > very much appreciated.
-> > 
-> >  mm/Kconfig | 5 -----
-> >  mm/slab.c  | 4 ++--
-> >  2 files changed, 2 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/mm/Kconfig b/mm/Kconfig
-> > index 886db21..8e860c7 100644
-> > --- a/mm/Kconfig
-> > +++ b/mm/Kconfig
-> > @@ -273,11 +273,6 @@ config ARCH_ENABLE_HUGEPAGE_MIGRATION
-> >  config PHYS_ADDR_T_64BIT
-> >  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
-> >  
-> > -config ZONE_DMA_FLAG
-> > -	int
-> > -	default "0" if !ZONE_DMA
-> > -	default "1"
-> > -
-> >  config BOUNCE
-> >  	bool "Enable bounce buffers"
-> >  	default y
-> > diff --git a/mm/slab.c b/mm/slab.c
-> > index 628f2b5..766c90e 100644
-> > --- a/mm/slab.c
-> > +++ b/mm/slab.c
-> > @@ -2243,7 +2243,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
-> >  	cachep->freelist_size = freelist_size;
-> >  	cachep->flags = flags;
-> >  	cachep->allocflags = __GFP_COMP;
-> > -	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
-> > +	if (IS_ENABLED(CONFIG_ZONE_DMA) && (flags & SLAB_CACHE_DMA))
-> >  		cachep->allocflags |= GFP_DMA;
-> 
-> GFP_DMA is actually safe to use even without CONFIG_ZONE_DMA, so you
-> only need to check for SLAB_CACHE_DMA here.
-> 
-> > @@ -2516,7 +2516,7 @@ static void cache_init_objs(struct kmem_cache *cachep,
-> >  
-> >  static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
-> >  {
-> > -	if (CONFIG_ZONE_DMA_FLAG) {
-> > +	if (IS_ENABLED(CONFIG_ZONE_DMA)) {
-> >  		if (flags & GFP_DMA)
-> >  			BUG_ON(!(cachep->allocflags & GFP_DMA));
-> >  		else
-> 
-> I think this assertion can be removed altogether and replaced by ORing
-> the passed in flags with the cache gfp flags.  The page allocator will
-> catch any contradictions, but the 3 callsites that actually do use DMA
-> caches are well-behaved as of now.
-
-Do your comments require the patch to be redone (partially or entirely)?
-In that case someone else should probably take it and improve it, as I
-hardly understand the issues you raise. Or is the patch already queued
-somewhere, with Cristoph's Ack attached?
+Otherwise I'm happy with this.  Given the timing (just missed this
+cycle I'm afraid) I'd like it to sit on the list for a little while
+longer to see if Hartmut or Peter want to give a reviewed-by.
 
 Thanks,
 
+Jonathan
+>
+> --
+> Changes since v1:
+> * Renamed to si7020 and replaced Si701x/2x with Si7013/20/21.
+> * Removed unneeded mutex.
+> * Pre-computed floating-point constant expressions.
+> * Removed address_list and I2C_CLASS_HWMON.
+>
+> Changes since v2:
+> * Return correct raw sensor values.
+> * Rename dev variable to indio_dev.
+> * Issue a software reset command during probe.
+> * Un-broke string literal.
+>
+> ---
+>  drivers/iio/humidity/Kconfig  |  10 +++
+>  drivers/iio/humidity/Makefile |   1 +
+>  drivers/iio/humidity/si7020.c | 165 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 176 insertions(+)
+>
+> diff --git a/drivers/iio/humidity/Kconfig b/drivers/iio/humidity/Kconfig
+> index e116bd8..4813b79 100644
+> --- a/drivers/iio/humidity/Kconfig
+> +++ b/drivers/iio/humidity/Kconfig
+> @@ -22,4 +22,14 @@ config SI7005
+>  	  To compile this driver as a module, choose M here: the module
+>  	  will be called si7005.
+>
+> +config SI7020
+> +	tristate "Si7013/20/21 Relative Humidity and Temperature Sensors"
+> +	depends on I2C
+> +	help
+> +	  Say yes here to build support for the Silicon Labs Si7013/20/21
+> +	  Relative Humidity and Temperature Sensors.
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called si7020.
+> +
+>  endmenu
+> diff --git a/drivers/iio/humidity/Makefile b/drivers/iio/humidity/Makefile
+> index e3f3d94..86e2d26 100644
+> --- a/drivers/iio/humidity/Makefile
+> +++ b/drivers/iio/humidity/Makefile
+> @@ -4,3 +4,4 @@
+>
+>  obj-$(CONFIG_DHT11) += dht11.o
+>  obj-$(CONFIG_SI7005) += si7005.o
+> +obj-$(CONFIG_SI7020) += si7020.o
+> diff --git a/drivers/iio/humidity/si7020.c b/drivers/iio/humidity/si7020.c
+> new file mode 100644
+> index 0000000..4aacb55
+> --- /dev/null
+> +++ b/drivers/iio/humidity/si7020.c
+> @@ -0,0 +1,165 @@
+> +/*
+> + * si7020.c - Silicon Labs Si7013/20/21 Relative Humidity and Temp Sensors
+> + * Copyright (c) 2013,2014  Uplogix, Inc.
+> + * David Barksdale <dbarksdale@uplogix.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/*
+> + * The Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors
+> + * are i2c devices which have an identical programming interface for
+> + * measuring relative humidity and temperature. The Si7013 has an additional
+> + * temperature input which this driver does not support.
+> + *
+> + * Data Sheets:
+> + *   Si7013: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7013.pdf
+> + *   Si7020: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7020.pdf
+> + *   Si7021: http://www.silabs.com/Support%20Documents/TechnicalDocs/Si7021.pdf
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/i2c.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/sysfs.h>
+> +
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/sysfs.h>
+> +
+> +enum {
+This is really an enum in any conventional sense.  Just
+use
 
-Paul Bolle
+#define SI7020CMD_RH_HOLD 0xE5;
+etc instead.
 
+> +	/* Measure Relative Humidity, Hold Master Mode */
+> +	SI7020CMD_RH_HOLD	= 0xE5,
+> +	/* Measure Temperature, Hold Master Mode */
+> +	SI7020CMD_TEMP_HOLD	= 0xE3,
+> +	/* Software Reset */
+> +	SI7020CMD_RESET		= 0xFE,
+> +};
+> +
+> +static int si7020_read_raw(struct iio_dev *indio_dev,
+> +			   struct iio_chan_spec const *chan, int *val,
+> +			   int *val2, long mask)
+> +{
+> +	struct i2c_client **client = iio_priv(indio_dev);
+> +	int ret;
+> +
+> +	switch (mask) {
+> +	case IIO_CHAN_INFO_RAW:
+> +		ret = i2c_smbus_read_word_data(*client,
+> +					       chan->type == IIO_TEMP ?
+> +					       SI7020CMD_TEMP_HOLD :
+> +					       SI7020CMD_RH_HOLD);
+> +		if (ret < 0)
+> +			return ret;
+> +		if (chan->type == IIO_TEMP)
+> +			*val = ret >> 2;
+> +		else
+> +			*val = (ret & 0x3FFF) >> 2;
+> +		return IIO_VAL_INT;
+> +	case IIO_CHAN_INFO_SCALE:
+> +		if (chan->type == IIO_TEMP)
+> +			*val = 175720; /* = 175.72 * 1000 */
+> +		else
+> +			*val = 125 * 1000;
+> +		*val2 = 65536 >> 2;
+> +		return IIO_VAL_FRACTIONAL;
+> +	case IIO_CHAN_INFO_OFFSET:
+> +		/* Since iio_convert_raw_to_processed_unlocked assumes offset
+> +		 * is an integer we have to round these values and lose
+> +		 * accuracy.
+> +		 * Relative humidity will be 0.0032959% too high and
+> +		 * temperature will be 0.00277344 degrees too high.
+> +		 * This is no big deal because it's within the accuracy of the
+> +		 * sensor.
+> +		 */
+> +		if (chan->type == IIO_TEMP)
+> +			*val = -4368; /* = -46.85 * (65536 >> 2) / 175.72 */
+> +		else
+> +			*val = -786; /* = -6 * (65536 >> 2) / 125 */
+> +		return IIO_VAL_INT;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+> +static const struct iio_chan_spec si7020_channels[] = {
+> +	{
+> +		.type = IIO_HUMIDITYRELATIVE,
+> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+> +	},
+> +	{
+> +		.type = IIO_TEMP,
+> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+> +			BIT(IIO_CHAN_INFO_SCALE) | BIT(IIO_CHAN_INFO_OFFSET),
+> +	}
+> +};
+> +
+> +static const struct iio_info si7020_info = {
+> +	.read_raw = si7020_read_raw,
+> +	.driver_module = THIS_MODULE,
+> +};
+> +
+> +static int si7020_probe(struct i2c_client *client,
+> +			const struct i2c_device_id *id)
+> +{
+> +	struct iio_dev *indio_dev;
+> +	struct i2c_client **data;
+> +	int ret;
+> +
+> +	if (!i2c_check_functionality(client->adapter,
+> +				     I2C_FUNC_SMBUS_WRITE_BYTE |
+> +				     I2C_FUNC_SMBUS_READ_WORD_DATA))
+> +		return -ENODEV;
+> +
+> +	/* Reset device, loads default settings. */
+> +	ret = i2c_smbus_write_byte(client, SI7020CMD_RESET);
+> +	if (ret < 0)
+> +		return ret;
+> +	/* Wait the maximum power-up time after software reset. */
+> +	msleep(15);
+> +
+> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*client));
+> +	if (!indio_dev)
+> +		return -ENOMEM;
+> +
+> +	data = iio_priv(indio_dev);
+> +	*data = client;
+> +	i2c_set_clientdata(client, indio_dev);
+> +
+> +	indio_dev->dev.parent = &client->dev;
+> +	indio_dev->name = dev_name(&client->dev);
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +	indio_dev->info = &si7020_info;
+> +	indio_dev->channels = si7020_channels;
+> +	indio_dev->num_channels = ARRAY_SIZE(si7020_channels);
+> +
+> +	return devm_iio_device_register(&client->dev, indio_dev);
+> +}
+> +
+> +static const struct i2c_device_id si7020_id[] = {
+> +	{ "si7020", 0 },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(i2c, si7020_id);
+> +
+> +static struct i2c_driver si7020_driver = {
+> +	.driver.name	= "si7020",
+> +	.probe		= si7020_probe,
+> +	.id_table	= si7020_id,
+> +};
+> +
+> +module_i2c_driver(si7020_driver);
+> +MODULE_DESCRIPTION("Silicon Labs Si7013/20/21 Relative Humidity and Temperature Sensors");
+> +MODULE_AUTHOR("David Barksdale <dbarksdale@uplogix.com>");
+> +MODULE_LICENSE("GPL");
+> +
+>
