@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaI0UBs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 16:01:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54378 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaI0UBq convert rfc822-to-8bit (ORCPT
+	id S1752601AbaI0UTT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 16:19:19 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:51823 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbaI0UTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 16:01:46 -0400
-Content-Type: text/plain; charset="utf-8"
+	Sat, 27 Sep 2014 16:19:16 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Thierry Reding <thierry.reding@gmail.com>,
-        =?utf-8?q?Janusz_U=C5=BCycki?= <j.uzycki@elproma.com.pl>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20140923085130.GO30514@ulmo>
-Cc: "Philipp Zabel" <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org
-References: <5410AEFD.5030302@elproma.com.pl> <20140923085130.GO30514@ulmo>
-Message-ID: <20140927200122.19023.40310@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: Add PWM clock driver
-Date: Sat, 27 Sep 2014 13:01:22 -0700
+In-Reply-To: <20140926224752.GB22030@e106497-lin.cambridge.arm.com>
+References: <1411498874-9864-1-git-send-email-Liviu.Dudau@arm.com>
+ <1411498874-9864-9-git-send-email-Liviu.Dudau@arm.com> <CAL_Jsq+j40Xf208wCf4as3H=cDU=htJ-JWinB0DjpcORjatNXQ@mail.gmail.com>
+ <20140926212052.GA6030@borg.dudau.co.uk> <CAL_JsqKJ6bfPuOofo4grVm3qW_WOpUzcS1juZvHxZdFyyF_19A@mail.gmail.com>
+ <20140926224752.GB22030@e106497-lin.cambridge.arm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 27 Sep 2014 14:18:55 -0600
+Message-ID: <CAErSpo5Q-gZaeV91+UeMjmnUt7jqGndDY6zfZqsDWJUNh+Gm6A@mail.gmail.com>
+Subject: Re: [PATCH v12 08/12] PCI: OF: Introduce helper function for
+ retrieving PCI domain numbers
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Thierry Reding (2014-09-23 01:51:31)
-> On Wed, Sep 10, 2014 at 10:05:17PM +0200, Janusz Użycki wrote:
-> > Hi,
-> > 
-> > http://patchwork.ozlabs.org/patch/359069/
-> > https://lkml.org/lkml/2014/6/12/186
-> > 
-> > Will the patch ever included to linux-next?
-> 
-> I've never seen this patch before. From a quick look it doesn't seem
-> like it would work as is, but the idea is certainly interesting. If
-> somebody decides to continue work on it, please Cc me and the linux-pwm
-> mailing list.
+[+cc Yinghai]
 
-I just merged a gpio-controlled clock gate and I'm fine with a PWM clock
-output.
+On Fri, Sep 26, 2014 at 4:47 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> On Fri, Sep 26, 2014 at 10:53:26PM +0100, Rob Herring wrote:
 
-Janusz, how are you testing the clock driver?
+>> I thought Bjorn already applied the series. Who's agreement are you
+>> waiting for specifically.
+>
+> Looks like he only applied about 60% of the series.
 
-Regards,
-Mike
+I applied it all but Yinghai pointed out a problem with a patch in the
+middle, so I dropped that patch and everything after it because I didn't
+have time to work out whether the later patches depended on anything
+in the one I dropped.
 
-> 
-> > pwm_config()  API could be extended to support
-> > not only period [ns] and duty [ns] time
-> > but also frequency [Hz] and duty cycle fraction [1/1000?]
-> > (instead of time in ns) as parameters.
-> > Then  ns (rounded by pwm) to freq. conversion problem
-> > inclk_pwm_recalc_rate() usingpwm_get_period()
-> > could be avoided.
-> > To extend the API pwm_config() can support
-> > new flags forduty_ns and period_ns,
-> > eg. PWM_DUTY_PERCENT and PWM_PERIOD_HZ.
-> 
-> Is that rounding really a problem? Also the PWM chips will most likely
-> use the concept of period and duty-cycle internally anyway, so it will
-> convert back from Hz/percentage to nanoseconds and fall victim to
-> similar rounding effects.
-> 
-> Thierry
+Bjorn
