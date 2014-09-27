@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaI0E66 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 00:58:58 -0400
-Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:36147 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750781AbaI0E65 (ORCPT
+	id S1751427AbaI0FUy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 01:20:54 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:51305 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaI0FUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 00:58:57 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:965:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:2828:2903:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:4041:4321:4390:4605:4823:5007:6119:7652:7903:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: snow52_88129646e6931
-X-Filterd-Recvd-Size: 2973
-Message-ID: <1411793932.21874.10.camel@joe-AO725>
-Subject: Re: [OPW kernel] checkpatch: Does anyone care that comments are
- freeform aligned?
-From: Joe Perches <joe@perches.com>
-To: josh@joshtriplett.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia.lawall@lip6.fr>,
-        tapaswenipathak@gmail.com, opw-kernel@googlegroups.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <error27@gmail.com>, Andy Whitcroft <apw@canonical.com>
-Date: Fri, 26 Sep 2014 21:58:52 -0700
-In-Reply-To: <20140926230314.GN20632@cloud>
-References: <alpine.DEB.2.02.1409240745160.2051@localhost6.localdomain6>
-	 <1411584074.3594.17.camel@joe-AO725> <20140926230314.GN20632@cloud>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Sep 2014 01:20:52 -0400
+MIME-Version: 1.0
+X-Google-Sender-Delegation: getarunks@gmail.com
+Date: Sat, 27 Sep 2014 10:50:52 +0530
+X-Google-Sender-Auth: TGZbVtEMRPipocpOVxcqd8zCL1o
+Message-ID: <CAKZGPANQ7cB-M8vyyUAbVdae6Cjy7ydHX0MoNmpkvVDg1kmKrA@mail.gmail.com>
+Subject: [3.10.49 stable kernel] crash in process_one_work
+From: Arun KS <arunks.linux@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tj@kernel.org
+Cc: Arun KS <getarunks@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-26 at 16:03 -0700, josh@joshtriplett.org wrote:
-> On Wed, Sep 24, 2014 at 11:41:14AM -0700, Joe Perches wrote:
-> > On Wed, 2014-09-24 at 07:47 +0200, Julia Lawall wrote:
-> > > In the following patch extract, one line is indented with spaces rather 
-> > > than tabs.  Is it intentional that checkpatch doesn't complain about this, 
-> > > I guess due to the line being a comment?
-> > []
-> > >  struct bcm_hdr_suppression_contextinfo {
-> > > -	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS]; /* Intermediate buffer to accumulate pkt Header for PHS */
-> > > -	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN]; /* Intermediate buffer containing pkt Header after PHS */
-> > > +    /* Intermediate buffer to accumulate pkt Header for PHS */
-> > > +	UCHAR ucaHdrSuppressionInBuf[MAX_PHS_LENGTHS];
-> > > +	/* Intermediate buffer containing pkt Header after PHS */
-> > > +	UCHAR ucaHdrSuppressionOutBuf[MAX_PHS_LENGTHS + PHSI_LEN];
-> > >  };
-> > 
-> > checkpatch does not care when comments start in any
-> > particular position or ensure comments have tabs
-> > preceding them.
-> > 
-> > Does anyone care?
-> 
-> This should have already been caught by other whitespace checks that
-> check for indentations of 8 or more spaces.  Similarly, mixed tab/space
-> indentations would get caught by those same checks.
+Hello Tejun,
 
-Yes and no.
+I m seen the following crash in 3.10 kernel workqueue.
 
-Leading whitespace over 8 chars would (ie: "^ {8,}" is a warning)
-but a statement like:
-
-	int foo;                    	/* some comment */
-[tab]	            [20 spaces]     [tab]
-
-would not.
-
-> I don't think checkpatch needs to check those.
-
-For the most part, I agree.
-
-On Fri, 2014-09-26 at 16:06 -0700, josh@joshtriplett.org wrote:
-> Lines starting with at least 8 spaces before a comment: 
-> $ git grep -E '^ {8,}/\*' | wc -l
-> 1544
-> 
-> I think just about all of those are bugs.
-
-Maybe.
-
-Most of those are from Linus' first git commit.
+[ 1133.893817] Unable to handle kernel NULL pointer dereference at
+virtual address 00000004
+[ 1133.893821] pgd = c0004000
+[ 1133.893827] [00000004] *pgd=00000000
+[ 1133.893834] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+[ 1133.893841] Modules linked in:
+[ 1133.893849] CPU: 2 PID: 5359 Comm: kworker/u8:20 Not tainted
+3.10.28-g99b6153-00006-gc32dab7 #1
+[ 1133.893859] task: d8c2aa00 ti: e79a4000 task.ti: e79a4000
+[ 1133.893873] PC is at process_one_work+0x18/0x448
+[ 1133.893878] LR is at process_one_work+0x14/0x448
+[ 1133.893887] pc : [<c0135218>]    lr : [<c0135214>]    psr: 400f0093
+               sp : e79a5ef8  ip : daf7f100  fp : 00000089
+[ 1133.893891] r10: daf7f118  r9 : ee80e820  r8 : ee80e800
+[ 1133.893897] r7 : c111872e  r6 : ee80e800  r5 : ed7cf150  r4 : daf7f100
+[ 1133.893902] r3 : ffffffe0  r2 : 00000081  r1 : ed7cf150  r0 : 00000000
+[ 1133.893908] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
+Segment kernel
+[ 1133.893914] Control: 10c5383d  Table: a7dbc06a  DAC: 00000015
 
 
+struct pool_workqueue *pwq = get_work_pwq(work);
+get_work_pwq returned NULL because WORK_STRUCT_PWQ was not set on
+work_struct->data.
+
+The work_struct looks likes this,
+
+crash> struct work_struct ed7cf150
+struct work_struct {
+  data = {
+    counter = 0xffffffe0
+  },
+  entry = {
+    next = 0xed7cf154,
+    prev = 0xed7cf154
+  },
+  func = 0xc0140ac4 <async_run_entry_fn>
+}
+
+
+The value of data is 0xffffffe0. I can think of only two reason for
+this value in data.
+1) driver calls INIT_WORK on same worker again after queuing.
+2) workqueue subsytem called clear_work_data(work);
+
+>From the above details of the work_struct shows that the work is
+queued from kernel/asyc.c.
+async_schedule dynamically allocates the work_struct and possibility
+of calling INIT_WORK is not there.
+
+I m suspecting the second reason.
+
+Your inputs are really appreciated.
+Please let me know if you want any more information from the crashed system.
+
+Thanks,
+Arun
