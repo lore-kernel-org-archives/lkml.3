@@ -1,146 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaI0Sbp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 14:31:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49794 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980AbaI0Sbn (ORCPT
+	id S1752450AbaI0SvU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 14:51:20 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:56408 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719AbaI0SvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 14:31:43 -0400
-Date: Sat, 27 Sep 2014 19:31:39 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mikhail Efremov <sem@altlinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20140927183139.GT7996@ZenIV.linux.org.uk>
-References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
- <20140924185521.GC7996@ZenIV.linux.org.uk>
- <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
- <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
- <20140926164442.GA26897@ZenIV.linux.org.uk>
- <20140927044555.GS7996@ZenIV.linux.org.uk>
- <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 27 Sep 2014 14:51:19 -0400
+From: Daniel Micay <danielmicay@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, jasone@canonware.com,
+        Daniel Micay <danielmicay@gmail.com>
+Subject: [PATCH v2] mm: add mremap flag for preserving the old mapping
+Date: Sat, 27 Sep 2014 14:51:07 -0400
+Message-Id: <1411843867-9575-1-git-send-email-danielmicay@gmail.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1411840686-7965-1-git-send-email-danielmicay@gmail.com>
+References: <1411840686-7965-1-git-send-email-danielmicay@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 27, 2014 at 10:56:57AM -0700, Linus Torvalds wrote:
+This introduces the MREMAP_RETAIN flag for preserving the source mapping
+when MREMAP_MAYMOVE moves the pages to a new destination. Accesses to
+the source location will fault and cause fresh pages to be mapped in.
 
->  - make a new "move_name(src,dst)" that explicitly moves names, and
-> explicitly knows that the source needs to be kept alive (although it
-> *could* also look at the source dentry refcount to decide whether it
-> needs to be careful or not). And do it right for the long names too,
-> not just the inline case.
+For consistency, the old_len >= new_len case could decommit the pages
+instead of unmapping. However, userspace can accomplish the same thing
+via madvise and a coherent definition of the flag is possible without
+the extra complexity.
 
-Er?  Source dentry refcount doesn't matter at all - *that* one gets
-rehashed, so we must get its name right, no matter what.  The target
-one is where it becomes interesting.  And I doubt it's worth bothering
-with refcount checks on that either, TBH...
+Motivation:
 
-The reason why we really can't get it right for long names without more
-serious surgery is that currently the lifetime of external name is
-the same as of dentry having that name.  And that makes "just copy them
-over, long or not" a problem - we suddenly get two dentries sharing the
-external name.  And we hit that under a shitload of spinlocks, so
-allocating a separate copy isn't attractive.  Mikhail (IIRC - I hadn't
-watched this thread all that closely back then, so I might be misattributing)
-had proposed refcounting the external names.  That would work, but we'll
-need to get it right.  Sure, we can make that refcount atomic_t; it's not
-as if we'll be playing with it a lot.  However, if the *source* name had
-been external, we need to drop the refcount on that, and we need to
-RCU-delay actual freeing.  Right now the delay comes from RCU-delaying
-__d_free(), with some optimisations for dentries that had never been hashed;
-this will be somewhat hairier.
+TCMalloc and jemalloc avoid releasing virtual memory in order to reduce
+virtual memory fragmentation. A call to munmap or mremap would leave a
+hole in the address space. Instead, unused pages are lazily returned to
+the operating system via MADV_DONTNEED.
 
-> Al (or Mikhail) - willing to do that extra cleanup? Please?
+Since mremap cannot be used to elide copies, TCMalloc and jemalloc end
+up being significantly slower for patterns like repeated vector / hash
+table reallocations. Consider the typical vector building pattern:
 
-See above.  I can do that, but it will be less trivial than you seem to
-expect it to be.  Anyway, the situation right now: vfs.git#for-linus
-survives the testing (and I'd like your S-o-b on the last one-liner there;
-if you have saner commit message - even better).  That can go in right
-now, as far as I'm concerned.
+    #include <string.h>
+    #include <stdlib.h>
 
-The minimal port of Mikhail's patch on top of that is below; it doesn't
-include what you are asking for, it's just an update to the situation past
-merging __d_move() and __d_materialise_dentry().
+    int main(void) {
+        void *ptr = NULL;
+        size_t old_size = 0;
+        for (size_t size = 4; size < (1 << 30); size *= 2) {
+            ptr = realloc(ptr, size);
+            if (!ptr) return 1;
+            memset(ptr + old_size, 0xff, size - old_size);
+            old_size = size;
+        }
+    }
 
-We can get the long name cases right, and I agree that it'll make the
-things nicer, but it might take a couple of days to get right.  The thing
-I'm concerned about is not screwing DCACHE_RCUACCESS up.
+glibc: 0.135s
+jemalloc: 0.226s
+TCMalloc: 0.238s
 
-BTW, the comments about being more careful with ->d_name.hash than with
-->d_name.name are from back in 2.3.40s; they became obsolete by 2.3.60s,
-when we started to unhash the target instead of swapping hash chain positions
-followed by d_delete() as we used to do when dcache was first introduced.
-It's a really old piece of detritus...
+In practice, in-place growth never occurs because the heap grows in the
+downwards direction for all 3 allocators. TCMalloc and jemalloc pay for
+enormous copies while glibc is only spending time writing new elements
+to the vector. Even if it was grown in the other direction, real-world
+applications would end up blocking in-place growth with new allocations.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 7599d35..cb25a1a 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2372,7 +2372,8 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
- }
- EXPORT_SYMBOL(dentry_update_name_case);
+The allocators could attempt to map the source location again after an
+mremap call, but there is no guarantee of success in a multi-threaded
+program and fragmentating memory over time is considered unacceptable.
+
+Signed-off-by: Daniel Micay <danielmicay@gmail.com>
+---
+ include/uapi/linux/mman.h |  1 +
+ mm/mremap.c               | 18 +++++++++++-------
+ 2 files changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/include/uapi/linux/mman.h b/include/uapi/linux/mman.h
+index ade4acd..4e9a546 100644
+--- a/include/uapi/linux/mman.h
++++ b/include/uapi/linux/mman.h
+@@ -5,6 +5,7 @@
  
--static void switch_names(struct dentry *dentry, struct dentry *target)
-+static void switch_names(struct dentry *dentry, struct dentry *target,
-+			 bool exchange)
+ #define MREMAP_MAYMOVE	1
+ #define MREMAP_FIXED	2
++#define MREMAP_RETAIN	4
+ 
+ #define OVERCOMMIT_GUESS		0
+ #define OVERCOMMIT_ALWAYS		1
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 05f1180..c01bab6 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -235,7 +235,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+ 
+ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		unsigned long old_addr, unsigned long old_len,
+-		unsigned long new_len, unsigned long new_addr, bool *locked)
++		unsigned long new_len, unsigned long new_addr, bool retain,
++		bool *locked)
  {
- 	if (dname_external(target)) {
- 		if (dname_external(dentry)) {
-@@ -2406,6 +2407,12 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
- 			 */
- 			unsigned int i;
- 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-+			if (!exchange) {
-+				memcpy(dentry->d_iname, target->d_name.name,
-+						target->d_name.len + 1);
-+				dentry->d_name.hash_len = target->d_name.hash_len;
-+				return;
-+			}
- 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
- 				swap(((long *) &dentry->d_iname)[i],
- 				     ((long *) &target->d_iname)[i]);
-@@ -2456,12 +2463,15 @@ static void dentry_unlock_for_move(struct dentry *dentry, struct dentry *target)
-  * When switching names, the actual string doesn't strictly have to
-  * be preserved in the target - because we're dropping the target
-  * anyway. As such, we can just do a simple memcpy() to copy over
-- * the new name before we switch.
-- *
-- * Note that we have to be a lot more careful about getting the hash
-- * switched - we have to switch the hash value properly even if it
-- * then no longer matches the actual (corrupted) string of the target.
-- * The hash value has to match the hash queue that the dentry is on..
-+ * the new name before we switch, unless we are going to rehash
-+ * it.  Note that if we *do* unhash the target, we are not allowed
-+ * to rehash it without giving it a new name/hash key - whether
-+ * we swap or overwrite the names here, resulting name won't match
-+ * the reality in filesystem; it's only there for d_path() purposes.
-+ * Note that all of this is happening under rename_lock, so the
-+ * any hash lookup seeing it in the middle of manipulations will
-+ * be discarded anyway.  So we do not care what happens to the hash
-+ * key in that case.
-  */
- /*
-  * __d_move - move a dentry
-@@ -2507,9 +2517,8 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
- 			   d_hash(dentry->d_parent, dentry->d_name.hash));
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct vm_area_struct *new_vma;
+@@ -287,6 +288,7 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		old_len = new_len;
+ 		old_addr = new_addr;
+ 		new_addr = -ENOMEM;
++		retain = false;
  	}
  
--
- 	/* Switch the names.. */
--	switch_names(dentry, target);
-+	switch_names(dentry, target, exchange);
+ 	/* Conceal VM_ACCOUNT so old reservation is not undone */
+@@ -310,7 +312,7 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 	hiwater_vm = mm->hiwater_vm;
+ 	vm_stat_account(mm, vma->vm_flags, vma->vm_file, new_len>>PAGE_SHIFT);
  
- 	/* ... and switch them in the tree */
- 	if (IS_ROOT(dentry)) {
+-	if (do_munmap(mm, old_addr, old_len) < 0) {
++	if (retain || do_munmap(mm, old_addr, old_len) < 0) {
+ 		/* OOM: unable to split vma, just get accounts right */
+ 		vm_unacct_memory(excess >> PAGE_SHIFT);
+ 		excess = 0;
+@@ -392,7 +394,8 @@ Eagain:
+ }
+ 
+ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
+-		unsigned long new_addr, unsigned long new_len, bool *locked)
++		unsigned long new_addr, unsigned long new_len, bool retain,
++		bool *locked)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+@@ -442,7 +445,7 @@ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
+ 	if (ret & ~PAGE_MASK)
+ 		goto out1;
+ 
+-	ret = move_vma(vma, addr, old_len, new_len, new_addr, locked);
++	ret = move_vma(vma, addr, old_len, new_len, new_addr, retain, locked);
+ 	if (!(ret & ~PAGE_MASK))
+ 		goto out;
+ out1:
+@@ -482,7 +485,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 	unsigned long charged = 0;
+ 	bool locked = false;
+ 
+-	if (flags & ~(MREMAP_FIXED | MREMAP_MAYMOVE))
++	if (flags & ~(MREMAP_FIXED | MREMAP_MAYMOVE | MREMAP_RETAIN))
+ 		return ret;
+ 
+ 	if (flags & MREMAP_FIXED && !(flags & MREMAP_MAYMOVE))
+@@ -506,7 +509,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 
+ 	if (flags & MREMAP_FIXED) {
+ 		ret = mremap_to(addr, old_len, new_addr, new_len,
+-				&locked);
++				flags & MREMAP_RETAIN, &locked);
+ 		goto out;
+ 	}
+ 
+@@ -575,7 +578,8 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 			goto out;
+ 		}
+ 
+-		ret = move_vma(vma, addr, old_len, new_len, new_addr, &locked);
++		ret = move_vma(vma, addr, old_len, new_len, new_addr,
++			       flags & MREMAP_RETAIN, &locked);
+ 	}
+ out:
+ 	if (ret & ~PAGE_MASK)
+-- 
+2.1.1
+
