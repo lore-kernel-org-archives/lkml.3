@@ -1,47 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbaI0D6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Sep 2014 23:58:23 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:60646 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751422AbaI0D6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Sep 2014 23:58:21 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <542635D2.6060004@smartplayin.com>
-Date: Sat, 27 Sep 2014 09:28:10 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1751348AbaI0EO7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 00:14:59 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:45379 "EHLO smtp.nebula.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781AbaI0EO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 00:14:58 -0400
+Date: Sat, 27 Sep 2014 07:13:36 +0300
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-next@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2] next: openrisc: Fix build
+Message-ID: <20140927041334.GA16373@chokladfabriken.org>
+References: <1411747539-28308-1-git-send-email-linux@roeck-us.net>
+ <5425A7B5.10209@southpole.se>
 MIME-Version: 1.0
-To: Sebastian Reichel <sre@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v4] power: reset: use restart_notifier mechanism for msm-poweroff
-References: <1411644831-2931-1-git-send-email-pramod.gurav@smartplayin.com> <20140926202523.GB27687@earth.universe>
-In-Reply-To: <20140926202523.GB27687@earth.universe>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5425A7B5.10209@southpole.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27-09-2014 01:55 AM, Sebastian Reichel wrote:
-> Hi,
+On Fri, Sep 26, 2014 at 07:51:49PM +0200, Jonas Bonn wrote:
+> On 09/26/2014 06:05 PM, Guenter Roeck wrote:
+> > openrisc:defconfig fails to build in next-20140926 with the following error.
+> >
+> > In file included from arch/openrisc/kernel/signal.c:31:0:
+> > ./arch/openrisc/include/asm/syscall.h: In function 'syscall_get_arch':
+> > ./arch/openrisc/include/asm/syscall.h:77:9: error: 'EM_OPENRISC' undeclared
+> >
+> > Fix by moving EM_OPENRISC to include/uapi/linux/elf-em.h.
+> >
+> > Fixes: ce5d112827e5 ("ARCH: AUDIT: implement syscall_get_arch for all arches")
+> > Cc: Eric Paris <eparis@redhat.com>
+> > Cc: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> > v2: Only move EM_OPENRISC.
+> >
+> > Another possible solution for the problem would be to include asm/elf.h
+> > in arch/openrisc/kernel/signal.c. I had actually submitted a patch with
+> > that fix back in August (maybe that is where I remembered the problem from).
+> > Wonder what happened with that patch.
+> >
+> > Would it make sense to drop EM_OR32 and replace it with EM_OPENRISC where
+> > it is used ? binutils seems to suggest that EM_OPENRISC is the "official"
+> > definition.
 > 
-> On Thu, Sep 25, 2014 at 05:03:51PM +0530, Pramod Gurav wrote:
->> This change replaces use of arm_pm_restart with recently introduced
->> reset mechanism in Linux kernel called restart_notifier.
->>
->> Choosing priority 128, which is default priority, as according to 
->> documentation, this mechanism is sufficient to restart the entire system.
+> Do we even use EM_OR32?  Will the kernel build with the old toolchain if
+> we drop it?  If yes, drop it altogether... I don't recall the details as
+> to why we kept that define around at all.  And really, why bother
+> supporting the old toolchain at all... it's been at least two or three
+> years since EM_OPENRISC was added, hopefully people have moved on.  If
+> users want to upgrade their kernel, they can update the toolchain, too,
+> at this point.
 > 
-> http://git.infradead.org/battery-2.6.git/commit/18a702e0de9879d5c0225a09f494443f0b91a0cc
 
-Thanks Sebastian.
-> 
-> -- Sebastian
-> 
+EM_OPENRISC was added about ten years ago, and when the OR32 things in binutils
+was removed in favour for OR1K earlier this year,
+EM_OR1K was added as an alias to EM_OPENRISC.
+
+With that said, I'm putting in a vote for removing EM_OR32 as well.
+
+Stefan
