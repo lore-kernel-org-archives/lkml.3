@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaI0FUy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 01:20:54 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:51305 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaI0FUw (ORCPT
+	id S1751563AbaI0Fdq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 01:33:46 -0400
+Received: from [119.145.14.64] ([119.145.14.64]:26131 "EHLO
+	szxga01-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaI0Fdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 01:20:52 -0400
+	Sat, 27 Sep 2014 01:33:45 -0400
+Message-ID: <54264C0B.1000607@huawei.com>
+Date: Sat, 27 Sep 2014 13:32:59 +0800
+From: Wang Weidong <wangweidong1@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-X-Google-Sender-Delegation: getarunks@gmail.com
-Date: Sat, 27 Sep 2014 10:50:52 +0530
-X-Google-Sender-Auth: TGZbVtEMRPipocpOVxcqd8zCL1o
-Message-ID: <CAKZGPANQ7cB-M8vyyUAbVdae6Cjy7ydHX0MoNmpkvVDg1kmKrA@mail.gmail.com>
-Subject: [3.10.49 stable kernel] crash in process_one_work
-From: Arun KS <arunks.linux@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        tj@kernel.org
-Cc: Arun KS <getarunks@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: <viresh.kumar@linaro.org>, <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance
+ states
+References: <53F589C3.4050504@huawei.com> <2075276.PKjjuvNeys@vostro.rjw.lan>
+In-Reply-To: <2075276.PKjjuvNeys@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.75]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+On 2014/9/27 7:21, Rafael J. Wysocki wrote:
+> On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
+>> As the initialized freq_tables maybe different from the p-states
+>> values, so the array index is different as well.
+>>
+>> p-states value: [2400 2400 2000 ...], while the freq_tables:
+>> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
+>> the perf->state is 3 while the freqs_table's index should be 2.
+>> So when call the get_cur_freq_on_cpu, the freqs value we get
+>> is 2400.
+>>
+>> So, fix the problem with the correct tables.
+> 
+> What you're saying is basically that freq_table and perf->states
+> diverge at one point.  Shouldn't we re-generate freq_table in that
+> case instead of fixing up get_cur_freq_on_cpu() only in a quite
+> indirect way? 
+> 
+Hi Rafael,
 
-I m seen the following crash in 3.10 kernel workqueue.
+Thanks for your reply.
 
-[ 1133.893817] Unable to handle kernel NULL pointer dereference at
-virtual address 00000004
-[ 1133.893821] pgd = c0004000
-[ 1133.893827] [00000004] *pgd=00000000
-[ 1133.893834] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[ 1133.893841] Modules linked in:
-[ 1133.893849] CPU: 2 PID: 5359 Comm: kworker/u8:20 Not tainted
-3.10.28-g99b6153-00006-gc32dab7 #1
-[ 1133.893859] task: d8c2aa00 ti: e79a4000 task.ti: e79a4000
-[ 1133.893873] PC is at process_one_work+0x18/0x448
-[ 1133.893878] LR is at process_one_work+0x14/0x448
-[ 1133.893887] pc : [<c0135218>]    lr : [<c0135214>]    psr: 400f0093
-               sp : e79a5ef8  ip : daf7f100  fp : 00000089
-[ 1133.893891] r10: daf7f118  r9 : ee80e820  r8 : ee80e800
-[ 1133.893897] r7 : c111872e  r6 : ee80e800  r5 : ed7cf150  r4 : daf7f100
-[ 1133.893902] r3 : ffffffe0  r2 : 00000081  r1 : ed7cf150  r0 : 00000000
-[ 1133.893908] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM
-Segment kernel
-[ 1133.893914] Control: 10c5383d  Table: a7dbc06a  DAC: 00000015
+You mean that we should re-generate the freq_table in that case?
+Could we fix the table init like this:
+
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -779,7 +779,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+
+        /* table init */
+        for (i = 0; i < perf->state_count; i++) {
+-               if (i > 0 && perf->states[i].core_frequency >=
++               if (i > 0 && perf->states[i].core_frequency >
+                    data->freq_table[valid_states-1].frequency / 1000)
+                        continue;
+
+when the value is same, we just keep the value into the freq_table.
+
+Regards,
+Wang
+
+>> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
+>> ---
+>>  drivers/cpufreq/acpi-cpufreq.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+>> index b0c18ed..ac93885 100644
+>> --- a/drivers/cpufreq/acpi-cpufreq.c
+>> +++ b/drivers/cpufreq/acpi-cpufreq.c
+>> @@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
+>>  static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
+>>  {
+>>  	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
+>> +	struct acpi_processor_performance *perf;
+>>  	unsigned int freq;
+>>  	unsigned int cached_freq;
+>>  
+>> @@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
+>>  		return 0;
+>>  	}
+>>  
+>> -	cached_freq = data->freq_table[data->acpi_data->state].frequency;
+>> +	perf = data->acpi_data;
+>> +	cached_freq = perf->states[perf->state].core_frequency * 1000;
+>>  	freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
+>>  	if (freq != cached_freq) {
+>>  		/*
+>>
+> 
 
 
-struct pool_workqueue *pwq = get_work_pwq(work);
-get_work_pwq returned NULL because WORK_STRUCT_PWQ was not set on
-work_struct->data.
-
-The work_struct looks likes this,
-
-crash> struct work_struct ed7cf150
-struct work_struct {
-  data = {
-    counter = 0xffffffe0
-  },
-  entry = {
-    next = 0xed7cf154,
-    prev = 0xed7cf154
-  },
-  func = 0xc0140ac4 <async_run_entry_fn>
-}
-
-
-The value of data is 0xffffffe0. I can think of only two reason for
-this value in data.
-1) driver calls INIT_WORK on same worker again after queuing.
-2) workqueue subsytem called clear_work_data(work);
-
->From the above details of the work_struct shows that the work is
-queued from kernel/asyc.c.
-async_schedule dynamically allocates the work_struct and possibility
-of calling INIT_WORK is not there.
-
-I m suspecting the second reason.
-
-Your inputs are really appreciated.
-Please let me know if you want any more information from the crashed system.
-
-Thanks,
-Arun
