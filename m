@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaI0Fdq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 01:33:46 -0400
-Received: from [119.145.14.64] ([119.145.14.64]:26131 "EHLO
-	szxga01-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaI0Fdp (ORCPT
+	id S1751817AbaI0Ff7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 01:35:59 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:65475 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaI0Ff5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 01:33:45 -0400
-Message-ID: <54264C0B.1000607@huawei.com>
-Date: Sat, 27 Sep 2014 13:32:59 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <viresh.kumar@linaro.org>, <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance
- states
-References: <53F589C3.4050504@huawei.com> <2075276.PKjjuvNeys@vostro.rjw.lan>
-In-Reply-To: <2075276.PKjjuvNeys@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
+	Sat, 27 Sep 2014 01:35:57 -0400
+From: Omar Sandoval <osandov@osandov.com>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] Move BTRFS RCU string to common library
+Date: Fri, 26 Sep 2014 22:36:47 -0700
+Message-Id: <cover.1411796033.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/27 7:21, Rafael J. Wysocki wrote:
-> On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
->> As the initialized freq_tables maybe different from the p-states
->> values, so the array index is different as well.
->>
->> p-states value: [2400 2400 2000 ...], while the freq_tables:
->> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
->> the perf->state is 3 while the freqs_table's index should be 2.
->> So when call the get_cur_freq_on_cpu, the freqs value we get
->> is 2400.
->>
->> So, fix the problem with the correct tables.
-> 
-> What you're saying is basically that freq_table and perf->states
-> diverge at one point.  Shouldn't we re-generate freq_table in that
-> case instead of fixing up get_cur_freq_on_cpu() only in a quite
-> indirect way? 
-> 
-Hi Rafael,
+This patch series makes the generic RCU string library used internally by BTRFS
+accessible by anyone.
 
-Thanks for your reply.
+The first patch makes printk_ratelimited pass on the return value from printk.
+Version 3 gives the temporary return variable a unique name to avoid name
+clashes.
 
-You mean that we should re-generate the freq_table in that case?
-Could we fix the table init like this:
+The second patch moves the RCU string header and updates the BTRFS code that
+depends on it. Version 3 adds the __rcu annotation to the relevant functions.
 
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -779,7 +779,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+Version 3 also adds Paul's ack and Josh's review.
 
-        /* table init */
-        for (i = 0; i < perf->state_count; i++) {
--               if (i > 0 && perf->states[i].core_frequency >=
-+               if (i > 0 && perf->states[i].core_frequency >
-                    data->freq_table[valid_states-1].frequency / 1000)
-                        continue;
+Omar Sandoval (2):
+  Return a value from printk_ratelimited
+  Move BTRFS RCU string to common library
 
-when the value is same, we just keep the value into the freq_table.
+ fs/btrfs/check-integrity.c |  6 +--
+ fs/btrfs/dev-replace.c     | 19 +++++-----
+ fs/btrfs/disk-io.c         |  6 +--
+ fs/btrfs/extent_io.c       |  4 +-
+ fs/btrfs/ioctl.c           |  4 +-
+ fs/btrfs/raid56.c          |  2 +-
+ fs/btrfs/rcu-string.h      | 56 ----------------------------
+ fs/btrfs/scrub.c           | 15 ++++----
+ fs/btrfs/super.c           |  2 +-
+ fs/btrfs/volumes.c         | 14 +++----
+ include/linux/printk.h     |  4 +-
+ include/linux/rcustring.h  | 92 ++++++++++++++++++++++++++++++++++++++++++++++
+ 12 files changed, 132 insertions(+), 92 deletions(-)
+ delete mode 100644 fs/btrfs/rcu-string.h
+ create mode 100644 include/linux/rcustring.h
 
-Regards,
-Wang
-
->> Signed-off-by: Wang Weidong <wangweidong1@huawei.com>
->> ---
->>  drivers/cpufreq/acpi-cpufreq.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
->> index b0c18ed..ac93885 100644
->> --- a/drivers/cpufreq/acpi-cpufreq.c
->> +++ b/drivers/cpufreq/acpi-cpufreq.c
->> @@ -365,6 +365,7 @@ static u32 get_cur_val(const struct cpumask *mask)
->>  static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->>  {
->>  	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
->> +	struct acpi_processor_performance *perf;
->>  	unsigned int freq;
->>  	unsigned int cached_freq;
->>  
->> @@ -375,7 +376,8 @@ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
->>  		return 0;
->>  	}
->>  
->> -	cached_freq = data->freq_table[data->acpi_data->state].frequency;
->> +	perf = data->acpi_data;
->> +	cached_freq = perf->states[perf->state].core_frequency * 1000;
->>  	freq = extract_freq(get_cur_val(cpumask_of(cpu)), data);
->>  	if (freq != cached_freq) {
->>  		/*
->>
-> 
-
+-- 
+2.1.1
 
