@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaI0Fpe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 01:45:34 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62086 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083AbaI0Fpc (ORCPT
+	id S1752050AbaI0FsR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 01:48:17 -0400
+Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:56547 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751156AbaI0FsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 01:45:32 -0400
-Date: Fri, 26 Sep 2014 22:46:34 -0700
-From: Omar Sandoval <osandov@osandov.com>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+	Sat, 27 Sep 2014 01:48:16 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:3872:4321:5007:7652:8957:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: money11_820419504bf41
+X-Filterd-Recvd-Size: 1610
+Message-ID: <1411796891.21874.14.camel@joe-AO725>
+Subject: Re: [PATCH v3 1/2] Return a value from printk_ratelimited
+From: Joe Perches <joe@perches.com>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
         linux-btrfs@vger.kernel.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Josh Triplett <josh@joshtriplett.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] Move BTRFS RCU string to common library
-Message-ID: <20140927054634.GA8516@molino.home.network>
+Date: Fri, 26 Sep 2014 22:48:11 -0700
+In-Reply-To: <a4437b89bc5684ea1d6f978039bd255d1f5b26f9.1411796033.git.osandov@osandov.com>
 References: <cover.1411796033.git.osandov@osandov.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1411796033.git.osandov@osandov.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	 <a4437b89bc5684ea1d6f978039bd255d1f5b26f9.1411796033.git.osandov@osandov.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:36:47PM -0700, Omar Sandoval wrote:
-> This patch series makes the generic RCU string library used internally by BTRFS
-> accessible by anyone.
+On Fri, 2014-09-26 at 22:36 -0700, Omar Sandoval wrote:
+> printk returns an integer; there's no reason for printk_ratelimited to swallow
+> it.
 > 
-> The first patch makes printk_ratelimited pass on the return value from printk.
-> Version 3 gives the temporary return variable a unique name to avoid name
-> clashes.
-> 
-> The second patch moves the RCU string header and updates the BTRFS code that
-> depends on it. Version 3 adds the __rcu annotation to the relevant functions.
-> 
-> Version 3 also adds Paul's ack and Josh's review.
-> 
-> Omar Sandoval (2):
->   Return a value from printk_ratelimited
->   Move BTRFS RCU string to common library
-> 
->  fs/btrfs/check-integrity.c |  6 +--
->  fs/btrfs/dev-replace.c     | 19 +++++-----
->  fs/btrfs/disk-io.c         |  6 +--
->  fs/btrfs/extent_io.c       |  4 +-
->  fs/btrfs/ioctl.c           |  4 +-
->  fs/btrfs/raid56.c          |  2 +-
->  fs/btrfs/rcu-string.h      | 56 ----------------------------
->  fs/btrfs/scrub.c           | 15 ++++----
->  fs/btrfs/super.c           |  2 +-
->  fs/btrfs/volumes.c         | 14 +++----
->  include/linux/printk.h     |  4 +-
->  include/linux/rcustring.h  | 92 ++++++++++++++++++++++++++++++++++++++++++++++
->  12 files changed, 132 insertions(+), 92 deletions(-)
->  delete mode 100644 fs/btrfs/rcu-string.h
->  create mode 100644 include/linux/rcustring.h
-> 
+> Signed-off-by: Omar Sandoval <osandov@osandov.com>
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
 
-I forgot to mention: this patch series is against 3.17-rc6.
+I'd prefer to keep it the way it is actually.
 
--- 
-Omar
+I've submitted several patches to convert the int return
+to void for printk derived functions recently.
+
+
