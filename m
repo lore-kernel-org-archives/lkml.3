@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaI0INd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 04:13:33 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48730 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaI0INW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 04:13:22 -0400
+	id S1752185AbaI0IW3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 04:22:29 -0400
+Received: from mailsec108.isp.belgacom.be ([195.238.20.104]:34042 "EHLO
+	mailsec108.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751156AbaI0IW0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 04:22:26 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=UGN7JNw3bPEHpwjh5ACRRBK85/3fvewMg9DN/Z6sboU= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=vmLDa1wCAAAA:8 a=gu6fZOg2AAAA:8
+ a=TXhoOCVd3RPAmDMQ1l4A:9 a=QEXdDO2ut3YA:10 a=gv_BBZfBKR8A:10
+ a=GC8p-B92FUEA:10 a=NWVoK91CQyQA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au4KAAZzJlTD7hTU/2dsb2JhbABfgw5Tg1iybgaTe4dOAoECFgF7hAMBAQEDASNWBQsFBAIYAgIYDgICVwYTEYglDAmMTpxMhn+PBBiBLIRmiVkzB4J4gVMFlh2Ia4pdiR2CIIFFOy+CSgEBAQ
+Date: Sat, 27 Sep 2014 10:22:24 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, Arend van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        brcm80211-dev-list@broadcom.com, brudley@broadcom.com
+Message-ID: <2023667085.710256.1411806144444.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20140926174636.GJ22967@tuxdriver.com>
+References: <1410809448-15982-1-git-send-email-fabf@skynet.be> <20140926174636.GJ22967@tuxdriver.com>
+Subject: Re: [PATCH V2 1/2] brcm80211: use container_of to resolve brcms_phy
+ from brcms_phy_pub
 MIME-Version: 1.0
-In-Reply-To: <20140926123429.GX18635@console-pimps.org>
-References: <20140925073133.GQ18635@console-pimps.org> <20140925144127.GA3828@gmail.com>
- <1411730854.7866.10.camel@x220> <20140926114454.GV18635@console-pimps.org>
- <1411732755.7866.24.camel@x220> <20140926123429.GX18635@console-pimps.org>
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-Date: Sat, 27 Sep 2014 10:04:42 +0200
-Message-ID: <CAD3Xx4JmkDZ1Cw02DFAE0fa0EaEmBi8-W-p7JCfEXLERK5yuUQ@mail.gmail.com>
-Subject: Re: [GIT PULL] EFI urgent fixes
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 2:34 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Fri, 26 Sep, at 01:59:15PM, Paul Bolle wrote:
->>
->> I have a 800 line perl monster that checks for stuff like this. It's not
->> very sophisticated but smart enough to spot typos like this one. I try
->> to have it check each linux-next (and mainline) release.
->
-> Very cool.
->
->> (I think Valentin Rothberg is trying to automate this properly. See
->> http://www.linuxplumbersconf.org/2014/ocw/sessions/1863 .)
->
-> Have either of you guys thought about asking for this to be included
-> with the 0-day kbuild bot or submitted under scripts/?
->
-> It certainly seems like a useful bit of functionality.
 
-Yes, I was talking with Greg about including the tool in the 0-day
-testing. In addition, I am working on a  patch to change the
-scripts/checkkconfigsymbols script
-(https://lkml.org/lkml/2014/9/22/336).
 
-The mayor difference between my tool and the script is that the script
-can only find bugs on a symbolic level (i.e., a reference on an
-feature that is not defined in Kconfig). The tool that I will present
-at the Plumbers Conference is additionally able to detect issue on the
-logic level, for instance an #ifdef block that can never be compiled
-as its precondition is contradictory. I will send some patches the
-next weeks to show which bugs can be detected with the tool.
+> On 26 September 2014 at 19:46 "John W. Linville" <linville@tuxdriver.com>
+> wrote:
+>
+>
+> These two patches don't seem to apply on wireless-next, and I don't
+> have time at the moment to fix them up.  Feel free to repost...
 
-> Fengguang, the interesting bits of this thread start here,
->
->   https://lkml.kernel.org/r/1411730854.7866.10.camel@x220
->
-> --
-> Matt Fleming, Intel Open Source Technology Center
+Hello John,
+
+        No problem, you already pushed the 2 same patches from the first (too
+generic) patchset
+
+        First patchset for drivers/net (see patch 3 and 4)
+        http://marc.info/?l=linux-kernel&m=141064073901334&w=2
+       
+        No updates in V2 anyway:
+        ("V2: 2 separate patches for brcm80211")
+
+Wireless-next commits:
+a38a9ef1c064
+("brcm80211: use container_of to resolve dma_info from dma_pub")
+
+d68e9f5d8549
+("brcm80211: use container_of to resolve brcms_phy from brcms_phy_pub")
+
+Regards,
+Fabian
