@@ -1,129 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaI1Axm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 20:53:42 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:56531 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaI1Axl (ORCPT
+	id S1753407AbaI1Ayh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 20:54:37 -0400
+Received: from regular1.263xmail.com ([211.150.99.130]:45554 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaI1Ayg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 20:53:41 -0400
+	Sat, 27 Sep 2014 20:54:36 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <ebd90401e9a88b293a95c797f3dbc821>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <54275C43.8010205@rock-chips.com>
+Date: Sun, 28 Sep 2014 08:54:27 +0800
+From: Jianqun <xjq@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140803101707.GA8018@himangi-Dell>
-References: <20140803101707.GA8018@himangi-Dell>
-Date: Sat, 27 Sep 2014 17:53:41 -0700
-Message-ID: <CAN8TOE9phK0ghUTm4b9Pj4R8h_CmGA8-GGi0zs84mkhx2nzgPQ@mail.gmail.com>
-Subject: Re: [PATCH] mtd: fsl_ifc_nand: use devm_ functions consistently
-From: Brian Norris <computersforpeace@gmail.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Prabhakar Kushwaha <prabhakar@freescale.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Aaron Sierra <asierra@xes-inc.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Joe Schultz <jschultz@xes-inc.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, heiko@sntech.de,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH 1/2] ASoC: rockchip-max98090: add documentation for rockchip-max98090
+ driver
+References: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com> <1410507036-15442-1-git-send-email-jay.xu@rock-chips.com> <20140912134446.GT7960@sirena.org.uk>
+In-Reply-To: <20140912134446.GT7960@sirena.org.uk>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ linux-mtd
 
-FYI, I addressed a similar patch over here:
 
-http://lists.infradead.org/pipermail/linux-mtd/2014-September/055563.html
+在 09/12/2014 09:44 PM, Mark Brown 写道:
+> On Fri, Sep 12, 2014 at 03:30:36PM +0800, Jianqun wrote:
+>> Add documentation for rockchip-max98090 driver, which is need by rockchip
+>> board using a max98090.
+> 
+> Can this use simple-card (perhaps after a bit of extension)?
+I haven't ever try simple-card, is there any sample usage for me from other vendor ?
+> 
+>> +- rockchip,audio-codec : The phandle of the MAX98090 audio codec.
+> 
+> Is the driver really specific to this CODEC?
+I think yes, we need to add two gpio for mic and hp detect, but simple-card driver hasn't them
+> 
+>> +
+>> +Optional properties:
+>> +- rockchip,hp-det-gpios : The GPIO that detect headphones are plugged in
+>> +- rockchip,mic-det-gpios : The GPIO that detect micphones are plugged in
+>> +
+>> +Example:
+>> +
+>> +sound {
+>> +	compatible = "rockchip,rockchip-audio-max98090";
+>> +	rockchip,model = "ROCKCHIP-I2S";
+>> +	rockchip,i2s-controller = <&i2s>;
+>> +	rockchip,audio-codec = <&max98090>;
+>> +	rockchip,hp-det-gpios = <&gpio6 5 GPIO_ACTIVE_HIGH>;
+>> +	rockchip,mic-det-gpios = <&gpio6 11 GPIO_ACTIVE_HIGH>;
+>> +};
+>> -- 
+>> 1.9.1
+>>
+>>
+>>
 
-I'm pretty sure this patch is wrong, and the semantic match is
-incorrect (or at least, it has false positives). Just because devm_*
-is used in some part of the driver doesn't mean that all allocations
-should be. Admittedly, this driver is not the best written (this patch
-drew my attention to at least one bug), but I just wanted to let y'all
-know.
+-- 
+Jianqun Xu
 
-Regards,
-Brian
+****************************************************************************
+*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
+Ltd .The contents of this email and any attachments may contain
+information that is privileged, confidential and/or exempt from
+disclosure under applicable law and relevant NDA. If you are not the
+intended recipient, you are hereby notified that any disclosure,
+copying, distribution, or use of the information is STRICTLY PROHIBITED.
+Please immediately contact the sender as soon as possible and destroy
+the material in its entirety in any format. Thank you.
+****************************************************************************
 
-On Sun, Aug 3, 2014 at 3:17 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
-> Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
-> devm functions for other allocations as well. The calls to free the
-> allocated memory in the remove function are done away with.
->
-> The semantic match that finds the inconsistency is as follows:
->
-> // <smpl>
-> @@
-> @@
->
-> *devm_kzalloc(...)
-> ...
-> *kzalloc(...)
-> // </smpl>
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
-> Not compile tested.
->  drivers/mtd/nand/fsl_ifc_nand.c | 17 ++++++-----------
->  1 file changed, 6 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
-> index 2338124..b403a77 100644
-> --- a/drivers/mtd/nand/fsl_ifc_nand.c
-> +++ b/drivers/mtd/nand/fsl_ifc_nand.c
-> @@ -995,11 +995,6 @@ static int fsl_ifc_chip_remove(struct fsl_ifc_mtd *priv)
->  {
->         nand_release(&priv->mtd);
->
-> -       kfree(priv->mtd.name);
-> -
-> -       if (priv->vbase)
-> -               iounmap(priv->vbase);
-> -
->         ifc_nand_ctrl->chips[priv->bank] = NULL;
->
->         return 0;
-> @@ -1062,7 +1057,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
->
->         mutex_lock(&fsl_ifc_nand_mutex);
->         if (!fsl_ifc_ctrl_dev->nand) {
-> -               ifc_nand_ctrl = kzalloc(sizeof(*ifc_nand_ctrl), GFP_KERNEL);
-> +               ifc_nand_ctrl = devm_kzalloc(&dev->dev, sizeof(*ifc_nand_ctrl),
-> +                                            GFP_KERNEL);
->                 if (!ifc_nand_ctrl) {
->                         mutex_unlock(&fsl_ifc_nand_mutex);
->                         return -ENOMEM;
-> @@ -1085,7 +1081,7 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
->         priv->ctrl = fsl_ifc_ctrl_dev;
->         priv->dev = &dev->dev;
->
-> -       priv->vbase = ioremap(res.start, resource_size(&res));
-> +       priv->vbase = devm_ioremap(&dev->dev, res.start, resource_size(&res));
->         if (!priv->vbase) {
->                 dev_err(priv->dev, "%s: failed to map chip region\n", __func__);
->                 ret = -ENOMEM;
-> @@ -1104,7 +1100,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
->                     IFC_NAND_EVTER_INTR_FTOERIR_EN |
->                     IFC_NAND_EVTER_INTR_WPERIR_EN,
->                     &ifc->ifc_nand.nand_evter_intr_en);
-> -       priv->mtd.name = kasprintf(GFP_KERNEL, "%llx.flash", (u64)res.start);
-> +       priv->mtd.name = devm_kasprintf(&dev->dev, GFP_KERNEL, "%llx.flash",
-> +                                       (u64)res.start);
->         if (!priv->mtd.name) {
->                 ret = -ENOMEM;
->                 goto err;
-> @@ -1148,10 +1145,8 @@ static int fsl_ifc_nand_remove(struct platform_device *dev)
->
->         mutex_lock(&fsl_ifc_nand_mutex);
->         ifc_nand_ctrl->counter--;
-> -       if (!ifc_nand_ctrl->counter) {
-> +       if (!ifc_nand_ctrl->counter)
->                 fsl_ifc_ctrl_dev->nand = NULL;
-> -               kfree(ifc_nand_ctrl);
-> -       }
->         mutex_unlock(&fsl_ifc_nand_mutex);
->
->         return 0;
-> --
-> 1.9.1
->
