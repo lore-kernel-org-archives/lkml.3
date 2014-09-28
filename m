@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaI1AoR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 20:44:17 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:48198 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaI1AoQ convert rfc822-to-8bit (ORCPT
+	id S1753357AbaI1Axm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 20:53:42 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:56531 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaI1Axl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 20:44:16 -0400
+	Sat, 27 Sep 2014 20:53:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <983713E2-1EBC-45CC-8212-20FBFAA9AC0B@arm.com>
-References: <CAHkaATRAuo=Mh1tmMVDxnWeO8ARjW+KBfHNLpaFG3XxN5uY-hQ@mail.gmail.com>
-	<983713E2-1EBC-45CC-8212-20FBFAA9AC0B@arm.com>
-Date: Sun, 28 Sep 2014 08:44:15 +0800
-Message-ID: <CAHkaATSUH=sKYJZ1NEM6-M8nCYPeqsU6v3JMBQbm_R=ykbkUjg@mail.gmail.com>
-Subject: Re: [PATCH] Remove GFP_DMA and GFP_DMA32 from flags before passing it
- into kmalloc.
-From: Miles MH Chen <orca.chen@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140803101707.GA8018@himangi-Dell>
+References: <20140803101707.GA8018@himangi-Dell>
+Date: Sat, 27 Sep 2014 17:53:41 -0700
+Message-ID: <CAN8TOE9phK0ghUTm4b9Pj4R8h_CmGA8-GGi0zs84mkhx2nzgPQ@mail.gmail.com>
+Subject: Re: [PATCH] mtd: fsl_ifc_nand: use devm_ functions consistently
+From: Brian Norris <computersforpeace@gmail.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Prabhakar Kushwaha <prabhakar@freescale.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Aaron Sierra <asierra@xes-inc.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Joe Schultz <jschultz@xes-inc.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 27, 2014 at 11:13 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On 27 Sep 2014, at 16:09, Miles MH Chen <orca.chen@gmail.com> wrote:
->> Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
->> ---
->>  arch/arm64/mm/dma-mapping.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
->> index 4164c5a..273cf6d 100644
->> --- a/arch/arm64/mm/dma-mapping.c
->> +++ b/arch/arm64/mm/dma-mapping.c
->> @@ -103,7 +103,8 @@ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
->>      ptr = __dma_alloc_coherent(dev, size, dma_handle, flags, attrs);
->>      if (!ptr)
->>          goto no_mem;
->> -    map = kmalloc(sizeof(struct page *) << order, flags & ~GFP_DMA);
->> +    map = kmalloc(sizeof(struct page *) << order,
->> +                    flags & ~(GFP_DMA | GFP_DMA32));
++ linux-mtd
+
+FYI, I addressed a similar patch over here:
+
+http://lists.infradead.org/pipermail/linux-mtd/2014-September/055563.html
+
+I'm pretty sure this patch is wrong, and the semantic match is
+incorrect (or at least, it has false positives). Just because devm_*
+is used in some part of the driver doesn't mean that all allocations
+should be. Admittedly, this driver is not the best written (this patch
+drew my attention to at least one bug), but I just wanted to let y'all
+know.
+
+Regards,
+Brian
+
+On Sun, Aug 3, 2014 at 3:17 AM, Himangi Saraogi <himangi774@gmail.com> wrote:
+> Use devm_kzalloc for all calls to kzalloc and not just the first.  Use
+> devm functions for other allocations as well. The calls to free the
+> allocated memory in the remove function are done away with.
 >
-> Do you have an explanation on why this is needed (and such explanation
-> should also be included in the commit log)? We don’t use ZONE_DMA32 on
-> arm64 (we did initially but it was for the wrong reasons).
-
-If GFP_DMA32 is passed to dma_alloc_coherent, the flag will go to kmalloc and
-trigger a BUG_ON check in slab allocator:
-
-__dma_alloc_noncoherent
-kmalloc
-new_slab  BUG_ON(flags & GFP_SLAB_BUG_MASK);
-
-It can be avoided this by removing GFP_DMA32 before passing it to kmalloc
-or we should block GFP_DMA32 flag earlier in arch/arm64/dma-mapping.c if
-GFP_DMA32 is not allowed in arch/arm64/dma-mapping.c.
-
-Thanks,
-MH
-
+> The semantic match that finds the inconsistency is as follows:
 >
-> Thanks,
+> // <smpl>
+> @@
+> @@
 >
-> Catalin
+> *devm_kzalloc(...)
+> ...
+> *kzalloc(...)
+> // </smpl>
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> Not compile tested.
+>  drivers/mtd/nand/fsl_ifc_nand.c | 17 ++++++-----------
+>  1 file changed, 6 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+> index 2338124..b403a77 100644
+> --- a/drivers/mtd/nand/fsl_ifc_nand.c
+> +++ b/drivers/mtd/nand/fsl_ifc_nand.c
+> @@ -995,11 +995,6 @@ static int fsl_ifc_chip_remove(struct fsl_ifc_mtd *priv)
+>  {
+>         nand_release(&priv->mtd);
+>
+> -       kfree(priv->mtd.name);
+> -
+> -       if (priv->vbase)
+> -               iounmap(priv->vbase);
+> -
+>         ifc_nand_ctrl->chips[priv->bank] = NULL;
+>
+>         return 0;
+> @@ -1062,7 +1057,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+>
+>         mutex_lock(&fsl_ifc_nand_mutex);
+>         if (!fsl_ifc_ctrl_dev->nand) {
+> -               ifc_nand_ctrl = kzalloc(sizeof(*ifc_nand_ctrl), GFP_KERNEL);
+> +               ifc_nand_ctrl = devm_kzalloc(&dev->dev, sizeof(*ifc_nand_ctrl),
+> +                                            GFP_KERNEL);
+>                 if (!ifc_nand_ctrl) {
+>                         mutex_unlock(&fsl_ifc_nand_mutex);
+>                         return -ENOMEM;
+> @@ -1085,7 +1081,7 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+>         priv->ctrl = fsl_ifc_ctrl_dev;
+>         priv->dev = &dev->dev;
+>
+> -       priv->vbase = ioremap(res.start, resource_size(&res));
+> +       priv->vbase = devm_ioremap(&dev->dev, res.start, resource_size(&res));
+>         if (!priv->vbase) {
+>                 dev_err(priv->dev, "%s: failed to map chip region\n", __func__);
+>                 ret = -ENOMEM;
+> @@ -1104,7 +1100,8 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+>                     IFC_NAND_EVTER_INTR_FTOERIR_EN |
+>                     IFC_NAND_EVTER_INTR_WPERIR_EN,
+>                     &ifc->ifc_nand.nand_evter_intr_en);
+> -       priv->mtd.name = kasprintf(GFP_KERNEL, "%llx.flash", (u64)res.start);
+> +       priv->mtd.name = devm_kasprintf(&dev->dev, GFP_KERNEL, "%llx.flash",
+> +                                       (u64)res.start);
+>         if (!priv->mtd.name) {
+>                 ret = -ENOMEM;
+>                 goto err;
+> @@ -1148,10 +1145,8 @@ static int fsl_ifc_nand_remove(struct platform_device *dev)
+>
+>         mutex_lock(&fsl_ifc_nand_mutex);
+>         ifc_nand_ctrl->counter--;
+> -       if (!ifc_nand_ctrl->counter) {
+> +       if (!ifc_nand_ctrl->counter)
+>                 fsl_ifc_ctrl_dev->nand = NULL;
+> -               kfree(ifc_nand_ctrl);
+> -       }
+>         mutex_unlock(&fsl_ifc_nand_mutex);
+>
+>         return 0;
+> --
+> 1.9.1
+>
