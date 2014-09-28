@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679AbaI1Iyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 04:54:53 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559AbaI1Iyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 04:54:52 -0400
-Message-ID: <5427CCD8.2090605@nod.at>
-Date: Sun, 28 Sep 2014 10:54:48 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753687AbaI1I4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 04:56:43 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:65099 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaI1I4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 04:56:41 -0400
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedeking1@gmail.com
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
-References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org>
-In-Reply-To: <5427CB6E.7010007@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140925235322.GW1193@ld-irv-0074>
+References: <1409767603-3290-1-git-send-email-computersforpeace@gmail.com>
+ <20140908104238.C7B3DC40AB2@trevor.secretlab.ca> <20140925235322.GW1193@ld-irv-0074>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Sun, 28 Sep 2014 09:56:20 +0100
+X-Google-Sender-Auth: nJQobFGlLtSsuE2eC1YzQK0dAGc
+Message-ID: <CACxGe6u+R80oMtF5G5GB4mP316wmuHJROAar4mXfL8fjMM407A@mail.gmail.com>
+Subject: Re: [PATCH] of: correct of_console_check()'s return value
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.09.2014 10:48, schrieb Tanya Brokhman:
->>> @@ -424,6 +440,8 @@ struct ubi_fm_sb {
->>>       __be32 used_blocks;
->>>       __be32 block_loc[UBI_FM_MAX_BLOCKS];
->>>       __be32 block_ec[UBI_FM_MAX_BLOCKS];
->>> +    __be32 block_rc[UBI_FM_MAX_BLOCKS];
->>> +    __be64 block_let[UBI_FM_MAX_BLOCKS];
+On Fri, Sep 26, 2014 at 12:53 AM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> Hi Grant,
+>
+> On Mon, Sep 08, 2014 at 11:42:38AM +0100, Grant Likely wrote:
+>> On Wed,  3 Sep 2014 11:06:43 -0700, Brian Norris <computersforpeace@gmail.com> wrote:
+>> > The comments above of_console_check() say that it will return TRUE if it
+>> > registers a preferred console, but add_preferred_console() uses a
+>> > 0-equals-success convention, so ths leaves of_console_check() with an
+>> > inconsistent policy for its return values.
+>> >
+>> > Fortunately, nobody was actually checking the return value of
+>> > of_console_check(), so this isn't significant at the moment.
+>> >
+>> > But let's match the comments, so we're doing what we say.
+>> >
+>> > Fixes: 3482f2c52b77 ('of: Create of_console_check() for selecting a console specified in /chosen')
+>> > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+>> > Cc: Grant Likely <grant.likely@linaro.org>
 >>
->> Doesn't this break the fastmap on-disk layout?
-> 
-> What do you mean "break"? I verified fastmap feature is working. the whole read-disturb depends on it so I tested this thoroughly.
+>> Good catch. Applied, thanks.
+>
+> Applied to what? I don't see it in linux-next.
 
-Did you write a fastmap with your changes applied and then an attach using a fastmap implementation *without*
-you changes?
-I bet it will not work because the disk layout is now different.
-Linux is not the only user of fastmap. We need to be very careful here.
+It got merged into mainline on Thursday.
 
-Thanks,
-//richard
+g.
