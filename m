@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaI1KXB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:23:01 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50020 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbaI1KW7 (ORCPT
+	id S1753852AbaI1KXb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:23:31 -0400
+Received: from mail-pd0-f193.google.com ([209.85.192.193]:60707 "EHLO
+	mail-pd0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaI1KX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:22:59 -0400
-Date: Sun, 28 Sep 2014 11:22:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Cc: lgirdwood@gmail.com, shawn.guo@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        festevam@gmail.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@pengutronix.de
-Message-ID: <20140928102202.GM27755@sirena.org.uk>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
- <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YGQsgxOP0v8GKjPA"
-Content-Disposition: inline
-In-Reply-To: <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.249.138
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Sun, 28 Sep 2014 06:23:29 -0400
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+To: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>
+Cc: linux-rockchip@lists.infradead.org,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>
+Subject: [PATCH v2 0/3] ARM: rk3288 : Add PM Domain support
+Date: Sun, 28 Sep 2014 03:22:51 -0700
+Message-Id: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
---YGQsgxOP0v8GKjPA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Use PM Domain framework to manage the clock.
 
-On Sat, Sep 27, 2014 at 12:59:47AM +0000, Stefan Wahren wrote:
-> This patch adds the Device tree bindings for the Freescale MXS
-> on-chip regulators.
+Changes in v2:
+- remove the "pd->pd.of_node = np"
+Adviced by Doug
+- move clocks to "optional"
+Adviced by Daniel
+- make pd_vio clocks all one entry per line and alphabetize.
+Adviced by Heiko
+- power: power-controller move back to pinctrl: pinctrl.
 
-Use subject lines matching the style for the subsystem.
+jinkun.hong (3):
+  power-domain: add power domain drivers for Rockchip platform
+  dt-bindings: add document of Rockchip power domain
+  ARM: dts: add rk3288 power-domain node
 
-> +Required regulator properties:
-> +- compatible: Must be "fsl,mxs-regulator"
-> +- reg: Absolute physical address of the register set for the regulator
-> +
-> +Any regulator property defined as part of the core regulator
-> +binding, defined in regulator.txt, can also be used.
+ .../bindings/arm/rockchip/power_domain.txt         |   48 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |   67 ++++
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/pm_domains.c                |  371 ++++++++++++++++++++
+ include/dt-bindings/power-domain/rk3288.h          |   11 +
+ 6 files changed, 499 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+ create mode 100644 include/dt-bindings/power-domain/rk3288.h
 
-While this should be using compatibles to identify which regulator is
-being supported note that the binding doesn't document the fact that the
-code makes regulator-name mandatory or what values are required.
+-- 
+1.7.9.5
 
---YGQsgxOP0v8GKjPA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUJ+FJAAoJECTWi3JdVIfQKWkH/07JDU+MbOO0709bg6SPkhl/
-AEOdpHTku5FHYJ7DSRUEmijpqjw+1s4YR2CYs1UmNseHUeFpKtkKrBBtpjrNsFnE
-/ahHfCQPPy4JnLQpwpsD0lTB56bLV0z+NHTLRQPb3cuiBXyZykQTx9tNwcuD0ThH
-WKa6hJm+3aYMtaE78sNPmUcDUjCzNbDHqopGvr1uJeMiuYIJdamHNGZp7fSWF3yR
-7bMHnvoq7qBFcwVBOfI6HjvMfvybzURfan/hWaNTVGhA0FZx0r62Rd+x/2PeI9OF
-UttFSaQerzOhoumc44DOXn62J6e3LZD7A6CNJ56A+wNHw3/Yvf0S63vWrkpFWn4=
-=7ewL
------END PGP SIGNATURE-----
-
---YGQsgxOP0v8GKjPA--
