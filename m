@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaI1K5W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:57:22 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:39728 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753686AbaI1K5U (ORCPT
+	id S1753343AbaI1LFd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 07:05:33 -0400
+Received: from regular1.263xmail.com ([211.150.99.130]:52362 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaI1LFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:57:20 -0400
+	Sun, 28 Sep 2014 07:05:31 -0400
+X-Greylist: delayed 36655 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Sep 2014 07:05:30 EDT
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <4345c13a690f52df0ae9a7e1db0848be>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <5427EB66.5090607@rock-chips.com>
+Date: Sun, 28 Sep 2014 19:05:10 +0800
+From: Jianqun <xjq@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140926132038.GF7422@leverpostej>
-References: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
-	<1411730703-25836-2-git-send-email-chenhui.zhao@freescale.com>
-	<20140926122003.GP5182@n2100.arm.linux.org.uk>
-	<20140926124614.GD7422@leverpostej>
-	<20140926130311.GQ5182@n2100.arm.linux.org.uk>
-	<20140926132038.GF7422@leverpostej>
-Date: Sun, 28 Sep 2014 18:57:18 +0800
-X-Google-Sender-Auth: bdm-CVK7O2J7ngBXFtkCfrcVdkg
-Message-ID: <CADRPPNQULzPhHt3Kk1EUnPRkfFOPGsWY4AqWEv=AdBc5y-Gg+Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] arm: ls1: add CPU hotplug platform support
-From: Li Yang <leoli@freescale.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chenhui Zhao <chenhui.zhao@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhuoyu.Zhang@freescale.com" <Zhuoyu.Zhang@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Jianqun <jay.xu@rock-chips.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, heiko@sntech.de, lgirdwood@gmail.com,
+        perex@perex.cz, tiwai@suse.de, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, huangtao@rock-chips.com,
+        cf@rock-chips.com
+Subject: Re: [PATCH 1/2] ASoC: rockchip-max98090: add documentation for rockchip-max98090
+ driver
+References: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com> <1410507036-15442-1-git-send-email-jay.xu@rock-chips.com> <20140912134446.GT7960@sirena.org.uk> <54275C43.8010205@rock-chips.com> <20140928104851.GR27755@sirena.org.uk>
+In-Reply-To: <20140928104851.GR27755@sirena.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 9:20 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > This looks to be a carbon copy of the vexpress pseudo-hotplug in
->> > arch/arm/mach-vexpress/hotplug.c, which is obviously broken in the way
->> > you describe above. Perhaps we should go about ripping that out?
->>
->> The Versatile Express does not support suspend so the only problem case
->> is kexec.  However, isn't this support needed for big.LITTLE, and as
->> the Versatile Express is the platform which these features get developed
->> on, having working CPU hotplug seems rather fundamental for ARM kernel
->> feature development.
->>
->> In that regard, Versatile Express is something of a special case.
->
-> It is admittedly helpful during development to perform pseudo-hotplug on
-> Versatile Express. I have a local patch adding vexpress_cpu_disable so I
-> can test for bugs that only trigger if CPU0 is hotplugged.
->
-> Given that, perhaps we should make it clearer that Versatile Express is
-> not a reference implementation for CPU hotplug; add some Kconfig (e.g.
-> VEXPRESS_PSEUDO_HOTPLUG) that depends on !KEXEC && !SUSPEND, and putting
-> a note in hotplug.c stating it's not suitable as a reference
-> implementation.
->
-> ...but perhaps that's overkill.
 
-I agree that the pseudo-hotplug is breaking the kexec.  However, I
-don't think it breaks the system suspend case as tasks and interrupts
-have been moved out of the non-booting CPU.  The pseudo-hotplug would
-be even better than real hotplug as it introduces less latency.
 
-Regards,
-Leo
+在 09/28/2014 06:48 PM, Mark Brown 写道:
+> On Sun, Sep 28, 2014 at 08:54:27AM +0800, Jianqun wrote:
+> 
+> Please fix your mailer to word wrap within paragraphs.
+> 
+>> 在 09/12/2014 09:44 PM, Mark Brown 写道:
+>>> On Fri, Sep 12, 2014 at 03:30:36PM +0800, Jianqun wrote:
+>>>> Add documentation for rockchip-max98090 driver, which is need by rockchip
+>>>> board using a max98090.
+> 
+>>> Can this use simple-card (perhaps after a bit of extension)?
+>> I haven't ever try simple-card, is there any sample usage for me from other vendor ?
+> 
+> $ git grep -l simple-audio-card
+> Documentation/devicetree/bindings/sound/simple-card.txt
+> arch/arm/boot/dts/kirkwood-openrd-client.dts
+> arch/arm/boot/dts/kirkwood-t5325.dts
+> arch/arm/boot/dts/r8a7740-armadillo800eva-reference.dts
+> arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
+> arch/arm/boot/dts/vf610-twr.dts
+> sound/soc/generic/simple-card.c
+> 
+thanks
+>>>> +- rockchip,audio-codec : The phandle of the MAX98090 audio codec.
+> 
+>>> Is the driver really specific to this CODEC?
+> 
+>> I think yes, we need to add two gpio for mic and hp detect, but simple-card driver hasn't them
+> 
+> That'd be the "possibly with some extensions" bit then...  if they're
+> just isolated GPIOs there's not really much board specific about having
+> them.
+> 
+I'll try it first, thanks Mark
+
+-- 
+Jianqun Xu
+
+****************************************************************************
+*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
+Ltd .The contents of this email and any attachments may contain
+information that is privileged, confidential and/or exempt from
+disclosure under applicable law and relevant NDA. If you are not the
+intended recipient, you are hereby notified that any disclosure,
+copying, distribution, or use of the information is STRICTLY PROHIBITED.
+Please immediately contact the sender as soon as possible and destroy
+the material in its entirety in any format. Thank you.
+****************************************************************************
+
