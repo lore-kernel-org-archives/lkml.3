@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050AbaI1Kqa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:46:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50201 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaI1Kq2 (ORCPT
+	id S1753865AbaI1Kq3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:46:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59540 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaI1Kq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:46:28 -0400
-Date: Sun, 28 Sep 2014 11:45:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20140928104557.GQ27755@sirena.org.uk>
-References: <1411875325-19293-1-git-send-email-Li.Xiubo@freescale.com>
+	Sun, 28 Sep 2014 06:46:27 -0400
+Message-ID: <5427E6FE.3090906@codeaurora.org>
+Date: Sun, 28 Sep 2014 13:46:22 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zOr5JpMIiGv/Oaxu"
-Content-Disposition: inline
-In-Reply-To: <1411875325-19293-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 92.40.249.138
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: debugfs: fix possbile NULL pointer dereference
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Richard Weinberger <richard@nod.at>, dedeking1@gmail.com
+CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org> <5427CCD8.2090605@nod.at>
+In-Reply-To: <5427CCD8.2090605@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9/28/2014 11:54 AM, Richard Weinberger wrote:
+> Am 28.09.2014 10:48, schrieb Tanya Brokhman:
+>>>> @@ -424,6 +440,8 @@ struct ubi_fm_sb {
+>>>>        __be32 used_blocks;
+>>>>        __be32 block_loc[UBI_FM_MAX_BLOCKS];
+>>>>        __be32 block_ec[UBI_FM_MAX_BLOCKS];
+>>>> +    __be32 block_rc[UBI_FM_MAX_BLOCKS];
+>>>> +    __be64 block_let[UBI_FM_MAX_BLOCKS];
+>>>
+>>> Doesn't this break the fastmap on-disk layout?
+>>
+>> What do you mean "break"? I verified fastmap feature is working. the whole read-disturb depends on it so I tested this thoroughly.
+>
+> Did you write a fastmap with your changes applied and then an attach using a fastmap implementation *without*
+> you changes?
+> I bet it will not work because the disk layout is now different.
 
---zOr5JpMIiGv/Oaxu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+you're right, it wont work. I did a set of attach/detach tests to verify 
+fastmap, but of course with my changes.
 
-On Sun, Sep 28, 2014 at 11:35:25AM +0800, Xiubo Li wrote:
-> If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
-> dereference. So before dev_name(), we need to have check of the map->dev
-> pionter.
+> Linux is not the only user of fastmap. We need to be very careful here.
 
-Applied, thanks.
+Could you please elaborate here? I'm not sure I understand the use case 
+you're referring to.
 
---zOr5JpMIiGv/Oaxu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+> Thanks,
+> //richard
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUJ+bkAAoJECTWi3JdVIfQOQMH/0aVPr6YJOZ9pbUwEM9ZTQCD
-uv2FH6gQ4EiZoSj8cqVGLYgLYiR5gJtxWV1W9FPkJPAjsMA8YKKP1jHjXd3gKTf+
-T4JxvklERNcJEl0nIAo6tN8KN+tmhFzt7wPHliQmoI8XAwthrr/HKYbvNUF2zfCj
-lT/sNSeGTHk9uo/yZJa9G1NrULTQpGSZ4pAzPqWhNeuT6XewOtP7wlBQi5ZK4Hsm
-fbBhxxAgwAJtv4us7kgksuS0dYVenzSkVb4/jv6Fz+ThRi5CQIIcIpuPu7vQODAW
-52PTqVpWlwLRC5lIy2CRI03KSnGp7n9mCJztpK9h8OoDntScT85GkQo8gJcCHJM=
-=o9Gk
------END PGP SIGNATURE-----
-
---zOr5JpMIiGv/Oaxu--
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
