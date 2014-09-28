@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbaI1Czd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 22:55:33 -0400
-Received: from mail-bn1bon0117.outbound.protection.outlook.com ([157.56.111.117]:5120
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753307AbaI1Cz3 convert rfc822-to-8bit (ORCPT
+	id S1753294AbaI1DPK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 23:15:10 -0400
+Received: from mga14.intel.com ([192.55.52.115]:46045 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752180AbaI1DPH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 22:55:29 -0400
-X-Greylist: delayed 157808 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Sep 2014 22:55:29 EDT
-From: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>
-To: Kumar Gala <galak@codeaurora.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sandeep Nair <sandeep_n@ti.com>, Olof Johansson <olof@lixom.net>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Paul Walmsley <paul@pwsan.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Sat, 27 Sep 2014 23:15:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="392577643"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shengchao Guo <Shawn.Guo@freescale.com>
-Subject: RE: [PATCH 2/2] soc/fsl: add ftm alarm driver for ls1021a platform
-Thread-Topic: [PATCH 2/2] soc/fsl: add ftm alarm driver for ls1021a platform
-Thread-Index: AQHP2VYNvkJJ8ylx3kqEIVXM63T25JwTcs4AgAJhgoA=
-Date: Sun, 28 Sep 2014 02:55:25 +0000
-Message-ID: <1806aa9735f7479f950734bb469c1136@BN1PR03MB188.namprd03.prod.outlook.com>
-References: <1411714121-32138-1-git-send-email-dongsheng.wang@freescale.com>
- <1411714121-32138-2-git-send-email-dongsheng.wang@freescale.com>
- <B448818B-E208-4451-8BA0-53D53E4BB7FC@codeaurora.org>
-In-Reply-To: <B448818B-E208-4451-8BA0-53D53E4BB7FC@codeaurora.org>
-Accept-Language: zh-CN, en-US
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: RE: [PATCH] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+Thread-Topic: [PATCH] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+Thread-Index: AQHP2splkx0ZBJe9NUiWssulYNYxFw==
+Date: Sun, 28 Sep 2014 03:15:04 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9970F8@SHSMSX101.ccr.corp.intel.com>
+References: <1411752349-31490-1-git-send-email-alvin.chen@intel.com>
+ <1411752349-31490-2-git-send-email-alvin.chen@intel.com>
+ <20140926100832.GE27755@sirena.org.uk>
+In-Reply-To: <20140926100832.GE27755@sirena.org.uk>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB340;UriScan:;
-x-forefront-prvs: 03484C0ABF
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(13464003)(24454002)(51704005)(377454003)(189002)(199003)(87936001)(77096002)(105586002)(19580395003)(106356001)(90102001)(20776003)(66066001)(99286002)(2656002)(76576001)(107046002)(21056001)(64706001)(33646002)(110136001)(76176999)(95666004)(74316001)(74662003)(54356999)(108616004)(74502003)(120916001)(81542003)(97736003)(79102003)(80022003)(81342003)(50986999)(77982003)(46102003)(99396003)(101416001)(19580405001)(4396001)(83322001)(85852003)(83072002)(85306004)(10300001)(92566001)(31966008)(76482002)(86362001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB340;H:BN1PR03MB188.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+x-originating-ip: [10.239.127.40]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB291;
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your review. :)
 
+> 
+> > +static u32 pxa2xx_spi_get_ssrc1_change_mask(const struct driver_data
+> > +*drv_data) {
+> > +	if (!is_quark_x1000_ssp(drv_data))
+> > +		return SSCR1_CHANGE_MASK;
+> > +
+> > +	return QUARK_X1000_SSCR1_CHANGE_MASK; }
+> 
+> These functions would be much better written as switch statements - think
+> how they're going to look when we've got another controller which needs
+> custom values.  It might also be helpful for review to have two patches, one
+> splitting things out into the functions and another adding the Quark support.
+> 
+OK. Let me use switch. BTW, for two patches, actually, using helpers is due to we support quark.
+Do you mean the first patch just introduce helpers, maybe it only support one type, then another patch to add
+quark supporting. Am I right?
 
-> -----Original Message-----
-> From: Kumar Gala [mailto:galak@codeaurora.org]
-> Sent: Friday, September 26, 2014 10:04 PM
-> To: Wang Dongsheng-B40534
-> Cc: Santosh Shilimkar; Sandeep Nair; Olof Johansson; shawn.guo@linaro.org; Greg
-> KH; Paul Walmsley; Arnd Bergmann; linux-kernel@vger.kernel.org; Guo Shawn-R65073
-> Subject: Re: [PATCH 2/2] soc/fsl: add ftm alarm driver for ls1021a platform
+> > +/*  see Quark SPI data sheet for implementation rationale */ static
+> > +u32 quark_x1000_set_clk_regvals(u32 rate, u32 *dds, u32 *clk_div) {
 > 
+> Please document this in the driver - I don't know if this datasheet is public but
+> even if it is it may not stay that way.
+OK. I will document it.
+
 > 
-> On Sep 26, 2014, at 1:48 AM, Dongsheng Wang <dongsheng.wang@freescale.com> wrote:
-> 
-> > From: Wang Dongsheng <dongsheng.wang@freescale.com>
+> > @@ -613,6 +759,8 @@ static void pump_transfers(unsigned long data)
+> >  	u32 cr1;
+> >  	u32 dma_thresh = drv_data->cur_chip->dma_threshold;
+> >  	u32 dma_burst = drv_data->cur_chip->dma_burst_size;
+> > +	u32 change_mask = pxa2xx_spi_get_ssrc1_change_mask(drv_data);
+> > +
 > >
-> > Only Ftm0 can be used when system going to deep sleep. So this driver
-> > to support ftm0 as a wakeup source.
-> >
-> > Signed-off-by: Wang Dongsheng <dongsheng.wang@freescale.com>
 > 
-> How does this differ from drivers/clocksource/fsl_ftm_timer.c
-
-Fsl_ftm_timer.c is only for system to provide a clock driver. FTM ip-block can be used
-by other functions such as PWM. I think we should not put all of functions into a .c file.
-So ftm0 alarm function as a specific block driver in SOC dir.
-
+> Extra blank line being added here.
 > 
-> Why not extend that with the alarm functionality you need?
-The framework of clocksource not provide sys interface to set alarm. And codes of ftm0-alarm
-not touch on clocksource framework.
+I will remove it.
 
+> > @@ -145,6 +147,9 @@ static inline int pxa25x_ssp_comp(struct driver_data
+> *drv_data)
+> >  		return 1;
+> >  	if (drv_data->ssp_type == CE4100_SSP)
+> >  		return 1;
+> > +	if (drv_data->ssp_type == QUARK_X1000_SSP)
+> > +		return 1;
+> > +
+> >  	return 0;
+> >  }
 > 
-> Also, where is the DT binding spec for this (if you plan on having a separate
-> driver)?
-Yes, now only a driver. My DT depend on LS1 device tree patches, now LS1 DT is upstreaming but not apply.
-After LS1 DT apply, I will add ftm alarm device node.
-
-Regards,
--Dongsheng
+> Things like this should also be refactored into switch statements - in general
+> anything that's deciding what to do based on ssp_type probably ought to be
+> using switch statements.
+OK. I will use switch.
