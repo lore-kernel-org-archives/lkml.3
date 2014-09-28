@@ -1,478 +1,534 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537AbaI1QpQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 12:45:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6290 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753397AbaI1QpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 12:45:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,615,1406617200"; 
-   d="asc'?scan'208";a="609918299"
-Message-ID: <1411922704.3156.40.camel@dwillia2-mobl2.amr.corp.intel.com>
-Subject: [GIT PULL] dmaengine-3.17, close my dmaengine tree
-From: Dan Williams <dan.j.williams@intel.com>
-To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, Vinod Koul <vinod.koul@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 28 Sep 2014 09:45:04 -0700
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-QxoVZTT4PIcYCGCvCT3l"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	id S1754316AbaI1RHs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 13:07:48 -0400
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:43064 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239AbaI1RHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 13:07:45 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.208.172.182]
+In-Reply-To: <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sun, 28 Sep 2014 19:07:24 +0200
+Message-ID: <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com>
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
+        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
+        dbueso@suse.com, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-QxoVZTT4PIcYCGCvCT3l
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-Even though this has fixes marked for -stable, given the size and the
-needed conflict resolutions this is 3.18-rc1/merge-window material.
-
-The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15=
-:
-
-  Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine tags/dmaengi=
-ne-3.17
-
-
-These patches have been languishing in my tree for a long while.  The
-fact that I do not have the time to do proper/prompt maintenance of this
-tree is a primary factor in the decision to step down as dmaengine
-maintainer.  That and the fact that the bulk of drivers/dma/ activity is
-going through Vinod these days.
-
-The net_dma removal has not been in -next.  It has developed simple
-conflicts against mainline and net-next (for-3.18).  I have resolved
-those conflicts here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine dmaengine-3.=
-17+conflicts
-
-...which is a back-merge of 3.17-rc6 and current net-next into
-dmaengine-3.17.  I figure you would like to resolve those yourself, and
-that -stable would appreciate the older net_dma removal commit.  This is
-more a heads up to Dave and Stephen that "conflicts are coming".
-
-Stephen: please remove the dmaengine tree from -next:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine next
-
-Finally, someone scream at me if you would rather I just rebase the
-net_dma removal and let it soak in -next properly.
-
-Continuing thanks to Vinod for staying on top of drivers/dma/.
-
---
-Dan
-
-
-----------------------------------------------------------------
-dmaengine-3.17
-
-1/ Step down as dmaengine maintainer see commit 08223d80df38 "dmaengine
-   maintainer update"
-
-2/ Removal of net_dma, as it has been marked 'broken' since 3.13 (commit
-   77873803363c "net_dma: mark broken"), without reports of performance
-   regression.
-
-3/ Miscellaneous fixes
-
-----------------------------------------------------------------
-Alexander Gordeev (1):
-      ioat: Use pci_enable_msix_exact() instead of pci_enable_msix()
-
-Andy Shevchenko (1):
-      dmatest: prevent memory leakage on error path in thread
-
-Dan Williams (4):
-      dmaengine maintainer update
-      net_dma: simple removal
-      net_dma: revert 'copied_early'
-      net: make tcp_cleanup_rbuf private
-
-Ezequiel Garcia (4):
-      dma: mv_xor: Add DMA API error checks
-      dma: mv_xor: Remove unneeded mv_xor_clean_completed_slots() call
-      dma: mv_xor: Remove all callers of mv_xor_slot_cleanup()
-      dma: mv_xor: Rename __mv_xor_slot_cleanup() to mv_xor_slot_cleanup()
-
-Manuel Sch=C3=B6lling (1):
-      ioat: Use time_before_jiffies()
-
-Rashika (2):
-      drivers: dma: Mark functions as static in dma_v3.c
-      drivers: dma: Include appropriate header file in dca.c
-
-Xuelin Shi (1):
-      dmaengine: fix xor sources continuation
-
-Yijing Wang (1):
-      ioat/dca: Use dev_is_pci() to check whether it is pci device
-
- Documentation/ABI/removed/net_dma      |   8 +
- Documentation/networking/ip-sysctl.txt |   6 -
- MAINTAINERS                            |  19 +--
- crypto/async_tx/async_xor.c            |   3 +-
- drivers/dma/Kconfig                    |  12 --
- drivers/dma/Makefile                   |   1 -
- drivers/dma/dmaengine.c                | 104 ------------
- drivers/dma/dmatest.c                  |   4 +-
- drivers/dma/ioat/dca.c                 |  13 +-
- drivers/dma/ioat/dma.c                 |   3 +-
- drivers/dma/ioat/dma.h                 |   7 -
- drivers/dma/ioat/dma_v2.c              |   4 +-
- drivers/dma/ioat/dma_v3.c              |   7 +-
- drivers/dma/iovlock.c                  | 280 -----------------------------=
-----
- drivers/dma/mv_xor.c                   |  80 ++++++++--
- include/linux/dmaengine.h              |  22 +--
- include/linux/skbuff.h                 |   8 +-
- include/linux/tcp.h                    |   8 -
- include/net/netdma.h                   |  32 ----
- include/net/sock.h                     |  19 +--
- include/net/tcp.h                      |   9 --
- kernel/sysctl_binary.c                 |   1 -
- net/core/Makefile                      |   1 -
- net/core/dev.c                         |  10 --
- net/core/sock.c                        |   6 -
- net/core/user_dma.c                    | 131 ---------------
- net/dccp/proto.c                       |   4 +-
- net/ipv4/sysctl_net_ipv4.c             |   9 --
- net/ipv4/tcp.c                         | 149 ++----------------
- net/ipv4/tcp_input.c                   |  83 +---------
- net/ipv4/tcp_ipv4.c                    |  18 +--
- net/ipv6/tcp_ipv6.c                    |  13 +-
- net/llc/af_llc.c                       |  10 +-
- 33 files changed, 129 insertions(+), 955 deletions(-)
- create mode 100644 Documentation/ABI/removed/net_dma
- delete mode 100644 drivers/dma/iovlock.c
- delete mode 100644 include/net/netdma.h
- delete mode 100644 net/core/user_dma.c
-
-Full log:
-
-commit 3f334078567245429540e6461c81c749fce87f70
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Mon Dec 30 17:12:07 2013 -0800
-
-    net: make tcp_cleanup_rbuf private
-   =20
-    net_dma was the only external user so this can become local to tcp.c
-    again.
-   =20
-    Cc: James Morris <jmorris@namei.org>
-    Cc: Patrick McHardy <kaber@trash.net>
-    Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-    Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-    Acked-by: Neal Cardwell <ncardwell@google.com>
-    Acked-by: David S. Miller <davem@davemloft.net>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit d27f9bc104375a0a835cf68bb88fc9cec69125da
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Mon Dec 30 11:37:15 2013 -0800
-
-    net_dma: revert 'copied_early'
-   =20
-    Now that tcp_dma_try_early_copy() is gone nothing ever sets
-    copied_early.
-   =20
-    Also reverts "53240c208776 tcp: Fix possible double-ack w/ user dma"
-    since it is no longer necessary.
-   =20
-    Cc: Ali Saidi <saidi@engin.umich.edu>
-    Cc: James Morris <jmorris@namei.org>
-    Cc: Patrick McHardy <kaber@trash.net>
-    Cc: Eric Dumazet <edumazet@google.com>
-    Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-    Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-    Cc: Neal Cardwell <ncardwell@google.com>
-    Reported-by: Dave Jones <davej@redhat.com>
-    Acked-by: David S. Miller <davem@davemloft.net>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 7bced397510ab569d31de4c70b39e13355046387
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Mon Dec 30 12:37:29 2013 -0800
-
-    net_dma: simple removal
-   =20
-    Per commit "77873803363c net_dma: mark broken" net_dma is no longer use=
-d
-    and there is no plan to fix it.
-   =20
-    This is the mechanical removal of bits in CONFIG_NET_DMA ifdef guards.
-    Reverting the remainder of the net_dma induced changes is deferred to
-    subsequent patches.
-   =20
-    Marked for stable due to Roman's report of a memory leak in
-    dma_pin_iovec_pages():
-   =20
-        https://lkml.org/lkml/2014/9/3/177
-   =20
-    Cc: Dave Jiang <dave.jiang@intel.com>
-    Cc: Vinod Koul <vinod.koul@intel.com>
-    Cc: David Whipple <whipple@securedatainnovations.ch>
-    Cc: Alexander Duyck <alexander.h.duyck@intel.com>
-    Cc: <stable@vger.kernel.org>
-    Reported-by: Roman Gushchin <klamm@yandex-team.ru>
-    Acked-by: David S. Miller <davem@davemloft.net>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 08223d80df38e666a42d7c82eb340db55c6e03bd
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Tue Aug 19 06:07:56 2014 -0700
-
-    dmaengine maintainer update
-   =20
-    I am stepping down as dmaengine maintainer as the bulk of the activity
-    in the subsystem is primarily targeted at the slave-dma case handled by
-    Vinod, and I have recently been unable to give the few patches I do
-    receive timely review.  There is still an item in my backlog to
-    eliminate the async_tx api and the constraints it poses on dmaengine
-    drivers, but I need not hold on to the maintainer role in the meantime.
-    I will still be subscribed to dmaengine@vger.kernel.org to answer
-    questions, but all patches should be routed through Vinod unless/until =
-a
-    maintainer for the non-slave-dma use case arrives.  It is non-entirely
-    clear at this point that there is enough work going forward for a
-    separate maintainer of the pure-offload case.
-   =20
-    Ongoing development of the ioatdma driver is handled by Dave.  I'm stil=
-l
-    interested in reviewing ioatdma patches, but he is the primary
-    maintainer/developer going forward.
-   =20
-    IOP platforms are not generating any traffic in my inbox, but if a patc=
-h
-    did arrive I've long since lost access to hardware.
-   =20
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: Vinod Koul <vinod.koul@intel.com>
-    Cc: Dave Jiang <dave.jiang@intel.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 8e1f50d7433b9a6e52cb296943f53c3ce8189ea5
-Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Date:   Fri Aug 22 15:19:44 2014 +0300
-
-    dmatest: prevent memory leakage on error path in thread
-   =20
-    When we fail to allocate memory for thread->srcs or thread->dsts and sr=
-c_cnt or
-    dst_cnt great than 1 we leak memory on error path. This patch fixes the=
- issue.
-   =20
-    Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit e628ce70cae5ccd67830b0e2c3d038831746d86b
-Author: Manuel Sch=C3=B6lling <manuel.schoelling@gmx.de>
-Date:   Thu May 22 22:11:06 2014 +0200
-
-    ioat: Use time_before_jiffies()
-   =20
-    To be future-proof and for better readability the time comparisons are =
-modified
-    to use time_before_jiffies() instead of plain, error-prone math.
-   =20
-    Signed-off-by: Manuel Sch=C3=B6lling <manuel.schoelling@gmx.de>
-    [djbw: use time_before_jiffies() to make argument order more clear]
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 87cea76384257e6ac3fa4791b6a6b9d0335f7457
-Author: Xuelin Shi <xuelin.shi@freescale.com>
-Date:   Tue Jul 1 16:32:38 2014 +0800
-
-    dmaengine: fix xor sources continuation
-   =20
-    the partial xor result must be kept until the next
-    tx is generated.
-   =20
-    Cc: <stable@vger.kernel.org>
-    Signed-off-by: Xuelin Shi <xuelin.shi@freescale.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit fbeec99ad5c03060ba71c470ac373e24e23a80e0
-Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Date:   Fri Mar 7 16:46:47 2014 -0300
-
-    dma: mv_xor: Rename __mv_xor_slot_cleanup() to mv_xor_slot_cleanup()
-   =20
-    Now that mv_xor_slot_cleanup() has no remaining callers, we remove it
-    and rename __mv_xor_slot_cleanup() to mv_xor_slot_cleanup().
-   =20
-    We take this opportunity to add a comment that makes it clear that the
-    channel spinlock should be held before calling mv_xor_slot_cleanup().
-   =20
-    Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-    Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit e43147acba6f64ba32664dd0e590657cc49b6940
-Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Date:   Fri Mar 7 16:46:46 2014 -0300
-
-    dma: mv_xor: Remove all callers of mv_xor_slot_cleanup()
-   =20
-    In order to simplify the code, remove all the calls to the locked
-    mv_xor_slot_cleanup() and instead use the unlocked version only,
-   =20
-    It's less error prone to have just one function, and require the caller
-    to ensure proper locking.
-   =20
-    Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 890766d278548afdc059cd977687c4f1297d72a0
-Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Date:   Fri Mar 7 16:46:45 2014 -0300
-
-    dma: mv_xor: Remove unneeded mv_xor_clean_completed_slots() call
-   =20
-    In mv_xor_status(), we are currently calling mv_xor_clean_completed_slo=
-ts()
-    when the transaction is complete (the cookie status is DMA_COMPLETE).
-    However, a completed status means that mv_xor_slot_cleanup() was called=
-,
-    which cleans the completed slots.
-   =20
-    In other words, there's nothing to cleanup for a completed transaction =
-in
-    mv_xor_status(). Remove the unneeded call to mv_xor_clean_completed_slo=
-ts().
-   =20
-    Reported-by: Dan Williams <dan.j.williams@intel.com>
-    Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 368da992b93eaf8861f1ef2d27bbe22c01140733
-Author: Alexander Gordeev <agordeev@redhat.com>
-Date:   Thu Mar 6 21:11:21 2014 +0100
-
-    ioat: Use pci_enable_msix_exact() instead of pci_enable_msix()
-   =20
-    As result of deprecation of MSI-X/MSI enablement functions
-    pci_enable_msix() and pci_enable_msi_block() all drivers
-    using these two interfaces need to be updated to use the
-    new pci_enable_msi_range()  or pci_enable_msi_exact()
-    and pci_enable_msix_range() or pci_enable_msix_exact()
-    interfaces.
-   =20
-    Function pci_enable_msix() returns a tri-state value while
-    pci_enable_msi_exact() is a canonical zero/-errno variant.
-    The former is being phased out in favor of the latter.
-    In case of 'ioat' there (should be) no difference.
-   =20
-    Cc: Vinod Koul <vinod.koul@intel.com>
-    Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 2358b820d42a33f1d1052b438489c90a4cc8f3fc
-Author: Rashika <rashika.kheria@gmail.com>
-Date:   Mon Dec 16 15:44:39 2013 +0530
-
-    drivers: dma: Include appropriate header file in dca.c
-   =20
-    Includes an appropriate header file dma_v2.h in ioat/dca.c because
-    functions ioat2_dca_init() and ioat3_dca_init() have their function
-    declarations in dma_v2.h.
-   =20
-    This eliminates the following warning in ioat/dca.c:
-    drivers/dma/ioat/dca.c:410:22: warning: no previous prototype for =E2=
-=80=98ioat2_dca_init=E2=80=99 [-Wmissing-prototypes]
-    drivers/dma/ioat/dca.c:624:22: warning: no previous prototype for =E2=
-=80=98ioat3_dca_init=E2=80=99 [-Wmissing-prototypes]
-   =20
-    Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-    Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-    Acked-by: Vinod Koul <vinod.koul@intel.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 8d1d32767ca0df1b5cd75cdc1be3915bc6887ed1
-Author: Rashika <rashika.kheria@gmail.com>
-Date:   Mon Dec 16 15:40:40 2013 +0530
-
-    drivers: dma: Mark functions as static in dma_v3.c
-   =20
-    Mark the functions ioat3_prep_xor_val(), ioat3_prep_pq_val() and
-    ioat3_prep_pqxor_val() as static in dma_v3.c because they are not used
-    outside this file.
-   =20
-    This eliminates the following warnings in dma_v3.c:
-    drivers/dma/ioat/dma_v3.c:741:1: warning: no previous prototype for =E2=
-=80=98ioat3_prep_xor_val=E2=80=99 [-Wmissing-prototypes]
-    drivers/dma/ioat/dma_v3.c:1092:1: warning: no previous prototype for =
-=E2=80=98ioat3_prep_pq_val=E2=80=99 [-Wmissing-prototypes]
-    drivers/dma/ioat/dma_v3.c:1134:1: warning: no previous prototype for =
-=E2=80=98ioat3_prep_pqxor_val=E2=80=99 [-Wmissing-prototypes]
-   =20
-    Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-    Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-    Acked-by: Vinod Koul <vinod.koul@intel.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit b8c01d259a08d75c5049b2bd5f579648262c30a4
-Author: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Date:   Tue Dec 10 09:32:37 2013 -0300
-
-    dma: mv_xor: Add DMA API error checks
-   =20
-    This commit adds proper error checking for various DMA API calls,
-    as reported by DMA_API_DEBUG=3Dy.
-   =20
-    Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit 1fde2548460c1ded9fe71220b506473f0b7de768
-Author: Yijing Wang <wangyijing@huawei.com>
-Date:   Thu Dec 5 19:31:18 2013 +0800
-
-    ioat/dca: Use dev_is_pci() to check whether it is pci device
-   =20
-    Use PCI standard marco dev_is_pci() instead of directly compare
-    pci_bus_type to check whether it is pci device.
-   =20
-    Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-
---=-QxoVZTT4PIcYCGCvCT3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABAgAGBQJUKDsQAAoJEB7SkWpmfYgCd1oP/Rs2UO3n0mm3gDQ7rzitBr+y
-T1WtHDR+eZnOLpejOH8H6cduNO3vu7qIZ54lHNh+M+jde/vtc3fYyrBoiHs+VsY3
-NOT3HlHm+bMHgv1U38Qq4W5Tt73lTIcudBbfmZhVy4P+g9A2b1qbm/xjEM9N218X
-TSuYT1R8WLvyeq06wCN51g6/jhTSPeBMoDR4flrwzSo8xy1HIvTcDtBDk+pHZ6NI
-oJKjck8NvLvsIglpSpPz3bXMadLjUBP1ktJqkErVYrMPgr/xV1o/Xl+pmZgF5aws
-7M9o/V55dHV7Lw/5rq2RtKFh2rwFRwi4eeBiRB5I/AdIZ8NcWNm8bijkpU/wu5vA
-EWONNwefSOtJlOTEE9Aw8rbtTRxPaLg+9b0lgz3gVRV/TdF4/w1LWXAiao3nGPV4
-iASVoiaIM8Gdczx5Aj9/hAQxorhHgtZuJ0V0xNp8YoNvrd0oNHgS/hIzCfGps3QH
-L5rsfxobpcSzYjQoBDqoLNVyr9K0+NaNGrBVIfcw+HnSFf5iujN0p2u5Cuon7Nuk
-7AGhsSUMMs3di9TV9kykirzNZIcDw1Y5JtN7apVEYazZZzIOtFr2eCkwLKcTCgak
-Xw9reotqZVMuIze7MDN5Sb/7zAVgAXl9FSlpBinAEYAZDo9OZtFV5r7XJh+mbYOd
-AK3A27UvoOmB7yB1SCgB
-=YLmI
------END PGP SIGNATURE-----
-
---=-QxoVZTT4PIcYCGCvCT3l--
-
+Hi Luis,
+
+Thanks for the patches and the detailed analysis.
+
+Feel free to add
+
+Acked-by: Tom Gundersen <teg@jklm.no>
+
+Minor comments on the commit message below.
+
+On Fri, Sep 26, 2014 at 11:57 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>
+> Some init systems may wish to express the desire to have
+> device drivers run their device driver's bus probe() run
+> asynchronously. This implements support for this and
+> allows userspace to request async probe as a preference
+> through a generic shared device driver module parameter,
+> async_probe. Implemention for async probe is supported
+> through a module parameter given that since synchronous
+> probe has been prevalent for years some userspace might
+> exist which relies on the fact that the device driver will
+> probe synchronously and the assumption that devices it
+> provides will be immediately available after this.
+>
+> Some device driver might not be able to run async probe
+> so we enable device drivers to annotate this to prevent
+> this module parameter from having any effect on them.
+>
+> This implementation uses queue_work(system_unbound_wq)
+> to queue async probes, this should enable probe to run
+> slightly *faster* if the driver's probe path did not
+> have much interaction with other workqueues otherwise
+> it may run _slightly_ slower. Tests were done with cxgb4,
+> which is known to take long on probe, both without
+> having to run request_firmware() [0] and then by
+> requiring it to use request_firmware() [1]. The
+> difference in run time are only measurable in microseconds:
+>
+> =====================================================================|
+> strategy                                fw (usec)       no-fw (usec) |
+> ---------------------------------------------------------------------|
+> synchronous                             24472569        1307563      |
+> kthread                                 25066415.5      1309868.5    |
+> queue_work(system_unbound_wq)           24913661.5      1307631      |
+> ---------------------------------------------------------------------|
+>
+> In practice, in seconds, the difference is barely noticeable:
+>
+> =====================================================================|
+> strategy                                fw (s)          no-fw (s)    |
+> ---------------------------------------------------------------------|
+> synchronous                             24.47           1.31         |
+> kthread                                 25.07           1.31         |
+> queue_work(system_unbound_wq)           24.91           1.31         |
+> ---------------------------------------------------------------------|
+>
+> [0] http://ftp.suse.com/pub/people/mcgrof/async-probe/probe-cgxb4-no-firmware.png
+> [1] http://ftp.suse.com/pub/people/mcgrof/async-probe/probe-cgxb4-firmware.png
+>
+> The rest of the commit log documents why this feature was implemented
+> primarily first for systemd and things it should consider next.
+>
+> Systemd has a general timeout for all workers currently set to 180
+> seconds after which it will send a sigkill signal. Systemd now has a
+> warning which is issued once it reaches 1/3 of the timeout. The original
+> motivation for the systemd timeout was to help track device drivers
+> which do not use asynch firmware loading on init() and the timeout was
+> originally set to 30 seconds.
+
+Please note that the motivation for the timeout in systemd had nothing
+to do with async firmware loading (that was just the case where
+problems cropped up). The motivation was to not allow udev-workers to
+stay around indefinitely, and hence put an upper-bound on
+their duration (initially 180 s). At some point the bound was reduced
+to 30 seconds to make sure module-loading would bail out before the
+kernel's firmware loading timeout would bail out (60s I believe). That
+is no longer relevant, which is why it was safe to reset the timeout
+to 180 s.
+
+> Since systemd + kernel are heavily tied in for the purposes of this
+> patch it is assumed you have merged on systemd the following
+> commits:
+>
+> 671174136525ddf208cdbe75d6d6bd159afa961f        udev: timeout - warn after a third of the timeout before killing
+> b5338a19864ac3f5632aee48069a669479621dca        udev: timeout - increase timeout
+> 2e92633dbae52f5ac9b7b2e068935990d475d2cd        udev: bump event timeout to 60 seconds
+> be2ea723b1d023b3d385d3b791ee4607cbfb20ca        udev: remove userspace firmware loading support
+> 9f20a8a376f924c8eb5423cfc1f98644fc1e2d1a        udev: fixup commit
+> dd5eddd28a74a49607a8fffcaf960040dba98479        udev: unify event timeout handling
+> 9719859c07aa13539ed2cd4b31972cd30f678543        udevd: add --event-timeout commandline option
+>
+> Since we bundle together serially driver init() and probe()
+> on module initialiation systemd's imposed timeout  put a limit on the
+> amount of time a driver init() and probe routines can take. There's a
+> few overlooked issues with this and the timeout in general:
+>
+> 0) Not all drivers are killed, the signal is just sent and
+>    the kill will only be acted upoon if the driver you loaded
+>    happens to have some code path that either uses kthreads (which
+>    as of 786235ee are now killable), or uses some code which checks for
+>    fatal_signal_pending() on the kernel somewhere -- i.e: pci_read_vpd().
+
+Shouldn't this be seen as something to be fixed in the kernel? I mean,
+do we not want userspace to have the possibility to kill udev/modprobe
+even disregarding the worker timeouts (say at shutdown, or before
+switching from the initrd)?
+
+> 1) Since systemd is the only one logging the sigkill debugging that
+>    drivers are not loaded or in the worst case *failed to boot* because
+>    of a sigkill has proven hard to debug.
+
+Care to clarify this a bit? Are the udev logs somehow unclear? If you
+think we can improve the logging from udev, please ping me about that
+and I'll sort it out.
+
+> 2) When and if the signal is received by the driver somehow
+>    the driver may fail at different points in its initialization
+>    and unless all error paths on the driver are implemented
+>    perfectly this could mean leaving a device in a half
+>    initialized state.
+>
+> 3) The timeout is penalizing device drivers that take long on
+>    probe(), this wasn't the original motivation. Systemd seems
+>    to have been under assumption that probe was asynchronous,
+>    this perhaps is true as an *objective* and goal for *some
+>    subsystems* but by no means is it true that we've been on a wide
+>    crusade to ensure this for all device drivers. It may be a good
+>    idea for *many* device drivers but penalizing them with a kill
+>    for taking long on probe is simply unacceptable specially
+>    when the timeout is completely arbitrary.
+
+The point is really not to "penalize" anything, we just need to make
+sure we put some sort of restrictions on our workers so they don't
+hang around forever.
+
+> 4) The driver core calls probe for *all* devices that a driver can
+>    claim and it does so serially, so if a device driver will need
+>    to probe 3 devices and if probe on the device driver is synchronous
+>    the amount of time that module loading will take will be:
+>
+>    driver load time = init() + probe for 3 devices serially
+>
+>    The timeout ultimatley ends up limiting the number of devices that
+>    *any* device driver can support based on the following formula:
+>
+>    number_devices =          systemd_timeout
+>                       -------------------------------------
+>                          max known probe time for driver
+>
+>    Lastly since the error value passed down is the value of
+>    the probe for the last device probed the module will fail
+>    to load and all devices will fail to be available.
+>
+> In the Linux kernel we don't want to work around the timeout,
+> instead systemd must be changed to take all the above into
+> consideration when issuing any kills on device drivers, ideally
+> the sigkill should be considered to be ignored at least for
+> kmod. In addition to this we help systemd by giving it what it
+> originally considered was there and enable it to ask device
+> drivers to use asynchronous probe. This patch addresses that
+> feature.
+>
+> Systemd should consider enabling async probe on device drivers
+> it loads through systemd-udev but probably does not want to
+> enable it for modules loaded through systemd-modules-load
+> (modules-load.d). At least on my booting enablign async probe
+> for all modules fails to boot as such in order to make this
+> a bit more useful we whitelist a few buses where it should be
+> at least in theory safe to try to enable async probe. This
+> way even if systemd tried to ask to enable async probe for all
+> its device drivers the kernel won't blindly do this. We also
+> have the sync_probe flag which device drivers can themselves
+> enable *iff* its known the device driver should never async
+> probe.
+>
+> In order to help *test* things folks can use the bus.safe_mod_async_probe=1
+> kernel parameter which will work as if userspace would have
+> requested all modules to load with async probe. Daring folks can
+> also use bus.force_mod_async_probe=1 which will enable asynch probe
+> even on buses not tested in any way yet, if you use that though
+> you're on your own.
+>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+> Cc: Tim Gardner <tim.gardner@canonical.com>
+> Cc: Pierre Fersing <pierre-fersing@pierref.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Benjamin Poirier <bpoirier@suse.de>
+> Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+> Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>
+> Cc: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+> Cc: Abhijit Mahajan <abhijit.mahajan@avagotech.com>
+> Cc: Casey Leedom <leedom@chelsio.com>
+> Cc: Hariprasad S <hariprasad@chelsio.com>
+> Cc: Santosh Rastapur <santosh@chelsio.com>
+> Cc: MPT-FusionLinux.pdl@avagotech.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> ---
+>  drivers/base/base.h    |   6 +++
+>  drivers/base/bus.c     | 137 +++++++++++++++++++++++++++++++++++++++++++++++--
+>  drivers/base/dd.c      |   7 +++
+>  include/linux/module.h |   2 +
+>  kernel/module.c        |  12 ++++-
+>  5 files changed, 159 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/base/base.h b/drivers/base/base.h
+> index 251c5d3..24836f1 100644
+> --- a/drivers/base/base.h
+> +++ b/drivers/base/base.h
+> @@ -43,11 +43,17 @@ struct subsys_private {
+>  };
+>  #define to_subsys_private(obj) container_of(obj, struct subsys_private, subsys.kobj)
+>
+> +struct driver_attach_work {
+> +       struct work_struct work;
+> +       struct device_driver *driver;
+> +};
+> +
+>  struct driver_private {
+>         struct kobject kobj;
+>         struct klist klist_devices;
+>         struct klist_node knode_bus;
+>         struct module_kobject *mkobj;
+> +       struct driver_attach_work *attach_work;
+>         struct device_driver *driver;
+>  };
+>  #define to_driver(obj) container_of(obj, struct driver_private, kobj)
+> diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+> index a5f41e4..41e321e6 100644
+> --- a/drivers/base/bus.c
+> +++ b/drivers/base/bus.c
+> @@ -85,6 +85,7 @@ static void driver_release(struct kobject *kobj)
+>         struct driver_private *drv_priv = to_driver(kobj);
+>
+>         pr_debug("driver: '%s': %s\n", kobject_name(kobj), __func__);
+> +       kfree(drv_priv->attach_work);
+>         kfree(drv_priv);
+>  }
+>
+> @@ -662,10 +663,125 @@ static void remove_driver_private(struct device_driver *drv)
+>         struct driver_private *priv = drv->p;
+>
+>         kobject_put(&priv->kobj);
+> +       kfree(priv->attach_work);
+>         kfree(priv);
+>         drv->p = NULL;
+>  }
+>
+> +static void driver_attach_workfn(struct work_struct *work)
+> +{
+> +       int ret;
+> +       struct driver_attach_work *attach_work =
+> +               container_of(work, struct driver_attach_work, work);
+> +       struct device_driver *drv = attach_work->driver;
+> +       ktime_t calltime, delta, rettime;
+> +       unsigned long long duration;
+> +
+> +       calltime = ktime_get();
+> +
+> +       ret = driver_attach(drv);
+> +       if (ret != 0) {
+> +               remove_driver_private(drv);
+> +               bus_put(drv->bus);
+> +       }
+> +
+> +       rettime = ktime_get();
+> +       delta = ktime_sub(rettime, calltime);
+> +       duration = (unsigned long long) ktime_to_ns(delta) >> 10;
+> +
+> +       pr_debug("bus: '%s': add driver %s attach completed after %lld usecs\n",
+> +                drv->bus->name, drv->name, duration);
+> +}
+> +
+> +int bus_driver_async_probe(struct device_driver *drv)
+> +{
+> +       struct driver_private *priv = drv->p;
+> +
+> +       priv->attach_work = kzalloc(sizeof(struct driver_attach_work),
+> +                                   GFP_KERNEL);
+> +       if (!priv->attach_work)
+> +               return -ENOMEM;
+> +
+> +       priv->attach_work->driver = drv;
+> +       INIT_WORK(&priv->attach_work->work, driver_attach_workfn);
+> +
+> +       /* Keep this as pr_info() until this is prevalent */
+> +       pr_info("bus: '%s': probe for driver %s is run asynchronously\n",
+> +                drv->bus->name, drv->name);
+> +
+> +       queue_work(system_unbound_wq, &priv->attach_work->work);
+> +
+> +       return 0;
+> +}
+> +
+> +/*
+> + */
+> +static bool safe_mod_async = false;
+> +module_param_named(safe_mod_async_probe, safe_mod_async, bool, 0400);
+> +MODULE_PARM_DESC(safe_mod_async_probe,
+> +                "Enable async probe on all modules safely");
+> +
+> +static bool force_mod_async = false;
+> +module_param_named(force_mod_async_probe, force_mod_async, bool, 0400);
+> +MODULE_PARM_DESC(force_mod_async_probe,
+> +                "Force async probe on all modules");
+> +
+> +/**
+> + * drv_enable_async_probe - evaluates if async probe should be used
+> + * @drv: device driver to evaluate
+> + * @bus: the bus for the device driver
+> + *
+> + * The driver core supports enabling asynchronous probe on device drivers
+> + * by requiring userspace to pass the module parameter "async_probe".
+> + * Currently only modules are enabled to use this feature. If a device
+> + * driver is known to not work properly with asynchronous probe they
+> + * can force disable asynchronous probe from being enabled through
+> + * userspace by adding setting sync_probe to true on the @drv. We require
+> + * async probe to be requested from userspace given that we have historically
+> + * supported synchronous probe and some userspaces may exist which depend
+> + * on this functionality. Userspace may wish to use asynchronous probe for
+> + * most device drivers but since this can fail boot in practice we only
+> + * enable it currently for a set of buses.
+> + *
+> + * If you'd like to test enabling async probe for all buses whitelisted
+> + * you can enable the safe_mod_async_probe module parameter. Note that its
+> + * not a good idea to always enable this, in particular you probably don't
+> + * want drivers under modules-load.d to use this. This module parameter should
+> + * only be used to help test. If you'd like to test even futher you can
+> + * use force_mod_async_probe, that will force enable async probe on all
+> + * drivers, regardless if its bus type, it should however be used with
+> + * caution.
+> + */
+> +static bool drv_enable_async_probe(struct device_driver *drv,
+> +                                  struct bus_type *bus)
+> +{
+> +       struct module *mod;
+> +
+> +       if (!drv->owner || drv->sync_probe)
+> +               return false;
+> +
+> +       if (force_mod_async)
+> +               return true;
+> +
+> +       mod = drv->owner;
+> +       if (!safe_mod_async && !mod->async_probe_requested)
+> +               return false;
+> +
+> +       /* For now lets avoid stupid bug reports */
+> +       if (!strcmp(bus->name, "pci") ||
+> +           !strcmp(bus->name, "pci_express") ||
+> +           !strcmp(bus->name, "hid") ||
+> +           !strcmp(bus->name, "sdio") ||
+> +           !strcmp(bus->name, "gameport") ||
+> +           !strcmp(bus->name, "mmc") ||
+> +           !strcmp(bus->name, "i2c") ||
+> +           !strcmp(bus->name, "platform") ||
+> +           !strcmp(bus->name, "usb"))
+> +               return true;
+> +
+> +       return false;
+> +}
+> +
+>  /**
+>   * bus_add_driver - Add a driver to the bus.
+>   * @drv: driver.
+> @@ -675,6 +791,7 @@ int bus_add_driver(struct device_driver *drv)
+>         struct bus_type *bus;
+>         struct driver_private *priv;
+>         int error = 0;
+> +       bool async_probe = false;
+>
+>         bus = bus_get(drv->bus);
+>         if (!bus)
+> @@ -696,11 +813,19 @@ int bus_add_driver(struct device_driver *drv)
+>         if (error)
+>                 goto out_unregister;
+>
+> +       async_probe = drv_enable_async_probe(drv, bus);
+> +
+>         klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+>         if (drv->bus->p->drivers_autoprobe) {
+> -               error = driver_attach(drv);
+> -               if (error)
+> -                       goto out_unregister;
+> +               if (async_probe) {
+> +                       error = bus_driver_async_probe(drv);
+> +                       if (error)
+> +                               goto out_unregister;
+> +               } else {
+> +                       error = driver_attach(drv);
+> +                       if (error)
+> +                               goto out_unregister;
+> +               }
+>         }
+>         module_add_driver(drv->owner, drv);
+>
+> @@ -1267,6 +1392,12 @@ EXPORT_SYMBOL_GPL(subsys_virtual_register);
+>
+>  int __init buses_init(void)
+>  {
+> +       if (unlikely(safe_mod_async))
+> +               pr_info("Enabled safe_mod_async -- you may run into issues\n");
+> +
+> +       if (unlikely(force_mod_async))
+> +               pr_info("Enabling force_mod_async -- you're on your own!\n");
+> +
+>         bus_kset = kset_create_and_add("bus", &bus_uevent_ops, NULL);
+>         if (!bus_kset)
+>                 return -ENOMEM;
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index e4ffbcf..7999aba 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -507,6 +507,13 @@ static void __device_release_driver(struct device *dev)
+>
+>         drv = dev->driver;
+>         if (drv) {
+> +               if (drv->owner && !drv->sync_probe) {
+> +                       struct module *mod = drv->owner;
+> +                       struct driver_private *priv = drv->p;
+> +
+> +                       if (mod->async_probe_requested)
+> +                               flush_work(&priv->attach_work->work);
+> +               }
+>                 pm_runtime_get_sync(dev);
+>
+>                 driver_sysfs_remove(dev);
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index 71f282a..1e9e017 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -271,6 +271,8 @@ struct module {
+>         bool sig_ok;
+>  #endif
+>
+> +       bool async_probe_requested;
+> +
+>         /* symbols that will be GPL-only in the near future. */
+>         const struct kernel_symbol *gpl_future_syms;
+>         const unsigned long *gpl_future_crcs;
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 88f3d6c..31d71ff 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -3175,8 +3175,16 @@ out:
+>  static int unknown_module_param_cb(char *param, char *val, const char *modname,
+>                                    void *arg)
+>  {
+> +       int ret;
+> +       struct module *mod = arg;
+> +
+> +       if (strcmp(param, "async_probe") == 0) {
+> +               mod->async_probe_requested = true;
+> +               return 0;
+> +       }
+> +
+>         /* Check for magic 'dyndbg' arg */
+> -       int ret = ddebug_dyndbg_module_param_cb(param, val, modname);
+> +       ret = ddebug_dyndbg_module_param_cb(param, val, modname);
+>         if (ret != 0)
+>                 pr_warn("%s: unknown parameter '%s' ignored\n", modname, param);
+>         return 0;
+> @@ -3278,7 +3286,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+>
+>         /* Module is ready to execute: parsing args may do that. */
+>         after_dashes = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
+> -                                 -32768, 32767, NULL,
+> +                                 -32768, 32767, mod,
+>                                   unknown_module_param_cb);
+>         if (IS_ERR(after_dashes)) {
+>                 err = PTR_ERR(after_dashes);
+> --
+> 2.1.0
+>
