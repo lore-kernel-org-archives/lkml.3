@@ -1,134 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaI1KXy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:23:54 -0400
-Received: from mail-pa0-f68.google.com ([209.85.220.68]:50922 "EHLO
-	mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbaI1KXv (ORCPT
+	id S1753625AbaI1Kdw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:33:52 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50086 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaI1Kdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:23:51 -0400
-From: "jinkun.hong" <jinkun.hong@rock-chips.com>
-To: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, dianders@chromium.org,
-        Heiko Stuebner <heiko@sntech.de>
-Cc: linux-rockchip@lists.infradead.org,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>,
-        Jack Dai <jack.dai@rock-chips.com>
-Subject: [PATCH v2 3/3] ARM: dts: add rk3288 power-domain node
-Date: Sun, 28 Sep 2014 03:22:54 -0700
-Message-Id: <1411899774-8484-4-git-send-email-jinkun.hong@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
-References: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
+	Sun, 28 Sep 2014 06:33:50 -0400
+Date: Sun, 28 Sep 2014 11:33:01 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Romain Perier <romain.perier@gmail.com>
+Cc: heiko@sntech.de, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Message-ID: <20140928103301.GN27755@sirena.org.uk>
+References: <1411834906-9533-1-git-send-email-romain.perier@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rdeY6f/ml8+xnc5C"
+Content-Disposition: inline
+In-Reply-To: <1411834906-9533-1-git-send-email-romain.perier@gmail.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.249.138
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v1 1/3] regulator: act8865: Add support to turn off all
+ outputs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
-Signed-off-by: Jack Dai <jack.dai@rock-chips.com>
-Signed-off-by: jinkun.hong <jinkun.hong@rock-chips.com>
+--rdeY6f/ml8+xnc5C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
+On Sat, Sep 27, 2014 at 04:21:44PM +0000, Romain Perier wrote:
+> When the property "active-semi,system-power-controller" is found in the
+> devicetree, the function pm_power_off is defined. This function sends the
+> rights bit fields to the global off control register. shutdown/poweroff
+> commands are now supported for hardware components which use these PMU.
 
-Changes in v2:
-Adviced by Daniel
-- make pd_vio clocks all one entry per line and alphabetize.
-Adviced by Heiko
-- power: power-controller move back to pinctrl: pinctrl.
+We really need to come up with a standard property for this and document
+it rather than continuing to add individual device specific properties
+all doing the same thing, and probably also some helper code and/or a
+standard operation for this - there's a lot of drivers implementing the
+same pattern here.
 
- arch/arm/boot/dts/rk3288.dtsi |   67 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
+> +	if (dev->of_node &&
+> +	    of_property_read_bool(dev->of_node,
+> +				  "active-semi,system-power-controller")) {
+> +		act8865_i2c_client = client;
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 54ec8c8..8ad77c5 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -15,6 +15,7 @@
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/pinctrl/rockchip.h>
- #include <dt-bindings/clock/rk3288-cru.h>
-+#include <dt-bindings/power-domain/rk3288.h>
- #include "skeleton.dtsi"
- 
- / {
-@@ -1004,4 +1005,70 @@
- 			};
- 		};
- 	};
-+
-+	power: power-controller {
-+		compatible = "rockchip,rk3288-power-controller";
-+		#power-domain-cells = <1>;
-+		rockchip,pmu = <&pmu>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		pd_gpu {
-+			reg = <RK3288_PD_GPU>;
-+			clocks = <&cru ACLK_GPU>;
-+		};
-+
-+		pd_hevc {
-+			reg = <RK3288_PD_HEVC>;
-+			clocks = <&cru ACLK_HEVC>,
-+				 <&cru SCLK_HEVC_CABAC>,
-+				 <&cru SCLK_HEVC_CORE>,
-+				 <&cru HCLK_HEVC>;
-+		};
-+
-+		pd_vio {
-+			reg = <RK3288_PD_VIO>;
-+			clocks = <&cru ACLK_IEP>,
-+				 <&cru ACLK_ISP>,
-+				 <&cru ACLK_RGA_NIU>,
-+				 <&cru ACLK_RGA>,
-+				 <&cru ACLK_VIO0_NIU>,
-+				 <&cru ACLK_VIO1_NIU>,
-+				 <&cru ACLK_VIP>,
-+				 <&cru ACLK_VOP0>,
-+				 <&cru ACLK_VOP1>,
-+				 <&cru DCLK_VOP0>,
-+				 <&cru DCLK_VOP1>,
-+				 <&cru HCLK_IEP>,
-+				 <&cru HCLK_ISP>,
-+				 <&cru HCLK_RGA>,
-+				 <&cru HCLK_VIO_AHB_ARBI>,
-+				 <&cru HCLK_VIO_NIU>,
-+				 <&cru HCLK_VIO2_H2P>,
-+				 <&cru HCLK_VIP>,
-+				 <&cru HCLK_VOP0>,
-+				 <&cru HCLK_VOP1>,
-+				 <&cru PCLK_EDP_CTRL>,
-+				 <&cru PCLK_HDMI_CTRL>,
-+				 <&cru PCLK_LVDS_PHY>,
-+				 <&cru PCLK_MIPI_CSI>,
-+				 <&cru PCLK_MIPI_DSI0>,
-+				 <&cru PCLK_MIPI_DSI1>,
-+				 <&cru PCLK_VIO2_H2P>,
-+				 <&cru SCLK_EDP_24M>,
-+				 <&cru SCLK_EDP>,
-+				 <&cru SCLK_HDMI_CEC>,
-+				 <&cru SCLK_HDMI_HDCP>,
-+				 <&cru SCLK_ISP_JPE>,
-+				 <&cru SCLK_ISP>,
-+				 <&cru SCLK_RGA>;
-+		};
-+
-+		pd_video {
-+			reg = <RK3288_PD_VIDEO>;
-+			/* FIXME: add clocks */
-+			clocks = <&cru ACLK_VCODEC>,
-+				 <&cru HCLK_VCODEC>;
-+		};
-+	};
- };
--- 
-1.7.9.5
+Indentation seems messed up here - tabs vs spaces?
 
+--rdeY6f/ml8+xnc5C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUJ+PcAAoJECTWi3JdVIfQBRsH/jG9HiRNk1r92AiGwMqUGWAq
+DrykyN7xeX0riwKdWWJSfV/2B4a3QMmgkpf3bjQapgEKHH+/RkMBPsFPhygDwn7L
+NNgRrolQ+KV0Q7Z209X4QaGQAgrIM+lCxim9c50DIrkhXqQ5j9SZc6/7LyIUfXXY
+B1s6gHexwZQhX4bEkD8ynMRgk77/vyBTsywbbEOqbBxWsEZt/fp2ZiRKJ0eplv9f
+FaHKBwaUyVyGqrRFPBnqnfO3/ZkCExpQ9mZnKe2ZPMFFPOggx6F1cVCNA0jK9uQz
+bWWnVJLIWg2xRA3TWezrbdUaF8dmZ2zyZDYS7NKUeOJCTF4u0EQ8ATRGax6+SuA=
+=VddQ
+-----END PGP SIGNATURE-----
+
+--rdeY6f/ml8+xnc5C--
