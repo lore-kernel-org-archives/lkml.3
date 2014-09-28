@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaI1KyH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:54:07 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818AbaI1KyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:54:05 -0400
-Message-ID: <5427E8CA.8000904@nod.at>
-Date: Sun, 28 Sep 2014 12:54:02 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753608AbaI1K4t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:56:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50274 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaI1K4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 06:56:48 -0400
+Date: Sun, 28 Sep 2014 11:56:04 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <20140928105604.GT27755@sirena.org.uk>
+References: <1411895394-25250-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedeking1@gmail.com
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
-References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org> <5427CCD8.2090605@nod.at> <5427E6FE.3090906@codeaurora.org>
-In-Reply-To: <5427E6FE.3090906@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KS5V1uDxmEcBh2BA"
+Content-Disposition: inline
+In-Reply-To: <1411895394-25250-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 92.40.249.138
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing
+ error.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.09.2014 12:46, schrieb Tanya Brokhman:
-> On 9/28/2014 11:54 AM, Richard Weinberger wrote:
->> Am 28.09.2014 10:48, schrieb Tanya Brokhman:
->>>>> @@ -424,6 +440,8 @@ struct ubi_fm_sb {
->>>>>        __be32 used_blocks;
->>>>>        __be32 block_loc[UBI_FM_MAX_BLOCKS];
->>>>>        __be32 block_ec[UBI_FM_MAX_BLOCKS];
->>>>> +    __be32 block_rc[UBI_FM_MAX_BLOCKS];
->>>>> +    __be64 block_let[UBI_FM_MAX_BLOCKS];
->>>>
->>>> Doesn't this break the fastmap on-disk layout?
->>>
->>> What do you mean "break"? I verified fastmap feature is working. the whole read-disturb depends on it so I tested this thoroughly.
->>
->> Did you write a fastmap with your changes applied and then an attach using a fastmap implementation *without*
->> you changes?
->> I bet it will not work because the disk layout is now different.
-> 
-> you're right, it wont work. I did a set of attach/detach tests to verify fastmap, but of course with my changes.
-> 
->> Linux is not the only user of fastmap. We need to be very careful here.
-> 
-> Could you please elaborate here? I'm not sure I understand the use case you're referring to.
 
-Consider the case where you have a board with a fastmap enabled bootloader and a Linux OS.
-The bootloader does a fastmap attach and boots the kernel from UBI and the kernel it self has the rootfs
-on UBI too. If you install a new kernel with your changes applied it will write the fastmap in a different
-format and the bootloader will fail badly. In worst case the board bricks, in best case the bootloader can fall back
-to scanning mode but it will be slow and the customer unhappy.
+--KS5V1uDxmEcBh2BA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Sep 28, 2014 at 05:09:54PM +0800, Xiubo Li wrote:
+> Since we cannot make sure the 'val_count' will always be none zero
+> here, and then if it equals to zero, the kmemdup() will return
+> ZERO_SIZE_PTR, which equals to ((void *)16).
 
-Thanks,
-//richard
+Applied, thanks. =20
 
+> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+> index 455a877..3d93e38 100644
+> --- a/drivers/base/regmap/regmap.c
+> +++ b/drivers/base/regmap/regmap.c
+> @@ -1716,6 +1716,9 @@ out:
+
+Whatever you're using to generate the patches isn't annotating with the
+function being changed like git normally does which isn't great for
+working out what the best return value should be.
+
+--KS5V1uDxmEcBh2BA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUJ+lDAAoJECTWi3JdVIfQvo0H/iwWTcSMpQOBMbnhgWChG5QV
+94zu6+mdZ9Cs+FZc+ukJRPeGm4Q9fc01ZIxEGWS7nFXcujxSnzzBMwz4H9BDd1BP
+wok8e8m7PXWz/C+G8XXBg4Y/F5CoJnEBsfC50ifxvuMMmb9/8TtZYlrQMMOdgoQQ
+1QY0ipYfysfzwZVUBFIt3nTztat5ZDLkAyARxpSyDLC7fJMNLraV4adPQ7RIZlZj
+P9Q7Q6qPrGhhOGbutZMSP1z/+yIc+c86DC6Jx7KzTtlP8ZZdVCiH51wescFhLNn/
+7PKtanDtcvminber8rI2pl90qX007oX6vnc54/sRQbHkQgH4MBannwy7TQ0xhrY=
+=W0oE
+-----END PGP SIGNATURE-----
+
+--KS5V1uDxmEcBh2BA--
