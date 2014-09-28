@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaI1Kja (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:39:30 -0400
-Received: from regular1.263xmail.com ([211.150.99.131]:48047 "EHLO
+	id S1753985AbaI1Kjk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:39:40 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:45333 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776AbaI1KjY (ORCPT
+	with ESMTP id S1753831AbaI1Kj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:39:24 -0400
+	Sun, 28 Sep 2014 06:39:28 -0400
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: wxt@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 58.22.7.114
 X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <4315a9c85c07bbeaab9dde695fc2f3ec>
+X-UNIQUE-TAG: <5d91b1184839a8ae7a37b5494690b4a1>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Caesar Wang <caesar.wang@rock-chips.com>
@@ -27,9 +27,9 @@ Cc: dmitry.torokhov@gmail.com, arnd@arndb.de, zyf@rock-chips.com,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, cf@rock-chips.com, dbasehore@chromium.org,
         huangtao@rock-chips.com, Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v7 2/5] dt-bindings: document Rockchip thermal
-Date: Sun, 28 Sep 2014 18:38:10 +0800
-Message-Id: <1411900693-30484-3-git-send-email-caesar.wang@rock-chips.com>
+Subject: [PATCH v7 3/5] ARM: dts: add RK3xxx CPU Thermal data
+Date: Sun, 28 Sep 2014 18:38:11 +0800
+Message-Id: <1411900693-30484-4-git-send-email-caesar.wang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411900693-30484-1-git-send-email-caesar.wang@rock-chips.com>
 References: <1411900693-30484-1-git-send-email-caesar.wang@rock-chips.com>
@@ -37,52 +37,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+This patch changes a dtsi file to contain the thermal data
+on RK3288 and later SoCs. This data will
+enable a thermal shutdown over 125C.
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
 Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
 ---
- .../bindings/thermal/rockchip-thermal.txt          | 32 ++++++++++++++++++++++
+ arch/arm/boot/dts/rk3xxx-cpu-thermal.dtsi | 32 +++++++++++++++++++++++++++++++
  1 file changed, 32 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 arch/arm/boot/dts/rk3xxx-cpu-thermal.dtsi
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+diff --git a/arch/arm/boot/dts/rk3xxx-cpu-thermal.dtsi b/arch/arm/boot/dts/rk3xxx-cpu-thermal.dtsi
 new file mode 100644
-index 0000000..a558bed
+index 0000000..8888f7e
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
++++ b/arch/arm/boot/dts/rk3xxx-cpu-thermal.dtsi
 @@ -0,0 +1,32 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
++/*
++ * Device Tree Source for RK3XXX SoC CPU thermal
++ *
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
 +
-+Required properties:
-+- compatible: "rockchip,rk3288-tsadc"
-+- reg: physical base address of the controller and length of memory mapped
-+       region.
-+- interrupts: The interrupt number to the cpu. The interrupt specifier format
-+	      depends on the interrupt controller.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+	       the peripheral clock.
-+- #thermal-sensor-cells: Should be 1. See ./thermal.txt for a description.
++#include <dt-bindings/thermal/thermal.h>
 +
-+Exiample:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+};
++cpu_thermal: cpu_thermal {
++	polling-delay-passive = <500>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
 +
-+Example: referring to thermal sensors:
-+thermal-zones {
-+        cpu {
-+                polling-delay-passive = <2000>;
-+                polling-delay = <1000>;
++			/* sensor       ID */
++        thermal-sensors = <&tsadc     0>;
 +
-+                thermal-sensors =
-+                        <&tsadc 0>;
++        trips {
++                cpu_alert0: cpu_alert {
++                        temperature = <800000>; /* millicelsius */
++                        hysteresis = <2000>; /* millicelsius */
++                        type = "passive";
++                };
++                cpu_crit: cpu_crit {
++                        temperature = <125000>; /* millicelsius */
++                        hysteresis = <2000>; /* millicelsius */
++                        type = "critical";
++                };
 +        };
 +};
 -- 
