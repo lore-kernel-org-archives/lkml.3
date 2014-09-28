@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaI1PCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 11:02:14 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:38357 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaI1PCM (ORCPT
+	id S1753852AbaI1PCh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 11:02:37 -0400
+Received: from pegasus3.altlinux.org ([194.107.17.103]:39112 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbaI1PCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 11:02:12 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        dm-devel@redhat.com (maintainer:DEVICE-MAPPER (LVM)),
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org (open list)
-Cc: paulmck@vger.kernel.org
-Subject: [PATCH] drivers/md: Use rcu_dereference() for accessing rcu pointer
-Date: Sun, 28 Sep 2014 11:01:29 -0400
-Message-Id: <1411916497-17071-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Sep 2014 11:02:35 -0400
+Date: Sun, 28 Sep 2014 19:01:58 +0400
+From: Mikhail Efremov <sem@altlinux.ru>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Mikhail Efremov <sem@altlinux.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames
+ unconditionally.
+Message-ID: <20140928190158.796d4c18@sem-notebook>
+In-Reply-To: <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
+	<20140924185521.GC7996@ZenIV.linux.org.uk>
+	<CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
+	<20140924201813.GI7996@ZenIV.linux.org.uk>
+	<20140925044601.GL7996@ZenIV.linux.org.uk>
+	<20140926164442.GA26897@ZenIV.linux.org.uk>
+	<20140927044555.GS7996@ZenIV.linux.org.uk>
+	<CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.21; x86_64-alt-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The map field in 'struct mapped_device' is an rcu pointer. Use rcu_dereference()
-while accessing it.
+On Sat, 27 Sep 2014 10:56:57 -0700 Linus Torvalds wrote:
+> (And Mikhail - I'm not ragging on you, even if I'm ragging on the
+> patch. I understand why you did it the way you did, and it makes sense
+> exactly in the "let's reinstate old hackery" model. I just think we
+> can and should do better than that, now that the "exchange" vs "move
+> over" semantics are so explicit).
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- drivers/md/dm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Well, I can't argue with the fact that this patch is ugly, especially
+after all this discussion.
+I just hope that the right solution will be implemented soon and this
+ugly hack will be dropped.
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 746411b..fbdf0bb 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2211,7 +2211,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
- 
- 	merge_is_optional = dm_table_merge_is_optional(t);
- 
--	old_map = md->map;
-+	old_map = rcu_dereference(md->map);
- 	rcu_assign_pointer(md->map, t);
- 	md->immutable_target_type = dm_table_get_immutable_target_type(t);
- 
-@@ -2230,7 +2230,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
-  */
- static struct dm_table *__unbind(struct mapped_device *md)
- {
--	struct dm_table *map = md->map;
-+	struct dm_table *map = rcu_dereference(md->map);
- 
- 	if (!map)
- 		return NULL;
-@@ -2624,7 +2624,7 @@ int dm_suspend(struct mapped_device *md, unsigned suspend_flags)
- 		goto out_unlock;
- 	}
- 
--	map = md->map;
-+	map = rcu_dereference(md->map);
- 
- 	/*
- 	 * DMF_NOFLUSH_SUSPENDING must be set before presuspend.
-@@ -2718,7 +2718,7 @@ int dm_resume(struct mapped_device *md)
- 	if (!dm_suspended_md(md))
- 		goto out;
- 
--	map = md->map;
-+	map = rcu_dereference(md->map);
- 	if (!map || !dm_table_get_size(map))
- 		goto out;
- 
+> Al (or Mikhail) - willing to do that extra cleanup? Please?
+
+I'll definetly take a look at this, but I doubt that I will be able to
+implement the right solution soon. Actually this is the first time when
+I look at the kernel code so deeply.
+I hope that someone with much more knowledge of the kernel code than my
+own (Al or Miklos may be) will do that.
+
 -- 
-1.9.1
-
+WBR, Mikhail Efremov
