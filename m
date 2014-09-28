@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671AbaI1HLu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 03:11:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750854AbaI1HLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 03:11:49 -0400
-Date: Sun, 28 Sep 2014 09:09:24 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Nicholas Krause <yocto6@gmail.com>
-Cc: IvDoorn@gmail.com, netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, linux-kernel@vger.kernel.org
-Subject: Re: [rt2x00-users] [PATCH] wireless: Remove unnessary write over of
- register 11 in rt2800lib.c
-Message-ID: <20140928070923.GA2087@redhat.com>
-References: <1411852301-26857-1-git-send-email-yocto6@gmail.com>
+	id S1751985AbaI1HeR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 03:34:17 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51320 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaI1HeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 03:34:15 -0400
+Date: Sun, 28 Sep 2014 00:34:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        "maintainer:DEVICE-MAPPER (LVM)" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>, josh@joshtriplett.org
+Subject: Re: [PATCH] dm: sparse: Annotate field with __rcu for checking
+Message-ID: <20140928073409.GC5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1411671049-20441-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411852301-26857-1-git-send-email-yocto6@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411671049-20441-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092807-6688-0000-0000-00000525CE18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 27, 2014 at 05:11:41PM -0400, Nicholas Krause wrote:
-> This removes the unnecessary  overwrite of register 11 in the function,
-> rt2800_config_channel as we are already writing a correct value to the
-> register with rt2800_rfcsr_write(rt2x00dev,11.rfcsr).
-What make you sure that overwrite is unnecessary ?
-
+On Thu, Sep 25, 2014 at 02:50:43PM -0400, Pranith Kumar wrote:
+> Annotate the map field with __rcu since this is a rcu pointer which is checked
+> by sparse.
 > 
-> Signed-off-by: Nicholas Krause <yocto6@gmail.com>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+
+Queued them both, thank you!
+
+Josh, given this change, are you OK with my applying your Reviewed-by
+to the RCU_INIT_POINTER() patch?
+
+							Thanx, Paul
+
 > ---
->  drivers/net/wireless/rt2x00/rt2800lib.c | 2 --
->  1 file changed, 2 deletions(-)
+>  drivers/md/dm.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
-> index 893c9d5..fb0ae38 100644
-> --- a/drivers/net/wireless/rt2x00/rt2800lib.c
-> +++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-> @@ -2787,8 +2787,6 @@ static void rt2800_config_channel_rf55xx(struct rt2x00_dev *rt2x00dev,
->  
->  	if (rf->channel <= 14) {
->  		rt2800_rfcsr_write(rt2x00dev, 10, 0x90);
-> -		/* FIXME: RF11 owerwrite ? */
-> -		rt2800_rfcsr_write(rt2x00dev, 11, 0x4A);
-We need a prove that remove is correct, i.e. some reference to 
-vendor code or spec that current writing register twice with
-different values is wrong.
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index 32b958d..746411b 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -140,7 +140,7 @@ struct mapped_device {
+>  	 * Use dm_get_live_table{_fast} or take suspend_lock for
+>  	 * dereference.
+>  	 */
+> -	struct dm_table *map;
+> +	struct dm_table __rcu *map;
+> 
+>  	unsigned long flags;
+> 
+> -- 
+> 2.1.0
+> 
 
-NACK for the patch.
-
-Stanislaw
