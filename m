@@ -1,129 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674AbaI1U1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 16:27:09 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:49857 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbaI1U1H (ORCPT
+	id S1753775AbaI1Ufu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 16:35:50 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:46282 "EHLO
+	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753493AbaI1Ufs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 16:27:07 -0400
-Date: Sun, 28 Sep 2014 21:27:02 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI changes for v3.18
-Message-ID: <20140928202702.GB18635@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Sun, 28 Sep 2014 16:35:48 -0400
+Date: Sun, 28 Sep 2014 22:35:41 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>
+Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
+Message-ID: <20140928203541.GA571@spo001.leaseweb.nl>
+References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com> <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1409091237-16722-4-git-send-email-b.galvani@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Hi Beniamino,
 
-This pull request is coming later than I had intended, sorry about that.
-It unfortunately got pushed out by a number of things, chasing bugs,
-releases for other projects, etc.
+> This adds a driver for the watchdog timer available in Ricoh RN5T618
+> PMIC. The device supports a programmable expiration time of 1, 8, 32
+> or 128 seconds.
+> 
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> ---
+>  drivers/watchdog/Kconfig       |   11 +++
+>  drivers/watchdog/Makefile      |    1 +
+>  drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rn5t618.h    |    4 +
+>  4 files changed, 212 insertions(+)
+>  create mode 100644 drivers/watchdog/rn5t618_wdt.c
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index f57312f..9eba6af 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -309,6 +309,17 @@ config ORION_WATCHDOG
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called orion_wdt.
+>  
+> +config RN5T618_WATCHDOG
+> +	tristate "Ricoh RN5T618 watchdog"
+> +	depends on MFD_RN5T618
+> +	select WATCHDOG_CORE
+> +	help
+> +	  If you say yes here you get support for watchdog on the Ricoh
+> +	  RN5T618 PMIC.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called rn5t618_wdt.
+> +
+>  config SUNXI_WATCHDOG
+>  	tristate "Allwinner SoCs watchdog support"
+>  	depends on ARCH_SUNXI
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 468c320..0afa343 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -47,6 +47,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
+>  obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
+>  obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
+>  obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
+> +obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
+>  obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
+>  obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
+>  obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
+> diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
+> new file mode 100644
+> index 0000000..3a76ad7
+> --- /dev/null
+> +++ b/drivers/watchdog/rn5t618_wdt.c
+> @@ -0,0 +1,196 @@
+> +/*
+> + * Watchdog driver for Ricoh RN5T618 PMIC
+> + *
+> + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * version 2 as published by the Free Software Foundation.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/mfd/rn5t618.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +
+> +#define DRIVER_NAME "rn5t618-wdt"
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static unsigned int heartbeat = -1;
+> +
+> +module_param(heartbeat, int, 0);
+> +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
 
-Merging this tag into Linus' tree causes some conflicts, which I've
-fixed up and pushed out as the efi-next-merge branch, in case you or
-Linus want to take a look at it. The conflicts are fairly straight
-forward to resolve.
+1) this is actually a timeout value and not the same as the heartbeat of the watchdog device.
+So I prefer this also to be called as timeout and not heartbeat.
+2) this actually is an unsigned int.
 
-The following changes since commit 99a5603e2a1f146ac0c6414d8a3669aa749ccff8:
+For the rest OK by me.
 
-  efi/arm64: Handle missing virtual mapping for UEFI System Table (2014-07-18 21:24:04 +0100)
+Kind regards,
+Wim.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
-
-for you to fetch changes up to 1eb56e1adab89d36f071db4277a3c4610970215f:
-
-  x86/efi: Adding efi_printks on memory allocationa and pci.reads (2014-09-28 17:43:21 +0100)
-
-----------------------------------------------------------------
- * Implement new EFI runtime lock which is required by the UEFI
-   specification - Ard Biesheuvel
-
- * Add new efi= x86 EFI boot stub parameter which mimics the way that
-   the regular kernel parameter works - Matt Fleming
-
- * Improve error handling in efi-bgrt driver - Josh Triplett
-
- * Extend the "noefi" kernel parameter to arm64, add an efi=noruntime
-   synonym - Dave Young
-
- * Beautify the EFI memory map logs - Laszlo Ersek
-
- * Fix compiler shadow warnings and improve variable names - Mark Rustad
-
- * Remove unused efi_call() macros, update comments, tag initialization
-   functions with __init - Mathias Krause
-
- * Add more informative efi_printk()s to the x86 EFI boot stub at the
-   firmware call-sites - Andre Müller
-
-----------------------------------------------------------------
-Andre Müller (1):
-      x86/efi: Adding efi_printks on memory allocationa and pci.reads
-
-Ard Biesheuvel (1):
-      efi: Implement mandatory locking for UEFI Runtime Services
-
-Dave Young (6):
-      efi: Move noefi early param code out of x86 arch code
-      lib: Add a generic cmdline parse function parse_option_str
-      efi: Add kernel param efi=noruntime
-      arm64/efi: uefi_init error handling fix
-      arm64/efi: Do not enter virtual mode if booting with efi=noruntime or noefi
-      x86/efi: Clear EFI_RUNTIME_SERVICES if failing to enter virtual mode
-
-Josh Triplett (1):
-      efi-bgrt: Add error handling; inform the user when ignoring the BGRT
-
-Laszlo Ersek (5):
-      efi: Add macro for EFI_MEMORY_UCE memory attribute
-      efi: Introduce efi_md_typeattr_format()
-      x86: efi: Format EFI memory type & attrs with efi_md_typeattr_format()
-      ia64: efi: Format EFI memory type & attrs with efi_md_typeattr_format()
-      arm64: efi: Format EFI memory type & attrs with efi_md_typeattr_format()
-
-Mark Rustad (1):
-      efi: Resolve some shadow warnings
-
-Mathias Krause (4):
-      x86/efi: Remove unused efi_call* macros
-      x86/efi: Unexport add_efi_memmap variable
-      x86/efi: Update comment regarding required phys mapped EFI services
-      x86/efi: Mark initialization code as such
-
-Matt Fleming (1):
-      efi: Add efi= parameter parsing to the EFI boot stub
-
- Documentation/kernel-parameters.txt            |   8 +-
- arch/arm64/kernel/efi.c                        |  44 +++----
- arch/ia64/kernel/efi.c                         |   6 +-
- arch/x86/boot/compressed/eboot.c               |  32 +++--
- arch/x86/include/asm/efi.h                     |  33 ++----
- arch/x86/platform/efi/efi-bgrt.c               |  36 +++++-
- arch/x86/platform/efi/efi.c                    |  52 ++++-----
- arch/x86/platform/efi/efi_32.c                 |  12 +-
- arch/x86/platform/efi/efi_64.c                 |   6 +-
- arch/x86/platform/efi/efi_stub_32.S            |   4 +-
- drivers/firmware/efi/efi.c                     |  79 +++++++++++++
- drivers/firmware/efi/libstub/arm-stub.c        |   4 +
- drivers/firmware/efi/libstub/efi-stub-helper.c |  62 +++++++++-
- drivers/firmware/efi/runtime-wrappers.c        | 154 +++++++++++++++++++++++--
- drivers/firmware/efi/vars.c                    |  14 +--
- include/linux/efi.h                            |  11 ++
- include/linux/kernel.h                         |   1 +
- lib/cmdline.c                                  |  29 +++++
- 18 files changed, 465 insertions(+), 122 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +struct rn5t618_wdt {
+> +	struct watchdog_device wdt_dev;
+> +	struct rn5t618 *rn5t618;
+> +};
+> +
+> +/*
+> + * This array encodes the values of WDOGTIM field for the supported
+> + * watchdog expiration times. If the watchdog is not accessed before
+> + * the timer expiration, the PMU generates an interrupt and if the CPU
+> + * doesn't clear it within one second the system is restarted.
+> + */
+> +static const struct {
+> +	u8 reg_val;
+> +	int time;
+> +} rn5t618_wdt_map[] = {
+> +	{ 0, 1 },
+> +	{ 1, 8 },
+> +	{ 2, 32 },
+> +	{ 3, 128 },
+> +};
+> +
+> +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				   unsigned int timeout)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret, i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
+> +		if (rn5t618_wdt_map[i].time + 1 >= timeout)
+> +			break;
+> +	}
+> +
+> +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
+> +		ret = -EINVAL;
+> +	else
+> +		ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +					 RN5T618_WATCHDOG_WDOGTIM_M,
+> +					 rn5t618_wdt_map[i].reg_val);
+> +	if (!ret)
+> +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
+> +
+> +	return ret;
+> +}
+> +
+> +static int rn5t618_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	int ret;
+> +
+> +	ret = rn5t618_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable repower-on */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_REPCNT,
+> +				 RN5T618_REPCNT_REPWRON,
+> +				 RN5T618_REPCNT_REPWRON);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog */
+> +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				 RN5T618_WATCHDOG_WDOGEN,
+> +				 RN5T618_WATCHDOG_WDOGEN);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* enable watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIREN,
+> +				  RN5T618_PWRIRQ_IR_WDOG,
+> +				  RN5T618_PWRIRQ_IR_WDOG);
+> +}
+> +
+> +static int rn5t618_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
+> +				  RN5T618_WATCHDOG_WDOGEN, 0);
+> +}
+> +
+> +static int rn5t618_wdt_ping(struct watchdog_device *wdt_dev)
+> +{
+> +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
+> +	unsigned int val;
+> +	int ret;
+> +
+> +	/* The counter is restarted after a R/W access to watchdog register */
+> +	ret = regmap_read(wdt->rn5t618->regmap, RN5T618_WATCHDOG, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = regmap_write(wdt->rn5t618->regmap, RN5T618_WATCHDOG, val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Clear pending watchdog interrupt */
+> +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIRQ,
+> +				  RN5T618_PWRIRQ_IR_WDOG, 0);
+> +}
+> +
+> +static struct watchdog_info rn5t618_wdt_info = {
+> +	.options	= WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
+> +			  WDIOF_KEEPALIVEPING,
+> +	.identity	= DRIVER_NAME,
+> +};
+> +
+> +static struct watchdog_ops rn5t618_wdt_ops = {
+> +	.owner          = THIS_MODULE,
+> +	.start          = rn5t618_wdt_start,
+> +	.stop           = rn5t618_wdt_stop,
+> +	.ping           = rn5t618_wdt_ping,
+> +	.set_timeout    = rn5t618_wdt_set_timeout,
+> +};
+> +
+> +static int rn5t618_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
+> +	struct rn5t618_wdt *wdt;
+> +	int min_timeout, max_timeout;
+> +
+> +	wdt = devm_kzalloc(&pdev->dev, sizeof(struct rn5t618_wdt), GFP_KERNEL);
+> +	if (!wdt)
+> +		return -ENOMEM;
+> +
+> +	min_timeout = rn5t618_wdt_map[0].time;
+> +	max_timeout = rn5t618_wdt_map[ARRAY_SIZE(rn5t618_wdt_map) - 1].time;
+> +
+> +	wdt->rn5t618 = rn5t618;
+> +	wdt->wdt_dev.info = &rn5t618_wdt_info;
+> +	wdt->wdt_dev.ops = &rn5t618_wdt_ops;
+> +	wdt->wdt_dev.min_timeout = min_timeout;
+> +	wdt->wdt_dev.max_timeout = max_timeout;
+> +	wdt->wdt_dev.timeout = max_timeout;
+> +	wdt->wdt_dev.parent = &pdev->dev;
+> +
+> +	watchdog_set_drvdata(&wdt->wdt_dev, wdt);
+> +	watchdog_init_timeout(&wdt->wdt_dev, heartbeat, &pdev->dev);
+> +	watchdog_set_nowayout(&wdt->wdt_dev, nowayout);
+> +
+> +	return watchdog_register_device(&wdt->wdt_dev);
+> +}
+> +
+> +static int rn5t618_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct watchdog_device *wdt_dev = platform_get_drvdata(pdev);
+> +
+> +	watchdog_unregister_device(wdt_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver rn5t618_wdt_driver = {
+> +	.probe = rn5t618_wdt_probe,
+> +	.remove = rn5t618_wdt_remove,
+> +	.driver = {
+> +		.name	= DRIVER_NAME,
+> +	},
+> +};
+> +
+> +module_platform_driver(rn5t618_wdt_driver);
+> +
+> +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
+> +MODULE_DESCRIPTION("RN5T618 watchdog driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/rn5t618.h b/include/linux/mfd/rn5t618.h
+> index e3571d1..c72d534 100644
+> --- a/include/linux/mfd/rn5t618.h
+> +++ b/include/linux/mfd/rn5t618.h
+> @@ -202,6 +202,10 @@
+>  
+>  #define RN5T618_REPCNT_REPWRON		BIT(0)
+>  #define RN5T618_SLPCNT_SWPWROFF		BIT(0)
+> +#define RN5T618_WATCHDOG_WDOGEN		BIT(2)
+> +#define RN5T618_WATCHDOG_WDOGTIM_M	(BIT(0) | BIT(1))
+> +#define RN5T618_WATCHDOG_WDOGTIM_S	0
+> +#define RN5T618_PWRIRQ_IR_WDOG		BIT(6)
+>  
+>  enum {
+>  	RN5T618_DCDC1,
+> -- 
+> 1.7.10.4
+> 
