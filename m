@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaI1PE3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 11:04:29 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:58613 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442AbaI1PE1 (ORCPT
+	id S1754255AbaI1PFN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 11:05:13 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:42935 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442AbaI1PFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 11:04:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABgxDo+Gor=xnOV83Oca6kez7Auyu95XpaOr7QW+iRHbtByGAg@mail.gmail.com>
-References: <1411834906-9533-1-git-send-email-romain.perier@gmail.com>
-	<20140928103301.GN27755@sirena.org.uk>
-	<CABgxDo+h2AYjAO4darK4+RTXqnhf4OqouGLfF2yuJCpu7r6tLg@mail.gmail.com>
-	<20140928122543.GA27755@sirena.org.uk>
-	<CABgxDo+Gor=xnOV83Oca6kez7Auyu95XpaOr7QW+iRHbtByGAg@mail.gmail.com>
-Date: Sun, 28 Sep 2014 17:04:26 +0200
-Message-ID: <CABgxDoJJEH387h7mSBG+5wTwyT6UkhvLjRzoryFX8NZjarxUHQ@mail.gmail.com>
-Subject: Re: [PATCH v1 1/3] regulator: act8865: Add support to turn off all outputs
-From: PERIER Romain <romain.perier@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 28 Sep 2014 11:05:11 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        dm-devel@redhat.com (maintainer:DEVICE-MAPPER (LVM)),
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list)
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [RESEND PATCH] drivers/md: Use rcu_dereference() for accessing rcu pointer
+Date: Sun, 28 Sep 2014 11:05:04 -0400
+Message-Id: <1411916712-17631-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, I will think about it and I will propose a separated patch with
-a generic property and helper functions.
+Got Paul's email wrong the first time.
 
-2014-09-28 15:25 GMT+02:00 PERIER Romain <romain.perier@gmail.com>:
-> 2014-09-28 14:25 GMT+02:00 Mark Brown <broonie@kernel.org>:
->> On Sun, Sep 28, 2014 at 02:00:54PM +0200, PERIER Romain wrote:
->>> 2014-09-28 12:33 GMT+02:00 Mark Brown <broonie@kernel.org>:
->>
->>> > We really need to come up with a standard property for this and document
->>> > it rather than continuing to add individual device specific properties
->>> > all doing the same thing, and probably also some helper code and/or a
->>> > standard operation for this - there's a lot of drivers implementing the
->>> > same pattern here.
->>
->>> I completly agree about adding a unified and generic property for that purpose.
->>> I already proposed something for that on devicetree ML, see the thread
->>> "Proposal: generic property for system-power-controller".
->>> Unfortunately I did not get replies :) .
->>
->> Did you CC relevant maintainers and send a patch?
->
-> No I did not propose patches as I was an open discussion. Perhaps I
-> might propose something as part of my contribution for act8865... (at
-> least for the property)
+The map field in 'struct mapped_device' is an rcu pointer. Use rcu_dereference()
+while accessing it.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ drivers/md/dm.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 746411b..fbdf0bb 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -2211,7 +2211,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
+ 
+ 	merge_is_optional = dm_table_merge_is_optional(t);
+ 
+-	old_map = md->map;
++	old_map = rcu_dereference(md->map);
+ 	rcu_assign_pointer(md->map, t);
+ 	md->immutable_target_type = dm_table_get_immutable_target_type(t);
+ 
+@@ -2230,7 +2230,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
+  */
+ static struct dm_table *__unbind(struct mapped_device *md)
+ {
+-	struct dm_table *map = md->map;
++	struct dm_table *map = rcu_dereference(md->map);
+ 
+ 	if (!map)
+ 		return NULL;
+@@ -2624,7 +2624,7 @@ int dm_suspend(struct mapped_device *md, unsigned suspend_flags)
+ 		goto out_unlock;
+ 	}
+ 
+-	map = md->map;
++	map = rcu_dereference(md->map);
+ 
+ 	/*
+ 	 * DMF_NOFLUSH_SUSPENDING must be set before presuspend.
+@@ -2718,7 +2718,7 @@ int dm_resume(struct mapped_device *md)
+ 	if (!dm_suspended_md(md))
+ 		goto out;
+ 
+-	map = md->map;
++	map = rcu_dereference(md->map);
+ 	if (!map || !dm_table_get_size(map))
+ 		goto out;
+ 
+-- 
+1.9.1
+
