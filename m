@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaI1DiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 23:38:25 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46963 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaI1DiY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 23:38:24 -0400
-Message-ID: <1411875493.2029.78.camel@cyc>
-Subject: Re: [PATCH] x86, MCE: support raising machine check poll for
- software MCE injection in IRQ context
-From: Chen Yucong <slaoub@gmail.com>
-To: gong.chen@linux.intel.com
-Cc: andi@firstfloor.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        "Luck, Tony" <tony.luck@intel.com>
-Date: Sun, 28 Sep 2014 11:38:13 +0800
-In-Reply-To: <1407847544-13224-1-git-send-email-slaoub@gmail.com>
-References: <1407847544-13224-1-git-send-email-slaoub@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753630AbaI1Dkm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 23:40:42 -0400
+Received: from mail-by2on0071.outbound.protection.outlook.com ([207.46.100.71]:4151
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752921AbaI1Dkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 23:40:41 -0400
+Date: Sat, 27 Sep 2014 22:40:12 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@shineypoop
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, <baruch@tkos.co.il>,
+        <grant.likely@linaro.org>, <robh+dt@kernel.org>, <skuribay@pobox.com>,
+        <alan@linux.intel.com>, <devicetree@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>,
+        Romain Baeriswyl <romainba@abilis.com>
+Subject: Re: [PATCH] i2c designware add support of I2C standard mode
+In-Reply-To: <20140920092456.GD1612@katana>
+Message-ID: <alpine.DEB.2.10.1409272238450.2655@shineypoop>
+References: <20140820124231.GD21734@leverpostej> <1408544948-22339-1-git-send-email-romainba@abilis.com> <20140920092456.GD1612@katana>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [24.206.110.125]
+X-ClientProxiedBy: BLUPR02CA026.namprd02.prod.outlook.com (25.160.23.144) To
+ DM2PR03MB317.namprd03.prod.outlook.com (10.141.54.15)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB317;
+X-Forefront-PRVS: 03484C0ABF
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(24454002)(51704005)(54164003)(199003)(86152002)(83072002)(83506001)(87976001)(23726002)(92566001)(102836001)(92726001)(85852003)(31966008)(50986999)(47776003)(20776003)(33716001)(97736003)(21056001)(46406003)(54356999)(76176999)(66066001)(50466002)(4396001)(46102003)(101416001)(64706001)(86362001)(83322001)(19580405001)(19580395003)(90102001)(77982003)(74502003)(74662003)(81542003)(81342003)(77096002)(80022003)(79102003)(76482002)(42186005)(106356001)(85306004)(107046002)(105586002)(95666004)(99396003)(120916001)(10300001)(110136001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB317;H:shineypoop.local;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-12 at 20:45 +0800, Chen Yucong wrote:
-> At present MCJ_NMI_BROADCAST(same for raise_local) supports both raise_exception()
-> and raise_poll(), but MCJ_IRQ_BROADCAST only supports raise_exception(). The goal
-> of this patch is that MCJ_IRQ_BROADCAST can support raising machine check poll.
+On Sat, 20 Sep 2014, Wolfram Sang wrote:
+
+> On Wed, Aug 20, 2014 at 04:29:08PM +0200, Romain Baeriswyl wrote:
+> > From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+> > 
+> > Some legacy devices support ony I2C standard mode at 100kHz.
+> > This patch allows to select the standard mode through the DTS
+> > with the use of the existing clock-frequency parameter.
+> > 
+> > When clock-frequency parameter is not set, the fast mode is selected.
+> > Only when the parameter is set at 100000, the standard mode is selected.
+> > 
+> > Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
+> > Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
 > 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce-inject.c |   10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
+> Applied to for-next, thanks to all involved!
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> index 5ac2d1f..97e4f7a 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> @@ -99,11 +99,13 @@ static void mce_irq_ipi(void *info)
->  	int cpu = smp_processor_id();
->  	struct mce *m = &__get_cpu_var(injectm);
->  
-> -	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
-> -			m->inject_flags & MCJ_EXCEPTION) {
-> -		cpumask_clear_cpu(cpu, mce_inject_cpumask);
-> +	if (!cpumask_test_cpu(cpu, mce_inject_cpumask))
-> +		return;
-> +	cpumask_clear_cpu(cpu, mce_inject_cpumask);
-> +	if (m->inject_flags & MCJ_EXCEPTION)
->  		raise_exception(m, NULL);
-> -	}
-> +	else if (m->status)
-> +		raise_poll(m);
->  }
->  
->  /* Inject mce on current CPU */
+> 
 
-Hi Chen Gong,
+I don't see this in 
+git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git
+Is this in i2c/i2c/for-next?
 
-Can you review the above patch?
-
-thx!
-cyc 
-
+Alan
