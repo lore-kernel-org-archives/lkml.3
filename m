@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaI1Vra (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 17:47:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15913 "EHLO mx1.redhat.com"
+	id S1754537AbaI1Vrj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 17:47:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18652 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411AbaI1Vr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 17:47:28 -0400
-Date: Sun, 28 Sep 2014 23:44:18 +0200
+	id S1754482AbaI1Vri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 17:47:38 -0400
+Date: Sun, 28 Sep 2014 23:44:21 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] signal: document the RCU protection of ->sighand
-Message-ID: <20140928214418.GA17965@redhat.com>
+Subject: [PATCH v2 2/2] rcu: more info about potential deadlocks with
+	rcu_read_unlock()
+Message-ID: <20140928214421.GA17972@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,61 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__cleanup_sighand() frees sighand without RCU grace period. This is
-correct but this looks "obviously buggy" and constantly confuses the
-readers, add the comments to explain how this works.
+The comment above rcu_read_unlock() explains the potential deadlock
+if the caller holds one of the locks taken by rt_mutex_unlock() paths,
+but it is not clear from this documentation that any lock which can
+be taken from interrupt can lead to deadlock as well and we need to
+take rt_mutex_lock() into account too.
+
+The problem is that rt_mutex_lock() takes wait_lock without disabling
+irqs, and thus an interrupt taking some LOCK can obviously race with
+rcu_read_unlock_special() called with the same LOCK held.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- kernel/fork.c   |    5 ++++-
- kernel/signal.c |   12 +++++++++++-
- 2 files changed, 15 insertions(+), 2 deletions(-)
+ include/linux/rcupdate.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 1380d8a..2dd9f1d 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1017,11 +1017,14 @@ void __cleanup_sighand(struct sighand_struct *sighand)
- {
- 	if (atomic_dec_and_test(&sighand->count)) {
- 		signalfd_cleanup(sighand);
-+		/*
-+		 * sighand_cachep is SLAB_DESTROY_BY_RCU so we can free it
-+		 * without an RCU grace period, see __lock_task_sighand().
-+		 */
- 		kmem_cache_free(sighand_cachep, sighand);
- 	}
- }
- 
--
- /*
-  * Initialize POSIX timer handling for a thread group.
-  */
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 8f0876f..c187133 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1275,7 +1275,17 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
- 			local_irq_restore(*flags);
- 			break;
- 		}
--
-+		/*
-+		 * This sighand can be already freed and even reused, but
-+		 * we rely on SLAB_DESTROY_BY_RCU and sighand_ctor() which
-+		 * initializes ->siglock: this slab can't go away, it has
-+		 * the same object type, ->siglock can't be reinitialized.
-+		 *
-+		 * We need to ensure that tsk->sighand is still the same
-+		 * after we take the lock, we can race with de_thread() or
-+		 * __exit_signal(). In the latter case the next iteration
-+		 * must see ->sighand == NULL.
-+		 */
- 		spin_lock(&sighand->siglock);
- 		if (likely(sighand == tsk->sighand)) {
- 			rcu_read_unlock();
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index d231aa1..5abcfda 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -863,7 +863,9 @@ static inline void rcu_read_lock(void)
+  * Unfortunately, this function acquires the scheduler's runqueue and
+  * priority-inheritance spinlocks.  This means that deadlock could result
+  * if the caller of rcu_read_unlock() already holds one of these locks or
+- * any lock that is ever acquired while holding them.
++ * any lock that is ever acquired while holding them; or any lock which
++ * can be taken from interrupt context because rcu_boost()->rt_mutex_lock()
++ * does not disable irqs while taking ->wait_lock.
+  *
+  * That said, RCU readers are never priority boosted unless they were
+  * preempted.  Therefore, one way to avoid deadlock is to make sure
 -- 
 1.5.5.1
 
