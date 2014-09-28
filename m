@@ -1,109 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394AbaI1Qkg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 12:40:36 -0400
-Received: from p02c11o147.mxlogic.net ([208.65.144.80]:51921 "EHLO
-	p02c11o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaI1Qkf (ORCPT
+	id S1754446AbaI1Qlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 12:41:50 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:44145 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322AbaI1Qls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 12:40:35 -0400
-X-MXL-Hash: 542839eb11a56482-d4f21433a8b142bc39131157d172065c205d2534
-X-MXL-Hash: 542839cf4c2fb173-1e682e3ac6142aefea0d4c580ad66861b99c4fe7
-Date: Sun, 28 Sep 2014 12:39:34 -0400
-From: Joe Lawrence <joe.lawrence@stratus.com>
-X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
-To: Tejun Heo <tj@kernel.org>
-CC: Joe Lawrence <joe.lawrence@stratus.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: schedule_delayed_work with a 0 jiffy delay
-In-Reply-To: <20140928142714.GB3736@mtj.dyndns.org>
-Message-ID: <alpine.DEB.2.02.1409281232040.31609@jlaw-desktop.mno.stratus.com>
-References: <20140926105227.01325697@jlaw-desktop.mno.stratus.com> <20140928142714.GB3736@mtj.dyndns.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 28 Sep 2014 12:41:48 -0400
+Date: Sun, 28 Sep 2014 17:41:46 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Mark Salter <msalter@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
+        rtc-linux@googlegroups.com
+Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
+ runtime enabled
+Message-ID: <20140928164146.GA18635@console-pimps.org>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+ <1408007953-15151-1-git-send-email-dyoung@redhat.com>
+ <1411403609.25340.55.camel@deneb.redhat.com>
+ <20140923072426.GB3916@darkstar.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [134.111.199.152]
-X-AnalysisOut: [v=2.1 cv=MfN4uvPf c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
-X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=nXGuE6rTyBAA:10 a=_KQ]
-X-AnalysisOut: [qW7t0BisA:10 a=CdzKgOd8jloA:10 a=BLceEmwcHowA:10 a=kj9zAlc]
-X-AnalysisOut: [Oel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxIAAAA:8 a=0pvFUhPfCBvoy]
-X-AnalysisOut: [w1hmocA:9 a=CjuIK1q_8ugA:10]
-X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014092805); S=0.200(2014051901)]
-X-MAIL-FROM: <joe.lawrence@stratus.com>
-X-SOURCE-IP: [134.111.1.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923072426.GB3916@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Sep 2014, Tejun Heo wrote:
-
-> Hello, Joe.
+On Tue, 23 Sep, at 03:24:26PM, Dave Young wrote:
 > 
-> On Fri, Sep 26, 2014 at 10:52:27AM -0400, Joe Lawrence wrote:
-> ...
-> > I was wondering if such behavior was expected on !PREEMPT kernels,
-> > especially after b22ce2785d97 "workqueue: cond_resched() after
-> > processing each work item".  In the ftraces I've observed from the RCU
-> > stall, cond_resched() never seems to schedule.  Under what conditions
-> > would it be expected to do so?
-> 
-> Hmmm... it should yield if there's a higher priority task scheduled.
-> Maybe the workqueue in question is a highpri one?
+> If that's the case then this patch should be unnecessary, I have no
+> machine to test it currently though.
 
-I don't believe any high priority tasks or workqueues are involved here.  
-Consider a synthetic repro module like:
+Thanks, I've dropped this from the v3.18 queue.
 
-#include <linux/module.h>
-#include <linux/sched.h>
-#include <linux/workqueue.h>
-
-struct delayed_work dwork;
-struct delayed_work dwork2;
-
-static void warn_thread(struct work_struct *work)
-{
-        schedule_delayed_work_on(4, &dwork, 0);
-}
-
-static void warn_thread2(struct work_struct *work)
-{
-        schedule_delayed_work_on(4, &dwork2, 0);
-}
-
-int __init init_module(void)
-{
-        INIT_DELAYED_WORK(&dwork, warn_thread);
-        schedule_delayed_work_on(4, &dwork, 1000);
-
-        INIT_DELAYED_WORK(&dwork2, warn_thread2);
-        schedule_delayed_work_on(4, &dwork2, 1000);
-
-        pr_info("%s loaded.\n", THIS_MODULE->name);
-
-        return 0;
-}
-
-void cleanup_module(void)
-{
-        cancel_delayed_work_sync(&dwork);
-        cancel_delayed_work_sync(&dwork2);
-
-        pr_info("%s unloaded.\n", THIS_MODULE->name);
-}
-
-When I load this, "kworker/4:1" goes to 100% CPU and the RCU grace 
-periods reported by rcusched freeze on CPU4 for minutes at a time.
- 
-> > Changing the worker function to reschedule with at least 1 jiffy avoids
-> > this problem -- I was just curious if a fix at that end was appropriate.
-> 
-> The fact that 0 delay means immediate execution is depended upon in
-> multiple places and changing it will break other things.  The
-> workqueue user itself sounds buggy to me.  Can't that be fixed?
-
-Certainly modifying the workqueue user should be sufficient here.  I was 
-only wondering if the cond_resched in process_one_work was expected to 
-give the CPU some breathing room in this scenario.
-
-Thanks,
-
--- Joe
+-- 
+Matt Fleming, Intel Open Source Technology Center
