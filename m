@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaI1IyE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 04:54:04 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56387 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989AbaI1IyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 04:54:02 -0400
-Message-ID: <5427CCA4.6060909@codeaurora.org>
-Date: Sun, 28 Sep 2014 11:53:56 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1753679AbaI1Iyx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 04:54:53 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753559AbaI1Iyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 04:54:52 -0400
+Message-ID: <5427CCD8.2090605@nod.at>
+Date: Sun, 28 Sep 2014 10:54:48 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
+To: Tanya Brokhman <tlinder@codeaurora.org>, dedeking1@gmail.com
 CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
-        Pratibhasagar V <pratibha@codeaurora.org>,
-        open list <linux-kernel@vger.kernel.org>, dedeking1@gmail.com,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
         Brian Norris <computersforpeace@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC/PATCH 5/5] mtd: ubi: Add sysfs entry to force all pebs'
- scan
-References: <1411886287-8947-1-git-send-email-tlinder@codeaurora.org> <CAFLxGvz5RXmC3vuCWkNSiAn91j6dC_9Q9XF3njObb_jBbL-ohw@mail.gmail.com>
-In-Reply-To: <CAFLxGvz5RXmC3vuCWkNSiAn91j6dC_9Q9XF3njObb_jBbL-ohw@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org>
+In-Reply-To: <5427CB6E.7010007@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/28/2014 11:42 AM, Richard Weinberger wrote:
-> Tanya,
->
-> On Sun, Sep 28, 2014 at 8:38 AM, Tanya Brokhman <tlinder@codeaurora.org> wrote:
->> A given eraseblock can be read many times or not at all.
->> We do not have the account of such eraseblocks that have
->> not been accessed since a pre-defined threshold interval.
->> By means of scanning the entire flash device it is possible to identify
->> all such eraseblocks.
+Am 28.09.2014 10:48, schrieb Tanya Brokhman:
+>>> @@ -424,6 +440,8 @@ struct ubi_fm_sb {
+>>>       __be32 used_blocks;
+>>>       __be32 block_loc[UBI_FM_MAX_BLOCKS];
+>>>       __be32 block_ec[UBI_FM_MAX_BLOCKS];
+>>> +    __be32 block_rc[UBI_FM_MAX_BLOCKS];
+>>> +    __be64 block_let[UBI_FM_MAX_BLOCKS];
 >>
->> Add a sysfs entry to force scan on all the PEBs on demand basis.
->>
->> The sysfs entry would be available under /sys/class/ubi/ubiX/peb_scan
->>   - echo 1 to this entry would trigger the scan, ignored if in progress
->>   - On reading returns the scan status (1 = Scan executing, 0 = Scan not
->>     executing)
->
-> Did you see that?
-> http://linux-kernel.2935.n7.nabble.com/RFC-UBI-bitrot-checking-td949453.html
-> Maybe we can combine our work.
-> Although your patch seems to be in better shape than mine. :)
+>> Doesn't this break the fastmap on-disk layout?
+> 
+> What do you mean "break"? I verified fastmap feature is working. the whole read-disturb depends on it so I tested this thoroughly.
 
-oh, I'm sorry, missed that (its new :) )
-this patch was tested thoroughly and working. I would appreciate if you 
-could review this patch and perhaps we could improve it if required.
+Did you write a fastmap with your changes applied and then an attach using a fastmap implementation *without*
+you changes?
+I bet it will not work because the disk layout is now different.
+Linux is not the only user of fastmap. We need to be very careful here.
 
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation
+Thanks,
+//richard
