@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaI1KpB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 06:45:01 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38949 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921AbaI1KpA (ORCPT
+	id S1754012AbaI1Kp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 06:45:28 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:52177 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaI1KpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 06:45:00 -0400
-Date: Sun, 28 Sep 2014 12:44:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, tytso@mit.edu,
-        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca
-Subject: ext4: 3.17? problems
-Message-ID: <20140928104456.GA17400@amd>
+	Sun, 28 Sep 2014 06:45:24 -0400
+Message-ID: <5427E6C0.1070208@plexistor.com>
+Date: Sun, 28 Sep 2014 13:45:20 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jens Axboe <axboe@fb.com>, Boaz Harrosh <boaz@plexistor.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCHSET 0/5 v2] brd: partition fixes
+References: <53FDF7AD.5000709@plexistor.com> <54044759.9080103@gmail.com> <540EEE2C.1090801@plexistor.com> <540F0DDF.3010907@fb.com>
+In-Reply-To: <540F0DDF.3010907@fb.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 09/09/2014 05:25 PM, Jens Axboe wrote:
+<>
+> 
+> I will drop the 3/5 patch (do that one separately) and queue up and test.
+> 
 
-After update to debian testing, my machine sometimes fails to
-reboot. (aptitude upgrade seems to be the trigger).
+Jens hi
 
-So I had to hard power-down the machine. That should be perfectly
-safe, as ext4 has a journal, and this is plain SATA disk, right?
+I'm reminding you of these brd bug fixes. Yes they are bug fixes for a driver
+no one cares about. But it is a great pity if an unwanted user-mode accessible
+parameter will hit a release. Lets solve this now please?
 
-On next boot to Debian stable, I got stacktrace, and messages about
-ext4 corruption. Back to Debian testing. systemd ran fsck, determined
-it can't fix it, dropped me into emergency shell, _but mounted the
-filesstem, anyway_. Oops.
+Is there anything I can help with?
 
-Now I'm getting
+Thanks
+Boaz
 
-fsck 1.42.12
-...
-Inodes that were part of a corrupted orphan linked list found <y>
-Deleted inode has zero dtime <y>
-(6 inodes) was part of the orphaned inode list. FIXED.
-Block bitmap differences.
-Free inode counts wrong.
-
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
