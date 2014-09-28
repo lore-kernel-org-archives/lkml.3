@@ -1,95 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaI1Abx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 20:31:53 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:50044 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaI1Abw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 20:31:52 -0400
+	id S1753419AbaI1AlH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 20:41:07 -0400
+Received: from mail-bl2on0139.outbound.protection.outlook.com ([65.55.169.139]:30030
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752187AbaI1AlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 20:41:05 -0400
+Date: Sun, 28 Sep 2014 08:40:52 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <sebastian.hesselbarth@gmail.com>, <p.zabel@pengutronix.de>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <alexandre.belloni@free-electrons.com>,
+        <jszhang@marvell.com>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140928004049.GA3667@peterchendt>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <2923729.dtX0WmHSV0@wuerfel> <20140924112902.GA23331@peterchendt>
+ <2786668.t3YLqX5enD@wuerfel> <20140925141553.GC28045@saruman>
+ <20140925233932.GA3026@peterchendt> <20140926003750.GA12770@saruman>
 MIME-Version: 1.0
-In-Reply-To: <5426CA0A.7000806@hurleysoftware.com>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
-	<5426CA0A.7000806@hurleysoftware.com>
-Date: Sun, 28 Sep 2014 09:31:50 +0900
-Message-ID: <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140926003750.GA12770@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(51704005)(189002)(76176999)(107046002)(50986999)(81156004)(106466001)(54356999)(47776003)(20776003)(64706001)(83506001)(23726002)(104016003)(21056001)(97736003)(10300001)(95666004)(90102001)(79102003)(33716001)(105606002)(74502003)(85306004)(74662003)(77982003)(46102003)(80022003)(81342003)(81542003)(120916001)(93886004)(99396003)(31966008)(19580395003)(19580405001)(83322001)(69596002)(68736004)(33656002)(87936001)(102836001)(6806004)(44976005)(4396001)(76482002)(83072002)(85852003)(92566001)(86362001)(92726001)(26826002)(84676001)(110136001)(46406003)(57986006)(97756001)(50466002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0631;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0631;
+X-Forefront-PRVS: 03484C0ABF
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-27 23:30 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
-> On 04/15/2014 09:08 AM, Akinobu Mita wrote:
->> This patch set enhances the DMA Contiguous Memory Allocator on x86.
->>
->> Currently the DMA CMA is only supported with pci-nommu dma_map_ops
->> and furthermore it can't be enabled on x86_64.  But I would like to
->> allocate big contiguous memory with dma_alloc_coherent() and tell it
->> to the device that requires it, regardless of which dma mapping
->> implementation is actually used in the system.
->>
->> So this makes it work with swiotlb and intel-iommu dma_map_ops, too.
->> And this also extends "cma=" kernel parameter to specify placement
->> constraint by the physical address range of memory allocations.  For
->> example, CMA allocates memory below 4GB by "cma=64M@0-4G", it is
->> required for the devices only supporting 32-bit addressing on 64-bit
->> systems without iommu.
->>
->> * Changes from v2
->> - Rebased on current Linus tree
->> - Add Acked-by line
->> - Fix gfp flags check for __GFP_ATOMIC, reported by Marek Szyprowski
->> - Avoid CMA area on highmem with cma= option, reported by Marek Szyprowski
->>
->> * Changes from v1
->> - fix dma_alloc_coherent() with __GFP_ZERO
->> - add placement specifier for "cma=" kernel parameter
->>
->> Akinobu Mita (5):
->>   x86: make dma_alloc_coherent() return zeroed memory if CMA is enabled
->>   x86: enable DMA CMA with swiotlb
->>   intel-iommu: integrate DMA CMA
->>   memblock: introduce memblock_alloc_range()
->>   cma: add placement specifier for "cma=" kernel parameter
->
-> This patchset breaks every x86 iommu configuration when CONFIG_DMA_CMA is
-> on, which is the base configuration for Ubuntu x86 and amd64 distro kernels.
->
-> Granted, the patchset leveraged existing code from the nommu configuration,
-> but that base (ie., calling dma_alloc_from_contiguous() in
-> dma_generic_alloc_config()) was an ill-conceived test configuration designed
-> to allow ARM developers to validate the CMA allocator on x86 boxen and
-> KVM guests, not as a general-purpose replacement for the existing page
-> allocator. The test code should have had a separate CONFIG_ knob.
->
-> What this patchset does is restrict all iommu configurations which can
-> map all of system memory to one _very_ small physical region, thus disabling
-> the whole point of an iommu.
->
-> Now I know why my GPU is causing paging to disk! And why my RAID controller
-> stalls for ages when I do a git log at the same time as a kernel build!
+On Thu, Sep 25, 2014 at 07:37:50PM -0500, Felipe Balbi wrote:
+> HI,
+> 
+> On Fri, Sep 26, 2014 at 07:39:34AM +0800, Peter Chen wrote:
+> > On Thu, Sep 25, 2014 at 09:15:53AM -0500, Felipe Balbi wrote:
+> > > On Wed, Sep 24, 2014 at 02:23:38PM +0200, Arnd Bergmann wrote:
+> > > > On Wednesday 24 September 2014 19:29:05 Peter Chen wrote:
+> > > > > 
+> > > > > So, it is IP CORE LIB (you suggest) vs IP CORE Platform Driver
+> > > > > (dwc3, musb, chipidea) you are talking about, right? Except for
+> > > > > creating another platform driver as well as related DT node (optional),
+> > > > > are there any advantages compared to current IP core driver structure?
+> > > > 
+> > > > Having a library module usually requires less code, and is more
+> > > > consistent with other drivers, which helps new developers understand
+> > > > what the driver is doing.
+> > > 
+> > > I beg to differ. You end-up having to pass function pointers through
+> > > platform_data to handle differences which could be handled by the core
+> > > IP.
+> > > 
+> > > > The most important aspect though is the DT binding: once the structure
+> > > > with separate kernel drivers leaks out into the DT format, you can't
+> > > > easily change the driver any more, e.g. to make a property that was
+> > > > introduced for one glue driver more general so it can get handled by
+> > > > the common part. Having a single node lets us convert to the library
+> > > > model later, so that would be a strong reason to keep the DT binding
+> > > > simple, without child nodes.
+> > > > 
+> > > > Following that logic, it turns into another reason for using the library
+> > > > model to start with, because otherwise the child device does not have
+> > > > any DT properties itself and has to rely on the parent device properties,
+> > > > which somewhat complicates the driver structure.
+> > > 
+> > > this is bullcrap. Take a look at
+> > > Documentation/devicetree/bindings/usb/dwc3.txt:
+> > > 
+> > > synopsys DWC3 CORE
+> > > 
+> > > DWC3- USB3 CONTROLLER
+> > > 
+> > > Required properties:
+> > >  - compatible: must be "snps,dwc3"
+> > >  - reg : Address and length of the register set for the device
+> > >  - interrupts: Interrupts used by the dwc3 controller.
+> > > 
+> > > Optional properties:
+> > >  - usb-phy : array of phandle for the PHY device.  The first element
+> > >    in the array is expected to be a handle to the USB2/HS PHY and
+> > >    the second element is expected to be a handle to the USB3/SS PHY
+> > >  - phys: from the *Generic PHY* bindings
+> > >  - phy-names: from the *Generic PHY* bindings
+> > >  - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+> > > 
+> > > This is usually a subnode to DWC3 glue to which it is connected.
+> > > 
+> > > dwc3@4a030000 {
+> > > 	compatible = "snps,dwc3";
+> > > 	reg = <0x4a030000 0xcfff>;
+> > > 	interrupts = <0 92 4>
+> > > 	usb-phy = <&usb2_phy>, <&usb3,phy>;
+> > > 	tx-fifo-resize;
+> > > };
+> > > 
+> > > This contains all the attributes it needs to work. In fact, this could
+> > > be used without any glue.
+> > > 
+> > 
+> > If you want to add "vbus-supply" core node to support ID switch, what's
+> > the plan for that?
+> 
+> send a patch ? Just make sure it's optional because not everybody needs
+> a vbus-supply. Also, DRD will still take a few merge windows to become a
+> reality. I don't want to merge something before considering it carefuly,
+> otherwise we will having which is broken and doesn't work for everybody
+> ;-)
+> 
+> > Is it possible that the glue layer needs to access core register
+> > (eg, portsc.phcd during suspend)? The wrapper IP may wait some signals
+> > at core IP to change.
+> 
+> why would a glue layer need to access registers from the core ? That
+> sounds very odd. I haven't seen that and will, definitely, NACK such a
+> patch :-)
+> 
+> can you further describe why you think a glue layer might need to access
+> core IP's registers ?
+> 
 
-The solution I have for this is that instead of trying to
-dma_alloc_from_contiguous() firstly, call alloc_pages() in dma_alloc_coherent().
-dma_alloc_from_contiguous() should be called only when alloc_pages() is failed
-or DMA_ATTR_FORCE_CONTIGUOUS is specified in dma_attr.
+My mistake, we can just wait core layer for finishing before doing PHY
+and wrapper operation.
 
-> And the apparent goal of this patchset is to enable DMA allocation below
-> 4GB, which is already supported in the existing page allocator with the
-> GFP_DMA32 flag?!
-
-The goal of this patchset is to enable huge DMA allocation which
-alloc_pages() can't (> MAX_ORDER) for the devices that require it.
-
-Thanks for the notification.  I'll prepare a patch described above.
+-- 
+Best Regards,
+Peter Chen
