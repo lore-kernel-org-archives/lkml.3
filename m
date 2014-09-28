@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaI1Olc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 10:41:32 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:58457 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaI1Ola (ORCPT
+	id S1753304AbaI1Oy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 10:54:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36491 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaI1Oy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 10:41:30 -0400
-Date: Sun, 28 Sep 2014 10:41:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, tiwai@suse.de,
-        arjan@linux.intel.com, teg@jklm.no, rmilasan@suse.com, werner@suse.com,
-        oleg@redhat.com, hare@suse.com, bpoirier@suse.de, santosh@chelsio.com,
-        pmladek@suse.cz, dbueso@suse.com, mcgrof@suse.com,
-        linux-kernel@vger.kernel.org,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH v1 3/5] amd64_edac: enforce synchronous probe
-Message-ID: <20140928144123.GB5023@mtj.dyndns.org>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-4-git-send-email-mcgrof@do-not-panic.com>
+	Sun, 28 Sep 2014 10:54:27 -0400
+Message-ID: <5428211D.5090005@codeaurora.org>
+Date: Sun, 28 Sep 2014 17:54:21 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411768637-6809-4-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: dedekind1@gmail.com
+CC: linux-arm-msm@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
+        dedeking1@gmail.com, linux-mtd@lists.infradead.org,
+        Richard Weinberger <richard@nod.at>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <1411906276.11836.21.camel@karhu>
+In-Reply-To: <1411906276.11836.21.camel@karhu>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 02:57:15PM -0700, Luis R. Rodriguez wrote:
-...
-> [   14.414746]  [<ffffffff814d2cf9>] ? dump_stack+0x41/0x51
-> [   14.414790]  [<ffffffff81061972>] ? warn_slowpath_common+0x72/0x90
-> [   14.414834]  [<ffffffff810619d7>] ? warn_slowpath_fmt+0x47/0x50
-> [   14.414880]  [<ffffffff814d0ac3>] ? printk+0x4f/0x51
-> [   14.414921]  [<ffffffff811f8593>] ? kernfs_remove_by_name_ns+0x83/0x90
-> [   14.415000]  [<ffffffff8137433d>] ? driver_sysfs_remove+0x1d/0x40
-> [   14.415046]  [<ffffffff81374a15>] ? driver_probe_device+0x1d5/0x250
-> [   14.415099]  [<ffffffff81374b4b>] ? __driver_attach+0x7b/0x80
-> [   14.415149]  [<ffffffff81374ad0>] ? __device_attach+0x40/0x40
-> [   14.415204]  [<ffffffff81372a13>] ? bus_for_each_dev+0x53/0x90
-> [   14.415254]  [<ffffffff81373913>] ? driver_attach_workfn+0x13/0x80
-> [   14.415298]  [<ffffffff81077403>] ? process_one_work+0x143/0x3c0
-> [   14.415342]  [<ffffffff81077a44>] ? worker_thread+0x114/0x480
-> [   14.415384]  [<ffffffff81077930>] ? rescuer_thread+0x2b0/0x2b0
-> [   14.415427]  [<ffffffff8107c261>] ? kthread+0xc1/0xe0
-> [   14.415468]  [<ffffffff8107c1a0>] ? kthread_create_on_node+0x170/0x170
-> [   14.415511]  [<ffffffff814d883c>] ? ret_from_fork+0x7c/0xb0
-> [   14.415554]  [<ffffffff8107c1a0>] ? kthread_create_on_node+0x170/0x170
+On 9/28/2014 3:11 PM, Artem Bityutskiy wrote:
+> On Sun, 2014-09-28 at 09:37 +0300, Tanya Brokhman wrote:
+>> The need for performing read disturb is determined according to new
+>> statistics collected per eraseblock:
+>> - read counter: incremented at each read operation
+>>                  reset at each erase
+>> - last erase time stamp: updated at each erase
+>>
+>> This patch adds the infrastructure for the above statistics
+>
+> Would you please provide some kind of high level description for this
+> stuff. What is the problem at hand, how is it solved. Right off-the top
+> of my head I have the following comment.
+>
+> Adding more fields to 'struct ubi_wl_entry' should be well-justified.
+> These objects are per-PEB, so there may be really a lot of them, and
+> they may consume a lot of memory. Increasing the size of the object may
+> be affect the memory consumption a lot.
+>
+> So I wonder if these read counters solve a big enough problem, so that
+> they are worth having in this data structure.
+>
+> So I am really missing the bigger picture here.
+>
 
-Do you have CONFIG_FRAME_POINTER turned off?  Probe failure itself
-aside, the above looks like a bug in really_probe()'s error path.  It
-looks like it can try to remove sysfs directory that it hasn't added
-yet.
-
-Thanks.
+Sure, will add a documentation file to describe the need for this and 
+the algorithm itself.
 
 -- 
-tejun
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
