@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580AbaI1LM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 07:12:27 -0400
-Received: from rgout0203.bt.lon5.cpcloud.co.uk ([65.20.0.202]:37435 "EHLO
-	rgout0203.bt.lon5.cpcloud.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751316AbaI1LM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 07:12:26 -0400
-X-CTCH-RefID: str=0001.0A090209.5427ED10.00F6,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-Junkmail-Premium-Raw: score=28/50,refid=2.7.2:2014.9.25.135419:17:28.905,ip=31.50.239.172,rules=__HAS_FROM,
- __PHISH_FROM2, __FRAUD_WEBMAIL_FROM, __TO_MALFORMED_2, __TO_NO_NAME,
- __MULTIPLE_RCPTS_CC_X2, __HAS_MSGID, __SANE_MSGID, __HAS_X_MAILER, __ANY_URI,
- __FRAUD_BODY_WEBMAIL, __URI_NO_WWW, __URI_NO_PATH, BODYTEXTP_SIZE_3000_LESS,
- BODY_SIZE_800_899, __MIME_TEXT_ONLY, RDNS_GENERIC_POOLED, __URI_NS,
- SXL_IP_DYNAMIC[172.239.50.31.fur], HTML_00_01, HTML_00_10,
- BODY_SIZE_5000_LESS, RDNS_SUSP_GENERIC, __PHISH_FROM, MULTIPLE_RCPTS,
- __PHISH_SPEAR_STRUCTURE_1, BODY_SIZE_1000_LESS, RDNS_SUSP,
- BODY_SIZE_2000_LESS, __FRAUD_WEBMAIL, BODY_SIZE_7000_LESS
-X-CTCH-Spam: Unknown
-From: Mike Roocroft <mike.linux@btinternet.com>
-To: gregkh@linuxfoundation.org
-Cc: swetland@google.com, sudipm.mukherjee@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Mike Roocroft <mike.linux@btinternet.com>
-Subject: [PATCH] Drivers: Staging: Android: sw_sync: Fixed a blank line after declaration coding style issue on lines 100 and 159
-Date: Sun, 28 Sep 2014 12:14:56 +0100
-Message-Id: <1411902896-9934-1-git-send-email-mike.linux@btinternet.com>
-X-Mailer: git-send-email 2.1.0
+	id S1753770AbaI1LPM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 07:15:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2140 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751940AbaI1LPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 07:15:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,613,1406617200"; 
+   d="scan'208";a="609843752"
+Message-ID: <5427EDB7.9060002@linux.intel.com>
+Date: Sun, 28 Sep 2014 19:15:03 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFT Part2 v2 00/24] Enable hierarchy irqdomian on x86 platforms
+References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com> <20140926142931.GA10066@nazgul.tnic> <542594A6.4040504@amd.com> <20140928110531.GB7351@pd.tnic>
+In-Reply-To: <20140928110531.GB7351@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue
+Hi Borislav,
+	I have prepared a git tree at:
+https://github.com/jiangliu/linux.git irqdomain/p1v2
+https://github.com/jiangliu/linux.git irqdomain/p2v2
+https://github.com/jiangliu/linux.git irqdomain/p3v1
 
-Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
----
- drivers/staging/android/sw_sync.c | 2 ++
- 1 file changed, 2 insertions(+)
+Branch irqdomain/p3v1 also includes all changes in p1v2/p2v2.
+Regards!
+Gerry
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index a76db3f..863d4b1 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
- 				       char *str, int size)
- {
- 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
-+
- 	snprintf(str, size, "%d", pt->value);
- }
- 
-@@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
- static int sw_sync_release(struct inode *inode, struct file *file)
- {
- 	struct sw_sync_timeline *obj = file->private_data;
-+
- 	sync_timeline_destroy(&obj->obj);
- 	return 0;
- }
--- 
-2.1.0
-
+On 2014/9/28 19:05, Borislav Petkov wrote:
+> On Fri, Sep 26, 2014 at 11:30:30AM -0500, Aravind Gopalakrishnan wrote:
+>> Okay, I shall start looking into the patches and RFH as needed.
+> 
+> Btw, apparently, there's a third patchset too:
+> 
+> https://lkml.kernel.org/r/1411743478-31435-1-git-send-email-jiang.liu@linux.intel.com
+> 
+> Jiang, do you have a tree which has all required patches for testing so
+> that people don't have to go hunting for them..?
+> 
+> Thanks.
+> 
