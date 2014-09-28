@@ -1,57 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaI1IYn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 04:24:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55642 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaI1IYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 04:24:41 -0400
-Message-ID: <5427C5C4.40508@codeaurora.org>
-Date: Sun, 28 Sep 2014 11:24:36 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1753549AbaI1IiG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 04:38:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404AbaI1Ih7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 04:37:59 -0400
+Date: Sun, 28 Sep 2014 10:35:32 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Denis Kirjanov <kda@linux-powerpc.org>
+Cc: Nicholas Krause <yocto6@gmail.com>, IvDoorn@gmail.com,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, linux-kernel@vger.kernel.org
+Subject: Re: [rt2x00-users] [PATCH] wireless: Remove unnessary write over of
+ register 11 in rt2800lib.c
+Message-ID: <20140928083531.GA2013@redhat.com>
+References: <1411852301-26857-1-git-send-email-yocto6@gmail.com>
+ <20140928070923.GA2087@redhat.com>
+ <CAOJe8K1nkeVjNpNoUBxuJv-YXj3Wr_oH86yR31U7w3Jq5j7oxw@mail.gmail.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-CC: linux-arm-msm@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: ubi: Extend UBI layer debug/messaging capabilities
-References: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org> <5427C046.5030608@nod.at>
-In-Reply-To: <5427C046.5030608@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJe8K1nkeVjNpNoUBxuJv-YXj3Wr_oH86yR31U7w3Jq5j7oxw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/28/2014 11:01 AM, Richard Weinberger wrote:
-> Tanya,
->
-> Am 28.09.2014 08:36, schrieb Tanya Brokhman:
->> If there is more then one UBI device mounted, there is no way to
->> distinguish between messages from different UBI devices.
->> Add device number to all ubi layer message types.
->>
->>
->> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->
-> Artem's mail is dedekind1@ not dedeking1@. :)
+On Sun, Sep 28, 2014 at 12:05:30PM +0400, Denis Kirjanov wrote:
+> Or someone with the hardware has to test and check that...
 
-oops.... sorry about that. thanks for the fix.
+... on all possible combinations of channel, bandwidth, signal strength, modulation type, ...
 
-> Anyway, instead of passing ubi->ubi_num down to every log function you can
-> just pass the ubi object itself and let the log function access ->ubi_num.
+Stanislaw
 
-This is how I first implemented this patch. But then I cam across some 
-ubi_err prints during the init process (in build.c ubi_init()) when we 
-still don't have the ubi structure, so we need to pass some number to 
-the message. I overcame this by using UBI_MAX_DEVICES.
-
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation
