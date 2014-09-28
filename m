@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaI1WQE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 18:16:04 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:52751 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaI1WQD (ORCPT
+	id S1753477AbaI1WZD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 18:25:03 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65184 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaI1WZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 18:16:03 -0400
-Date: Mon, 29 Sep 2014 01:15:53 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
-        namhyung@kernel.org
-Subject: Re: [PATCH 15/15] perf: replace _BSD_SOURCE macro by _DEFAULT_SOURCE
-Message-ID: <20140928221553.GA22895@drone.musicnaut.iki.fi>
-References: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com>
- <1411422796-27049-16-git-send-email-alexis.berlemont@gmail.com>
+	Sun, 28 Sep 2014 18:25:01 -0400
+Date: Sun, 28 Sep 2014 15:26:04 -0700
+From: Omar Sandoval <osandov@osandov.com>
+To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: orenl@cellrox.com
+Subject: Re: [PATCH 1/2] btrfs: fix sparse address space warnings
+Message-ID: <20140928222604.GA6328@molino.home.network>
+References: <1411894092-28784-1-git-send-email-osandov@osandov.com>
+ <1411894092-28784-2-git-send-email-osandov@osandov.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411422796-27049-16-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <1411894092-28784-2-git-send-email-osandov@osandov.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Sep 22, 2014 at 11:53:16PM +0200, Alexis Berlemont wrote:
-> Starting from glibc-2.20, the macro _BSD_SOURCE is deprecated and
-> should be replaced by _DEFAULT_SOURCE.
-
-This patch fixes perf build breakage with glibc-2.20, so _DEFAULT_SOURCE
-is needed.
-
-But shouldn't you also keep _BSD_SOURCE still there for a while for
-backwards compatibility? (Not sure if it has relevance for those
-using older glibcs...).
-
-Anyway to fix the perf + glibc-2.20 build failure:
-
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-
-(BTW, your patch was missing Signed-off-by.)
-
-A.
-
-> ---
->  tools/perf/util/util.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index 6686436..f56b4e0 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -38,7 +38,7 @@
->  #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
+On Sun, Sep 28, 2014 at 01:48:11AM -0700, Omar Sandoval wrote:
+> diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
+> index 6528aa6..e0be577 100644
+> --- a/fs/btrfs/send.c
+> +++ b/fs/btrfs/send.c
+> @@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf, u32 len, loff_t *off)
+>  	set_fs(KERNEL_DS);
 >  
->  #define _ALL_SOURCE 1
-> -#define _BSD_SOURCE 1
-> +#define _DEFAULT_SOURCE 1
->  #define HAS_BOOL
->  
->  #include <unistd.h>
-> -- 
-> 2.1.0
+>  	while (pos < len) {
+> -		ret = vfs_write(filp, (char *)buf + pos, len - pos, off);
+> +		ret = vfs_write(filp, (__force const char __user *)buf + pos,
+> +				len - pos, off);
+>  		/* TODO handle that correctly */
+>  		/*if (ret == -ERESTARTSYS) {
+>  			continue;
+
+Actually, looking at this now, it looks like this is just an open-coded
+kernel_write. I think this could be made a bit cleaner by using that instead;
+the tradeoff is that each call to kernel_write will do the address space
+flip-flop, so if the write gets split up into many calls, there'd be some
+slight overhead. That's probably a microoptimization, but I think it's worth
+looking into making kernel_read and kernel_write handle the retry logic.
+
+It looks like Oren Laadan submitted a patch doing exactly that as part of the
+checkpoint/restart patch series: https://lkml.org/lkml/2010/5/6/142. I've added
+an email address that I found for him.
+
+>From Josef's response way back in 2010:
+> > +static ssize_t _kernel_write(struct file *file, loff_t offset,
+> > +			     const char __user *ubuf, size_t count)
+> > +{
+> > +	ssize_t nwrite;
+> > +	size_t nleft;
+> > +	loff_t pos = offset;
+> > +
+> > +	for (nleft = count; nleft; nleft -= nwrite) {
+> > +		nwrite = vfs_write(file, ubuf, nleft, &pos);
+> > +		if (nwrite < 0) {
+> > +			if (nwrite == -EAGAIN) {
+> > +				nwrite = 0;
+> > +				continue;
+> > +			} else
+> > +				return nwrite;
+> > +		}
+> > +		ubuf += nwrite;
+> > +	}
+> > +	return count - nleft;
+> > +}
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I'm not entirely sure if this can happen, but if vfs_write doesn't write
+> anything, but doesn't have an error, we could end up in an infinite loop.  Like
+> I said I'm not sure if thats even possible, but its definitely one of those
+> things that if it is possible some random security guy is going to figure out
+> how to exploit it at some point down the line.
+
+Did anyone ever come up with a good answer for this?
+
+-- 
+Omar
