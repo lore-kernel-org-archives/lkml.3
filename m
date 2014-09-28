@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142AbaI1Cu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 22:50:58 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:57383 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaI1Cu5 (ORCPT
+	id S1753540AbaI1CvU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 22:51:20 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50357 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaI1CvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 22:50:57 -0400
-From: Nicholas Krause <yocto6@gmail.com>
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: Remove read of issue in sa1111.c in sa1111_resume
-Date: Sat, 27 Sep 2014 22:50:52 -0400
-Message-Id: <1411872652-16207-1-git-send-email-yocto6@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 27 Sep 2014 22:51:17 -0400
+Date: Sun, 28 Sep 2014 03:51:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: nick <yocto6@gmail.com>
+Cc: khilman@deeprootsystems.com, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Legacy Code in gpmc-onenand.c
+Message-ID: <20140928025114.GY7996@ZenIV.linux.org.uk>
+References: <5427744E.4040409@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5427744E.4040409@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the FIXME message and issue with reading in this driver before resuming
-in the function, sa1111_resume.
+On Sat, Sep 27, 2014 at 10:37:02PM -0400, nick wrote:
+> Greetings Kevin and others,
+> I am wondering if the below code is legacy I can remove it as stated it the fix me.
+> Cheers Nick 
 
-Signed-off-by: Nicholas Krause <yocto6@gmail.com>
----
- arch/arm/common/sa1111.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-index e57d7e5..0c4b9a9 100644
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -950,9 +950,7 @@ static int sa1111_resume(struct platform_device *dev)
- 
- 	/*
- 	 * Ensure that the SA1111 is still here.
--	 * FIXME: shouldn't do this here.
- 	 */
--	id = sa1111_readl(sachip->base + SA1111_SKID);
- 	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
- 		__sa1111_remove(sachip);
- 		platform_set_drvdata(dev, NULL);
--- 
-1.9.1
-
+Nick, could you take that to more appropriate forum?  alt.sex.fetish.FIXME
+would probably be a good starting point...
