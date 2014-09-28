@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255AbaI1PFN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 11:05:13 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:42935 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442AbaI1PFL (ORCPT
+	id S1753510AbaI1PMT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 11:12:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45689 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750901AbaI1PMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 11:05:11 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        dm-devel@redhat.com (maintainer:DEVICE-MAPPER (LVM)),
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org (open list)
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [RESEND PATCH] drivers/md: Use rcu_dereference() for accessing rcu pointer
-Date: Sun, 28 Sep 2014 11:05:04 -0400
-Message-Id: <1411916712-17631-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Sep 2014 11:12:18 -0400
+Date: Sun, 28 Sep 2014 16:12:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC:kirkwood: Don't raise an error when no DAI format
+Message-ID: <20140928151207.GI5182@n2100.arm.linux.org.uk>
+References: <20140928150342.CC21B786A1D@smtpfb1-g21.free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140928150342.CC21B786A1D@smtpfb1-g21.free.fr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got Paul's email wrong the first time.
+On Sun, Sep 28, 2014 at 04:19:27PM +0200, Jean-Francois Moine wrote:
+> The two DAIs of the kirkwood controller have a unique PCM format.
+> 
+> The simple-card sets the audio hardware definitions of all CPU DAIs.
+> The PCM format is defined only when it is present in the DT.
+> 
+> This patch prevents the controller to raise an error when
+> the DT audio card definition by the simple card contains the PCM
+> format of one CPU DAI only.
 
-The map field in 'struct mapped_device' is an rcu pointer. Use rcu_dereference()
-while accessing it.
+I think this is a silly idea - why should every driver have additional code
+to detect when it's called to do thing.  Why doesn't the simple card code
+always pass the required format?
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- drivers/md/dm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Looking at other drivers, no one else does this; they all appear to require
+the proper format to be specified.
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 746411b..fbdf0bb 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2211,7 +2211,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
- 
- 	merge_is_optional = dm_table_merge_is_optional(t);
- 
--	old_map = md->map;
-+	old_map = rcu_dereference(md->map);
- 	rcu_assign_pointer(md->map, t);
- 	md->immutable_target_type = dm_table_get_immutable_target_type(t);
- 
-@@ -2230,7 +2230,7 @@ static struct dm_table *__bind(struct mapped_device *md, struct dm_table *t,
-  */
- static struct dm_table *__unbind(struct mapped_device *md)
- {
--	struct dm_table *map = md->map;
-+	struct dm_table *map = rcu_dereference(md->map);
- 
- 	if (!map)
- 		return NULL;
-@@ -2624,7 +2624,7 @@ int dm_suspend(struct mapped_device *md, unsigned suspend_flags)
- 		goto out_unlock;
- 	}
- 
--	map = md->map;
-+	map = rcu_dereference(md->map);
- 
- 	/*
- 	 * DMF_NOFLUSH_SUSPENDING must be set before presuspend.
-@@ -2718,7 +2718,7 @@ int dm_resume(struct mapped_device *md)
- 	if (!dm_suspended_md(md))
- 		goto out;
- 
--	map = md->map;
-+	map = rcu_dereference(md->map);
- 	if (!map || !dm_table_get_size(map))
- 		goto out;
- 
+What some drivers do (eg, omap-mcbsp.c) is to block set_fmt when the
+DAI is already in use - setting a flag "configured" in hw_params, and
+clearing it in shutdown.  Maybe following this will solve your problem.
+
+In any case, random drivers doing stuff differently without reason is
+really not a good idea.
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
