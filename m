@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaI1Ug4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 16:36:56 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:46298 "EHLO
-	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751632AbaI1Ugz (ORCPT
+	id S1753826AbaI1UlT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 16:41:19 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:36086 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449AbaI1UlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 16:36:55 -0400
-Date: Sun, 28 Sep 2014 22:36:46 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Carlo Caione <carlo@caione.org>
-Subject: Re: [PATCH 3/4] watchdog: add driver for Ricoh RN5T618 watchdog
-Message-ID: <20140928203646.GB571@spo001.leaseweb.nl>
-References: <1409091237-16722-1-git-send-email-b.galvani@gmail.com> <1409091237-16722-4-git-send-email-b.galvani@gmail.com> <20140904091917.GA1397@lee--X1>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904091917.GA1397@lee--X1>
-User-Agent: Mutt/1.4.1i
+	Sun, 28 Sep 2014 16:41:18 -0400
+Date: Sun, 28 Sep 2014 15:41:15 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 1/2] x86: don't unnecessarily call
+ dma_alloc_from_contiguous()
+Message-ID: <20140928154115.6d77541d@as>
+In-Reply-To: <1411919524-3666-1-git-send-email-akinobu.mita@gmail.com>
+References: <1411919524-3666-1-git-send-email-akinobu.mita@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On Mon, 29 Sep 2014 00:52:03 +0900
+Akinobu Mita <akinobu.mita@gmail.com> wrote:
 
-> Still waiting on a Watchdog Ack, so I can take this set in.
+> If CONFIG_DMA_CMA is enabled, dma_generic_alloc_coherent() tries to
+> allocate memory region by dma_alloc_from_contiguous() before trying to
+> use alloc_pages().
 > 
-> > This adds a driver for the watchdog timer available in Ricoh RN5T618
-> > PMIC. The device supports a programmable expiration time of 1, 8, 32
-> > or 128 seconds.
-> > 
-> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> > ---
-> >  drivers/watchdog/Kconfig       |   11 +++
-> >  drivers/watchdog/Makefile      |    1 +
-> >  drivers/watchdog/rn5t618_wdt.c |  196 ++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/rn5t618.h    |    4 +
-> >  4 files changed, 212 insertions(+)
-> >  create mode 100644 drivers/watchdog/rn5t618_wdt.c
-> > 
-> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> > index f57312f..9eba6af 100644
-> > --- a/drivers/watchdog/Kconfig
-> > +++ b/drivers/watchdog/Kconfig
-> > @@ -309,6 +309,17 @@ config ORION_WATCHDOG
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called orion_wdt.
-> >  
-> > +config RN5T618_WATCHDOG
-> > +	tristate "Ricoh RN5T618 watchdog"
-> > +	depends on MFD_RN5T618
-> > +	select WATCHDOG_CORE
-> > +	help
-> > +	  If you say yes here you get support for watchdog on the Ricoh
-> > +	  RN5T618 PMIC.
-> > +
-> > +	  This driver can also be built as a module.  If so, the module
-> > +	  will be called rn5t618_wdt.
-> > +
-> >  config SUNXI_WATCHDOG
-> >  	tristate "Allwinner SoCs watchdog support"
-> >  	depends on ARCH_SUNXI
-> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> > index 468c320..0afa343 100644
-> > --- a/drivers/watchdog/Makefile
-> > +++ b/drivers/watchdog/Makefile
-> > @@ -47,6 +47,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
-> >  obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
-> >  obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
-> >  obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
-> > +obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
-> >  obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
-> >  obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
-> >  obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
-> > diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
-> > new file mode 100644
-> > index 0000000..3a76ad7
-> > --- /dev/null
-> > +++ b/drivers/watchdog/rn5t618_wdt.c
-> > @@ -0,0 +1,196 @@
-> > +/*
-> > + * Watchdog driver for Ricoh RN5T618 PMIC
-> > + *
-> > + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * version 2 as published by the Free Software Foundation.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program. If not, see <http://www.gnu.org/licenses/>.
-> > + */
-> > +
-> > +#include <linux/device.h>
-> > +#include <linux/mfd/rn5t618.h>
-> > +#include <linux/module.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/watchdog.h>
-> > +
-> > +#define DRIVER_NAME "rn5t618-wdt"
-> > +
-> > +static bool nowayout = WATCHDOG_NOWAYOUT;
-> > +static unsigned int heartbeat = -1;
-> > +
-> > +module_param(heartbeat, int, 0);
-> > +MODULE_PARM_DESC(heartbeat, "Initial watchdog heartbeat in seconds");
-> > +
+> This wastes CMA region by small DMA-coherent buffers which can be
+> allocated by alloc_pages().  And it also causes performance degradation,
+> as this is trying to drive _all_ dma mapping allocations through a
+> _very_ small window, reported by Peter Hurley.
+> 
+> This fixes it by trying to allocate by alloc_pages() first in
+> dma_generic_alloc_coherent() as dma_alloc_from_contiguous should be
+> called only for huge allocation.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Reported-by: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Don Dutile <ddutile@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: x86@kernel.org
+> Cc: iommu@lists.linux-foundation.org
+> ---
+>  arch/x86/kernel/pci-dma.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+> index a25e202..0402266 100644
+> --- a/arch/x86/kernel/pci-dma.c
+> +++ b/arch/x86/kernel/pci-dma.c
+> @@ -99,20 +99,20 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+>  
+>  	flag &= ~__GFP_ZERO;
+>  again:
+> -	page = NULL;
+> +	page = alloc_pages_node(dev_to_node(dev), flag | __GFP_NOWARN,
+> +				get_order(size));
 
-These are the comments I just mailed:
-1) this is actually a timeout value and not the same as the heartbeat of the watchdog device.
-So I prefer this also to be called as timeout and not heartbeat.
-2) this actually is an unsigned int.
+Shouldn't you be doing this only in the case where order is relatively
+small? Like < PAGE_ALLOC_COSTLY_ORDER or so?
 
-For the rest OK by me.
-
-Kind regards,
-Wim.
+>  	/* CMA can be used only in the context which permits sleeping */
+> -	if (flag & __GFP_WAIT) {
+> +	if (!page && (flag & __GFP_WAIT)) {
+>  		page = dma_alloc_from_contiguous(dev, count, get_order(size));
+>  		if (page && page_to_phys(page) + size > dma_mask) {
+>  			dma_release_from_contiguous(dev, page, count);
+>  			page = NULL;
+>  		}
+>  	}
+> -	/* fallback */
+> -	if (!page)
+> -		page = alloc_pages_node(dev_to_node(dev), flag, get_order(size));
+> -	if (!page)
+> +	if (!page) {
+> +		warn_alloc_failed(flag, get_order(size), NULL);
+>  		return NULL;
+> +	}
+>  
+>  	addr = page_to_phys(page);
+>  	if (addr + size > dma_mask) {
 
