@@ -1,293 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaI1WlT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 18:41:19 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:51889 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaI1WlR (ORCPT
+	id S1753940AbaI1Wns (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 18:43:48 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:48536 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbaI1Wnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 18:41:17 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v3] watchdog: add driver for Ricoh RN5T618 watchdog
-Date: Mon, 29 Sep 2014 00:39:47 +0200
-Message-Id: <1411943987-30738-1-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Sep 2014 18:43:47 -0400
+X-Auth-Info: BVwmSKZZ7m5SMYMJgOl1d+yWHxZ4HHzr/gUF6a8u90Y=
+From: Marek Vasut <marex@denx.de>
+To: bpqw <bpqw@micron.com>
+Subject: Re: [PATCH 1/1 v2] driver:mtd:spi-nor: Add Micron quad I/O support
+Date: Mon, 29 Sep 2014 00:43:43 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com> <201409261046.07132.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315DCED6@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315DCED6@NTXXIAMBX02.xacn.micron.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409290043.43750.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a driver for the watchdog timer available in Ricoh RN5T618
-PMIC. The device supports a programmable expiration time of 1, 8, 32
-or 128 seconds.
+On Sunday, September 28, 2014 at 03:59:42 AM, bpqw wrote:
+> For Micron spi norflash,you can enable
+> Quad spi transfer by clear EVCR(Enhanced
+> Volatile Configuration Register) Quad I/O
+> protocol bit.
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
----
+OK, this information is nice and all, but what does this patch do? I can't learn 
+this information from the commit message as it is, can I ? And , the purpose of 
+the commit message is exactly to summarize the change the patch implements.
 
-Hi,
+> Signed-off-by: bean huo <beanhuo@micron.com>
+> ---
+>  v1-v2:modified to that capture wait_till_ready()
+> 	return value,if error,directly return its
+> 	the value.
+> 
+>  drivers/mtd/spi-nor/spi-nor.c |   46
+> +++++++++++++++++++++++++++++++++++++++++ include/linux/mtd/spi-nor.h   | 
+>   6 ++++++
+>  2 files changed, 52 insertions(+)
+> 
+> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+> index b5ad6be..0c3b4fd 100644
+> --- a/drivers/mtd/spi-nor/spi-nor.c
+> +++ b/drivers/mtd/spi-nor/spi-nor.c
+> @@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
+>  	return 0;
+>  }
+> 
+> +static int micron_quad_enable(struct spi_nor *nor)
+> +{
+> +	int ret, val;
+> +
+> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
+> +	if (ret < 0) {
+> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
+> +		return -EINVAL;
+> +	}
+> +
+> +	write_enable(nor);
+> +
+> +	/* set EVCR ,enable quad I/O */
+> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
+> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
+> +	if (ret < 0) {
+> +		dev_err(nor->dev,
+> +			"error while writing EVCR register\n");
+> +		return -EINVAL;
 
-this is the third version of Ricoh RN5T618 watchdog driver. The other
-patches of the original series adding MFD and regulator support have
-already been merged.
-
-Changes since v2 (http://lwn.net/Articles/610000/ ):
-  - rename 'heartbeat' module parameter to 'timeout'
-  - change parameter type to uint
-
-Changes since v1:
-  - initialized heartbeat parameter to 0 instead of -1
-  - simplified code path in set_timeout function
-  - fixed module unloading
-  - made 'time' unsigned in struct rn5t618_wdt_map
-
- drivers/watchdog/Kconfig       |  11 +++
- drivers/watchdog/Makefile      |   1 +
- drivers/watchdog/rn5t618_wdt.c | 198 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 210 insertions(+)
- create mode 100644 drivers/watchdog/rn5t618_wdt.c
-
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 3ee951b..6fd5a87 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -327,6 +327,17 @@ config ORION_WATCHDOG
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called orion_wdt.
- 
-+config RN5T618_WATCHDOG
-+	tristate "Ricoh RN5T618 watchdog"
-+	depends on MFD_RN5T618
-+	select WATCHDOG_CORE
-+	help
-+	  If you say yes here you get support for watchdog on the Ricoh
-+	  RN5T618 PMIC.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called rn5t618_wdt.
-+
- config SUNXI_WATCHDOG
- 	tristate "Allwinner SoCs watchdog support"
- 	depends on ARCH_SUNXI
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 44f5d68..f105999 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -48,6 +48,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
- obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
- obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
- obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
-+obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
- obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
- obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
- obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
-diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
-new file mode 100644
-index 0000000..d1c1227
---- /dev/null
-+++ b/drivers/watchdog/rn5t618_wdt.c
-@@ -0,0 +1,198 @@
-+/*
-+ * Watchdog driver for Ricoh RN5T618 PMIC
-+ *
-+ * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/mfd/rn5t618.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/watchdog.h>
-+
-+#define DRIVER_NAME "rn5t618-wdt"
-+
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+static unsigned int timeout;
-+
-+module_param(timeout, uint, 0);
-+MODULE_PARM_DESC(timeout, "Initial watchdog timeout in seconds");
-+
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-+		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+struct rn5t618_wdt {
-+	struct watchdog_device wdt_dev;
-+	struct rn5t618 *rn5t618;
-+};
-+
-+/*
-+ * This array encodes the values of WDOGTIM field for the supported
-+ * watchdog expiration times. If the watchdog is not accessed before
-+ * the timer expiration, the PMU generates an interrupt and if the CPU
-+ * doesn't clear it within one second the system is restarted.
-+ */
-+static const struct {
-+	u8 reg_val;
-+	unsigned int time;
-+} rn5t618_wdt_map[] = {
-+	{ 0, 1 },
-+	{ 1, 8 },
-+	{ 2, 32 },
-+	{ 3, 128 },
-+};
-+
-+static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
-+				   unsigned int t)
-+{
-+	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-+	int ret, i;
-+
-+	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
-+		if (rn5t618_wdt_map[i].time + 1 >= t)
-+			break;
-+	}
-+
-+	if (i == ARRAY_SIZE(rn5t618_wdt_map))
-+		return -EINVAL;
-+
-+	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-+				 RN5T618_WATCHDOG_WDOGTIM_M,
-+				 rn5t618_wdt_map[i].reg_val);
-+	if (!ret)
-+		wdt_dev->timeout = rn5t618_wdt_map[i].time;
-+
-+	return ret;
-+}
-+
-+static int rn5t618_wdt_start(struct watchdog_device *wdt_dev)
-+{
-+	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-+	int ret;
-+
-+	ret = rn5t618_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
-+	if (ret)
-+		return ret;
-+
-+	/* enable repower-on */
-+	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_REPCNT,
-+				 RN5T618_REPCNT_REPWRON,
-+				 RN5T618_REPCNT_REPWRON);
-+	if (ret)
-+		return ret;
-+
-+	/* enable watchdog */
-+	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-+				 RN5T618_WATCHDOG_WDOGEN,
-+				 RN5T618_WATCHDOG_WDOGEN);
-+	if (ret)
-+		return ret;
-+
-+	/* enable watchdog interrupt */
-+	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIREN,
-+				  RN5T618_PWRIRQ_IR_WDOG,
-+				  RN5T618_PWRIRQ_IR_WDOG);
-+}
-+
-+static int rn5t618_wdt_stop(struct watchdog_device *wdt_dev)
-+{
-+	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-+
-+	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-+				  RN5T618_WATCHDOG_WDOGEN, 0);
-+}
-+
-+static int rn5t618_wdt_ping(struct watchdog_device *wdt_dev)
-+{
-+	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-+	unsigned int val;
-+	int ret;
-+
-+	/* The counter is restarted after a R/W access to watchdog register */
-+	ret = regmap_read(wdt->rn5t618->regmap, RN5T618_WATCHDOG, &val);
-+	if (ret)
-+		return ret;
-+
-+	ret = regmap_write(wdt->rn5t618->regmap, RN5T618_WATCHDOG, val);
-+	if (ret)
-+		return ret;
-+
-+	/* Clear pending watchdog interrupt */
-+	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIRQ,
-+				  RN5T618_PWRIRQ_IR_WDOG, 0);
-+}
-+
-+static struct watchdog_info rn5t618_wdt_info = {
-+	.options	= WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
-+			  WDIOF_KEEPALIVEPING,
-+	.identity	= DRIVER_NAME,
-+};
-+
-+static struct watchdog_ops rn5t618_wdt_ops = {
-+	.owner          = THIS_MODULE,
-+	.start          = rn5t618_wdt_start,
-+	.stop           = rn5t618_wdt_stop,
-+	.ping           = rn5t618_wdt_ping,
-+	.set_timeout    = rn5t618_wdt_set_timeout,
-+};
-+
-+static int rn5t618_wdt_probe(struct platform_device *pdev)
-+{
-+	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
-+	struct rn5t618_wdt *wdt;
-+	int min_timeout, max_timeout;
-+
-+	wdt = devm_kzalloc(&pdev->dev, sizeof(struct rn5t618_wdt), GFP_KERNEL);
-+	if (!wdt)
-+		return -ENOMEM;
-+
-+	min_timeout = rn5t618_wdt_map[0].time;
-+	max_timeout = rn5t618_wdt_map[ARRAY_SIZE(rn5t618_wdt_map) - 1].time;
-+
-+	wdt->rn5t618 = rn5t618;
-+	wdt->wdt_dev.info = &rn5t618_wdt_info;
-+	wdt->wdt_dev.ops = &rn5t618_wdt_ops;
-+	wdt->wdt_dev.min_timeout = min_timeout;
-+	wdt->wdt_dev.max_timeout = max_timeout;
-+	wdt->wdt_dev.timeout = max_timeout;
-+	wdt->wdt_dev.parent = &pdev->dev;
-+
-+	watchdog_set_drvdata(&wdt->wdt_dev, wdt);
-+	watchdog_init_timeout(&wdt->wdt_dev, timeout, &pdev->dev);
-+	watchdog_set_nowayout(&wdt->wdt_dev, nowayout);
-+
-+	platform_set_drvdata(pdev, wdt);
-+
-+	return watchdog_register_device(&wdt->wdt_dev);
-+}
-+
-+static int rn5t618_wdt_remove(struct platform_device *pdev)
-+{
-+	struct rn5t618_wdt *wdt = platform_get_drvdata(pdev);
-+
-+	watchdog_unregister_device(&wdt->wdt_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rn5t618_wdt_driver = {
-+	.probe = rn5t618_wdt_probe,
-+	.remove = rn5t618_wdt_remove,
-+	.driver = {
-+		.name	= DRIVER_NAME,
-+	},
-+};
-+
-+module_platform_driver(rn5t618_wdt_driver);
-+
-+MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
-+MODULE_DESCRIPTION("RN5T618 watchdog driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
-
+Why not just "return ret;" ?
+[...]
