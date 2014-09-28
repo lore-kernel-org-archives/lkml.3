@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaI1DX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 23:23:27 -0400
-Received: from mga14.intel.com ([192.55.52.115]:60445 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752180AbaI1DXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 23:23:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,612,1406617200"; 
-   d="scan'208";a="597819659"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-CC: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Subject: RE: [PATCH] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
-Thread-Topic: [PATCH] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
-Thread-Index: AQHP2ZVZkx0ZBJe9NUiWssulYNYxF5wV4pPw
-Date: Sun, 28 Sep 2014 03:23:21 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E99710F@SHSMSX101.ccr.corp.intel.com>
-References: <1411752349-31490-1-git-send-email-alvin.chen@intel.com>
-	 <1411752349-31490-2-git-send-email-alvin.chen@intel.com>
-	 <20140926100832.GE27755@sirena.org.uk>
- <1411741357.22717.4.camel@linux.intel.com>
-In-Reply-To: <1411741357.22717.4.camel@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753451AbaI1Dbd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 23:31:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60505 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601AbaI1Dbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Sep 2014 23:31:32 -0400
+Message-ID: <5427810F.2000305@infradead.org>
+Date: Sat, 27 Sep 2014 20:31:27 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: Nicholas Krause <yocto6@gmail.com>, linux@arm.linux.org.uk
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: Remove read of issue in sa1111.c in sa1111_resume
+References: <1411872652-16207-1-git-send-email-yocto6@gmail.com>
+In-Reply-To: <1411872652-16207-1-git-send-email-yocto6@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8S3NkO8007779
 
-> 
-> >
-> > > +/*  see Quark SPI data sheet for implementation rationale */ static
-> > > +u32 quark_x1000_set_clk_regvals(u32 rate, u32 *dds, u32 *clk_div) {
-> >
-> > Please document this in the driver - I don't know if this datasheet is
-> > public but even if it is it may not stay that way.
-> 
-> Datasheet is public.
-> I'm just wondering if we can use just a formula instead of table.
-> 
-As I said before, there are two formulas, but for the given rate, from the formulas, we can get a lot of <dds, clk_div> pairs,
-and we also need to select them according to the guidelines which is not formula. The table the datasheet given should be
-the best one to meet the jitter and duty cycles as the datasheet documented.
+On 09/27/14 19:50, Nicholas Krause wrote:
+> This removes the FIXME message and issue with reading in this driver before resuming
+> in the function, sa1111_resume.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+You need to explain why this makes any sense.
+Hint:  it doesn't.
+
+> Signed-off-by: Nicholas Krause <yocto6@gmail.com>
+> ---
+>  arch/arm/common/sa1111.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
+> index e57d7e5..0c4b9a9 100644
+> --- a/arch/arm/common/sa1111.c
+> +++ b/arch/arm/common/sa1111.c
+> @@ -950,9 +950,7 @@ static int sa1111_resume(struct platform_device *dev)
+>  
+>  	/*
+>  	 * Ensure that the SA1111 is still here.
+> -	 * FIXME: shouldn't do this here.
+>  	 */
+> -	id = sa1111_readl(sachip->base + SA1111_SKID);
+>  	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
+>  		__sa1111_remove(sachip);
+>  		platform_set_drvdata(dev, NULL);
+> 
+
+
+-- 
+~Randy
