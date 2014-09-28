@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaI1WxK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 18:53:10 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14559 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaI1WxI (ORCPT
+	id S1754037AbaI1W6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 18:58:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35501 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbaI1W6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 18:53:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18l9lRQS0a519fuz9G8eixS2uOOTJFlzNE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 91D875EF945
-Date: Sun, 28 Sep 2014 18:53:02 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Eric Rost <eric.rost@mybabylon.net>, jake@lwn.net, antonysaraev@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixed Conditional white space problems
-Message-ID: <20140928225302.GE23926@titan.lakedaemon.net>
-References: <20140928215426.GA10384@localhost>
- <20140928220101.GA25770@kroah.com>
+	Sun, 28 Sep 2014 18:58:13 -0400
+Message-ID: <54289267.7030905@ti.com>
+Date: Sun, 28 Sep 2014 18:57:43 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140928220101.GA25770@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>,
+        "Khoronzhuk, Ivan" <ivan.khoronzhuk@ti.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] power/reset: keystone: Register with kernel restart
+ handler
+References: <1411779438-23127-1-git-send-email-linux@roeck-us.net> <1411779438-23127-9-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1411779438-23127-9-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 06:01:01PM -0400, Greg KH wrote:
-> On Sun, Sep 28, 2014 at 04:54:26PM -0500, Eric Rost wrote:
-> > My first patch, resent to appropriate multiple addresses!
+On Friday 26 September 2014 08:57 PM, Guenter Roeck wrote:
+> Register with kernel restart handler instead of setting arm_pm_restart directly.
 > 
-> That's great, but it doesn't belong here in the body of the changelog :)
+> Move notifier registration to the end of the probe function to avoid having to
+> implement error handling.
 > 
-> > This patch fixes the following checkpatch.pl Warnings:
-> > 
-> > WARNING: suspect code indent for conditional statements (16, 16)
-> > +               for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
-> > [...]
-> > +               {
-> > 
-> > WARNING: suspect code indent for conditional statements (16, 16)
-> > +               for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
-> > [...]
-> > +               {
-> 
-> Your subject should give a clue as to what part of the kernel it
-> modifies, for this patch, it might look like:
-> 	staging: skein: fixed conditional...
-> 
-> Care to fix that up and resend?
+> Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+Looks ok for me.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-With Greg's comments addressed,
+Ivan,
+Can you please just test it once ? Thanks !!
 
-Acked-by: Jason Cooper <jason@lakedaemon.net>
+Regards,
+Santosh
 
-thx,
 
-Jason.
