@@ -1,212 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbaI1Hrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 03:47:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50819 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaI1Hru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 03:47:50 -0400
-Date: Sun, 28 Sep 2014 08:47:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20140928074747.GZ7996@ZenIV.linux.org.uk>
-References: <1411582473-29184-1-git-send-email-sem@altlinux.org>
- <20140924185521.GC7996@ZenIV.linux.org.uk>
- <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
- <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
- <20140926164442.GA26897@ZenIV.linux.org.uk>
- <20140927044555.GS7996@ZenIV.linux.org.uk>
- <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
- <20140927183139.GT7996@ZenIV.linux.org.uk>
- <20140927191657.GU7996@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140927191657.GU7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752322AbaI1H7W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 03:59:22 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:37442 "EHLO smtp.nebula.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937AbaI1H7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 03:59:21 -0400
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: linux-kernel@vger.kernel.org
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org, lars@metafoo.de,
+        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+Subject: [PATCH 1/2] ASoC: ssm2602: add device tree bindings
+Date: Sun, 28 Sep 2014 10:57:52 +0300
+Message-Id: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 27, 2014 at 08:16:57PM +0100, Al Viro wrote:
-> On Sat, Sep 27, 2014 at 07:31:39PM +0100, Al Viro wrote:
-> 
-> > We can get the long name cases right, and I agree that it'll make the
-> > things nicer, but it might take a couple of days to get right.  The thing
-> > I'm concerned about is not screwing DCACHE_RCUACCESS up.
-> 
-> FWIW, I suspect that the right approach is to put refcount + rcu_head in
-> front of external name and do the following:
-> 	* __d_free() checks if we have an external name, gets its containing
-> structure and does if (atomic_dec_and_test(&name->count)) kfree(name);
-> 	* switch_names() in non-exchange case (I'd probably call it copy_name,
-> not move_names, but anyway) sets DCACHE_RCUACCESS on target (source has
-> already gotten it from __d_rehash()), increments refcount on target's name
-> if external and, if the source old name is external, decrements its refcount
-> and calls kfree_rcu() if it has hit zero.
-> 
-> AFAICS, it guarantees that we'll schedule an RCU callback on name's rch_head
-> at most once, that we won't free it while RCU callback on it is scheduled
-> and we won't free it until a grace period has expired since the last time
-> it had been referenced by observable dentries.  Do you see any holes in that?
+Allow the ssm2602/ssm2603/ssm2604 codec driver to be
+instantiated from the device tree.
 
-Bugger...  I see one, actually.  Look: d1 and d2 come to share name at some
-point.  name has refcount 2.  d1 gets dropped.  OK, we get RCU-delayed
-__d_free().  refcount is still 2.  Now somebody starts looking through the
-hash chain.  And somebody else renames d2.  __d_move() decrements refcount of
-name to 1.  No kfree_rcu().  OK, _now_ __d_free() on d1 happens; it was
-RCU-delayed, but that won't wait for rcu_read_lock() done after we'd
-done call_rcu().  So __d_free() is called, name refcount reaches 0 and the
-name is freed.  Just as the hash lookup has gotten around to looking at what
-used to be the name of d2.  Oops...
+Also, add Kconfig prompts to allow manual selection of both the
+I2C and SPI configuration versions of the driver.
 
-The root cause, of course, is that we delay decrementing the refcount on
-dentry_free() path...  One variant is to rip freeing these suckers out of
-__d_free() and have dentry_free() do atomic_dec_and_test + kfree_rcu.
-That works (and we don't need to set DCACHE_RCUACCESS in copy_name();
-the interesting part of never-hashed case is for short names anyway), but
-the cost is twice the number of rcu callbacks on freeing long-name dentries.
-Is that really painful enough to care?  If not, something like the following
-would do; if it is... well, we could probably do make free_dentry() mark
-dentry->d_flags for __d_free() with "free the external name hanging off
-this one" in case if refcount decrement has ended up with zero.  Doable,
-but more complicated (and somewhat messy, since ->d_lock is not held
-at that point; OTOH, we could play with ->d_name instead of ->d_flags...).
-Anyway, the delta below might suffice.  Comments?
+Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+---
+ .../devicetree/bindings/sound/adi,ssm2602.txt         | 19 +++++++++++++++++++
+ sound/soc/codecs/Kconfig                              |  8 ++++++--
+ sound/soc/codecs/ssm2602-i2c.c                        |  9 +++++++++
+ sound/soc/codecs/ssm2602-spi.c                        |  9 +++++++++
+ 4 files changed, 43 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/adi,ssm2602.txt
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index cb25a1a..b52f4ee 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -235,18 +235,34 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
- 	return dentry_string_cmp(cs, ct, tcount);
- }
- 
-+struct ext_name {
-+	union {
-+		atomic_t count;
-+		struct rcu_head head;
+diff --git a/Documentation/devicetree/bindings/sound/adi,ssm2602.txt b/Documentation/devicetree/bindings/sound/adi,ssm2602.txt
+new file mode 100644
+index 0000000..3b3302f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/adi,ssm2602.txt
+@@ -0,0 +1,19 @@
++Analog Devices SSM2602, SSM2603 and SSM2604 I2S audio CODEC devices
++
++SSM2602 support both I2C and SPI as the configuration interface,
++the selection is made by the MODE strap-in pin.
++SSM2603 and SSM2604 only support I2C as the configuration interface.
++
++Required properties:
++
++  - compatible : One of "adi,ssm2602", "adi,ssm2603" or "adi,ssm2604"
++
++  - reg : the I2C address of the device for I2C, the chip select
++          number for SPI.
++
++ Example:
++
++	ssm2602: ssm2602@1a {
++		compatible = "adi,ssm2602";
++		reg = <0x1a>;
 +	};
-+	unsigned char name[];
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 8838838e..3649e73 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -520,12 +520,16 @@ config SND_SOC_SSM2602
+ 	tristate
+ 
+ config SND_SOC_SSM2602_SPI
++	tristate "Analog Devices SSM2602 CODEC - SPI"
++	depends on SPI_MASTER
+ 	select SND_SOC_SSM2602
+-	tristate
++	select REGMAP_SPI
+ 
+ config SND_SOC_SSM2602_I2C
++	tristate "Analog Devices SSM2602 CODEC - I2C"
++	depends on I2C
+ 	select SND_SOC_SSM2602
+-	tristate
++	select REGMAP_I2C
+ 
+ config SND_SOC_STA32X
+ 	tristate
+diff --git a/sound/soc/codecs/ssm2602-i2c.c b/sound/soc/codecs/ssm2602-i2c.c
+index abd63d5..0d9779d 100644
+--- a/sound/soc/codecs/ssm2602-i2c.c
++++ b/sound/soc/codecs/ssm2602-i2c.c
+@@ -41,10 +41,19 @@ static const struct i2c_device_id ssm2602_i2c_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, ssm2602_i2c_id);
+ 
++static const struct of_device_id ssm2602_of_match[] = {
++	{ .compatible = "adi,ssm2602", },
++	{ .compatible = "adi,ssm2603", },
++	{ .compatible = "adi,ssm2604", },
++	{ }
 +};
++MODULE_DEVICE_TABLE(of, ssm2602_of_match);
 +
-+static inline struct ext_name *ext_name(struct dentry *dentry)
-+{
-+	if (likely(!dname_external(dentry)))
-+		return NULL;
-+	return container_of(dentry->d_name.name, struct ext_name, name[0]);
-+}
-+
- static void __d_free(struct rcu_head *head)
- {
- 	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
- 
- 	WARN_ON(!hlist_unhashed(&dentry->d_alias));
--	if (dname_external(dentry))
--		kfree(dentry->d_name.name);
- 	kmem_cache_free(dentry_cache, dentry); 
+ static struct i2c_driver ssm2602_i2c_driver = {
+ 	.driver = {
+ 		.name = "ssm2602",
+ 		.owner = THIS_MODULE,
++		.of_match_table = ssm2602_of_match,
+ 	},
+ 	.probe = ssm2602_i2c_probe,
+ 	.remove = ssm2602_i2c_remove,
+diff --git a/sound/soc/codecs/ssm2602-spi.c b/sound/soc/codecs/ssm2602-spi.c
+index 2bf55e2..fb4cc46 100644
+--- a/sound/soc/codecs/ssm2602-spi.c
++++ b/sound/soc/codecs/ssm2602-spi.c
+@@ -26,10 +26,19 @@ static int ssm2602_spi_remove(struct spi_device *spi)
+ 	return 0;
  }
  
- static void dentry_free(struct dentry *dentry)
- {
-+	struct ext_name *p = ext_name(dentry);
-+	if (unlikely(p) && likely(atomic_dec_and_test(&p->count)))
-+		kfree_rcu(p, head);
- 	/* if dentry was never visible to RCU, immediate free is OK */
- 	if (!(dentry->d_flags & DCACHE_RCUACCESS))
- 		__d_free(&dentry->d_u.d_rcu);
-@@ -1438,11 +1454,14 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 	 */
- 	dentry->d_iname[DNAME_INLINE_LEN-1] = 0;
- 	if (name->len > DNAME_INLINE_LEN-1) {
--		dname = kmalloc(name->len + 1, GFP_KERNEL);
--		if (!dname) {
-+		size_t size = offsetof(struct ext_name, name) + name->len + 1;
-+		struct ext_name *p = kmalloc(size, GFP_KERNEL);
-+		if (!p) {
- 			kmem_cache_free(dentry_cache, dentry); 
- 			return NULL;
- 		}
-+		atomic_set(&p->count, 1);
-+		dname = p->name;
- 	} else  {
- 		dname = dentry->d_iname;
- 	}	
-@@ -2372,11 +2391,10 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
- }
- EXPORT_SYMBOL(dentry_update_name_case);
- 
--static void switch_names(struct dentry *dentry, struct dentry *target,
--			 bool exchange)
-+static void swap_names(struct dentry *dentry, struct dentry *target)
- {
--	if (dname_external(target)) {
--		if (dname_external(dentry)) {
-+	if (unlikely(dname_external(target))) {
-+		if (unlikely(dname_external(dentry))) {
- 			/*
- 			 * Both external: swap the pointers
- 			 */
-@@ -2392,7 +2410,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
- 			target->d_name.name = target->d_iname;
- 		}
- 	} else {
--		if (dname_external(dentry)) {
-+		if (unlikely(dname_external(dentry))) {
- 			/*
- 			 * dentry:external, target:internal.  Give dentry's
- 			 * storage to target and make dentry internal
-@@ -2407,12 +2425,6 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
- 			 */
- 			unsigned int i;
- 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
--			if (!exchange) {
--				memcpy(dentry->d_iname, target->d_name.name,
--						target->d_name.len + 1);
--				dentry->d_name.hash_len = target->d_name.hash_len;
--				return;
--			}
- 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
- 				swap(((long *) &dentry->d_iname)[i],
- 				     ((long *) &target->d_iname)[i]);
-@@ -2422,6 +2434,22 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
- 	swap(dentry->d_name.hash_len, target->d_name.hash_len);
- }
- 
-+static void copy_name(struct dentry *dentry, struct dentry *target)
-+{
-+	struct ext_name *old_name = ext_name(dentry);
-+	if (unlikely(dname_external(target))) {
-+		atomic_inc(&ext_name(target)->count);
-+		dentry->d_name = target->d_name;
-+	} else {
-+		memcpy(dentry->d_iname, target->d_name.name,
-+				target->d_name.len + 1);
-+		dentry->d_name.name = dentry->d_iname;
-+		dentry->d_name.hash_len = target->d_name.hash_len;
-+	}
-+	if (unlikely(old_name) && likely(atomic_dec_and_test(&old_name->count)))
-+		kfree_rcu(old_name, head);
-+}
++static const struct of_device_id ssm2602_of_match[] = {
++	{ .compatible = "adi,ssm2602", },
++	{ .compatible = "adi,ssm2603", },
++	{ .compatible = "adi,ssm2604", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, ssm2602_of_match);
 +
- static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
- {
- 	/*
-@@ -2518,7 +2546,10 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
- 	}
- 
- 	/* Switch the names.. */
--	switch_names(dentry, target, exchange);
-+	if (exchange)
-+		swap_names(dentry, target);
-+	else
-+		copy_name(dentry, target);
- 
- 	/* ... and switch them in the tree */
- 	if (IS_ROOT(dentry)) {
+ static struct spi_driver ssm2602_spi_driver = {
+ 	.driver = {
+ 		.name	= "ssm2602",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = ssm2602_of_match,
+ 	},
+ 	.probe		= ssm2602_spi_probe,
+ 	.remove		= ssm2602_spi_remove,
+-- 
+1.9.1
+
