@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaI1QDQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 12:03:16 -0400
-Received: from mga03.intel.com ([134.134.136.65]:43221 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907AbaI1QDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 12:03:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,614,1406617200"; 
-   d="asc'?scan'208";a="609910485"
-Date: Sun, 28 Sep 2014 21:03:48 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Williams <dan.j.williams@intel.com>, dma <dmaengine@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] slave dmaengine fixes
-Message-ID: <20140928153347.GF1638@intel.com>
+	id S1754080AbaI1QEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 12:04:15 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:65421 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaI1QEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 12:04:13 -0400
+Date: Sun, 28 Sep 2014 12:04:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v4 2/4] AHCI: Move host activation code into
+ ahci_host_activate()
+Message-ID: <20140928160408.GA8050@mtj.dyndns.org>
+References: <cover.1411648623.git.agordeev@redhat.com>
+ <39cff5287f4fcc33d0f00f89cb2337c5a5ec22b6.1411648623.git.agordeev@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="osDK9TLjxFScVI/L"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <39cff5287f4fcc33d0f00f89cb2337c5a5ec22b6.1411648623.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 25, 2014 at 03:13:22PM +0200, Alexander Gordeev wrote:
+> -/**
+> - *	ahci_host_activate - start AHCI host, request IRQs and register it
+> - *	@host: target ATA host
+> - *	@irq: base IRQ number to request
+> - *	@irq_handler: irq_handler used when requesting IRQs
+> - *	@irq_flags: irq_flags used when requesting IRQs
+> - *
+> - *	Similar to ata_host_activate, but requests IRQs according to AHCI-1.1
+> - *	when multiple MSIs were allocated. That is one MSI per port, starting
+> - *	from @irq.
+> - *
+> - *	LOCKING:
+> - *	Inherited from calling layer (may sleep).
+> - *
+> - *	RETURNS:
+> - *	0 on success, -errno otherwise.
+> - */
+> -int ahci_host_activate(struct ata_host *host, int irq)
+> -{
+> -	int i, rc;
+> -
+> -	rc = ata_host_start(host);
+> -	if (rc)
+> -		return rc;
+> -
+> -	for (i = 0; i < host->n_ports; i++) {
+> -		struct ahci_port_priv *pp = host->ports[i]->private_data;
+> -
+> -		/* Do not receive interrupts sent by dummy ports */
+> -		if (!pp) {
+> -			disable_irq(irq + i);
+> -			continue;
+> -		}
+> -
+> -		rc = devm_request_threaded_irq(host->dev, irq + i,
+> -					       ahci_hw_interrupt,
+> -					       ahci_thread_fn, IRQF_SHARED,
+> -					       pp->irq_desc, host->ports[i]);
+> -		if (rc)
+> -			goto out_free_irqs;
+> -	}
+> -
+> -	for (i = 0; i < host->n_ports; i++)
+> -		ata_port_desc(host->ports[i], "irq %d", irq + i);
+> -
+> -	rc = ata_host_register(host, &ahci_sht);
+> -	if (rc)
+> -		goto out_free_all_irqs;
+> -
+> -	return 0;
+> -
+> -out_free_all_irqs:
+> -	i = host->n_ports;
+> -out_free_irqs:
+> -	for (i--; i >= 0; i--)
+> -		devm_free_irq(host->dev, irq + i, host->ports[i]);
+> -
+> -	return rc;
+> -}
 
---osDK9TLjxFScVI/L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's generally a bad idea to mix code movement w/ other changes.  I'm
+applying this one but please separate code movements to separate
+patches from now on.
 
-Hi Linus,
+Thanks.
 
-Please pull to receive two small fixes for omap dmaengine driver which fixes
-cyclic suspend and resume.
-
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
-  Linus Torvalds (1):
-        Linux 3.17-rc5
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git fixes
-
-Peter Ujfalusi (2):
-      dmaengine: omap-dma: Add memory barrier to dma_resume path
-      dmaengine: omap-dma: Restore the CLINK_CTRL in resume path
-
- drivers/dma/omap-dma.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
---=20
-~Vinod
-
---osDK9TLjxFScVI/L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUKCpbAAoJEHwUBw8lI4NHCzsP/jbl+CyhaHyEJjO9W1YRH74w
-ELyCOc8aeJfRew45ZR7Wto7dFHlChxdXxFREyKbaYLmrnsGk7HfrYBSbsTSomaCX
-fcilKgfph5ffPMfFSkGzlO4HkSTZ4Y3P1o0lqqxp6xKJIYPMGyEt0PAhxNl6yANM
-cflNKyw7C3VNy36i2c2Jx7s9TtBGielFnPKzPnwx6Lqi2Gi4oRfsJh4vWwHjv4JV
-s3td8l5qF20CKw8Z05Z9YG7S5YPTzQJK0rvNILRa0d3QOsgr6VJtUxl66MqXGVWG
-Ncan0jfiMQawT7KjklGVpwvMUaTRJK42VaLp70NVkqYIEpZtD/I2WzoJlk4mLkdJ
-g1Z1ncP63tmCrdmBelkxzb2+c7ZKpX7uNZeIR4Rx2tmRosmvQ29Rcj/iRcMACfQg
-cYKW3uYYacYtT12QcpPUBGYpkGtVwcL96clj8ThtCCDQkLT41A5aKMfmhbKo5G2C
-Ln6ZyxjmMkEJY7khyUUa5lmT4UeA4pWl5kZGAGnXoGWG4BHyNJRTJlRegf7Gufn0
-yhB5k0pAySXi/bHPEh527Ho0ic9NR5xO8M8kT76n49DdbbMU7ki5TVPip/YMjvZw
-OB6SIDhhY0RmqChprTZfzDr7t81hARCQMiVIfAD7sZ/v/AuJnuNsiMVWWIvNcao5
-4eVOUmNF88Mrx5M8ibQp
-=swK2
------END PGP SIGNATURE-----
-
---osDK9TLjxFScVI/L--
+-- 
+tejun
