@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaI1Qfq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 12:35:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59736 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828AbaI1Qfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 12:35:45 -0400
-Message-ID: <542838E0.9000604@kernel.dk>
-Date: Sun, 28 Sep 2014 10:35:44 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754282AbaI1QhZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 12:37:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:36647 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751404AbaI1QhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 12:37:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,615,1406617200"; 
+   d="scan'208";a="580292089"
+Date: Sun, 28 Sep 2014 21:37:57 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: dmaengine@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de
+Subject: Re: [PATCH 2/9] dmaengine: Make channel allocation callbacks
+ optional
+Message-ID: <20140928160757.GJ1638@intel.com>
+References: <1411808085-27792-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1411808085-27792-3-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-To: Kieran Kunhya <kieran@kunhya.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Akhil Bhansali <abhansali@stec-inc.com>, Jiri Kosina <jkosina@suse.cz>,
-        Alan <gnomes@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3] block: Add support for Sony SxS cards
-References: <1405814499-4163-1-git-send-email-kieran@kunhya.com> <1411861415-16210-1-git-send-email-kieran@kunhya.com> <542772E7.80902@kernel.dk> <1411915159.78518.YahooMailNeo@web161504.mail.bf1.yahoo.com>
-In-Reply-To: <1411915159.78518.YahooMailNeo@web161504.mail.bf1.yahoo.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411808085-27792-3-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2014 08:39 AM, Kieran Kunhya wrote:
->> So a few questions here... This device only does reads? And it seems to 
->> be assuming that only reads end up in the request handler? How so?
+On Sat, Sep 27, 2014 at 10:54:38AM +0200, Maxime Ripard wrote:
+> Nowadays, some drivers don't have anything in there channel allocation
+> callbacks anymore.
 > 
-> I have only reverse engineered the read-part of the device. Yes, the 
-> driver should check whether the request is a read. 
-
-And you should also deny any writeable opens, in that case. Add an open
-method and check for FMODE_WRITE. Then add a check ala:
-
-	if (bio_data_dir(bio)) {
-		bio_endio(bio, -EROFS);
-		return;
-	}
-
-and the top of your sxs_request().
-
->> Second question. IO never fails? There's no status checking and IO is 
->> always ended successfully. This too seems odd.
+> Remove the BUG_ON if those callbacks aren't implemented, in order to allow
+> drivers to not implement them.
 > 
-> I will fix this.
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  drivers/dma/dmaengine.c | 2 --
+>  1 file changed, 2 deletions(-)
 > 
->> Third, this wong work as-is, at least not of HIGHMEM is used. After the 
->> bvec_kmap_irq(), irqs will be disabled. But your sxs_memcpy_read() 
->> invokes schedule through the completion waits, that will instantly go bad.
-> 
-> Is there a better way of doing this? I spent a long time trying to get DMA 
-> to work but couldn't so had to resort to this ugly hack. I assume the memcpy 
-> also needs to have some locking somewhere?
-
-It really is pretty horrible and slow, but if you can't get DMA working,
-then so be it. And yes, you should add a mutex that is held for the
-duration of the memcpy_read(), otherwise things will go bad very fast if
-two or more processes attempt to read from it at the same time. A quick
-work-around for the irq issue would be to have the block layer bounce
-the highmem pages for you. That's actually the default behavior, but I
-would make it explicit with a call to:
-
-	blk_queue_bounce_limit(q, BLK_BOUNCE_HIGH);
-
-after the blk_queue_make_request() call. If you do that, then get rid of
-the bvec_kmap_irq(), and just do:
-
-	buffer = page_address(bvec.bv_page) + bvec.bv_offset;
-
-to get the destination for your read.
+> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+> index d5d30ed863ce..cfcb181b1184 100644
+> --- a/drivers/dma/dmaengine.c
+> +++ b/drivers/dma/dmaengine.c
+> @@ -817,8 +817,6 @@ int dma_async_device_register(struct dma_device *device)
+>  	BUG_ON(dma_has_cap(DMA_INTERLEAVE, device->cap_mask) &&
+>  		!device->device_prep_interleaved_dma);
+>  
+> -	BUG_ON(!device->device_alloc_chan_resources);
+> -	BUG_ON(!device->device_free_chan_resources);
+Dont think we have drivers without free. IIRC cppi one might be only
+instance
 
 -- 
-Jens Axboe
+~Vinod
+>  	BUG_ON(!device->device_tx_status);
+>  	BUG_ON(!device->device_issue_pending);
+>  	BUG_ON(!device->dev);
+> -- 
+> 2.1.0
+> 
 
+-- 
