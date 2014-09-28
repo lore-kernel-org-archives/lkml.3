@@ -1,98 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaI1C30 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Sep 2014 22:29:26 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50609 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185AbaI1C3W (ORCPT
+	id S1753493AbaI1CbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Sep 2014 22:31:09 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55589 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaI1CbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Sep 2014 22:29:22 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: dianders@chromium.org, heiko@sntech.de
-Cc: linux-rockchip@lists.infradead.org, lee.jones@linaro.org,
-        broonie@kernel.org, Chris Zhong <zyw@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 2/2] dt-bindings: add devicetree bindings for pwm regulator
-Date: Sun, 28 Sep 2014 10:28:54 +0800
-Message-Id: <1411871334-17692-3-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411871334-17692-1-git-send-email-zyw@rock-chips.com>
-References: <1411871334-17692-1-git-send-email-zyw@rock-chips.com>
+	Sat, 27 Sep 2014 22:31:07 -0400
+Message-ID: <542772E7.80902@kernel.dk>
+Date: Sat, 27 Sep 2014 20:31:03 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Kieran Kunhya <kieran@kunhya.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, Jingoo Han <jg1.han@samsung.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Pekka Enberg <penberg@kernel.org>, Minchan Kim <minchan@kernel.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Akhil Bhansali <abhansali@stec-inc.com>, Jiri Kosina <jkosina@suse.cz>,
+        Alan <gnomes@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] block: Add support for Sony SxS cards
+References: <1405814499-4163-1-git-send-email-kieran@kunhya.com> <1411861415-16210-1-git-send-email-kieran@kunhya.com>
+In-Reply-To: <1411861415-16210-1-git-send-email-kieran@kunhya.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the pwm regulator
+On 2014-09-27 17:43, Kieran Kunhya wrote:
+> +static void sxs_memcpy_read(struct sxs_device *dev, unsigned long sector,
+> +			    unsigned long nsect, char *buffer)
+> +{
+> +	struct pci_dev *pdev = dev->pci_dev;
+> +	u32 status;
+> +	u32 data[4];
+> +	u16 *tmp;
+> +	u32 *tmp2;
+> +
+> +	void *dma2;
+> +	dma_addr_t dma2_handle;
+> +	void *dma3;
+> +	dma_addr_t dma3_handle;
+> +
+> +	sector >>= dev->sector_shift;
+> +	nsect >>= dev->sector_shift;
+> +
+> +	/* Read */
+> +	dma2 = pci_alloc_consistent(pdev, 8192, &dma2_handle);
+> +	dma3 = pci_alloc_consistent(pdev, 8192, &dma3_handle);
+> +
+> +	tmp = dma2;
+> +	tmp2 = dma3;
+> +	tmp2[0] = dma2_handle;
+> +	tmp2[2] = dma3_handle;
+> +
+> +	dev_dbg_ratelimited(&pdev->dev, "CALL %lu %lu\n",
+> +			    sector & 0xffffffff, nsect & 0xffffffff);
+> +
+> +	reinit_completion(&dev->irq_response);
+> +	status = readl(dev->mmio+SXS_STATUS_REG);
+> +	data[0] = cpu_to_le32(0x00010028);
+> +	data[1] = cpu_to_le32(sector & 0xffffffff);
+> +	data[2] = 0x0;
+> +	data[3] = cpu_to_le32(nsect & 0xffffffff);
+> +	memcpy_toio(dev->mmio, data, sizeof(data));
+> +	writel(0xa0, dev->mmio+SXS_ENABLE_REG);
+> +	writel(0x80, dev->mmio+SXS_CONTROL_REG);
+> +
+> +	if (!wait_for_completion_timeout(&dev->irq_response,
+> +					 msecs_to_jiffies(5000))) {
+> +		dev_dbg(&pdev->dev, "No IRQ\n");
+> +	}
+> +
+> +	reinit_completion(&dev->irq_response);
+> +	writel(dma3_handle, dev->mmio+SXS_MASTER_LINK_REG_L);
+> +	writel(0x0, dev->mmio+SXS_MASTER_LINK_REG_H);
+> +	writel(0x20, dev->mmio+SXS_CONTROL_REG);
+> +
+> +	if (!wait_for_completion_timeout(&dev->irq_response,
+> +					 msecs_to_jiffies(5000))) {
+> +		dev_dbg(&pdev->dev, "No IRQ\n");
+> +	}
+> +
+> +	/* FIXME: Use DMA properly */
+> +	memcpy(buffer, dma2, dev->sector_size * nsect);
+> +
+> +	dev_dbg_ratelimited(&pdev->dev, "boot-signature %x\n",
+> +			    tmp[255]);
+> +
+> +	writel(0, dev->mmio+SXS_ENABLE_REG);
+> +
+> +	pci_free_consistent(pdev, 8192, dma3, dma3_handle);
+> +	pci_free_consistent(pdev, 8192, dma2, dma2_handle);
+> +}
+> +
+> +static void sxs_request(struct request_queue *q, struct bio *bio)
+> +{
+> +	struct bvec_iter iter;
+> +	struct bio_vec bvec;
+> +	char *buffer;
+> +	unsigned long flags;
+> +	struct sxs_device *dev = q->queuedata;
+> +	struct pci_dev *pdev = dev->pci_dev;
+> +	sector_t sector = bio->bi_iter.bi_sector;
+> +
+> +	bio_for_each_segment(bvec, bio, iter) {
+> +		dev_dbg_ratelimited(&pdev->dev, "REQUEST %i %i %i\n",
+> +				    bio_cur_bytes(bio), bio->bi_vcnt,
+> +				    bvec.bv_len);
+> +		buffer = bvec_kmap_irq(&bvec, &flags);
+> +		sxs_memcpy_read(dev, sector, bio_cur_bytes(bio) >> 9,
+> +				buffer);
+> +		sector += bio_cur_bytes(bio) >> 9;
+> +		bvec_kunmap_irq(buffer, &flags);
+> +	}
+> +
+> +	bio_endio(bio, 0);
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+So a few questions here... This device only does reads? And it seems to 
+be assuming that only reads end up in the request handler? How so?
 
----
+Second question. IO never fails? There's no status checking and IO is 
+always ended successfully. This too seems odd.
 
-Changes in v7:
-- re-edit changelog
+Third, this wong work as-is, at least not of HIGHMEM is used. After the 
+bvec_kmap_irq(), irqs will be disabled. But your sxs_memcpy_read() 
+invokes schedule through the completion waits, that will instantly go bad.
 
-Changes in v6:
-Adviced by Mark Rutland
-- fix a spelling error
-
-Changes in v4:
-Adviced by Doug Anderson
-- remove regulator-always-on and regulator-boot-on from the Example
-
-Changes in v3:
-Adviced by Doug Anderson
-- update the Example
-
-Changes in v2:
-Adviced by Lee Jones
-- rename the documentation
-Adviced by Doug Anderson
-- update the example
-Adviced by Mark Rutland
-- remove pwm-reg-period
-
- .../bindings/regulator/pwm-regulator.txt           |   27 ++++++++++++++++++++
- 1 file changed, 27 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/pwm-regulator.txt b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-new file mode 100644
-index 0000000..ce91f61
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/pwm-regulator.txt
-@@ -0,0 +1,27 @@
-+pwm regulator bindings
-+
-+Required properties:
-+- compatible: Should be "pwm-regulator"
-+- pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-+- voltage-table: voltage and duty table, include 2 members in each set of
-+  brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-+
-+Any property defined as part of the core regulator binding defined in
-+regulator.txt can also be used.
-+
-+Example:
-+	pwm_regulator {
-+		compatible = "pwm-regulator;
-+		pwms = <&pwm1 0 8448 0>;
-+
-+		voltage-table = <1114000 0>,
-+				<1095000 10>,
-+				<1076000 20>,
-+				<1056000 30>,
-+				<1036000 40>,
-+				<1016000 50>;
-+
-+		regulator-min-microvolt = <1016000>;
-+		regulator-max-microvolt = <1114000>;
-+		regulator-name = "vdd_logic";
-+	};
 -- 
-1.7.9.5
+Jens Axboe
 
