@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaI1Fyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 01:54:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:52247 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807AbaI1Fyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 01:54:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,613,1406617200"; 
-   d="scan'208";a="597846094"
-Message-ID: <5427A297.7050605@intel.com>
-Date: Sun, 28 Sep 2014 13:54:31 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751701AbaI1GMV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 02:12:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6356 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaI1GMS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Sep 2014 02:12:18 -0400
+Message-ID: <5427A6A0.5040703@huawei.com>
+Date: Sun, 28 Sep 2014 14:11:44 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Chuansheng Liu <chuansheng.liu@intel.com>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mister.freeman@laposte.net, rui.zhang@intel.com,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH V2] ata: Disabling the async PM for JMicron chips
-References: <1411543338-2257-1-git-send-email-chuansheng.liu@intel.com>
-In-Reply-To: <1411543338-2257-1-git-send-email-chuansheng.liu@intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Liviu Dudau <liviu@dudau.co.uk>, Bjorn Helgaas <bhelgaas@google.com>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com> <20140925074235.GN12423@ulmo> <20140925144855.GB31157@bart.dudau.co.uk> <20140925164937.GB30382@ulmo> <20140925171612.GC31157@bart.dudau.co.uk> <542505B3.7040208@huawei.com> <20140926085430.GG31106@ulmo> <20140926090537.GH31106@ulmo> <54277327.6070500@huawei.com>
+In-Reply-To: <54277327.6070500@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2014 03:22 PM, Chuansheng Liu wrote:
-> Like the commit e6b7e41cdd8c ("ata: Disabling the async PM for JMicron chip 363/361"),
-> Barto found the similar issue for JMicron chip 368, that 363/368 has no
-> parent-children relationship, but they have the power dependency.
+On 2014/9/28 10:32, Yijing Wang wrote:
+> On 2014/9/26 17:05, Thierry Reding wrote:
+>> On Fri, Sep 26, 2014 at 10:54:32AM +0200, Thierry Reding wrote:
+>> [...]
+>>> At least for Tegra it's trivial to just hook it up in tegra_pcie_scan_bus()
+>>> directly (patch attached).
+>>
+>> Really attached this time.
+>>
+>> Thierry
+>>
 > 
-> So here we can exclude the JMicron chips out of pm_async method directly,
-> to avoid further similar issues.
-> 
-> Details in:
-> https://bugzilla.kernel.org/show_bug.cgi?id=84861
+> It looks good to me, so I will update the arm pci hostbridge driver to assign
+> pci root bus the msi chip instead of current pcibios_add_bus(). But for other
+> platforms which only have a one msi chip, I will kept the arch_find_msi_chip()
+> temporarily for more comments, especially from Bjorn.
 
-I think we can disable the async PM for JMicron chips in PCI subsystem:
-pci_pm_init, check if it is JMicron chip and then enable_async
-accordingly. The problem doesn't have much to do with ATA, so move them
-to PCI may be more appropriate.
-
-Thanks,
-Aaron
+Oh, sorry, I found designware and rcar use pci_scan_root_bus(), so we can not simply
+assign msi chip to root bus in all host drivers's scan functions.
 
 > 
-> Reported-and-tested-by: Barto <mister.freeman@laposte.net>
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> ---
->  drivers/ata/ahci.c         |   11 +++++------
->  drivers/ata/pata_jmicron.c |   11 +++++------
->  2 files changed, 10 insertions(+), 12 deletions(-)
+> Thanks!
+> Yijing.
 > 
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index a0cc0ed..85aa6ec 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -1340,15 +1340,14 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->  		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
->  
->  	/*
-> -	 * The JMicron chip 361/363 contains one SATA controller and one
-> +	 * The JMicron chip 361/363/368 contains one SATA controller and one
->  	 * PATA controller,for powering on these both controllers, we must
->  	 * follow the sequence one by one, otherwise one of them can not be
-> -	 * powered on successfully, so here we disable the async suspend
-> -	 * method for these chips.
-> +	 * powered on successfully.
-> +	 * Here we can exclude the Jmicron family directly out of pm_async
-> +	 * method to follow the power-on sequence.
->  	 */
-> -	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
-> -		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
-> -		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-> +	if (pdev->vendor == PCI_VENDOR_ID_JMICRON)
->  		device_disable_async_suspend(&pdev->dev);
->  
->  	/* acquire resources */
-> diff --git a/drivers/ata/pata_jmicron.c b/drivers/ata/pata_jmicron.c
-> index 47e418b..1d685b6 100644
-> --- a/drivers/ata/pata_jmicron.c
-> +++ b/drivers/ata/pata_jmicron.c
-> @@ -144,15 +144,14 @@ static int jmicron_init_one (struct pci_dev *pdev, const struct pci_device_id *i
->  	const struct ata_port_info *ppi[] = { &info, NULL };
->  
->  	/*
-> -	 * The JMicron chip 361/363 contains one SATA controller and one
-> +	 * The JMicron chip 361/363/368 contains one SATA controller and one
->  	 * PATA controller,for powering on these both controllers, we must
->  	 * follow the sequence one by one, otherwise one of them can not be
-> -	 * powered on successfully, so here we disable the async suspend
-> -	 * method for these chips.
-> +	 * powered on successfully.
-> +	 * Here we can exclude the Jmicron family directly out of pm_async
-> +	 * method to follow the power-on sequence.
->  	 */
-> -	if (pdev->vendor == PCI_VENDOR_ID_JMICRON &&
-> -		(pdev->device == PCI_DEVICE_ID_JMICRON_JMB363 ||
-> -		pdev->device == PCI_DEVICE_ID_JMICRON_JMB361))
-> +	if (pdev->vendor == PCI_VENDOR_ID_JMICRON)
->  		device_disable_async_suspend(&pdev->dev);
->  
->  	return ata_pci_bmdma_init_one(pdev, ppi, &jmicron_sht, NULL, 0);
-> 
+
+
+-- 
+Thanks!
+Yijing
 
