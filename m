@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaI2V0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 17:26:10 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:34124 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaI2V0H (ORCPT
+	id S1754935AbaI2V1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:27:03 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:55622 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbaI2V1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 17:26:07 -0400
-Date: Mon, 29 Sep 2014 17:26:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
-Message-ID: <20140929212601.GF15925@htj.dyndns.org>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
- <20140928150329.GC5023@mtj.dyndns.org>
- <20140929212208.GV17349@wotan.suse.de>
+	Mon, 29 Sep 2014 17:27:00 -0400
+Date: Mon, 29 Sep 2014 21:26:55 +0000
+From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org, mroos@linux.ee
+Subject: Re: [PATCH v2] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+Message-ID: <20140929212655.GE15737@erable>
+References: <20140925151519.GA12225@erable>
+ <20140929.153748.2020820992295588670.davem@davemloft.net>
+ <20140929194512.GB15737@erable>
+ <20140929.160813.1739128124571074828.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140929212208.GV17349@wotan.suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140929.160813.1739128124571074828.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Luis.
-
-On Mon, Sep 29, 2014 at 11:22:08PM +0200, Luis R. Rodriguez wrote:
-> > > +	/* For now lets avoid stupid bug reports */
-> > > +	if (!strcmp(bus->name, "pci") ||
-> > > +	    !strcmp(bus->name, "pci_express") ||
-> > > +	    !strcmp(bus->name, "hid") ||
-> > > +	    !strcmp(bus->name, "sdio") ||
-> > > +	    !strcmp(bus->name, "gameport") ||
-> > > +	    !strcmp(bus->name, "mmc") ||
-> > > +	    !strcmp(bus->name, "i2c") ||
-> > > +	    !strcmp(bus->name, "platform") ||
-> > > +	    !strcmp(bus->name, "usb"))
-> > > +		return true;
-> > 
-> > Ugh... things like this tend to become permanent.  Do we really need
-> > this?  And how are we gonna find out what's broken why w/o bug
-> > reports?
+When: 2014-09-29_1@16-08-13 -0400
+Who:  David Miller
+What:
+> From: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+> Date: Mon, 29 Sep 2014 19:45:12 +0000
 > 
-> Yeah... well we have two options, one is have something like this to
-> at least make it generally useful or remove this and let folks who
-> care start fixing async for all modules. The downside to removing
-> this is it makes async probe pretty much useless on most systems
-> right now, it would mean systemd would have to probably consider
-> the list above if they wanted to start using this without expecting
-> systems to not work.
+> You should not submit patches as a reply to a discussion, it must be
+> done as a fresh mailing list posting.
 
-So, I'd much prefer blacklist approach if something like this is a
-necessity.  That way, we'd at least know what doesn't work.
+Ah, didn't know.
+I've seen this be done before, such as:
+    http://thread.gmane.org/gmane.linux.kernel/1759680/focus=1775068
+and hence did the same.
 
-Thanks.
+And searching case-insensitively "reply", "fresh", "new", "thread" in
+Documentation/SubmittingPatches shed no light on this topic.
+
+> The posting must also be properly formed, in that "Subject: " should
+> be of the form "[PATCH vx] ${subsystem}: Description."  and the mail
+> message body must be the commit message with appropriate signoffs
+> and ACKs, then the patch comes next.
+> 
+> This is fully described, in detail, in Documentation/SubmittingPatches
+
+Ah, OK, you meant:
+    Please use git format-patch so that I could use git am.
+
+Did that.
+
+(Thanks, you made me learn about git format-patch by myself.
+That is, only describing the format makes you a
+teacher-who-let-the-padawan-find-the-right-tool-by-self-work instead of a
+teacher-who-gives-the-solution.)
+
+> > Would it be OK for me re-sending my part as v3 including Neil's ack?
+> > Or are you expecting a unique patch combining Neil's changes and mine?
+
+I went for a v3.
+
+
+Regards,
+Sylvain "ythier" Hitier
 
 -- 
-tejun
+Business is about being busy, not being rich...
+Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
+There's THE room for ideals in this mechanical place!
