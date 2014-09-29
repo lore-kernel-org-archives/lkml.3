@@ -1,58 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbaI2PPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:15:54 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:44694 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaI2PPw (ORCPT
+	id S1753971AbaI2PSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:18:47 -0400
+Received: from forward13.mail.yandex.net ([95.108.130.120]:48913 "EHLO
+	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaI2PSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:15:52 -0400
+	Mon, 29 Sep 2014 11:18:46 -0400
+X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 11:18:45 EDT
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Juri Lelli <juri.lelli@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+In-Reply-To: <542974DE.8050203@arm.com>
+References: <20140927084044.1634.60573.stgit@localhost> <20140927084104.1634.88783.stgit@localhost> <542974DE.8050203@arm.com>
+Subject: Re: [PATCH 2/2] sched/dl: Cleanup prio_changed_dl()
 MIME-Version: 1.0
-In-Reply-To: <20140928180556.GA7996@ZenIV.linux.org.uk>
-References: <20140924185521.GC7996@ZenIV.linux.org.uk>
-	<CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
-	<20140924201813.GI7996@ZenIV.linux.org.uk>
-	<20140925044601.GL7996@ZenIV.linux.org.uk>
-	<20140926164442.GA26897@ZenIV.linux.org.uk>
-	<20140927044555.GS7996@ZenIV.linux.org.uk>
-	<CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
-	<20140927183139.GT7996@ZenIV.linux.org.uk>
-	<20140927191657.GU7996@ZenIV.linux.org.uk>
-	<20140928074747.GZ7996@ZenIV.linux.org.uk>
-	<20140928180556.GA7996@ZenIV.linux.org.uk>
-Date: Mon, 29 Sep 2014 08:15:51 -0700
-X-Google-Sender-Auth: jogAQUBL6mK3IaF-BlrvUrhRDs4
-Message-ID: <CA+55aFxZDsD94CSDYfyw9g3WWNkVApZDKxHVhK2zy0ycRsjcmA@mail.gmail.com>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mikhail Efremov <sem@altlinux.org>
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <5425501412003601@web12j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Mon, 29 Sep 2014 19:13:21 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 11:05 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+
+
+29.09.2014, 19:03, "Juri Lelli" <juri.lelli@arm.com>:
+> Hi Kirill,
 >
-> Folks, care to review and test the following?
+> On 27/09/14 09:41, Kirill Tkhai wrote:
+>> šFrom: Kirill Tkhai <ktkhai@parallels.com>
+>>
+>> šNow rq->curr task can't be dequeued in this function
+>> š(it's possible only in __schedule()).
+>
+> Could you please detail about "before", with a reference to the commit
+> that made this further change necessary?
 
-No testing, but having thought about this some more, I'm personally
-getting quite convinced that doing the RCU delaying of the external
-name freeing in the __d_free() path is entirely pointless.
+I wrote about unlocked context switching, but I've looked one more time
+and found that it used to be impossible before too.
 
-So I think the *only* rcu_free() you need is for just the "free old
-name" case in copy_name().
+We set "rq->curr = next" before prepare_lock_switch(),
+so dequeued task wasn't able to be curr.
 
-In __d_free(), the name pointer has gone through the same grace period
-that the dentry pointer itself went through. If it's not safe to free
-the external name, then it damn well wouldn't be safe to free the
-dentry itself either.
+I'll update both descriptions in v2.
 
-IOW, I think your games in __d_free() are totally unnecessary.
+Thanks,
+Kirill
 
-Now you can tell me why I'm wrong.
-
-              Linus
+>
+> Thanks a lot,
+>
+> - Juri
+>> šAlso, delete "else" branch which is dead code.
+>>
+>> šSigned-off-by: Kirill Tkhai <ktkhai@parallels.com>
+>> š---
+>> šškernel/sched/deadline.c | šš50 +++++++++++++++++++++++------------------------
+>> šš1 file changed, 24 insertions(+), 26 deletions(-)
+>>
+>> šdiff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> šindex 63f8b4a..38b4f19 100644
+>> š--- a/kernel/sched/deadline.c
+>> š+++ b/kernel/sched/deadline.c
+>> š@@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>> ššstatic void prio_changed_dl(struct rq *rq, struct task_struct *p,
+>> ššššššššššššššššššššššššššššššint oldprio)
+>> šš{
+>> š- if (task_on_rq_queued(p) || rq->curr == p) {
+>> š+ if (!task_on_rq_queued(p))
+>> š+ return;
+>> šš#ifdef CONFIG_SMP
+>> š- /*
+>> š- * This might be too much, but unfortunately
+>> š- * we don't have the old deadline value, and
+>> š- * we can't argue if the task is increasing
+>> š- * or lowering its prio, so...
+>> š- */
+>> š- if (!rq->dl.overloaded)
+>> š- pull_dl_task(rq);
+>> š-
+>> š- /*
+>> š- * If we now have a earlier deadline task than p,
+>> š- * then reschedule, provided p is still on this
+>> š- * runqueue.
+>> š- */
+>> š- if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
+>> š- šššrq->curr == p)
+>> š- resched_curr(rq);
+>> š-#else
+>> š- /*
+>> š- * Again, we don't know if p has a earlier
+>> š- * or later deadline, so let's blindly set a
+>> š- * (maybe not needed) rescheduling point.
+>> š- */
+>> š+ /*
+>> š+ * This might be too much, but unfortunately
+>> š+ * we don't have the old deadline value, and
+>> š+ * we can't argue if the task is increasing
+>> š+ * or lowering its prio, so...
+>> š+ */
+>> š+ if (!rq->dl.overloaded)
+>> š+ pull_dl_task(rq);
+>> š+ /*
+>> š+ * If we now have a earlier deadline task than p,
+>> š+ * then reschedule, provided p is still on this
+>> š+ * runqueue.
+>> š+ */
+>> š+ if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
+>> š+ šššrq->curr == p)
+>> ššššššššššššššššššresched_curr(rq);
+>> š+#else
+>> š+ /*
+>> š+ * Again, we don't know if p has a earlier
+>> š+ * or later deadline, so let's blindly set a
+>> š+ * (maybe not needed) rescheduling point.
+>> š+ */
+>> š+ resched_curr(rq);
+>> šš#endif /* CONFIG_SMP */
+>> š- } else
+>> š- switched_to_dl(rq, p);
+>> šš}
+>>
+>> ššconst struct sched_class dl_sched_class = {
