@@ -1,114 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaI2IXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:23:32 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:41653 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaI2IX2 (ORCPT
+	id S1751961AbaI2I1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:27:46 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:53911 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaI2I1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:23:28 -0400
-Date: Mon, 29 Sep 2014 10:23:25 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140929082323.GE12506@ulmo>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com>
- <9197976.uQdLmtvIl1@wuerfel>
- <20140926134608.GT5182@n2100.arm.linux.org.uk>
- <3359318.XmOCYLZHTV@wuerfel>
+	Mon, 29 Sep 2014 04:27:44 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cpvLTH7QU4gwfq3S"
-Content-Disposition: inline
-In-Reply-To: <3359318.XmOCYLZHTV@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140929080637.GB12506@ulmo>
+References: <53FDB46C.5010609@redhat.com>
+	<20140827125613.GF23186@ulmo>
+	<53FDE0CE.5030807@redhat.com>
+	<20140827141632.GB32243@ulmo>
+	<53FF1D6C.6090205@redhat.com>
+	<20140829070116.GC13106@ulmo>
+	<20140829141244.GH15297@lukather>
+	<20140829143812.GC31264@ulmo>
+	<20140902092508.GR15297@lukather>
+	<20140927235601.19023.31593@quantum>
+	<20140929080637.GB12506@ulmo>
+Date: Mon, 29 Sep 2014 10:27:41 +0200
+X-Google-Sender-Auth: jlOfmNeYee8fTNRPlVa6HDr3y1s
+Message-ID: <CAMuHMdV8job81-sf88Dx6w=0GZsWD02h94picAtYw2BtSz=Kgw@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 4/4] simplefb: add clock handling code
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Luc Verhaegen <libv@skynet.be>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Brown <broonie@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thierry,
 
---cpvLTH7QU4gwfq3S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(CC linux-pm, as PM is the real reason behind disabling unused clocks)
+(CC gregkh and lkml, for driver core)
 
-On Fri, Sep 26, 2014 at 11:36:13PM +0200, Arnd Bergmann wrote:
-> On Friday 26 September 2014 14:46:08 Russell King - ARM Linux wrote:
-> >=20
-> > Obviously, this does nothing for the:
-> >=20
-> > include/asm-generic/io.h:804:29: error: redefinition of 'virt_to_bus'
-> > include/asm-generic/io.h:809:21: error: redefinition of 'bus_to_virt'
-> >=20
-> > errors which are also reported in Olof's build system.
-> >=20
-> > Given how close we are to the merge window, I'd suggest this stuff gets
-> > reverted so that it can have a better period of testing, rather than
-> > stuffing it into -next at such a critical time.
->=20
-> Right, I've fixed these all up locally, but then found new warnings on
-> allmodconfig builds that I haven't been able to track down yet.
->=20
-> I've dropped everything from the asm-generic tree now, so we can get
-> a clean linux-next tree.
+On Mon, Sep 29, 2014 at 10:06 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Sat, Sep 27, 2014 at 04:56:01PM -0700, Mike Turquette wrote:
+>> Quoting Maxime Ripard (2014-09-02 02:25:08)
+>> > On Fri, Aug 29, 2014 at 04:38:14PM +0200, Thierry Reding wrote:
+>> > > On Fri, Aug 29, 2014 at 04:12:44PM +0200, Maxime Ripard wrote:
+>> > > > On Fri, Aug 29, 2014 at 09:01:17AM +0200, Thierry Reding wrote:
+>> > > > > I would think the memory should still be reserved anyway to make sure
+>> > > > > nothing else is writing over it. And it's in the device tree anyway
+>> > > > > because the driver needs to know where to put framebuffer content. So
+>> > > > > the point I was trying to make is that we can't treat the memory in the
+>> > > > > same way as clocks because it needs to be explicitly managed. Whereas
+>> > > > > clocks don't. The driver is simply too generic to know what to do with
+>> > > > > the clocks.
+>> > > >
+>> > > > You agreed on the fact that the only thing we need to do with the
+>> > > > clocks is claim them. Really, I don't find what's complicated there
+>> > > > (or not generic).
+>> > >
+>> > > That's not what I agreed on. What I said is that the only thing we need
+>> > > to do with the clocks is nothing. They are already in the state that
+>> > > they need to be.
+>> >
+>> > Claim was probably a poor choice of words, but still. We have to keep
+>> > the clock running, and both the solution you've been giving and this
+>> > patch do so in a generic way.
+>> >
+>> > > > > It doesn't know what frequency they should be running at
+>> > > >
+>> > > > We don't care about that. Just like we don't care about which
+>> > > > frequency is the memory bus running at. It will just run at whatever
+>> > > > frequency is appropriate.
+>> > >
+>> > > Exactly. And you shouldn't have to care about them at all. Firmware has
+>> > > already configured the clocks to run at the correct frequencies, and it
+>> > > has made sure that they are enabled.
+>> > >
+>> > > > > or what they're used for
+>> > > >
+>> > > > And we don't care about that either. You're not interested in what
+>> > > > output the framebuffer is setup to use, which is pretty much the same
+>> > > > here, this is the same thing here.
+>> > >
+>> > > That's precisely what I've been saying. The only thing that simplefb
+>> > > cares about is the memory it should be using and the format of the
+>> > > pixels (and how many of them) it writes into that memory. Everything
+>> > > else is assumed to have been set up.
+>> > >
+>> > > Including clocks.
+>> >
+>> > We're really discussing in circles here.
+>> >
+>> > Mike?
+>> >
+>>
+>> -EHIGHLATENCYRESPONSE
+>>
+>> I forgot about this thread. Sorry.
+>>
+>> In an attempt to provide the least helpful answer possible, I will stay
+>> clear of all of the stuff relating to "how simple should simplefb be"
+>> and the related reserved memory discussion.
+>>
+>> A few times in this thread it is stated that we can't prevent unused
+>> clocks from being disabled. That is only partially true.
+>>
+>> The clock framework DOES provide a flag to prevent UNUSED clocks from
+>> being disabled at late_initcall-time by a clock "garbage collector"
+>> mechanism. Maxime and others familiar with the clock framework are aware
+>> of this.
+>>
+>> What the framework doesn't do is to allow for a magic flag in DT, in
+>> platform_data or elsewhere that says, "don't let me get turned off until
+>> the right driver claims me". That would be an external or alternative
+>> method for preventing a clock from being disabled. We have a method for
+>> preventing clocks from being disabled. It is as follows:
+>>
+>> struct clk *my_clk = clk_get(...);
+>> clk_prepare_enable(my_clk);
+>>
+>> That is how it should be done. Period.
+>>
+>> With that said I think that Luc's approach is very sensible. I'm not
+>> sure what purpose in the universe DT is supposed to serve if not for
+>> _this_exact_case_. We have a nice abstracted driver, usable by many
+>> people. The hardware details of how it is hooked up at the board level
+>> can all be hidden behind stable DT bindings that everyone already uses.
+>
+> simplefb doesn't deal at all with hardware details. It simply uses what
+> firmware has set up, which is the only reason why it will work for many
 
-How about if I keep iterating this series? It seems like most failures
-can be reproduced by doing ARM defconfig and allmodconfig builds, so
-I'll do those and fix up any issues I find. Hopefully I can squash all
-these before 3.18-rc1, then we can take it into linux-next early for
-3.19? In the meantime perhaps I can work with Olof to get a branch with
-these patches tested on his builder? And perhaps on the 0-day builder in
-addition?
+It doesn't deal with "hardware details for hardware components for which
+no driver is available (yet)". That's why the hardware is still in a usable
+state, after the firmware has set it up.
 
-Thierry
+Clocks, regulators, PM domains typically have system-wide implications,
+and thus need system-wide drivers (in the absence of such drivers,
+things would work as-is).
 
---cpvLTH7QU4gwfq3S
-Content-Type: application/pgp-signature
+Note that the driver still requests resources (ioremap the frame buffer),
+so it needs to know about that tiny piece of hardware detail.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> people. What is passed in via its device tree node is the minimum amount
+> of information needed to draw something into the framebuffer. Also note
+> that the simplefb device tree node is not statically added to a DTS file
+> but needs to be dynamically generated by firmware at runtime.
 
-iQIcBAEBAgAGBQJUKRb7AAoJEN0jrNd/PrOhshQP/RiSEwIi1Y4jQR6s76b28fz0
-JQ5L1MNGQE98LBHMJqd5nRkOhoTb91WrIVzhXtO4AsqyvuQZ75K7dP4u2v0PtRr4
-Qz7w1XuHU6z79nv9R82jOhWplQymANW/3pfgpNbmRNW9t2OxVvsdyvDDk8eRZJ8T
-NxYSW5AA76ZU2NbNaN+cd/UKm5BQB979v5Y1rv9UVGzdU7H9Y463VhWheIp4GuzF
-cjgN7skIOeo7nE/YKKsmzzXIaxZG0rF8KaMpc+0eCfTFR4gr5hgAf9iCpJ5es9JP
-z40zSojHMmBYGGBUFsG/fYcdVGkYk8ui5fB++9dGllI6Dk0juBOTOpNNQ3ewJWoj
-mjWln79ljJZgVxqZ6RMB0yd6yAqzZHl+v29hiwzXS5RKFKJ7IqUA/JQ2in4fz8MI
-q9z4/wrnH/YuClU26Ni7cuvXGSoN/hiDqBUeIujEM/rWQxT5XGjPWC7ez3+D5b/p
-AOWVI/uajUIazESUVe4Rr7hDcMB7u39ZhXG75VyQz/6O3gkf3RtM0iKEAa6KSM6+
-E8tvuV6Zoki1bj03XNM/d/QRvs+JLC+gqNptj1yU5d1RkH4TeNomtPr5tgkQ37zM
-w8to/JRjqt+sT/K8N8472XOXxNdJyw9pSEgUtYVvHDRW+d7vNTeI0C3zzM5/RDF2
-wCPg2Rovs0sGKhHCEAxU
-=+Hzh
------END PGP SIGNATURE-----
+The latter indeed complicates things. But see below... [*]
 
---cpvLTH7QU4gwfq3S--
+> If we start extending the binding with board-level details we end up
+> duplicating the device tree node for the proper video device. Also note
+> that it won't stop at clocks. Other setups will require regulators to be
+> listed in this device tree node as well so that they don't get disabled
+> at late_initcall. And the regulator bindings don't provide a method to
+> list an arbitrary number of clocks in a single property in the way that
+> the clocks property works.
+
+Then (optional) regulator support needs to be added.
+
+> There may be also resets involved. Fortunately the reset framework is
+> minimalistic enough not to care about asserting all unused resets at
+> late_initcall. And other things like power domains may also need to be
+> kept on.
+
+Fortunately, unlike clocks, PM domains are first class citizens in the
+device framework, as they're handled by the driver core.
+So just adding a power-domains property to DTS will work, without any
+driver change.
+
+> Passing in clock information via the device tree already requires a non-
+> trivial amount of code in the firmware. A similar amount of code would
+> be necessary for each type of resource that needs to be kept enabled. In
+> addition to the above some devices may also require resources that have
+> no generic bindings. That just doesn't scale.
+
+[*] The firmware does need to make sure the clocks, regulators, PM domains,
+... are up and running for the initial video mode, too. So it already needs
+to have this knowledge (unless enabled by SoC reset-state).
+
+> The only reasonable thing for simplefb to do is not deal with any kind
+> of resource at all (except perhaps area that contains the framebuffer
+> memory).
+>
+> So how about instead of requiring resources to be explicitly claimed we
+> introduce something like the below patch? The intention being to give
+> "firmware device" drivers a way of signalling to the clock framework
+> that they need rely on clocks set up by firmware and when they no longer
+> need them. This implements essentially what Mark (CC'ing again on this
+> subthread) suggested earlier in this thread. Basically, it will allow
+> drivers to determine the time when unused clocks are really unused. It
+> will of course only work when used correctly by drivers. For the case of
+> simplefb I'd expect its .probe() implementation to call the new
+> clk_ignore_unused() function and once it has handed over control of the
+> display hardware to the real driver it can call clk_unignore_unused() to
+> signal that all unused clocks that it cares about have now been claimed.
+> This is "reference counted" and can therefore be used by more than a
+> single driver if necessary. Similar functionality could be added for
+> other resource subsystems as needed.
+
+This still won't work for modules, right? Or am I missing something?
+With modules you will never know in advance what will be used and what
+won't be used, so you need to keep all clocks, regulators, PM domains, ...
+up and running?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
