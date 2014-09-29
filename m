@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaI2AYS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 20:24:18 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41456 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939AbaI2AYB (ORCPT
+	id S1754340AbaI2AYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 20:24:16 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:57183 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926AbaI2AX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 20:24:01 -0400
+	Sun, 28 Sep 2014 20:23:59 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/13] clocksource: cadence_ttc: Add support for 32bit mode
-Date: Mon, 29 Sep 2014 02:23:42 +0200
-Message-Id: <1411950226-21598-9-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 08/13] clocksource: tcb_clksrc: Sanitize IRQ request
+Date: Mon, 29 Sep 2014 02:23:41 +0200
+Message-Id: <1411950226-21598-8-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411950226-21598-1-git-send-email-daniel.lezcano@linaro.org>
 References: <5428A559.5050908@linaro.org>
  <1411950226-21598-1-git-send-email-daniel.lezcano@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Simek <michal.simek@xilinx.com>
+From: Gael Portay <gael.portay@gmail.com>
 
-New TTCs support 32bit mode. Older versions support
-only 16bit modes. Keep 16bit mode as default
-and 32bit optional.
+The clock is not unprepared in case of the request IRQ fails.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Also update to request_irq.
+
+Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- drivers/clocksource/cadence_ttc_timer.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/clocksource/tcb_clksrc.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-index 7a08811..510c8a1 100644
---- a/drivers/clocksource/cadence_ttc_timer.c
-+++ b/drivers/clocksource/cadence_ttc_timer.c
-@@ -25,7 +25,7 @@
- #include <linux/sched_clock.h>
- 
- /*
-- * This driver configures the 2 16-bit count-up timers as follows:
-+ * This driver configures the 2 16/32-bit count-up timers as follows:
-  *
-  * T1: Timer 1, clocksource for generic timekeeping
-  * T2: Timer 2, clockevent source for hrtimers
-@@ -321,7 +321,8 @@ static int ttc_rate_change_clocksource_cb(struct notifier_block *nb,
- 	return NOTIFY_DONE;
+diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
+index a8d7ea1..c0b56ea 100644
+--- a/drivers/clocksource/tcb_clksrc.c
++++ b/drivers/clocksource/tcb_clksrc.c
+@@ -178,12 +178,6 @@ static irqreturn_t ch2_irq(int irq, void *handle)
+ 	return IRQ_NONE;
  }
  
--static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
-+static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base,
-+					 u32 timer_width)
+-static struct irqaction tc_irqaction = {
+-	.name		= "tc_clkevt",
+-	.flags		= IRQF_TIMER,
+-	.handler	= ch2_irq,
+-};
+-
+ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
  {
- 	struct ttc_timer_clocksource *ttccs;
- 	int err;
-@@ -351,7 +352,7 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
- 	ttccs->cs.name = "ttc_clocksource";
- 	ttccs->cs.rating = 200;
- 	ttccs->cs.read = __ttc_clocksource_read;
--	ttccs->cs.mask = CLOCKSOURCE_MASK(16);
-+	ttccs->cs.mask = CLOCKSOURCE_MASK(timer_width);
- 	ttccs->cs.flags = CLOCK_SOURCE_IS_CONTINUOUS;
+ 	int ret;
+@@ -198,15 +192,16 @@ static int __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
  
- 	/*
-@@ -372,7 +373,8 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
- 	}
+ 	clkevt.regs = tc->regs;
+ 	clkevt.clk = t2_clk;
+-	tc_irqaction.dev_id = &clkevt;
  
- 	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
--	sched_clock_register(ttc_sched_clock_read, 16, ttccs->ttc.freq / PRESCALE);
-+	sched_clock_register(ttc_sched_clock_read, timer_width,
-+			     ttccs->ttc.freq / PRESCALE);
- }
+ 	timer_clock = clk32k_divisor_idx;
  
- static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
-@@ -467,6 +469,7 @@ static void __init ttc_timer_init(struct device_node *timer)
- 	struct clk *clk_cs, *clk_ce;
- 	static int initialized;
- 	int clksel;
-+	u32 timer_width = 16;
+ 	clkevt.clkevt.cpumask = cpumask_of(0);
  
- 	if (initialized)
- 		return;
-@@ -490,6 +493,8 @@ static void __init ttc_timer_init(struct device_node *timer)
- 		BUG();
- 	}
+-	ret = setup_irq(irq, &tc_irqaction);
+-	if (ret)
++	ret = request_irq(irq, ch2_irq, IRQF_TIMER, "tc_clkevt", &clkevt);
++	if (ret) {
++		clk_disable_unprepare(t2_clk);
+ 		return ret;
++	}
  
-+	of_property_read_u32(timer, "timer-width", &timer_width);
-+
- 	clksel = readl_relaxed(timer_baseaddr + TTC_CLK_CNTRL_OFFSET);
- 	clksel = !!(clksel & TTC_CLK_CNTRL_CSRC_MASK);
- 	clk_cs = of_clk_get(timer, clksel);
-@@ -506,7 +511,7 @@ static void __init ttc_timer_init(struct device_node *timer)
- 		BUG();
- 	}
+ 	clockevents_config_and_register(&clkevt.clkevt, 32768, 1, 0xffff);
  
--	ttc_setup_clocksource(clk_cs, timer_baseaddr);
-+	ttc_setup_clocksource(clk_cs, timer_baseaddr, timer_width);
- 	ttc_setup_clockevent(clk_ce, timer_baseaddr + 4, irq);
- 
- 	pr_info("%s #0 at %p, irq=%d\n", timer->name, timer_baseaddr, irq);
 -- 
 1.9.1
 
