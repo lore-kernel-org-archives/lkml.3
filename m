@@ -1,124 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646AbaI2PJz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:09:55 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:51726 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaI2PJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:09:54 -0400
-Message-ID: <54297645.7030208@linaro.org>
-Date: Mon, 29 Sep 2014 16:09:57 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754210AbaI2PL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:11:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54386 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913AbaI2PL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 11:11:27 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH] sched/nohz: add debugfs control over sched_tick_max_deferment
+References: <1411760732-14102-1-git-send-email-khilman@kernel.org>
+	<20140927165938.GB21729@lerouge>
+Date: Mon, 29 Sep 2014 08:11:25 -0700
+In-Reply-To: <20140927165938.GB21729@lerouge> (Frederic Weisbecker's message
+	of "Sat, 27 Sep 2014 18:59:39 +0200")
+Message-ID: <7hh9zq31ia.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        linux-kernel@vger.kernel.org
-CC: Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
-References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com> <542970CF.6040405@linaro.org>
-In-Reply-To: <542970CF.6040405@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/09/14 15:46, Srinivas Kandagatla wrote:
-> On 29/09/14 14:48, Pramod Gurav wrote:
->> This change fixes below sparse error,
->> drivers/pinctrl/pinctrl-st.c:1515:31: error: incompatible types for
->> operation (>)
->> drivers/pinctrl/pinctrl-st.c:1515:31:    left side has type void
->> [noderef] <asn:2>*irqmux_base
->> drivers/pinctrl/pinctrl-st.c:1515:31:    right side has type int
->>
->> The fix is done by removing a check on info->irqmux_base as
->> info->irqmux_base has already been checked  for error when allocating it.
->> Hence there is no need to redo the check.
->>
->> Cc: Maxime Coquelin <maxime.coquelin@st.com>
->> Cc: Patrice Chotard <patrice.chotard@st.com>
->> CC: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->>   drivers/pinctrl/pinctrl-st.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
->> index 5475374..ddeaeda 100644
->> --- a/drivers/pinctrl/pinctrl-st.c
->> +++ b/drivers/pinctrl/pinctrl-st.c
->> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
->> st_pinctrl *info,
->>                            gpio_irq, st_gpio_irq_handler);
->>       }
->>
->> -    if (info->irqmux_base > 0 || gpio_irq > 0) {
->> +    if (gpio_irq > 0) {
->>           err = gpiochip_irqchip_add(&bank->gpio_chip, &st_gpio_irqchip,
->>                          0, handle_simple_irq,
->>                          IRQ_TYPE_LEVEL_LOW);
-> 
-> This is not the correct fix. Please see why irqmux_base and gpio_irq are
-> used in the driver.
-> You are breaking the logic here...
-> 
-> please read the below comment from the code.
-> 
->     /**
->      * GPIO bank can have one of the two possible types of
->      * interrupt-wirings.
->      *
->      * First type is via irqmux, single interrupt is used by multiple
->      * gpio banks. This reduces number of overall interrupts numbers
->      * required. All these banks belong to a single pincontroller.
->      *          _________
->      *         |       |----> [gpio-bank (n)    ]
->      *         |       |----> [gpio-bank (n + 1)]
->      *    [irqN]-- | irq-mux |----> [gpio-bank (n + 2)]
->      *         |       |----> [gpio-bank (...  )]
->      *         |_________|----> [gpio-bank (n + 7)]
->      *
->      * Second type has a dedicated interrupt per each gpio bank.
->      *
->      *    [irqN]----> [gpio-bank (n)]
->      */
-> 
-> 
-> so irqmux_base is first type and gpio_irq is second type.
-> if you remove check for irqmux_base here you would end up NOT adding
-> irqchip the gpiochip in first type so you break the existing logic here.
-> 
-> 
-> I think the correct fix is:
-> 
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 5475374..4060c30 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
-> st_pinctrl *info,
->                                              gpio_irq,
-> st_gpio_irq_handler);
->         }
-> 
-> -       if (info->irqmux_base > 0 || gpio_irq > 0) {
-> +       if (!IS_ERR(info->irqmux_base) || gpio_irq > 0) {
->                 err = gpiochip_irqchip_add(&bank->gpio_chip,
-> &st_gpio_irqchip,
->                                            0, handle_simple_irq,
->                                            IRQ_TYPE_LEVEL_LOW);
+Frederic Weisbecker <fweisbec@gmail.com> writes:
 
-IS_ERR() should be irrelavent because the allocation code bombs out on
-error. Shouldn't this just be a NULL pointer check?
+> On Fri, Sep 26, 2014 at 12:45:32PM -0700, Kevin Hilman wrote:
+>> From: Kevin Hilman <khilman@linaro.org>
+>> 
+>> Allow debugfs override of sched_tick_max_deferment in order to ease
+>> finding/fixing the remaining issues with full nohz.
+>> 
+>> The value to be written is in jiffies, and -1 means the max deferment
+>> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
+>> 
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+>
+> So, I'm worried that it becomes a hack that everybody uses to shutdown
+> the tick completely then nobody will come and fix the issue that prevents
+> from doing it properly.
 
-  if(info->irqmux_base || gpio_irq > 0)
+OK.
 
+> I seriously doubt this will be used for development purpose to help
+> fixing the real problem. 
 
-Daniel.
+Well, that's what I was using it for, until I was distracted by other
+tasks.
 
+> Quite the opposite. If developers want to do
+> testing, they can as well comment out the call to scheduler_max_tick_deferment().
+
+OK, fair enough.
+
+Thanks,
+
+Kevin
