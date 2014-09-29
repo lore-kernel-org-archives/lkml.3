@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324AbaI2QVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:21:46 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:62051 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753821AbaI2QVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:21:44 -0400
-Message-ID: <1412007702.6334.71.camel@x220>
-Subject: Re: [PATCH v7] checkkconfigsymbols.sh: reimplementation in python
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>, akpm@linux-foundation.org,
-        Stefan Hengelein <stefan.hengelein@fau.de>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Sep 2014 18:21:42 +0200
-In-Reply-To: <5429711C.4060008@suse.cz>
-References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
-		 <1411919729-5800-1-git-send-email-valentinrothberg@gmail.com>
-	 <1411986525.6334.32.camel@x220> <5429711C.4060008@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2014 16:21:42.0868 (UTC) FILETIME=[74BD6140:01CFDC01]
-X-RcptDomain: vger.kernel.org
+	id S1754615AbaI2QXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:23:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37331 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754302AbaI2QXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:23:36 -0400
+Date: Mon, 29 Sep 2014 18:23:34 +0200
+From: Petr Mladek <pmladek@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with seq_puts()
+Message-ID: <20140929162334.GB30562@pathway.suse.cz>
+References: <20140926143721.52206f95@gandalf.local.home>
+ <20140929144121.GA30562@pathway.suse.cz>
+ <20140929112538.3929a9a2@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929112538.3929a9a2@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-[This point I already conceded to Valentin, so my remarks are moot for
-Valentin's script.]
-
-On Mon, 2014-09-29 at 16:47 +0200, Michal Marek wrote:
-> On 2014-09-29 12:28, Paul Bolle wrote:
-> >> +STMT = r"^\s*(?:if|select|depends\s+on)\s+" + EXPR
+On Mon 2014-09-29 11:25:38, Steven Rostedt wrote:
+> On Mon, 29 Sep 2014 16:41:22 +0200
+> Petr Mladek <pmladek@suse.cz> wrote:
+> 
+> 
+> > This patch moves set_putc() from b) to c) because it leaves mess in the
+> > last byte.
+> 
+> Which removes the "b" section, and makes seq_putc() and seq_puts()
+> function the same.
+> 
 > > 
-> > Could please make that "depends on"? Yes, it seems the yacc grammar
-> > accepts any amount of whitespace, but that doesn't make it right to use
-> > anything other than a single space.
+> > 
+> > The semantic looks weird in all categories:
+> > 
+> > add a) They report error even when there was not a real overflow.
+> >     Well, they do not know if there was overflow because
+> >     bitmap_scnprintf() does not report if it shrunk
+> >     the data or not.
+> > 
+> > add b) It does not report error even when seq_overflow() might later
+> >     report overflow.
+> > 
+> > add c) Any overflow invalidates the whole buffer because there might
+> >     be mess at the end. The overflow is not checked by read functions,
+> >     so they allow to read the mess.
+> > 
+> > 
+> > I think that reasonable semantic would be:
+> > 
+> >   + either signalize overflow another way (extra struct member and
+> >     leave count to point to the valid data) or always fill valid
+> >     data until the end of the buffer.
+> > 
+> >     The second variant might be problem if we add only half of
+> >     an escape sequence.
+
+Do you prefer:
+
+      + the extra struct member?
+      + or always filling some valid data?
+      + or invalidating the buffer when the overflow is set?
+
+> > 
+> >   + always return error when seq_overflow() would return overflow;
+> >     in fact, the full buffer means that the last write operation
+> >     was most likely incomplete
 > 
-> But then lines that violate coding style would not be checked for real
-> errors.
+> I think this is probably the best option.
 
-Perhaps my dislike of this element of the grammar won here. There are
-probably better ways to enforce proper use of "depends on".
-
-> > (Can the yacc grammar be tweaked to
-> > see "depends on" as one, well, token?)
 > 
-> I don't think this is a good idea. This is a style issue, why make it a
-> grammar issue.
+> > 
+> >     Also we might rename it from "overflow" to "full" or "filled"
+> >     or "sealed" or "complete" that might describe the state more
+> >     precisely because there is not a real overflow in some situations
+> 
+> We could make overflow be m->count > m->size, which would mean that
+> m->count == m->size (full) isn't a problem. Although, I would have to
+> audit the kernel to see if anything just assumes that m->count is
+> always less than m->size.
 
-Well, a grammar that allows one of its keywords to be written in
-different ways makes style and grammar issues overlap. Whatever. I guess
-it's just me being annoyed with writing
-    git grep -w "depends\s\+on\s\+FOO"
+I am not sure if it is a good idea. I think that having
+m->count > m->size is prone to buffer overflow errors in
+the buffer reading code. I vote for adding extra flag to
+the struct :-)
 
-instead of
-    git grep -w "depends on FOO"
+> This would mean overflow is the correct term, and wouldn't have to
+> change it.
+> 
+> Anyway, that should be a second patch, and we should get my current
+> patch (the one to make putc and puts the same) in first, as that
+> actually fixes the inconsistency between the two.
 
-Ditto for writing a parser for Kconfig files. (Real world examples are
-more complicated, but you catch my drift.)
+Feel free to add
 
+Acked-by: Petr Mladek <pmladek@suse.cz>
 
-Paul Bolle
+for this patch. The question is if it is really really needed in the
+final patch set. It might get even partly reverted with the follow
+up changes.
 
+Best Regards,
+Petr
