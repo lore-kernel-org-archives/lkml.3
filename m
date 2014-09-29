@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaI2MfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 08:35:13 -0400
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:48430 "EHLO
-	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753778AbaI2MfL (ORCPT
+	id S1753974AbaI2MfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:35:22 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49202 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778AbaI2MfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 08:35:11 -0400
-Message-ID: <542951FD.6080902@nexus-software.ie>
-Date: Mon, 29 Sep 2014 13:35:09 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 29 Sep 2014 08:35:17 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Felipe Balbi <balbi@ti.com>, Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB changes for v3.18 merge window
+Date: Mon, 29 Sep 2014 15:35:22 +0300
+Message-ID: <4470421.xsts97VC3x@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <CAMuHMdX9mSv0H-fS23KKONO+=aiCtZ5fxZBvbBnhCev3DffkCQ@mail.gmail.com>
+References: <1410976602-1536-1-git-send-email-balbi@ti.com> <CAMuHMdX9mSv0H-fS23KKONO+=aiCtZ5fxZBvbBnhCev3DffkCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] x86: Quark: Enable correct cache size/type reporting
-References: <1411956372-16469-1-git-send-email-pure.logic@nexus-software.ie> <1411956372-16469-2-git-send-email-pure.logic@nexus-software.ie> <20140929121559.GA18328@gmail.com> <54294EF6.1070209@nexus-software.ie> <20140929123420.GA18825@gmail.com>
-In-Reply-To: <20140929123420.GA18825@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/09/14 13:34, Ingo Molnar wrote:
->
-> * Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
->
->> Thanks for the review Ingo.
->>
->> Appreciate your comments.
->> Will incorporate changes and submit an update.
->
-> Please also include the latest version of the comment-update
-> patch in your series, there were several variants of that.
+Hi Geert,
 
-Will do.
+On Monday 29 September 2014 11:31:30 Geert Uytterhoeven wrote:
+> On Wed, Sep 17, 2014 at 7:56 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > Andrzej Pietrasiewicz (23):
+> >       usb: gadget: uvc: rename functions to avoid conflicts with host uvc
+> 
+> It seems not everything got renamed:
+> 
+> drivers/usb/gadget/function/uvc_v4l2.c:363:23: error:
+> 'uvcg_v4l2_get_unmapped_area' undeclared here (not in a function)
+> make[5]: *** [drivers/usb/gadget/function/uvc_v4l2.o] Error 1
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/12028115/
 
+Indeed :-/ I should have caught that, my bad.
 
---
-Bryan
+Arnd has sent a patch to fix the problem, I've asked Felipe to apply it.
+
+-- 
+Regards,
+
+Laurent Pinchart
 
