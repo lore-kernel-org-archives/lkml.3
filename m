@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669AbaI2OgP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:36:15 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:36810 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035AbaI2OgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:36:14 -0400
-Date: Mon, 29 Sep 2014 17:34:53 +0300
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] ASoC: ssm2602: add device tree bindings
-Message-ID: <20140929143452.GA11763@chokladfabriken.org>
-References: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi>
- <54291D50.30002@metafoo.de>
+	id S1754498AbaI2OhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:37:13 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:60218 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaI2OhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:37:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: suravee.suthikulpanit@amd.com
+Cc: will.deacon@arm.com, liviu.dudau@arm.com, marc.zyngier@arm.com,
+        mark.rutland@arm.com, catalin.marinas@arm.com, jason@lakedaemon.net,
+        tglx@linutronix.de, robh+dt@kernel.org, bhelgaas@google.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
+Date: Mon, 29 Sep 2014 16:36:30 +0200
+Message-ID: <8631927.qWHZsjCs8e@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54291D50.30002@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ccYuLVE3tFDeSBHAVt1nu0wYD3leYXOdqSGaVp86b+t
+ kgPG7NhxRnYFskpvpCAqfKAVlnhHc8mu0K+5zAq45myWv1mlXr
+ EGc80F/Pz7IsOIrqJHKwebPtO62dvHHg26MMcHF5fwU/md0wca
+ 0zfZFhJ4bwF6s8pc0tpmEYg5P1FHB2B+ycmQlYZP+xxyf9rndq
+ 4BzEExKWmJaQ2bKbhxbD+xqm9u38vWfroTveneK/D69QRIbf0E
+ 7nxxNwNnWhlabSMnQKbj6psIqmfIACQzFS1KqdhB38OVrldezv
+ re/qx/49xhDlahQJVL88aCpkFwmS19vvMQUff0SYckZjUJ7nF3
+ dL5IHf3H+bAr+l7POosE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 10:50:24AM +0200, Lars-Peter Clausen wrote:
-> On 09/28/2014 09:57 AM, Stefan Kristiansson wrote:
-> >Allow the ssm2602/ssm2603/ssm2604 codec driver to be
-> >instantiated from the device tree.
-> >
-> >Also, add Kconfig prompts to allow manual selection of both the
-> >I2C and SPI configuration versions of the driver.
-> >
-> >Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+On Sunday 28 September 2014 15:53:28 suravee.suthikulpanit@amd.com wrote:
+> +
+> +#ifdef CONFIG_ARM64
+> +struct pci_bus *gen_scan_root_bus(struct device *parent, int bus,
+> +                                      struct pci_ops *ops, void *sysdata,
+> +                                      struct list_head *resources)
+> +{
+
+I don't see anything ARM64 specific in this, the function only uses
+the newly added generic helpers.
+
+>  static int gen_pci_probe(struct platform_device *pdev)
+>  {
+> @@ -326,6 +385,7 @@ static int gen_pci_probe(struct platform_device *pdev)
+>         struct device *dev = &pdev->dev;
+>         struct device_node *np = dev->of_node;
+>         struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
+> +#ifndef CONFIG_ARM64
+>         struct hw_pci hw = {
+>                 .nr_controllers = 1,
+>                 .private_data   = (void **)&pci,
+> @@ -333,6 +393,7 @@ static int gen_pci_probe(struct platform_device *pdev)
+>                 .map_irq        = of_irq_parse_and_map_pci,
+>                 .ops            = &gen_pci_ops,
+>         };
+> +#endif
+>  
+
+Same here, I'd suggest marking this "#ifdef CONFIG_ARM" instead, as hw_pci
+is an arm32 specific data structure.
+
+>         if (!pci)
+>                 return -ENOMEM;
+> @@ -368,8 +429,24 @@ static int gen_pci_probe(struct platform_device *pdev)
+>                 gen_pci_release_of_pci_ranges(pci);
+>                 return err;
+>         }
+> +#ifdef CONFIG_ARM64
+>  
+> +#ifdef CONFIG_PCI_MSI
+> +       pci->msi_parent = of_parse_phandle(np, "msi-parent", 0);
+> +       if (!pci->msi_parent) {
+> +               dev_err(&pdev->dev, "Failed to allocate msi-parent.\n");
+> +               return -EINVAL;
+> +       }
+> +#endif
+
+We probably want to enable MSI unconditionally on ARM64, so the #ifdef is
+not necessary here. However, I don't think that a missing msi-parent should
+be a fatal error here: we can still continue without MSI support if this
+case.
+
+> +       if (!gen_scan_root_bus(&pdev->dev, pci->cfg.bus_range.start,
+> +                              &gen_pci_ops, pci, &pci->resources)) {
+> +               dev_err(&pdev->dev, "failed to enable PCIe ports\n");
+> +               return -ENODEV;
+> +       }
+> +#else
+>         pci_common_init_dev(dev, &hw);
+> +#endif /* CONFIG_ARM64 */
 > 
-> Looks mostly good, but you should Cc both the devicetree and the
-> ASoC maintainers.
-> 
 
-Ok, I'll make sure to do that in v2.
+Again, just make the pci_common_init_dev() call #ifdef CONFIG_ARM, and move
+the generic case after it, outside of the #ifdef.
 
-> [...]
-> >diff --git a/sound/soc/codecs/ssm2602-i2c.c b/sound/soc/codecs/ssm2602-i2c.c
-> >index abd63d5..0d9779d 100644
-> >--- a/sound/soc/codecs/ssm2602-i2c.c
-> >+++ b/sound/soc/codecs/ssm2602-i2c.c
-> >@@ -41,10 +41,19 @@ static const struct i2c_device_id ssm2602_i2c_id[] = {
-> >  };
-> >  MODULE_DEVICE_TABLE(i2c, ssm2602_i2c_id);
-> >
-> >+static const struct of_device_id ssm2602_of_match[] = {
-> >+	{ .compatible = "adi,ssm2602", },
-> >+	{ .compatible = "adi,ssm2603", },
-> >+	{ .compatible = "adi,ssm2604", },
-> 
-> Since the driver is supposed to behave different depending on the
-> device you should set the driver data similar to like it is done in
-> the ssm2602_i2c_id table and add code in the probe function to
-> extract the driver data.
-> 
-
-As far as I understand, that is already covered for, ssm2602_i2c_probe() get
-called with the i2c_device_id struct set according to the compatible string.
-I.e. if I set it to "adi,ssm2603" in the .dts, ssm2602_i2c_probe() is called
-with id->name = "ssm2603" and id->driver_data = 0 and if I set it to
-"adi,ssm2604" I get id->name = "ssm2603" and id->driver_data = 1.
-
-However, when looking into that, I noticed this in ssm2602_probe()
-
-	 ssm2602->type = SSM2602;
-
-so the value from id->driver_data is never used.
-(it should be ssm2602->type = type;)
-
-I can send a seperate patch that fixes this, but I only have a ssm2603,
-so I can't test if it works.
-
-> >+static const struct of_device_id ssm2602_of_match[] = {
-> >+	{ .compatible = "adi,ssm2602", },
-> >+	{ .compatible = "adi,ssm2603", },
-> >+	{ .compatible = "adi,ssm2604", },
-> 
-> The ssm2603 and ssm2604 do not have a SPI interface.
->
-
-Right, I'll remove those from that list.
-
-Stefan
+	Arnd
