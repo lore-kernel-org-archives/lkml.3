@@ -1,323 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971AbaI2OtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:49:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47900 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754037AbaI2Ooc (ORCPT
+	id S1755042AbaI2Otd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:49:33 -0400
+Received: from smtp-out-058.synserver.de ([212.40.185.58]:1140 "EHLO
+	smtp-out-058.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646AbaI2Ota (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:44:32 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 03/11] pwm: add support for atmel-hlcdc-pwm device
-Date: Mon, 29 Sep 2014 16:44:16 +0200
-Message-Id: <1412001864-3251-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 29 Sep 2014 10:49:30 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1417
+Message-ID: <54297186.1070801@metafoo.de>
+Date: Mon, 29 Sep 2014 16:49:42 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
+MIME-Version: 1.0
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] ASoC: ssm2602: add device tree bindings
+References: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi> <54291D50.30002@metafoo.de> <20140929143452.GA11763@chokladfabriken.org>
+In-Reply-To: <20140929143452.GA11763@chokladfabriken.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On 09/29/2014 04:34 PM, Stefan Kristiansson wrote:
+> On Mon, Sep 29, 2014 at 10:50:24AM +0200, Lars-Peter Clausen wrote:
+>> On 09/28/2014 09:57 AM, Stefan Kristiansson wrote:
+>>> Allow the ssm2602/ssm2603/ssm2604 codec driver to be
+>>> instantiated from the device tree.
+>>>
+>>> Also, add Kconfig prompts to allow manual selection of both the
+>>> I2C and SPI configuration versions of the driver.
+>>>
+>>> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+>>
+>> Looks mostly good, but you should Cc both the devicetree and the
+>> ASoC maintainers.
+>>
+>
+> Ok, I'll make sure to do that in v2.
+>
+>> [...]
+>>> diff --git a/sound/soc/codecs/ssm2602-i2c.c b/sound/soc/codecs/ssm2602-i2c.c
+>>> index abd63d5..0d9779d 100644
+>>> --- a/sound/soc/codecs/ssm2602-i2c.c
+>>> +++ b/sound/soc/codecs/ssm2602-i2c.c
+>>> @@ -41,10 +41,19 @@ static const struct i2c_device_id ssm2602_i2c_id[] = {
+>>>   };
+>>>   MODULE_DEVICE_TABLE(i2c, ssm2602_i2c_id);
+>>>
+>>> +static const struct of_device_id ssm2602_of_match[] = {
+>>> +	{ .compatible = "adi,ssm2602", },
+>>> +	{ .compatible = "adi,ssm2603", },
+>>> +	{ .compatible = "adi,ssm2604", },
+>>
+>> Since the driver is supposed to behave different depending on the
+>> device you should set the driver data similar to like it is done in
+>> the ssm2602_i2c_id table and add code in the probe function to
+>> extract the driver data.
+>>
+>
+> As far as I understand, that is already covered for, ssm2602_i2c_probe() get
+> called with the i2c_device_id struct set according to the compatible string.
+> I.e. if I set it to "adi,ssm2603" in the .dts, ssm2602_i2c_probe() is called
+> with id->name = "ssm2603" and id->driver_data = 0 and if I set it to
+> "adi,ssm2604" I get id->name = "ssm2603" and id->driver_data = 1.
 
-The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
-at91sam9x5 family or sama5d3 family) provide a PWM device.
+Ok, looks like the I2C core extracts the string after the "," and than 
+matches the I2C device id table against it.
 
-This driver add support for a PWM chip exposing a single PWM device (which
-will most likely be used to drive a backlight device).
+>
+> However, when looking into that, I noticed this in ssm2602_probe()
+>
+> 	 ssm2602->type = SSM2602;
+>
+> so the value from id->driver_data is never used.
+> (it should be ssm2602->type = type;)
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Tested-by: Anthony Harivel <anthony.harivel@emtrion.de>
-Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
----
- drivers/pwm/Kconfig           |  10 ++
- drivers/pwm/Makefile          |   1 +
- drivers/pwm/pwm-atmel-hlcdc.c | 229 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 240 insertions(+)
- create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
+Yes, that's clearly a bug.
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index b800783..afb896b 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -50,6 +50,16 @@ config PWM_ATMEL
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel.
- 
-+config PWM_ATMEL_HLCDC_PWM
-+	tristate "Atmel HLCDC PWM support"
-+	select MFD_ATMEL_HLCDC
-+	depends on OF
-+	help
-+	  Generic PWM framework driver for Atmel HLCDC PWM.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-atmel.
-+
- config PWM_ATMEL_TCB
- 	tristate "Atmel TC Block PWM support"
- 	depends on ATMEL_TCLIB && OF
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index f8c577d..eb0aae5 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -2,6 +2,7 @@ obj-$(CONFIG_PWM)		+= core.o
- obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
-+obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
- obj-$(CONFIG_PWM_BCM_KONA)	+= pwm-bcm-kona.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
-diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
-new file mode 100644
-index 0000000..0238f7a
---- /dev/null
-+++ b/drivers/pwm/pwm-atmel-hlcdc.c
-@@ -0,0 +1,229 @@
-+/*
-+ * Copyright (C) 2014 Free Electrons
-+ * Copyright (C) 2014 Atmel
-+ *
-+ * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/mfd/atmel-hlcdc.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/regmap.h>
-+
-+#define ATMEL_HLCDC_PWMCVAL_MASK	GENMASK(15, 8)
-+#define ATMEL_HLCDC_PWMCVAL(x)		((x << 8) & ATMEL_HLCDC_PWMCVAL_MASK)
-+#define ATMEL_HLCDC_PWMPOL		BIT(4)
-+#define ATMEL_HLCDC_PWMPS_MASK		GENMASK(2, 0)
-+#define ATMEL_HLCDC_PWMPS_MAX		0x6
-+#define ATMEL_HLCDC_PWMPS(x)		((x) & ATMEL_HLCDC_PWMPS_MASK)
-+
-+struct atmel_hlcdc_pwm_chip {
-+	struct pwm_chip chip;
-+	struct atmel_hlcdc *hlcdc;
-+	struct clk *cur_clk;
-+};
-+
-+static inline struct atmel_hlcdc_pwm_chip *
-+pwm_chip_to_atmel_hlcdc_pwm_chip(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct atmel_hlcdc_pwm_chip, chip);
-+}
-+
-+static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
-+				  struct pwm_device *pwm,
-+				  int duty_ns, int period_ns)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	struct clk *new_clk = hlcdc->slow_clk;
-+	u64 pwmcval = duty_ns * 256;
-+	unsigned long clk_freq;
-+	u64 clk_period_ns;
-+	u32 pwmcfg;
-+	int pres;
-+
-+	clk_freq = clk_get_rate(new_clk);
-+	clk_period_ns = 1000000000;
-+	clk_period_ns *= 256;
-+	do_div(clk_period_ns, clk_freq);
-+
-+	if (clk_period_ns > period_ns) {
-+		new_clk = hlcdc->sys_clk;
-+		clk_freq = clk_get_rate(new_clk);
-+		clk_period_ns = 1000000000;
-+		clk_period_ns *= 256;
-+		do_div(clk_period_ns, clk_freq);
-+	}
-+
-+	for (pres = 0; pres <= ATMEL_HLCDC_PWMPS_MAX; pres++) {
-+		if ((clk_period_ns << pres) >= period_ns)
-+			break;
-+	}
-+
-+	if (pres > ATMEL_HLCDC_PWMPS_MAX)
-+		return -EINVAL;
-+
-+	pwmcfg = ATMEL_HLCDC_PWMPS(pres);
-+
-+	if (new_clk != chip->cur_clk) {
-+		u32 gencfg = 0;
-+
-+		clk_prepare_enable(new_clk);
-+		clk_disable_unprepare(chip->cur_clk);
-+		chip->cur_clk = new_clk;
-+
-+		if (new_clk != hlcdc->slow_clk)
-+			gencfg = ATMEL_HLCDC_CLKPWMSEL;
-+		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
-+				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
-+	}
-+
-+	do_div(pwmcval, period_ns);
-+	if (pwmcval > 255)
-+		pwmcval = 255;
-+
-+	pwmcfg |= ATMEL_HLCDC_PWMCVAL(pwmcval);
-+
-+	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
-+			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
-+			   pwmcfg);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
-+					struct pwm_device *pwm,
-+					enum pwm_polarity polarity)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 cfg = 0;
-+
-+	if (polarity == PWM_POLARITY_NORMAL)
-+		cfg = ATMEL_HLCDC_PWMPOL;
-+
-+	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
-+			   ATMEL_HLCDC_PWMPOL, cfg);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_enable(struct pwm_chip *c,
-+				  struct pwm_device *pwm)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 status;
-+
-+	regmap_write(hlcdc->regmap, ATMEL_HLCDC_EN, ATMEL_HLCDC_PWM);
-+	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
-+	       !(status & ATMEL_HLCDC_PWM))
-+		;
-+
-+	return 0;
-+}
-+
-+static void atmel_hlcdc_pwm_disable(struct pwm_chip *c,
-+				    struct pwm_device *pwm)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip =
-+				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-+	struct atmel_hlcdc *hlcdc = chip->hlcdc;
-+	u32 status;
-+
-+	regmap_write(hlcdc->regmap, ATMEL_HLCDC_DIS, ATMEL_HLCDC_PWM);
-+	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
-+	       (status & ATMEL_HLCDC_PWM))
-+		;
-+}
-+
-+static const struct pwm_ops atmel_hlcdc_pwm_ops = {
-+	.config = atmel_hlcdc_pwm_config,
-+	.set_polarity = atmel_hlcdc_pwm_set_polarity,
-+	.enable = atmel_hlcdc_pwm_enable,
-+	.disable = atmel_hlcdc_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int atmel_hlcdc_pwm_probe(struct platform_device *pdev)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip;
-+	struct device *dev = &pdev->dev;
-+	struct atmel_hlcdc *hlcdc;
-+	int ret;
-+
-+	hlcdc = dev_get_drvdata(dev->parent);
-+	if (!hlcdc)
-+		return -EINVAL;
-+
-+	ret = clk_prepare_enable(hlcdc->periph_clk);
-+	if (ret)
-+		return ret;
-+
-+	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
-+
-+	chip->hlcdc = hlcdc;
-+	chip->chip.ops = &atmel_hlcdc_pwm_ops;
-+	chip->chip.dev = dev;
-+	chip->chip.base = -1;
-+	chip->chip.npwm = 1;
-+	chip->chip.of_xlate = of_pwm_xlate_with_flags;
-+	chip->chip.of_pwm_n_cells = 3;
-+	chip->chip.can_sleep = 1;
-+
-+	ret = pwmchip_add(&chip->chip);
-+	if (ret)
-+		return ret;
-+
-+	platform_set_drvdata(pdev, chip);
-+
-+	return 0;
-+}
-+
-+static int atmel_hlcdc_pwm_remove(struct platform_device *pdev)
-+{
-+	struct atmel_hlcdc_pwm_chip *chip = platform_get_drvdata(pdev);
-+
-+	clk_disable_unprepare(chip->hlcdc->periph_clk);
-+
-+	return pwmchip_remove(&chip->chip);
-+}
-+
-+static const struct of_device_id atmel_hlcdc_pwm_dt_ids[] = {
-+	{ .compatible = "atmel,hlcdc-pwm" },
-+	{ /* sentinel */ },
-+};
-+
-+static struct platform_driver atmel_hlcdc_pwm_driver = {
-+	.driver = {
-+		.name = "atmel-hlcdc-pwm",
-+		.of_match_table = atmel_hlcdc_pwm_dt_ids,
-+	},
-+	.probe = atmel_hlcdc_pwm_probe,
-+	.remove = atmel_hlcdc_pwm_remove,
-+};
-+module_platform_driver(atmel_hlcdc_pwm_driver);
-+
-+MODULE_ALIAS("platform:atmel-hlcdc-pwm");
-+MODULE_AUTHOR("Boris Brezillon <boris.brezillon@free-electrons.com>");
-+MODULE_DESCRIPTION("Atmel HLCDC PWM driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
-
+[...]
