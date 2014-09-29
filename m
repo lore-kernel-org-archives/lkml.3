@@ -1,276 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaI2K2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:28:49 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57629 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751429AbaI2K2s (ORCPT
+	id S1753730AbaI2K3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:29:01 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:52520 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753362AbaI2K26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:28:48 -0400
-Message-ID: <1411986525.6334.32.camel@x220>
-Subject: Re: [PATCH v7] checkkconfigsymbols.sh: reimplementation in python
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Valentin Rothberg <valentinrothberg@gmail.com>
-Cc: akpm@linux-foundation.org, Stefan Hengelein <stefan.hengelein@fau.de>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Sep 2014 12:28:45 +0200
-In-Reply-To: <1411919729-5800-1-git-send-email-valentinrothberg@gmail.com>
-References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
-	 <1411919729-5800-1-git-send-email-valentinrothberg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 29 Sep 2014 10:28:45.0494 (UTC) FILETIME=[260A8D60:01CFDBD0]
-X-RcptDomain: vger.kernel.org
+	Mon, 29 Sep 2014 06:28:58 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Message-ID: <542933E1.8010809@smartplayin.com>
+Date: Mon, 29 Sep 2014 15:56:41 +0530
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+CC: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        broonie@kernel.org, lee.jones@linaro.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-msm@vger.kernel.org,
+        bjorn.andersson@sonymobile.com
+Subject: Re: [PATCH 3/4] ARM: DT: apq8064: Add USB OTG support
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added  linux-kbuild@vger.kernel.org.]
+Hi Srinivas,
 
-On Sun, 2014-09-28 at 17:55 +0200, Valentin Rothberg wrote:
-> The scripts/checkkconfigsymbols.sh script searches Kconfig features
-> in the source code that are not defined in Kconfig. Such identifiers
-> always evaluate to false and are the source of various kinds of bugs.
-> However, the shell script is slow and it does not detect such broken
-> references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
-> Furthermore, it generates false positives. The script is also hard to
-> read and understand, and is thereby difficult to maintain.
-> 
-> This patch replaces the shell script with an implementation in Python,
-> which:
->     (a) detects the same bugs, but does not report previous false positives
->     (b) additionally detects broken references in Kconfig and all
->         non-Kconfig files, such as Kbuild, .[cSh], .txt, .sh, defconfig, etc.
->     (c) is up to 75 times faster than the shell script
->     (d) only checks files under version control ('git ls-files')
+Some review are comments inline.
 
-(The shell script is .git unaware. If you happen to have one or more
-branches with "Kconfig" in their name, as I do, it generates a lot of
-noise on stderr.)
-
-> The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
-> from 3m47s to 0m3s, and reports 939 broken identifiers in Linux v3.17-rc1;
-> 420 additional reports of which 16 are located in Kconfig files,
-> 287 in defconfigs, 63 in ./Documentation, 1 in Kbuild.
+On Monday 29 September 2014 02:45 PM, Srinivas Kandagatla wrote:
+> This patch adds USB OTG support on USB1 of APQ8064 SOC.
+> Tested on IFC6410 with ethernet gadget.
 > 
-> Moreover, we intentionally include references in comments, which have been
-> ignored until now. Such comments may be leftovers of features that have
-> been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
-> These references can be misleading and should be removed or replaced.
-> 
-> Note that the output format changed from (file list <tab> feature) to
-> (feature <tab> file list) as it simplifies the detection of the Kconfig
-> feature for long file lists.
-> 
-> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
-> Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 > ---
-> Changelog:
-> v2: Fix of regular expressions
-> v3: Changelog replacement, and add changes of v2
-> v4: Based on comments from Paul Bolle <pebolle@tiscali.nl>
->   - Inclusion of all non-Kconfig files, such as .txt, .sh, etc.
->   - Changes of regular expressions
->   - Increases additional reports from 49 to 229 compared to v3
->   - Change of output format from (file list <tab> feature) to
->         (feature <tab> file list)·
-> v5: Only analyze files under version control ('git ls-files')
-> v6: Cover features with numbers and small letters (e.g., 4xx)
-> v7: Add changes of v6 (lost 'git add') and filter FOO/BAR features
-> ---
->  scripts/checkkconfigsymbols.py | 138 +++++++++++++++++++++++++++++++++++++++++
->  scripts/checkkconfigsymbols.sh |  59 ------------------
->  2 files changed, 138 insertions(+), 59 deletions(-)
->  create mode 100644 scripts/checkkconfigsymbols.py
->  delete mode 100755 scripts/checkkconfigsymbols.sh
+>  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts | 14 +++++++++
+>  arch/arm/boot/dts/qcom-apq8064.dtsi        | 46 ++++++++++++++++++++++++++++++
+>  2 files changed, 60 insertions(+)
 > 
-> diff --git a/scripts/checkkconfigsymbols.py b/scripts/checkkconfigsymbols.py
-> new file mode 100644
-> index 0000000..01bf9c4
-> --- /dev/null
-> +++ b/scripts/checkkconfigsymbols.py
-> @@ -0,0 +1,138 @@
-> +#!/usr/bin/env python
-> +
-> +"""Find Kconfig identifiers that are referenced but not defined."""
-> +
-> +# (c) 2014 Valentin Rothberg <valentinrothberg@gmail.com>
-> +# (c) 2014 Stefan Hengelein <stefan.hengelein@fau.de>
-> +#
-> +# Licensed under the terms of the GNU GPL License version 2
-> +
-> +
-> +import os
-> +import re
-> +from subprocess import Popen, PIPE, STDOUT
-> +
-> +
-> +# regex expressions
-> +OPERATORS = r"&|\(|\)|\||\!"
-> +FEATURE = r"(?:\w*[A-Z0-9]\w*){2,}"
-> +DEF = r"^\s*(?:menu){,1}config\s+(" + FEATURE + r")\s*"
-> +EXPR = r"(?:" + OPERATORS + r"|\s|" + FEATURE + r")+"
-> +STMT = r"^\s*(?:if|select|depends\s+on)\s+" + EXPR
+> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> index d6036b8..f41fb39 100644
+> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> @@ -40,6 +40,11 @@
+>  			};
+>  		};
+>  
+> +		/* OTG */
+> +		usb1_phy:phy@12500000 {
+> +			status = "ok";
 
-Could please make that "depends on"? Yes, it seems the yacc grammar
-accepts any amount of whitespace, but that doesn't make it right to use
-anything other than a single space. (Can the yacc grammar be tweaked to
-see "depends on" as one, well, token?)
+Its canonical value is "okay" (although in practice anything
+other than "disabled" should work).
 
+> +		};
 > +
-> +# regex objects
-> +REGEX_FILE_KCONFIG = re.compile(r".*Kconfig[\.\w+\-]*$")
-> +REGEX_FEATURE = re.compile(r"(" + FEATURE + r")")
-> +REGEX_SOURCE_FEATURE = re.compile(r"(?:D|\W|\b)+CONFIG_(" + FEATURE + r")")
+>  		usb3_phy:phy@12520000 {
+>  			status = "ok";
+>  		};
+> @@ -48,6 +53,15 @@
+>  			status = "ok";
+>  		};
+>  
+> +		gadget1:gadget@12500000 {
+> +			status = "ok";
+> +		};
+> +
+> +		/* OTG */
+> +		usb1: usb@12500000 {
+> +			status = "ok";
+> +		};
+> +
+>  		usb3: usb@12520000 {
+>  			status = "ok";
+>  		};
+> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+> index 491a136..38d3efa 100644
+> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
+> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+> @@ -284,6 +284,16 @@
+>  				qcom,boot-load = <50000>;
+>  			};
+>  
+> +			pm8921_l4: pm8921-l4 {
+> +				compatible	= "qcom,rpm-pm8921-pldo";
+> +				reg		= <QCOM_RPM_PM8921_LDO4>;
+> +
+> +				regulator-min-microvolt = <1000000>;
+> +				regulator-max-microvolt = <1800000>;
+> +				regulator-always-on;
+> +				qcom,boot-load = <50000>;
+> +			};
+> +
+>  			pm8921_l23: pm8921-l23 {
+>  				compatible	= "qcom,rpm-pm8921-pldo";
+>  				reg		= <QCOM_RPM_PM8921_LDO23>;
+> @@ -296,6 +306,25 @@
+>  
+>  		};
+>  
+> +		usb1_phy:phy@12500000 {
+> +			compatible	= "qcom,usb-otg-ci";
+> +			reg		= <0x12500000 0x400>;
+> +			interrupts	= <0 100 0>;
 
-That should be "-D", because now you get a hit on
-    TPS6507X_ADCONFIG_CONVERT_TS
+The trailing 0 might be IRQ_TYPE_NONE?
 
-and friends. What does \W do, by the way?
+> +			status		= "disabled";
 
-> +REGEX_KCONFIG_DEF = re.compile(DEF)
-> +REGEX_KCONFIG_EXPR = re.compile(EXPR)
-> +REGEX_KCONFIG_STMT = re.compile(STMT)
-> +REGEX_KCONFIG_HELP = re.compile(r"^\s+(help|---help---)\s*$")
-> +REGEX_FILTER_FEATURES = re.compile(r"[A-Za-z0-9]$")
-> +
-> +
-> +def main():
-> +    """Main function of this module."""
-> +    source_files = []
-> +    kconfig_files = []
-> +    defined_features = set()
-> +    referenced_features = dict()  # {feature: [files]}
-> +
-> +    # use 'git ls-files' to get the worklist
-> +    pop = Popen("git ls-files", stdout=PIPE, stderr=STDOUT, shell=True)
-> +    (stdout, _) = pop.communicate()  # wait until finished
-> +    if len(stdout) > 0 and stdout[-1] == "\n":
-> +        stdout = stdout[:-1]
-> +
-> +    for gitfile in stdout.rsplit("\n"):
-> +        if ".git" in gitfile or "ChangeLog" in gitfile or \
-> +                os.path.isdir(gitfile):
-
-(The only directories in the git tree are a few symlinks:
-    arch/arm/boot/dts/include/dt-bindings
-    arch/metag/boot/dts/include/dt-bindings
-    arch/mips/boot/dts/include/dt-bindings
-    arch/powerpc/boot/dts/include/dt-bindings
-
-Filtering out symlinks makes sense anyway. But that's probably not worth
-the effort.)
-
-You might also consider filtering out "Next/merge.log". It tends to have
-references to Kconfig macros. But it's only a few hits anyway.
-
-> +            continue
-> +        if REGEX_FILE_KCONFIG.match(gitfile):
-> +            kconfig_files.append(gitfile)
-> +        else:
-> +            # all non-Kconfig files are checked for consistency
-> +            source_files.append(gitfile)
-> +
-> +    for sfile in source_files:
-> +        parse_source_file(sfile, referenced_features)
-> +
-> +    for kfile in kconfig_files:
-> +        parse_kconfig_file(kfile, defined_features, referenced_features)
-> +
-> +    print "Undefined symbol used\tFile list"
-> +    for feature in sorted(referenced_features):
-> +        # filter some false positives
-> +        if feature == "FOO" or feature == "BAR" or \
-> +                feature == "FOO_BAR":
-> +            continue
-> +        if feature not in defined_features:
-> +            if feature.endswith("_MODULE"):
-> +                # avoid false positives for kernel modules
-> +                if feature[:-len("_MODULE")] in defined_features:
-> +                    continue
-> +            files = referenced_features.get(feature)
-> +            print "%s\t%s" % (feature, ", ".join(files))
-> +
-> +
-> +def parse_source_file(sfile, referenced_features):
-> +    """Parse @sfile for referenced Kconfig features."""
-> +    lines = []
-> +    with open(sfile, "r") as stream:
-> +        lines = stream.readlines()
-> +
-> +    for line in lines:
-> +        if not "CONFIG_" in line:
-> +            continue
-> +        features = REGEX_SOURCE_FEATURE.findall(line)
-> +        for feature in features:
-> +            if not REGEX_FILTER_FEATURES.search(feature):
-> +                continue
-> +            sfiles = referenced_features.get(feature, set())
-> +            sfiles.add(sfile)
-> +            referenced_features[feature] = sfiles
-> +
-> +
-> +def get_features_in_line(line):
-> +    """Return mentioned Kconfig features in @line."""
-> +    return REGEX_FEATURE.findall(line)
-> +
-> +
-> +def parse_kconfig_file(kfile, defined_features, referenced_features):
-> +    """Parse @kfile and update feature definitions and references."""
-> +    lines = []
-> +    skip = False
-> +
-> +    with open(kfile, "r") as stream:
-> +        lines = stream.readlines()
-> +
-> +    for i in range(len(lines)):
-> +        line = lines[i]
-> +        line = line.strip('\n')
-> +        line = line.split("#")[0]  # ignore comments
-> +
-> +        if REGEX_KCONFIG_DEF.match(line):
-> +            feature_def = REGEX_KCONFIG_DEF.findall(line)
-> +            defined_features.add(feature_def[0])
-> +            skip = False
-> +        elif REGEX_KCONFIG_HELP.match(line):
-> +            skip = True
-> +        elif skip:
-> +            # ignore content of help messages
-> +            pass
-> +        elif REGEX_KCONFIG_STMT.match(line):
-> +            features = get_features_in_line(line)
-> +            # multi-line statements
-> +            while line.endswith("\\"):
-> +                i += 1
-> +                line = lines[i]
-> +                line = line.strip('\n')
-> +                features.extend(get_features_in_line(line))
-> +            for feature in set(features):
-> +                paths = referenced_features.get(feature, set())
-> +                paths.add(kfile)
-> +                referenced_features[feature] = paths
-> +
-> +
-> +if __name__ == "__main__":
-> +    main()
->[...]
-
-This seems to find, roughly, what my local perl script finds. It does
-skip references to Kconfig macros in the Kconfig help texts and
-comments: grep for CONFIG_ITANIUM_ASTEP_SPECIFIC as an example. But
-there are so few of those that it's probable not worth the trouble to
-check for them too.
-
-A few test show the speedup is especially nice with the entire tree in
-cache: run time drops from over four minutes to just under five seconds
-here. Provided you look into my comments, this is:
-
-Acked-by: Paul Bolle <pebolle@tiscali.nl>
-
-Thanks,
+Usually the status property goes first.
 
 
-Paul Bolle
+> +			dr_mode		= "host";
+> +
+> +			clocks		= <&gcc USB_HS1_XCVR_CLK>,
+> +					  <&gcc USB_HS1_H_CLK>;
+> +			clock-names	= "core", "iface";
+> +
+> +			vddcx-supply	= <&pm8921_s3>;
+> +			v3p3-supply	= <&pm8921_l3>;
+> +			v1p8-supply	= <&pm8921_l4>;
+> +
+> +			resets		= <&gcc USB_HS1_RESET>;
+> +			reset-names	= "link";
+> +		};
+> +
+>  		usb3_phy:phy@12520000 {
+>  			compatible	= "qcom,usb-otg-ci";
+>  			reg		= <0x12520000 0x400>;
+> @@ -334,6 +363,23 @@
+>  			reset-names	= "link";
+>  		};
+>  
+> +		gadget1:gadget@12500000 {
+> +			compatible	= "qcom,ci-hdrc";
+> +			reg		= <0x12500000 0x400>;
+> +			status		= "disabled";
+> +			dr_mode		= "peripheral";
+> +			interrupts	= <0 100 0>;
+> +			usb-phy		= <&usb1_phy>;
+> +		};
+> +
+> +		usb1: usb@12500000 {
+> +			compatible	= "qcom,ehci-host";
+> +			reg		= <0x12500000 0x400>;
+> +			interrupts	= <0 100 0>;
+> +			status		= "disabled";
+> +			usb-phy		= <&usb1_phy>;
+> +		};
+> +
+>  		usb3: usb@12520000 {
+>  			compatible	= "qcom,ehci-host";
+>  			reg		= <0x12520000 0x400>;
+> 
 
