@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbaI2Ols (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:41:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35152 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143AbaI2Olq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:41:46 -0400
-Message-ID: <54296FA3.8080902@suse.cz>
-Date: Mon, 29 Sep 2014 16:41:39 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754529AbaI2Omo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:42:44 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:57673 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaI2Omm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:42:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: suravee.suthikulpanit@amd.com, will.deacon@arm.com, liviu.dudau@arm.com,
+        marc.zyngier@arm.com, mark.rutland@arm.com, catalin.marinas@arm.com,
+        jason@lakedaemon.net, tglx@linutronix.de, robh+dt@kernel.org,
+        bhelgaas@google.com, Mark Rutland <Mark.Rutland@arm.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Marc Zyngier <Marc.Zyngier@arm.com>, linux-pci@vger.kernel.org,
+        Will Deacon <Will.Deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [RFC 4/4] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
+Date: Mon, 29 Sep 2014 16:42:18 +0200
+Message-ID: <2648363.DSa0NxqRJL@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411937610-22125-5-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1411937610-22125-5-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] [RFC] kconfig: warn if an unknown symbol is selected
-References: <1411769309.15241.37.camel@x220>
-In-Reply-To: <1411769309.15241.37.camel@x220>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:RF3GhPBaSljD31QR2Ng/OafbHPwII4FY4faSFVVVcUV
+ YcMZxMlGJ+O+65sV/xuQx4DFzAC8OEnPw4resy0nPjH161NfbO
+ oQ6K1A1yY9GpyfFdV1UbuygNeaeaIPfInhtrCaSiIXeL288Mre
+ Z5fl+dx768R8geQpDtH6b5OHDeAr3vPQK6/zoPKIwhrjUS3HCb
+ cR2W9iXPu70C8pWtBUvHG/S+HZA3NodYgeqYgjcO3Sy8XcPVB2
+ 8pT2A3Xrc2npenLsWHCGAIjMENTacfA5G3N/kRC5/dRp1g0Gx6
+ qL8LEqxj/ImyMzbGsboOBDe++SPCZPLFdjAximbFtHZ9wPJpD/
+ g6jvoMvkJLuJbgczG7k4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-27 00:08, Paul Bolle wrote:
-> A select of an unknown symbol is basically treated as a nop and is
-> silently skipped. This is annoying if the selected symbol contains a
-> typo. It can also hide the fact that a treewide symbol cleanup was only
-> done partially.
+On Sunday 28 September 2014 15:53:30 suravee.suthikulpanit@amd.com wrote:
+> +       interrupt-controller@e1101000 {
+> +               compatible = "arm,gic-400";
+> +               #interrupt-cells = >;
+> +               #address-cells = <2>;
+> +               #size-cells = <2>;
+> +               interrupt-controller;
+> +               interrupts = <1 8 0xf04>;
+> +               ranges = <0 0 0 0xe1100000 0 0x100000>;
+> +               reg = <0x0 0xe1110000 0 0x01000>,
+> +                     <0x0 0xe112f000 0 0x02000>,
+> +                     <0x0 0xe1140000 0 0x10000>,
+> +                     <0x0 0xe1160000 0 0x10000>;
+> +               v2m0: v2m@0x8000 {
+> +                       compatible = "arm,gic-v2m-frame";
+> +                       msi-controller;
+> +                       reg = <0x0 0x80000 0 0x1000>;
+> +               };
+> +
+> +               ....
+> +
+> +               v2mN: v2m@0x9000 {
+> +                       compatible = "arm,gic-v2m-frame";
+> +                       msi-controller;
+> +                       reg = <0x0 0x90000 0 0x1000>;
+> +               };
+> +       };
 > 
-> There are also a few cases were this might have been done on purpose.
-> But that anti-pattern should be discouraged. Almost all select
-> statements point to a known and reachable symbol. So people will likely
-> assume that any selected symbol is actually set. Violating that
-> assumption might lead to (subtle) bugs.
-> 
-> So let's warn when we notice a select of a symbol that is not known in
-> the configuration we're creating.
-> 
-> Rfced-by: Paul Bolle <pebolle@tiscali.nl>
 
-I think this is a good idea, it fits well next to the already present
-warning about selecting symbols with unmet dependencies. Feel free to
-submit as a regular patch with
+Could this just be modeled as a separate msi-controller node
+outside of the GIC?
 
-Acked-by: Michal Marek <mmarek@suse.cz>
+Instead of the arm,msi-base-spi/arm,msi-num-spis properties, how
+about using regular "interrupts"/"interrupt-parent" properties listing
+the exact interrupts? That would also make it more flexible in
+case the same layout is used with a parent other than the GIC.
 
-Michal
+	ARnd
