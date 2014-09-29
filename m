@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaI2UIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:08:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33515 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935AbaI2UIQ (ORCPT
+	id S1755039AbaI2UJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:09:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53943 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaI2UJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:08:16 -0400
-Date: Mon, 29 Sep 2014 16:08:13 -0400 (EDT)
-Message-Id: <20140929.160813.1739128124571074828.davem@davemloft.net>
-To: sylvain.hitier@gmail.com
-Cc: nhorman@tuxdriver.com, linux-kernel@vger.kernel.org, mroos@linux.ee
-Subject: Re: [PATCH v2] 3c59x: fix bad split of
- cpu_to_le32(pci_map_single())
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140929194512.GB15737@erable>
-References: <20140925151519.GA12225@erable>
-	<20140929.153748.2020820992295588670.davem@davemloft.net>
-	<20140929194512.GB15737@erable>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 29 Sep 2014 13:08:15 -0700 (PDT)
+	Mon, 29 Sep 2014 16:09:46 -0400
+Date: Mon, 29 Sep 2014 22:10:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Andy Lutomirski <luto@amacapital.net>, Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Sebastian Lackner <sebastian@fds-team.de>
+Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+In-Reply-To: <5429BAA7.8060406@zytor.com>
+Message-ID: <alpine.DEB.2.02.1409292208100.22082@ionos.tec.linutronix.de>
+References: <1411674171-24442-1-git-send-email-anish@chelsio.com> <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de> <CALCETrX7yce2PfYi-Gqkf116a1rXUzjKkO3JAf==zd3WuZuDsQ@mail.gmail.com>
+ <alpine.DEB.2.02.1409292135090.22082@ionos.tec.linutronix.de> <5429B664.4060003@zytor.com> <alpine.DEB.2.02.1409292152270.22082@ionos.tec.linutronix.de> <5429BAA7.8060406@zytor.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-Date: Mon, 29 Sep 2014 19:45:12 +0000
-
-> When: 2014-09-29_1@15-37-48 -0400
-> Who:  David Miller
-> What:
->> Can someone please clean this up and submit it properly?
+On Mon, 29 Sep 2014, H. Peter Anvin wrote:
+> On 09/29/2014 12:57 PM, Thomas Gleixner wrote:
+> >  
+> >> I think we should mask the bit anyway.
+> > 
+> > I tend to disagree. If we clear it there we need to consequentely
+> > audit ALL other possibilites and if there are any we need to clear the
+> > bit there as well. Just to make buggy user space happy?
+> > 
 > 
-> I'm willing to do it, but...
-> could you elaborate on "clean up" and "properly"?
-> 
-> Would it be OK for me re-sending my part as v3 including Neil's ack?
-> Or are you expecting a unique patch combining Neil's changes and mine?
+> The entry options into the kernel are: interrupt/exception (already
+> known to be OK), SYSENTER32, SYSCALL32, and SYSCALL64.  It is not too
+> much to work through those issues, I don't think.
 
-You should not submit patches as a reply to a discussion, it must be
-done as a fresh mailing list posting.
+Fair enough.
 
-The posting must also be properly formed, in that "Subject: " should
-be of the form "[PATCH vx] ${subsystem}: Description."  and the mail
-message body must be the commit message with appropriate signoffs
-and ACKs, then the patch comes next.
+I still don't see why we should care. Supporting buggy user space was
+never high on my list.
 
-This is fully described, in detail, in Documentation/SubmittingPatches
+Thanks,
+
+	tglx
+
+
