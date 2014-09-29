@@ -1,130 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaI2RNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:13:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53143 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaI2RNj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:13:39 -0400
-Date: Mon, 29 Sep 2014 18:13:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Cc: lgirdwood@gmail.com, shawn.guo@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        festevam@gmail.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@pengutronix.de
-Message-ID: <20140929171314.GW16977@sirena.org.uk>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
- <1411779588-22031-3-git-send-email-stefan.wahren@i2se.com>
- <20140928101650.GL27755@sirena.org.uk>
- <5428FE7B.8060700@i2se.com>
+	id S1753656AbaI2RO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:14:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:3081 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310AbaI2ROZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 13:14:25 -0400
+X-IronPort-AV: E=Sophos;i="5.04,621,1406592000"; 
+   d="scan'208";a="177189298"
+Message-ID: <5429936A.7050905@citrix.com>
+Date: Mon, 29 Sep 2014 18:14:18 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nqu5fpgjE+BQlEdo"
-Content-Disposition: inline
-In-Reply-To: <5428FE7B.8060700@i2se.com>
-X-Cookie: Your own mileage may vary.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: add mxs regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Chen Gang <gang.chen.5i5j@gmail.com>, <ian.campbell@citrix.com>,
+        <wei.liu2@citrix.com>, <boris.ostrovsky@oracle.com>,
+        <bhelgaas@google.com>, <jgross@suse.com>,
+        <yongjun_wei@trendmicro.com.cn>, <mukesh.rathor@oracle.com>,
+        <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
+ of xenbus_switch_state()
+References: <5425961A.5000604@gmail.com> <20140929140229.GA28279@laptop.dumpdata.com> <542969E6.1010104@citrix.com> <20140929154055.GA31952@laptop.dumpdata.com>
+In-Reply-To: <20140929154055.GA31952@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 29/09/14 16:40, Konrad Rzeszutek Wilk wrote:
+> On Mon, Sep 29, 2014 at 03:17:10PM +0100, David Vrabel wrote:
+>> On 29/09/14 15:02, Konrad Rzeszutek Wilk wrote:
+>>> On Sat, Sep 27, 2014 at 12:36:42AM +0800, Chen Gang wrote:
+>>>> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+>>>
+>>> Only on the first depth, not on the subsequent ones (as in if
+>>> the first xenbus_switch_fail fails, it won't try to call
+>>> xenbus_switch_state again and again).
+>>>
+>>>> internally, so need not return any status value, then use 'void' instead
+>>>> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
+>>>
+>>> When that switch occurs (to XenbusStateConnected) won't the watches
+>>> fire - meaning we MUST make sure that the watch functions - if they
+>>> use the xenbus_switch_state() they MUST not hold any locks - because
+>>> they could be executed once more?
+>>>
+>>> Oh wait, we don't have to worry about that right now as the callbacks
+>>> that pick up the messages from the XenBus are all gated on one mutex
+>>> anyhow.
+>>>
+>>> Hm, anyhow, I would add this extra piece of information to the patch:
+>>>
+>>>
+>>> diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+>>> index c214daa..f7399fd 100644
+>>> --- a/drivers/xen/xen-pciback/xenbus.c
+>>> +++ b/drivers/xen/xen-pciback/xenbus.c
+>>> @@ -661,6 +661,12 @@ static void xen_pcibk_be_watch(struct xenbus_watch *watch,
+>>>  
+>>>  	switch (xenbus_read_driver_state(pdev->xdev->nodename)) {
+>>>  	case XenbusStateInitWait:
+>>> +		/*
+>>> +		 * xenbus_switch_state can call xenbus_switch_fatal which will
+>>> +		 * immediately set the state to XenbusStateClosing which
+>>> +		 * means if we were reading for it here we MUST drop any
+>>> +		 * locks so that we don't dead-lock.
+>>> +		 */
+>>
+>> Watches are asynchronous and serialised by the xenwatch thread.  I can't
+>> see what deadlock you're talking about here.  Particularly since the
+>> backend doesn't watch its own state node (it watches the frontend one).
+>>
+>>>  		xen_pcibk_setup_backend(pdev);
+>>>  		break;
+>>>  
+>>>>
+>>>> Also need be sure that all callers which check the return value must let
+>>>> 'err' be 0.
+>>>
+>>> I am bit uncomfortable with that, that is due to:
+>>>
+>>>
+>>> .. snip..
+>>>> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+>>>> index 9c47b89..b5c3d47 100644
+>>>> --- a/drivers/net/xen-netback/xenbus.c
+>>>> +++ b/drivers/net/xen-netback/xenbus.c
+>>>> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
+>>>>  	if (err)
+>>>>  		pr_debug("Error writing multi-queue-max-queues\n");
+>>>>  
+>>>> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+>>>> -	if (err)
+>>>> -		goto fail;
+>>>> -
+>>>> +	xenbus_switch_state(dev, XenbusStateInitWait);
+>>>
+>>> Which if it fails it won't call:
+>>>
+>>> 354 fail:                                                                           
+>>> 355         pr_debug("failed\n");                                                   
+>>> 356         netback_remove(dev);                                                    
+>>> 357         return err;         
+>>>
+>>>
+>>> And since there is no watch on the backend state to go in Closing it won't
+>>> ever call those and we leak memory.
+>>
+>> It's not leaking the memory.  All resources will be recovered when the
+>> device is removed.
+> 
+> I presume you mean when the XenBus entries are torn down? It does look
+> like it would call the .remove functionality. That should take care of that.
+> 
+> In which case we can just remove all of the 'netback_remove()' and also
+> remove some of the labels.
 
---nqu5fpgjE+BQlEdo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No.  If the final xenbus_switch_state() fails then at least the device
+is in a consistent state, waiting for the other end to notice.
 
-On Mon, Sep 29, 2014 at 08:38:51AM +0200, Stefan Wahren wrote:
+We don't want to return success from a probe with a half-setup device.
 
-> I'm searching for a good regulator implementation example.
-
-> Does it apply to ti-abb-regulator.c and twl-regulator.c?
-
-Possibly.  But bear in mind that it's important to understand the
-hardware you're trying to support.
-
-> > This really needs a comment to explain what on earth is going on here -
-> > the whole thing with writing the same thing twice with two delays is
-> > more than a little odd.  It looks like the driver is trying to busy wait
-> > in cases where the change happens quickly but the comments about "fast"
-> > and "normal" mode make this unclear.
-
-> The regulator driver polls for the DC_OK bit in the power status register.
-
-> Quote for reference manual (p. 935): "High when switching DC-DC
-> converter control loop has stabilized after a voltage target change."
-
-> The two loops comes from the different regulator modes
-> (REGULATOR_MODE_FAST, REGULATOR_MODE_NORMAL).
-
-> In REGULATOR_MODE_FAST the voltage steping is disabled and changing
-> voltage should be fast. In REGULATOR_MODE_NORMAL voltage steping is
-> enabled and it's take a while for reaching the target voltage.
-
-I don't think you've fully understood what the different modes mean
-here, that's not normally how a buck convertor works.  The different
-modes would typically control the ability of the regulator to respond
-quickly to changes in load without drifting off regulation, fast mode
-makes the regulator less efficient but more responsive to load changes
-(probably marginally with modern regulators).  It should have relatively
-little to do with the ability to ramp the voltage and certainly not on
-the scale there.
-
-> Do you see more a problem with the two different loops or the redundant
-> register write?
-
-Both.  The code right now just looks really obscure.
-
-> if (readl(sreg->base_addr) & sreg->mode_mask)
->     return REGULATOR_MODE_FAST;
-
-> return REGULATOR_MODE_NORMAL;
-
-> Better?
-
-Yes.
-
-> > Why is this not looked up from the data structure like the rest of the
-> > data?
-
-> I was a little bit confused why there wasn't a mode_mask in the struct
-> regulator_desc. I will do it like the ti-abb-regulator in the matching
-> table.
-
-There's no helpers for setting modes.
-
-> >> +	regulator_unregister(rdev);
-> >> +	iounmap(power_addr);
-> >> +	iounmap(base_addr);
-
-> > Use devm_ versions of functions.
-
-> As a result the remove function for the drivers becomes unnecessary. Am
-> i right?
-
-Yes.
-
---nqu5fpgjE+BQlEdo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUKZMpAAoJECTWi3JdVIfQ8gYH/1LE4xs4mGetcUR5/f9aJDNp
-ofg2K/fNOyqi5d79gY+l5lM8otlBijWAeNtVrWQs33u+2HqPWpCsxkYnCKsSCqIl
-mLSxC36/WK4jZw2DxOi6U7JAdZIbkib2b/KIXQp9IkbOnhjktuGK14GluFA/j+f4
-SAJ/dbDrjihWD5/XtQ2gFv0czOeEFB2U+jqu0Uk+IrJ2duTp2KPqeJP0DlTGO4sq
-094CQAdjcKliNbFy9fDr5Iq5znvxx3CbPaYSpgUg7MWzvM0gI18WixrMUVVByfum
-oy2cjoMaKeIM3A0StH76a0QFTr73c0C/BAgOwycPgD+9mzEwDyJUmTHnniWdf8w=
-=JYcR
------END PGP SIGNATURE-----
-
---nqu5fpgjE+BQlEdo--
+David
