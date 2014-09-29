@@ -1,47 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaI2QCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:02:21 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:39175 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404AbaI2QCT (ORCPT
+	id S1754529AbaI2QFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:05:32 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:61889 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971AbaI2QFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:02:19 -0400
-Message-ID: <54298287.6020806@codethink.co.uk>
-Date: Mon, 29 Sep 2014 17:02:15 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Mon, 29 Sep 2014 12:05:30 -0400
+Message-ID: <54298341.1080504@gmail.com>
+Date: Mon, 29 Sep 2014 23:05:21 +0700
+From: Lars Melin <larsm17@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-kernel@codethink.co.uk
-Subject: Re: [PATCH 1/2] fs: proc: use __seq_open_private()
-References: <1410530978-29627-1-git-send-email-rob.jones@codethink.co.uk>	<1410530978-29627-2-git-send-email-rob.jones@codethink.co.uk> <20140912145456.863d25e38db6fa5dea60845d@linux-foundation.org>
-In-Reply-To: <20140912145456.863d25e38db6fa5dea60845d@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: hs@denx.de
+CC: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Macpaul Lin <macpaul@gmail.com>, "Meier, Roger" <r.meier@siemens.com>
+Subject: Re: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for
+ rndis
+References: <1411541339-32400-1-git-send-email-hs@denx.de> <5422B83A.8030406@gmail.com> <5422C33F.400@denx.de> <5422D39D.70006@gmail.com> <54294C78.6050006@denx.de>
+In-Reply-To: <54294C78.6050006@denx.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 12/09/14 22:54, Andrew Morton wrote:
-> On Fri, 12 Sep 2014 15:09:37 +0100 Rob Jones <rob.jones@codethink.co.uk> wrote:
+On 2014-09-29 19:11, Heiko Schocher wrote:
+> Hello Lars,
 >
->> Reduce boilerplate code by using __seq_open_private() instead of seq_open().
+> sorry for my late answer ...
 >
-> http://ozlabs.org/~akpm/mmots/broken-out/fs-proc-task_nommuc-change-maps_open-to-use-__seq_open_private.patch
-> already did this.
+> Am 24.09.2014 16:22, schrieb Lars Melin:
+>> On 2014-09-24 20:12, Heiko Schocher wrote:
+>>> Hello Lars,
+>>>
+>>> Am 24.09.2014 14:25, schrieb Lars Melin:
+>>>> On 2014-09-24 13:48, Heiko Schocher wrote:
+>>>>> use the values for RNDIS over Ethernet as defined in
+>>>>> http://www.usb.org/developers/defined_class
+>>>>> (search for RDNIS):
+>>>>>
+>>>>> - baseclass: 0xef (miscellaneous)
+>>>>> - subclass: 0x04
+>>>>> - protocol: 0x01
+>>>>>
+>>>> That is usb class, it is not the same thing as communication device 
+>>>> class.
+>>>>> --- a/include/uapi/linux/usb/cdc.h
+>>>>> +++ b/include/uapi/linux/usb/cdc.h
+>>>>> @@ -12,6 +12,7 @@
+>>>>> #include <linux/types.h>
+>>>>> #define USB_CDC_SUBCLASS_ACM 0x02
+>>>>> +#define USB_CDC_SUBCLASS_RNDIS 0x04
+>>>> No, no, no.
+>>>> There is no CDC_SUBCLASS_RNDIS and you can not define one over an 
+>>>> already used cdc subclass number, 0x04 is Multi-Channel Control Model
+>>>
+>>> Ah, ok, so I have to define this values in a new header file, as there
+>>> is no current file for the USB_CLASS_MISC defines? Or is there a proper
+>>> place for them?
+>>>
+>>> BTW: where do I find the "cdc subclass number, 0x04 is Multi-Channel
+>>> Control Model" define?
+>>>
+>>> bye,
+>>> Heiko
+>>
+>> You can still find the original specification usbcdc11.pdf on the net 
+>> if you google for it, it has been pulled from usb.org where you could 
+>> download it until a few years ago.
+>> It is old but covers a lot of what you need to know.
+>
+> Hmm.. maybe I am to dummy for finding this docment...
+>
+> http://www.usb.org/results?q=usbcdc11.pdf&submit=Search
+>
+> does not find this document ... could you send me a direct link?
+>
+> I found with the above search:
+>
+> http://www.usb.org/developers/defined_class
 
-This duplicated only half of my submission, patch 2/2 did a similar
-operation on a different file (fs/proc/task_mmu.c).
+I don't know if it is a good idea to provide a link here to a document 
+which usb.org has made unavailable, I told you to google for the file 
+name , not to search for it on usb.org
+> and this site, exactly describes the values for RNDIS over ethernet,
+> as my patch changes [1]
+>
+>> Linux has afaik only the cdc.h definition file, everything else is 
+>> coded by class/subclass in respectively drivers when needed.
+>
+> why not in header files? I thought, magical values are not welcome
+> in source code ...
+>
 
-https://lkml.org/lkml/2014/9/12/347
+I was wrong, usb class definitions are included in 
+../include/uapi/linux/usb/ch9.h
+> As for the is_rndis() function case, this function is defined in
+> 2 places:
+>
+> - drivers/net/usb/cdc_ether.c
+> - drivers/usb/core/generic.c
+>
+> Has this a special reason? This seems suboptimal to me ...
+Yes it has, but the core driver is not an interface driver so it is not 
+of relevance in this case.
+cdc_ether handles interfaces of device connected to the usb bus, not 
+interfaces of gadget devices
+created by linux.
+> I got from a customer this patch (in a similiar version) and
+> he did tests with [3] and saw, that a board which runs linux,
+> is seen in [3] with the values [2] ... so he changed the
+> values in drivers/usb/gadget/function/f_rndis.c to the
+> values [1], which are documented in [4] and with them
+> the test [3] is happy ... and the file
+> "Documentation/usb/linux.inf" is not longer needed on the
+> windows pc!
+>
+The patch from your customer removed  the most common rndis interface 
+attributes and substituted them
+with one of many other interface attributes which Microsoft uses, this 
+is not the right way of doing it.
+Why did he patch  ../core/generic.c  and ../net/usb/cdc_ether.c  if he 
+wants to change the interface attributes of g_rndis?
 
-Is that one actually going in (with Andrew's rename to include the file
-name) or should I resubmit it on its own?
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+Lars
+
+
+
