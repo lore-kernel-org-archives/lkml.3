@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaI2Ep2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 00:45:28 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38356 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbaI2Ep1 (ORCPT
+	id S1751547AbaI2Eqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 00:46:39 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50617 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaI2Eqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 00:45:27 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v4] perf tools: Fix build-id matching on vmlinux
-References: <1411373053-24250-1-git-send-email-namhyung@kernel.org>
-	<20140924073356.GB1962@gmail.com>
-Date: Mon, 29 Sep 2014 13:45:23 +0900
-In-Reply-To: <20140924073356.GB1962@gmail.com> (Ingo Molnar's message of "Wed,
-	24 Sep 2014 09:33:56 +0200")
-Message-ID: <874mvrhw64.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 29 Sep 2014 00:46:38 -0400
+Message-ID: <5428E42A.6090206@codeaurora.org>
+Date: Mon, 29 Sep 2014 07:46:34 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jeremiah Mahler <jmmahler@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <20140928181354.GB2782@hudson.localdomain>
+In-Reply-To: <20140928181354.GB2782@hudson.localdomain>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo and Arnaldo,
+Hi Jeremiah,
 
-On Wed, 24 Sep 2014 09:33:56 +0200, Ingo Molnar wrote:
-> * Namhyung Kim <namhyung@kernel.org> wrote:
->> @@ -1062,8 +1063,26 @@ static int machine__process_kernel_mmap_event(struct machine *machine,
->>  		 * Should be there already, from the build-id table in
->>  		 * the header.
->>  		 */
->> -		struct dso *kernel = __dsos__findnew(&machine->kernel_dsos,
->> -						     kmmap_prefix);
->> +		struct dso *kernel = NULL;
->> +		struct dso *dso;
->> +
->> +		list_for_each_entry(dso, &machine->kernel_dsos, node) {
->> +			const char *suffix;
->> +			size_t len = strlen(dso->long_name);
->> +
->> +			if (WARN_ONCE(len <= 3, "Too short dso name"))
->> +				continue;
->> +
->> +			suffix = dso->long_name + len - 3;
->> +			if (strcmp(suffix, ".ko")) {
->> +				kernel = dso;
->> +				break;
->> +			}
-
-I just noticed that the modules can be gzip'ed on some system
-(e.g. Arch) so that it no longer has the ".ko" suffix.
-
-  $ ls /lib/modules/`uname -r`/kernel/fs/btrfs/
-  btrfs.ko.gz
-
-
-Actually in this case, the dso->long_name cannot be set since when perf
-record synthesizes module map events, it checks the ".ko" suffix
-also. :/
-
-And I also guess that if one loads a custom module not in a canonical
-path, it again cannot find the long name (absolute path) of the module
-and it results in no ".ko" suffix in the long name - so the check will
-be broken too.
-
-
->> +		}
->> +
->> +		if (kernel == NULL)
->> +			kernel = __dsos__findnew(&machine->kernel_dsos,
->> +						 kmmap_prefix);
+On 9/28/2014 9:13 PM, Jeremiah Mahler wrote:
+> Tanya,
 >
-> Please don't break the line just to pacify checkpatch.pl. Other 
-> than that:
-
-For non string literals too?  Anyway in this case, it's already broken. :)
-
-
+> On Sun, Sep 28, 2014 at 09:37:00AM +0300, Tanya Brokhman wrote:
+>> The need for performing read disturb is determined according to new
+>> statistics collected per eraseblock:
+>> - read counter: incremented at each read operation
+>>                  reset at each erase
+>> - last erase time stamp: updated at each erase
+>>
+>> This patch adds the infrastructure for the above statistics
+>>
+>> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
+>> ---
+> ...
+>> @@ -385,6 +402,38 @@ static ssize_t dev_attribute_show(struct device *dev,
+>>   	return ret;
+>>   }
+>>
+>> +static ssize_t dev_attribute_store(struct device *dev,
+>> +			   struct device_attribute *attr,
+>> +			   const char *buf, size_t count)
+>> +{
+>> +	int value;
+>> +	struct ubi_device *ubi;
+>> +
+>> +	ubi = container_of(dev, struct ubi_device, dev);
+>> +	ubi = ubi_get_device(ubi->ubi_num);
+>> +	if (!ubi)
+>> +		return -ENODEV;
+>> +
+>> +	if (kstrtos32(buf, 10, &value))
+>> +		return -EINVAL;
+>> +	/* Consider triggering full scan if threshods change */
+>> +	else if (attr == &dev_dt_threshold) {
+>> +		if (value < UBI_MAX_DT_THRESHOLD)
+>> +			ubi->dt_threshold = value;
+>> +		else
+>> +			pr_err("Max supported threshold value is %d",
+>> +				   UBI_MAX_DT_THRESHOLD);
+>> +	} else if (attr == &dev_rd_threshold) {
+>> +		if (value < UBI_MAX_READCOUNTER)
+>> +			ubi->rd_threshold = value;
+>> +		else
+>> +			pr_err("Max supported threshold value is %d",
+>> +				   UBI_MAX_READCOUNTER);
+>> +	}
+>> +
+>> +	return count;
+>> +}
+>> +
+> ...
 >
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+> One small style nit.  As per Documentation/CodingStyle [line 169] if
+> one branch in a conditional uses braces then all branches should use
+> braces.
+>
 
-Thanks anyway! :)
+I'm sorry but I understand it differently. From CodingStyle:
+"This does not apply if only one branch of a conditional statement is a 
+single
+statement; in the latter case use braces in both branches:
 
-Namhyung
+if (condition) {
+	do_this();
+	do_that();
+} else {
+	otherwise();
+}"
+According to my understanding this doesn't mean {} should be added in 
+case of an if statement inside an if statement. So the above code seems 
+to be complaint with the coding style.
+Please correct me if I'm misunderstanding something.
+
+Thanks,
+- Tanya Brokhman
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
