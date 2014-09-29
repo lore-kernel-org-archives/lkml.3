@@ -1,56 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaI2J4u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:56:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49888 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763AbaI2J4t (ORCPT
+	id S1753923AbaI2J4S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:56:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51414 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290AbaI2J4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:56:49 -0400
-Date: Mon, 29 Sep 2014 11:56:45 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: linux-serial@vger.kernel.org, tony@atomide.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 13/16] tty: serial: 8250_dma: add pm runtime
-Message-ID: <20140929095645.GC13142@linutronix.de>
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-14-git-send-email-bigeasy@linutronix.de>
- <20140929092606.GC13952@ci00147.xsens-tech.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140929092606.GC13952@ci00147.xsens-tech.local>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Sep 2014 05:56:16 -0400
+From: Michael Grzeschik <m.grzeschik@pengutronix.de>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: [PATCH v2 3/5] ARCNET: add com20020 PCI IDs with metadata
+Date: Mon, 29 Sep 2014 11:55:36 +0200
+Message-Id: <1411984538-953-4-git-send-email-m.grzeschik@pengutronix.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1411984538-953-1-git-send-email-m.grzeschik@pengutronix.de>
+References: <1411984538-953-1-git-send-email-m.grzeschik@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: mgr@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frans Klaver | 2014-09-29 11:26:06 [+0200]:
+This patch adds metadata for the com20020 to prepare for devices with
+multiple io address areas with multi card interfaces.
 
->On Wed, Sep 10, 2014 at 09:30:08PM +0200, Sebastian Andrzej Siewior wrote:
->> There is nothing to do for RPM in the RX path. If the HW goes off then it
->> won't assert the DMA line and the transfer won't happen. So we hope that
->> the HW does not go off for RX to work (DMA or PIO makes no difference
->> here).
->> 
->> For TX the situation is slightly different. RPM is enabled on
->> start_tx(). We can't disable RPM on DMA complete callback because there
->> is still data in the FIFO which is being sent. We have to wait until
->> the FIFO is empty before we disable it.
->> For this to happen we fake a TX sent error and enable THRI. Once the
->> FIFO is empty we receive an interrupt and since the TTY-buffer is still
->> empty we "put RPM" via __stop_tx(). Should it been filed then in the
->> start_tx() path we should program the DMA transfer and remove the error
->> flag and the THRI bit.
->
->That last sentence starts out a bit messy.
+Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
+---
+ drivers/net/arcnet/com20020-pci.c | 216 ++++++++++++++++++++++++++++++++------
+ include/linux/com20020.h          |  16 +++
+ 2 files changed, 197 insertions(+), 35 deletions(-)
 
-This got mered so there is nothing I can do about it anymore. But I will
-try to fix comments in code where and in patches that are not yet merged
-(what you report :))
+diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
+index 7bb292e..f9e5552 100644
+--- a/drivers/net/arcnet/com20020-pci.c
++++ b/drivers/net/arcnet/com20020-pci.c
+@@ -63,6 +63,8 @@ MODULE_LICENSE("GPL");
+ 
+ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
++	struct com20020_pci_channel_map *cm;
++	struct com20020_pci_card_info *ci;
+ 	struct net_device *dev;
+ 	struct arcnet_local *lp;
+ 	int ioaddr, err;
+@@ -75,19 +77,15 @@ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
+ 
+ 	dev->netdev_ops = &com20020_netdev_ops;
+ 
++	ci = (struct com20020_pci_card_info *)id->driver_data;
++
+ 	lp = netdev_priv(dev);
+ 
+ 	pci_set_drvdata(pdev, dev);
+ 
+-	// SOHARD needs PCI base addr 4
+-	if (pdev->vendor==0x10B5) {
+-		BUGMSG(D_NORMAL, "SOHARD\n");
+-		ioaddr = pci_resource_start(pdev, 4);
+-	}
+-	else {
+-		BUGMSG(D_NORMAL, "Contemporary Controls\n");
+-		ioaddr = pci_resource_start(pdev, 2);
+-	}
++	cm = &ci->chan_map_tbl[0];
++	BUGMSG(D_NORMAL, "%s Controls\n", ci->name);
++	ioaddr = pci_resource_start(pdev, cm->bar);
+ 
+ 	if (!request_region(ioaddr, ARCNET_TOTAL_SIZE, "com20020-pci")) {
+ 		BUGMSG(D_INIT, "IO region %xh-%xh already allocated.\n",
+@@ -105,7 +103,7 @@ static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *i
+ 	dev->irq = pdev->irq;
+ 	dev->dev_addr[0] = node;
+ 	lp->card_name = "PCI COM20020";
+-	lp->card_flags = id->driver_data;
++	lp->card_flags = ci->flags;
+ 	lp->backplane = backplane;
+ 	lp->clockp = clockp & 7;
+ 	lp->clockm = clockm & 3;
+@@ -144,32 +142,180 @@ static void com20020pci_remove(struct pci_dev *pdev)
+ 	free_netdev(dev);
+ }
+ 
++static struct com20020_pci_card_info card_info_10mbit = {
++	.name = "ARC-PCI",
++	.devcount = 1,
++	.chan_map_tbl = {
++		{ 2, 0x00, 0x08 },
++	},
++	.flags = ARC_CAN_10MBIT,
++};
++
++static struct com20020_pci_card_info card_info_5mbit = {
++	.name = "ARC-PCI",
++	.devcount = 1,
++	.chan_map_tbl = {
++		{ 2, 0x00, 0x08 },
++	},
++	.flags = ARC_IS_5MBIT,
++};
++
++static struct com20020_pci_card_info card_info_sohard = {
++	.name = "PLX-PCI",
++	.devcount = 1,
++	/* SOHARD needs PCI base addr 4 */
++	.chan_map_tbl = {
++		{4, 0x00, 0x08},
++	},
++	.flags = ARC_CAN_10MBIT,
++};
++
+ static const struct pci_device_id com20020pci_id_table[] = {
+-	{ 0x1571, 0xa001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa003, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa004, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa005, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa006, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa007, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa008, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
+-	{ 0x1571, 0xa009, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa00a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa00b, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa00c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa00d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa00e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_IS_5MBIT },
+-	{ 0x1571, 0xa201, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x1571, 0xa202, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x1571, 0xa203, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x1571, 0xa204, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x1571, 0xa205, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x1571, 0xa206, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x10B5, 0x9030, 0x10B5,     0x2978,     0, 0, ARC_CAN_10MBIT },
+-	{ 0x10B5, 0x9050, 0x10B5,     0x2273,     0, 0, ARC_CAN_10MBIT },
+-	{ 0x14BA, 0x6000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{ 0x10B5, 0x2200, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ARC_CAN_10MBIT },
+-	{0,}
++	{
++		0x1571, 0xa001,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0,
++	},
++	{
++		0x1571, 0xa002,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0,
++	},
++	{
++		0x1571, 0xa003,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0
++	},
++	{
++		0x1571, 0xa004,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0,
++	},
++	{
++		0x1571, 0xa005,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0
++	},
++	{
++		0x1571, 0xa006,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0
++	},
++	{
++		0x1571, 0xa007,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0
++	},
++	{
++		0x1571, 0xa008,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		0
++	},
++	{
++		0x1571, 0xa009,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa00a,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa00b,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa00c,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa00d,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa00e,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_5mbit
++	},
++	{
++		0x1571, 0xa201,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x1571, 0xa202,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x1571, 0xa203,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x1571, 0xa204,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x1571, 0xa205,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x1571, 0xa206,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x10B5, 0x9030,
++		0x10B5, 0x2978,
++		0, 0,
++		(kernel_ulong_t)&card_info_sohard
++	},
++	{
++		0x10B5, 0x9050,
++		0x10B5, 0x2273,
++		0, 0,
++		(kernel_ulong_t)&card_info_sohard
++	},
++	{
++		0x14BA, 0x6000,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{
++		0x10B5, 0x2200,
++		PCI_ANY_ID, PCI_ANY_ID,
++		0, 0,
++		(kernel_ulong_t)&card_info_10mbit
++	},
++	{ 0, }
+ };
+ 
+ MODULE_DEVICE_TABLE(pci, com20020pci_id_table);
+diff --git a/include/linux/com20020.h b/include/linux/com20020.h
+index 5dcfb94..6a1ceca 100644
+--- a/include/linux/com20020.h
++++ b/include/linux/com20020.h
+@@ -41,6 +41,22 @@ extern const struct net_device_ops com20020_netdev_ops;
+ #define BUS_ALIGN  1
+ #endif
+ 
++#define PLX_PCI_MAX_CARDS 1
++
++struct com20020_pci_channel_map {
++	u32 bar;
++	u32 offset;
++	u32 size;               /* 0x00 - auto, e.g. length of entire bar */
++};
++
++struct com20020_pci_card_info {
++	const char *name;
++	int devcount;
++
++	struct com20020_pci_channel_map chan_map_tbl[PLX_PCI_MAX_CARDS];
++
++	unsigned int flags;
++};
+ 
+ #define _INTMASK  (ioaddr+BUS_ALIGN*0)	/* writable */
+ #define _STATUS   (ioaddr+BUS_ALIGN*0)	/* readable */
+-- 
+2.1.0
 
-Sebastian
