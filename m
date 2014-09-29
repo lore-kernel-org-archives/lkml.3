@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaI2Iyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:54:41 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:63983 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbaI2Iyh (ORCPT
+	id S1752654AbaI2I44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:56:56 -0400
+Received: from smtp-out-039.synserver.de ([212.40.185.39]:1028 "EHLO
+	smtp-out-039.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaI2I4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:54:37 -0400
+	Mon, 29 Sep 2014 04:56:55 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7709
+Message-ID: <54291EE4.7030505@metafoo.de>
+Date: Mon, 29 Sep 2014 10:57:08 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
 MIME-Version: 1.0
-In-Reply-To: <1407925738-26170-7-git-send-email-thierry.reding@gmail.com>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
-	<1407925738-26170-7-git-send-email-thierry.reding@gmail.com>
-Date: Mon, 29 Sep 2014 10:54:34 +0200
-X-Google-Sender-Auth: eVV9MuS5C_cGHeQ8NMsg_nwD0UM
-Message-ID: <CAMuHMdW4emoma3nRUGna985tE17yPh5pNjMb-jxe5yc5UVr=cw@mail.gmail.com>
-Subject: Re: [PATCH v4 6/8] asm-generic/io.h: Implement generic {read,write}s*()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, sparclinux <sparclinux@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
+        linux-kernel@vger.kernel.org
+CC: alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH 2/2] ASoC: ssm2602: add support for 11.025kHz and 22.5kHz
+ sample rates
+References: <1411891105-22683-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+In-Reply-To: <1411891105-22683-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> #ifndef memset_io
-> -#define memset_io(a, b, c)     memset(__io_virt(a), (b), (c))
-> +#define memset_io memset_io
-> +static inline void memset_io(void __iomem *addr, int value, size_t size)
-> +{
-> +       memset(__io_virt(addr), value, size);
-> +}
->  #endif
+On 09/28/2014 09:58 AM, Stefan Kristiansson wrote:
+> This adds the necessary values to the constraint list and
+> register values to the coefficient table in order to
+> configure the device for 11.025kHz and 22.5kHz sample rates.
+>
+> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
 
-xtensa/allmodconfig:
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-include/asm-generic/io.h:820:2: error: implicit declaration of
-function 'memset' [-Werror=implicit-function-declaration]
-include/asm-generic/io.h:829:2: error: implicit declaration of
-function 'memcpy' [-Werror=implicit-function-declaration]
-arch/xtensa/include/asm/string.h:110:14: error: conflicting types for 'memset'
-arch/xtensa/include/asm/string.h:113:14: error: conflicting types for 'memcpy'
+Thanks.
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/12028900/
+But again, don't forget to Cc the ASoC maintainers, otherwise the patch will 
+be lost.
 
-Gr{oetje,eeting}s,
+[...]
+> @@ -467,7 +477,8 @@ static int ssm2602_set_bias_level(struct snd_soc_codec *codec,
+>   	return 0;
+>   }
+>
+> -#define SSM2602_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
+> +#define SSM2602_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
+> +		SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_16000 |\
 
-                        Geert
+Tiny nitpick, order should be SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_22050 to 
+keep things sorted.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>   		SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |\
+>   		SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200 |\
+>   		SNDRV_PCM_RATE_96000)
+>
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
