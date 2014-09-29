@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaI2IQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:16:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48346 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857AbaI2IQi (ORCPT
+	id S1751921AbaI2IUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:20:47 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:52356 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaI2IUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:16:38 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v4 5/8] of: Add of_graph_get_port_by_id function
-Date: Mon, 29 Sep 2014 10:15:48 +0200
-Message-Id: <1411978551-30480-6-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
-References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Sep 2014 04:20:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com>
+References: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com>
+Date: Mon, 29 Sep 2014 01:20:44 -0700
+Message-ID: <CAKohpokht4=7XCftPYa5PqpPMN-O-5b_RjJ3BgHnxjYV4VzyTg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Cpufreq: Keep cpufreq sysfs nodes across S2RAM/S2DISK
+ when using intel_pstate driver.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function to get a port device tree node by port id,
-or reg property value.
+Sorry for being late on this. Was away for a week for Linaro Connect followed
+by a week of vacations :(
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- drivers/of/base.c        | 26 ++++++++++++++++++++++++++
- include/linux/of_graph.h |  7 +++++++
- 2 files changed, 33 insertions(+)
+On 18 September 2014 00:03, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> Cpufreq core introduces cpufreq_suspended flag to let cpufreq sysfs nodes
+> across S2RAM/S2DISK. But the flag is only set in the cpufreq_suspend()
+> for cpufreq drivers which have target or target_index callback. This
+> skips intel_pstate driver. This patch is to set the flag before checking
+> target or target_index callback.
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index a49b5628..76e2651 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2053,6 +2053,32 @@ int of_graph_parse_endpoint(const struct device_node *node,
- EXPORT_SYMBOL(of_graph_parse_endpoint);
- 
- /**
-+ * of_graph_get_port_by_id() - get the port matching a given id
-+ * @parent: pointer to the parent device node
-+ * @id: id of the port
-+ *
-+ * Return: A 'port' node pointer with refcount incremented. The caller
-+ * has to use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id)
-+{
-+	struct device_node *port;
-+
-+	for_each_child_of_node(node, port) {
-+		u32 port_id = 0;
-+
-+		if (of_node_cmp(port->name, "port") != 0)
-+			continue;
-+		of_property_read_u32(port, "reg", &port_id);
-+		if (id == port_id)
-+			return port;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL(of_graph_get_port_by_id);
-+
-+/**
-  * of_graph_get_next_endpoint() - get next endpoint node
-  * @parent: pointer to the parent device node
-  * @prev: previous endpoint node, or NULL to get first
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index e43442e..3c1c95a 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -40,6 +40,7 @@ struct of_endpoint {
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id);
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *previous);
- struct device_node *of_graph_get_remote_port_parent(
-@@ -53,6 +54,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
- 	return -ENOSYS;
- }
- 
-+static inline struct device_node *of_graph_get_port_by_id(
-+					struct device_node *node, u32 id)
-+{
-+	return NULL;
-+}
-+
- static inline struct device_node *of_graph_get_next_endpoint(
- 					const struct device_node *parent,
- 					struct device_node *previous)
--- 
-2.1.0
+Oh yes, this looks to be the right thing to do..
 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index d9fdedd..eb9bb78 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1656,6 +1656,8 @@ void cpufreq_suspend(void)
+>         if (!cpufreq_driver)
+>                 return;
+>
+> +       cpufreq_suspended = true;
+> +
+>         if (!has_target())
+>                 return;
+>
+> @@ -1670,8 +1672,6 @@ void cpufreq_suspend(void)
+>                         pr_err("%s: Failed to suspend driver: %p\n", __func__,
+>                                 policy);
+>         }
+> -
+> -       cpufreq_suspended = true;
+
+But this change is buggy.. Because you are updating 'cpufreq_suspended'
+before actually stopping the governor, any calls to __cpufreq_governor()
+will be converted to NO-operations because of this in __cpufreq_governor():
+
+/* Don't start any governor operations if we are entering suspend */
+if (cpufreq_suspended)
+    return 0;
+
+And so the governor's will never stop :(
+
+So you need to keep the above line where it was :)
