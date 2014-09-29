@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaI2J0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:26:14 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:57818 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaI2J0L (ORCPT
+	id S1752913AbaI2J0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:26:18 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43155 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbaI2J0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:26:11 -0400
-X-ASG-Debug-ID: 1411982768-0759e74bdc52bab0002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Mon, 29 Sep 2014 11:26:06 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-serial@vger.kernel.org>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 13/16] tty: serial: 8250_dma: add pm runtime
-Message-ID: <20140929092606.GC13952@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH 13/16] tty: serial: 8250_dma: add pm runtime
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-14-git-send-email-bigeasy@linutronix.de>
+	Mon, 29 Sep 2014 05:26:16 -0400
+Message-ID: <54292707.90008@gmail.com>
+Date: Mon, 29 Sep 2014 17:31:51 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1410377411-26656-14-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411982768
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.50
-X-Barracuda-Spam-Status: No, SCORE=0.50 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=BSF_RULE7568M
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10016
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE7568M          Custom Rule 7568M
+To: Jan Beulich <JBeulich@suse.com>, Juergen Gross <JGross@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen-scsiback: Need go to fail after xenbus_dev_error()
+References: <5425967F.7020002@gmail.com> <5428E0ED.1050107@suse.com> <54293742020000780003A48A@mail.emea.novell.com>
+In-Reply-To: <54293742020000780003A48A@mail.emea.novell.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:30:08PM +0200, Sebastian Andrzej Siewior wrote:
-> There is nothing to do for RPM in the RX path. If the HW goes off then it
-> won't assert the DMA line and the transfer won't happen. So we hope that
-> the HW does not go off for RX to work (DMA or PIO makes no difference
-> here).
+On 9/29/14 16:41, Jan Beulich wrote:
+>>>> On 29.09.14 at 06:32, <JGross@suse.com> wrote:
+>> On 09/26/2014 06:38 PM, Chen Gang wrote:
+>>> When failure occurs, after xenbus_dev_error(), need go to fail to let
+>>> upper caller know about it.
+>>>
+>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>> ---
+>>>   drivers/xen/xen-scsiback.c | 4 +++-
+>>>   1 file changed, 3 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/xen/xen-scsiback.c b/drivers/xen/xen-scsiback.c
+>>> index 847bc9c..3e430e1 100644
+>>> --- a/drivers/xen/xen-scsiback.c
+>>> +++ b/drivers/xen/xen-scsiback.c
+>>> @@ -1222,8 +1222,10 @@ static int scsiback_probe(struct xenbus_device *dev,
+>>>
+>>>   	err = xenbus_printf(XBT_NIL, dev->nodename, "feature-sg-grant", "%u",
+>>>   			    SG_ALL);
+>>> -	if (err)
+>>> +	if (err) {
+>>>   		xenbus_dev_error(dev, err, "writing feature-sg-grant");
+>>> +		goto fail;
+>>> +	}
+>>>
+>>>   	xenbus_switch_state(dev, XenbusStateInitWait);
+>>>   	return 0;
+>>>
+>>
+>> Hmm, not testing for failure was on purpose. Advertising this feature
+>> is just for tuning purposes, not mandatory.
+>>
+>> OTOH it would really be a strange error if this xenbus_printf() fails
+>> but all other operations are working, and signaling an error at the
+>> time when it first shows up is a good thing. So:
 > 
-> For TX the situation is slightly different. RPM is enabled on
-> start_tx(). We can't disable RPM on DMA complete callback because there
-> is still data in the FIFO which is being sent. We have to wait until
-> the FIFO is empty before we disable it.
-> For this to happen we fake a TX sent error and enable THRI. Once the
-> FIFO is empty we receive an interrupt and since the TTY-buffer is still
-> empty we "put RPM" via __stop_tx(). Should it been filed then in the
-> start_tx() path we should program the DMA transfer and remove the error
-> flag and the THRI bit.
+> I disagree - failure to announce optional features should not lead to
+> general failure. And this should be consistent across drivers; for
+> existing examples see xen_blkbk_flush_diskcache() and
+> xen_blkbk_discard().
+> 
 
-That last sentence starts out a bit messy.
+During scsiback_probe(), can we sure that "feature-sg-grant" is optional
+feature? For me, only according to its name, I guess not: it is about
+security which is always necessary in kernel (although SG_ALL).
 
 
-> 
-> Reviewed-by: Tony Lindgren <tony@atomide.com>
-> Tested-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/tty/serial/8250/8250_dma.c | 16 +++++++++++-----
->  1 file changed, 11 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-> index 898a6781d0b3..e8850219b150 100644
-> --- a/drivers/tty/serial/8250/8250_dma.c
-> +++ b/drivers/tty/serial/8250/8250_dma.c
-> @@ -21,6 +21,7 @@ static void __dma_tx_complete(void *param)
->  	struct uart_8250_dma	*dma = p->dma;
->  	struct circ_buf		*xmit = &p->port.state->xmit;
->  	unsigned long	flags;
-> +	bool en_thri = false;
->  
->  	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
->  				UART_XMIT_SIZE, DMA_TO_DEVICE);
-> @@ -40,11 +41,16 @@ static void __dma_tx_complete(void *param)
->  		int ret;
->  
->  		ret = serial8250_tx_dma(p);
-> -		if (ret) {
-> -			dma->tx_err = 1;
-> -			p->ier |= UART_IER_THRI;
-> -			serial_port_out(&p->port, UART_IER, p->ier);
-> -		}
-> +		if (ret)
-> +			en_thri = true;
-> +
-> +	} else if (p->capabilities & UART_CAP_RPM)
-> +		en_thri = true;
-> +
-> +	if (en_thri) {
-> +		dma->tx_err = 1;
-> +		p->ier |= UART_IER_THRI;
-> +		serial_port_out(&p->port, UART_IER, p->ier);
->  	}
->  
->  	spin_unlock_irqrestore(&p->port.lock, flags);
-> -- 
-> 2.1.0
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Thanks
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
