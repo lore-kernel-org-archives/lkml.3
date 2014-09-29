@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbaI2WZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 18:25:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42081 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaI2WZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 18:25:42 -0400
-Date: Mon, 29 Sep 2014 18:24:45 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
-        Tom Gundersen <teg@jklm.no>, rmilasan@suse.com, werner@suse.com,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, Petr Mladek <pmladek@suse.cz>,
-        dbueso@suse.com,
+	id S1754808AbaI2WbY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 18:31:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:39182 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751551AbaI2WbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 18:31:23 -0400
+Date: Tue, 30 Sep 2014 08:31:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
-Message-ID: <20140929222445.GA10280@kroah.com>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
- <20140928150329.GC5023@mtj.dyndns.org>
- <20140929212208.GV17349@wotan.suse.de>
- <20140929215945.GA1628@kroah.com>
- <CAB=NE6XKeoDnnBxupLSAXz9w3TXVgAW+Yw3o8-ugzzUgH7j13A@mail.gmail.com>
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the asm-generic tree
+Message-ID: <20140930083116.753ae631@canb.auug.org.au>
+In-Reply-To: <6184197.FUKmdXcAaQ@wuerfel>
+References: <20140926200251.78f0d713@canb.auug.org.au>
+	<20140926105333.GG22293@arm.com>
+	<6184197.FUKmdXcAaQ@wuerfel>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6XKeoDnnBxupLSAXz9w3TXVgAW+Yw3o8-ugzzUgH7j13A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/kygyAXGdddUod_74.oYk78M"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 03:10:22PM -0700, Luis R. Rodriguez wrote:
-> On Mon, Sep 29, 2014 at 2:59 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> Sure make sense, I wasn't quite sure how to make this quite clear,
-> >> a naming convention seems good to me but I also had added at least
-> >> a print about this on the log. Ideally I think a TAIN_DEBUG would
-> >> be best and it seems it could be useful for many other cases in
-> >> the kernel, we could also just re-use TAINT_CRAP as well. Thoughts?
-> >> Greg?
-> >
-> > TAINT_CRAP is for drivers/staging/ code, don't try to repurpose it for
-> > some other horrid option.  There's no reason we can't add more taint
-> > flags for this.
-> 
-> OK thanks, I'll add TAINT_DEBUG. Any preference where to stuff struct
-> driver_attach_work *attach_work ? On the private data structure as
-> this patch currently implements, saving us 24 bytes and hiding it from
-> drivers, or stuffing it on the device driver and simplifying the core
-> code?
+--Sig_/kygyAXGdddUod_74.oYk78M
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I honestly haven't even looked at this series, sorry.  It's too late
-near the close of the merge window for 3.18 and have been on the road
-for the past week in France.
+Hi Arnd,
 
-greg k-h
+On Fri, 26 Sep 2014 13:14:45 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> Thanks, applied on top with Stephen's full report in the commit
+> message and your Ack.
+
+I look at your tree today, and its empty ... just checking that you
+didn't forget to push or something.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/kygyAXGdddUod_74.oYk78M
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUKd24AAoJEMDTa8Ir7ZwVKKAQAIB3gVp1PwjGuNEq5bHLHvaE
++XVtP8EhX3hDImjwU6JyHU8GH8B3r5Jhg42kVz6KDEz7EzM7zWa96Puem2TBgLIn
+WRhrH/tnfDlbVBRKV1HmcH+tpiZhQe/qoe9mMLnNg1BQf6Od3Ya1hswJsDYSDQeB
+9VpFdlECpaCvEmQrBrEJpHGU8pDCMxYXP+pIDyqffs46s1mZl218KqDeisqzAnpw
+gCnUFquWXWpYWG9/Xv6yZ6rDCb0yiwyz2p4qfspnGHRiF1MchxzIuUsX44MVmRPU
+GsyDJflSf0sTKwxr4sW9a8g+h6M7FdScjS6BcVKx3pwpISy1j6dCMym3BDZYcohf
+udPjIH7TYxzB8pA4Fxg5meaPrQlL4IRUk7gTdzsA/MwnWETfCiksrxh7JnXI+cSB
+gqs6kPmDis+hDP9p1giz4ElEJtDp05596dBhrXT+y7goa2TDxpblQ2v2/Kb76McV
+np88FQXHNqgLvouWj/7VRyHnTFTP0DUTfcgGmadzYGuAgUGKEgb7ESW0axXZkN4m
+U12t1ypVMeYcxihIOOvkvcneRy2QJHqFuya+gAtYFCSWpRwOZbWtdYIUQUqn5Jy6
+usrL0pp3OuXja0jik7zHkXRbzOP9kbbPBuUK4Ypk8NiI/fhkXhoVCuEY/sT9S72y
+90waqyLxkOpEUX/if20/
+=cGag
+-----END PGP SIGNATURE-----
+
+--Sig_/kygyAXGdddUod_74.oYk78M--
