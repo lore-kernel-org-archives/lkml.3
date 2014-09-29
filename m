@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388AbaI2Ooc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:44:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47854 "EHLO
+	id S1754971AbaI2OtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:49:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47900 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752177AbaI2Ooa (ORCPT
+	with ESMTP id S1754037AbaI2Ooc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:44:30 -0400
+	Mon, 29 Sep 2014 10:44:32 -0400
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -21,172 +21,303 @@ Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v6 00/11] drm: add support for Atmel HLCDC Display Controller
-Date: Mon, 29 Sep 2014 16:44:13 +0200
-Message-Id: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v6 03/11] pwm: add support for atmel-hlcdc-pwm device
+Date: Mon, 29 Sep 2014 16:44:16 +0200
+Message-Id: <1412001864-3251-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-This patch series adds support for the Atmel HLCDC block (HLCD Controller)
-available on some Atmel SoCs (i.e. the sama5d3 family).
+The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
+at91sam9x5 family or sama5d3 family) provide a PWM device.
 
-The HLCDC actually provides a Display Controller and a PWM device, hence I
-decided to declare an MFD device exposing 2 subdevices: a display
-controller and a PWM chip.
-This also solves a circular dependency issue preventing HLCDC driver from
-unloading.
-The HLCDC request a drm_panel device, which request a backlight device
-(a PWM backlight), which depends on a PWM which is provided by the HLCDC
-driver (hlcdc -> panel -> backlight -> hlcdc (pwm part)).
+This driver add support for a PWM chip exposing a single PWM device (which
+will most likely be used to drive a backlight device).
 
-The current implementation only supports sama5d3 SoCs but other SoCs should
-be easily ported by defining new compatible strings and adding HLCDC
-description structures for these SoCs (Ludovic tested this driver on an
-at91sam9x5 board).
-
-The drivers supports basic CRTC functionalities, several overlays and an
-hardware cursor.
-
-At the moment, it only supports connection to LCD panels through an RGB
-connector (defined as an LVDS connector in my implementation), though
-connection to other kind of devices (like DRM bridges) could be added later.
-
-It also supports several RGB formats on all planes and some YUV formats on
-the HEO overlay plane.
-
-This series depends those ones: [1], [2] and [3].
-
-Best Regards,
-
-Boris
-
-[1]http://lkml.iu.edu/hypermail/linux/kernel/1407.1/04171.html
-[2]https://lkml.org/lkml/2014/9/29/330
-[3]https://lkml.org/lkml/2014/9/22/575
-
-Changes since v5:
-- fix Kconfig dependency bug
-- use adjusted mode in crtc config
-- move signal config (clk, hsync, vsync) from connector to crtc mode_set
-  function
-- use standard rotation property
-- check display_mode validity in connecto mode_valid function
-- remove dma_set_coherent mask call (now done in MFD core)
-- do not use drm_platform_init
-
-Changes since v4:
-- fix a few more bugs in rotation handling (rotation was buggy on some
-  formats)
-- return connector_status_unknown until a panel is exposed by the
-  drm_panel infrastructure (prevent fbdev creation until everyting is
-  in place)
-- rework Kconfig MFD_ATMEL_HLCDC selection to simplify the configuration
-  (automatically select this option when selecting the HLCDC PMW or DRM
-  driver, instead of depending on this option)
-
-Changes since v3:
-- rework the layer code to simplify several parts (locking and layer
-  disabling)
-- make use of the drm_flip_work infrastructure
-- rely on default HW cursor implementation using on the cursor plane
-- rework the display controller DT bindings (based on OF graph
-  representation)
-- add rotation support
-- retrive RGB bus format from drm_display_info
-- drop the dynamic pinctrl state selection
-- rework HLCDC output handling (previously specialized to interface
-  with LCD panels)
-- drop ".module = THIS_MODULE" lines
-- change display controller compatible string
-
-Changes since v2:
-- fix coding style issues (macro indentation)
-- make use of GENMASK in several places
-- declare regmap config as a static structure
-- rework hlcdc plane update API
-- rework cursor handling to make use of the new plane update API
-- fix backporch config
-- do not use devm_regmap_init_mmio_clk to avoid extra clk_enable
-  clk disable calls when accessing registers
-- explicitely include regmap and clk headers instead of relying on
-  atmel-hlcdc.h inclusions
-- make the atmel-hlcdc driver depends on CONFIG_OF
-- separate DT bindings documentation from driver implementation
-- support several pin muxing for HLCDC pins on sama5d3 SoCs
-
-Changes since v1:
-- replace the backlight driver by a PWM driver
-- make use of drm_panel infrastructure
-- split driver code in several subsystem: MFD, PWM and DRM
-- add support for overlays
-- add support for hardware cursor
-
-
-Boris BREZILLON (10):
-  mfd: add documentation for atmel-hlcdc DT bindings
-  pwm: add support for atmel-hlcdc-pwm device
-  pwm: add DT bindings documentation for atmel-hlcdc-pwm driver
-  drm: add Atmel HLCDC Display Controller support
-  drm: add DT bindings documentation for atmel-hlcdc-dc driver
-  ARM: AT91/dt: split sama5d3 lcd pin definitions to match RGB mode
-    configs
-  ARM: AT91/dt: add alternative pin muxing for sama5d3 lcd pins
-  ARM: at91/dt: define the HLCDC node available on sama5d3 SoCs
-  ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
-  ARM: at91/dt: enable the LCD panel on sama5d3xek boards
-
-Boris Brezillon (1):
-  mfd: add atmel-hlcdc driver
-
- .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     |  54 ++
- .../devicetree/bindings/mfd/atmel-hlcdc.txt        |  50 ++
- .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    |  55 ++
- arch/arm/boot/dts/sama5d31ek.dts                   |  20 +
- arch/arm/boot/dts/sama5d33ek.dts                   |  20 +
- arch/arm/boot/dts/sama5d34ek.dts                   |  20 +
- arch/arm/boot/dts/sama5d36ek.dts                   |  20 +
- arch/arm/boot/dts/sama5d3_lcd.dtsi                 | 205 ++++-
- arch/arm/boot/dts/sama5d3xdm.dtsi                  |  58 ++
- drivers/gpu/drm/Kconfig                            |   2 +
- drivers/gpu/drm/Makefile                           |   1 +
- drivers/gpu/drm/atmel-hlcdc/Kconfig                |  13 +
- drivers/gpu/drm/atmel-hlcdc/Makefile               |   7 +
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c     | 392 ++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c       | 527 +++++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h       | 216 ++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c    | 659 ++++++++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h    | 403 ++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c   | 443 +++++++++++
- drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c    | 833 +++++++++++++++++++++
- drivers/mfd/Kconfig                                |   6 +
- drivers/mfd/Makefile                               |   1 +
- drivers/mfd/atmel-hlcdc.c                          | 118 +++
- drivers/pwm/Kconfig                                |  10 +
- drivers/pwm/Makefile                               |   1 +
- drivers/pwm/pwm-atmel-hlcdc.c                      | 229 ++++++
- include/linux/mfd/atmel-hlcdc.h                    |  78 ++
- 27 files changed, 4410 insertions(+), 31 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
- create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
- create mode 100644 drivers/mfd/atmel-hlcdc.c
+Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Tested-by: Anthony Harivel <anthony.harivel@emtrion.de>
+Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+---
+ drivers/pwm/Kconfig           |  10 ++
+ drivers/pwm/Makefile          |   1 +
+ drivers/pwm/pwm-atmel-hlcdc.c | 229 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 240 insertions(+)
  create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
- create mode 100644 include/linux/mfd/atmel-hlcdc.h
 
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index b800783..afb896b 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -50,6 +50,16 @@ config PWM_ATMEL
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-atmel.
+ 
++config PWM_ATMEL_HLCDC_PWM
++	tristate "Atmel HLCDC PWM support"
++	select MFD_ATMEL_HLCDC
++	depends on OF
++	help
++	  Generic PWM framework driver for Atmel HLCDC PWM.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-atmel.
++
+ config PWM_ATMEL_TCB
+ 	tristate "Atmel TC Block PWM support"
+ 	depends on ATMEL_TCLIB && OF
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index f8c577d..eb0aae5 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -2,6 +2,7 @@ obj-$(CONFIG_PWM)		+= core.o
+ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+ obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
++obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
+ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BCM_KONA)	+= pwm-bcm-kona.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
+new file mode 100644
+index 0000000..0238f7a
+--- /dev/null
++++ b/drivers/pwm/pwm-atmel-hlcdc.c
+@@ -0,0 +1,229 @@
++/*
++ * Copyright (C) 2014 Free Electrons
++ * Copyright (C) 2014 Atmel
++ *
++ * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/clk.h>
++#include <linux/mfd/atmel-hlcdc.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/regmap.h>
++
++#define ATMEL_HLCDC_PWMCVAL_MASK	GENMASK(15, 8)
++#define ATMEL_HLCDC_PWMCVAL(x)		((x << 8) & ATMEL_HLCDC_PWMCVAL_MASK)
++#define ATMEL_HLCDC_PWMPOL		BIT(4)
++#define ATMEL_HLCDC_PWMPS_MASK		GENMASK(2, 0)
++#define ATMEL_HLCDC_PWMPS_MAX		0x6
++#define ATMEL_HLCDC_PWMPS(x)		((x) & ATMEL_HLCDC_PWMPS_MASK)
++
++struct atmel_hlcdc_pwm_chip {
++	struct pwm_chip chip;
++	struct atmel_hlcdc *hlcdc;
++	struct clk *cur_clk;
++};
++
++static inline struct atmel_hlcdc_pwm_chip *
++pwm_chip_to_atmel_hlcdc_pwm_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct atmel_hlcdc_pwm_chip, chip);
++}
++
++static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
++				  struct pwm_device *pwm,
++				  int duty_ns, int period_ns)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	struct clk *new_clk = hlcdc->slow_clk;
++	u64 pwmcval = duty_ns * 256;
++	unsigned long clk_freq;
++	u64 clk_period_ns;
++	u32 pwmcfg;
++	int pres;
++
++	clk_freq = clk_get_rate(new_clk);
++	clk_period_ns = 1000000000;
++	clk_period_ns *= 256;
++	do_div(clk_period_ns, clk_freq);
++
++	if (clk_period_ns > period_ns) {
++		new_clk = hlcdc->sys_clk;
++		clk_freq = clk_get_rate(new_clk);
++		clk_period_ns = 1000000000;
++		clk_period_ns *= 256;
++		do_div(clk_period_ns, clk_freq);
++	}
++
++	for (pres = 0; pres <= ATMEL_HLCDC_PWMPS_MAX; pres++) {
++		if ((clk_period_ns << pres) >= period_ns)
++			break;
++	}
++
++	if (pres > ATMEL_HLCDC_PWMPS_MAX)
++		return -EINVAL;
++
++	pwmcfg = ATMEL_HLCDC_PWMPS(pres);
++
++	if (new_clk != chip->cur_clk) {
++		u32 gencfg = 0;
++
++		clk_prepare_enable(new_clk);
++		clk_disable_unprepare(chip->cur_clk);
++		chip->cur_clk = new_clk;
++
++		if (new_clk != hlcdc->slow_clk)
++			gencfg = ATMEL_HLCDC_CLKPWMSEL;
++		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
++				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
++	}
++
++	do_div(pwmcval, period_ns);
++	if (pwmcval > 255)
++		pwmcval = 255;
++
++	pwmcfg |= ATMEL_HLCDC_PWMCVAL(pwmcval);
++
++	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
++			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
++			   pwmcfg);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
++					struct pwm_device *pwm,
++					enum pwm_polarity polarity)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 cfg = 0;
++
++	if (polarity == PWM_POLARITY_NORMAL)
++		cfg = ATMEL_HLCDC_PWMPOL;
++
++	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
++			   ATMEL_HLCDC_PWMPOL, cfg);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_enable(struct pwm_chip *c,
++				  struct pwm_device *pwm)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 status;
++
++	regmap_write(hlcdc->regmap, ATMEL_HLCDC_EN, ATMEL_HLCDC_PWM);
++	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
++	       !(status & ATMEL_HLCDC_PWM))
++		;
++
++	return 0;
++}
++
++static void atmel_hlcdc_pwm_disable(struct pwm_chip *c,
++				    struct pwm_device *pwm)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 status;
++
++	regmap_write(hlcdc->regmap, ATMEL_HLCDC_DIS, ATMEL_HLCDC_PWM);
++	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
++	       (status & ATMEL_HLCDC_PWM))
++		;
++}
++
++static const struct pwm_ops atmel_hlcdc_pwm_ops = {
++	.config = atmel_hlcdc_pwm_config,
++	.set_polarity = atmel_hlcdc_pwm_set_polarity,
++	.enable = atmel_hlcdc_pwm_enable,
++	.disable = atmel_hlcdc_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++static int atmel_hlcdc_pwm_probe(struct platform_device *pdev)
++{
++	struct atmel_hlcdc_pwm_chip *chip;
++	struct device *dev = &pdev->dev;
++	struct atmel_hlcdc *hlcdc;
++	int ret;
++
++	hlcdc = dev_get_drvdata(dev->parent);
++	if (!hlcdc)
++		return -EINVAL;
++
++	ret = clk_prepare_enable(hlcdc->periph_clk);
++	if (ret)
++		return ret;
++
++	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->hlcdc = hlcdc;
++	chip->chip.ops = &atmel_hlcdc_pwm_ops;
++	chip->chip.dev = dev;
++	chip->chip.base = -1;
++	chip->chip.npwm = 1;
++	chip->chip.of_xlate = of_pwm_xlate_with_flags;
++	chip->chip.of_pwm_n_cells = 3;
++	chip->chip.can_sleep = 1;
++
++	ret = pwmchip_add(&chip->chip);
++	if (ret)
++		return ret;
++
++	platform_set_drvdata(pdev, chip);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_remove(struct platform_device *pdev)
++{
++	struct atmel_hlcdc_pwm_chip *chip = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(chip->hlcdc->periph_clk);
++
++	return pwmchip_remove(&chip->chip);
++}
++
++static const struct of_device_id atmel_hlcdc_pwm_dt_ids[] = {
++	{ .compatible = "atmel,hlcdc-pwm" },
++	{ /* sentinel */ },
++};
++
++static struct platform_driver atmel_hlcdc_pwm_driver = {
++	.driver = {
++		.name = "atmel-hlcdc-pwm",
++		.of_match_table = atmel_hlcdc_pwm_dt_ids,
++	},
++	.probe = atmel_hlcdc_pwm_probe,
++	.remove = atmel_hlcdc_pwm_remove,
++};
++module_platform_driver(atmel_hlcdc_pwm_driver);
++
++MODULE_ALIAS("platform:atmel-hlcdc-pwm");
++MODULE_AUTHOR("Boris Brezillon <boris.brezillon@free-electrons.com>");
++MODULE_DESCRIPTION("Atmel HLCDC PWM driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.1
 
