@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaI2PFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:05:46 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:48945 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448AbaI2PFo (ORCPT
+	id S1754565AbaI2PHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:07:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:18717 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaI2PHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:05:44 -0400
+	Mon, 29 Sep 2014 11:07:18 -0400
+Date: Mon, 29 Sep 2014 11:07:05 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: sgruszka@redhat.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, boris.ostrovsky@oracle.com
+Subject: Re: [PATCH] Revert "xen/acpi-processor: fix enabling interrupts on
+ syscore_resume"
+Message-ID: <20140929150705.GG28012@laptop.dumpdata.com>
+References: <1412002276-30873-1-git-send-email-konrad.wilk@oracle.com>
+ <5429730E.1050506@citrix.com>
 MIME-Version: 1.0
-In-Reply-To: <542970CF.6040405@linaro.org>
-References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com>
-	<542970CF.6040405@linaro.org>
-Date: Mon, 29 Sep 2014 20:35:42 +0530
-Message-ID: <CAMf-jSmdNibSK+ffBOdcuVjyhmHFcfi5s4nQzctrS0dK889+FA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5429730E.1050506@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srini,
+On Mon, Sep 29, 2014 at 03:56:14PM +0100, David Vrabel wrote:
+> On 29/09/14 15:51, Konrad Rzeszutek Wilk wrote:
+> > This reverts commit cd979883b9ede90643e019f33cb317933eb867b4.
+> > 
+> > As it actually never gets called on the initial domain when
+> > resuming. That is after we suspend and go in resume, the
+> > do_suspend (from manage.c) is never called (it is if it
+> > was running as a guest)- so the 'resume' functionality of the driver
+> > was never called.
+> > 
+> > Which means that this whole patch was pointless (well, it did
+> > remove the WARNING splat).
+> > 
+> > This patch reverts the patch and allows the C and P states to
+> > be uploaded to the hypervisor on ACPI S3 resume of the
+> > initial domain. It sadly brings back the WARNING splat which
+> > will have to be dealt with at some point.
+> 
+> Incorrectly enabling interrupts in contexts where this is not permitted
+> is not just harmless "WARNING splat".
+> 
+> This has been broken since 3.15-rc1 without anyone else noticing so I
+> think we can afford to take a bit more time and fix the original bug
+> properly.
 
-Thanks for review.
-
-On Mon, Sep 29, 2014 at 8:16 PM, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> On 29/09/14 14:48, Pramod Gurav wrote:
->>
->> This change fixes below sparse error,
->> drivers/pinctrl/pinctrl-st.c:1515:31: error: incompatible types for
->> operation (>)
->> drivers/pinctrl/pinctrl-st.c:1515:31:    left side has type void [noderef]
->> <asn:2>*irqmux_base
->> drivers/pinctrl/pinctrl-st.c:1515:31:    right side has type int
->>
->> The fix is done by removing a check on info->irqmux_base as
->> info->irqmux_base has already been checked  for error when allocating it.
->> Hence there is no need to redo the check.
->>
->> Cc: Maxime Coquelin <maxime.coquelin@st.com>
->> Cc: Patrice Chotard <patrice.chotard@st.com>
->> CC: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
->> ---
->>   drivers/pinctrl/pinctrl-st.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
->> index 5475374..ddeaeda 100644
->> --- a/drivers/pinctrl/pinctrl-st.c
->> +++ b/drivers/pinctrl/pinctrl-st.c
->> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
->> st_pinctrl *info,
->>                                              gpio_irq,
->> st_gpio_irq_handler);
->>         }
->>
->> -       if (info->irqmux_base > 0 || gpio_irq > 0) {
->> +       if (gpio_irq > 0) {
->>                 err = gpiochip_irqchip_add(&bank->gpio_chip,
->> &st_gpio_irqchip,
->>                                            0, handle_simple_irq,
->>                                            IRQ_TYPE_LEVEL_LOW);
->
->
-> This is not the correct fix. Please see why irqmux_base and gpio_irq are
-> used in the driver.
-> You are breaking the logic here...
->
-> please read the below comment from the code.
->
->         /**
->          * GPIO bank can have one of the two possible types of
->          * interrupt-wirings.
->          *
->          * First type is via irqmux, single interrupt is used by multiple
->          * gpio banks. This reduces number of overall interrupts numbers
->          * required. All these banks belong to a single pincontroller.
->          *                _________
->          *               |         |----> [gpio-bank (n)    ]
->          *               |         |----> [gpio-bank (n + 1)]
->          *      [irqN]-- | irq-mux |----> [gpio-bank (n + 2)]
->          *               |         |----> [gpio-bank (...  )]
->          *               |_________|----> [gpio-bank (n + 7)]
->          *
->          * Second type has a dedicated interrupt per each gpio bank.
->          *
->          *      [irqN]----> [gpio-bank (n)]
->          */
->
->
-> so irqmux_base is first type and gpio_irq is second type.
-> if you remove check for irqmux_base here you would end up NOT adding irqchip
-> the gpiochip in first type so you break the existing logic here.
->
->
-Thanks for this nice explanation.
-
-> I think the correct fix is:
->
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 5475374..4060c30 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl
-> *info,
->                                              gpio_irq, st_gpio_irq_handler);
->         }
->
-> -       if (info->irqmux_base > 0 || gpio_irq > 0) {
-> +       if (!IS_ERR(info->irqmux_base) || gpio_irq > 0) {
->                 err = gpiochip_irqchip_add(&bank->gpio_chip,
-But if I am not wrong in function st_pctl_probe_dt, This is already done:
-
-if (IS_ERR(info->irqmux_base))
-            return PTR_ERR(info->irqmux_base);
-
-That is the reason I thought there is no need to recheck the pointer
-info->irqmux_base.
-Am I misunderstanding something?
-> &st_gpio_irqchip,
->                                            0, handle_simple_irq,
->                                            IRQ_TYPE_LEVEL_LOW);
->
->
-> Thanks,
-> srini
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Thanks and Regards
-Pramod
+That certainly can be done (perhaps as a next patch). But that won't get
+done by for a good month or so (-EOVERLOADED).
+> 
+> David
