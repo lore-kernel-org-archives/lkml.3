@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaI2VFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 17:05:06 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:60031 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbaI2VFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 17:05:04 -0400
+	id S1754971AbaI2VFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:05:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16905 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917AbaI2VFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 17:05:40 -0400
+Date: Mon, 29 Sep 2014 23:02:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/11] wait: Provide infrastructure to deal with nested
+	blocking
+Message-ID: <20140929210221.GA12112@redhat.com>
+References: <20140924081845.572814794@infradead.org> <20140924082242.051202318@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
-References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
-	<5421A4B4.1040604@infradead.org>
-	<1411492210.30136.15.camel@nebuchadnezzar>
-	<5421A9D5.8020503@infradead.org>
-	<1411496822.31476.1.camel@nebuchadnezzar>
-	<1412021904.6334.97.camel@x220>
-	<CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
-Date: Mon, 29 Sep 2014 14:05:02 -0700
-X-Google-Sender-Auth: 3ci9Vo38mL9ZE8kgvu5UzAkmYI8
-Message-ID: <CAGXu5jJHmj+t+VLZ8Ww=C2_cYr69HwxNmDb8rySD7qt0_+3+gw@mail.gmail.com>
-Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
-From: Kees Cook <keescook@chromium.org>
-To: Valentin Rothberg <valentinrothberg@gmail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924082242.051202318@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 1:25 PM, Valentin Rothberg
-<valentinrothberg@gmail.com> wrote:
-> It has been merged already, see [1]. Sorry, I did not check if you
-> were in the CC to let you know.
+On 09/24, Peter Zijlstra wrote:
+>
+> There are a few places that call blocking primitives from wait loops,
+> provide infrastructure to support this without the typical
+> task_struct::state collision.
+>
+> We record the wakeup in wait_queue_t::flags which leaves
+> task_struct::state free to be used by others.
 
-If it helps, I tend to use scripts/get_maintainer.pl when sending
-patches. It's a nice way to see who touched the same areas your patch
-touches, as well as doing all the filename and patch matching from the
-items listed in MAINTAINERS.
+Sorry for delay. FWIW,
 
--Kees
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
--- 
-Kees Cook
-Chrome OS Security
+> +/*
+> + * DEFINE_WAIT_FUNC(wait, woken_wait_func);
+                             ^^^^^^^^^^^^^^^^
+woken_wake_function ;)
+
+> +int woken_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
+> +{
+> +	/*
+> +	 * Although this function is called under waitqueue lock, LOCK
+> +	 * doesn't imply write barrier and the users expects write
+> +	 * barrier semantics on wakeup functions.  The following
+> +	 * smp_wmb() is equivalent to smp_wmb() in try_to_wake_up()
+> +	 * and is paired with set_mb() in wait_woken().
+> +	 */
+> +	smp_wmb(); /* C */
+> +	wait->flags |= WQ_FLAG_WOKEN;
+
+Perhaps it is just me, but I was a bit confused by the comment above wmb().
+Afaics, it is not that "users expects write barrier semantics", just we
+need to ensure that
+
+	CONDITION = true;
+	wait->flags |= WQ_FLAG_WOKEN;
+
+can't be reordered (and this differs from smp_wmb() in try_to_wake_up()).
+Otherwise we can obviously race with
+
+	// wait_woken() -> set_mb()
+	wait->flags &= ~WQ_FLAG_WOKEN;
+	mb();
+
+	if (CONDITION)
+		break;
+
+Oleg.
+
