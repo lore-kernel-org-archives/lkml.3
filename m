@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705AbaI2TGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:06:14 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:52006 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991AbaI2TGM (ORCPT
+	id S1754801AbaI2TGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:06:49 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:38829 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768AbaI2TGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:06:12 -0400
+	Mon, 29 Sep 2014 15:06:48 -0400
+Date: Mon, 29 Sep 2014 12:06:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Jojy G Varghese <jojyv@juniper.net>,
+        Guenter Roeck <groeck@juniper.net>, hongtao.jia@freescale.com
+Subject: Re: [PATCH] powerpc/fsl: Add support for pci(e) machine check
+ exception on E500MC / E5500
+Message-ID: <20140929190643.GA20189@roeck-us.net>
+References: <1412009312-7400-1-git-send-email-linux@roeck-us.net>
+ <1412015766.13320.253.camel@snotra.buserror.net>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXEUZvkuzwOrK+2zGVj0ywFaQsiWH7SHufZk9BRWnwddQ@mail.gmail.com>
-References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
-	<1412000971-9242-11-git-send-email-Liviu.Dudau@arm.com>
-	<CAE9FiQXEUZvkuzwOrK+2zGVj0ywFaQsiWH7SHufZk9BRWnwddQ@mail.gmail.com>
-Date: Mon, 29 Sep 2014 12:06:10 -0700
-X-Google-Sender-Auth: sYeCQUtVY6OCme-pmC4PRbs3baQ
-Message-ID: <CAE9FiQUkcPRMUEn01VJMyXz8aYvk6C5MBNZi5NCV2m3qkNabeg@mail.gmail.com>
-Subject: Re: [PATCH v13 10/12] PCI: Assign unassigned bus resources in pci_scan_root_bus()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412015766.13320.253.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:25 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Sep 29, 2014 at 7:29 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> If the firmware has not assigned all the bus resources and we are not just
->> probing the PCI buses, it makes sense to assign the unassigned resources
->> in pci_scan_root_bus().
->>
->> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Arnd Bergmann <arnd@arndb.de>
->> CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
->> CC: Rob Herring <robh+dt@kernel.org>
->> ---
->>  drivers/pci/probe.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index 636d1c9..d2ebd49 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -1951,6 +1951,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
->>         if (!found)
->>                 pci_bus_update_busn_res_end(b, max);
->>
->> +       if (!pci_has_flag(PCI_PROBE_ONLY))
->> +               pci_assign_unassigned_bus_resources(b);
->> +
->>         pci_bus_add_devices(b);
->>         return b;
->>  }
->
-> No, you can not do it that early.
->
-> On x86, we need to call
-> pcibios_resource_survey_bus at first.
+On Mon, Sep 29, 2014 at 01:36:06PM -0500, Scott Wood wrote:
+> On Mon, 2014-09-29 at 09:48 -0700, Guenter Roeck wrote:
+> > From: Jojy G Varghese <jojyv@juniper.net>
+> > 
+> > For E500MC and E5500, a machine check exception in pci(e) memory space
+> > crashes the kernel.
+> > 
+> > Testing shows that the MCAR(U) register is zero on a MC exception for the
+> > E5500 core. At the same time, DEAR register has been found to have the
+> > address of the faulty load address during an MC exception for this core.
+> > 
+> > This fix changes the current behavior to fixup the result register
+> > and instruction pointers in the case of a load operation on a faulty
+> > PCI address.
+> > 
+> > The changes are:
+> > - Added the hook to pci machine check handing to the e500mc machine check
+> >   exception handler.
+> > - For the E5500 core, load faulting address from SPRN_DEAR register.
+> >   As mentioned above, this is necessary because the E5500 core does not
+> >   report the fault address in the MCAR register.
+> > 
+> > Cc: Scott Wood <scottwood@freescale.com>
+> > Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
+> > [Guenter Roeck: updated description]
+> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> >  arch/powerpc/kernel/traps.c   | 3 ++-
+> >  arch/powerpc/sysdev/fsl_pci.c | 5 +++++
+> >  2 files changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+> > index 0dc43f9..ecb709b 100644
+> > --- a/arch/powerpc/kernel/traps.c
+> > +++ b/arch/powerpc/kernel/traps.c
+> > @@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
+> >  	int recoverable = 1;
+> >  
+> >  	if (reason & MCSR_LD) {
+> > -		recoverable = fsl_rio_mcheck_exception(regs);
+> > +		recoverable = fsl_rio_mcheck_exception(regs) ||
+> > +			fsl_pci_mcheck_exception(regs);
+> >  		if (recoverable == 1)
+> >  			goto silent_out;
+> >  	}
+> > diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+> > index c507767..bdb956b 100644
+> > --- a/arch/powerpc/sysdev/fsl_pci.c
+> > +++ b/arch/powerpc/sysdev/fsl_pci.c
+> > @@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs *regs)
+> >  #endif
+> >  	addr += mfspr(SPRN_MCAR);
+> >  
+> > +#ifdef CONFIG_E5500_CPU
+> > +	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
+> > +		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
+> > +#endif
+> 
+> Kconfig tells you what hardware is supported, not what hardware you're
+> actually running on.
+> 
+Hi Scott,
 
-on x86:
-pcibios_init
-pcibios_resource_survey()
-pcibios_assign_resources() via fs_initcall
+Good point. Jojy, guess we'll have to check if the CPU is actually an E5500.
+Can you look into that ?
+
+> Jia Hongtao, do you know anything about this issue?  Is there an
+> erratum?  What chips are affected by the the erratum covered by
+> <http://patchwork.ozlabs.org/patch/240239/>?
+> 
+We already have and use the above patch(es) in our kernel. It works fine
+for E500 (P2020), but does not address E5500 (P5020/P5040).
+
+> Can we rely on DEAR or is this just a side effect of likely having taken
+> a TLB miss for the address recently?  Perhaps we should use the
+> instruction emulation to determine the effective address instead.
+> 
+> Guenter, is this patch intended to deal with an erratum or are you
+> covering up legitimate errors?
+> 
+Those are errors related to PCIe hotplug, and are seen with unexpected PCIe
+device removals (triggered, for example, by removing power from a PCIe adapter).
+The behavior we see on E5500 is quite similar to the same behavior on E500:
+If unhandled, the CPU keeps executing the same instruction over and over again
+if there is an error on a PCIe access and thus stalls. I don't know if this
+is considered an erratum or expected behavior, but it is one we have to address
+since we have to be able to handle that condition. Ultimately, we'll want to
+implement PCIe error handlers for the affected drivers, but that will be a next
+step.
+
+Please let me know if you have a better solution to address this problem.
+
+Thanks,
+Guenter
