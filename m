@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbaI2UZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:25:55 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:43369 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaI2UZy convert rfc822-to-8bit (ORCPT
+	id S1754565AbaI2U1D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:27:03 -0400
+Received: from pegasus3.altlinux.org ([194.107.17.103]:35742 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaI2U1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:25:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412021904.6334.97.camel@x220>
-References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
- <5421A4B4.1040604@infradead.org> <1411492210.30136.15.camel@nebuchadnezzar>
- <5421A9D5.8020503@infradead.org> <1411496822.31476.1.camel@nebuchadnezzar> <1412021904.6334.97.camel@x220>
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-Date: Mon, 29 Sep 2014 22:25:22 +0200
-Message-ID: <CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
-Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Kees Cook <keescook@chromium.org>, Randy Dunlap <rdunlap@infradead.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Sep 2014 16:27:01 -0400
+Date: Tue, 30 Sep 2014 00:26:59 +0400
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND v3 PATCH 3/3] vfs: make mounts and mountstats honor root dir like mountinfo does
+Message-ID: <20140929202659.GA16292@altlinux.org>
+References: <20140929180523.GC15829@altlinux.org> <20140929183222.GJ7996@ZenIV.linux.org.uk> <20140929184333.GD15829@altlinux.org> <20140929193329.GL7996@ZenIV.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929193329.GL7996@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 10:18 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> [Perhaps Kees hasn't seen this yet.]
->
-> On Tue, 2014-09-23 at 20:27 +0200, Valentin Rothberg wrote:
->> On mar., 2014-09-23 at 10:11 -0700, Randy Dunlap wrote:
->> > On 09/23/14 10:10, Valentin Rothberg wrote:
->> > > On mar., 2014-09-23 at 09:49 -0700, Randy Dunlap wrote:
->> > >> On 09/22/14 23:58, Valentin Rothberg wrote:
->> > >>> The "_MODULE" suffix is reserved for tristates compiled as
->> > >>> loadable kernel modules (LKM). The "TEST_MODULE" feature thereby
->> > >>
->> > >> Is that documented anywhere?
->> > >
->> > > Sadly this is not made explicit, but the Kconfig code documents it. The
->> > > following code (./scripts/kconfig/confdata.c) is used to generate the
->> > > autoconf.h header file during the build process. When a feature is
->> > > selected as a kernel module ('m'), it is suffixed with "_MODULE" to
->> > > indicate it.
->> > >
->> > > »   »   switch (*value) {
->> > > »   »   case 'n':
->> > > »   »   »   break;
->> > > »   »   case 'm':
->> > > »   »   »   suffix = "_MODULE";
->> > > »   »   »   /* fall through */
->> > >
->> > >> Was this causing some kind of problem or error?  Please tell us what that was if so.
->> > >
->> > > It causes problems for static code analysis, which assumes a consistent
->> > > use of the "_MODULE" suffix.
->> > >
->> > > Another possible change would be to rename the reference in the Makefile
->> > > to "TEST_MODULE_MODULE". Personally, I prefer my proposed patch.
->> >
->> > Sure, your patch is fine, but we need to know *why* the patch is needed.
->>
->> Thank you for pointing that out. I will take care to give more
->> information in future patches.
->>
->> Thanks,
->>  Valentin
->>
->> > Thanks.
->> >
->> > >>
->> > >>
->> > >>> violates this convention. The feature is used to compile the
->> > >>> lib/test_module.c kernel module.
->> > >>>
->> > >>> This patch renames the feature and its reference in a Makefile
->> > >>> to "TEST_LKM", which still expresses the test of a LKM.
->
-> Maybe something like "TEST_MODULE_LOAD"?
+On Mon, Sep 29, 2014 at 08:33:29PM +0100, Al Viro wrote:
+> On Mon, Sep 29, 2014 at 10:43:33PM +0400, Dmitry V. Levin wrote:
+> > On Mon, Sep 29, 2014 at 07:32:22PM +0100, Al Viro wrote:
+> > > On Mon, Sep 29, 2014 at 10:05:23PM +0400, Dmitry V. Levin wrote:
+> > > > Date: Wed, 17 Oct 2012 20:29:55 +0400
+> > > > 
+> > > > Change show_vfsmnt() and show_vfsstat() to show mountpoints relative
+> > > > to the root directory and skip mountpoints outside of chroot jail
+> > > > the same way as show_mountinfo() does.
+> > > 
+> > > Sigh...  Repeat after me:  We  Do  Not  Break  Userland.  Care to explain
+> > > why that change won't do just that?
+> > 
+> > This is definitely an information leak, and I cannot imagine how these
+> > unaccessible entries listed in /proc/self/mounts and /proc/self/mountstats
+> > could be used sanely.
+> 
+> How do you think any existing script running chrooted is going to parse
+> /proc/mounts?  One obvious way is to filter on known prefix and strip it
+> away.  With your change it will instantly break.  Moreover, any script
+> working with *new* semantics will break as soon as you boot an older
+> kernel.
 
-It has been merged already, see [1]. Sorry, I did not check if you
-were in the CC to let you know.
+If a script relies on this behaviour, it is likely to be broken already
+because the kernel strips chroot prefix somehow (I've just checked back to
+2.6.32).  The main purpose of this patch is to exclude from listing those
+mount points that do not belong to the chroot at all.
 
-[1] http://ozlabs.org/~akpm/mmotm/broken-out/lib-rename-test_module-to-test_lkm.patch
+> Existing behaviour had been there since mid-90s (at least) and I'm absolutely
+> certain that such scripts do exist.  I know that, since I had to write such.
 
->
->> > >>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
->> > >>> ---
->> > >>>  lib/Kconfig.debug | 2 +-
->> > >>>  lib/Makefile      | 2 +-
->> > >>>  2 files changed, 2 insertions(+), 2 deletions(-)
->> > >>>
->> > >>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
->> > >>> index 07c2832..db91c97 100644
->> > >>> --- a/lib/Kconfig.debug
->> > >>> +++ b/lib/Kconfig.debug
->> > >>> @@ -1627,7 +1627,7 @@ config DMA_API_DEBUG
->> > >>>
->> > >>>           If unsure, say N.
->> > >>>
->> > >>> -config TEST_MODULE
->> > >>> +config TEST_LKM
->> > >>>         tristate "Test module loading with 'hello world' module"
->> > >>>         default n
->> > >>>         depends on m
->> > >>> diff --git a/lib/Makefile b/lib/Makefile
->> > >>> index d6b4bc4..382437a 100644
->> > >>> --- a/lib/Makefile
->> > >>> +++ b/lib/Makefile
->> > >>> @@ -31,7 +31,7 @@ obj-y += string_helpers.o
->> > >>>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
->> > >>>  obj-y += kstrtox.o
->> > >>>  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
->> > >>> -obj-$(CONFIG_TEST_MODULE) += test_module.o
->> > >>> +obj-$(CONFIG_TEST_LKM) += test_module.o
->
-> Perhaps we should rename that file likewise?
->
->> > >>>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
->> > >>>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
->> > >>>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
->
-> If something like this gets applied a follow up patch to make the kbuild
-> system reject Kconfig symbols ending in _MODULE might be nice.
+I'm very curious, what could your scripts do with paths outside chroot,
+assuming that prefix removal was done by the kernel?
 
-That is a very nice idea. Please CC me if you come up with a path.
+> Again, we do not break userland.
 
-Thanks,
- Valentin
->
->
-> Paul Bolle
->
+Occasionally, we do.  If you say there was no chroot prefix removal in the
+kernel before, and there seems to be a prefix removal for at least 5 years,
+then there must have been a break some years ago that went unnoticed.
+
+
+-- 
+ldv
