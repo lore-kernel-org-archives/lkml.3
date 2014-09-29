@@ -1,52 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbaI2UhY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:37:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33885 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaI2UhX (ORCPT
+	id S1754517AbaI2UkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:40:09 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58824 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaI2UkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:37:23 -0400
-Date: Mon, 29 Sep 2014 16:37:20 -0400 (EDT)
-Message-Id: <20140929.163720.1059434932375001698.davem@davemloft.net>
-To: hock.leong.kweh@intel.com
-Cc: peppe.cavallaro@st.com, rayagond@vayavyalabs.com, vbridgers2013@gmail.com,
-        wens@csie.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        boon.leong.ong@intel.com, tobias.johannes.klausmann@mni.thm.de
-Subject: Re: [PATCH v2] net: stmmac: fix stmmac_pci_probe failed when
- CONFIG_HAVE_CLK is selected
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1411738975-20056-1-git-send-email-hock.leong.kweh@intel.com>
-References: <1411738975-20056-1-git-send-email-hock.leong.kweh@intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 29 Sep 2014 13:37:22 -0700 (PDT)
+	Mon, 29 Sep 2014 16:40:08 -0400
+Date: Mon, 29 Sep 2014 22:40:04 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: alsa-devel@alsa-project.org, Andreas Mohr <andi@lisas.de>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ES938 support for ES18xx driver
+Message-ID: <20140929204004.GA5037@rhlx01.hs-esslingen.de>
+References: <1412020242-8752-1-git-send-email-linux@rainbow-software.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412020242-8752-1-git-send-email-linux@rainbow-software.org>
+X-Priority: none
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Date: Fri, 26 Sep 2014 21:42:55 +0800
+Hi,
 
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-> 
-> When the CONFIG_HAVE_CLK is selected for the system, the stmmac_pci_probe
-> will fail with dmesg:
-> [    2.167225] stmmaceth 0000:00:14.6: enabling device (0000 -> 0002)
-> [    2.178267] stmmaceth 0000:00:14.6: enabling bus mastering
-> [    2.178436] stmmaceth 0000:00:14.6: irq 24 for MSI/MSI-X
-> [    2.178703] stmmaceth 0000:00:14.6: stmmac_dvr_probe: warning: cannot
-> get CSR clock
-> [    2.186503] stmmac_pci_probe: main driver probe failed
-> [    2.194003] stmmaceth 0000:00:14.6: disabling bus mastering
-> [    2.196473] stmmaceth: probe of 0000:00:14.6 failed with error -2
-> 
-> This patch fix the issue by breaking the dependency to devm_clk_get()
-> as the CSR clock can be obtained at priv->plat->clk_csr from pci driver.
-> 
-> Reported-by: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+On Mon, Sep 29, 2014 at 09:50:42PM +0200, Ondrej Zary wrote:
+> +	if (mpu_port[dev] > 0 && mpu_port[dev] != SNDRV_AUTO_PORT)
+> +		/* no error if this fails because ES938 is optional */
+> +		if (snd_es938_init(&chip->es938, card, 0, 0) == 0)
+> +			snd_printk(KERN_DEBUG "found ES938 audio processor\n");
+> +
+> +	return 0;
 
-Applied, thank you.
+Hmm, how's the braces policy here?
+Given a double "if" I'd suspect that the outer "if" would want braces then.
+(perhaps checkpatch.pl has something to say here)
+
+Not to mention that I'm having strong doubts about the kernel's
+"if" coding style guidelines in general:
+IMHO *all* uses of "if" ought to be braced:
+witness the Apple-specific OpenSSL bug catastrophy ("goto fail;"),
+where people said that adding braces to conditionals would have made things
+obvious.
+Plus the annoyance that for an addition commit to an existing conditional
+the diff will *not* contain the addition only (one line),
+but rather *three* lines, and the first line rather needlessly getting
+modified even!
+
++ if (is_foo)
++   bar;
+
+So, given a ridiculously simple one-line addition:
+
+- if (is_foo)
++ if (is_foo) {
+    bar;
++   boo;
++ }
+
+Rather than:
+
++ if (is_foo) {
++   bar;
++ }
+
+if (is_foo) {
+  bar;
++ boo;
+}
+
+
+(SIX changed lines vs. 4!)
+
+
+Not to mention my pet peeve about large sections of coding style documents -
+they establish Golden Rules to never be broken, but then
+Fail To Elaborate Why - STUPID!
+(that does not fully apply to our "if" CodingStyle paragraph though)
+What a great way to hamper properly thought out evolution of guidelines...
+
+Perhaps we should have a seasoned discussion about that coding style issue,
+and others? (any update of Documentation/CodingStyle
+would need to directly include an update to checkpatch.pl, too, though)
+
+(sorry about that part being rather OT to your particular nice patch)
+
+> +	struct snd_es938_sysex_reg req = {
+> +		.midi_cmd = MIDI_CMD_COMMON_SYSEX,
+> +		.id = ES938_ID,
+> +		.cmd = ES938_CMD_REG_R,
+> +		.reg = reg,
+> +		.midi_end = MIDI_CMD_COMMON_SYSEX_END,
+> +	};
+
+Hmm, perhaps const? :)
+(and dito probably a const void * cast further below, to forego receiving
+the optionally activated gcc non-const cast warnings)
+
+> +	end_time = ktime_add_ms(ktime_get(), 100);
+
+Yay! One driver less which is advertising
+less precise deprecated implementation style :)
+
+> +	/* check if the reply is our and has SYSEX_END at the end */
+
+"ours"
+
+Thanks,
+
+Andreas Mohr
