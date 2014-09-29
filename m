@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950AbaI2Jgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:36:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38391 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaI2Jgs (ORCPT
+	id S1753355AbaI2JhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:37:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36825 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaI2JhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:36:48 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org, tytso@mit.edu,
-        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca
-Subject: Re: ext4: 3.17? problems
-In-Reply-To: <20140928104456.GA17400@amd>
-References: <20140928104456.GA17400@amd>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 29 Sep 2014 13:36:43 +0400
-Message-ID: <87iok6ojis.fsf@openvz.org>
+	Mon, 29 Sep 2014 05:37:03 -0400
+Date: Mon, 29 Sep 2014 11:36:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: kan.liang@intel.com, eranian@google.com, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, paulus@samba.org, acme@kernel.org,
+        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH V5 02/16] perf, core: introduce pmu context switch
+ callback
+Message-ID: <20140929093657.GD5430@worktop>
+References: <978920978-30191-1-git-send-email-kan.liang@intel.com>
+ <978920978-30191-3-git-send-email-kan.liang@intel.com>
+ <20140927164738.GA21729@lerouge>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140927164738.GA21729@lerouge>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Sep 2014 12:44:56 +0200, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
-> 
-> After update to debian testing, my machine sometimes fails to
-> reboot. (aptitude upgrade seems to be the trigger).
-> 
-> So I had to hard power-down the machine. That should be perfectly
-> safe, as ext4 has a journal, and this is plain SATA disk, right?
-> 
-AFAIU you have some corruption on your fs (the root of cause is unknown
-at this moment)
-So you have following stages:
-1) fs corruption
-2) boot-> mount attempt
-3) fsck
-During (1) Once ext4 driver found this error it will call ext4_error
-which will tag sb with FS_ERROR flag.
-During (2) it will found that tag and clear s_orphan which result
-in complain you have seen  during(3)
+On Sat, Sep 27, 2014 at 06:47:41PM +0200, Frederic Weisbecker wrote:
 
-My idea is that (2) and (3) is consequences of (1).
-Please provide more details(dmsg) about initial error.
-> On next boot to Debian stable, I got stacktrace, and messages about
-> ext4 corruption. Back to Debian testing. systemd ran fsck, determined
-> it can't fix it, dropped me into emergency shell, _but mounted the
-> filesstem, anyway_. Oops.
-> 
-> Now I'm getting
-> 
-> fsck 1.42.12
-> ...
-> Inodes that were part of a corrupted orphan linked list found <y>
-> Deleted inode has zero dtime <y>
-> (6 inodes) was part of the orphaned inode list. FIXED.
-> Block bitmap differences.
-> Free inode counts wrong.
-> 
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Trim replies already -- I should really go write that auto-bounce for
+excessive quoting already.
+
+> I wonder if it's worth to create such an arch callback and core corner case.
+> How about just scheduling out then in the events that have lbr, wouldn't we
+> have more simple code in the end?
+
+That depends a bit, the lbr save/restore is indeed very expensive (at
+least 16 msr reads and 16 msr writes -- when assuming 16 deep lbr), but
+this is still on about the same order of msr writes required to switch 4
+counters (esp. if we include the PEBS msrs).
+
+So at that point we still win about half the context switch cost by not
+doing an unconditional sched out / sched in.
+
+Also, there are more consumers of this thing.
+
+> Besides, BTS would benefit from that too. I can't seem to find where it is
+> flushed when a task context switches inside a same perf context. It seems
+> that it doesn't happen, BTS traces are flushed only on event stop (and overflow IRQ)
+> and events aren't stopped if a context switch happens in the same perf context.
+> Having Y task bts traces from task X event is probably not what we want.
+
+Flushing the BTS is indeed a good point, but that would definitely
+benefit from this, draining the BTS buffer is likely faster than doing
+all those MSR writes.
