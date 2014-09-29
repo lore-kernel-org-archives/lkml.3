@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaI2QPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:15:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52824 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015AbaI2QPI convert rfc822-to-8bit (ORCPT
+	id S1755057AbaI2QPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:15:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:2821 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754260AbaI2QPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:15:08 -0400
-Date: Mon, 29 Sep 2014 18:15:05 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140929161505.GF13142@linutronix.de>
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
- <20140911111721.GB17476@xps8300>
- <54118AAB.2010205@linutronix.de>
- <5411967A.6090406@hurleysoftware.com>
- <54119AAA.9080907@linutronix.de>
- <5411B33F.10405@hurleysoftware.com>
- <54171B85.5060209@linutronix.de>
- <54186B89.8050505@linutronix.de>
- <54197C99.8030601@hurleysoftware.com>
+	Mon, 29 Sep 2014 12:15:37 -0400
+Date: Mon, 29 Sep 2014 12:15:34 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
+ seq_puts()
+Message-ID: <20140929121534.34c3ebd9@gandalf.local.home>
+In-Reply-To: <1412006881.4302.29.camel@joe-AO725>
+References: <20140926143721.52206f95@gandalf.local.home>
+	<20140929144121.GA30562@pathway.suse.cz>
+	<20140929154711.GF7996@ZenIV.linux.org.uk>
+	<1412006881.4302.29.camel@joe-AO725>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <54197C99.8030601@hurleysoftware.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Hurley | 2014-09-17 08:20:41 [-0400]:
+On Mon, 29 Sep 2014 09:08:01 -0700
+Joe Perches <joe@perches.com> wrote:
 
->> So I connected my am335x-evm
->> with beagle board xm because both of them have an old fashion UART
->> connector (instead those uart-to-usb). Both configured with HW-Flow and
->> I haven't seen the function invoked but I saw "port->icount.overrun"
->> being incremented. This shouldn't happen. So I am a little puzzled here…
->
->Yeah, that's weird. Do you have a break-out box to confirm that RTS/CTS are
->being driven?
+> On Mon, 2014-09-29 at 16:47 +0100, Al Viro wrote:
+> > On Mon, Sep 29, 2014 at 04:41:22PM +0200, Petr Mladek wrote:
+> > > Hmm, this inconsistency seems to be in more functions. I would divide
+> > > it into three categories:
+> []
+> > No.  _Any_ caller that decides to report that error to its caller is fucking
+> > broken.  We had some cases like that.
+> []
+> > And let's make seq_printf and friends return void.  Any breakage we miss
+> > on grep will be caught by compiler.  Enough is enough.
+> 
+> https://lkml.org/lkml/2013/12/11/8
+> 
 
-=>
-- beagle board
-  According to schematics the board has only RX and TX connected. No
-  RTS/CTS
+Since you like posting links:
 
-- am335x-evm
-  The schematics say "DNI" next to a resistor on RTS/CTS. DNI stands
-  most likely for "Do Not Install". With a scope it looks like the the
-  wire behind the MAX is open.
+https://lkml.org/lkml/2013/12/11/76
 
-- beagle bone black
-  Only RX and TX are wired towards the USB2serial device.
+If you want to resurrect your patches, go ahead. I'll pull them into my
+list. Probably should rename seq_overflow() to seq_is_full(), which
+makes it sound less of an error.
 
-In short: each device I have has RTS/CTS not working/connected and I
-can't test HW handshake with HW available.
+And as Al noted, only fix what's there (just the places that check the
+return values). Don't add anything else.
 
->Regards,
->Peter Hurley
-
-Sebastian
+-- Steve
