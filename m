@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaI2VrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 17:47:12 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:55155 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaI2VrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 17:47:10 -0400
-Message-ID: <5429D2FD.5090602@gmail.com>
-Date: Mon, 29 Sep 2014 17:45:33 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
+	id S1754886AbaI2VsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:48:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49156 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754017AbaI2VsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 17:48:17 -0400
+Message-ID: <5429D384.1040909@ti.com>
+Date: Mon, 29 Sep 2014 17:47:48 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>
-CC: Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
-Subject: Re: [PULL for 3.18] overlay filesystem v24
-References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu>
-In-Reply-To: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <sandeep_n@ti.com>, <joe@perches.com>
+Subject: Re: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
+References: <1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>	<20140929.155200.2231132602322345812.davem@davemloft.net>	<5429BAD0.1050101@ti.com> <20140929.161253.1302757975839499212.davem@davemloft.net>
+In-Reply-To: <20140929.161253.1302757975839499212.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I remember like if it was yesterday... ;-)
-Around 3.8 Linus decided to include overlayfs in the kernel, so in 3.10 
-we were supposed to get it... And we keep waiting...
+On Monday 29 September 2014 04:12 PM, David Miller wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Mon, 29 Sep 2014 16:02:24 -0400
+> 
+>> We are badly missing mainline network driver support for the Keystone
+>> and hence I request you to help here.
+> 
+> It is absolutely not reasonable for you depend specifically upon me
+> for top-level review of a given change, sorry.
+> 
+Sorry I didn't mean you specifically to review everything. But a guidance
+on how we can move forward. If you can suggest someone, we can try to
+request them to have a look. The design of driver is just now standard
+NIC card. We removed the controversial plug in framework after your
+and Jamal's suggestion. Jamal already commented on the offload design of
+the driver and we addressed them in the last version.
 
-Woody
+We can follow it up on any comments, suggestions quickly so do let us
+know.
 
-Miklos Szeredi wrote:
-> I'd like to propose overlayfs for inclusion into 3.18.
->
-> Al, would you mind giving it a review?
->
-> Git tree is here:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.current
->
-> Thanks,
-> Miklos
->
-> ---
-> Andy Whitcroft (1):
->        overlayfs: add statfs support
->
-> Erez Zadok (1):
->        overlayfs: implement show_options
->
-> Miklos Szeredi (11):
->        vfs: add i_op->dentry_open()
->        vfs: export do_splice_direct() to modules
->        vfs: export __inode_permission() to modules
->        vfs: introduce clone_private_mount()
->        vfs: export check_sticky()
->        vfs: add whiteout support
->        vfs: add RENAME_WHITEOUT
->        ext4: support RENAME_WHITEOUT
->        shmem: support RENAME_WHITEOUT
->        overlay filesystem
->        fs: limit filesystem stacking depth
->
-> Neil Brown (1):
->        overlay: overlay filesystem documentation
->
-> Sedat Dilek (1):
->        vfs: dcache: Export d_ancestor to modules
->
-> ---
->   Documentation/filesystems/Locking       |   2 +
->   Documentation/filesystems/overlayfs.txt | 198 +++++++
->   Documentation/filesystems/vfs.txt       |   7 +
->   MAINTAINERS                             |   7 +
->   fs/Kconfig                              |   1 +
->   fs/Makefile                             |   1 +
->   fs/btrfs/ioctl.c                        |  20 +-
->   fs/dcache.c                             |   1 +
->   fs/ecryptfs/main.c                      |   7 +
->   fs/ext4/namei.c                         |  95 +++-
->   fs/internal.h                           |   7 -
->   fs/namei.c                              |  41 +-
->   fs/namespace.c                          |  27 +
->   fs/open.c                               |  23 +-
->   fs/overlayfs/Kconfig                    |  10 +
->   fs/overlayfs/Makefile                   |   7 +
->   fs/overlayfs/copy_up.c                  | 431 +++++++++++++++
->   fs/overlayfs/dir.c                      | 914 ++++++++++++++++++++++++++++++++
->   fs/overlayfs/inode.c                    | 408 ++++++++++++++
->   fs/overlayfs/overlayfs.h                | 187 +++++++
->   fs/overlayfs/readdir.c                  | 518 ++++++++++++++++++
->   fs/overlayfs/super.c                    | 762 ++++++++++++++++++++++++++
->   fs/splice.c                             |   1 +
->   include/linux/fs.h                      |  37 ++
->   include/linux/mount.h                   |   3 +
->   include/uapi/linux/fs.h                 |   1 +
->   mm/shmem.c                              |  36 +-
->   27 files changed, 3694 insertions(+), 58 deletions(-)
->   create mode 100644 Documentation/filesystems/overlayfs.txt
->   create mode 100644 fs/overlayfs/Kconfig
->   create mode 100644 fs/overlayfs/Makefile
->   create mode 100644 fs/overlayfs/copy_up.c
->   create mode 100644 fs/overlayfs/dir.c
->   create mode 100644 fs/overlayfs/inode.c
->   create mode 100644 fs/overlayfs/overlayfs.h
->   create mode 100644 fs/overlayfs/readdir.c
->   create mode 100644 fs/overlayfs/super.c
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+Santosh
+
+
+
+
+
+
 
