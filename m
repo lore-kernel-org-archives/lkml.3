@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaI2QaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:30:17 -0400
-Received: from mailsec112.isp.belgacom.be ([195.238.20.108]:31604 "EHLO
-	mailsec112.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754129AbaI2QaP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:30:15 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=QtXKAWzsBkcudMCKpZuGZ7NJaqRtyPzs72kSfj+Kyd4= c=1 sm=2
- a=IkcTkHD0fZMA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8
- a=-rE1qe-bh9ZcCm4xV6AA:9 a=QEXdDO2ut3YA:10 a=x8gzFH9gYPwA:10
- a=MSl-tDqOz04A:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkIRAFuIKVTD7hTR/2dsb2JhbABggw5TV4MBsxcGk3EKh04CgRIWAXsJDoERYoF5AQEBAwEjBCcrBQsFBAIYAgIYDgICIRAmBggLCQgMBIgJAwkMCY0VnEyGf4c9DYcMGIEshGaHXB2BLzEzB4J4gVMFj0uGVIR5g3KNMwOGRYNlOy8BgQUUgTABAQE
-Date: Mon, 29 Sep 2014 18:30:13 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org
-Message-ID: <1643816105.31300.1412008213769.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <20140929054004.GA4144@sudip-PC>
-References: <1411929887-2440-1-git-send-email-fabf@skynet.be> <20140929054004.GA4144@sudip-PC>
-Subject: Re: [PATCH 1/1 linux-next] ACPI / SBS: fix sparse warning
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+	id S1755153AbaI2Qam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:30:42 -0400
+Received: from smtprelay0174.hostedemail.com ([216.40.44.174]:44581 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753249AbaI2Qal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:30:41 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 20,1.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2565:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3291:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6691:7652:7903:8985:9010:9025:10009:10400:10848:10967:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: bird67_22b6d3cce3d62
+X-Filterd-Recvd-Size: 2298
+Message-ID: <1412008235.4302.31.camel@joe-AO725>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
+ seq_puts()
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 29 Sep 2014 09:30:35 -0700
+In-Reply-To: <20140929121534.34c3ebd9@gandalf.local.home>
+References: <20140926143721.52206f95@gandalf.local.home>
+	 <20140929144121.GA30562@pathway.suse.cz>
+	 <20140929154711.GF7996@ZenIV.linux.org.uk>
+	 <1412006881.4302.29.camel@joe-AO725>
+	 <20140929121534.34c3ebd9@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-09-29 at 12:15 -0400, Steven Rostedt wrote:
+> On Mon, 29 Sep 2014 09:08:01 -0700
+> Joe Perches <joe@perches.com> wrote:
+> 
+> > On Mon, 2014-09-29 at 16:47 +0100, Al Viro wrote:
+> > > On Mon, Sep 29, 2014 at 04:41:22PM +0200, Petr Mladek wrote:
+> > > > Hmm, this inconsistency seems to be in more functions. I would divide
+> > > > it into three categories:
+> > []
+> > > No.  _Any_ caller that decides to report that error to its caller is fucking
+> > > broken.  We had some cases like that.
+> > []
+> > > And let's make seq_printf and friends return void.  Any breakage we miss
+> > > on grep will be caught by compiler.  Enough is enough.
+> > 
+> > https://lkml.org/lkml/2013/12/11/8
+> > 
+> 
+> Since you like posting links:
+> 
+> https://lkml.org/lkml/2013/12/11/76
+> 
+> If you want to resurrect your patches, go ahead. I'll pull them into my
+> list. Probably should rename seq_overflow() to seq_is_full(), which
+> makes it sound less of an error.
+> 
+> And as Al noted, only fix what's there (just the places that check the
+> return values). Don't add anything else.
 
+I did that too
 
-> On 29 September 2014 at 07:40 Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-> wrote:
->
->
-> On Sun, Sep 28, 2014 at 08:44:47PM +0200, Fabian Frederick wrote:
-> > Adding parentheses around expression to avoid:
-> > drivers/acpi/sbs.c:444:28: warning: dubious: !x & y
-> >
-> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > ---
-> >  drivers/acpi/sbs.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
-> > index 32aecea..a7a3edd 100644
-> > --- a/drivers/acpi/sbs.c
-> > +++ b/drivers/acpi/sbs.c
-> > @@ -441,7 +441,7 @@ static int acpi_ac_get_present(struct acpi_sbs *sbs)
-> >      * The spec requires that bit 4 always be 1. If it's not set, assume
-> >      * that the implementation doesn't support an SBS charger
-> >      */
-> > -   if (!(status >> 4) & 0x1)
-> > +   if (!((status >> 4) & 0x1))
->
-> i think the logic changed over here.
-> it was !x & y , but now it has become !(x & y)
-> ! is having higher priority than & so !x & y will mean ((!x) & y)
->
-> thanks
-> sudip
-Hello Sudip,
+https://lkml.org/lkml/2013/12/11/713
 
-You're right, logic has changed but IMHO expression was wrong.
+Then I gave up.
 
-Let's take value 100, decimal.
-Binary: 0110>0<100
-
-Spec states that bit 4 must be 1 so value is wrong.
-
-We don't go in
-if (!(status>>4) & 0x1)
-
-but
-
-if (!((status>>4) & 0x1))
-        return -ENODEV;
-
-is triggered.
-
-Regards,
-Fabian
-> >             return -ENODEV;
-> > 
-> >     sbs->charger_present = (status >> 15) & 0x1;
-> > --
-> > 1.9.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
