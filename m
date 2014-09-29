@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbaI2XQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:16:35 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54822 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815AbaI2XQd (ORCPT
+	id S1755020AbaI2XYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:24:12 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62514 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751028AbaI2XYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:16:33 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <3073358.myrKz9QbdW@vostro.rjw.lan>
-References: <1411996251-13455-1-git-send-email-pali.rohar@gmail.com> <20140929213028.GB34181@vmdeb7> <3073358.myrKz9QbdW@vostro.rjw.lan>
+	Mon, 29 Sep 2014 19:24:10 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 1/1] Cpufreq: Keep cpufreq sysfs nodes across S2RAM/S2DISK when using intel_pstate driver.
+Date: Tue, 30 Sep 2014 01:44:05 +0200
+Message-ID: <5318779.3lMVbcv1i3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohpokht4=7XCftPYa5PqpPMN-O-5b_RjJ3BgHnxjYV4VzyTg@mail.gmail.com>
+References: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com> <CAKohpokht4=7XCftPYa5PqpPMN-O-5b_RjJ3BgHnxjYV4VzyTg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] dell-wmi: Fix access out of memory
-From: Darren Hart <dvhart@infradead.org>
-Date: Mon, 29 Sep 2014 16:16:23 -0700
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Message-ID: <55C20A75-AB0A-4A4E-9E91-3428B5F868BB@infradead.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, September 29, 2014 01:20:44 AM Viresh Kumar wrote:
+> Sorry for being late on this. Was away for a week for Linaro Connect followed
+> by a week of vacations :(
+> 
+> On 18 September 2014 00:03, Lan Tianyu <tianyu.lan@intel.com> wrote:
+> > Cpufreq core introduces cpufreq_suspended flag to let cpufreq sysfs nodes
+> > across S2RAM/S2DISK. But the flag is only set in the cpufreq_suspend()
+> > for cpufreq drivers which have target or target_index callback. This
+> > skips intel_pstate driver. This patch is to set the flag before checking
+> > target or target_index callback.
+> 
+> Oh yes, this looks to be the right thing to do..
+> 
+> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> > ---
+> >  drivers/cpufreq/cpufreq.c | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> > index d9fdedd..eb9bb78 100644
+> > --- a/drivers/cpufreq/cpufreq.c
+> > +++ b/drivers/cpufreq/cpufreq.c
+> > @@ -1656,6 +1656,8 @@ void cpufreq_suspend(void)
+> >         if (!cpufreq_driver)
+> >                 return;
+> >
+> > +       cpufreq_suspended = true;
+> > +
+> >         if (!has_target())
+> >                 return;
+> >
+> > @@ -1670,8 +1672,6 @@ void cpufreq_suspend(void)
+> >                         pr_err("%s: Failed to suspend driver: %p\n", __func__,
+> >                                 policy);
+> >         }
+> > -
+> > -       cpufreq_suspended = true;
+> 
+> But this change is buggy.. Because you are updating 'cpufreq_suspended'
+> before actually stopping the governor, any calls to __cpufreq_governor()
+> will be converted to NO-operations because of this in __cpufreq_governor():
+> 
+> /* Don't start any governor operations if we are entering suspend */
+> if (cpufreq_suspended)
+>     return 0;
+> 
+> And so the governor's will never stop :(
+> 
+> So you need to keep the above line where it was :)
 
-
-On September 29, 2014 4:26:03 PM PDT, "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
->On Monday, September 29, 2014 02:30:29 PM Darren Hart wrote:
->> On Mon, Sep 29, 2014 at 03:10:51PM +0200, Pali Rohár wrote:
->> > Without this patch driver dell-wmi is trying to access elements of
->dynamically
->> > allocated array without checking array size. This can lead to
->memory corruption
->> > or kernel panic. This patch adds missing checks for array size.
->> > 
->> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->> 
->> Looks good to me. Rafael, any concerns?
->
->Not anything obvious.
-
-Queued, thanks.
-
->
->> 
->> Cc: linux-acpi
->
->Thanks!
->
->
->> > ---
->> > This patch should be probably applied to stable kernel trees as it
->fixing
->> > possible memory corruption.
->> > ---
->> >  drivers/platform/x86/dell-wmi.c |   12 +++++++++---
->> >  1 file changed, 9 insertions(+), 3 deletions(-)
->> > 
->> > diff --git a/drivers/platform/x86/dell-wmi.c
->b/drivers/platform/x86/dell-wmi.c
->> > index 390e8e3..25721bf 100644
->> > --- a/drivers/platform/x86/dell-wmi.c
->> > +++ b/drivers/platform/x86/dell-wmi.c
->> > @@ -163,18 +163,24 @@ static void dell_wmi_notify(u32 value, void
->*context)
->> >  		const struct key_entry *key;
->> >  		int reported_key;
->> >  		u16 *buffer_entry = (u16 *)obj->buffer.pointer;
->> > +		int buffer_size = obj->buffer.length/2;
->> >  
->> > -		if (dell_new_hk_type && (buffer_entry[1] != 0x10)) {
->> > +		if (buffer_size >= 2 && dell_new_hk_type && buffer_entry[1] !=
->0x10) {
->> >  			pr_info("Received unknown WMI event (0x%x)\n",
->> >  				buffer_entry[1]);
->> >  			kfree(obj);
->> >  			return;
->> >  		}
->> >  
->> > -		if (dell_new_hk_type || buffer_entry[1] == 0x0)
->> > +		if (buffer_size >= 3 && (dell_new_hk_type || buffer_entry[1] ==
->0x0))
->> >  			reported_key = (int)buffer_entry[2];
->> > -		else
->> > +		else if (buffer_size >= 2)
->> >  			reported_key = (int)buffer_entry[1] & 0xffff;
->> > +		else {
->> > +			pr_info("Received unknown WMI event\n");
->> > +			kfree(obj);
->> > +			return;
->> > +		}
->> >  
->> >  		key = sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
->> >  							reported_key);
->> 
->> 
+OK, so please send a fix for that against the Linus' tree.
 
 -- 
-Sent from my Android device with K-9 Mail. Please excuse my brevity.
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
