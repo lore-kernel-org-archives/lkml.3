@@ -1,136 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaI2IPm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:15:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50448 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972AbaI2IPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:15:41 -0400
-Message-ID: <54291528.40505@suse.cz>
-Date: Mon, 29 Sep 2014 10:15:36 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v6 05/13] mm, compaction: move pageblock checks up from
- isolate_migratepages_range()
-References: <1407142524-2025-1-git-send-email-vbabka@suse.cz> <1407142524-2025-6-git-send-email-vbabka@suse.cz> <20140929075038.GC29310@js1304-P5Q-DELUXE>
-In-Reply-To: <20140929075038.GC29310@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752417AbaI2IQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:16:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39717 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaI2IQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:16:07 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v4 1/8] [media] soc_camera: Do not decrement endpoint node refcount in the loop
+Date: Mon, 29 Sep 2014 10:15:44 +0200
+Message-Id: <1411978551-30480-2-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
+References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 09:50 AM, Joonsoo Kim wrote:
->
-> Hello,
->
-> This patch needs one fix.
-> Please see below.
+In preparation for a following patch, stop decrementing the endpoint node
+refcount in the loop. This temporarily leaks a reference to the endpoint node,
+which will be fixed by having of_graph_get_next_endpoint decrement the refcount
+of its prev argument instead.
 
-Oops, you're right.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v3:
+ - Moved of_node_put for the break case after the loop
+---
+ drivers/media/platform/soc_camera/soc_camera.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Thanks.
->
-> ---------->8-------------
->  From 3ba15d35c00e0d913d603d2972678bf74554ed60 Mon Sep 17 00:00:00 2001
-> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Date: Mon, 29 Sep 2014 15:08:07 +0900
-> Subject: [PATCH] mm/compaction: fix isolated page counting bug in compaction
->
-> acct_isolated() is the function to adjust isolated page count. It
-> iterates cc->migratepages list and add
-> NR_ISOLATED_ANON/NR_ISOLATED_FILE count according to number of anon,
-> file pages in migratepages list, respectively. Before commit (mm,
-> compaction: move pageblock checks up from isolate_migratepages_range()),
-> it is called just once in isolate_migratepages_range(), but, after commit,
-> it is called in newly introduced isolate_migratepages_block() and this
-> isolate_migratepages_block() could be called many times in
-> isolate_migratepages_range() so that some page could be counted more
-> than once. This duplicate counting bug results in hang in cma_alloc(),
-> because too_many_isolated() returns true continually.
->
-> This patch fixes this bug by moving acct_isolated() into upper layer
-> function, isolate_migratepages_range() and isolate_migratepages().
-> After this change, isolated page would be counted only once so
-> problem would be gone.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-
-Thanks!
-
-> ---
->   mm/compaction.c |   19 ++++++++-----------
->   1 file changed, 8 insertions(+), 11 deletions(-)
->
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 7d9d92e..48129b6 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -514,22 +514,19 @@ isolate_freepages_range(struct compact_control *cc,
->   }
->
->   /* Update the number of anon and file isolated pages in the zone */
-> -static void acct_isolated(struct zone *zone, bool locked, struct compact_control *cc)
-> +static void acct_isolated(struct zone *zone, struct compact_control *cc)
->   {
->   	struct page *page;
->   	unsigned int count[2] = { 0, };
->
-> +	if (list_empty(&cc->migratepages))
-> +		return;
-> +
->   	list_for_each_entry(page, &cc->migratepages, lru)
->   		count[!!page_is_file_cache(page)]++;
->
-> -	/* If locked we can use the interrupt unsafe versions */
-> -	if (locked) {
-> -		__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-> -		__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
-> -	} else {
-> -		mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-> -		mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
-> -	}
-> +	mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
-> +	mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
->   }
->
->   /* Similar to reclaim, but different enough that they don't share logic */
-> @@ -726,8 +723,6 @@ isolate_success:
->   	if (unlikely(low_pfn > end_pfn))
->   		low_pfn = end_pfn;
->
-> -	acct_isolated(zone, locked, cc);
-> -
->   	if (locked)
->   		spin_unlock_irqrestore(&zone->lru_lock, flags);
->
-> @@ -789,6 +784,7 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
->   			break;
->   		}
->   	}
-> +	acct_isolated(cc->zone, cc);
->
->   	return pfn;
->   }
-> @@ -1028,6 +1024,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->   		break;
->   	}
->
-> +	acct_isolated(zone, cc);
->   	/* Record where migration scanner will be restarted */
->   	cc->migrate_pfn = low_pfn;
->
->
+diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
+index f4308fe..619b2d4 100644
+--- a/drivers/media/platform/soc_camera/soc_camera.c
++++ b/drivers/media/platform/soc_camera/soc_camera.c
+@@ -1696,7 +1696,6 @@ static void scan_of_host(struct soc_camera_host *ici)
+ 		if (!i)
+ 			soc_of_bind(ici, epn, ren->parent);
+ 
+-		of_node_put(epn);
+ 		of_node_put(ren);
+ 
+ 		if (i) {
+@@ -1704,6 +1703,8 @@ static void scan_of_host(struct soc_camera_host *ici)
+ 			break;
+ 		}
+ 	}
++
++	of_node_put(epn);
+ }
+ 
+ #else
+-- 
+2.1.0
 
