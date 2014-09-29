@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696AbaI2NeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:34:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32046 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577AbaI2NdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:33:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393030111"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 15/18] mei: trivial: fix errors in prints in comments
-Date: Mon, 29 Sep 2014 16:31:47 +0300
-Message-Id: <1411997510-29094-16-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
-References: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
+	id S1754725AbaI2NeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:34:17 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:56521 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577AbaI2NeO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:34:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140929132712.GD13142@linutronix.de>
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+	<1410377411-26656-7-git-send-email-bigeasy@linutronix.de>
+	<20140929093823.GD13952@ci00147.xsens-tech.local>
+	<20140929132712.GD13142@linutronix.de>
+Date: Mon, 29 Sep 2014 15:34:12 +0200
+Message-ID: <CAH6sp9Psot-KETANLvH6dw+dWJcpD_hQOgoY1jYZ=riH2kW_qA@mail.gmail.com>
+Subject: Re: [PATCH 06/16] tty: serial: Add 8250-core based omap driver
+From: Frans Klaver <fransklaver@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Frans Klaver <frans.klaver@xsens.com>, Tony Lindgren <tony@atomide.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, linux-serial@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+On Mon, Sep 29, 2014 at 3:27 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> * Frans Klaver | 2014-09-29 11:38:23 [+0200]:
+>
+>>threshold
+> fixed
+>
+>>> +    /*
+>>> +     * It claims to be 16C750 compatible however it is a little different.
+>>> +     * It has EFR and has no FCR7_64byte bit. The AFE (which it claims to
+>>> +     * have) is enabled via EFR instead of MCR. The type is set here 8250
+>>> +     * just to get things going. UNKNOWN does not work for a few reasons and
+>>> +     * we don't need our own type since we don't use 8250's set_termios()
+>>> +     * and our "bugs" are handeld via the bug member.
+>>
+>>handled
+> replaced that last line with
+>     or pm callback.
+>
+> since there no bugs member anymore.
+>
+>>
+>>> +     */
+>>> +    up.port.type = PORT_8250;
+>>> +    up.port.iotype = UPIO_MEM;
+>>> +    up.port.flags = UPF_FIXED_PORT | UPF_FIXED_TYPE | UPF_SOFT_FLOW |
+>>> +            UPF_HARD_FLOW;
+>>> +    up.port.private_data = priv;
+>>> +
+>>> +    up.port.regshift = 2;
+>>> +    up.port.fifosize = 64;
+>>> +    up.tx_loadsz = 64;
+>>> +    up.capabilities = UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP;
+>>> +#ifdef CONFIG_PM_RUNTIME
+>>> +    /*
+>>> +     * PM_RUNTIME is mostly transparent. However to do it right we need to a
+>>
+>>need to _do_ a ...?
+> I think dropping that 'to' should fix it.
 
-Fix misspellings and wrong print texts
+Yup.
 
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/client.c  | 2 +-
- drivers/misc/mei/debugfs.c | 2 +-
- drivers/misc/mei/hw-txe.c  | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+>
+>>> +     * TX empty interrupt before we can put the device to auto idle. So if
+>>> +     * PM_RUNTIME is not enabled we don't add that flag and can spare that
+>>> +     * one extra interrupt in the TX path.
+>>> +     */
+>>
+>><snip>
+>>
+>>> +config SERIAL_8250_OMAP
+>>> +    tristate "Support for OMAP internal UART (8250 based driver)"
+>>> +    depends on SERIAL_8250 && ARCH_OMAP2PLUS
+>>> +    help
+>>> +      If you have a machine based on an Texas Instruments OMAP CPU you
+>>> +      can enable its onboard serial ports by enabling this option.
+>>> +
+>>> +      This driver is in early stage and uses ttyS instead of ttyO.
+>>> +
+>>
+>>I just wondered if this driver should be marked experimental?
+> What did you have in mind? CONFIG_EXPERIMENTAL is gone. After all that
+> debuging that I had in the meantime I was thinking about dropping that
+> "early stage".
 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 04a1964..bf3fd67 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -926,7 +926,7 @@ int mei_cl_write(struct mei_cl *cl, struct mei_cl_cb *cb, bool blocking)
- 
- 	buf = &cb->request_buffer;
- 
--	cl_dbg(dev, cl, "mei_cl_write %d\n", buf->size);
-+	cl_dbg(dev, cl, "size=%d\n", buf->size);
- 
- 	rets = pm_runtime_get(dev->dev);
- 	if (rets < 0 && rets != -EINPROGRESS) {
-diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index aca7847..b92b8bc 100644
---- a/drivers/misc/mei/debugfs.c
-+++ b/drivers/misc/mei/debugfs.c
-@@ -105,7 +105,7 @@ static ssize_t mei_dbgfs_read_active(struct file *fp, char __user *ubuf,
- 
- 	mutex_lock(&dev->device_lock);
- 
--	/*  if the driver is not enabled the list won't b consitent */
-+	/*  if the driver is not enabled the list won't be consistent */
- 	if (dev->dev_state != MEI_DEV_ENABLED)
- 		goto out;
- 
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index f33fbcb..695d480 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -841,7 +841,7 @@ static int mei_txe_hw_reset(struct mei_device *dev, bool intr_enable)
- 	}
- 
- 	/*
--	 * Set rediness RDY_CLR bit
-+	 * Set readiness RDY_CLR bit
- 	 */
- 	mei_txe_readiness_clear(dev);
- 
-@@ -867,7 +867,7 @@ static int mei_txe_hw_start(struct mei_device *dev)
- 
- 	ret = mei_txe_readiness_wait(dev);
- 	if (ret < 0) {
--		dev_err(dev->dev, "wating for readiness failed\n");
-+		dev_err(dev->dev, "waiting for readiness failed\n");
- 		return ret;
- 	}
- 
--- 
-1.9.3
+That was the other option. I'm good with that. Also, I never noticed
+CONFIG_EXPERIMENTAL being gone, so that's down the drain ;).
 
+>
+>>Thanks,
+>>Frans
+>
+> Sebastian
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
