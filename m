@@ -1,227 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaI2L65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:58:57 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:36985 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaI2L6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:58:55 -0400
+	id S1753730AbaI2L7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:59:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228AbaI2L7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:59:10 -0400
+Date: Mon, 29 Sep 2014 15:02:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH] tun: make sure interface usage can not overflow
+Message-ID: <20140929120228.GA1151@redhat.com>
+References: <20140928232753.GA31180@www.outflux.net>
+ <20140929114849.GA913@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org>
-Date: Mon, 29 Sep 2014 17:28:53 +0530
-Message-ID: <CALicx6vxZOh44apx4+s5pkTnmVeXzqvxys_8QempVLbKu3h=oQ@mail.gmail.com>
-Subject: Re: [RFC v2] arm64: kgdb: fix single stepping
-From: Vijay Kilari <vijay.kilari@gmail.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>,
-        linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929114849.GA913@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akashi,
+On Mon, Sep 29, 2014 at 02:48:49PM +0300, Michael S. Tsirkin wrote:
+> On Sun, Sep 28, 2014 at 04:27:53PM -0700, Kees Cook wrote:
+> > This makes the size argument a const, since it is always populated by
+> > the caller. Additionally double-checks to make sure the copy_from_user
+> > can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
+> > 
+> >    In function 'copy_from_user',
+> >        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+> >        ... copy_from_user() buffer size is not provably correct
+> > 
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> 
+> What exactly is the issue here?
+> __tun_chr_ioctl is called with sizeof(struct compat_ifreq)
+> or  sizeof (struct ifreq) as the last argument.
+> 
+> So this looks like a false positive, but
+> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS machinery is supposed
+> to avoid false positives.
+> 
+> On which architecture is this?
 
-On Fri, Sep 26, 2014 at 5:24 PM, AKASHI Takahiro
-<takahiro.akashi@linaro.org> wrote:
-> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
-> the single stepping with kgdb doesn't work correctly since its first
-> appearance at v3.15.
->
-> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
-> steps forward to the next instruction, but the succeeding 'stepi' never
-> goes beyond that.
-> On v3.16, 'stepi' moves forward and stops at the next instruction just
-> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
-> behavior seems to come in with the following patch in v3.16:
->
->     commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
->     paths where possible")
->
-> This patch
-> (1) moves kgdb_disable_single_step() from 'c' command handling to single
->     step handler.
->     This makes sure that single stepping gets effective at every 's' command.
->     Please note that, under the current implementation, single step bit in
->     spsr, which is cleared by the first single stepping, will not be set
->     again for the consecutive 's' commands because single step bit in mdscr
->     is still kept on (that is, kernel_active_single_step() in
->     kgdb_arch_handle_exception() is true).
 
-Have you please check the functionality by running KGDB test suit
-with multicores?
+Also - which kernel?
+Does your kernel include: commit 3df7b41aa5e7797f391d0a41f8b0dce1fe366a09
+    x86: Unify copy_from_user() size checking
+?
 
-> (2) removes 'enable_dbg' in el1_dbg.
->     Single step bit in mdscr is turned on in do_handle_exception()->
->     kgdb_handle_expection() before returning to debugged context, and if
->     debug exception is enabled in el1_dbg, we will see unexpected single-
->     stepping in el1_dbg.
-> (3) masks interrupts while single-stepping one instruction.
->     If an interrupt is caught during processing a single-stepping, debug
->     exception is unintentionally enabled by el1_irq's 'enable_dbg' before
->     returning to debugged context.
->     Thus, like in (2), we will see unexpected single-stepping in el1_irq.
->
-> Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
->
-> With those changes, we will see another problem if a breakpoint is set
-> at interrupt-sensible places, like gic_handle_irq():
->
->     KGDB: re-enter error: breakpoint removed ffffffc000081258
->     ------------[ cut here ]------------
->     WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
->                                         kgdb_handle_exception+0x1dc/0x1f4()
->     Modules linked in:
->     CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
->     Call trace:
->     [<ffffffc000087fac>] dump_backtrace+0x0/0x130
->     [<ffffffc0000880ec>] show_stack+0x10/0x1c
->     [<ffffffc0004d683c>] dump_stack+0x74/0xb8
->     [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
->     [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
->     [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
->     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->     Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
->     ...
->     [<ffffffc000083cac>] el1_dbg+0x14/0x68
->     [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
->     [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
->     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->     Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
->     ...
->     [<ffffffc000083cac>] el1_dbg+0x14/0x68
->     [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
->     [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
->     [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
->     [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
->     [<ffffffc0001939b0>] SyS_write+0x40/0xa0
->
-> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
-> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
-> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
-> use smp_call_function().
-> This eventually allows another interrupt to occur and likely results in
-> hitting a breakpoint at gic_handle_irq() again since debug exception is
-> always enabled in el1_irq.
->
-> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
-> but this will also leave other cpus be in unknown state in terms of kgdb,
-> and may result in interfering with kgdb activity.
->
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
->  arch/arm64/kernel/entry.S |    1 -
->  arch/arm64/kernel/kgdb.c  |   29 +++++++++++++++++++----------
->  2 files changed, 19 insertions(+), 11 deletions(-)
->
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index fdd6eae..a935d5f 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -325,7 +325,6 @@ el1_dbg:
->         mrs     x0, far_el1
->         mov     x2, sp                          // struct pt_regs
->         bl      do_debug_exception
-> -       enable_dbg
->         kernel_exit 1
->  el1_inv:
->         // TODO: add support for undefined instructions in kernel mode
-> diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
-> index 75c9cf1..f1fc1d8 100644
-> --- a/arch/arm64/kernel/kgdb.c
-> +++ b/arch/arm64/kernel/kgdb.c
-> @@ -22,6 +22,7 @@
->  #include <linux/irq.h>
->  #include <linux/kdebug.h>
->  #include <linux/kgdb.h>
-> +#include <asm/percpu.h>
->  #include <asm/traps.h>
->
->  struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
-> @@ -95,6 +96,8 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
->         { "fpcr", 4, -1 },
->  };
->
-> +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
-> +
->  char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
->  {
->         if (regno >= DBG_MAX_REG_NUM || regno < 0)
-> @@ -176,18 +179,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
->                  * over and over again.
->                  */
->                 kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
-> -               atomic_set(&kgdb_cpu_doing_single_step, -1);
-> -               kgdb_single_step =  0;
-> -
-> -               /*
-> -                * Received continue command, disable single step
-> -                */
-> -               if (kernel_active_single_step())
-> -                       kernel_disable_single_step();
->
->                 err = 0;
->                 break;
->         case 's':
-> +               /* mask interrupts while single stepping */
-> +               __this_cpu_write(kgdb_pstate, linux_regs->pstate);
-> +               linux_regs->pstate |= (1 << 7);
 
-Hard coded values.
-
-> +
->                 /*
->                  * Update step address value with address passed
->                  * with step packet.
-> @@ -198,8 +197,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
->                  */
->                 kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
->                 atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
-> -               kgdb_single_step =  1;
-
-why kgdb_single_step is not set?
-
-> -
->                 /*
->                  * Enable single step handling
->                  */
-> @@ -229,6 +226,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
->
->  static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
->  {
-> +       unsigned int pstate;
-> +
-> +       kernel_disable_single_step();
-> +       atomic_set(&kgdb_cpu_doing_single_step, -1);
-> +
-> +       /* restore interrupt mask status */
-> +       pstate = __this_cpu_read(kgdb_pstate);
-> +       if (pstate & (1 << 7))
-> +               regs->pstate |= (1 << 7);
-> +       else
-> +               regs->pstate &= ~(1 << 7);
-> +
-Same as above comment
-
->         kgdb_handle_exception(1, SIGTRAP, 0, regs);
->         return 0;
->  }
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+ 
+> > ---
+> >  drivers/net/tun.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > index acaaf6784179..a1f317cba206 100644
+> > --- a/drivers/net/tun.c
+> > +++ b/drivers/net/tun.c
+> > @@ -1855,7 +1855,7 @@ unlock:
+> >  }
+> >  
+> >  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+> > -			    unsigned long arg, int ifreq_len)
+> > +			    unsigned long arg, const size_t ifreq_len)
+> >  {
+> >  	struct tun_file *tfile = file->private_data;
+> >  	struct tun_struct *tun;
+> > @@ -1869,6 +1869,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+> >  	int ret;
+> >  
+> >  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
+> > +		BUG_ON(ifreq_len > sizeof(ifr));
+> >  		if (copy_from_user(&ifr, argp, ifreq_len))
+> >  			return -EFAULT;
+> >  	} else {
+> > -- 
+> > 1.9.1
+> > 
+> > 
+> > -- 
+> > Kees Cook
+> > Chrome OS Security
