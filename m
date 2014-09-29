@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbaI2Nr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:47:29 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:47304 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751913AbaI2Nr2 (ORCPT
+	id S1754567AbaI2Nsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:48:54 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:61890 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182AbaI2Nsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:47:28 -0400
-Message-ID: <542962E6.1000005@st.com>
-Date: Mon, 29 Sep 2014 15:47:18 +0200
-From: Patrice Chotard <patrice.chotard@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 29 Sep 2014 09:48:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: zhang.lyra@gmail.com
+Cc: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
+        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
+        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
+        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
+        robh+dt@kernel.org, will.deacon@arm.com, orsonzhai@gmail.com,
+        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+Subject: Re: [PATCH 2/6] arm64: Add DTS support for Spreadtrum's Shark64 SoC
+Date: Mon, 29 Sep 2014 15:47:47 +0200
+Message-ID: <4004425.NZAxCnE0qr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411992293-7729-3-git-send-email-zhang.lyra@gmail.com>
+References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com> <1411992293-7729-3-git-send-email-zhang.lyra@gmail.com>
 MIME-Version: 1.0
-To: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        <linux-kernel@vger.kernel.org>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
-References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com>
-In-Reply-To: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.18]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-29_03:2014-09-29,2014-09-29,1970-01-01 signatures=0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:ULZd9+MpPRA5iVAB01SeipCfsFOM7w7wK3g0HzCETui
+ yQ0enrt9QaCuClWwV8TXApUTntjdMO/6OYpl4rYqaLroN34QrA
+ v5aMf/DladtbrH+M8A2U5tpPwdZt6OwoTsIYbHzRs33UpiDAQg
+ ANPJ3eyxYdN1O+BsYDieYWg+zDAQt/Fp1PMABCuKxgAtquKl6g
+ pqU8TYsNccLEIERDdzqhLtMp/hDh9HVJVr2gGoc4BprwUF44J3
+ 4HBKEpxitf1zPThHRjE198wjNvexewDlFoLm2x7t643zID5/FH
+ w64givhQxSh80vXIhnAE3jMhyjNNn0EuiKKJIx4zZIXKJU0uSJ
+ IxUn/M9hfJ3Ovv1zTWIk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pramod
+On Monday 29 September 2014 20:04:49 zhang.lyra@gmail.com wrote:
+> +
+> +/memreserve/ 0x80000000 0x00010000;
 
-On 09/29/2014 03:48 PM, Pramod Gurav wrote:
-> This change fixes below sparse error,
-> drivers/pinctrl/pinctrl-st.c:1515:31: error: incompatible types for operation (>)
-> drivers/pinctrl/pinctrl-st.c:1515:31:    left side has type void [noderef] <asn:2>*irqmux_base
-> drivers/pinctrl/pinctrl-st.c:1515:31:    right side has type int
->
-> The fix is done by removing a check on info->irqmux_base as
-> info->irqmux_base has already been checked  for error when allocating it.
-> Hence there is no need to redo the check.
->
-> Cc: Maxime Coquelin <maxime.coquelin@st.com>
-> Cc: Patrice Chotard <patrice.chotard@st.com>
-> CC: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->   drivers/pinctrl/pinctrl-st.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
-> index 5475374..ddeaeda 100644
-> --- a/drivers/pinctrl/pinctrl-st.c
-> +++ b/drivers/pinctrl/pinctrl-st.c
-> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl *info,
->   					     gpio_irq, st_gpio_irq_handler);
->   	}
->   
-> -	if (info->irqmux_base > 0 || gpio_irq > 0) {
-> +	if (gpio_irq > 0) {
->   		err = gpiochip_irqchip_add(&bank->gpio_chip, &st_gpio_irqchip,
->   					   0, handle_simple_irq,
->   					   IRQ_TYPE_LEVEL_LOW);
+Maybe add a comment explaining why it is reserved?
 
+> +	chosen {
+> +		bootargs = "earlycon=serial_sprd,0x70000000";
+> +      };
 
-Acked-by: Patrice Chotard <patrice.chotard@st.com>
+Just remove this for now, the command line should really be set by the
+boot loader, not hardcoded in the dts file.
 
-Thanks
+IIRC, the earlycon=... syntax is not recommended on DT based systems,
+better use the "stdout-path" syntax instead.
+
+> +	cpus {
+> +		#address-cells = <2>;
+> +		#size-cells = <0>;
+> +
+> +		cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "arm,armv8";
+> +			reg = <0x0 0x0>;
+> +			enable-method = "spin-table";
+> +			cpu-release-addr = <0x0 0x8000fff8>;
+> +		};
+
+New platforms should avoid using "spin-table" method. Please
+change the boot loader to implement PSCI if you can.
+
+> +	memory@80000000 {
+> +		device_type = "memory";
+> +		reg = <0 0x80000000 0 0x20000000>;
+> +	};
+> +
+> +	aliases {
+> +		serial0 = &uart0;
+> +		serial1 = &uart1;
+> +	};
+
+These two belong into a board-specific file. I'd suggest renaming this
+file to sprd_shark64.dtsi (or whatever the SoC is called) and adding a
+.dts file that includes this and sets the aliases and memory node
+according to what the particular board has.
+
+> +	intc:interrupt-controller@71400000 {
+> +		compatible = "sprd,intc";
+> +		#interrupt-cells = <0>;
+> +		interrupt-controller;
+> +		reg =	<0 0x71400000 0 0x1000>,
+> +			<0 0x71500000 0 0x1000>,
+> +			<0 0x71600000 0 0x1000>,
+> +			<0 0x71700000 0 0x1000>;
+> +	};
+
+This interrupt controller does not have a binding, so please add at least
+a documentation for the binding as well. The name should probably be more
+specific that this. Also, explain why you have an interrupt controller
+that has four memory regions but only one interrupt sink but no interrupt
+source.
+
+I assume this is a nested interrupt controller to which some internal
+peripherals are connected?
+
+> +	uart0: uart@70000000 {
+> +		compatible = "sprd,serial";
+> +		reg = <0 0x70000000 0 0x100>;
+> +		interrupts = <0 2 0xf04>;
+> +	};
+> +
+> +	uart1: uart@70100000 {
+> +		compatible = "sprd,serial";
+> +		reg = <0 0x70100000 0 0x100>;
+> +		interrupts = <0 3 0xf04>;
+> +	};
+
+Please rename these to serial@70000000. Like the interrupt controller,
+it would be good to have a more specific compatible string.
+You may want to add a status="disabled" property in both these
+nodes, and override them from the board.dts file for the ports that
+are actually available.
+
+	Arnd
+
