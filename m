@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaI2OPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:15:06 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:52930 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaI2OPC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:15:02 -0400
-Date: Mon, 29 Sep 2014 16:14:57 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
-Subject: [PULL for 3.18] overlay filesystem v24
-Message-ID: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu>
+	id S1754015AbaI2ORV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:17:21 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:63801 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543AbaI2ORT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:17:19 -0400
+X-IronPort-AV: E=Sophos;i="5.04,620,1406592000"; 
+   d="scan'208";a="176040867"
+Message-ID: <542969E6.1010104@citrix.com>
+Date: Mon, 29 Sep 2014 15:17:10 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Chen Gang <gang.chen.5i5j@gmail.com>
+CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <boris.ostrovsky@oracle.com>, <bhelgaas@google.com>, <jgross@suse.com>,
+        <yongjun_wei@trendmicro.com.cn>, <mukesh.rathor@oracle.com>,
+        <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
+ of xenbus_switch_state()
+References: <5425961A.5000604@gmail.com> <20140929140229.GA28279@laptop.dumpdata.com>
+In-Reply-To: <20140929140229.GA28279@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to propose overlayfs for inclusion into 3.18.
+On 29/09/14 15:02, Konrad Rzeszutek Wilk wrote:
+> On Sat, Sep 27, 2014 at 12:36:42AM +0800, Chen Gang wrote:
+>> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+> 
+> Only on the first depth, not on the subsequent ones (as in if
+> the first xenbus_switch_fail fails, it won't try to call
+> xenbus_switch_state again and again).
+> 
+>> internally, so need not return any status value, then use 'void' instead
+>> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
+> 
+> When that switch occurs (to XenbusStateConnected) won't the watches
+> fire - meaning we MUST make sure that the watch functions - if they
+> use the xenbus_switch_state() they MUST not hold any locks - because
+> they could be executed once more?
+> 
+> Oh wait, we don't have to worry about that right now as the callbacks
+> that pick up the messages from the XenBus are all gated on one mutex
+> anyhow.
+> 
+> Hm, anyhow, I would add this extra piece of information to the patch:
+> 
+> 
+> diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+> index c214daa..f7399fd 100644
+> --- a/drivers/xen/xen-pciback/xenbus.c
+> +++ b/drivers/xen/xen-pciback/xenbus.c
+> @@ -661,6 +661,12 @@ static void xen_pcibk_be_watch(struct xenbus_watch *watch,
+>  
+>  	switch (xenbus_read_driver_state(pdev->xdev->nodename)) {
+>  	case XenbusStateInitWait:
+> +		/*
+> +		 * xenbus_switch_state can call xenbus_switch_fatal which will
+> +		 * immediately set the state to XenbusStateClosing which
+> +		 * means if we were reading for it here we MUST drop any
+> +		 * locks so that we don't dead-lock.
+> +		 */
 
-Al, would you mind giving it a review?
+Watches are asynchronous and serialised by the xenwatch thread.  I can't
+see what deadlock you're talking about here.  Particularly since the
+backend doesn't watch its own state node (it watches the frontend one).
 
-Git tree is here:
+>  		xen_pcibk_setup_backend(pdev);
+>  		break;
+>  
+>>
+>> Also need be sure that all callers which check the return value must let
+>> 'err' be 0.
+> 
+> I am bit uncomfortable with that, that is due to:
+> 
+> 
+> .. snip..
+>> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+>> index 9c47b89..b5c3d47 100644
+>> --- a/drivers/net/xen-netback/xenbus.c
+>> +++ b/drivers/net/xen-netback/xenbus.c
+>> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
+>>  	if (err)
+>>  		pr_debug("Error writing multi-queue-max-queues\n");
+>>  
+>> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+>> -	if (err)
+>> -		goto fail;
+>> -
+>> +	xenbus_switch_state(dev, XenbusStateInitWait);
+> 
+> Which if it fails it won't call:
+> 
+> 354 fail:                                                                           
+> 355         pr_debug("failed\n");                                                   
+> 356         netback_remove(dev);                                                    
+> 357         return err;         
+> 
+> 
+> And since there is no watch on the backend state to go in Closing it won't
+> ever call those and we leak memory.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.current
+It's not leaking the memory.  All resources will be recovered when the
+device is removed.
 
-Thanks,
-Miklos
+> The same is for xen-blkback mechanism in the probe function.
 
----
-Andy Whitcroft (1):
-      overlayfs: add statfs support
+David
 
-Erez Zadok (1):
-      overlayfs: implement show_options
-
-Miklos Szeredi (11):
-      vfs: add i_op->dentry_open()
-      vfs: export do_splice_direct() to modules
-      vfs: export __inode_permission() to modules
-      vfs: introduce clone_private_mount()
-      vfs: export check_sticky()
-      vfs: add whiteout support
-      vfs: add RENAME_WHITEOUT
-      ext4: support RENAME_WHITEOUT
-      shmem: support RENAME_WHITEOUT
-      overlay filesystem
-      fs: limit filesystem stacking depth
-
-Neil Brown (1):
-      overlay: overlay filesystem documentation
-
-Sedat Dilek (1):
-      vfs: dcache: Export d_ancestor to modules
-
----
- Documentation/filesystems/Locking       |   2 +
- Documentation/filesystems/overlayfs.txt | 198 +++++++
- Documentation/filesystems/vfs.txt       |   7 +
- MAINTAINERS                             |   7 +
- fs/Kconfig                              |   1 +
- fs/Makefile                             |   1 +
- fs/btrfs/ioctl.c                        |  20 +-
- fs/dcache.c                             |   1 +
- fs/ecryptfs/main.c                      |   7 +
- fs/ext4/namei.c                         |  95 +++-
- fs/internal.h                           |   7 -
- fs/namei.c                              |  41 +-
- fs/namespace.c                          |  27 +
- fs/open.c                               |  23 +-
- fs/overlayfs/Kconfig                    |  10 +
- fs/overlayfs/Makefile                   |   7 +
- fs/overlayfs/copy_up.c                  | 431 +++++++++++++++
- fs/overlayfs/dir.c                      | 914 ++++++++++++++++++++++++++++++++
- fs/overlayfs/inode.c                    | 408 ++++++++++++++
- fs/overlayfs/overlayfs.h                | 187 +++++++
- fs/overlayfs/readdir.c                  | 518 ++++++++++++++++++
- fs/overlayfs/super.c                    | 762 ++++++++++++++++++++++++++
- fs/splice.c                             |   1 +
- include/linux/fs.h                      |  37 ++
- include/linux/mount.h                   |   3 +
- include/uapi/linux/fs.h                 |   1 +
- mm/shmem.c                              |  36 +-
- 27 files changed, 3694 insertions(+), 58 deletions(-)
- create mode 100644 Documentation/filesystems/overlayfs.txt
- create mode 100644 fs/overlayfs/Kconfig
- create mode 100644 fs/overlayfs/Makefile
- create mode 100644 fs/overlayfs/copy_up.c
- create mode 100644 fs/overlayfs/dir.c
- create mode 100644 fs/overlayfs/inode.c
- create mode 100644 fs/overlayfs/overlayfs.h
- create mode 100644 fs/overlayfs/readdir.c
- create mode 100644 fs/overlayfs/super.c
