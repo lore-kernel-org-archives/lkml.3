@@ -1,120 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaI2FPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 01:15:25 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:36291 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaI2FPW (ORCPT
+	id S1751891AbaI2FR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 01:17:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31737 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaI2FRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 01:15:22 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 29 Sep 2014 01:21:42 -0400 (EDT)
-To: Cong Wang <cwang@twopensource.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-In-Reply-To: <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1409290117350.20725@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu> <20140908185115.GI6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu> <20140910083136.GP6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu> <541059C9.1040200@oracle.com>
- <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu> <20140910143306.GD4783@worktop.ger.corp.intel.com> <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
- <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 29 Sep 2014 01:17:25 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-68-5428eb63e25a
+From: Abhilash Kesavan <a.kesavan@samsung.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [PATCH] serial: samsung: Fix serial config dependencies for exynos7
+Date: Mon, 29 Sep 2014 10:46:57 +0530
+Message-id: <1411967817-8423-1-git-send-email-a.kesavan@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsWyRsSkTjf5tUaIwYujMhZ/Jx1jt2hevJ7N
+	4vPvXawWmx5fY7W4vGsOm8WM8/uYLBZt/cLuwO7x+9ckRo/9c9ewe2xeUu/Rt2UVo8eZBUfY
+	PT5vkgtgi+KySUnNySxLLdK3S+DKuN/5iq3gNm/FwW8HWRsYN3N3MXJySAiYSPR/2cEGYYtJ
+	XLi3HswWEljKKPFiojBMzfwn51m7GLmA4osYJSY3fIVy+pgk+o8dZQKpYhPQk1jw7ysziC0i
+	oCExpesxO0gRs8BqRollXSfAxgoL+Ej0TzwCVsQioCrxblsTWDOvgIvEifbdQA0cQOsUJOZM
+	soHY3M0u0f0hG6JcQOLb5EMsECWyEpsOMEOUSEocXHGDZQKj4AJGhlWMoqkFyQXFSelFpnrF
+	ibnFpXnpesn5uZsYgcF7+t+ziTsY7x+wPsQowMGoxMPLsUIjRIg1say4MvcQoynQhonMUqLJ
+	+cAYySuJNzQ2M7IwNTE1NjK3NFMS59WR/hksJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXGy
+	85q5No/z8lqiF07cVXfueBGLdFZotTaz7epHbP9mx5n+4nuwNPFBz+znMz6Kpz3buWT+/1zv
+	yV41e7x0Tq60DXHaKKp69GhPWrTbH//pMa5x1e/qAz5eCTr9cNd19t9OlV+VZkoyCjdnf9/q
+	cJGpNSvXOUzOaGfHDu6LMieMDin+f/khyEGJpTgj0VCLuag4EQAf6FPDWQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9jAd3k1xohBg/Pi1j8nXSM3aJ58Xo2
+	i8+/d7FabHp8jdXi8q45bBYzzu9jsli09Qu7A7vH71+TGD32z13D7rF5Sb1H35ZVjB5nFhxh
+	9/i8SS6ALaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DX
+	LTMH6BYlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8b9zldsBbd5Kw5+
+	O8jawLiZu4uRk0NCwERi/pPzrBC2mMSFe+vZuhi5OIQEFjFKTG74ygrh9DFJ9B87ygRSxSag
+	J7Hg31dmEFtEQENiStdjdpAiZoHVjBLLuk6wgSSEBXwk+iceAStiEVCVeLetCayZV8BF4kT7
+	bqAGDqB1ChJzJtlMYORewMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4Pp5J72Bc1WBx
+	iFGAg1GJh5djhUaIEGtiWXFl7iFGCQ5mJRFehdfqIUK8KYmVValF+fFFpTmpxYcYTYGWT2SW
+	Ek3OB8ZuXkm8obGJuamxqaWJhYmZpZI478FW60AhgfTEktTs1NSC1CKYPiYOTqkGxvUvT0ga
+	XJDp7Q3L+HMlZX/RTbVFB6XNGX9KpHW+Cj2lqu/8YwVLofHDQ1YLYooS7j4NYlUNtlpmaqzr
+	Wvp+eqC+d9fx3f4r3z+fFHvMfXW5Lpvx8kUqt1QX//mtffrsueY1i++5vX3vHlHWcHrxiz1v
+	1jhvZP3eedA8+M3bNxf/JBhUnzDbyqDEUpyRaKjFXFScCACJFOB6pQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Cong Wang wrote:
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
 
-> On Wed, Sep 24, 2014 at 9:59 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+Exynos7 has a similar serial controller to that present in older Samsung
+SoCs. To re-use the existing serial driver on Exynos7 we need to have
+SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS selected. This is not
+possible because these symbols are dependent on PLAT_SAMSUNG which is
+not present for the ARMv8 based exynos7.
 
-> > Now that just might mean the patch pushed the code around enough so my
-> > test doesn't trigger, but there is hope that maybe this fixes things.
-> 
-> I read this as it fixes your crash as well?
+Change the dependency of these symbols from PLAT_SAMSUNG to the serial
+driver thus making it available on exynos7. As the existing platform
+specific code making use of these symbols is related to uart driver this
+change in dependency should not cause any issues.
 
-It makes a testcase I have stop triggering an instant reboot, but there 
-have been various attempts to fix similar problems over the past few 
-months and so far the general family of lockups/reboots still remains.
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+Build tested with s3c6400_defconfig, exynos_defconfig and arm64's defconfig
+with and without the serial driver enabled.
 
-I'll have to start fuzzing with 3.17-rc7 and see if things are better now,
-but it can take days to trigger this class of bugs.
+ drivers/tty/serial/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Sure, as I said in the changelog, it is a soft lockup which was triggered on
-> dozens of machines here, it is actually pretty straightforward:
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 81f6ee7..e6c0bcb 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -249,14 +249,14 @@ config SERIAL_SAMSUNG
+ 
+ config SERIAL_SAMSUNG_UARTS_4
+ 	bool
+-	depends on PLAT_SAMSUNG
++	depends on SERIAL_SAMSUNG
+ 	default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
+ 	help
+ 	  Internal node for the common case of 4 Samsung compatible UARTs
+ 
+ config SERIAL_SAMSUNG_UARTS
+ 	int
+-	depends on PLAT_SAMSUNG
++	depends on SERIAL_SAMSUNG
+ 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+ 	default 3
+ 	help
+-- 
+1.7.9.5
 
-so you managed to trigger it with the perf utility?
-Do you have the exact command line that triggered it?
-
-Thanks,
-
-Vince
-
-
-
-> [5108912.562963] BUG: soft lockup - CPU#7 stuck for 22s! [perf:13856]
-> [5108912.563173] Modules linked in: netconsole configfs ipv6 bonding
-> dm_multipath video sbs sbshc hed acpi_pad acpi_memhotplug acpi_ipmi
-> parport_pc lp parport tcp_diag inet_diag ipmi_si ipmi_devintf
-> ipmi_msghandler dell_rbu igb dcdbas shpchp i2c_i801 i2c_core iTCO_wdt
-> i7core_edac edac_core iTCO_vendor_support ioatdma dca microcode
-> [5108912.563198] CPU 7
-> [5108912.563199] Modules linked in: netconsole configfs ipv6 bonding
-> dm_multipath video sbs sbshc hed acpi_pad acpi_memhotplug acpi_ipmi
-> parport_pc lp parport tcp_diag inet_diag ipmi_si ipmi_devintf
-> ipmi_msghandler dell_rbu igb dcdbas shpchp i2c_i801 i2c_core iTCO_wdt
-> i7core_edac edac_core iTCO_vendor_support ioatdma dca microcode
-> [5108912.563216]
-> [5108912.563219] Pid: 13856, comm: perf Not tainted 3.4.78 #1 Dell
-> Inc.  C6100           /0D61XP
-> [5108912.563222] RIP: 0010:[<ffffffff810d9a6a>]  [<ffffffff810d9a6a>]
-> perf_remove_from_context+0x8d/0xb4
-> [5108912.563233] RSP: 0018:ffff8809ea39bd48  EFLAGS: 00000202
-> [5108912.563235] RAX: 000000000000006d RBX: ffffffff810d6dcc RCX:
-> 0000000000000000
-> [5108912.563237] RDX: ffff88123fc8006d RSI: ffffffff810d6dcc RDI:
-> ffff8808f8541c0c
-> [5108912.563239] RBP: ffff8809ea39bd88 R08: 0000000000000001 R09:
-> 0000000000000000
-> [5108912.563241] R10: ffff8809abf95610 R11: ffff880a3a6c331c R12:
-> 0000000000000000
-> [5108912.563243] R13: 00000000000000ef R14: 0000000000000001 R15:
-> 0000000000000000
-> [5108912.563245] FS:  0000000000000000(0000) GS:ffff88123fc20000(0000)
-> knlGS:0000000000000000
-> [5108912.563248] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [5108912.563250] CR2: 00007f692e787180 CR3: 0000000001a0b000 CR4:
-> 00000000000007e0
-> [5108912.563252] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> 0000000000000000
-> [5108912.563254] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> 0000000000000400
-> [5108912.563256] Process perf (pid: 13856, threadinfo
-> ffff8809ea39a000, task ffff880a2167c470)
-> [5108912.563258] Stack:
-> [5108912.563260]  ffff880a3a6c32c0 ffff88048c7c3820 ffff8809ea39bd88
-> ffff88048c7c3800
-> [5108912.563265]  ffff88048c7c3800 ffff8808f8541c00 ffff8808f8541c10
-> ffff88091b56c000
-> [5108912.563269]  ffff8809ea39bdb8 ffffffff810d9bbe ffff8809ea39bdb8
-> ffff880a2167c470
-> [5108912.563273] Call Trace:
-> [5108912.563278]  [<ffffffff810d9bbe>] perf_event_release_kernel+0x77/0x91
-> [5108912.563282]  [<ffffffff810d9c56>] put_event+0x7e/0x86
-> [5108912.563285]  [<ffffffff810d9dc0>] perf_release+0x10/0x14
-> [5108912.563291]  [<ffffffff8112dfc0>] __fput+0xfe/0x1f6
-> [5108912.563294]  [<ffffffff8112e0d2>] fput+0x1a/0x1c
-> [5108912.563297]  [<ffffffff8112ad8d>] filp_close+0x72/0x7d
-> [5108912.563303]  [<ffffffff8103efbf>] put_files_struct+0x6c/0xc3
-> [5108912.563306]  [<ffffffff8103f057>] exit_files+0x41/0x46
-> [5108912.563309]  [<ffffffff81040971>] do_exit+0x292/0x3b6
-> [5108912.563312]  [<ffffffff81040b12>] do_group_exit+0x7d/0xa5
-> [5108912.563315]  [<ffffffff81040b51>] sys_exit_group+0x17/0x1b
-> [5108912.563320]  [<ffffffff814c2469>] system_call_fastpath+0x16/0x1b
