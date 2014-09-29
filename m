@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaI2SHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:07:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33864 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755141AbaI2SHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:07:31 -0400
-Date: Mon, 29 Sep 2014 15:07:27 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH v4 1/2] perf tool: encapsulate dsos list head into struct
- dsos
-Message-ID: <20140929180727.GF3879@kernel.org>
-References: <1411573540-8765-1-git-send-email-Waiman.Long@hp.com>
- <1411573540-8765-2-git-send-email-Waiman.Long@hp.com>
- <20140926141230.GB3879@kernel.org>
- <5429965F.2070806@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5429965F.2070806@hp.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755091AbaI2SHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:07:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53229 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003AbaI2SG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 14:06:58 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        gregkh@linuxfoundation.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 01/13] tty: serial: 8250: Fix wording in runtime-PM comments
+Date: Mon, 29 Sep 2014 20:06:37 +0200
+Message-Id: <1412014009-13315-2-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 29, 2014 at 01:26:55PM -0400, Waiman Long escreveu:
-> On 09/26/2014 10:12 AM, Arnaldo Carvalho de Melo wrote:
-> >Em Wed, Sep 24, 2014 at 11:45:39AM -0400, Waiman Long escreveu:
-> >>This is a precursor patch to enable long name searching of DSOs
-> >>using the rbtree. In this patch, a new dsos structure is created
-> >>which contains only a list head structure for the moment. The new
-> >>dsos structure is used, in turn, in the machine structure for the
-> >>user_dsos and kernel_dsos fields. Only the following 3 dsos functions
-> >>are modified to accept the new dsos structure parameter instead
-> >>of list_head:
-> >>  - dsos__add()
-> >>  - dsos__find()
-> >>  - __dsos__findnew()
-> >>
-> >>Because of the need to find out the corresponding dsos structure to
-> >>properly call dsos__add() in dso__load_sym() of util/symbol-elf.c,
-> >>a new dsos field is also added to the dso structure.
-> >What tree did you use to produce these patches? I just tried on my
-> >perf/core branch and I get some fuzzes:
-> >
-> >[acme@zoo linux]$ patch -p1<  /wb/1.patch
-> >patching file tools/perf/util/dso.c
-> >Hunk #1 succeeded at 755 (offset 2 lines).
-> >Hunk #2 succeeded at 852 (offset 2 lines).
-> >patching file tools/perf/util/dso.h
-> >patching file tools/perf/util/header.c
-> >patching file tools/perf/util/machine.c
-> >Hunk #2 succeeded at 72 (offset 2 lines).
-> >Hunk #3 succeeded at 477 (offset 29 lines).
-> >Hunk #4 succeeded at 994 (offset 29 lines).
-> >patching file tools/perf/util/machine.h
-> >Hunk #2 succeeded at 39 with fuzz 1 (offset 1 line).
-> >patching file tools/perf/util/probe-event.c
-> >patching file tools/perf/util/symbol-elf.c
-> >Hunk #1 succeeded at 929 (offset 13 lines).
-> >[acme@zoo linux]$
-> >
-> >I'll fix this up, probably harmless, just a heads up.
-> >
-> >- Arnaldo
-> 
-> I was using the latest linux 3.17 tree. I should have used the tip tree
-> instead. I will use that if I need to sent out a new patch.
+Frans reworded the two comments with better English for better
+understanding. His review hit the mailing list after the patch got
+applied so here is an incremental update.
 
-Please do, tip/perf/urgent strictly for bug fixes, tip/perf/core for new
-features or bug fixes for things that are only in tip/perf/core.
+Reported-by: Frans Klaver <frans.klaver@xsens.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/8250/8250_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-- Arnaldo
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 139f3d2b8aa9..a1904628a2a1 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -557,7 +557,7 @@ static void serial8250_rpm_put(struct uart_8250_port *p)
+ }
+ 
+ /*
+- * This two wrapper ensure, that enable_runtime_pm_tx() can be called more than
++ * These two wrappers ensure that enable_runtime_pm_tx() can be called more than
+  * once and disable_runtime_pm_tx() will still disable RPM because the fifo is
+  * empty and the HW can idle again.
+  */
+@@ -1532,7 +1532,7 @@ void serial8250_tx_chars(struct uart_8250_port *up)
+ 	DEBUG_INTR("THRE...");
+ 
+ 	/*
+-	 * With RPM enabled, we have to wait once the FIFO is empty before the
++	 * With RPM enabled, we have to wait until the FIFO is empty before the
+ 	 * HW can go idle. So we get here once again with empty FIFO and disable
+ 	 * the interrupt and RPM in __stop_tx()
+ 	 */
+-- 
+2.1.0
+
