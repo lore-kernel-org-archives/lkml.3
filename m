@@ -1,162 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaI2IvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:51:05 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:51300 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaI2IvB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:51:01 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH 08/15] powerpc/mm: Add new hash_page_mm()
-In-Reply-To: <1411028820-29933-9-git-send-email-mikey@neuling.org>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org> <1411028820-29933-9-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 29 Sep 2014 14:20:45 +0530
-Message-ID: <87wq8mq07u.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092908-0013-0000-0000-000000484C36
+	id S1753102AbaI2IwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:52:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61478 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738AbaI2IwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:52:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,619,1406617200"; 
+   d="scan'208";a="598175727"
+Message-ID: <1411980737.10697.0.camel@linux.intel.com>
+Subject: Re: [PATCH 1/2 v2] SPI: spi-pxa2xx: Add helpers for regiseters'
+ accessing
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Weike Chen <alvin.chen@intel.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>
+Date: Mon, 29 Sep 2014 11:52:17 +0300
+In-Reply-To: <1412000548-9908-2-git-send-email-alvin.chen@intel.com>
+References: <1412000548-9908-1-git-send-email-alvin.chen@intel.com>
+	 <1412000548-9908-2-git-send-email-alvin.chen@intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
-
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> This adds a new function hash_page_mm() based on the existing hash_page().
-> This version allows any struct mm to be passed in, rather than assuming
-> current.  This is useful for servicing co-processor faults which are not in the
-> context of the current running process.
->
-> We need to be careful here as the current hash_page() assumes current in a few
-> places.
-
-Can you also explain calling semantics. ie, why would we want to call
-this with anything other than current ? Should we flush slb now or
-should it be skipped ? so what would happen if the new hash page can
-result in segment demotion ?  You don't put that under if (mm ==
-current->mm). is that ok ?
-
-	if ((pte_val(*ptep) & _PAGE_4K_PFN) && psize == MMU_PAGE_64K) {
-		demote_segment_4k(mm, ea);
-		psize = MMU_PAGE_4K;
-	}
-
-We also update paca context there
-
-	if (get_paca_psize(addr) != MMU_PAGE_4K) {
-		get_paca()->context = mm->context;
-		slb_flush_and_rebolt();
-	}
+On Mon, 2014-09-29 at 07:22 -0700, Weike Chen wrote:
 
 
-You also added code to handle KERNEL_REGION_ID in
-[PATCH 02/15] powerpc/cell: Move data segment faulting code out of cell
-platform. do we need to handle that here ?
+I'm okay with the current version, though I have few minor comments
+below.
+
+> Introduce helper functions to access the 'SSCR0' and 'SSCR1'.
+> 
+
+Like you said in the summary there are many accessors to many registers,
+not only cr1/cr0. Perhaps, you may extend your commit message.
+
+In any case
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
 
->
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
+More comments below.
+
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
 > ---
->  arch/powerpc/include/asm/mmu-hash64.h |  1 +
->  arch/powerpc/mm/hash_utils_64.c       | 20 +++++++++++++-------
->  2 files changed, 14 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> index fd19a53..a3b85e9 100644
-> --- a/arch/powerpc/include/asm/mmu-hash64.h
-> +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> @@ -319,6 +319,7 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
->  			   unsigned int local, int ssize);
->  struct mm_struct;
->  unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
-> +extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
->  extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
->  int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
->  		     pte_t *ptep, unsigned long trap, int local, int ssize,
-> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index 0f73367..66071af 100644
-> --- a/arch/powerpc/mm/hash_utils_64.c
-> +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -991,26 +991,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
->   * -1 - critical hash insertion error
->   * -2 - access not permitted by subpage protection mechanism
->   */
-> -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
->  {
->  	enum ctx_state prev_state = exception_enter();
->  	pgd_t *pgdir;
->  	unsigned long vsid;
-> -	struct mm_struct *mm;
->  	pte_t *ptep;
->  	unsigned hugeshift;
->  	const struct cpumask *tmp;
->  	int rc, user_region = 0, local = 0;
->  	int psize, ssize;
->  
-> -	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
-> -		ea, access, trap);
-> +	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
-> +		__func__, ea, access, trap);
->  
->  	/* Get region & vsid */
->   	switch (REGION_ID(ea)) {
->  	case USER_REGION_ID:
->  		user_region = 1;
-> -		mm = current->mm;
->  		if (! mm) {
->  			DBG_LOW(" user region with no mm !\n");
->  			rc = 1;
-> @@ -1106,7 +1104,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  			WARN_ON(1);
->  		}
->  #endif
-> -		check_paca_psize(ea, mm, psize, user_region);
-> +		if (current->mm == mm)
-> +			check_paca_psize(ea, mm, psize, user_region);
->  
->  		goto bail;
->  	}
-> @@ -1149,7 +1148,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  		}
->  	}
->  
-> -	check_paca_psize(ea, mm, psize, user_region);
-> +	if (current->mm == mm)
-> +		check_paca_psize(ea, mm, psize, user_region);
->  #endif /* CONFIG_PPC_64K_PAGES */
->  
->  #ifdef CONFIG_PPC_HAS_HASH_64K
-> @@ -1184,6 +1184,12 @@ bail:
->  	exception_exit(prev_state);
->  	return rc;
+>  drivers/spi/spi-pxa2xx.c |  108 ++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 85 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+> index 256c0ab..e7ff9c5 100644
+> --- a/drivers/spi/spi-pxa2xx.c
+> +++ b/drivers/spi/spi-pxa2xx.c
+> @@ -80,6 +80,73 @@ static bool is_lpss_ssp(const struct driver_data *drv_data)
+>  	return drv_data->ssp_type == LPSS_SSP;
 >  }
-> +EXPORT_SYMBOL_GPL(hash_page_mm);
-> +
-> +int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +{
-> +	return hash_page_mm(current->mm, ea, access, trap);
-> +}
->  EXPORT_SYMBOL_GPL(hash_page);
 >  
->  void hash_preload(struct mm_struct *mm, unsigned long ea,
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +static u32 pxa2xx_spi_get_ssrc1_change_mask(const struct driver_data *drv_data)
+> +{
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		return SSCR1_CHANGE_MASK;
+> +	}
+> +}
+> +
+> +static u32
+> +pxa2xx_spi_get_rx_default_thre(const struct driver_data *drv_data)
+> +{
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		return RX_THRESH_DFLT;
+> +	}
+> +}
+> +
+> +static bool pxa2xx_spi_txfifo_full(const struct driver_data *drv_data)
+> +{
+> +	void __iomem *reg = drv_data->ioaddr;
+> +	u32 mask;
+> +
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		mask = SSSR_TFL_MASK;
+> +		break;
+> +	}
+> +
+> +	return (read_SSSR(reg) & mask) == mask;
+> +}
+> +
+> +static void pxa2xx_spi_clear_rx_thre(const struct driver_data *drv_data,
+> +				     u32 *sccr1_reg)
+> +{
+> +	u32 mask;
+> +
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		mask = SSCR1_RFT;
+> +		break;
+> +	}
+> +	*sccr1_reg &= ~mask;
+> +}
+> +
+> +static void pxa2xx_spi_set_rx_thre(const struct driver_data *drv_data,
+> +				   u32 *sccr1_reg, u32 threshold)
+> +{
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		*sccr1_reg |= SSCR1_RxTresh(threshold);
+> +		break;
+> +	}
+> +}
+> +
+> +static u32 pxa2xx_configure_sscr0(const struct driver_data *drv_data,
+> +				  u32 clk_div, u8 bits)
+> +{
+> +	switch (drv_data->ssp_type) {
+> +	default:
+> +		return clk_div
+> +			| SSCR0_Motorola
+> +			| SSCR0_DataSize(bits > 16 ? bits - 16 : bits)
+> +			| SSCR0_SSE
+> +			| (bits > 16 ? SSCR0_EDSS : 0);
+> +	}
+> +}
+> +
+>  /*
+>   * Read and write LPSS SSP private registers. Caller must first check that
+>   * is_lpss_ssp() returns true before these can be called.
+> @@ -234,7 +301,7 @@ static int null_writer(struct driver_data *drv_data)
+>  	void __iomem *reg = drv_data->ioaddr;
+>  	u8 n_bytes = drv_data->n_bytes;
+>  
+> -	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
+> +	if (pxa2xx_spi_txfifo_full(drv_data)
+>  		|| (drv_data->tx == drv_data->tx_end))
+
+Just wondering if those two could fit one line.
+
+>  		return 0;
+>  
+> @@ -262,7 +329,7 @@ static int u8_writer(struct driver_data *drv_data)
+>  {
+>  	void __iomem *reg = drv_data->ioaddr;
+>  
+> -	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
+> +	if (pxa2xx_spi_txfifo_full(drv_data)
+>  		|| (drv_data->tx == drv_data->tx_end))
+
+Ditto.
+
+>  		return 0;
+>  
+> @@ -289,7 +356,7 @@ static int u16_writer(struct driver_data *drv_data)
+>  {
+>  	void __iomem *reg = drv_data->ioaddr;
+>  
+> -	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
+> +	if (pxa2xx_spi_txfifo_full(drv_data)
+>  		|| (drv_data->tx == drv_data->tx_end))
+
+Ditto.
+
+>  		return 0;
+>  
+> @@ -316,7 +383,7 @@ static int u32_writer(struct driver_data *drv_data)
+>  {
+>  	void __iomem *reg = drv_data->ioaddr;
+>  
+> -	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
+> +	if (pxa2xx_spi_txfifo_full(drv_data)
+>  		|| (drv_data->tx == drv_data->tx_end))
+
+Ditto.
+
+>  		return 0;
+>  
+> @@ -508,8 +575,9 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
+>  		 * remaining RX bytes.
+>  		 */
+>  		if (pxa25x_ssp_comp(drv_data)) {
+> +			u32 rx_thre;
+>  
+> -			sccr1_reg &= ~SSCR1_RFT;
+> +			pxa2xx_spi_clear_rx_thre(drv_data, &sccr1_reg);
+>  
+>  			bytes_left = drv_data->rx_end - drv_data->rx;
+>  			switch (drv_data->n_bytes) {
+> @@ -519,10 +587,12 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
+>  				bytes_left >>= 1;
+>  			}
+>  
+> -			if (bytes_left > RX_THRESH_DFLT)
+> -				bytes_left = RX_THRESH_DFLT;
+> +			rx_thre = pxa2xx_spi_get_rx_default_thre(drv_data);
+> +			if (rx_thre > bytes_left)
+> +				rx_thre = bytes_left;
+>  
+> -			sccr1_reg |= SSCR1_RxTresh(bytes_left);
+> +			pxa2xx_spi_set_rx_thre(drv_data, &sccr1_reg,
+> +					       rx_thre);
+>  		}
+>  		write_SSCR1(sccr1_reg, reg);
+>  	}
+> @@ -613,6 +683,7 @@ static void pump_transfers(unsigned long data)
+>  	u32 cr1;
+>  	u32 dma_thresh = drv_data->cur_chip->dma_threshold;
+>  	u32 dma_burst = drv_data->cur_chip->dma_burst_size;
+> +	u32 change_mask = pxa2xx_spi_get_ssrc1_change_mask(drv_data);
+>  
+>  	/* Get current state information */
+>  	message = drv_data->cur_msg;
+> @@ -731,11 +802,7 @@ static void pump_transfers(unsigned long data)
+>  						     "pump_transfers: DMA burst size reduced to match bits_per_word\n");
+>  		}
+>  
+> -		cr0 = clk_div
+> -			| SSCR0_Motorola
+> -			| SSCR0_DataSize(bits > 16 ? bits - 16 : bits)
+> -			| SSCR0_SSE
+> -			| (bits > 16 ? SSCR0_EDSS : 0);
+> +		cr0 = pxa2xx_configure_sscr0(drv_data, clk_div, bits);
+>  	}
+>  
+>  	message->state = RUNNING_STATE;
+> @@ -772,16 +839,15 @@ static void pump_transfers(unsigned long data)
+>  	}
+>  
+>  	/* see if we need to reload the config registers */
+> -	if ((read_SSCR0(reg) != cr0)
+> -		|| (read_SSCR1(reg) & SSCR1_CHANGE_MASK) !=
+> -			(cr1 & SSCR1_CHANGE_MASK)) {
+> +	if ((read_SSCR0(reg) != cr0) ||
+> +	    (read_SSCR1(reg) & change_mask) != (cr1 & change_mask)) {
+>  
+>  		/* stop the SSP, and update the other bits */
+>  		write_SSCR0(cr0 & ~SSCR0_SSE, reg);
+>  		if (!pxa25x_ssp_comp(drv_data))
+>  			write_SSTO(chip->timeout, reg);
+>  		/* first set CR1 without interrupt and service enables */
+> -		write_SSCR1(cr1 & SSCR1_CHANGE_MASK, reg);
+> +		write_SSCR1(cr1 & change_mask, reg);
+>  		/* restart the SSP */
+>  		write_SSCR0(cr0, reg);
+>  
+> @@ -959,12 +1025,8 @@ static int setup(struct spi_device *spi)
+>  	clk_div = ssp_get_clk_div(drv_data, spi->max_speed_hz);
+>  	chip->speed_hz = spi->max_speed_hz;
+>  
+> -	chip->cr0 = clk_div
+> -			| SSCR0_Motorola
+> -			| SSCR0_DataSize(spi->bits_per_word > 16 ?
+> -				spi->bits_per_word - 16 : spi->bits_per_word)
+> -			| SSCR0_SSE
+> -			| (spi->bits_per_word > 16 ? SSCR0_EDSS : 0);
+> +	chip->cr0 = pxa2xx_configure_sscr0(drv_data, clk_div,
+> +					   spi->bits_per_word);
+>  	chip->cr1 &= ~(SSCR1_SPO | SSCR1_SPH);
+>  	chip->cr1 |= (((spi->mode & SPI_CPHA) != 0) ? SSCR1_SPH : 0)
+>  			| (((spi->mode & SPI_CPOL) != 0) ? SSCR1_SPO : 0);
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
+
 
