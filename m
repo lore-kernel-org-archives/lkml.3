@@ -1,143 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbaI2ASh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 20:18:37 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51723 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723AbaI2ASg (ORCPT
+	id S1753528AbaI2AXv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 20:23:51 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:46359 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaI2AXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Sep 2014 20:18:36 -0400
-Message-ID: <5428A559.5050908@linaro.org>
-Date: Mon, 29 Sep 2014 02:18:33 +0200
+	Sun, 28 Sep 2014 20:23:50 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "horms+renesas@verge.net.au" <horms+renesas@verge.net.au>,
-        Carlo Caione <carlo@caione.org>,
-        =?UTF-8?B?R2HDq2wgUE9SVEFZ?= <gael.portay@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>, Stefan Agner <stefan@agner.ch>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "Hao.Liu@csr.com >> Hao Liu" <Hao.Liu@csr.com>
-Subject: [GIT PULL] : clockevents/clocksource for 3.18
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: tglx@linutronix.de, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 01/13] clocksource: sh_cmt: Document SoC specific bindings
+Date: Mon, 29 Sep 2014 02:23:34 +0200
+Message-Id: <1411950226-21598-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <5428A559.5050908@linaro.org>
+References: <5428A559.5050908@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Simon Horman <horms+renesas@verge.net.au>
 
-Hi Thomas, Ingo,
+In general Renesas hardware is not documented to the extent
+where the relationship between IP blocks on different SoCs can be assumed
+although they may appear to operate the same way. Furthermore the
+documentation typically does not specify a version for individual
+IP blocks. For these reasons a convention of using the SoC name in place
+of a version and providing SoC-specific compat strings has been adopted.
 
-sorry for sending my PR so late but I have been very busy.
+Although not universally liked this convention is used in the bindings for
+a number of drivers for Renesas hardware. The purpose of this patch is to
+update the Renesas R-Car Compare Match Timer (CMT) driver to follow this
+convention.
 
-This PR contains the following changes:
+Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
+Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-  * Simon Horman provided the DT soc bindings for the sh_cmt, sh_mtu2 
-and sh_tmu
+---
+* I plan to follow up with patches to use these new bindings in the
+  dtsi files for the affected SoCs.
 
-  * Carlo Caione implemented the driver for the Meson6 with its 
-documentation
+v2
+* Reorder compat entries so more-specific entries and their fallbacks
+  are grouped with the fallback entry coming last.
+* Explicitly document fallback
 
-  * Gael Portay fixed to unprepare the clock when the irq request fails 
-and he took the opportunity to replace 'setup_irq' by 'request_irq' for 
-the 'tcb_clrsrc' driver
+v3
+* Avoid circular dependency in documentation of fallback
+  behaviour of renesas,cmt-48-gen2
+* Use consistent case for SoC names in compat string descriptions
+---
+ .../devicetree/bindings/timer/renesas,cmt.txt      | 44 +++++++++++++++++++---
+ 1 file changed, 38 insertions(+), 6 deletions(-)
 
-  * Hao Liu disabled the timer before setting it again for the 'sirf' driver
-
-  * Michal Simek changed the 'cadence_ttc' timer to make configurable 
-the counter width (16 and 32), defaulting to 16 which is the current setting
-
-  * Nathan Lynch provided a set of cleanup for the architected arm timer 
-in preparation of the vdso support
-
-  * Stefan Agner disabled the 'vf_pit_timer' when the system is entering 
-in suspend in order to prevent the system to be woken up by the timer
-
-  * Sudeep Holla added a check to make sure the mem and the cp15 timers 
-are available if they are defined in the DT
-
-Thanks !
-
-   -- Daniel
-
-The following changes since commit 88299c9bdb109e0d95abdca648065631ff91b2cb:
-
-   timerfd: Remove an always true check (2014-08-27 11:17:48 +0200)
-
-are available in the git repository at:
-
-   http://git.linaro.org/people/daniel.lezcano/linux.git clockevents/3.18
-
-for you to fetch changes up to 867f667fb9c6734e06cc24e96fc7f06a7e772084:
-
-   Merge tag 'renesas-clocksource-for-v3.18' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into 
-clockevents/3.18 (2014-09-29 01:59:51 +0200)
-
-----------------------------------------------------------------
-
-Carlo Caione (2):
-       ARM: meson: documentation: Add timer documentation
-       ARM: meson6: clocksource: Add Meson6 timer support
-
-Daniel Lezcano (1):
-       Merge tag 'renesas-clocksource-for-v3.18' of 
-git://git.kernel.org/.../horms/renesas into clockevents/3.18
-
-Gael Portay (1):
-       clocksource: tcb_clksrc: Sanitize IRQ request
-
-Hao Liu (1):
-       clocksource: sirf: Disable counter before re-setting it
-
-Michal Simek (1):
-       clocksource: cadence_ttc: Add support for 32bit mode
-
-Nathan Lynch (3):
-       clocksource: arm_arch_timer: Change clocksource name if CP15 
-unavailable
-       clocksource: arm_arch_timer: Enable counter access for 32-bit ARM
-       clocksource: arm_arch_timer: Consolidate arch_timer_evtstrm_enable
-
-Simon Horman (3):
-       clocksource: sh_cmt: Document SoC specific bindings
-       clocksource: sh_mtu2: Document r7s72100 binding
-       clocksource: sh_tmu: Document r8a7779 binding
-
-Stefan Agner (1):
-       clocksource: vf_pit_timer: Support shutdown mode
-
-Sudeep Holla (1):
-       clocksource: arm_arch_timer: Discard unavailable timers correctly
-
-  .../bindings/timer/amlogic,meson6-timer.txt        |  15 ++
-  .../devicetree/bindings/timer/renesas,cmt.txt      |  44 +++++-
-  .../devicetree/bindings/timer/renesas,mtu2.txt     |   7 +-
-  .../devicetree/bindings/timer/renesas,tmu.txt      |   7 +-
-  arch/arm/include/asm/arch_timer.h                  |  25 ---
-  arch/arm64/include/asm/arch_timer.h                |  31 ----
-  drivers/clocksource/Kconfig                        |   3 +
-  drivers/clocksource/Makefile                       |   1 +
-  drivers/clocksource/arm_arch_timer.c               |  64 +++++++-
-  drivers/clocksource/cadence_ttc_timer.c            |  15 +-
-  drivers/clocksource/meson6_timer.c                 | 167 
-+++++++++++++++++++++
-  drivers/clocksource/tcb_clksrc.c                   |  13 +-
-  drivers/clocksource/timer-marco.c                  |   5 +-
-  drivers/clocksource/vf_pit_timer.c                 |   4 +
-  14 files changed, 314 insertions(+), 87 deletions(-)
-  create mode 100644 
-Documentation/devicetree/bindings/timer/amlogic,meson6-timer.txt
-  create mode 100644 drivers/clocksource/meson6_timer.c
-
-
+diff --git a/Documentation/devicetree/bindings/timer/renesas,cmt.txt b/Documentation/devicetree/bindings/timer/renesas,cmt.txt
+index a17418b..1a05c1b 100644
+--- a/Documentation/devicetree/bindings/timer/renesas,cmt.txt
++++ b/Documentation/devicetree/bindings/timer/renesas,cmt.txt
+@@ -11,15 +11,47 @@ datasheets.
+ 
+ Required Properties:
+ 
+-  - compatible: must contain one of the following.
+-    - "renesas,cmt-32" for the 32-bit CMT
++  - compatible: must contain one or more of the following:
++    - "renesas,cmt-32-r8a7740" for the r8a7740 32-bit CMT
++		(CMT0)
++    - "renesas,cmt-32-sh7372" for the sh7372 32-bit CMT
++		(CMT0)
++    - "renesas,cmt-32-sh73a0" for the sh73a0 32-bit CMT
++		(CMT0)
++    - "renesas,cmt-32" for all 32-bit CMT without fast clock support
+ 		(CMT0 on sh7372, sh73a0 and r8a7740)
+-    - "renesas,cmt-32-fast" for the 32-bit CMT with fast clock support
++		This is a fallback for the above renesas,cmt-32-* entries.
++
++    - "renesas,cmt-32-fast-r8a7740" for the r8a7740 32-bit CMT with fast
++		clock support (CMT[234])
++    - "renesas,cmt-32-fast-sh7372" for the sh7372 32-bit CMT with fast
++		clock support (CMT[234])
++    - "renesas,cmt-32-fast-sh73a0" for the sh73A0 32-bit CMT with fast
++		clock support (CMT[234])
++    - "renesas,cmt-32-fast" for all 32-bit CMT with fast clock support
+ 		(CMT[234] on sh7372, sh73a0 and r8a7740)
+-    - "renesas,cmt-48" for the 48-bit CMT
++		This is a fallback for the above renesas,cmt-32-fast-* entries.
++
++    - "renesas,cmt-48-sh7372" for the sh7372 48-bit CMT
++		(CMT1)
++    - "renesas,cmt-48-sh73a0" for the sh73A0 48-bit CMT
++		(CMT1)
++    - "renesas,cmt-48-r8a7740" for the r8a7740 48-bit CMT
++		(CMT1)
++    - "renesas,cmt-48" for all non-second generation 48-bit CMT
+ 		(CMT1 on sh7372, sh73a0 and r8a7740)
+-    - "renesas,cmt-48-gen2" for the second generation 48-bit CMT
++		This is a fallback for the above renesas,cmt-48-* entries.
++
++    - "renesas,cmt-48-r8a73a4" for the r8a73a4 48-bit CMT
++		(CMT[01])
++    - "renesas,cmt-48-r8a7790" for the r8a7790 48-bit CMT
++		(CMT[01])
++    - "renesas,cmt-48-r8a7791" for the r8a7791 48-bit CMT
++		(CMT[01])
++    - "renesas,cmt-48-gen2" for all second generation 48-bit CMT
+ 		(CMT[01] on r8a73a4, r8a7790 and r8a7791)
++		This is a fallback for the renesas,cmt-48-r8a73a4,
++		renesas,cmt-48-r8a7790 and renesas,cmt-48-r8a7791 entries.
+ 
+   - reg: base address and length of the registers block for the timer module.
+   - interrupts: interrupt-specifier for the timer, one per channel.
+@@ -36,7 +68,7 @@ Example: R8A7790 (R-Car H2) CMT0 node
+ 	them channels 0 and 1 in the documentation.
+ 
+ 	cmt0: timer@ffca0000 {
+-		compatible = "renesas,cmt-48-gen2";
++		compatible = "renesas,cmt-48-r8a7790", "renesas,cmt-48-gen2";
+ 		reg = <0 0xffca0000 0 0x1004>;
+ 		interrupts = <0 142 IRQ_TYPE_LEVEL_HIGH>,
+ 			     <0 142 IRQ_TYPE_LEVEL_HIGH>;
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.9.1
 
