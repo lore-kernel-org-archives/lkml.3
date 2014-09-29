@@ -1,86 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaI2KNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:13:55 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:27345 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaI2KNx (ORCPT
+	id S1753914AbaI2KOr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:14:47 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:39387 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaI2KOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:13:53 -0400
-Message-ID: <542930BD.2090907@huawei.com>
-Date: Mon, 29 Sep 2014 18:13:17 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 29 Sep 2014 06:14:46 -0400
 MIME-Version: 1.0
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: Thierry Reding <thierry.reding@gmail.com>, Liviu Dudau <liviu@dudau.co.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>	 <20140925074235.GN12423@ulmo> <20140925144855.GB31157@bart.dudau.co.uk>	 <20140925164937.GB30382@ulmo> <20140925171612.GC31157@bart.dudau.co.uk>	 <542505B3.7040208@huawei.com> <20140926085430.GG31106@ulmo>	 <20140926090537.GH31106@ulmo> <54277327.6070500@huawei.com>	 <5427A6A0.5040703@huawei.com> <1411979850.2625.7.camel@pengutronix.de>
-In-Reply-To: <1411979850.2625.7.camel@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [2a01:e35:2434:4600:1a4:faed:8b74:35f6]
+In-Reply-To: <20140926153751.GW5182@n2100.arm.linux.org.uk>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com> <20140926153751.GW5182@n2100.arm.linux.org.uk>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Mon, 29 Sep 2014 12:14:25 +0200
+Message-ID: <CAG8rG2wXOf3fWkTsevktOEuhHostLEL_zMZt4s3U3hshzgxv=w@mail.gmail.com>
+Subject: Re: [PATCHv7 07/26] driver core: amba: add device binding path 'driver_override'
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/29 16:37, Lucas Stach wrote:
-> Am Sonntag, den 28.09.2014, 14:11 +0800 schrieb Yijing Wang:
->> On 2014/9/28 10:32, Yijing Wang wrote:
->>> On 2014/9/26 17:05, Thierry Reding wrote:
->>>> On Fri, Sep 26, 2014 at 10:54:32AM +0200, Thierry Reding wrote:
->>>> [...]
->>>>> At least for Tegra it's trivial to just hook it up in tegra_pcie_scan_bus()
->>>>> directly (patch attached).
->>>>
->>>> Really attached this time.
->>>>
->>>> Thierry
->>>>
->>>
->>> It looks good to me, so I will update the arm pci hostbridge driver to assign
->>> pci root bus the msi chip instead of current pcibios_add_bus(). But for other
->>> platforms which only have a one msi chip, I will kept the arch_find_msi_chip()
->>> temporarily for more comments, especially from Bjorn.
+On Fri, Sep 26, 2014 at 5:37 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Sep 23, 2014 at 04:46:06PM +0200, Antonios Motakis wrote:
+>> As already demonstrated with PCI [1] and the platform bus [2], a
+>> driver_override property in sysfs can be used to bypass the id matching
+>> of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
+>> device requested by the user.
 >>
->> Oh, sorry, I found designware and rcar use pci_scan_root_bus(), so we can not simply
->> assign msi chip to root bus in all host drivers's scan functions.
-> 
-> Designware will switch away from pci_scan_root_bus() in the 3.18 cycle
-> and I would think it would be no problem to to the same with rcar.
+>> [1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
+>> [2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
+>>
+>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>
+> I have to ask why this is even needed in the first place.  To take the
+> example in [2], what's wrong with:
+>
+> echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
+> echo fff51000.ethernet > /sys/bus/platform/drivers/vfio-platform/bind
+>
+> and similar for AMBA.
+>
+> All we would need to do is to introduce a way of having a driver accept
+> explicit bind requests.
 
-Good.
+I don't have strong feelings on whether it should be done one way or
+the other, however the approach proposed here is identical to the one
+already accepted in mainline for PCI and platform devices. Should we
+do something different for AMBA?
 
-> 
-> Regards,
-> Lucas
-> 
+>
+> In any case:
+>
+>> +static ssize_t driver_override_store(struct device *_dev,
+>> +                                  struct device_attribute *attr,
+>> +                                  const char *buf, size_t count)
+>> +{
+>> +     struct amba_device *dev = to_amba_device(_dev);
+>> +     char *driver_override, *old = dev->driver_override, *cp;
+>> +
+>> +     if (count > PATH_MAX)
+>> +             return -EINVAL;
+>> +
+>> +     driver_override = kstrndup(buf, count, GFP_KERNEL);
+>> +     if (!driver_override)
+>> +             return -ENOMEM;
+>> +
+>> +     cp = strchr(driver_override, '\n');
+>> +     if (cp)
+>> +             *cp = '\0';
+>
+> I hope that is not replicated everywhere.  This allows up to a page to be
+> allocated, even when the first byte may be a newline.  This is wasteful.
+>
+> How about:
+>
+>         if (count > PATH_MAX)
+>                 return -EINVAL;
+>
+>         cp = strnchr(buf, count, '\n');
+>         if (cp)
+>                 count = cp - buf - 1;
+>
+>         if (count) {
+>                 driver_override = kstrndup(buf, count, GFP_KERNEL);
+>                 if (!driver_override)
+>                         return -ENOMEM;
+>         } else {
+>                 driver_override = NULL;
+>         }
+>
+>         kfree(dev->driver_override);
+>         dev->driver_override = driver_override;
 
+Ack.
+
+>
+> Also:
+>
+>> +static ssize_t driver_override_show(struct device *_dev,
+>> +                                 struct device_attribute *attr, char *buf)
+>> +{
+>> +     struct amba_device *dev = to_amba_device(_dev);
+>> +
+>> +     return sprintf(buf, "%s\n", dev->driver_override);
+>> +}
+>
+> Do we really want to do a NULL pointer dereference here?
+
+I'll add a check here.
+
+Thanks
 
 -- 
-Thanks!
-Yijing
-
+Antonios Motakis
+Virtual Open Systems
