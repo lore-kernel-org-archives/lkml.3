@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaI2Nh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:37:58 -0400
-Received: from rhcavuit02.kulnet.kuleuven.be ([134.58.240.130]:41536 "EHLO
-	cavuit02.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754862AbaI2Nh5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:37:57 -0400
-X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
-X-KULeuven-Scanned: Found to be clean
-X-KULeuven-ID: B68C31280CE.A3029
-X-KULeuven-Information: Katholieke Universiteit Leuven
-Message-ID: <542960AE.1040200@thomasmore.be>
-Date: Mon, 29 Sep 2014 15:37:50 +0200
-X-Kuleuven: This mail passed the K.U.Leuven mailcluster
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754905AbaI2NiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:38:10 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:52447 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754654AbaI2NiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:38:07 -0400
+Message-ID: <542960B2.1010200@kapsi.fi>
+Date: Mon, 29 Sep 2014 16:37:54 +0300
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
-Subject: Re: [resend rfc v3] pwm: add BCM2835 PWM driver
-References: <1398689686-30317-1-git-send-email-bart.tanghe@thomasmore.be> <20140825131908.GG4163@ulmo.nvidia.com> <5408395E.2030305@thomasmore.be> <54088008.9080200@wwwdotorg.org> <20140926071109.GA31106@ulmo> <54257C25.2000308@wwwdotorg.org> <20140929053311.GA12506@ulmo>
-In-Reply-To: <20140929053311.GA12506@ulmo>
-Content-Type: text/plain; charset=windows-1252
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Mikko Perttunen <cyndis@kapsi.fi>, edubezval@gmail.com,
+        swarren@wwwdotorg.org, linux-pm@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, juha-matti.tilli@iki.fi,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v6 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+References: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi> <1411724593-4037-5-git-send-email-cyndis@kapsi.fi> <20140926114533.GN31106@ulmo> <5425CC6F.2020309@kapsi.fi> <20140929082904.GF12506@ulmo>
+In-Reply-To: <20140929082904.GF12506@ulmo>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-29 07:33, Thierry Reding wrote:
-> On Fri, Sep 26, 2014 at 08:45:57AM -0600, Stephen Warren wrote:
->> On 09/26/2014 01:11 AM, Thierry Reding wrote:
->>> On Thu, Sep 04, 2014 at 09:06:48AM -0600, Stephen Warren wrote:
+On 09/29/2014 11:29 AM, Thierry Reding wrote:
+> On Fri, Sep 26, 2014 at 11:28:31PM +0300, Mikko Perttunen wrote:
+>> On 09/26/2014 02:45 PM, Thierry Reding wrote:
 > [...]
->>>> Oh dear. It sounds like we need at least some form of clock driver for the
->>>> platform then. I still don't think there's complete documentation for the
->>>> HW, even though a lot of register docs were published which presumably cover
->>>> the clock HW? Equally, given that the VC firmware assumes it owns most of
->>>> the HW, it seems best to manipulate the clocks through the firmware
->>>> interface rather than directly touching the HW. Unfortunately, I don't
->>>> believe there's any ABI guarantee on the firmware interface. Perhaps we can
->>>> get one?
+>>> I think a more idiomatic way to write this would be:
 >>>
->>> Urgs... this VC firmware seems to be more of a headache that I thought
->>> it was. How is this handled in other drivers? Surely PWM isn't the first
->>> one that needs clocks?
+>>> static int
+>>> calculate_tsensor_calibration(const struct tegra_tsensor *sensor,
+>>> 			      struct tsensor_shared_calibration shared,
+>>> 			      u32 *calib)
 >>
->> For the other clocks, I've set up dummy fixed-rate clocks in the DT and/or
->> "clock driver" code to satisfy references by phandle or clock name
->> respectively. Since the other drivers don't actually manipulate the clock
->> rates etc., this is enough for the drivers.
-> 
-> Given that this driver only queries the clock frequency adding a fixed-
-> rate clock to the device tree should work as well. Then the calls to
-> clk_prepare_enable() and clk_disable_unprepare() can still be added as
-> appropriate so that the driver doesn't need to change if a proper clock
-> driver ever gets added.
-> 
-> Or am I missing anything? Perhaps the issue is that the default clock
-> rate for the PWM clock isn't usable? That would still not prevent the
-> driver from being merged.
-> 
-> Thierry
-> 
-The pwm clock is default unusable. To let the pwm clock run, It's necessary to change some 
-clock registers. I've added the clk_prepare_enable and the clk_disable_unprepare functions. So the 
-driver is able to work with a proper clock driver in the future.
+>> If I do that, it will go over the 80 character limit by quite a few
+>> characters, which is why I didn't use that style. Personally I'm fine with
+>> either style.
+>
+> The above doesn't exceed the 80 character limit. Putting the return
+> value and the static keyword on a separate line is a pretty common way
+> to reduce line length.
 
-Bart
-  
+Good point, I didn't think of doing that. I usually never use the above 
+style, but clearly here it is the best choice.
+
+>
+>>>
+>>> While at it, perhaps make shared a const * instead of passing it in by
+>>> value?
+>>
+>> That is possible, but I'm not sure what the difference would be. Is there a
+>> style rule forbidding by-value compound types? (Also if I change the style,
+>> it would go over 80 characters by even more.)
+>
+> No it doesn't. The below fits within 80 characters per line just fine:
+>
+> static int
+> calculate_tsensor_calibration(const struct tegra_tsensor *sensor,
+> 			      const struct tsensor_shared_calibration *shared,
+> 			      u32 *calib)
+>
+> Thierry
+>
+
