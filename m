@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588AbaI2AYY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Sep 2014 20:24:24 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:35342 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaI2AYD (ORCPT
+	id S1754552AbaI2AYW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Sep 2014 20:24:22 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46068 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940AbaI2AYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Sep 2014 20:24:03 -0400
 From: Daniel Lezcano <daniel.lezcano@linaro.org>
 To: tglx@linutronix.de, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 11/13] clocksource: arm_arch_timer: Change clocksource name if CP15 unavailable
-Date: Mon, 29 Sep 2014 02:23:44 +0200
-Message-Id: <1411950226-21598-11-git-send-email-daniel.lezcano@linaro.org>
+Subject: [PATCH 10/13] clocksource: sirf: Disable counter before re-setting it
+Date: Mon, 29 Sep 2014 02:23:43 +0200
+Message-Id: <1411950226-21598-10-git-send-email-daniel.lezcano@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1411950226-21598-1-git-send-email-daniel.lezcano@linaro.org>
 References: <5428A559.5050908@linaro.org>
@@ -21,49 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathan Lynch <nathan_lynch@mentor.com>
+From: Hao Liu <Hao.Liu@csr.com>
 
-The arm and arm64 VDSOs need CP15 access to the architected counter.
-If this is unavailable (which is allowed by ARM v7), indicate this by
-changing the clocksource name to "arch_mem_counter" before registering
-the clocksource.
+According to HW spec, we have to disable the counter before setting
+it, if we don't this, in pressure test, sometimes the timer might
+not generate interrupt any more.
 
-Suggested by Stephen Boyd.
+And this patch also fixes a typo for register set by changing 0x7
+to 0x3. 0x7 is loop mode in HW, but here we are using oneshot 0x3.
 
-Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Hao Liu <Hao.Liu@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
 Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Acked-by: Will Deacon <will.deacon@arm.com>
 ---
- drivers/clocksource/arm_arch_timer.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/clocksource/timer-marco.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 7e267e3..e0e7729 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -429,11 +429,19 @@ static void __init arch_counter_register(unsigned type)
- 	u64 start_count;
+diff --git a/drivers/clocksource/timer-marco.c b/drivers/clocksource/timer-marco.c
+index 330e930..caf7a20 100644
+--- a/drivers/clocksource/timer-marco.c
++++ b/drivers/clocksource/timer-marco.c
+@@ -63,7 +63,7 @@ static inline void sirfsoc_timer_count_disable(int idx)
+ /* enable count and interrupt */
+ static inline void sirfsoc_timer_count_enable(int idx)
+ {
+-	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) | 0x7,
++	writel_relaxed(readl_relaxed(sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx) | 0x3,
+ 		sirfsoc_timer_base + SIRFSOC_TIMER_32COUNTER_0_CTRL + 4 * idx);
+ }
  
- 	/* Register the CP15 based counter if we have one */
--	if (type & ARCH_CP15_TIMER)
-+	if (type & ARCH_CP15_TIMER) {
- 		arch_timer_read_counter = arch_counter_get_cntvct;
--	else
-+	} else {
- 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
+@@ -103,6 +103,9 @@ static int sirfsoc_timer_set_next_event(unsigned long delta,
+ {
+ 	int cpu = smp_processor_id();
  
-+		/* If the clocksource name is "arch_sys_counter" the
-+		 * VDSO will attempt to read the CP15-based counter.
-+		 * Ensure this does not happen when CP15-based
-+		 * counter is not available.
-+		 */
-+		clocksource_counter.name = "arch_mem_counter";
-+	}
++	/* disable timer first, then modify the related registers */
++	sirfsoc_timer_count_disable(cpu);
 +
- 	start_count = arch_timer_read_counter();
- 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
- 	cyclecounter.mult = clocksource_counter.mult;
+ 	writel_relaxed(0, sirfsoc_timer_base + SIRFSOC_TIMER_COUNTER_0 +
+ 		4 * cpu);
+ 	writel_relaxed(delta, sirfsoc_timer_base + SIRFSOC_TIMER_MATCH_0 +
 -- 
 1.9.1
 
