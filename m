@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaI2L2D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:28:03 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33953 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaI2L2B (ORCPT
+	id S1753498AbaI2L3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:29:09 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39918 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaI2L3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:28:01 -0400
-Message-ID: <5429423E.8030908@linaro.org>
-Date: Mon, 29 Sep 2014 12:27:58 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 29 Sep 2014 07:29:07 -0400
+X-IronPort-AV: E=McAfee;i="5600,1067,7575"; a="70547171"
+X-IronPort-AV: E=Sophos;i="5.04,619,1406617200"; 
+   d="scan'208";a="759649658"
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+To: Joe Perches <joe@perches.com>
+CC: wil6210 <wil6210@qca.qualcomm.com>, <netdev@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ath10k@lists.infradead.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        <ath6kl@lists.infradead.org>
+Subject: Re: [PATCH] ath: change logging functions to return void
+References: <1411407334.2952.46.camel@joe-AO725>
+Date: Mon, 29 Sep 2014 14:28:42 +0300
+In-Reply-To: <1411407334.2952.46.camel@joe-AO725> (Joe Perches's message of
+	"Mon, 22 Sep 2014 10:35:34 -0700")
+Message-ID: <87h9zq1x91.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-CC: Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "bjorn.andersson@sonymobile.com" <bjorn.andersson@sonymobile.com>
-Subject: Re: [PATCH 3/4] ARM: DT: apq8064: Add USB OTG support
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org> <542933E1.8010809@smartplayin.com> <20140929105329.GA2432@leverpostej>
-In-Reply-To: <20140929105329.GA2432@leverpostej>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [10.80.80.8]
+X-ClientProxiedBy: NASANEXM01C.na.qualcomm.com (129.46.53.236) To
+ NASANEXM01G.na.qualcomm.com (10.46.200.111)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joe Perches <joe@perches.com> writes:
 
-
-On 29/09/14 11:53, Mark Rutland wrote:
->> >Its canonical value is "okay" (although in practice anything
->> >other than "disabled" should work).
-> That's not quite true, there are other "bad" values like "fail" and
-> "fail-sss" documented by ePAPR. In Linux, of_device_is_available errs on
-> the side of caution and checks for either "okay" or "ok", failing
-> otherwise
+> The return values are not used by callers of these functions
+> so change the functions to return void.
 >
-> Regardless, please use the canonical "okay".
-I will fix this in v2.
+> Other miscellanea:
+>
+> o add __printf verification to wil6210 logging functions
+>   No format/argument mismatches found
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
+Thanks, applied.
 
---srini
+-- 
+Kalle Valo
