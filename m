@@ -1,212 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaI2KVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:21:25 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43819 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaI2KVX (ORCPT
+	id S1753120AbaI2KXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:23:30 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52018 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaI2KX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:21:23 -0400
+	Mon, 29 Sep 2014 06:23:28 -0400
+Message-ID: <5429330A.7000103@linux.vnet.ibm.com>
+Date: Mon, 29 Sep 2014 15:53:06 +0530
+From: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:1a4:faed:8b74:35f6]
-In-Reply-To: <1411762736.7360.42.camel@ul30vt.home>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
- <1411483586-29304-11-git-send-email-a.motakis@virtualopensystems.com>
- <1411513277.24563.61.camel@ul30vt.home> <CAG8rG2wECWL2w9Xyvs7tZx8bqdMqk2SP8gfYpq=ZY0_Jk0Q+-g@mail.gmail.com>
- <1411762736.7360.42.camel@ul30vt.home>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Mon, 29 Sep 2014 12:21:02 +0200
-Message-ID: <CAG8rG2xNN9=47NEZ2vMVQy3eSvDN+_DMzqHiELQQfTyPYiYwVA@mail.gmail.com>
-Subject: Re: [PATCHv7 10/26] vfio: platform: probe to devices on the platform bus
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        KVM devel mailing list <kvm@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:ABI/API" <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Srivatsa S. Bhat" <srivatsa@MIT.EDU>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
+References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com> <541A4D4F.1090307@linux.vnet.ibm.com>
+In-Reply-To: <541A4D4F.1090307@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092910-0005-0000-0000-000000C38009
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 10:18 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> On Fri, 2014-09-26 at 17:30 +0200, Antonios Motakis wrote:
->> On Wed, Sep 24, 2014 at 1:01 AM, Alex Williamson
->> <alex.williamson@redhat.com> wrote:
->> >
->> > On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
->> > > Driver to bind to Linux platform devices, and callbacks to discover their
->> > > resources to be used by the main VFIO PLATFORM code.
->> > >
->> > > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->> > > ---
->> > >  drivers/vfio/platform/vfio_platform.c | 96 +++++++++++++++++++++++++++++++++++
->> > >  include/uapi/linux/vfio.h             |  1 +
->> > >  2 files changed, 97 insertions(+)
->> > >  create mode 100644 drivers/vfio/platform/vfio_platform.c
->> > >
->> > > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
->> > > new file mode 100644
->> > > index 0000000..024c026
->> > > --- /dev/null
->> > > +++ b/drivers/vfio/platform/vfio_platform.c
->> > > @@ -0,0 +1,96 @@
->> > > +/*
->> > > + * Copyright (C) 2013 - Virtual Open Systems
->> > > + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
->> > > + *
->> > > + * This program is free software; you can redistribute it and/or modify
->> > > + * it under the terms of the GNU General Public License, version 2, as
->> > > + * published by the Free Software Foundation.
->> > > + *
->> > > + * This program is distributed in the hope that it will be useful,
->> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> > > + * GNU General Public License for more details.
->> > > + */
->> > > +
->> > > +#include <linux/device.h>
->> > > +#include <linux/eventfd.h>
->> > > +#include <linux/interrupt.h>
->> > > +#include <linux/iommu.h>
->> > > +#include <linux/module.h>
->> > > +#include <linux/mutex.h>
->> > > +#include <linux/notifier.h>
->> > > +#include <linux/pm_runtime.h>
->> > > +#include <linux/slab.h>
->> > > +#include <linux/types.h>
->> > > +#include <linux/uaccess.h>
->> > > +#include <linux/vfio.h>
->> > > +#include <linux/io.h>
->> > > +#include <linux/platform_device.h>
->> > > +#include <linux/irq.h>
->> > > +
->> > > +#include "vfio_platform_private.h"
->> > > +
->> > > +#define DRIVER_VERSION  "0.7"
->> > > +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
->> > > +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
->> > > +
->> > > +/* probing devices from the linux platform bus */
->> > > +
->> > > +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
->> > > +                                             int i)
->> > > +{
->> > > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
->> > > +
->> > > +     return platform_get_resource(pdev, IORESOURCE_MEM, i);
->> >
->> > ARM may only support IORESOURCE_MEM, but I don't think platform devices
->> > are limited to MMIO, right?  vfio-platform shouldn't be either.
->> >
->>
->> Indeed. Should we however implement this lacking a target to verify it
->> is working correctly?
->>
->> Leaving it out would mean PIO resources for those devices would not be
->> exposed before an update to VFIO, but we wouldn't have to break
->> backward compatibility I think.
->>
->> Would you prefer to have it implemented regardless?
->
-> I think we need to have PIO figured out at least enough to have stubbed
-> read/write handlers that could be filled in by someone with test
-> hardware.  I'm not sure I fully understand how a user associates a
-> region index to a device tree description, whether it's ordering or
-> something more complicated, so I'm not sure if simply listing all the
-> PIO resources after the MMIO resources is sufficient and compatible.
-> Maybe you have some thoughts on that.  Thanks,
+Hi,
+Any updates on this patch series?
 
-You are right. I'm not aware if the Linux calls used are guaranteed to
-preserve ordering of PIO/MMIO resources, I will investigate a bit on
-that.
-
->
-> Alex
->
->> > > +}
->> > > +
->> > > +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
->> > > +{
->> > > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
->> > > +
->> > > +     return platform_get_irq(pdev, i);
->> > > +}
->> > > +
->> > > +
->> > > +static int vfio_platform_probe(struct platform_device *pdev)
->> > > +{
->> > > +     struct vfio_platform_device *vdev;
->> > > +     int ret;
->> > > +
->> > > +     vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
->> > > +     if (!vdev)
->> > > +             return -ENOMEM;
->> > > +
->> > > +     vdev->opaque = (void *) pdev;
->> > > +     vdev->name = pdev->name;
->> > > +     vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
->> > > +     vdev->get_resource = get_platform_resource;
->> > > +     vdev->get_irq = get_platform_irq;
->> > > +
->> > > +     ret = vfio_platform_probe_common(vdev, &pdev->dev);
->> > > +     if (ret)
->> > > +             kfree(vdev);
->> > > +
->> > > +     return ret;
->> > > +}
->> > > +
->> > > +static int vfio_platform_remove(struct platform_device *pdev)
->> > > +{
->> > > +     return vfio_platform_remove_common(&pdev->dev);
->> > > +}
->> > > +
->> > > +static struct platform_driver vfio_platform_driver = {
->> > > +     .probe          = vfio_platform_probe,
->> > > +     .remove         = vfio_platform_remove,
->> > > +     .driver = {
->> > > +             .name   = "vfio-platform",
->> > > +             .owner  = THIS_MODULE,
->> > > +     },
->> > > +};
->> > > +
->> > > +module_platform_driver(vfio_platform_driver);
->> > > +
->> > > +MODULE_VERSION(DRIVER_VERSION);
->> > > +MODULE_LICENSE("GPL v2");
->> > > +MODULE_AUTHOR(DRIVER_AUTHOR);
->> > > +MODULE_DESCRIPTION(DRIVER_DESC);
->> > > diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
->> > > index 30f630c..b022a25 100644
->> > > --- a/include/uapi/linux/vfio.h
->> > > +++ b/include/uapi/linux/vfio.h
->> > > @@ -158,6 +158,7 @@ struct vfio_device_info {
->> > >       __u32   flags;
->> > >  #define VFIO_DEVICE_FLAGS_RESET      (1 << 0)        /* Device supports reset */
->> > >  #define VFIO_DEVICE_FLAGS_PCI        (1 << 1)        /* vfio-pci device */
->> > > +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)  /* vfio-platform device */
->> > >       __u32   num_regions;    /* Max region index + 1 */
->> > >       __u32   num_irqs;       /* Max IRQ index + 1 */
->> > >  };
->> >
->> >
->> >
+On Thursday 18 September 2014 08:41 AM, Shreyas B Prabhu wrote:
+> Hi,
+> 
+> In this patch series we use winkle for offlined cores. I successfully
+> tested the working of this with subcore functionality.
+> 
+> Test scenario was as follows:
+> 1. Set SMT mode to 1, Set subores-per-core to 1
+> 2. Offline a core, in this case cpu 32 (sending it to winkle)
+> 3. Set subcores-per-core to 4
+> 4. Online the core
+> 5. Start a guest (Topology 1 core 2 threads) on a subcore, in this case
+> on cpu 36
+> 
+> This works without any glitch.
+> 
+> Thanks,
+> Shreyas
+> 
+> On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
+>> Fast sleep is an idle state, where the core and the L1 and L2
+>> caches are brought down to a threshold voltage. This also means that
+>> the communication between L2 and L3 caches have to be fenced. However
+>> the current P8 chips have a bug wherein this fencing between L2 and
+>> L3 caches get delayed by a cpu cycle. This can delay L3 response to
+>> the other cpus if they request for data during this time. Thus they
+>> would fetch the same data from the memory which could lead to data
+>> corruption if L3 cache is not flushed.
+>> Patch 4 adds support to work around this.
+>>
+>> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
+>> off. While it offers higher power savings, it is at the cost of losing
+>> hypervisor register state and higher latency.
+>> Patch 5-9 adds support for winkle and uses it for offline cpus.
+>>
+>> Patch 1 - Moves parameters required discover idle states to a location 
+>> common to both cpuidle driver and powernv core code
+>> Patch 2 - Populates idle state details from device tree
+>> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
 >>
 >>
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Michael Ellerman <mpe@ellerman.id.au>
+>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+>> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
+>> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+>> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: devicetree@vger.kernel.org
+>> Cc: linux-pm@vger.kernel.org
+>> Cc: linuxppc-dev@lists.ozlabs.org
 >>
->
->
->
+>> Preeti U Murthy (2):
+>>   cpuidle/powernv: Populate cpuidle state details by querying the
+>>     device-tree
+>>   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
+>>
+>> Shreyas B. Prabhu (6):
+>>   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
+>>     fast-sleep
+>>   powerpc/powernv: Add OPAL call to save and restore
+>>   powerpc: Adding macro for accessing Thread Switch Control Register
+>>   powerpc/powernv: Add winkle infrastructure
+>>   powerpc/powernv: Discover and enable winkle
+>>   powerpc/powernv: Enter deepest supported idle state in offline
+>>
+>> Srivatsa S. Bhat (1):
+>>   powerpc/powernv: Enable Offline CPUs to enter deep idle states
+>>
+>>  arch/powerpc/include/asm/machdep.h             |   4 +
+>>  arch/powerpc/include/asm/opal.h                |  10 ++
+>>  arch/powerpc/include/asm/paca.h                |   3 +
+>>  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
+>>  arch/powerpc/include/asm/processor.h           |   6 +-
+>>  arch/powerpc/include/asm/reg.h                 |   1 +
+>>  arch/powerpc/kernel/asm-offsets.c              |   1 +
+>>  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
+>>  arch/powerpc/kernel/idle.c                     |  30 ++++
+>>  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
+>>  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
+>>  arch/powerpc/platforms/powernv/powernv.h       |   8 +
+>>  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
+>>  arch/powerpc/platforms/powernv/smp.c           |  13 +-
+>>  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
+>>  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
+>>  16 files changed, 439 insertions(+), 33 deletions(-)
+>>
 
-
-
--- 
-Antonios Motakis
-Virtual Open Systems
