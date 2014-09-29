@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbaI2L3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:29:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39918 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaI2L3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:29:07 -0400
-X-IronPort-AV: E=McAfee;i="5600,1067,7575"; a="70547171"
-X-IronPort-AV: E=Sophos;i="5.04,619,1406617200"; 
-   d="scan'208";a="759649658"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Joe Perches <joe@perches.com>
-CC: wil6210 <wil6210@qca.qualcomm.com>, <netdev@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <ath10k@lists.infradead.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        <ath6kl@lists.infradead.org>
-Subject: Re: [PATCH] ath: change logging functions to return void
-References: <1411407334.2952.46.camel@joe-AO725>
-Date: Mon, 29 Sep 2014 14:28:42 +0300
-In-Reply-To: <1411407334.2952.46.camel@joe-AO725> (Joe Perches's message of
-	"Mon, 22 Sep 2014 10:35:34 -0700")
-Message-ID: <87h9zq1x91.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: NASANEXM01C.na.qualcomm.com (129.46.53.236) To
- NASANEXM01G.na.qualcomm.com (10.46.200.111)
+	id S1753732AbaI2Ldi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:33:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601AbaI2Ldg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:33:36 -0400
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
+        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
+        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
+        hannsj_uhl@de.ibm.com, torvalds@linux-foundation.org
+Subject: [RESEND PATCH 0/4] x86: /dev/mem fixes
+Date: Mon, 29 Sep 2014 13:32:58 +0200
+Message-Id: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+Hi all,
 
-> The return values are not used by callers of these functions
-> so change the functions to return void.
->
-> Other miscellanea:
->
-> o add __printf verification to wil6210 logging functions
->   No format/argument mismatches found
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+this is a combination of two patch sets I sent a while ago
+1) Prevent possible PTE corruption with /dev/mem mmap
+2) x86: allow read/write /dev/mem to access non-system RAM above high_memory
 
-Thanks, applied.
+The original thread with both patch sets can be found here
+   https://lkml.org/lkml/2014/8/14/229
+   lkml: <1408025927-16826-1-git-send-email-fhrbata@redhat.com>
+
+1) Prevent possible PTE corruption with /dev/mem mmap
+x86: add arch_pfn_possible helper
+x86: add phys addr validity check for /dev/mem mmap
+
+Many thanks goes to Dave Hansen, who helped with the "final" check. Other than
+that it did not get much attention, except H. Peter Anvin's complain that having
+two checks for mmap and read/write for /dev/mem access is ridiculous. I for sure
+do not object to this, but AFAICT it's not that simple to unify them and it's not
+"directly" related to the PTE corruption. Please note that there are other
+archs(ia64, arm) using these check. But I for sure can be missing something.
+
+What this patch set does is using the existing interface to implement x86 specific
+check in the least invasive way.
+
+Anyway I tried to remove the high_memory check with a follow-up patch set 2)
+
+2) x86: allow read/write /dev/mem to access non-system RAM above high_memory
+x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
+x86: remove high_memory check from valid_phys_addr_range
+
+This is an attempt to remove the high_memory limit for the read/write access to
+/dev/mem. IMHO there is no reason for this limit on x86. It is presented in
+the generic valid_phys_addr_range, which is used only by (read|write)_mem. IIUIC
+it's main purpose is for the generic xlate_dev_mem_ptr, which is using only the
+direct kernel mapping __va translation. Since the valid_phys_addr_range is
+called as the first check in (read|write)_mem, it basically does not allow to
+access anything above high_memory on x86.
+
+The first patch adds high_memory check to x86's (xlate|unxlate)_dev_mem_ptr, so
+the direct kernel mapping can be safely used for system RAM bellow high_memory.
+This is IMHO the only valid reason to use high_memory check in (read|write)_mem.
+
+The second patch removes the high_memory check from valid_phys_addr_range,
+allowing read/write to access non-system RAM above high_memory. So far this
+was possible only by using mmap.
+
+I hope I haven't overlooked something.
+
+Many thanks
+
+Frantisek Hrbata (4):
+  x86: add arch_pfn_possible helper
+  x86: add phys addr validity check for /dev/mem mmap
+  x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
+  x86: remove high_memory check from valid_phys_addr_range
+
+ arch/x86/include/asm/io.h |  4 ++++
+ arch/x86/mm/ioremap.c     |  9 ++++++---
+ arch/x86/mm/mmap.c        | 12 ++++++++++++
+ arch/x86/mm/physaddr.h    |  9 +++++++--
+ 4 files changed, 29 insertions(+), 5 deletions(-)
 
 -- 
-Kalle Valo
+1.9.3
+
