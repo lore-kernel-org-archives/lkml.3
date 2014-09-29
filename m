@@ -1,132 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaI2L7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:59:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59367 "EHLO mx2.suse.de"
+	id S1754097AbaI2MBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:01:14 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753831AbaI2L7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:59:17 -0400
-From: Hannes Reinecke <hare@suse.de>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        Robert Elliott <elliott@hp.com>, Hannes Reinecke <hare@suse.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 28/38] Externalize string buffer for printk
-Date: Mon, 29 Sep 2014 13:58:57 +0200
-Message-Id: <1411991947-130166-29-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1411991947-130166-1-git-send-email-hare@suse.de>
-References: <1411991947-130166-1-git-send-email-hare@suse.de>
+	id S1753792AbaI2MBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 08:01:10 -0400
+Message-ID: <54294A01.8070505@nod.at>
+Date: Mon, 29 Sep 2014 14:01:05 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Kiran Padwal <kiran.padwal21@gmail.com>,
+        Tanya Brokhman <tlinder@codeaurora.org>
+CC: dedeking1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: ubi: Extend UBI layer debug/messaging capabilities
+References: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org> <54293975.9040402@gmail.com>
+In-Reply-To: <54293975.9040402@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits off the actual logging from vprintk_emit()
-into printk_emit_string(), with vprintk_emit() just being a
-simple wrapper for formatting the message into a
-static buffer.
+Am 29.09.2014 12:50, schrieb Kiran Padwal:
+> Hi Tanya,
+> 
+> On Sunday 28 September 2014 12:06 PM, Tanya Brokhman wrote:
+>> If there is more then one UBI device mounted, there is no way to
+>> distinguish between messages from different UBI devices.
+>> Add device number to all ubi layer message types.
+>>
+>>
+>> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
+>>
+>> ---
+>>  drivers/mtd/ubi/attach.c  | 138 ++++++++++++++++++++----------------
+>>  drivers/mtd/ubi/build.c   | 130 ++++++++++++++++++++--------------
+>>  drivers/mtd/ubi/cdev.c    |  37 +++++-----
+>>  drivers/mtd/ubi/debug.c   |   9 +--
+>>  drivers/mtd/ubi/eba.c     |  54 +++++++-------
+>>  drivers/mtd/ubi/fastmap.c | 108 ++++++++++++++++------------
+>>  drivers/mtd/ubi/io.c      | 177 +++++++++++++++++++++++++++-------------------
+>>  drivers/mtd/ubi/kapi.c    |   6 +-
+>>  drivers/mtd/ubi/misc.c    |   6 +-
+>>  drivers/mtd/ubi/ubi.h     |  13 ++--
+>>  drivers/mtd/ubi/vmt.c     |  76 +++++++++++---------
+>>  drivers/mtd/ubi/vtbl.c    |  54 ++++++++------
+>>  drivers/mtd/ubi/wl.c      |  87 +++++++++++++++--------
+>>  13 files changed, 521 insertions(+), 374 deletions(-)
+> 
+> Compilation breaks while I try to compile with this patch.
+> May be you need to update remaining ubi layer messages also.
 
-With that the caller can pass in a local buffer for
-printk_emit_string() without increasing the overall stack size.
+Please always share the errors you face.
+Maybe you have a different config.
 
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
----
- include/linux/printk.h |  5 +++++
- kernel/printk/printk.c | 36 ++++++++++++++++++++++++------------
- 2 files changed, 29 insertions(+), 12 deletions(-)
-
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index d78125f..9639900 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -130,6 +130,11 @@ int vprintk_emit(int facility, int level,
- 		 const char *dict, size_t dictlen,
- 		 const char *fmt, va_list args);
- 
-+asmlinkage
-+int printk_emit_string(int facility, int level,
-+		       const char *dict, size_t dictlen,
-+		       char *textbuf, size_t text_len);
-+
- asmlinkage __printf(1, 0)
- int vprintk(const char *fmt, va_list args);
- 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index d13675e..303a1fe 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1618,22 +1618,11 @@ asmlinkage int vprintk_emit(int facility, int level,
- 			    const char *dict, size_t dictlen,
- 			    const char *fmt, va_list args)
- {
--	static int recursion_bug;
- 	static char textbuf[LOG_LINE_MAX];
- 	char *text = textbuf;
- 	size_t text_len = 0;
--	enum log_flags lflags = 0;
--	unsigned long flags;
--	int this_cpu;
--	int printed_len = 0;
--	bool in_sched = false;
--	/* cpu currently holding logbuf_lock in this function */
--	static volatile unsigned int logbuf_cpu = UINT_MAX;
- 
- 	if (level == SCHED_MESSAGE_LOGLEVEL) {
--		level = -1;
--		in_sched = true;
--
- 		/*
- 		 * The printf needs to come first; we need the syslog
- 		 * prefix which might be passed-in as a parameter.
-@@ -1644,6 +1633,24 @@ asmlinkage int vprintk_emit(int facility, int level,
- 
- 	text_len += vscnprintf(text + text_len,
- 			       sizeof(textbuf) - text_len, fmt, args);
-+	return printk_emit_string(facility, level, dict, dictlen,
-+				  textbuf, text_len);
-+}
-+EXPORT_SYMBOL(vprintk_emit);
-+
-+asmlinkage int printk_emit_string(int facility, int level,
-+				  const char *dict, size_t dictlen,
-+				  char *textbuf, size_t text_len)
-+{
-+	static int recursion_bug;
-+	char *text = textbuf;
-+	enum log_flags lflags = 0;
-+	unsigned long flags;
-+	int this_cpu;
-+	int printed_len = 0;
-+	bool in_sched = false;
-+	/* cpu currently holding logbuf_lock in this function */
-+	static volatile unsigned int logbuf_cpu = UINT_MAX;
- 
- 	boot_delay_msec(level);
- 	printk_delay();
-@@ -1652,6 +1659,11 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	local_irq_save(flags);
- 	this_cpu = smp_processor_id();
- 
-+	if (level == SCHED_MESSAGE_LOGLEVEL) {
-+		level = -1;
-+		in_sched = true;
-+	}
-+
- 	/*
- 	 * Ouch, printk recursed into itself!
- 	 */
-@@ -1789,7 +1801,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 
- 	return printed_len;
- }
--EXPORT_SYMBOL(vprintk_emit);
-+EXPORT_SYMBOL(printk_emit_string);
- 
- asmlinkage int vprintk(const char *fmt, va_list args)
- {
--- 
-1.8.5.2
-
+Thanks,
+//richard
