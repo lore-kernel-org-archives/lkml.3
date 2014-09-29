@@ -1,112 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaI2TI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:08:59 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38862 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753249AbaI2TI5 convert rfc822-to-8bit (ORCPT
+	id S1754128AbaI2TQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:16:29 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:56548 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaI2TQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:08:57 -0400
+	Mon, 29 Sep 2014 15:16:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
- <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 29 Sep 2014 12:08:35 -0700
-Message-ID: <CALCETrXnzh=E=m+Q3zeT66xKkPbn6K8xfDti54PXVtA+0iqoGQ@mail.gmail.com>
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Anish Bhatt <anish@chelsio.com>,
+In-Reply-To: <20140926094752.GB4476@leverpostej>
+References: <1410473895-6756-1-git-send-email-sonnyrao@chromium.org> <20140926094752.GB4476@leverpostej>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Mon, 29 Sep 2014 12:16:06 -0700
+X-Google-Sender-Auth: bNZ7n7_4VwvAbfjlmyk-sitYC0w
+Message-ID: <CAPz6YkVeE825gaZPyhDTX91v+vsbFSp+Wz4xT1WAKdtivpDnrQ@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Fix code to use physical
+ timers when requested
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, sebastian@fds-team.de
+        "dianders@chromium.org" <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:59 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 29 Sep 2014, Andy Lutomirski wrote:
->> On 09/25/2014 12:42 PM, Anish Bhatt wrote:
->> > The MSR_SYSCALL_MASK, which is responsible for clearing specific EFLAGS on
->> >  syscall entry, should also clear the nested task (NT) flag to be safe from
->> >  userspace injection. Without this fix the application segmentation
->> >  faults on syscall return because of the changed meaning of the IRET
->> >  instruction.
->> >
->> > Further details can be seen here https://bugs.winehq.org/show_bug.cgi?id=33275
->> >
->> > Signed-off-by: Anish Bhatt <anish@chelsio.com>
->> > Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
->> > ---
->> >  arch/x86/kernel/cpu/common.c | 2 +-
->> >  1 file changed, 1 insertion(+), 1 deletion(-)
->> >
->> > diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
->> > index e4ab2b4..3126558 100644
->> > --- a/arch/x86/kernel/cpu/common.c
->> > +++ b/arch/x86/kernel/cpu/common.c
->> > @@ -1184,7 +1184,7 @@ void syscall_init(void)
->> >     /* Flags to clear on syscall */
->> >     wrmsrl(MSR_SYSCALL_MASK,
->> >            X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
->> > -          X86_EFLAGS_IOPL|X86_EFLAGS_AC);
->> > +          X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
->>
->> Something's weird here, and at the very least the changelog is
->> insufficiently informative.
->>
->> The Intel SDM says:
->>
->> If the NT flag is set and the processor is in IA-32e mode, the IRET
->> instruction causes a general protection exception.
->>
->> Presumably interrupt delivery clears NT.  I haven't spotted where that's
->> documented yet.
+On Fri, Sep 26, 2014 at 2:47 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Hi Sonny,
 >
-> Nope, that's unrelated.
->
-> See Volume 3, chapter 7.4 "Task linking":
->
-> "The previous task link field of the TSS (sometimes called the
->  “backlink”) and the NT flag in the EFLAGS register are used to return
->  execution to the previous task. EFLAGS.NT = 1 indicates that the
->  currently executing task is nested within the execution of another
->  task.
->
->  When a CALL instruction, an interrupt, or an exception causes a task
->  switch: the processor copies the segment selector for the current TSS
->  to the previous task link field of the TSS for the new task; it then
->  sets EFLAGS.NT = 1.  If software uses an IRET instruction to suspend
->  the new task, the processor checks for EFLAGS.NT = 1; it then uses the
->  value in the previous task link field to return to the previous
->  task. See Figures 7-8."
->
-> Now, Linux does not care about that. Thread management is done purely
-> in software. So nothing uses and nothing can use the TSS backlink and
-> NT mode.
->
-> In IA-32e mode a IRET seing EFLAGS.NT=1 will cause #GP. In non IA-32e
-> mode it would simply explode by returning to TSS.back_link, which is
-> reliably NULL.
->
-> So there is nothing to see here other than the stupid user space task
-> fiddling with the NT flag being killed rightfully.
+> Apologies for the delay in replying, I'd hoped to cover this at Connect,
+> but we didn't seem to get the time, and since I've been back in the UK
+> it slipped my mind.
 
-Except that we're exposing ourselves to security issues.  I don't see
-any off the top of my head, but what if an unprivileged or
-semi-privileged process sets NT, does syscall or sysenter, and causes
-the kernel to jump to EFI code?  Or, hell, what if there's something
-in the kernel that fakes interrupt delivery and blows up on return?
-Or what if we're running in kernel mode with NT set and we take an NMI
-or even a nested NMI?  What happens if we have NT set in kernel mode
-and enter a VM?
+Hi Mark, no problem, thanks for following up.
 
-I think it's absurd that you can set NT at all from CPL3 in long mode,
-but we should at least try to be graceful about it.
+>
+> On Thu, Sep 11, 2014 at 11:18:15PM +0100, Sonny Rao wrote:
+>> This is a bug fix for using physical arch timers when
+>> the arch_timer_use_virtual boolean is false.  It restores the
+>> arch_counter_get_cntpct() function after removal in
+>>
+>> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>
+> Given we cannot get firmware involved, I am happy to use the physical
+> cp15 counters when we can't guarantee the value of CNTVOFF.
+>
+>> and completes the implementation of memory mapped access for physical
+>> timers, so if a system is trying to use physical timers, it will
+>> function properly.
+>
+> I don't see why we need to change the MMIO timers. Those are global
+> rather than per-cpu, aren't turned off when CPUs go down (or they'd be
+> useless), and we only use a single frame, so I don't see why the value
+> of the virtual offset should matter.
+>
+> Additionally, the CP15 and MMIO timers could be configured separately
+> w.r.t. timer and counter access, and for the MMIO timers we can
+> determine which we can access by reading a register.
+>
+> I do not think the selection of physical/virtual timers should be shared
+> by the CP15 and MMIO timers.
 
-I don't know of any actual bugs here, but fixing this (at least for
-syscall) will have absolutely no performance impact.
+Ok, I see what you're saying.  I'll remove the physical memory mapped
+access code and re-post.
 
---Andy
+> Mark.
+>
+>>
+>> We need this on certain ARMv7 systems which are architected like this:
+>>
+>> * The firmware doesn't know and doesn't care about hypervisor mode and
+>>   we don't want to add the complexity of hypervisor there.
+>>
+>> * The firmware isn't involved in SMP bringup or resume.
+>>
+>> * The ARCH timer come up with an uninitialized offset between the
+>>   virtual and physical counters.  Each core gets a different random
+>>   offset.
+>>
+>> * The device boots in "Secure SVC" mode.
+>>
+>> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>>   CNTHCTL.PL1PCTEN (both default to 1 at reset)
+>>
+>> One example of such as system is RK3288 where it is much simpler to
+>> use the physical counter since there's nobody managing the offset and
+>> each time a core goes down and comes back up it will get reinitialized
+>> to some other random value.
+>>
+>> Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>> Acked-by: Olof Johansson <olof@lixom.net>
+>> ---
+>> v2: Add fixes tag to commit message, cc stable, copy Doug's
+>>     description of the systems which need this in commit message.
+>> ---
+>>  arch/arm/include/asm/arch_timer.h    |  9 +++++++++
+>>  arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
+>>  drivers/clocksource/arm_arch_timer.c | 30 ++++++++++++++++++++++++++----
+>>  3 files changed, 45 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+>> index 0704e0c..e72aa4d 100644
+>> --- a/arch/arm/include/asm/arch_timer.h
+>> +++ b/arch/arm/include/asm/arch_timer.h
+>> @@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+>>       return val;
+>>  }
+>>
+>> +static inline u64 arch_counter_get_cntpct(void)
+>> +{
+>> +     u64 cval;
+>> +
+>> +     isb();
+>> +     asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
+>> +     return cval;
+>> +}
+>> +
+>>  static inline u64 arch_counter_get_cntvct(void)
+>>  {
+>>       u64 cval;
+>> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+>> index 9400596..58657c4 100644
+>> --- a/arch/arm64/include/asm/arch_timer.h
+>> +++ b/arch/arm64/include/asm/arch_timer.h
+>> @@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+>>  #endif
+>>  }
+>>
+>> +static inline u64 arch_counter_get_cntpct(void)
+>> +{
+>> +     u64 cval;
+>> +
+>> +     isb();
+>> +     asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
+>> +
+>> +     return cval;
+>> +}
+>> +
+>>  static inline u64 arch_counter_get_cntvct(void)
+>>  {
+>>       u64 cval;
+>> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+>> index 5163ec1..ad723cb 100644
+>> --- a/drivers/clocksource/arm_arch_timer.c
+>> +++ b/drivers/clocksource/arm_arch_timer.c
+>> @@ -30,6 +30,8 @@
+>>  #define CNTTIDR              0x08
+>>  #define CNTTIDR_VIRT(n)      (BIT(1) << ((n) * 4))
+>>
+>> +#define CNTPCT_LO    0x00
+>> +#define CNTPCT_HI    0x04
+>>  #define CNTVCT_LO    0x08
+>>  #define CNTVCT_HI    0x0c
+>>  #define CNTFRQ               0x10
+>> @@ -386,6 +388,19 @@ static u64 arch_counter_get_cntvct_mem(void)
+>>       return ((u64) vct_hi << 32) | vct_lo;
+>>  }
+>>
+>> +static u64 arch_counter_get_cntpct_mem(void)
+>> +{
+>> +     u32 pct_lo, pct_hi, tmp_hi;
+>> +
+>> +     do {
+>> +             pct_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
+>> +             pct_lo = readl_relaxed(arch_counter_base + CNTPCT_LO);
+>> +             tmp_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
+>> +     } while (pct_hi != tmp_hi);
+>> +
+>> +     return ((u64) pct_hi << 32) | pct_lo;
+>> +}
+>> +
+>>  /*
+>>   * Default to cp15 based access because arm64 uses this function for
+>>   * sched_clock() before DT is probed and the cp15 method is guaranteed
+>> @@ -429,10 +444,17 @@ static void __init arch_counter_register(unsigned type)
+>>       u64 start_count;
+>>
+>>       /* Register the CP15 based counter if we have one */
+>> -     if (type & ARCH_CP15_TIMER)
+>> -             arch_timer_read_counter = arch_counter_get_cntvct;
+>> -     else
+>> -             arch_timer_read_counter = arch_counter_get_cntvct_mem;
+>> +     if (type & ARCH_CP15_TIMER) {
+>> +             if (arch_timer_use_virtual)
+>> +                     arch_timer_read_counter = arch_counter_get_cntvct;
+>> +             else
+>> +                     arch_timer_read_counter = arch_counter_get_cntpct;
+>> +     } else {
+>> +             if (arch_timer_use_virtual)
+>> +                     arch_timer_read_counter = arch_counter_get_cntvct_mem;
+>> +             else
+>> +                     arch_timer_read_counter = arch_counter_get_cntpct_mem;
+>> +     }
+>>
+>>       start_count = arch_timer_read_counter();
+>>       clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+>> --
+>> 1.8.3.2
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
