@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaI2Kw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:52:56 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35210 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaI2Kwn (ORCPT
+	id S1753519AbaI2Kxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:53:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64382 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751694AbaI2Kxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:52:43 -0400
-Message-ID: <54293975.9040402@gmail.com>
-Date: Mon, 29 Sep 2014 16:20:29 +0530
-From: Kiran Padwal <kiran.padwal21@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 29 Sep 2014 06:53:33 -0400
+Date: Mon, 29 Sep 2014 11:53:29 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "bjorn.andersson@sonymobile.com" <bjorn.andersson@sonymobile.com>
+Subject: Re: [PATCH 3/4] ARM: DT: apq8064: Add USB OTG support
+Message-ID: <20140929105329.GA2432@leverpostej>
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <542933E1.8010809@smartplayin.com>
 MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>
-CC: dedeking1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: ubi: Extend UBI layer debug/messaging capabilities
-References: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org>
-In-Reply-To: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542933E1.8010809@smartplayin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tanya,
-
-On Sunday 28 September 2014 12:06 PM, Tanya Brokhman wrote:
-> If there is more then one UBI device mounted, there is no way to
-> distinguish between messages from different UBI devices.
-> Add device number to all ubi layer message types.
+On Mon, Sep 29, 2014 at 11:26:41AM +0100, Kiran Padwal wrote:
+> Hi Srinivas,
 > 
+> Some review are comments inline.
 > 
-> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
+> On Monday 29 September 2014 02:45 PM, Srinivas Kandagatla wrote:
+> > This patch adds USB OTG support on USB1 of APQ8064 SOC.
+> > Tested on IFC6410 with ethernet gadget.
+> > 
+> > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts | 14 +++++++++
+> >  arch/arm/boot/dts/qcom-apq8064.dtsi        | 46 ++++++++++++++++++++++++++++++
+> >  2 files changed, 60 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> > index d6036b8..f41fb39 100644
+> > --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> > +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> > @@ -40,6 +40,11 @@
+> >  			};
+> >  		};
+> >  
+> > +		/* OTG */
+> > +		usb1_phy:phy@12500000 {
+> > +			status = "ok";
 > 
-> ---
->  drivers/mtd/ubi/attach.c  | 138 ++++++++++++++++++++----------------
->  drivers/mtd/ubi/build.c   | 130 ++++++++++++++++++++--------------
->  drivers/mtd/ubi/cdev.c    |  37 +++++-----
->  drivers/mtd/ubi/debug.c   |   9 +--
->  drivers/mtd/ubi/eba.c     |  54 +++++++-------
->  drivers/mtd/ubi/fastmap.c | 108 ++++++++++++++++------------
->  drivers/mtd/ubi/io.c      | 177 +++++++++++++++++++++++++++-------------------
->  drivers/mtd/ubi/kapi.c    |   6 +-
->  drivers/mtd/ubi/misc.c    |   6 +-
->  drivers/mtd/ubi/ubi.h     |  13 ++--
->  drivers/mtd/ubi/vmt.c     |  76 +++++++++++---------
->  drivers/mtd/ubi/vtbl.c    |  54 ++++++++------
->  drivers/mtd/ubi/wl.c      |  87 +++++++++++++++--------
->  13 files changed, 521 insertions(+), 374 deletions(-)
+> Its canonical value is "okay" (although in practice anything
+> other than "disabled" should work).
 
-Compilation breaks while I try to compile with this patch.
-May be you need to update remaining ubi layer messages also.
+That's not quite true, there are other "bad" values like "fail" and
+"fail-sss" documented by ePAPR. In Linux, of_device_is_available errs on
+the side of caution and checks for either "okay" or "ok", failing
+otherwise
 
-Thanks,
---Kiran
+Regardless, please use the canonical "okay".
 
+Mark.
