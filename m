@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaI2SNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:13:41 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26039 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753991AbaI2SNj (ORCPT
+	id S1755130AbaI2SOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:14:01 -0400
+Received: from pegasus3.altlinux.org ([194.107.17.103]:52965 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053AbaI2SNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:13:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+dS8+4Q3O7ItvbFRKGREH+
-Date: Mon, 29 Sep 2014 11:12:59 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>, Felipe Balbi <balbi@ti.com>
-Subject: Re: linux-next: manual merge of the tip tree with the arm-soc tree
-Message-ID: <20140929181258.GF3122@atomide.com>
-References: <20140926162512.07ef4957@canb.auug.org.au>
-MIME-Version: 1.0
+	Mon, 29 Sep 2014 14:13:16 -0400
+Date: Mon, 29 Sep 2014 22:05:06 +0400
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RESEND v3 PATCH 2/3] vfs: cleanup show_mountinfo
+Message-ID: <20140929180506.GB15829@altlinux.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140926162512.07ef4957@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [140925 23:26]:
-> Hi all,
-> 
-> Today's linux-next merge of the tip tree got a conflict in
-> arch/arm/mach-omap2/irq.c between commit 8598066cddd1 ("arm: omap: irq:
-> move irq.c to drivers/irqchip/") from the arm-soc tree and commit
-> f978999f6096 ("Use the new handle_domain_irq method to handle
-> interrupts") from the tip tree.
-> 
-> I fixed it up (I applied the latter patch to the moved file - see
-> below) and can carry the fix as necessary (no action is required).
-> 
-> diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-intc.c
-> index f3814e79192d..28718d3e8281 100644
-> --- a/drivers/irqchip/irq-omap-intc.c
-> +++ b/drivers/irqchip/irq-omap-intc.c
-> @@ -334,8 +334,7 @@ out:
->  		irqnr &= ACTIVEIRQ_MASK;
->  
->  		if (irqnr) {
-> -			irqnr = irq_find_mapping(domain, irqnr);
-> -			handle_IRQ(irqnr, regs);
-> +			handle_domain_irq(domain, irqnr, regs);
->  			handled_irq = 1;
->  		}
->  	} while (irqnr);
-> 
+Date: Wed, 17 Oct 2012 20:29:36 +0400
 
-Thanks I've verified things are booting fine with linux next.
+Starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
+changes the value of its "struct path *root" argument.
+Starting with commit v3.2-rc7-104-g8c9379e, the "struct path *root"
+argument of seq_path_root() is const.
+As result, the temporary variable "root" in show_mountinfo() that
+holds a copy of struct path root is no longer needed.
 
-Regards,
+Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+---
+ fs/proc_namespace.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Tony
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 73ca174..789e8d1 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -125,7 +125,6 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	struct mount *r = real_mount(mnt);
+ 	struct super_block *sb = mnt->mnt_sb;
+ 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
+-	struct path root = p->root;
+ 	int err = 0;
+ 
+ 	seq_printf(m, "%i %i %u:%u ", r->mnt_id, r->mnt_parent->mnt_id,
+@@ -139,7 +138,7 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	seq_putc(m, ' ');
+ 
+ 	/* mountpoints outside of chroot jail will give SEQ_SKIP on this */
+-	err = seq_path_root(m, &mnt_path, &root, " \t\n\\");
++	err = seq_path_root(m, &mnt_path, &p->root, " \t\n\\");
+ 	if (err)
+ 		goto out;
+ 
+-- 
+ldv
+
