@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaI2QMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:12:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53055 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869AbaI2QMa (ORCPT
+	id S1754780AbaI2QOk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:14:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53413 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605AbaI2QOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:12:30 -0400
-Date: Mon, 29 Sep 2014 17:12:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Message-ID: <20140929161217.GT16977@sirena.org.uk>
-References: <2771900.ce8bYznKIN@wuerfel>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6axCafNXXMM8qu6Q"
-Content-Disposition: inline
-In-Reply-To: <2771900.ce8bYznKIN@wuerfel>
-X-Cookie: Your own mileage may vary.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: davinci: vcif must be a module if SND_DAVINCI_SOC
- is
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 29 Sep 2014 12:14:39 -0400
+Message-ID: <1412007271.3508.46.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 1/4] evm: skip replacing EVM signature with HMAC on
+ read-only filesystem
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-ima-devel@lists.sourceforge.net, dmitry.kasatkin@gmail.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Date: Mon, 29 Sep 2014 12:14:31 -0400
+In-Reply-To: <aa21c2c52e3cd17825be21aa29ca88019296a712.1411560295.git.d.kasatkin@samsung.com>
+References: <cover.1411560295.git.d.kasatkin@samsung.com>
+	 <aa21c2c52e3cd17825be21aa29ca88019296a712.1411560295.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092916-1542-0000-0000-00000530B33A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-09-24 at 15:07 +0300, Dmitry Kasatkin wrote: 
+> If filesystem is mounted read-only or file is immutable, updating
+> xattr will fail. This is a usual case during early boot until
+> filesystem is remount read-write. This patch verifies conditions
+> to skip unnecessary attempt to calculate HMAC and set xattr.
+> 
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> ---
+>  security/integrity/evm/evm_main.c | 11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+> index 9685af3..a30be77 100644
+> --- a/security/integrity/evm/evm_main.c
+> +++ b/security/integrity/evm/evm_main.c
+> @@ -162,9 +162,14 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+>  					(const char *)xattr_data, xattr_len,
+>  					calc.digest, sizeof(calc.digest));
+>  		if (!rc) {
+> -			/* we probably want to replace rsa with hmac here */
+> -			evm_update_evmxattr(dentry, xattr_name, xattr_value,
+> -				   xattr_value_len);
+> +			/* Replace RSA with HMAC if not mounted readonly and
+> +			 * not immutable
+> +			 */
+> +			if (!IS_RDONLY(dentry->d_inode) &&
+> +					!IS_IMMUTABLE(dentry->d_inode))
 
---6axCafNXXMM8qu6Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Previously patches conformed to Lindent, unless there was a valid reason
+not to use it, like conflicting with checkpatch.pl.  Joe Perches
+submitted a patch to remove it from the Documentation/CodingStyle a
+while ago -  https://lkml.org/lkml/2013/2/11/390 and recommends using
+"checkpatch.pl --fix" instead.
 
-On Mon, Sep 29, 2014 at 05:32:17PM +0200, Arnd Bergmann wrote:
-> It is possible to configure a kernel with SND_DAVINCI_SOC=m and
-> SND_DM365_VOICE_CODEC=y, which results in a link error:
+Andrew, Greg, what is the current best practice?
 
-Applied, thanks.
+thanks,
 
---6axCafNXXMM8qu6Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Mimi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> +				evm_update_evmxattr(dentry, xattr_name,
+> +						    xattr_value,
+> +						    xattr_value_len);
+>  		}
+>  		break;
+>  	default:
 
-iQEcBAEBAgAGBQJUKYTgAAoJECTWi3JdVIfQhSoH/jeEOwQkwtrvFGYV/24eEZF1
-ujE9yhVRtVnvQmhcYqFdTce8/cberOPg3w41nuqzTadyssOMJEXw3vuYVCoCwdE5
-ITaztKCarG+Q4TnRuzWe/uTuqUBYCVbPaBHK/zfTHR1yj9yEfVUqDl1Oe0ZyyRHj
-cFYSpV/LvwvXStJt0GKlGofcrlCNGXJVm3/Toaa6jiMcBgaKiBtHTs2gzxKAuK7g
-71AXh6/A6EBRdyONLa5djNV5DZd5PmEj5h7V+BquWA0jaf+65REwMnLObPllY4Yk
-HhynbNXCEFo/mDLBSvg8hndidPxZR1iGJqXFEgHh87PBsnaAqK5OrxkyNVNk8H8=
-=2imw
------END PGP SIGNATURE-----
 
---6axCafNXXMM8qu6Q--
