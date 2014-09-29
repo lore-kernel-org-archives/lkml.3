@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaI2Qso (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:48:44 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:64136 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568AbaI2Qsl (ORCPT
+	id S1754725AbaI2Qto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:49:44 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:13915 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753821AbaI2Qtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:48:41 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Scott Wood <scottwood@freescale.com>, Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Jojy G Varghese <jojyv@juniper.net>,
-        Guenter Roeck <groeck@juniper.net>, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] powerpc/fsl: Add support for pci(e) machine check exception on E500MC / E5500
-Date: Mon, 29 Sep 2014 09:48:32 -0700
-Message-Id: <1412009312-7400-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Mon, 29 Sep 2014 12:49:43 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtsSAFmMKVRbtA8r/2dsb2JhbABggw6BKrYYBQFyAZpQBAKBExcBe4RgI4EaN4hCAa9xj2WGEok7AQFPHYQ1BZE9i2uMQIkdg2U7L4EPgTsBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: [PATCH 1/1] fat: remove redundant sys_tz declaration
+Date: Mon, 29 Sep 2014 18:49:39 +0200
+Message-Id: <1412009379-9189-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jojy G Varghese <jojyv@juniper.net>
+sys_tz is already declared extern struct in include/linux/time.h
 
-For E500MC and E5500, a machine check exception in pci(e) memory space
-crashes the kernel.
-
-Testing shows that the MCAR(U) register is zero on a MC exception for the
-E5500 core. At the same time, DEAR register has been found to have the
-address of the faulty load address during an MC exception for this core.
-
-This fix changes the current behavior to fixup the result register
-and instruction pointers in the case of a load operation on a faulty
-PCI address.
-
-The changes are:
-- Added the hook to pci machine check handing to the e500mc machine check
-  exception handler.
-- For the E5500 core, load faulting address from SPRN_DEAR register.
-  As mentioned above, this is necessary because the E5500 core does not
-  report the fault address in the MCAR register.
-
-Cc: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
-[Guenter Roeck: updated description]
-Signed-off-by: Guenter Roeck <groeck@juniper.net>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/powerpc/kernel/traps.c   | 3 ++-
- arch/powerpc/sysdev/fsl_pci.c | 5 +++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ fs/fat/misc.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-index 0dc43f9..ecb709b 100644
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
- 	int recoverable = 1;
+diff --git a/fs/fat/misc.c b/fs/fat/misc.c
+index 628e22a..d8da2d2 100644
+--- a/fs/fat/misc.c
++++ b/fs/fat/misc.c
+@@ -164,8 +164,6 @@ int fat_chain_add(struct inode *inode, int new_dclus, int nr_cluster)
+ 	return 0;
+ }
  
- 	if (reason & MCSR_LD) {
--		recoverable = fsl_rio_mcheck_exception(regs);
-+		recoverable = fsl_rio_mcheck_exception(regs) ||
-+			fsl_pci_mcheck_exception(regs);
- 		if (recoverable == 1)
- 			goto silent_out;
- 	}
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index c507767..bdb956b 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs *regs)
- #endif
- 	addr += mfspr(SPRN_MCAR);
- 
-+#ifdef CONFIG_E5500_CPU
-+	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
-+		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
-+#endif
-+
- 	if (is_in_pci_mem_space(addr)) {
- 		if (user_mode(regs)) {
- 			pagefault_disable();
+-extern struct timezone sys_tz;
+-
+ /*
+  * The epoch of FAT timestamp is 1980.
+  *     :  bits :     value
 -- 
-1.9.1
+1.9.3
 
