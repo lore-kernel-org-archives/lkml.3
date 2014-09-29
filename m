@@ -1,123 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290AbaI2Sax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:30:53 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:60347 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891AbaI2Saw (ORCPT
+	id S1754588AbaI2Sb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:31:29 -0400
+Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:60706 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754343AbaI2Sb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:30:52 -0400
-Message-ID: <5429A556.50507@fds-team.de>
-Date: Mon, 29 Sep 2014 20:30:46 +0200
-From: Sebastian Lackner <sebastian@fds-team.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Anish Bhatt <anish@chelsio.com>,
+	Mon, 29 Sep 2014 14:31:28 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:69:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3873:4321:4605:5007:7652:7903:9592:10004:10400:10848:11026:11232:11473:11658:11914:12043:12050:12296:12517:12519:12555:12740:13019:13095:13160:13161:13229:14093:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: time93_46b149a78c91d
+X-Filterd-Recvd-Size: 3321
+Message-ID: <1412015484.4302.51.camel@joe-AO725>
+Subject: Re: [PATCH] Staging: gdm72xx: fix coding style
+From: Joe Perches <joe@perches.com>
+To: Thibaut Robert <thibaut.robert@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michalis Pappas <mpappas@fastmail.fm>,
+        Davide Gianforte <davide@gengisdave.org>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-CC: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com> <54299979.6080705@amacapital.net>
-In-Reply-To: <54299979.6080705@amacapital.net>
-Content-Type: text/plain; charset=windows-1252
+Date: Mon, 29 Sep 2014 11:31:24 -0700
+In-Reply-To: <1412014535-24239-1-git-send-email-thibaut.robert@gmail.com>
+References: <1412014535-24239-1-git-send-email-thibaut.robert@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.09.2014 19:40, Andy Lutomirski wrote:
-> On 09/25/2014 12:42 PM, Anish Bhatt wrote:
->> The MSR_SYSCALL_MASK, which is responsible for clearing specific EFLAGS on
->>  syscall entry, should also clear the nested task (NT) flag to be safe from
->>  userspace injection. Without this fix the application segmentation
->>  faults on syscall return because of the changed meaning of the IRET
->>  instruction.
->>
->> Further details can be seen here https://bugs.winehq.org/show_bug.cgi?id=33275
->>
->> Signed-off-by: Anish Bhatt <anish@chelsio.com>
->> Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
->> ---
->>  arch/x86/kernel/cpu/common.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
->> index e4ab2b4..3126558 100644
->> --- a/arch/x86/kernel/cpu/common.c
->> +++ b/arch/x86/kernel/cpu/common.c
->> @@ -1184,7 +1184,7 @@ void syscall_init(void)
->>  	/* Flags to clear on syscall */
->>  	wrmsrl(MSR_SYSCALL_MASK,
->>  	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
->> -	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
->> +	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
-> 
-> Something's weird here, and at the very least the changelog is
-> insufficiently informative.
-> 
-> The Intel SDM says:
-> 
-> If the NT flag is set and the processor is in IA-32e mode, the IRET
-> instruction causes a general protection exception.
-> 
-> Presumably interrupt delivery clears NT.  I haven't spotted where that's
-> documented yet.
+On Mon, 2014-09-29 at 20:15 +0200, Thibaut Robert wrote:
+> This patch remove a checkstyle warning in netlink_k.c.
+> Note: This is my homework of the day.
 
-Well, the best documentation I've found is something like
-http://www.fermimn.gov.it/linux/quarta/x86/int.htm
+The "Note: " line isn't useful for a commit message.
+Neither is the checkpatch warning bit.
 
-which states:
+Maybe the commit message could be something like:
+"Remove unnecessary else after return".
 
---- snip ---
-INTERRUPT-TO-INNER-PRIVILEGE:
-   [...]
-   TF := 0;
-   NT := 0;
---- snip ---
-(Doesn't say anything about HW interrupts though)
+> diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
+[]
+> @@ -147,12 +147,11 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
+>  
+>  	if (!ret) {
+>  		return len;
+> -	} else {
+> -		if (ret != -ESRCH) {
+> -			pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
+> -			       group, type, len, ret);
+> -		}
+> -		ret = 0;
+>  	}
+> -	return ret;
+> +
+> +	if (ret != -ESRCH) {
+> +		pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
+> +		       group, type, len, ret);
+> +	}
 
-This also makes sense at my opinion, since the interrupt handler has to know if it should return
-to the previous task (when NT=1) or to the same task (when NT=0).
+OK, but you don't need the braces around the pr_err.
 
-> 
-> sysret doesn't appear to care about NT at all.
-> 
-> So: the test code doesn't appear to do anything interesting *unless* it
-> goes through syscall followed by the iret exit path.  Then it receives
-> #GP on return, which turns into a signal.
+My preference is to also fix the typo in the function
+and would be something like:
+---
+ drivers/staging/gdm72xx/netlink_k.c | 23 ++++++++++-------------
+ 1 file changed, 10 insertions(+), 13 deletions(-)
 
-Yep, thats also my interpretation of this issue. If the processor would be in 32-bit/protected-mode the
-NT flag would be interpreted as a task return, and it would probably cause a different exception,
-because the kernel never uses the task link property of the TSS.
+diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
+index 9bf00e6..43d2a49 100644
+--- a/drivers/staging/gdm72xx/netlink_k.c
++++ b/drivers/staging/gdm72xx/netlink_k.c
+@@ -120,9 +120,9 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
+ 	struct nlmsghdr *nlh;
+ 	int ret = 0;
+ 
+-	if (group > ND_MAX_GROUP) {
+-		pr_err("Group %d is invalied.\n", group);
+-		pr_err("Valid group is 0 ~ %d.\n", ND_MAX_GROUP);
++	if (group < 0 || group > ND_MAX_GROUP) {
++		pr_err("Invalid group %d (valid groups are 0 to %d)\n",
++		       group, ND_MAX_GROUP);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -144,15 +144,12 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
+ 	NETLINK_CB(skb).dst_group = 0;
+ 
+ 	ret = netlink_broadcast(sock, skb, 0, group+1, GFP_ATOMIC);
+-
+-	if (!ret) {
++	if (!ret)
+ 		return len;
+-	} else {
+-		if (ret != -ESRCH) {
+-			pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
+-			       group, type, len, ret);
+-		}
+-		ret = 0;
+-	}
+-	return ret;
++
++	if (ret != -ESRCH)
++		pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
++		       group, type, len, ret);
++
++	return 0;
+ }
 
-> 
-> On the premise that the slow and fast return paths ought to be
-> indistinguishable from userspace, I think we should fix this.  But I
-> want to understand it better first.
 
-A reliable way to force the slow return path is to use ptrace, see:
-http://lxr.free-electrons.com/source/arch/x86/kernel/entry_64.S#L544
-
-This also matches the experience: The test application only crashes with a small probability,
-except you use strace, then it will always crash (because the kernel forces the slow return path).
-
-Two additional remarks:
-
-* A reliable way to let it crash without strace, is to run the fork()/clone() syscall afterwards and
-  compile as 32-bit.
-
-* When you run exec*() afterwards, the crash will happen at the entry of the new executable. Doesn't
-  matter if the target process is SUID or not. I don't see a way to exploit this issue, though, but
-  probably some more people should take a look at it...
-
-> 
-> Also, 32-bit may need more care here.
-
-That might be possible. It probably makes sense to review other parts of the code, for similar issues.
-
-> 
-> --Andy
-> 
-
-Regards,
-Sebastian
 
