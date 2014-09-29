@@ -1,322 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403AbaI2ODq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:03:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28370 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaI2ODo (ORCPT
+	id S1754340AbaI2ODn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:03:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47328 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751949AbaI2ODl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:03:44 -0400
-Date: Mon, 29 Sep 2014 10:03:24 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, ian.campbell@citrix.com,
-        wei.liu2@citrix.com, boris.ostrovsky@oracle.com, bhelgaas@google.com,
-        jgross@suse.com, yongjun_wei@trendmicro.com.cn,
-        mukesh.rathor@oracle.com, xen-devel@lists.xenproject.org,
-        linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/xenbus: Use 'void' instead of 'int' for
- the return of xenbus_switch_state()
-Message-ID: <20140929140324.GA28012@laptop.dumpdata.com>
-References: <5425961A.5000604@gmail.com>
- <5425AB57.8040804@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5425AB57.8040804@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 29 Sep 2014 10:03:41 -0400
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 0/5] video: describe data bus formats
+Date: Mon, 29 Sep 2014 16:02:38 +0200
+Message-Id: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 07:07:19PM +0100, David Vrabel wrote:
-> On 26/09/14 17:36, Chen Gang wrote:
-> > When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
-> > internally, so need not return any status value, then use 'void' instead
-> > of 'int' for xenbus_switch_state() and __xenbus_switch_state().
-> > 
-> > Also need be sure that all callers which check the return value must let
-> > 'err' be 0.
-> 
-> I've rewritten the commit message as:
-> 
->     xen/xenbus: don't return errors from xenbus_switch_state()
-> 
->     Most users of xenbus_switch_state() weren't handling the failure of
->     xenbus_switch_state() correctly.  They either called
->     xenbus_dev_fatal() (which xenbus_switch_state() has effectively
->     already tried to do), or ignored errors.
-> 
->     xenbus_switch_state() may fail because:
-> 
->     a) The device is being unplugged by the toolstack. The device will
->     shortly be removed and the error does not need to be handled.
-> 
->     b) Xenstore is broken.  There isn't much the driver can do in this
->     case since xenstore is required to signal failure to the toolstack.
-> 
->     So, don't report any errors from xenbus_switch_state() which removes
->     some unnecessary error handling in some of the drivers.
-> 
-> I'd appreciate a review from some of the other front/backend driver
-> maintainers on whether this is sensible reasoning.
+Hello,
 
-Done that but I am not too keen about this patch - as I think it will
-cause memory leaks on failure paths.
+This patch series is a proposal to describe the different data formats used
+by HW components to connect with each other.
 
-> 
-> David
-> 
-> > 
-> > And also need change the related comments for xenbus_switch_state().
-> > 
-> > Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> > ---
-> >  drivers/block/xen-blkback/xenbus.c |  9 ++-------
-> >  drivers/net/xen-netback/xenbus.c   |  5 +----
-> >  drivers/pci/xen-pcifront.c         | 15 ++++++---------
-> >  drivers/xen/xen-pciback/xenbus.c   | 21 ++++-----------------
-> >  drivers/xen/xen-scsiback.c         |  5 +----
-> >  drivers/xen/xenbus/xenbus_client.c | 16 ++++++++--------
-> >  include/xen/xenbus.h               |  3 ++-
-> >  7 files changed, 24 insertions(+), 50 deletions(-)
-> > 
-> > diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-> > index 3a8b810..fdcc584 100644
-> > --- a/drivers/block/xen-blkback/xenbus.c
-> > +++ b/drivers/block/xen-blkback/xenbus.c
-> > @@ -587,9 +587,7 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
-> >  	if (err)
-> >  		goto fail;
-> >  
-> > -	err = xenbus_switch_state(dev, XenbusStateInitWait);
-> > -	if (err)
-> > -		goto fail;
-> > +	xenbus_switch_state(dev, XenbusStateInitWait);
-> >  
-> >  	return 0;
-> >  
-> > @@ -837,10 +835,7 @@ again:
-> >  	if (err)
-> >  		xenbus_dev_fatal(dev, err, "ending transaction");
-> >  
-> > -	err = xenbus_switch_state(dev, XenbusStateConnected);
-> > -	if (err)
-> > -		xenbus_dev_fatal(dev, err, "%s: switching to Connected state",
-> > -				 dev->nodename);
-> > +	xenbus_switch_state(dev, XenbusStateConnected);
-> >  
-> >  	return;
-> >   abort:
-> > diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
-> > index 9c47b89..b5c3d47 100644
-> > --- a/drivers/net/xen-netback/xenbus.c
-> > +++ b/drivers/net/xen-netback/xenbus.c
-> > @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
-> >  	if (err)
-> >  		pr_debug("Error writing multi-queue-max-queues\n");
-> >  
-> > -	err = xenbus_switch_state(dev, XenbusStateInitWait);
-> > -	if (err)
-> > -		goto fail;
-> > -
-> > +	xenbus_switch_state(dev, XenbusStateInitWait);
-> >  	be->state = XenbusStateInitWait;
-> >  
-> >  	/* This kicks hotplug scripts, so do it immediately. */
-> > diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-> > index 53df39a..c1d73b7 100644
-> > --- a/drivers/pci/xen-pcifront.c
-> > +++ b/drivers/pci/xen-pcifront.c
-> > @@ -901,18 +901,16 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
-> >  		}
-> >  	}
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-> > -
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-> > +	return 0;
-> >  out:
-> >  	return err;
-> >  }
-> >  
-> >  static int pcifront_try_disconnect(struct pcifront_device *pdev)
-> >  {
-> > -	int err = 0;
-> >  	enum xenbus_state prev_state;
-> >  
-> > -
-> >  	prev_state = xenbus_read_driver_state(pdev->xdev->nodename);
-> >  
-> >  	if (prev_state >= XenbusStateClosing)
-> > @@ -923,11 +921,10 @@ static int pcifront_try_disconnect(struct pcifront_device *pdev)
-> >  		pcifront_disconnect(pdev);
-> >  	}
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateClosed);
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateClosed);
-> >  
-> >  out:
-> > -
-> > -	return err;
-> > +	return 0;
-> >  }
-> >  
-> >  static int pcifront_attach_devices(struct pcifront_device *pdev)
-> > @@ -1060,8 +1057,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
-> >  			domain, bus, slot, func);
-> >  	}
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateReconfiguring);
-> > -
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateReconfiguring);
-> > +	return 0;
-> >  out:
-> >  	return err;
-> >  }
-> > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-> > index c214daa..630a215 100644
-> > --- a/drivers/xen/xen-pciback/xenbus.c
-> > +++ b/drivers/xen/xen-pciback/xenbus.c
-> > @@ -184,10 +184,7 @@ static int xen_pcibk_attach(struct xen_pcibk_device *pdev)
-> >  
-> >  	dev_dbg(&pdev->xdev->dev, "Connecting...\n");
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-> > -	if (err)
-> > -		xenbus_dev_fatal(pdev->xdev, err,
-> > -				 "Error switching to connected state!");
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-> >  
-> >  	dev_dbg(&pdev->xdev->dev, "Connected? %d\n", err);
-> >  out:
-> > @@ -500,12 +497,7 @@ static int xen_pcibk_reconfigure(struct xen_pcibk_device *pdev)
-> >  		}
-> >  	}
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateReconfigured);
-> > -	if (err) {
-> > -		xenbus_dev_fatal(pdev->xdev, err,
-> > -				 "Error switching to reconfigured state!");
-> > -		goto out;
-> > -	}
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateReconfigured);
-> >  
-> >  out:
-> >  	mutex_unlock(&pdev->dev_lock);
-> > @@ -640,10 +632,7 @@ static int xen_pcibk_setup_backend(struct xen_pcibk_device *pdev)
-> >  		goto out;
-> >  	}
-> >  
-> > -	err = xenbus_switch_state(pdev->xdev, XenbusStateInitialised);
-> > -	if (err)
-> > -		xenbus_dev_fatal(pdev->xdev, err,
-> > -				 "Error switching to initialised state!");
-> > +	xenbus_switch_state(pdev->xdev, XenbusStateInitialised);
-> >  
-> >  out:
-> >  	mutex_unlock(&pdev->dev_lock);
-> > @@ -683,9 +672,7 @@ static int xen_pcibk_xenbus_probe(struct xenbus_device *dev,
-> >  	}
-> >  
-> >  	/* wait for xend to configure us */
-> > -	err = xenbus_switch_state(dev, XenbusStateInitWait);
-> > -	if (err)
-> > -		goto out;
-> > +	xenbus_switch_state(dev, XenbusStateInitWait);
-> >  
-> >  	/* watch the backend node for backend configuration information */
-> >  	err = xenbus_watch_path(dev, dev->nodename, &pdev->be_watch,
-> > diff --git a/drivers/xen/xen-scsiback.c b/drivers/xen/xen-scsiback.c
-> > index ad11258..847bc9c 100644
-> > --- a/drivers/xen/xen-scsiback.c
-> > +++ b/drivers/xen/xen-scsiback.c
-> > @@ -1225,10 +1225,7 @@ static int scsiback_probe(struct xenbus_device *dev,
-> >  	if (err)
-> >  		xenbus_dev_error(dev, err, "writing feature-sg-grant");
-> >  
-> > -	err = xenbus_switch_state(dev, XenbusStateInitWait);
-> > -	if (err)
-> > -		goto fail;
-> > -
-> > +	xenbus_switch_state(dev, XenbusStateInitWait);
-> >  	return 0;
-> >  
-> >  fail:
-> > diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-> > index ca74410..e2bcd1d 100644
-> > --- a/drivers/xen/xenbus/xenbus_client.c
-> > +++ b/drivers/xen/xenbus/xenbus_client.c
-> > @@ -166,7 +166,7 @@ EXPORT_SYMBOL_GPL(xenbus_watch_pathfmt);
-> >  static void xenbus_switch_fatal(struct xenbus_device *, int, int,
-> >  				const char *, ...);
-> >  
-> > -static int
-> > +static void
-> >  __xenbus_switch_state(struct xenbus_device *dev,
-> >  		      enum xenbus_state state, int depth)
-> >  {
-> > @@ -188,7 +188,7 @@ __xenbus_switch_state(struct xenbus_device *dev,
-> >  	int err, abort;
-> >  
-> >  	if (state == dev->state)
-> > -		return 0;
-> > +		return;
-> >  
-> >  again:
-> >  	abort = 1;
-> > @@ -196,7 +196,7 @@ again:
-> >  	err = xenbus_transaction_start(&xbt);
-> >  	if (err) {
-> >  		xenbus_switch_fatal(dev, depth, err, "starting transaction");
-> > -		return 0;
-> > +		return;
-> >  	}
-> >  
-> >  	err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
-> > @@ -219,7 +219,7 @@ abort:
-> >  	} else
-> >  		dev->state = state;
-> >  
-> > -	return 0;
-> > +	return;
-> >  }
-> >  
-> >  /**
-> > @@ -228,12 +228,12 @@ abort:
-> >   * @state: new state
-> >   *
-> >   * Advertise in the store a change of the given driver to the given new_state.
-> > - * Return 0 on success, or -errno on error.  On error, the device will switch
-> > - * to XenbusStateClosing, and the error will be saved in the store.
-> > + * When failure occurs, it will call xenbus_switch_fatal() internally, so need
-> > + * not return value to notify upper caller.
-> >   */
-> > -int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
-> > +void xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
-> >  {
-> > -	return __xenbus_switch_state(dev, state, 0);
-> > +	__xenbus_switch_state(dev, state, 0);
-> >  }
-> >  
-> >  EXPORT_SYMBOL_GPL(xenbus_switch_state);
-> > diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
-> > index 0324c6d..587c53d 100644
-> > --- a/include/xen/xenbus.h
-> > +++ b/include/xen/xenbus.h
-> > @@ -195,7 +195,8 @@ int xenbus_watch_pathfmt(struct xenbus_device *dev, struct xenbus_watch *watch,
-> >  					  const char **, unsigned int),
-> >  			 const char *pathfmt, ...);
-> >  
-> > -int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state new_state);
-> > +void xenbus_switch_state(struct xenbus_device *dev,
-> > +			 enum xenbus_state new_state);
-> >  int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn);
-> >  int xenbus_map_ring_valloc(struct xenbus_device *dev,
-> >  			   int gnt_ref, void **vaddr);
-> > 
-> 
+This is just a copy of the existing V4L2_MBUS_FMT defintions with a neutral
+name so that it can be used by V4L2 and DRM/KMS subsystem.
+
+This series also makes use of this video_bus_format enum in the DRM/KMS
+subsystem to define the data fomats supported on the connector <-> device
+link.
+
+Best Regards,
+
+Boris
+
+Changes since v1:
+ - define an enum and use a macro for v4l2 bus formats definitions
+ - rename nformats into num_formats
+ - declare num_formats as an unsigned int
+
+Boris BREZILLON (3):
+  drm: add bus_formats and nbus_formats fields to drm_display_info
+  drm: panel: simple-panel: add support for bus_format retrieval
+  drm: panel: simple-panel: add bus format information for foxlink panel
+
+Boris Brezillon (2):
+  video: move mediabus format definition to a more standard place
+  video: add RGB444_1X12 and RGB565_1X16 bus formats
+
+ drivers/gpu/drm/drm_crtc.c            |  31 ++++++
+ drivers/gpu/drm/panel/panel-simple.c  |   6 ++
+ include/drm/drm_crtc.h                |   8 ++
+ include/uapi/linux/Kbuild             |   1 +
+ include/uapi/linux/v4l2-mediabus.h    | 185 +++++++++++++++-------------------
+ include/uapi/linux/video-bus-format.h | 129 ++++++++++++++++++++++++
+ 6 files changed, 256 insertions(+), 104 deletions(-)
+ create mode 100644 include/uapi/linux/video-bus-format.h
+
+-- 
+1.9.1
+
