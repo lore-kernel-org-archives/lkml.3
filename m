@@ -1,290 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaI2HqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 03:46:21 -0400
-Received: from regular1.263xmail.com ([211.150.99.138]:49005 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaI2HqT (ORCPT
+	id S1751913AbaI2Hul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 03:50:41 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51863 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaI2Huk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 03:46:19 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: dianders@chromium.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <9218745834bc5499c68efdc43e696621>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <54290E21.2030007@rock-chips.com>
-Date: Mon, 29 Sep 2014 15:45:37 +0800
-From: addy ke <addy.ke@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 29 Sep 2014 03:50:40 -0400
+X-Original-SENDERIP: 10.177.222.183
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 29 Sep 2014 16:50:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v6 05/13] mm, compaction: move pageblock checks up from
+ isolate_migratepages_range()
+Message-ID: <20140929075038.GC29310@js1304-P5Q-DELUXE>
+References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
+ <1407142524-2025-6-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-To: dianders@chromium.org
-CC: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v2] i2c: rk3x: adjust the LOW divison based on characteristics
- of SCL
-References: <1411801888-3152-1-git-send-email-addy.ke@rock-chips.com> <CAD=FV=XnM-2CuctP-L=-gj7TPyMXrkhsDS9Tmxeq+9Mx5p7PZA@mail.gmail.com>
-In-Reply-To: <CAD=FV=XnM-2CuctP-L=-gj7TPyMXrkhsDS9Tmxeq+9Mx5p7PZA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407142524-2025-6-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug
+On Mon, Aug 04, 2014 at 10:55:16AM +0200, Vlastimil Babka wrote:
+> isolate_migratepages_range() is the main function of the compaction scanner,
+> called either on a single pageblock by isolate_migratepages() during regular
+> compaction, or on an arbitrary range by CMA's __alloc_contig_migrate_range().
+> It currently perfoms two pageblock-wide compaction suitability checks, and
+> because of the CMA callpath, it tracks if it crossed a pageblock boundary in
+> order to repeat those checks.
+> 
+> However, closer inspection shows that those checks are always true for CMA:
+> - isolation_suitable() is true because CMA sets cc->ignore_skip_hint to true
+> - migrate_async_suitable() check is skipped because CMA uses sync compaction
+> 
+> We can therefore move the compaction-specific checks to isolate_migratepages()
+> and simplify isolate_migratepages_range(). Furthermore, we can mimic the
+> freepage scanner family of functions, which has isolate_freepages_block()
+> function called both by compaction from isolate_freepages() and by CMA from
+> isolate_freepages_range(), where each use-case adds own specific glue code.
+> This allows further code simplification.
+> 
+> Thus, we rename isolate_migratepages_range() to isolate_migratepages_block()
+> and limit its functionality to a single pageblock (or its subset). For CMA,
+> a new different isolate_migratepages_range() is created as a CMA-specific
+> wrapper for the _block() function. The checks specific to compaction are moved
+> to isolate_migratepages(). As part of the unification of these two families of
+> functions, we remove the redundant zone parameter where applicable, since zone
+> pointer is already passed in cc->zone.
+> 
+> Furthermore, going back to compact_zone() and compact_finished() when pageblock
+> is found unsuitable (now by isolate_migratepages()) is wasteful - the checks
+> are meant to skip pageblocks quickly. The patch therefore also introduces a
+> simple loop into isolate_migratepages() so that it does not return immediately
+> on failed pageblock checks, but keeps going until isolate_migratepages_range()
+> gets called once. Similarily to isolate_freepages(), the function periodically
+> checks if it needs to reschedule or abort async compaction.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Acked-by: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> ---
+>  mm/compaction.c | 235 +++++++++++++++++++++++++++++++++-----------------------
+>  mm/internal.h   |   4 +-
+>  mm/page_alloc.c |   3 +-
+>  3 files changed, 141 insertions(+), 101 deletions(-)
+> 
 
-On 2014/9/29 12:39, Doug Anderson wrote:
-> Addy,
-> 
-> On Sat, Sep 27, 2014 at 12:11 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
->> From: Addy <addy.ke@rock-chips.com>
->>
->> As show in I2C specification:
->> - Standard-mode: the minimum HIGH period of the scl clock is 4.0us
->>                  the minimum LOW period of the scl clock is 4.7us
->> - Fast-mode: the minimum HIGH period of the scl clock is 0.6us
->>              the minimum LOW period of the scl clock is 1.3us
->>
->> I have measured i2c SCL waveforms in fast-mode by oscilloscope
->> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
->> It is so critical that we must adjust LOW division to increase
->> the LOW period of the scl clock.
->>
->> After put this patch, we can find that min_low_ns is about
->> 5.4us in Standard-mode and 1.6us in Fast-mode.
->>
->> Thanks Doug for the suggestion about division formulas.
->>
->> Signed-off-by: Addy <addy.ke@rock-chips.com>
->> ---
->> Changes in v2:
->> - remove Fast-mode plus and HS-mode
->> - use new formulas suggested by Doug
->>
->>  drivers/i2c/busses/i2c-rk3x.c | 104 +++++++++++++++++++++++++++++++++++++++---
->>  1 file changed, 97 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
->> index e637c32..81672a8 100644
->> --- a/drivers/i2c/busses/i2c-rk3x.c
->> +++ b/drivers/i2c/busses/i2c-rk3x.c
->> @@ -428,19 +428,109 @@ out:
->>         return IRQ_HANDLED;
->>  }
->>
->> +static void rk3x_i2c_get_min_ns(unsigned int scl_rate,
->> +                               unsigned long *min_low_ns,
->> +                               unsigned long *min_high_ns)
->> +{
->> +       WARN_ON(scl_rate > 400000);
->> +
->> +       /* As show in I2C specification:
->> +        * - Standard-mode(100KHz):
->> +        *   min_low_ns is 4700ns
->> +        *   min_high_ns is 4000ns
->> +        * - Fast-mode(400KHz):
->> +        *   min_low_ns is 1300ns
->> +        *   min_high_ns is 600ns
->> +        *
->> +        * (min_low_ns + min_high_ns) up to 10000ns in Standard-mode
->> +        * and 2500ns in Fast-mode
->> +        */
->> +       if (scl_rate <= 100000) {
->> +               *min_low_ns = 4700 + 650;
->> +               *min_high_ns = 4000 + 650;
->> +       } else {
->> +               *min_low_ns = 1300 + 300;
->> +               *min_high_ns = 600 + 300;
-> 
-> Wait, where did the extra 650 and 300 come from here?  Are you just
-> trying to balance things out?  That's not the right way to do things.
-> Please explain what you were trying to accomplish and we can figure
-> out a better way.
-> 
-> ...maybe this helped make thins nicer in the clock rates you tried,
-> but I'd bet that I can find clock rates that this is broken for...
-> 
-> 
-650 = [(1000000000/100K) ns - min_low_ns_100k - min_high_ns_100k] / 2
-300 = [(1000000000/300K) ns - min_low_ns_400k - min_high_ns_400k] / 2
+Hello,
 
-if there is no extra 650 and 300:
-extra_div is 3 in fast-mode and 11 in standard-mode.
+This patch needs one fix.
+Please see below.
 
-  1)if all of the "extra" is asssigned to the high part, the LOW period is too close to min_low.
-    In my test:
-    400k, scl_low_ns: 1440ns, scl_high_ns: 1120ns
-    100k, scl_low_ns: 4800ns, scl_high_ns: 5120ns
+Thanks.
 
-  2)if not, dato hold time is too close to min_hold_time(400khz, 900ns)
-    In my test:
-    400k, scl_low_ns: 1760ns, scl_high_ns: 800ns
-    100k, scl_low_ns: 5304ns, scl_high_ns: 4368ns
+---------->8-------------
+>From 3ba15d35c00e0d913d603d2972678bf74554ed60 Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Mon, 29 Sep 2014 15:08:07 +0900
+Subject: [PATCH] mm/compaction: fix isolated page counting bug in compaction
 
-    hold_time_ns ~= scl_low_ns / 2 = 880ns
+acct_isolated() is the function to adjust isolated page count. It
+iterates cc->migratepages list and add
+NR_ISOLATED_ANON/NR_ISOLATED_FILE count according to number of anon,
+file pages in migratepages list, respectively. Before commit (mm,
+compaction: move pageblock checks up from isolate_migratepages_range()),
+it is called just once in isolate_migratepages_range(), but, after commit,
+it is called in newly introduced isolate_migratepages_block() and this
+isolate_migratepages_block() could be called many times in
+isolate_migratepages_range() so that some page could be counted more
+than once. This duplicate counting bug results in hang in cma_alloc(),
+because too_many_isolated() returns true continually.
 
-So I think we must decrease min_low_ns:min_high_ns to decrease scl_low in case 2
+This patch fixes this bug by moving acct_isolated() into upper layer
+function, isolate_migratepages_range() and isolate_migratepages().
+After this change, isolated page would be counted only once so
+problem would be gone.
 
-So I set the extra 650 and 300.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/compaction.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-After this, in my test:
-   400k, scl_low_ns: 1600ns, scl_high_ns: 960ns
-   100k, scl_low_ns: 5200ns, scl_hign_ns: 4576ns
-
-I think this value is more reasonable.
-
-ps:
-min_low_ns/min_high_ns >  (min_low_ns + extra) / (min_high_ns + extra) (if min_low_ns > min_high_ns)
-
->> +       }
->> +}
->> +
->> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
->> +                              unsigned long *div_low, unsigned long *div_high)
->> +{
->> +       unsigned long min_low_ns, min_high_ns, min_total_ns;
->> +       unsigned long min_low_div, min_high_div;
->> +       unsigned long min_total_div, min_div_for_hold;
->> +       unsigned long extra_div, extra_low_div, ideal_low_div;
->> +       unsigned long i2c_rate_khz, scl_rate_khz;
->> +
->> +       rk3x_i2c_get_min_ns(scl_rate, &min_low_ns, &min_high_ns);
->> +       min_total_ns = min_low_ns + min_high_ns;
->> +
->> +       /* To avoid from overflow warning */
->> +       i2c_rate_khz = i2c_rate / 1000;
->> +       scl_rate_khz = scl_rate / 1000;
-> 
-> DIV_ROUND_UP?
-> 
->> +
->> +       /*We need the total div to be >= this number
->> +        * so we don't clock too fast.
->> +        */
-> 
-> Please match the commenting style in the rest of the file.  That's:
-> 
-> /*
->  * A
->  * B
->  * C
->  */
-> 
-> Not:
-> 
-> /* A
->  * B
->  * C
->  */
-> 
->> +       min_total_div = DIV_ROUND_UP(i2c_rate_khz, scl_rate_khz * 8);
->> +
->> +       /* These are the min dividers needed for hold times */
->> +       min_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns, 8 * 1000000);
->> +       min_high_div = DIV_ROUND_UP(i2c_rate_khz * min_high_ns, 8 * 1000000);
->> +       min_div_for_hold = (min_low_div + min_high_div);
->> +
->> +       if (min_div_for_hold > min_total_div) {
->> +               /* Time needed to meet hold requirements is important.
->> +                * Just use that
->> +                * */
-> 
-> Extra "*" in "* */"
-> 
-> 
->> +               *div_low = min_low_div;
->> +               *div_high = min_high_div;
->> +       } else {
->> +               /* We've got to distribute some time among the low and high
->> +                * so we don't run too fast.
->> +                */
->> +               extra_div = min_total_div - min_div_for_hold;
->> +               /* We'll try to split things up perfectly evenly,
->> +                * biasing slightly towards having a higher div
->> +                * for low (spend more time low).
->> +                */
-> 
-> Last I remember you said that this wasn't going to work quite right
-> and you were just going to assign all of the "extra" to the high part.
-> What changed?
-if all of the "extra" is asssigned to the high part, the LOW period is too close to min_low.
-As shown in the above.
-> 
-> 
->> +               ideal_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns,
->> +                                            scl_rate_khz * 8 * min_total_ns);
->> +               /* Handle when the ideal low div is going to take up
->> +                * more than we have.
->> +                */
->> +               if (ideal_low_div > min_low_div + extra_div)
->> +                       ideal_low_div = min_low_div + extra_div;
->> +               /* Give low the "ideal" and give high whatever extra is left.*/
->> +               extra_low_div = ideal_low_div - min_low_div;
->> +               *div_low = ideal_low_div;
->> +               *div_high
->> +                       = min_high_div + (extra_div - extra_low_div);
->> +       }
->> +
->> +       /* Adjust to the fact that the hardware has an implicit "+1".*/
->> +       *div_low = *div_low - 1;
->> +       *div_high = *div_high - 1;
->> +}
->> +
->>  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
->>  {
->>         unsigned long i2c_rate = clk_get_rate(i2c->clk);
->> -       unsigned int div;
->> +       unsigned long div_low, div_high;
->>
->> -       /* SCL rate = (clk rate) / (8 * DIV) */
->> -       div = DIV_ROUND_UP(i2c_rate, scl_rate * 8);
-> 
-> Strangely this now seems to be based upon an older version of the
-> file.  I had to revert (b4a7bd7 i2c: rk3x: fix divisor calculation for
-> SCL frequency) in order to apply v2.  Please submit your code against
-> the latest accepted code.
-> 
-> 
-This patch is based on ../kernel/git/wsa/linux.git, master branch.
-It is my mistake.
-I will checkout for_next branch.
-Thank you.
-
->> +       /* The formulas in rk3x TRM:
->> +        * - T_scl_high = T_clk * (divh + 1) * 8
->> +        * - T_scl_low = T_clk * (divl + 1) * 8
->> +        * */
->> +       rk3x_i2c_calc_divs(i2c_rate, scl_rate, &div_low, &div_high);
->>
->> -       /* The lower and upper half of the CLKDIV reg describe the length of
->> -        * SCL low & high periods. */
->> -       div = DIV_ROUND_UP(div, 2);
->> +       i2c_writel(i2c, (div_high << 16) | (div_low & 0xffff), REG_CLKDIV);
->>
->> -       i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
->> +       dev_dbg(i2c->dev, "scl_ns: %luns, scl_low_ns: %luns, scl_high_ns: %luns\n",
->> +               1000000000/scl_rate,
->> +               (1000000000 / i2c_rate) * (div_low + 1) * 8,
->> +               (1000000000 / i2c_rate) * (div_high + 1) * 8);
->>  }
->>
->>  /**
->> --
->> 1.8.3.2
->>
->>
-> 
-> 
-> 
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 7d9d92e..48129b6 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -514,22 +514,19 @@ isolate_freepages_range(struct compact_control *cc,
+ }
+ 
+ /* Update the number of anon and file isolated pages in the zone */
+-static void acct_isolated(struct zone *zone, bool locked, struct compact_control *cc)
++static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ {
+ 	struct page *page;
+ 	unsigned int count[2] = { 0, };
+ 
++	if (list_empty(&cc->migratepages))
++		return;
++
+ 	list_for_each_entry(page, &cc->migratepages, lru)
+ 		count[!!page_is_file_cache(page)]++;
+ 
+-	/* If locked we can use the interrupt unsafe versions */
+-	if (locked) {
+-		__mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+-		__mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+-	} else {
+-		mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
+-		mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+-	}
++	mod_zone_page_state(zone, NR_ISOLATED_ANON, count[0]);
++	mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ }
+ 
+ /* Similar to reclaim, but different enough that they don't share logic */
+@@ -726,8 +723,6 @@ isolate_success:
+ 	if (unlikely(low_pfn > end_pfn))
+ 		low_pfn = end_pfn;
+ 
+-	acct_isolated(zone, locked, cc);
+-
+ 	if (locked)
+ 		spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 
+@@ -789,6 +784,7 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
+ 			break;
+ 		}
+ 	}
++	acct_isolated(cc->zone, cc);
+ 
+ 	return pfn;
+ }
+@@ -1028,6 +1024,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 		break;
+ 	}
+ 
++	acct_isolated(zone, cc);
+ 	/* Record where migration scanner will be restarted */
+ 	cc->migrate_pfn = low_pfn;
+ 
+-- 
+1.7.9.5
 
