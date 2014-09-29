@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaI2XJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:09:08 -0400
-Received: from smtprelay0031.hostedemail.com ([216.40.44.31]:34157 "EHLO
+	id S1755231AbaI2XJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:09:00 -0400
+Received: from smtprelay0064.hostedemail.com ([216.40.44.64]:51612 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755265AbaI2XJE (ORCPT
+	by vger.kernel.org with ESMTP id S1755201AbaI2XIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:09:04 -0400
+	Mon, 29 Sep 2014 19:08:55 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::::::::::::::::::::,RULES_HIT:4:41:69:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:1801:2393:2559:2562:2639:2895:3138:3139:3140:3141:3142:3865:3871:3874:4250:4321:4605:5007:6119:6261:6742:7903:8603:9592:10004:10026:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12683:14096:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: talk59_146267102423c
-X-Filterd-Recvd-Size: 15070
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:1:41:69:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2198:2199:2393:2559:2562:2639:3138:3139:3140:3141:3142:3865:3867:3868:3871:3872:4321:4605:5007:6119:6261:7903:10004:10026:10394:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:13161:13229:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: heart39_1340cc785982c
+X-Filterd-Recvd-Size: 14238
 From: Joe Perches <joe@perches.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Alexander Viro <viro@ZenIV.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jeff Layton <jlayton@poochiereds.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH 5/7] fs: Convert show_fdinfo functions to void
-Date: Mon, 29 Sep 2014 16:08:25 -0700
-Message-Id: <e37e6e7b76acbdcc3bb4ab2a57c8f8ca1ae11b9a.1412031505.git.joe@perches.com>
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/7] dlm: Use seq_is_full - remove seq_printf returns
+Date: Mon, 29 Sep 2014 16:08:23 -0700
+Message-Id: <43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1412031505.git.joe@perches.com>
 References: <20140929124246.3e39dac8@gandalf.local.home> <cover.1412031505.git.joe@perches.com>
@@ -33,430 +29,477 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seq_printf functions shouldn't really check the return value.
-Checking seq_is_full occasionally is used instead.
+The seq_printf return should be ignored and the
+seq_is_full function should be tested instead.
 
-Update vfs documentation.
+Convert functions returning int to void where
+seq_printf is used.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- Documentation/filesystems/vfs.txt |  2 +-
- drivers/net/tun.c                 |  4 +--
- fs/eventfd.c                      | 15 +++-----
- fs/eventpoll.c                    | 19 ++++------
- fs/notify/fdinfo.c                | 76 +++++++++++++++++----------------------
- fs/notify/fdinfo.h                |  4 +--
- fs/proc/fd.c                      |  2 +-
- fs/signalfd.c                     | 10 ++----
- fs/timerfd.c                      | 27 +++++++-------
- include/linux/fs.h                |  2 +-
- 10 files changed, 68 insertions(+), 93 deletions(-)
+ fs/dlm/debug_fs.c | 248 +++++++++++++++++++++++++-----------------------------
+ 1 file changed, 116 insertions(+), 132 deletions(-)
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index fceff7c..af1dbc1 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -828,7 +828,7 @@ struct file_operations {
- 	ssize_t (*splice_read)(struct file *, struct pipe_inode_info *, size_t, unsigned int);
- 	int (*setlease)(struct file *, long arg, struct file_lock **, void **);
- 	long (*fallocate)(struct file *, int mode, loff_t offset, loff_t len);
--	int (*show_fdinfo)(struct seq_file *m, struct file *f);
-+	void (*show_fdinfo)(struct seq_file *m, struct file *f);
- };
- 
- Again, all methods are called without any locks being held, unless
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 186ce54..a3420e0 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -2209,7 +2209,7 @@ static int tun_chr_close(struct inode *inode, struct file *file)
- }
- 
- #ifdef CONFIG_PROC_FS
--static int tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
-+static void tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct tun_struct *tun;
- 	struct ifreq ifr;
-@@ -2225,7 +2225,7 @@ static int tun_chr_show_fdinfo(struct seq_file *m, struct file *f)
- 	if (tun)
- 		tun_put(tun);
- 
--	return seq_printf(m, "iff:\t%s\n", ifr.ifr_name);
-+	seq_printf(m, "iff:\t%s\n", ifr.ifr_name);
- }
- #endif
- 
-diff --git a/fs/eventfd.c b/fs/eventfd.c
-index d6a88e7..abcb25d 100644
---- a/fs/eventfd.c
-+++ b/fs/eventfd.c
-@@ -286,25 +286,20 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
- 	return res;
- }
- 
--#ifdef CONFIG_PROC_FS
--static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
-+static void eventfd_show_fdinfo(struct seq_file *m, struct file *f)
- {
-+#ifdef CONFIG_PROC_FS
- 	struct eventfd_ctx *ctx = f->private_data;
--	int ret;
- 
- 	spin_lock_irq(&ctx->wqh.lock);
--	ret = seq_printf(m, "eventfd-count: %16llx\n",
--			 (unsigned long long)ctx->count);
-+	seq_printf(m, "eventfd-count: %16llx\n",
-+		   (unsigned long long)ctx->count);
- 	spin_unlock_irq(&ctx->wqh.lock);
--
--	return ret;
--}
- #endif
-+}
- 
- static const struct file_operations eventfd_fops = {
--#ifdef CONFIG_PROC_FS
- 	.show_fdinfo	= eventfd_show_fdinfo,
--#endif
- 	.release	= eventfd_release,
- 	.poll		= eventfd_poll,
- 	.read		= eventfd_read,
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 7bcfff9..4e742b6 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -869,34 +869,29 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
- 	return pollflags != -1 ? pollflags : 0;
- }
- 
--#ifdef CONFIG_PROC_FS
--static int ep_show_fdinfo(struct seq_file *m, struct file *f)
-+static void ep_show_fdinfo(struct seq_file *m, struct file *f)
- {
-+#ifdef CONFIG_PROC_FS
- 	struct eventpoll *ep = f->private_data;
- 	struct rb_node *rbp;
--	int ret = 0;
- 
- 	mutex_lock(&ep->mtx);
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		struct epitem *epi = rb_entry(rbp, struct epitem, rbn);
- 
--		ret = seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
--				 epi->ffd.fd, epi->event.events,
--				 (long long)epi->event.data);
--		if (ret)
-+		seq_printf(m, "tfd: %8d events: %8x data: %16llx\n",
-+			   epi->ffd.fd, epi->event.events,
-+			   (long long)epi->event.data);
-+		if (seq_is_full(m))
- 			break;
+diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
+index 1323c56..27c8335 100644
+--- a/fs/dlm/debug_fs.c
++++ b/fs/dlm/debug_fs.c
+@@ -48,8 +48,8 @@ static char *print_lockmode(int mode)
  	}
- 	mutex_unlock(&ep->mtx);
--
--	return ret;
--}
- #endif
-+}
- 
- /* File callbacks that implement the eventpoll file behaviour */
- static const struct file_operations eventpoll_fops = {
--#ifdef CONFIG_PROC_FS
- 	.show_fdinfo	= ep_show_fdinfo,
--#endif
- 	.release	= ep_eventpoll_release,
- 	.poll		= ep_eventpoll_poll,
- 	.llseek		= noop_llseek,
-diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index 9d7e2b9..0bb10b7 100644
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -20,25 +20,24 @@
- 
- #if defined(CONFIG_INOTIFY_USER) || defined(CONFIG_FANOTIFY)
- 
--static int show_fdinfo(struct seq_file *m, struct file *f,
--		       int (*show)(struct seq_file *m, struct fsnotify_mark *mark))
-+static void show_fdinfo(struct seq_file *m, struct file *f,
-+			void (*show)(struct seq_file *m,
-+				     struct fsnotify_mark *mark))
- {
- 	struct fsnotify_group *group = f->private_data;
- 	struct fsnotify_mark *mark;
--	int ret = 0;
- 
- 	mutex_lock(&group->mark_mutex);
- 	list_for_each_entry(mark, &group->marks_list, g_list) {
--		ret = show(m, mark);
--		if (ret)
-+		show(m, mark);
-+		if (seq_is_full(m))
- 			break;
- 	}
- 	mutex_unlock(&group->mark_mutex);
--	return ret;
  }
  
- #if defined(CONFIG_EXPORTFS)
--static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
-+static void show_mark_fhandle(struct seq_file *m, struct inode *inode)
+-static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+-			      struct dlm_rsb *res)
++static void print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
++			       struct dlm_rsb *res)
  {
- 	struct {
- 		struct file_handle handle;
-@@ -52,71 +51,62 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
- 	if ((ret == FILEID_INVALID) || (ret < 0)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
--		return 0;
-+		return;
+ 	seq_printf(s, "%08x %s", lkb->lkb_id, print_lockmode(lkb->lkb_grmode));
+ 
+@@ -68,21 +68,17 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 	if (lkb->lkb_wait_type)
+ 		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+ 
+-	return seq_puts(s, "\n");
++	seq_puts(s, "\n");
+ }
+ 
+-static int print_format1(struct dlm_rsb *res, struct seq_file *s)
++static void print_format1(struct dlm_rsb *res, struct seq_file *s)
+ {
+ 	struct dlm_lkb *lkb;
+ 	int i, lvblen = res->res_ls->ls_lvblen, recover_list, root_list;
+-	int rv;
+ 
+ 	lock_rsb(res);
+ 
+-	rv = seq_printf(s, "\nResource %p Name (len=%d) \"",
+-			res, res->res_length);
+-	if (rv)
+-		goto out;
++	seq_printf(s, "\nResource %p Name (len=%d) \"", res, res->res_length);
+ 
+ 	for (i = 0; i < res->res_length; i++) {
+ 		if (isprint(res->res_name[i]))
+@@ -92,17 +88,16 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
  	}
  
- 	f.handle.handle_type = ret;
- 	f.handle.handle_bytes = size * sizeof(u32);
+ 	if (res->res_nodeid > 0)
+-		rv = seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+-				res->res_nodeid);
++		seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
++			   res->res_nodeid);
+ 	else if (res->res_nodeid == 0)
+-		rv = seq_puts(s, "\"\nMaster Copy\n");
++		seq_puts(s, "\"\nMaster Copy\n");
+ 	else if (res->res_nodeid == -1)
+-		rv = seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+-			   	res->res_first_lkid);
++		seq_printf(s, "\"\nLooking up master (lkid %x)\n",
++			   res->res_first_lkid);
+ 	else
+-		rv = seq_printf(s, "\"\nInvalid master %d\n",
+-				res->res_nodeid);
+-	if (rv)
++		seq_printf(s, "\"\nInvalid master %d\n", res->res_nodeid);
++	if (seq_is_full(s))
+ 		goto out;
  
--	ret = seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
--			 f.handle.handle_bytes, f.handle.handle_type);
-+	seq_printf(m, "fhandle-bytes:%x fhandle-type:%x f_handle:",
-+		   f.handle.handle_bytes, f.handle.handle_type);
- 
- 	for (i = 0; i < f.handle.handle_bytes; i++)
--		ret |= seq_printf(m, "%02x", (int)f.handle.f_handle[i]);
--
--	return ret;
-+		seq_printf(m, "%02x", (int)f.handle.f_handle[i]);
- }
- #else
--static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
-+static void show_mark_fhandle(struct seq_file *m, struct inode *inode)
- {
--	return 0;
- }
- #endif
- 
- #ifdef CONFIG_INOTIFY_USER
- 
--static int inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
-+static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- {
- 	struct inotify_inode_mark *inode_mark;
- 	struct inode *inode;
--	int ret = 0;
- 
- 	if (!(mark->flags & (FSNOTIFY_MARK_FLAG_ALIVE | FSNOTIFY_MARK_FLAG_INODE)))
--		return 0;
-+		return;
- 
- 	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
- 	inode = igrab(mark->i.inode);
- 	if (inode) {
--		ret = seq_printf(m, "inotify wd:%x ino:%lx sdev:%x "
--				 "mask:%x ignored_mask:%x ",
--				 inode_mark->wd, inode->i_ino,
--				 inode->i_sb->s_dev,
--				 mark->mask, mark->ignored_mask);
--		ret |= show_mark_fhandle(m, inode);
--		ret |= seq_putc(m, '\n');
-+		seq_printf(m, "inotify wd:%x ino:%lx sdev:%x mask:%x ignored_mask:%x ",
-+			   inode_mark->wd, inode->i_ino, inode->i_sb->s_dev,
-+			   mark->mask, mark->ignored_mask);
-+		show_mark_fhandle(m, inode);
-+		seq_putc(m, '\n');
- 		iput(inode);
- 	}
--
--	return ret;
- }
- 
--int inotify_show_fdinfo(struct seq_file *m, struct file *f)
-+void inotify_show_fdinfo(struct seq_file *m, struct file *f)
- {
--	return show_fdinfo(m, f, inotify_fdinfo);
-+	show_fdinfo(m, f, inotify_fdinfo);
- }
- 
- #endif /* CONFIG_INOTIFY_USER */
- 
- #ifdef CONFIG_FANOTIFY
- 
--static int fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
-+static void fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- {
- 	unsigned int mflags = 0;
- 	struct inode *inode;
--	int ret = 0;
- 
- 	if (!(mark->flags & FSNOTIFY_MARK_FLAG_ALIVE))
--		return 0;
-+		return;
- 
- 	if (mark->flags & FSNOTIFY_MARK_FLAG_IGNORED_SURV_MODIFY)
- 		mflags |= FAN_MARK_IGNORED_SURV_MODIFY;
-@@ -125,25 +115,23 @@ static int fanotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- 		inode = igrab(mark->i.inode);
- 		if (!inode)
+ 	/* Print the LVB: */
+@@ -116,8 +111,8 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 		}
+ 		if (rsb_flag(res, RSB_VALNOTVALID))
+ 			seq_puts(s, " (INVALID)");
+-		rv = seq_puts(s, "\n");
+-		if (rv)
++		seq_puts(s, "\n");
++		if (seq_is_full(s))
  			goto out;
--		ret = seq_printf(m, "fanotify ino:%lx sdev:%x "
--				 "mflags:%x mask:%x ignored_mask:%x ",
--				 inode->i_ino, inode->i_sb->s_dev,
--				 mflags, mark->mask, mark->ignored_mask);
--		ret |= show_mark_fhandle(m, inode);
--		ret |= seq_putc(m, '\n');
-+		seq_printf(m, "fanotify ino:%lx sdev:%x mflags:%x mask:%x ignored_mask:%x ",
-+			   inode->i_ino, inode->i_sb->s_dev,
-+			   mflags, mark->mask, mark->ignored_mask);
-+		show_mark_fhandle(m, inode);
-+		seq_putc(m, '\n');
- 		iput(inode);
- 	} else if (mark->flags & FSNOTIFY_MARK_FLAG_VFSMOUNT) {
- 		struct mount *mnt = real_mount(mark->m.mnt);
- 
--		ret = seq_printf(m, "fanotify mnt_id:%x mflags:%x mask:%x "
--				 "ignored_mask:%x\n", mnt->mnt_id, mflags,
--				 mark->mask, mark->ignored_mask);
-+		seq_printf(m, "fanotify mnt_id:%x mflags:%x mask:%x ignored_mask:%x\n",
-+			   mnt->mnt_id, mflags, mark->mask, mark->ignored_mask);
- 	}
- out:
--	return ret;
-+	;
- }
- 
--int fanotify_show_fdinfo(struct seq_file *m, struct file *f)
-+void fanotify_show_fdinfo(struct seq_file *m, struct file *f)
- {
- 	struct fsnotify_group *group = f->private_data;
- 	unsigned int flags = 0;
-@@ -169,7 +157,7 @@ int fanotify_show_fdinfo(struct seq_file *m, struct file *f)
- 	seq_printf(m, "fanotify flags:%x event-flags:%x\n",
- 		   flags, group->fanotify_data.f_flags);
- 
--	return show_fdinfo(m, f, fanotify_fdinfo);
-+	show_fdinfo(m, f, fanotify_fdinfo);
- }
- 
- #endif /* CONFIG_FANOTIFY */
-diff --git a/fs/notify/fdinfo.h b/fs/notify/fdinfo.h
-index 556afda..9664c49 100644
---- a/fs/notify/fdinfo.h
-+++ b/fs/notify/fdinfo.h
-@@ -10,11 +10,11 @@ struct file;
- #ifdef CONFIG_PROC_FS
- 
- #ifdef CONFIG_INOTIFY_USER
--extern int inotify_show_fdinfo(struct seq_file *m, struct file *f);
-+void inotify_show_fdinfo(struct seq_file *m, struct file *f);
- #endif
- 
- #ifdef CONFIG_FANOTIFY
--extern int fanotify_show_fdinfo(struct seq_file *m, struct file *f);
-+void fanotify_show_fdinfo(struct seq_file *m, struct file *f);
- #endif
- 
- #else /* CONFIG_PROC_FS */
-diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index e11d7c5..4c3c253 100644
---- a/fs/proc/fd.c
-+++ b/fs/proc/fd.c
-@@ -53,7 +53,7 @@ static int seq_show(struct seq_file *m, void *v)
- 			   (long long)file->f_pos, f_flags,
- 			   real_mount(file->f_path.mnt)->mnt_id);
- 		if (file->f_op->show_fdinfo)
--			ret = file->f_op->show_fdinfo(m, file);
-+			file->f_op->show_fdinfo(m, file);
- 		fput(file);
  	}
  
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 424b7b6..06bd5a2 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -229,24 +229,20 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 	return total ? total: ret;
+@@ -125,32 +120,30 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 	recover_list = !list_empty(&res->res_recover_list);
+ 
+ 	if (root_list || recover_list) {
+-		rv = seq_printf(s, "Recovery: root %d recover %d flags %lx "
+-				"count %d\n", root_list, recover_list,
+-			   	res->res_flags, res->res_recover_locks_count);
+-		if (rv)
+-			goto out;
++		seq_printf(s, "Recovery: root %d recover %d flags %lx count %d\n",
++			   root_list, recover_list,
++			   res->res_flags, res->res_recover_locks_count);
+ 	}
+ 
+ 	/* Print the locks attached to this resource */
+ 	seq_puts(s, "Granted Queue\n");
+ 	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	seq_puts(s, "Conversion Queue\n");
+ 	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	seq_puts(s, "Waiting Queue\n");
+ 	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
+-		rv = print_format1_lock(s, lkb, res);
+-		if (rv)
++		print_format1_lock(s, lkb, res);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+@@ -159,23 +152,23 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+ 
+ 	seq_puts(s, "Lookup Queue\n");
+ 	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
+-		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
+-				print_lockmode(lkb->lkb_rqmode));
++		seq_printf(s, "%08x %s",
++			   lkb->lkb_id, print_lockmode(lkb->lkb_rqmode));
+ 		if (lkb->lkb_wait_type)
+ 			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+-		rv = seq_puts(s, "\n");
++		seq_puts(s, "\n");
++		if (seq_is_full(s))
++			goto out;
+ 	}
+  out:
+ 	unlock_rsb(res);
+-	return rv;
  }
  
--#ifdef CONFIG_PROC_FS
--static int signalfd_show_fdinfo(struct seq_file *m, struct file *f)
-+static void signalfd_show_fdinfo(struct seq_file *m, struct file *f)
+-static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+-			      struct dlm_rsb *r)
++static void print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
++			       struct dlm_rsb *r)
  {
-+#ifdef CONFIG_PROC_FS
- 	struct signalfd_ctx *ctx = f->private_data;
- 	sigset_t sigmask;
+ 	u64 xid = 0;
+ 	u64 us;
+-	int rv;
  
- 	sigmask = ctx->sigmask;
- 	signotset(&sigmask);
- 	render_sigset_t(m, "sigmask:\t", &sigmask);
--
--	return 0;
--}
- #endif
-+}
+ 	if (lkb->lkb_flags & DLM_IFL_USER) {
+ 		if (lkb->lkb_ua)
+@@ -188,103 +181,97 @@ static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 	/* id nodeid remid pid xid exflags flags sts grmode rqmode time_us
+ 	   r_nodeid r_len r_name */
  
- static const struct file_operations signalfd_fops = {
--#ifdef CONFIG_PROC_FS
- 	.show_fdinfo	= signalfd_show_fdinfo,
--#endif
- 	.release	= signalfd_release,
- 	.poll		= signalfd_poll,
- 	.read		= signalfd_read,
-diff --git a/fs/timerfd.c b/fs/timerfd.c
-index b46ffa9..b94fa6c 100644
---- a/fs/timerfd.c
-+++ b/fs/timerfd.c
-@@ -288,7 +288,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+-	rv = seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+-			lkb->lkb_id,
+-			lkb->lkb_nodeid,
+-			lkb->lkb_remid,
+-			lkb->lkb_ownpid,
+-			(unsigned long long)xid,
+-			lkb->lkb_exflags,
+-			lkb->lkb_flags,
+-			lkb->lkb_status,
+-			lkb->lkb_grmode,
+-			lkb->lkb_rqmode,
+-			(unsigned long long)us,
+-			r->res_nodeid,
+-			r->res_length,
+-			r->res_name);
+-	return rv;
++	seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
++		   lkb->lkb_id,
++		   lkb->lkb_nodeid,
++		   lkb->lkb_remid,
++		   lkb->lkb_ownpid,
++		   (unsigned long long)xid,
++		   lkb->lkb_exflags,
++		   lkb->lkb_flags,
++		   lkb->lkb_status,
++		   lkb->lkb_grmode,
++		   lkb->lkb_rqmode,
++		   (unsigned long long)us,
++		   r->res_nodeid,
++		   r->res_length,
++		   r->res_name);
  }
  
- #ifdef CONFIG_PROC_FS
--static int timerfd_show(struct seq_file *m, struct file *file)
-+static void timerfd_show(struct seq_file *m, struct file *file)
+-static int print_format2(struct dlm_rsb *r, struct seq_file *s)
++static void print_format2(struct dlm_rsb *r, struct seq_file *s)
  {
- 	struct timerfd_ctx *ctx = file->private_data;
- 	struct itimerspec t;
-@@ -298,18 +298,19 @@ static int timerfd_show(struct seq_file *m, struct file *file)
- 	t.it_interval = ktime_to_timespec(ctx->tintv);
- 	spin_unlock_irq(&ctx->wqh.lock);
+ 	struct dlm_lkb *lkb;
+-	int rv = 0;
  
--	return seq_printf(m,
--			  "clockid: %d\n"
--			  "ticks: %llu\n"
--			  "settime flags: 0%o\n"
--			  "it_value: (%llu, %llu)\n"
--			  "it_interval: (%llu, %llu)\n",
--			  ctx->clockid, (unsigned long long)ctx->ticks,
--			  ctx->settime_flags,
--			  (unsigned long long)t.it_value.tv_sec,
--			  (unsigned long long)t.it_value.tv_nsec,
--			  (unsigned long long)t.it_interval.tv_sec,
--			  (unsigned long long)t.it_interval.tv_nsec);
-+	seq_printf(m,
-+		   "clockid: %d\n"
-+		   "ticks: %llu\n"
-+		   "settime flags: 0%o\n"
-+		   "it_value: (%llu, %llu)\n"
-+		   "it_interval: (%llu, %llu)\n",
-+		   ctx->clockid,
-+		   (unsigned long long)ctx->ticks,
-+		   ctx->settime_flags,
-+		   (unsigned long long)t.it_value.tv_sec,
-+		   (unsigned long long)t.it_value.tv_nsec,
-+		   (unsigned long long)t.it_interval.tv_sec,
-+		   (unsigned long long)t.it_interval.tv_nsec);
+ 	lock_rsb(r);
+ 
+ 	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+-		rv = print_format2_lock(s, lkb, r);
+-		if (rv)
++		print_format2_lock(s, lkb, r);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+  out:
+ 	unlock_rsb(r);
+-	return rv;
  }
- #else
- #define timerfd_show NULL
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a4ce5bae..e2f67f0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1494,7 +1494,7 @@ struct file_operations {
- 	int (*setlease)(struct file *, long, struct file_lock **, void **);
- 	long (*fallocate)(struct file *file, int mode, loff_t offset,
- 			  loff_t len);
--	int (*show_fdinfo)(struct seq_file *m, struct file *f);
-+	void (*show_fdinfo)(struct seq_file *m, struct file *f);
+ 
+-static int print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
++static void print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+ 			      int rsb_lookup)
+ {
+ 	u64 xid = 0;
+-	int rv;
+ 
+ 	if (lkb->lkb_flags & DLM_IFL_USER) {
+ 		if (lkb->lkb_ua)
+ 			xid = lkb->lkb_ua->xid;
+ 	}
+ 
+-	rv = seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+-			lkb->lkb_id,
+-			lkb->lkb_nodeid,
+-			lkb->lkb_remid,
+-			lkb->lkb_ownpid,
+-			(unsigned long long)xid,
+-			lkb->lkb_exflags,
+-			lkb->lkb_flags,
+-			lkb->lkb_status,
+-			lkb->lkb_grmode,
+-			lkb->lkb_rqmode,
+-			lkb->lkb_last_bast.mode,
+-			rsb_lookup,
+-			lkb->lkb_wait_type,
+-			lkb->lkb_lvbseq,
+-			(unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+-			(unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+-	return rv;
++	seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
++		   lkb->lkb_id,
++		   lkb->lkb_nodeid,
++		   lkb->lkb_remid,
++		   lkb->lkb_ownpid,
++		   (unsigned long long)xid,
++		   lkb->lkb_exflags,
++		   lkb->lkb_flags,
++		   lkb->lkb_status,
++		   lkb->lkb_grmode,
++		   lkb->lkb_rqmode,
++		   lkb->lkb_last_bast.mode,
++		   rsb_lookup,
++		   lkb->lkb_wait_type,
++		   lkb->lkb_lvbseq,
++		   (unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
++		   (unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+ }
+ 
+-static int print_format3(struct dlm_rsb *r, struct seq_file *s)
++static void print_format3(struct dlm_rsb *r, struct seq_file *s)
+ {
+ 	struct dlm_lkb *lkb;
+ 	int i, lvblen = r->res_ls->ls_lvblen;
+ 	int print_name = 1;
+-	int rv;
+ 
+ 	lock_rsb(r);
+ 
+-	rv = seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+-			r,
+-			r->res_nodeid,
+-			r->res_first_lkid,
+-			r->res_flags,
+-			!list_empty(&r->res_root_list),
+-			!list_empty(&r->res_recover_list),
+-			r->res_recover_locks_count,
+-			r->res_length);
+-	if (rv)
++	seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
++		   r,
++		   r->res_nodeid,
++		   r->res_first_lkid,
++		   r->res_flags,
++		   !list_empty(&r->res_root_list),
++		   !list_empty(&r->res_recover_list),
++		   r->res_recover_locks_count,
++		   r->res_length);
++	if (seq_is_full(s))
+ 		goto out;
+ 
+ 	for (i = 0; i < r->res_length; i++) {
+@@ -300,8 +287,8 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_puts(s, "\n");
+-	if (rv)
++	seq_puts(s, "\n");
++	if (seq_is_full(s))
+ 		goto out;
+ 
+ 	if (!r->res_lvbptr)
+@@ -311,58 +298,55 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+ 
+ 	for (i = 0; i < lvblen; i++)
+ 		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
+-	rv = seq_puts(s, "\n");
+-	if (rv)
++	seq_puts(s, "\n");
++	if (seq_is_full(s))
+ 		goto out;
+ 
+  do_locks:
+ 	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+-		rv = print_format3_lock(s, lkb, 0);
+-		if (rv)
++		print_format3_lock(s, lkb, 0);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+ 
+ 	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup) {
+-		rv = print_format3_lock(s, lkb, 1);
+-		if (rv)
++		print_format3_lock(s, lkb, 1);
++		if (seq_is_full(s))
+ 			goto out;
+ 	}
+  out:
+ 	unlock_rsb(r);
+-	return rv;
+ }
+ 
+-static int print_format4(struct dlm_rsb *r, struct seq_file *s)
++static void print_format4(struct dlm_rsb *r, struct seq_file *s)
+ {
+ 	int our_nodeid = dlm_our_nodeid();
+ 	int print_name = 1;
+-	int i, rv;
++	int i;
+ 
+ 	lock_rsb(r);
+ 
+-	rv = seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+-			r,
+-			r->res_nodeid,
+-			r->res_master_nodeid,
+-			r->res_dir_nodeid,
+-			our_nodeid,
+-			r->res_toss_time,
+-			r->res_flags,
+-			r->res_length);
+-	if (rv)
+-		goto out;
++	seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
++		   r,
++		   r->res_nodeid,
++		   r->res_master_nodeid,
++		   r->res_dir_nodeid,
++		   our_nodeid,
++		   r->res_toss_time,
++		   r->res_flags,
++		   r->res_length);
+ 
+ 	for (i = 0; i < r->res_length; i++) {
+ 		if (!isascii(r->res_name[i]) || !isprint(r->res_name[i]))
+@@ -377,10 +361,9 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+ 		else
+ 			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+ 	}
+-	rv = seq_puts(s, "\n");
+- out:
++	seq_puts(s, "\n");
++
+ 	unlock_rsb(r);
+-	return rv;
+ }
+ 
+ struct rsbtbl_iter {
+@@ -390,11 +373,12 @@ struct rsbtbl_iter {
+ 	int header;
  };
  
- struct inode_operations {
+-/* seq_printf returns -1 if the buffer is full, and 0 otherwise.
+-   If the buffer is full, seq_printf can be called again, but it
+-   does nothing and just returns -1.  So, the these printing routines
+-   periodically check the return value to avoid wasting too much time
+-   trying to print to a full buffer. */
++/*
++ * If the buffer is full, seq_printf can be called again, but it
++ * does nothing.  So, the these printing routines periodically check
++ * seq_is_full to avoid wasting too much time trying to print to
++ * a full buffer.
++ */
+ 
+ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ {
+@@ -403,7 +387,7 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ 
+ 	switch (ri->format) {
+ 	case 1:
+-		rv = print_format1(ri->rsb, seq);
++		print_format1(ri->rsb, seq);
+ 		break;
+ 	case 2:
+ 		if (ri->header) {
+@@ -412,21 +396,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+ 					"r_nodeid r_len r_name\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format2(ri->rsb, seq);
++		print_format2(ri->rsb, seq);
+ 		break;
+ 	case 3:
+ 		if (ri->header) {
+ 			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format3(ri->rsb, seq);
++		print_format3(ri->rsb, seq);
+ 		break;
+ 	case 4:
+ 		if (ri->header) {
+ 			seq_printf(seq, "version 4 rsb 2\n");
+ 			ri->header = 0;
+ 		}
+-		rv = print_format4(ri->rsb, seq);
++		print_format4(ri->rsb, seq);
+ 		break;
+ 	}
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
