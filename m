@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaI2IuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:50:23 -0400
-Received: from smtp-out-039.synserver.de ([212.40.185.39]:1052 "EHLO
-	smtp-out-039.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaI2IuP (ORCPT
+	id S1752763AbaI2Iuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:50:50 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:49761 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaI2Iur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:50:15 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7916
-Message-ID: <54291D50.30002@metafoo.de>
-Date: Mon, 29 Sep 2014 10:50:24 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
+	Mon, 29 Sep 2014 04:50:47 -0400
+X-ASG-Debug-ID: 1411980644-0759e74bdc521d40002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 29 Sep 2014 10:50:42 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, <tony@atomide.com>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140929085042.GA13952@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
+ <54129F6C.7040508@linutronix.de>
+ <20140912094010.GE28458@ci00147.xsens-tech.local>
+ <5412C21A.8020203@linutronix.de>
+ <20140912102816.GF28458@ci00147.xsens-tech.local>
+ <541716DC.9020904@linutronix.de>
+ <20140917102812.GA20438@ci00147.xsens-tech.local>
+ <20140921204100.GA10111@linutronix.de>
+ <20140922092853.GH20438@ci00147.xsens-tech.local>
+ <20140925151403.GH19396@linutronix.de>
 MIME-Version: 1.0
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        linux-kernel@vger.kernel.org
-CC: alsa-devel@alsa-project.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] ASoC: ssm2602: add device tree bindings
-References: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-In-Reply-To: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140925151403.GH19396@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411980644
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10015
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2014 09:57 AM, Stefan Kristiansson wrote:
-> Allow the ssm2602/ssm2603/ssm2604 codec driver to be
-> instantiated from the device tree.
->
-> Also, add Kconfig prompts to allow manual selection of both the
-> I2C and SPI configuration versions of the driver.
->
-> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+On Thu, Sep 25, 2014 at 05:14:03PM +0200, Sebastian Andrzej Siewior wrote:
+> * Frans Klaver | 2014-09-22 11:28:54 [+0200]:
+> 
+> >I guess then we'd still have to answer the question why the yocto build
+> >calls set_termios() so often, but that's not on you then. Did you notice
+> >it even changing settings? We might want to fix this even if the kernel
+> >should be able to cope.
+> 
+> could you please test uart_v10_pre3? I dropped a few register sets and
+> delayed the register update until TX-DMA is complete. I am traveling
+> currently and have only my boneblack and it passes my limited testing.
+> If it solves your problems, too then I would address Heikki's latest
+> comments and prepare the final v10 (and I hope I didn't break beagle
+> board in between).
 
-Looks mostly good, but you should Cc both the devicetree and the ASoC 
-maintainers.
+This version fixes the console things for us. It also increases the
+amount of data we can push over the serial port. If I push the data
+towards our requirements, we're not there yet. I get the "too much work
+for irq" notice still. However, I don't think you'd need to be fixing
+that in this series (or at all). We had similar issues there with
+omap-serial as well.
 
-[...]
-> diff --git a/sound/soc/codecs/ssm2602-i2c.c b/sound/soc/codecs/ssm2602-i2c.c
-> index abd63d5..0d9779d 100644
-> --- a/sound/soc/codecs/ssm2602-i2c.c
-> +++ b/sound/soc/codecs/ssm2602-i2c.c
-> @@ -41,10 +41,19 @@ static const struct i2c_device_id ssm2602_i2c_id[] = {
->   };
->   MODULE_DEVICE_TABLE(i2c, ssm2602_i2c_id);
->
-> +static const struct of_device_id ssm2602_of_match[] = {
-> +	{ .compatible = "adi,ssm2602", },
-> +	{ .compatible = "adi,ssm2603", },
-> +	{ .compatible = "adi,ssm2604", },
+As far as I'm concerned, this is
 
-Since the driver is supposed to behave different depending on the device you 
-should set the driver data similar to like it is done in the ssm2602_i2c_id 
-table and add code in the probe function to extract the driver data.
+Tested-by: Frans Klaver <frans.klaver@xsens.com>
 
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, ssm2602_of_match);
-> +
->   static struct i2c_driver ssm2602_i2c_driver = {
->   	.driver = {
->   		.name = "ssm2602",
->   		.owner = THIS_MODULE,
-> +		.of_match_table = ssm2602_of_match,
->   	},
->   	.probe = ssm2602_i2c_probe,
->   	.remove = ssm2602_i2c_remove,
-> diff --git a/sound/soc/codecs/ssm2602-spi.c b/sound/soc/codecs/ssm2602-spi.c
-> index 2bf55e2..fb4cc46 100644
-> --- a/sound/soc/codecs/ssm2602-spi.c
-> +++ b/sound/soc/codecs/ssm2602-spi.c
-> @@ -26,10 +26,19 @@ static int ssm2602_spi_remove(struct spi_device *spi)
->   	return 0;
->   }
->
-> +static const struct of_device_id ssm2602_of_match[] = {
-> +	{ .compatible = "adi,ssm2602", },
-> +	{ .compatible = "adi,ssm2603", },
-> +	{ .compatible = "adi,ssm2604", },
-
-The ssm2603 and ssm2604 do not have a SPI interface.
-
-> +	{ }
-> +};
-[...]
+Thanks,
+Frans
