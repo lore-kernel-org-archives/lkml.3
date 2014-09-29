@@ -1,135 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaI2XJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:09:03 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59557 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755159AbaI2XIz (ORCPT
+	id S1755335AbaI2XJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:09:17 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:36363 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315AbaI2XJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:08:55 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
-        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
-Date: Tue, 30 Sep 2014 01:28:50 +0200
-Message-ID: <128377046.aOTypBOIY8@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5429330A.7000103@linux.vnet.ibm.com>
-References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com> <541A4D4F.1090307@linux.vnet.ibm.com> <5429330A.7000103@linux.vnet.ibm.com>
+	Mon, 29 Sep 2014 19:09:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1412029912.4285.110.camel@pasglop>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+ <1412000971-9242-11-git-send-email-Liviu.Dudau@arm.com> <CAE9FiQXEUZvkuzwOrK+2zGVj0ywFaQsiWH7SHufZk9BRWnwddQ@mail.gmail.com>
+ <CAE9FiQUkcPRMUEn01VJMyXz8aYvk6C5MBNZi5NCV2m3qkNabeg@mail.gmail.com>
+ <1412024521.4285.98.camel@pasglop> <CAErSpo62ap1YkzvuZ6MCpXry9=VpLv+Skzrwr10h=+Lc4VfVgQ@mail.gmail.com>
+ <1412029912.4285.110.camel@pasglop>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 29 Sep 2014 17:08:49 -0600
+Message-ID: <CAErSpo70t9TMdntjBt+GdTw3FVmMquACQePX8=SKkySPuG3F3Q@mail.gmail.com>
+Subject: Re: [PATCH v13 10/12] PCI: Assign unassigned bus resources in pci_scan_root_bus()
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 29, 2014 03:53:06 PM Shreyas B Prabhu wrote:
-> Hi,
-> Any updates on this patch series?
+On Mon, Sep 29, 2014 at 4:31 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Mon, 2014-09-29 at 15:33 -0600, Bjorn Helgaas wrote:
+>> > Right and on powerpc and others as well. We need to survey existing
+>> > resources. We also have a number of platform things that might need
+>> > to happen before we do the final re-assignment pass.
+>>
+>> That's true today.  But I don't know whether it *has* to be this way
+>> forever.  On x86, pcibios_resource_survey() throws in E820 information
+>> (which we know long before we do any PCI enumeration) and some IO-APIC
+>> resources (it looks like we also know these before PCI enumeration).
+>> Powerpc has pcibios_reserve_legacy_regions(), but that looks like
+>> mostly stuff that could be done when we find the host bridge, before
+>> we enumerate PCI devices below it.
+>
+> Oh we can probably change that but it's going to be much more work than
+> just moving the assignment into pci_scan_root_bus().
 
-I have a couple of patches from there in my tree it seems.  Please have a look
-at linux-pm.git/linux-next and please let me know if that's the case.
+Agreed.  It's obvious that we can't apply Liviu's patch as-is.
 
+> There are also a
+> number of subtle and not-so-subtle bits of code that rely on side
+> effects of the current code such as anything that tests for bus->added
+> or dev->added. Again, nothing we can't sort out eventually but the
+> transition might be a bit painful.
+>
+> We might need to introduce a new flag for platforms converted to the
+> "new style" generalized resource assignment which we can deprecate once
+> everybody has moved over.
 
-> On Thursday 18 September 2014 08:41 AM, Shreyas B Prabhu wrote:
-> > Hi,
-> > 
-> > In this patch series we use winkle for offlined cores. I successfully
-> > tested the working of this with subcore functionality.
-> > 
-> > Test scenario was as follows:
-> > 1. Set SMT mode to 1, Set subores-per-core to 1
-> > 2. Offline a core, in this case cpu 32 (sending it to winkle)
-> > 3. Set subcores-per-core to 4
-> > 4. Online the core
-> > 5. Start a guest (Topology 1 core 2 threads) on a subcore, in this case
-> > on cpu 36
-> > 
-> > This works without any glitch.
-> > 
-> > Thanks,
-> > Shreyas
-> > 
-> > On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
-> >> Fast sleep is an idle state, where the core and the L1 and L2
-> >> caches are brought down to a threshold voltage. This also means that
-> >> the communication between L2 and L3 caches have to be fenced. However
-> >> the current P8 chips have a bug wherein this fencing between L2 and
-> >> L3 caches get delayed by a cpu cycle. This can delay L3 response to
-> >> the other cpus if they request for data during this time. Thus they
-> >> would fetch the same data from the memory which could lead to data
-> >> corruption if L3 cache is not flushed.
-> >> Patch 4 adds support to work around this.
-> >>
-> >> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
-> >> off. While it offers higher power savings, it is at the cost of losing
-> >> hypervisor register state and higher latency.
-> >> Patch 5-9 adds support for winkle and uses it for offline cpus.
-> >>
-> >> Patch 1 - Moves parameters required discover idle states to a location 
-> >> common to both cpuidle driver and powernv core code
-> >> Patch 2 - Populates idle state details from device tree
-> >> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
-> >>
-> >>
-> >> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >> Cc: Paul Mackerras <paulus@samba.org>
-> >> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> >> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> >> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
-> >> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-> >> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> >> Cc: Rob Herring <robh+dt@kernel.org>
-> >> Cc: Grant Likely <grant.likely@linaro.org>
-> >> Cc: devicetree@vger.kernel.org
-> >> Cc: linux-pm@vger.kernel.org
-> >> Cc: linuxppc-dev@lists.ozlabs.org
-> >>
-> >> Preeti U Murthy (2):
-> >>   cpuidle/powernv: Populate cpuidle state details by querying the
-> >>     device-tree
-> >>   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
-> >>
-> >> Shreyas B. Prabhu (6):
-> >>   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
-> >>     fast-sleep
-> >>   powerpc/powernv: Add OPAL call to save and restore
-> >>   powerpc: Adding macro for accessing Thread Switch Control Register
-> >>   powerpc/powernv: Add winkle infrastructure
-> >>   powerpc/powernv: Discover and enable winkle
-> >>   powerpc/powernv: Enter deepest supported idle state in offline
-> >>
-> >> Srivatsa S. Bhat (1):
-> >>   powerpc/powernv: Enable Offline CPUs to enter deep idle states
-> >>
-> >>  arch/powerpc/include/asm/machdep.h             |   4 +
-> >>  arch/powerpc/include/asm/opal.h                |  10 ++
-> >>  arch/powerpc/include/asm/paca.h                |   3 +
-> >>  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
-> >>  arch/powerpc/include/asm/processor.h           |   6 +-
-> >>  arch/powerpc/include/asm/reg.h                 |   1 +
-> >>  arch/powerpc/kernel/asm-offsets.c              |   1 +
-> >>  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
-> >>  arch/powerpc/kernel/idle.c                     |  30 ++++
-> >>  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
-> >>  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
-> >>  arch/powerpc/platforms/powernv/powernv.h       |   8 +
-> >>  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
-> >>  arch/powerpc/platforms/powernv/smp.c           |  13 +-
-> >>  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
-> >>  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
-> >>  16 files changed, 439 insertions(+), 33 deletions(-)
-> >>
-> 
+There's definitely a lot of work here if we ever want to make this happen.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Bjorn
