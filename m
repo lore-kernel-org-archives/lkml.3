@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418AbaI2UgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:36:09 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:52933 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750970AbaI2UgH (ORCPT
+	id S1754397AbaI2UhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:37:24 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33885 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaI2UhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:36:07 -0400
-Message-ID: <1412022964.6334.104.camel@x220>
-Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Valentin Rothberg <valentinrothberg@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, Randy Dunlap <rdunlap@infradead.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Sep 2014 22:36:04 +0200
-In-Reply-To: <CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
-References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
-	 <5421A4B4.1040604@infradead.org> <1411492210.30136.15.camel@nebuchadnezzar>
-	 <5421A9D5.8020503@infradead.org> <1411496822.31476.1.camel@nebuchadnezzar>
-	 <1412021904.6334.97.camel@x220>
-	 <CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+	Mon, 29 Sep 2014 16:37:23 -0400
+Date: Mon, 29 Sep 2014 16:37:20 -0400 (EDT)
+Message-Id: <20140929.163720.1059434932375001698.davem@davemloft.net>
+To: hock.leong.kweh@intel.com
+Cc: peppe.cavallaro@st.com, rayagond@vayavyalabs.com, vbridgers2013@gmail.com,
+        wens@csie.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        boon.leong.ong@intel.com, tobias.johannes.klausmann@mni.thm.de
+Subject: Re: [PATCH v2] net: stmmac: fix stmmac_pci_probe failed when
+ CONFIG_HAVE_CLK is selected
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1411738975-20056-1-git-send-email-hock.leong.kweh@intel.com>
+References: <1411738975-20056-1-git-send-email-hock.leong.kweh@intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2014 20:36:04.0943 (UTC) FILETIME=[FDA535F0:01CFDC24]
-X-RcptDomain: vger.kernel.org
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 29 Sep 2014 13:37:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-29 at 22:25 +0200, Valentin Rothberg wrote:
-> On Mon, Sep 29, 2014 at 10:18 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > Maybe something like "TEST_MODULE_LOAD"?
+From: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Date: Fri, 26 Sep 2014 21:42:55 +0800
+
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
 > 
-> It has been merged already, see [1]. Sorry, I did not check if you
-> were in the CC to let you know.
+> When the CONFIG_HAVE_CLK is selected for the system, the stmmac_pci_probe
+> will fail with dmesg:
+> [    2.167225] stmmaceth 0000:00:14.6: enabling device (0000 -> 0002)
+> [    2.178267] stmmaceth 0000:00:14.6: enabling bus mastering
+> [    2.178436] stmmaceth 0000:00:14.6: irq 24 for MSI/MSI-X
+> [    2.178703] stmmaceth 0000:00:14.6: stmmac_dvr_probe: warning: cannot
+> get CSR clock
+> [    2.186503] stmmac_pci_probe: main driver probe failed
+> [    2.194003] stmmaceth 0000:00:14.6: disabling bus mastering
+> [    2.196473] stmmaceth: probe of 0000:00:14.6 failed with error -2
 > 
-> [1] http://ozlabs.org/~akpm/mmotm/broken-out/lib-rename-test_module-to-test_lkm.patch
+> This patch fix the issue by breaking the dependency to devm_clk_get()
+> as the CSR clock can be obtained at priv->plat->clk_csr from pci driver.
+> 
+> Reported-by: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-That didn't hit lkml, did it? Don't know whether mmotm is set in stone
-nor whether Kees has strong feelings about the name of this feature. (I
-suspect I'm wandering into bicycle shed territory here...).
-
-> > If something like this gets applied a follow up patch to make the kbuild
-> > system reject Kconfig symbols ending in _MODULE might be nice.
-
-Will do. But you're free to beat me to it.
-
-Thanks,
-
-
-Paul Bolle
-
+Applied, thank you.
