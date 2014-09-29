@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaI2Nfu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:35:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:32043 "EHLO mga11.intel.com"
+	id S1754783AbaI2NgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:36:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32039 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461AbaI2NdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754458AbaI2NdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Sep 2014 09:33:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393030075"
+   d="scan'208";a="393030058"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 12/18] mei: remove the reference to pdev from mei_device
-Date: Mon, 29 Sep 2014 16:31:44 +0300
-Message-Id: <1411997510-29094-13-git-send-email-tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 11/18] mei: move fw_status back to hw ops handlers
+Date: Mon, 29 Sep 2014 16:31:43 +0300
+Message-Id: <1411997510-29094-12-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
 References: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
@@ -23,106 +23,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For purpose of adding testing HW we would like
-to get rid of pci dependency in generic mei code.
+fw status retrieval has pci specific implementation
+so we push it back to the hw layer
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/hw-me.c   | 3 +--
- drivers/misc/mei/hw-txe.c  | 3 +--
- drivers/misc/mei/mei_dev.h | 2 --
- drivers/misc/mei/pci-me.c  | 2 +-
- drivers/misc/mei/pci-txe.c | 2 +-
- 5 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/misc/mei/hw-me.c   | 28 ++++++++++++++++++++++++++++
+ drivers/misc/mei/hw-txe.c  | 30 ++++++++++++++++++++++++++++++
+ drivers/misc/mei/init.c    | 21 ---------------------
+ drivers/misc/mei/mei_dev.h |  9 ++++++++-
+ 4 files changed, 66 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 678531c..da86310 100644
+index 1247be7..678531c 100644
 --- a/drivers/misc/mei/hw-me.c
 +++ b/drivers/misc/mei/hw-me.c
-@@ -676,7 +676,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
- 
- 	/* Ack the interrupt here
- 	 * In case of MSI we don't go through the quick handler */
--	if (pci_dev_msi_enabled(dev->pdev))
-+	if (pci_dev_msi_enabled(to_pci_dev(dev->dev)))
- 		mei_clear_interrupts(dev);
- 
- 	/* check if ME wants a reset */
-@@ -854,7 +854,6 @@ struct mei_device *mei_me_dev_init(struct pci_dev *pdev,
- 
- 	mei_device_init(dev, &pdev->dev, &mei_me_hw_ops);
- 	dev->cfg  = cfg;
--	dev->pdev = pdev;
- 	return dev;
+@@ -101,6 +101,33 @@ static inline void mei_hcsr_set(struct mei_me_hw *hw, u32 hcsr)
+ 	mei_me_reg_write(hw, H_CSR, hcsr);
  }
  
++/**
++ * mei_me_fw_status - read fw status register from pci config space
++ *
++ * @dev: mei device
++ * @fw_status: fw status register values
++ */
++static int mei_me_fw_status(struct mei_device *dev,
++			    struct mei_fw_status *fw_status)
++{
++	const struct mei_fw_status *fw_src = &dev->cfg->fw_status;
++	struct pci_dev *pdev = to_pci_dev(dev->dev);
++	int ret;
++	int i;
++
++	if (!fw_status)
++		return -EINVAL;
++
++	fw_status->count = fw_src->count;
++	for (i = 0; i < fw_src->count && i < MEI_FW_STATUS_MAX; i++) {
++		ret = pci_read_config_dword(pdev,
++			fw_src->status[i], &fw_status->status[i]);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
+ 
+ /**
+  * mei_me_hw_config - configure hw dependent settings
+@@ -714,6 +741,7 @@ end:
+ 
+ static const struct mei_hw_ops mei_me_hw_ops = {
+ 
++	.fw_status = mei_me_fw_status,
+ 	.pg_state  = mei_me_pg_state,
+ 
+ 	.host_is_ready = mei_me_host_is_ready,
 diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index e4cb9dc..6eef676 100644
+index acc475e..e4cb9dc 100644
 --- a/drivers/misc/mei/hw-txe.c
 +++ b/drivers/misc/mei/hw-txe.c
-@@ -998,7 +998,7 @@ irqreturn_t mei_txe_irq_thread_handler(int irq, void *dev_id)
- 	mutex_lock(&dev->device_lock);
- 	mei_io_list_init(&complete_list);
- 
--	if (pci_dev_msi_enabled(dev->pdev))
-+	if (pci_dev_msi_enabled(to_pci_dev(dev->dev)))
- 		mei_txe_check_and_ack_intrs(dev, true);
- 
- 	/* show irq events */
-@@ -1157,7 +1157,6 @@ struct mei_device *mei_txe_dev_init(struct pci_dev *pdev,
- 	init_waitqueue_head(&hw->wait_aliveness_resp);
- 
- 	dev->cfg  = cfg;
--	dev->pdev = pdev;
- 	return dev;
+@@ -573,6 +573,35 @@ static int mei_txe_readiness_wait(struct mei_device *dev)
+ 	return 0;
  }
  
++
++/**
++ * mei_txe_fw_status - read fw status register from pci config space
++ *
++ * @dev: mei device
++ * @fw_status: fw status register values
++ */
++static int mei_txe_fw_status(struct mei_device *dev,
++			     struct mei_fw_status *fw_status)
++{
++	const struct mei_fw_status *fw_src = &dev->cfg->fw_status;
++	struct pci_dev *pdev = to_pci_dev(dev->dev);
++	int ret;
++	int i;
++
++	if (!fw_status)
++		return -EINVAL;
++
++	fw_status->count = fw_src->count;
++	for (i = 0; i < fw_src->count && i < MEI_FW_STATUS_MAX; i++) {
++		ret = pci_read_config_dword(pdev,
++			fw_src->status[i], &fw_status->status[i]);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
+ /**
+  *  mei_txe_hw_config - configure hardware at the start of the devices
+  *
+@@ -1064,6 +1093,7 @@ static const struct mei_hw_ops mei_txe_hw_ops = {
+ 
+ 	.host_is_ready = mei_txe_host_is_ready,
+ 
++	.fw_status = mei_txe_fw_status,
+ 	.pg_state = mei_txe_pg_state,
+ 
+ 	.hw_is_ready = mei_txe_hw_is_ready,
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 29aae7b..dd233fd 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -344,27 +344,6 @@ bool mei_write_is_idle(struct mei_device *dev)
+ }
+ EXPORT_SYMBOL_GPL(mei_write_is_idle);
+ 
+-int mei_fw_status(struct mei_device *dev, struct mei_fw_status *fw_status)
+-{
+-	const struct mei_fw_status *fw_src = &dev->cfg->fw_status;
+-	int ret;
+-	int i;
+-
+-	if (!fw_status)
+-		return -EINVAL;
+-
+-	fw_status->count = fw_src->count;
+-	for (i = 0; i < fw_src->count && i < MEI_FW_STATUS_MAX; i++) {
+-		ret = pci_read_config_dword(dev->pdev,
+-			fw_src->status[i], &fw_status->status[i]);
+-		if (ret)
+-			return ret;
+-	}
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(mei_fw_status);
+-
+ /**
+  * mei_device_init  -- initialize mei_device structure
+  *
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 7080fff..5a16cc4 100644
+index 7051430..7080fff 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -401,7 +401,6 @@ struct mei_cfg {
- /**
-  * struct mei_device -  MEI private device struct
+@@ -233,6 +233,7 @@ struct mei_cl {
+  * @hw_start         - start hw after reset
+  * @hw_config        - configure hw
  
-- * @pdev - pointer to pci device struct
-  * @dev  - device on a bus
-  * @cdev - character device
-  * @minor - minor number allocated for device
-@@ -420,7 +419,6 @@ struct mei_cfg {
-  * @cfg - per device generation config and ops
-  */
- struct mei_device {
--	struct pci_dev *pdev;	/* pointer to pci device struct */
- 	struct device *dev;
- 	struct cdev cdev;
- 	int minor;
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index 83e8892..a910717 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -430,7 +430,7 @@ static int mei_me_pm_runtime_resume(struct device *device)
-  */
- static inline void mei_me_set_pm_domain(struct mei_device *dev)
- {
--	struct pci_dev *pdev  = dev->pdev;
-+	struct pci_dev *pdev  = to_pci_dev(dev->dev);
++ * @fw_status        - get fw status registers
+  * @pg_state         - power gating state of the device
+  * @pg_is_enabled    - is power gating enabled
  
- 	if (pdev->dev.bus && pdev->dev.bus->pm) {
- 		dev->pg_domain.ops = *pdev->dev.bus->pm;
-diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
-index a1f60be..cd9dda7 100644
---- a/drivers/misc/mei/pci-txe.c
-+++ b/drivers/misc/mei/pci-txe.c
-@@ -378,7 +378,7 @@ static int mei_txe_pm_runtime_resume(struct device *device)
-  */
- static inline void mei_txe_set_pm_domain(struct mei_device *dev)
- {
--	struct pci_dev *pdev  = dev->pdev;
-+	struct pci_dev *pdev  = to_pci_dev(dev->dev);
+@@ -260,6 +261,8 @@ struct mei_hw_ops {
+ 	int (*hw_start)(struct mei_device *dev);
+ 	void (*hw_config)(struct mei_device *dev);
  
- 	if (pdev->dev.bus && pdev->dev.bus->pm) {
- 		dev->pg_domain.ops = *pdev->dev.bus->pm;
++
++	int (*fw_status)(struct mei_device *dev, struct mei_fw_status *fw_sts);
+ 	enum mei_pg_state (*pg_state)(struct mei_device *dev);
+ 	bool (*pg_is_enabled)(struct mei_device *dev);
+ 
+@@ -731,7 +734,11 @@ static inline int mei_count_full_read_slots(struct mei_device *dev)
+ 	return dev->ops->rdbuf_full_slots(dev);
+ }
+ 
+-int mei_fw_status(struct mei_device *dev, struct mei_fw_status *fw_status);
++static inline int mei_fw_status(struct mei_device *dev,
++				struct mei_fw_status *fw_status)
++{
++	return dev->ops->fw_status(dev, fw_status);
++}
+ 
+ #define FW_STS_FMT "%08X %08X"
+ #define FW_STS_PRM(fw_status) \
 -- 
 1.9.3
 
