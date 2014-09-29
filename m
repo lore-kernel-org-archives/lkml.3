@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaI2Kxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:53:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64382 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751694AbaI2Kxd (ORCPT
+	id S1752239AbaI2K6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:58:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53022 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaI2K6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:53:33 -0400
-Date: Mon, 29 Sep 2014 11:53:29 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "bjorn.andersson@sonymobile.com" <bjorn.andersson@sonymobile.com>
-Subject: Re: [PATCH 3/4] ARM: DT: apq8064: Add USB OTG support
-Message-ID: <20140929105329.GA2432@leverpostej>
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
- <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
- <542933E1.8010809@smartplayin.com>
+	Mon, 29 Sep 2014 06:58:49 -0400
+Date: Mon, 29 Sep 2014 12:58:42 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv4 0/4] pwm: imx: support output polarity inversion
+Message-ID: <20140929105842.GG4958@pengutronix.de>
+References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
+ <20140826092409.7dea5530@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <542933E1.8010809@smartplayin.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140826092409.7dea5530@ipc1.ka-ro>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:47:48 up 19 days,  3:35, 80 users,  load average: 0.05, 0.10,
+ 0.13
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:26:41AM +0100, Kiran Padwal wrote:
-> Hi Srinivas,
+On Tue, Aug 26, 2014 at 09:24:09AM +0200, Lothar Waßmann wrote:
+> Hi,
 > 
-> Some review are comments inline.
-> 
-> On Monday 29 September 2014 02:45 PM, Srinivas Kandagatla wrote:
-> > This patch adds USB OTG support on USB1 of APQ8064 SOC.
-> > Tested on IFC6410 with ethernet gadget.
+> Lothar Waßmann wrote:
+> > This patch series adds support for polarity inversion to the pwm-imx
+> > driver. The patches have been tested on i.MX6, i.MX53 and with the
+> > ti-ehrpwm.c driver.
 > > 
-> > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> > ---
-> >  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts | 14 +++++++++
-> >  arch/arm/boot/dts/qcom-apq8064.dtsi        | 46 ++++++++++++++++++++++++++++++
-> >  2 files changed, 60 insertions(+)
+> > Changes wrt. v2:
+> > - make the use of '#pwm-cells = <3>' optional, so that the change does
+> >   not break existing DT blobs as suggested by Arnd Bergmann and Sascha
+> >   Hauer.
 > > 
-> > diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> > index d6036b8..f41fb39 100644
-> > --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> > +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> > @@ -40,6 +40,11 @@
-> >  			};
-> >  		};
-> >  
-> > +		/* OTG */
-> > +		usb1_phy:phy@12500000 {
-> > +			status = "ok";
-> 
-> Its canonical value is "okay" (although in practice anything
-> other than "disabled" should work).
+> > Changes wrt. v3:
+> > - implemented the approach suggested by Sascha Hauer 
+> > - don't modify struct pwm_ops in the imx_pwm probe function
+> > 
+> > 
+> Any further comments?
 
-That's not quite true, there are other "bad" values like "fail" and
-"fail-sss" documented by ePAPR. In Linux, of_device_is_available errs on
-the side of caution and checks for either "okay" or "ok", failing
-otherwise
+No, except this one:
 
-Regardless, please use the canonical "okay".
+Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-Mark.
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
