@@ -1,103 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaI2L4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:56:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37389 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaI2L4W (ORCPT
+	id S1753128AbaI2L65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:58:57 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:36985 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaI2L6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:56:22 -0400
-Date: Mon, 29 Sep 2014 13:56:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: dave@sr71.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        eranian@google.com, x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-        torvalds@linux-foundation.org,
-        Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Subject: Re: [PATCH 2/2] x86: Only do a single page fault for
- copy_from_user_nmi
-Message-ID: <20140929115620.GH5430@worktop>
-References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
- <1411774277-4198-3-git-send-email-andi@firstfloor.org>
+	Mon, 29 Sep 2014 07:58:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411774277-4198-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org>
+Date: Mon, 29 Sep 2014 17:28:53 +0530
+Message-ID: <CALicx6vxZOh44apx4+s5pkTnmVeXzqvxys_8QempVLbKu3h=oQ@mail.gmail.com>
+Subject: Re: [RFC v2] arm64: kgdb: fix single stepping
+From: Vijay Kilari <vijay.kilari@gmail.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>,
+        linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 04:31:17PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> When copy_from_user_nmi faults the copy_user_tail code ends
-> up "replaying" the page faults to compute the exact tail bytes,
-> (added with 112958).
+Hi Akashi,
 
-That is a wrong way to quote commits in two ways;
+On Fri, Sep 26, 2014 at 5:24 PM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
+> the single stepping with kgdb doesn't work correctly since its first
+> appearance at v3.15.
+>
+> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
+> steps forward to the next instruction, but the succeeding 'stepi' never
+> goes beyond that.
+> On v3.16, 'stepi' moves forward and stops at the next instruction just
+> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
+> behavior seems to come in with the following patch in v3.16:
+>
+>     commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
+>     paths where possible")
+>
+> This patch
+> (1) moves kgdb_disable_single_step() from 'c' command handling to single
+>     step handler.
+>     This makes sure that single stepping gets effective at every 's' command.
+>     Please note that, under the current implementation, single step bit in
+>     spsr, which is cleared by the first single stepping, will not be set
+>     again for the consecutive 's' commands because single step bit in mdscr
+>     is still kept on (that is, kernel_active_single_step() in
+>     kgdb_arch_handle_exception() is true).
 
-  1) Linus 'requires' you use 12 character abreviated hashes (because
-     we've already seen collisions with the default 8), yet you use 6.
+Have you please check the functionality by running KGDB test suit
+with multicores?
 
-  2) the recommended quoting style is:
+> (2) removes 'enable_dbg' in el1_dbg.
+>     Single step bit in mdscr is turned on in do_handle_exception()->
+>     kgdb_handle_expection() before returning to debugged context, and if
+>     debug exception is enabled in el1_dbg, we will see unexpected single-
+>     stepping in el1_dbg.
+> (3) masks interrupts while single-stepping one instruction.
+>     If an interrupt is caught during processing a single-stepping, debug
+>     exception is unintentionally enabled by el1_irq's 'enable_dbg' before
+>     returning to debugged context.
+>     Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+>
+> Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
+>
+> With those changes, we will see another problem if a breakpoint is set
+> at interrupt-sensible places, like gic_handle_irq():
+>
+>     KGDB: re-enter error: breakpoint removed ffffffc000081258
+>     ------------[ cut here ]------------
+>     WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
+>                                         kgdb_handle_exception+0x1dc/0x1f4()
+>     Modules linked in:
+>     CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
+>     Call trace:
+>     [<ffffffc000087fac>] dump_backtrace+0x0/0x130
+>     [<ffffffc0000880ec>] show_stack+0x10/0x1c
+>     [<ffffffc0004d683c>] dump_stack+0x74/0xb8
+>     [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
+>     [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
+>     [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
+>     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>     Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
+>     ...
+>     [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>     [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
+>     [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
+>     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>     Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
+>     ...
+>     [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>     [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
+>     [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
+>     [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
+>     [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
+>     [<ffffffc0001939b0>] SyS_write+0x40/0xa0
+>
+> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
+> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
+> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
+> use smp_call_function().
+> This eventually allows another interrupt to occur and likely results in
+> hitting a breakpoint at gic_handle_irq() again since debug exception is
+> always enabled in el1_irq.
+>
+> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
+> but this will also leave other cpus be in unknown state in terms of kgdb,
+> and may result in interfering with kgdb activity.
+>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/kernel/entry.S |    1 -
+>  arch/arm64/kernel/kgdb.c  |   29 +++++++++++++++++++----------
+>  2 files changed, 19 insertions(+), 11 deletions(-)
+>
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index fdd6eae..a935d5f 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -325,7 +325,6 @@ el1_dbg:
+>         mrs     x0, far_el1
+>         mov     x2, sp                          // struct pt_regs
+>         bl      do_debug_exception
+> -       enable_dbg
+>         kernel_exit 1
+>  el1_inv:
+>         // TODO: add support for undefined instructions in kernel mode
+> diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
+> index 75c9cf1..f1fc1d8 100644
+> --- a/arch/arm64/kernel/kgdb.c
+> +++ b/arch/arm64/kernel/kgdb.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/kdebug.h>
+>  #include <linux/kgdb.h>
+> +#include <asm/percpu.h>
+>  #include <asm/traps.h>
+>
+>  struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+> @@ -95,6 +96,8 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+>         { "fpcr", 4, -1 },
+>  };
+>
+> +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
+> +
+>  char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+>  {
+>         if (regno >= DBG_MAX_REG_NUM || regno < 0)
+> @@ -176,18 +179,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>                  * over and over again.
+>                  */
+>                 kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+> -               atomic_set(&kgdb_cpu_doing_single_step, -1);
+> -               kgdb_single_step =  0;
+> -
+> -               /*
+> -                * Received continue command, disable single step
+> -                */
+> -               if (kernel_active_single_step())
+> -                       kernel_disable_single_step();
+>
+>                 err = 0;
+>                 break;
+>         case 's':
+> +               /* mask interrupts while single stepping */
+> +               __this_cpu_write(kgdb_pstate, linux_regs->pstate);
+> +               linux_regs->pstate |= (1 << 7);
 
-    1129585a08ba ("x86: introduce copy_user_handle_tail() routine")
+Hard coded values.
 
-You _should_ know this.
+> +
+>                 /*
+>                  * Update step address value with address passed
+>                  * with step packet.
+> @@ -198,8 +197,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>                  */
+>                 kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+>                 atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
+> -               kgdb_single_step =  1;
 
-> So we do an expensive page fault. And then we do it *again*.
-> 
-> This ends up being very expensive in the PMI handler for any
-> page fault on a stack access, and is one the more common
-> causes for the NMI handler exceeding its runtime limit.
-> 
->   1)   0.109 us    |        copy_from_user_nmi();
->   1)               |        copy_from_user_nmi() {
->   1)               |          __do_page_fault() {
->   1)               |            bad_area_nosemaphore() {
->   1)               |              __bad_area_nosemaphore() {
->   1)               |                no_context() {
->   1)               |                  fixup_exception() {
->   1)               |                    search_exception_tables() {
->   1)   0.079 us    |                      search_extable();
->   1)   0.409 us    |                    }
->   1)   0.757 us    |                  }
->   1)   1.106 us    |                }
->   1)   1.466 us    |              }
->   1)   1.793 us    |            }
->   1)   2.233 us    |          }
->   1)               |          copy_user_handle_tail() {
->   1)               |            __do_page_fault() {
->   1)               |              bad_area_nosemaphore() {
->   1)               |                __bad_area_nosemaphore() {
->   1)               |                  no_context() {
->   1)               |                    fixup_exception() {
->   1)               |                      search_exception_tables() {
->   1)   0.060 us    |                        search_extable();
->   1)   0.412 us    |                      }
->   1)   0.764 us    |                    }
->   1)   1.074 us    |                  }
->   1)   1.389 us    |                }
->   1)   1.665 us    |              }
->   1)   2.002 us    |            }
->   1)   2.784 us    |          }
->   1)   6.230 us    |        }
-> 
-> The NMI code actually doesn't care about the exact tail value. It only
-> needs to know if a fault happened (!= 0)
+why kgdb_single_step is not set?
 
-For now, changing the semantics of the function seems like a sure way to
-fail in the future though.
+> -
+>                 /*
+>                  * Enable single step handling
+>                  */
+> @@ -229,6 +226,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
+>
+>  static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
+>  {
+> +       unsigned int pstate;
+> +
+> +       kernel_disable_single_step();
+> +       atomic_set(&kgdb_cpu_doing_single_step, -1);
+> +
+> +       /* restore interrupt mask status */
+> +       pstate = __this_cpu_read(kgdb_pstate);
+> +       if (pstate & (1 << 7))
+> +               regs->pstate |= (1 << 7);
+> +       else
+> +               regs->pstate &= ~(1 << 7);
+> +
+Same as above comment
 
-> So check for in_nmi() in copy_user_tail and don't bother with the exact
-> tail check. This way we save the extra ~2.7us.
-> 
-> In theory we could also duplicate the whole copy_*_ path for cases
-> where the caller doesn't care about the exact bytes. But that
-> seems overkill for just this issue, and I'm not sure anyone
-> else cares about how fast this is. The simpler check works
-> as well for now.
-
-So I don't get that code, but why not fix it in general? Taking two
-faults seems silly.
+>         kgdb_handle_exception(1, SIGTRAP, 0, regs);
+>         return 0;
+>  }
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
