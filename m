@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaI2PlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:41:18 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42948 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaI2PlQ (ORCPT
+	id S1754682AbaI2Plq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:41:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38600 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110AbaI2Plp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:41:16 -0400
-Date: Mon, 29 Sep 2014 11:40:55 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, ian.campbell@citrix.com,
-        wei.liu2@citrix.com, boris.ostrovsky@oracle.com, bhelgaas@google.com,
-        jgross@suse.com, yongjun_wei@trendmicro.com.cn,
-        mukesh.rathor@oracle.com, xen-devel@lists.xenproject.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
- of xenbus_switch_state()
-Message-ID: <20140929154055.GA31952@laptop.dumpdata.com>
-References: <5425961A.5000604@gmail.com>
- <20140929140229.GA28279@laptop.dumpdata.com>
- <542969E6.1010104@citrix.com>
+	Mon, 29 Sep 2014 11:41:45 -0400
+Date: Mon, 29 Sep 2014 17:41:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [GIT PULL] EFI changes for v3.18
+Message-ID: <20140929154142.GO5430@worktop>
+References: <20140928202702.GB18635@console-pimps.org>
+ <20140929124321.GB18825@gmail.com>
+ <20140929140516.GL5430@worktop>
+ <20140929150009.GA9102@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <542969E6.1010104@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20140929150009.GA9102@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 03:17:10PM +0100, David Vrabel wrote:
-> On 29/09/14 15:02, Konrad Rzeszutek Wilk wrote:
-> > On Sat, Sep 27, 2014 at 12:36:42AM +0800, Chen Gang wrote:
-> >> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+On Mon, Sep 29, 2014 at 04:00:09PM +0100, Matt Fleming wrote:
+> On Mon, 29 Sep, at 04:05:16PM, Peter Zijlstra wrote:
 > > 
-> > Only on the first depth, not on the subsequent ones (as in if
-> > the first xenbus_switch_fail fails, it won't try to call
-> > xenbus_switch_state again and again).
-> > 
-> >> internally, so need not return any status value, then use 'void' instead
-> >> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
-> > 
-> > When that switch occurs (to XenbusStateConnected) won't the watches
-> > fire - meaning we MUST make sure that the watch functions - if they
-> > use the xenbus_switch_state() they MUST not hold any locks - because
-> > they could be executed once more?
-> > 
-> > Oh wait, we don't have to worry about that right now as the callbacks
-> > that pick up the messages from the XenBus are all gated on one mutex
-> > anyhow.
-> > 
-> > Hm, anyhow, I would add this extra piece of information to the patch:
-> > 
-> > 
-> > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-> > index c214daa..f7399fd 100644
-> > --- a/drivers/xen/xen-pciback/xenbus.c
-> > +++ b/drivers/xen/xen-pciback/xenbus.c
-> > @@ -661,6 +661,12 @@ static void xen_pcibk_be_watch(struct xenbus_watch *watch,
-> >  
-> >  	switch (xenbus_read_driver_state(pdev->xdev->nodename)) {
-> >  	case XenbusStateInitWait:
-> > +		/*
-> > +		 * xenbus_switch_state can call xenbus_switch_fatal which will
-> > +		 * immediately set the state to XenbusStateClosing which
-> > +		 * means if we were reading for it here we MUST drop any
-> > +		 * locks so that we don't dead-lock.
-> > +		 */
+> > OMFG what a trainwreck... if they are reentrant like that, a lock isn't
+> > going to help you in any way. The implementation of these calls must be
+> > lockfree otherwise they cannot possibly be correct.
+>  
+> The only way these services are going to be called is if we (the OS)
+> invoke them. These NMI shenanigans we're playing in the locking
+> functions are actually for our benefit, not the firmware's.
 > 
-> Watches are asynchronous and serialised by the xenwatch thread.  I can't
-> see what deadlock you're talking about here.  Particularly since the
-> backend doesn't watch its own state node (it watches the frontend one).
+> > Conditional locking like above is just plain broken, disgusting doesn't
+> > even begin to cover it. Full NAK on this. If this is required by the EFI
+> > spec someone needs to pull their head from their arse and smell the real
+> > world.
 > 
-> >  		xen_pcibk_setup_backend(pdev);
-> >  		break;
-> >  
-> >>
-> >> Also need be sure that all callers which check the return value must let
-> >> 'err' be 0.
-> > 
-> > I am bit uncomfortable with that, that is due to:
-> > 
-> > 
-> > .. snip..
-> >> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
-> >> index 9c47b89..b5c3d47 100644
-> >> --- a/drivers/net/xen-netback/xenbus.c
-> >> +++ b/drivers/net/xen-netback/xenbus.c
-> >> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
-> >>  	if (err)
-> >>  		pr_debug("Error writing multi-queue-max-queues\n");
-> >>  
-> >> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
-> >> -	if (err)
-> >> -		goto fail;
-> >> -
-> >> +	xenbus_switch_state(dev, XenbusStateInitWait);
-> > 
-> > Which if it fails it won't call:
-> > 
-> > 354 fail:                                                                           
-> > 355         pr_debug("failed\n");                                                   
-> > 356         netback_remove(dev);                                                    
-> > 357         return err;         
-> > 
-> > 
-> > And since there is no watch on the backend state to go in Closing it won't
-> > ever call those and we leak memory.
+> The conditional locking isn't intended to conform to the spec, it's
+> intended to write a pstore object to the EFI variable NVRAM with our
+> last dying breath, even if someone was in the middle of a SetVariable()
+> call. All the spec says is that, if we're in a non-recoverable state,
+> it's OK to do that. Whether that'll be implemented correctly across a
+> range of firmware implementations is another matter.
 > 
-> It's not leaking the memory.  All resources will be recovered when the
-> device is removed.
+> In fact, maybe we shouldn't support that lockless access at all. I've no
+> huge problem changing the code in efi_pstore_write() to bail if we can't
+> grab the lock, so that we can be serialized all of the time.
+> 
+> That would certainly make the runtime lock code much simpler.
 
-I presume you mean when the XenBus entries are torn down? It does look
-like it would call the .remove functionality. That should take care of that.
+Right, like we talked about on IRC, we need to either drop all from NMI
+stuff or do the trylock-from-NMI thing you suggested and have a runtime
+test to make sure that all actually works.
 
-In which case we can just remove all of the 'netback_remove()' and also
-remove some of the labels.
-
-
-> 
-> > The same is for xen-blkback mechanism in the probe function.
-> 
-> David
-> 
+Because just not having any serialization is relying on the firmware to
+not screw itself, which I think is unsound, esp. given that Windows is
+unlikely to rely on this and we all know the quality of implementation,
+esp. outside of what Windows does.
