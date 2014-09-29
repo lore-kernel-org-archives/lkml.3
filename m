@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaI2TnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:43:00 -0400
-Received: from smtp-69.nebula.fi ([83.145.220.69]:35712 "EHLO smtp.nebula.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991AbaI2Tm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:42:59 -0400
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-To: linux-kernel@vger.kernel.org
-Cc: alsa-devel@alsa-project.org, lgirdwood@gmail.com, broonie@kernel.org,
-        lars@metafoo.de,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Subject: [PATCH v2 3/3] ASoC: ssm2602: add support for 11.025kHz and 22.5kHz sample rates
-Date: Mon, 29 Sep 2014 22:41:37 +0300
-Message-Id: <1412019697-19475-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-X-Mailer: git-send-email 1.9.1
+	id S1755010AbaI2Tns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:43:48 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:45460 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187AbaI2Tnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 15:43:43 -0400
+Date: Mon, 29 Sep 2014 13:43:35 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH v13 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20140929194335.GA13747@google.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the necessary values to the constraint list and
-register values to the coefficient table in order to
-configure the device for 11.025kHz and 22.5kHz sample rates.
+On Mon, Sep 29, 2014 at 03:29:19PM +0100, Liviu Dudau wrote:
+> This is my version 13 of the attempt at adding support for generic PCI host
+> bridge controllers. It contains only cleanups to make it play nice with the
+> linux-next tree as of 09/25. If Bjorn deems it safe, now that it looks like
+> asm-generic is going to revert some of its more aggresive patches, he has the
+> choice of queueing it into linux-next again.
+> ...
 
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
----
-Changes in v2:
- - Keep SSM2602_RATES sorted.
----
- sound/soc/codecs/ssm2602.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+These patches above were already on my pci/host-generic branch and in
+linux-next:
 
-diff --git a/sound/soc/codecs/ssm2602.c b/sound/soc/codecs/ssm2602.c
-index 4021cd4..7c41848 100644
---- a/sound/soc/codecs/ssm2602.c
-+++ b/sound/soc/codecs/ssm2602.c
-@@ -192,7 +192,7 @@ static const struct snd_pcm_hw_constraint_list ssm2602_constraints_12288000 = {
- };
- 
- static const unsigned int ssm2602_rates_11289600[] = {
--	8000, 44100, 88200,
-+	8000, 11025, 22050, 44100, 88200,
- };
- 
- static const struct snd_pcm_hw_constraint_list ssm2602_constraints_11289600 = {
-@@ -237,6 +237,16 @@ static const struct ssm2602_coeff ssm2602_coeff_table[] = {
- 	{18432000, 96000, SSM2602_COEFF_SRATE(0x7, 0x1, 0x0)},
- 	{12000000, 96000, SSM2602_COEFF_SRATE(0x7, 0x0, 0x1)},
- 
-+	/* 11.025k */
-+	{11289600, 11025, SSM2602_COEFF_SRATE(0xc, 0x0, 0x0)},
-+	{16934400, 11025, SSM2602_COEFF_SRATE(0xc, 0x1, 0x0)},
-+	{12000000, 11025, SSM2602_COEFF_SRATE(0xc, 0x1, 0x1)},
-+
-+	/* 22.05k */
-+	{11289600, 22050, SSM2602_COEFF_SRATE(0xd, 0x0, 0x0)},
-+	{16934400, 22050, SSM2602_COEFF_SRATE(0xd, 0x1, 0x0)},
-+	{12000000, 22050, SSM2602_COEFF_SRATE(0xd, 0x1, 0x1)},
-+
- 	/* 44.1k */
- 	{11289600, 44100, SSM2602_COEFF_SRATE(0x8, 0x0, 0x0)},
- 	{16934400, 44100, SSM2602_COEFF_SRATE(0x8, 0x1, 0x0)},
-@@ -467,7 +477,8 @@ static int ssm2602_set_bias_level(struct snd_soc_codec *codec,
- 	return 0;
- }
- 
--#define SSM2602_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
-+#define SSM2602_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
-+		SNDRV_PCM_RATE_16000 | SNDRV_PCM_RATE_22050 |\
- 		SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_44100 |\
- 		SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_88200 |\
- 		SNDRV_PCM_RATE_96000)
--- 
-1.9.1
+   asm-generic/io.h: Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+   of/pci: Add pci_register_io_range() and pci_pio_to_address()
+   ARM: Define PCI_IOBASE as the base of virtual PCI IO space
+   of/pci: Define of_pci_range_to_resource() only when CONFIG_PCI=y
+   of/pci: Move of_pci_range_to_resources() to of/address.c
+   of/pci: Fix the conversion of IO ranges into IO resources
 
+I added these three patches to my pci/host-generic branch:
+
+   PCI: Add generic domain handling
+   of/pci: Add pci_get_new_domain_nr() and of_get_pci_domain_nr()
+   of/pci: Add support for parsing PCI host bridge resources from DT
+
+Yinghai pointed out a problem with this one, so I omitted it:
+
+   PCI: Assign unassigned bus resources in pci_scan_root_bus()
+
+I added this one to my pci/host-generic branch:
+
+   PCI: Add pci_remap_iospace() to map bus I/O resources
+
+I assume this depends on the pci_scan_root_bus() change (if not, let me
+know), so I omitted this one:
+
+   arm64: Add architectural support for PCI
+
+Bjorn
