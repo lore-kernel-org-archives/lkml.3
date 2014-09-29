@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaI2Qw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:52:26 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:38403 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738AbaI2QwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:52:25 -0400
-Message-ID: <54298E46.6050207@osg.samsung.com>
-Date: Mon, 29 Sep 2014 10:52:22 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1753247AbaI2QyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:54:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39028 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaI2QyY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:54:24 -0400
+Date: Mon, 29 Sep 2014 18:54:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Use RCU read lock on all calls to dl_bw_of()
+Message-ID: <20140929165418.GQ5430@worktop>
+References: <1412003970-25277-1-git-send-email-sasha.levin@oracle.com>
+ <1412009027.20287.17.camel@tkhai>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH 3.12 000/142] 3.12.29-stable review
-References: <cover.1411724723.git.jslaby@suse.cz>
-In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412009027.20287.17.camel@tkhai>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/26/2014 03:45 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.29 release.
-> There are 142 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Mon, Sep 29, 2014 at 08:43:47PM +0400, Kirill Tkhai wrote:
+> Thanks for your report. It looks like your fix is not enough, because
+> we check for rcu_read_lock_sched_held() in dl_bw_of(). It still warns
+> even if rcu_read_lock() is held.
 > 
-> Responses should be made by Tue Sep 30 11:45:24 CEST 2014.
-> Anything received after that time might be too late.
+> I used rcu_read_lock_sched_held() because we free root_domain using
+> call_rcu_sched(). So, it's necessary to held rcu_read_lock_sched(),
+> and my initial commit has this problem too.
 > 
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.29-rc1.xz
-> and the diffstat can be found below.
+> It looks like we should fix it in a way like this:
 > 
-> thanks,
-> js
+> [PATCH]sched: Use dl_bw_of() under rcu_read_lock_sched()
 > 
+> rq->rd is freed using call_rcu_sched(), and it's accessed with preemption
+> disabled in the most cases.
+> 
+> So in other places we should use rcu_read_lock_sched() to access it to fit
+> the scheme:
+> 
+> rcu_read_lock_sched() or preempt_disable() <==> call_rcu_sched().
 
-Compiled and booted on my test system. No dmesg regressions.
+Hmm, sad that. I cannot remember why that is rcu_sched, I suspect
+because we rely on it someplace but I cannot remember where.
 
--- Shuah
+We could of course do a double take on that and use call_rcu after
+call_rcu_sched(), such that either or both are sufficient.
 
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+I would very much prefer not to add extra preempt_disable()s if
+possible.
