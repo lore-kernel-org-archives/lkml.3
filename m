@@ -1,128 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaI2PSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:18:47 -0400
-Received: from forward13.mail.yandex.net ([95.108.130.120]:48913 "EHLO
-	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaI2PSq (ORCPT
+	id S1754102AbaI2PUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:20:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27918 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaI2PUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:18:46 -0400
-X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 11:18:45 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Juri Lelli <juri.lelli@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-In-Reply-To: <542974DE.8050203@arm.com>
-References: <20140927084044.1634.60573.stgit@localhost> <20140927084104.1634.88783.stgit@localhost> <542974DE.8050203@arm.com>
-Subject: Re: [PATCH 2/2] sched/dl: Cleanup prio_changed_dl()
-MIME-Version: 1.0
-Message-Id: <5425501412003601@web12j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Mon, 29 Sep 2014 19:13:21 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Mon, 29 Sep 2014 11:20:15 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: mingo@kernel.org
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, ktkhai@parallels.com,
+        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] sched: Use RCU read lock on all calls to dl_bw_of()
+Date: Mon, 29 Sep 2014 11:19:30 -0400
+Message-Id: <1412003970-25277-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit "sched: Use dl_bw_of() under RCU read lock" has missed a call
+to dl_bw_of(), which has now started showing warnings:
 
+[  820.960972] ===============================
+[  820.961663] [ INFO: suspicious RCU usage. ]
+[  820.962344] 3.17.0-rc6-next-20140926-sasha-00051-g9253dff-dirty #1242 Not tainted
+[  820.963670] -------------------------------
+[  820.964454] kernel/sched/core.c:2008 sched RCU must be held!
+[  820.975556]
+[  820.975556] other info that might help us debug this:
+[  820.975556]
+[  820.987512] rcu_scheduler_active = 1, debug_locks = 1
+[  820.988546] 9 locks held by trinity-c157/26236:
+[  820.989274] #0: (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:718)
+[  820.994630] #1: (sb_writers#5){.+.+.+}, at: do_readv_writev (include/linux/fs.h:2270 fs/read_write.c:832)
+[  820.996170] #2: (&of->mutex){+.+.+.}, at: kernfs_fop_write (fs/kernfs/file.c:296)
+[  821.001816] #3: (s_active#23){.+.+.+}, at: kernfs_fop_write (fs/kernfs/file.c:296)
+[  821.003235] #4: (device_hotplug_lock){+.+.+.}, at: lock_device_hotplug_sysfs (drivers/base/core.c:66)
+[  821.004842] #5: (&dev->mutex){......}, at: device_offline (include/linux/device.h:900 drivers/base/core.c:1423)
+[  821.010610] #6: (cpu_add_remove_lock){+.+.+.}, at: cpu_down (kernel/cpu.c:426)
+[  821.011859] #7: (cpu_hotplug.lock){++++++}, at: cpu_hotplug_begin (kernel/cpu.c:152)
+[  821.013208] #8: (cpu_hotplug.lock#2){+.+.+.}, at: cpu_hotplug_begin (kernel/cpu.c:158)
+[  821.027101]
+[  821.027101] stack backtrace:
+[  821.027903] CPU: 17 PID: 26236 Comm: trinity-c157 Not tainted 3.17.0-rc6-next-20140926-sasha-00051-g9253dff-dirty #1242
+[  821.030246]  0000000000000001 0000000000000000 0000000000000001 ffff880803363a98
+[  821.038543]  ffffffffb5f0070f 0000000000000011 ffff8808271eb000 ffff880803363ac8
+[  821.039967]  ffffffffb124e8ed 0000000000000000 ffff880803363bbc 0000000000000013
+[  821.041455] Call Trace:
+[  821.042038] dump_stack (lib/dump_stack.c:52)
+[  821.043005] lockdep_rcu_suspicious (kernel/locking/lockdep.c:4265)
+[  821.044169] sched_cpu_inactive (kernel/sched/core.c:2008 kernel/sched/core.c:5271)
+[  821.050486] notifier_call_chain (kernel/notifier.c:93)
+[  821.051594] __raw_notifier_call_chain (kernel/notifier.c:395)
+[  821.052766] _cpu_down (include/linux/notifier.h:179 kernel/cpu.c:219 kernel/cpu.c:356)
+[  821.053809] ? cpu_down (kernel/cpu.c:426)
+[  821.054770] cpu_down (kernel/cpu.c:431)
+[  821.062497] cpu_subsys_offline (drivers/base/cpu.c:69)
+[  821.063500] device_offline (drivers/base/core.c:1428)
+[  821.064428] ? cpu_device_release (drivers/base/cpu.c:67)
+[  821.065429] online_store (drivers/base/core.c:451 (discriminator 2))
+[  821.066390] dev_attr_store (drivers/base/core.c:138)
+[  821.067328] ? dev_driver_string (drivers/base/core.c:130)
+[  821.073698] sysfs_kf_write (fs/sysfs/file.c:116)
+[  821.074496] ? sysfs_file_ops (fs/sysfs/file.c:108)
+[  821.075312] kernfs_fop_write (fs/kernfs/file.c:308)
+[  821.076135] ? do_readv_writev (include/linux/fs.h:2270 fs/read_write.c:832)
+[  821.076999] do_loop_readv_writev (fs/read_write.c:710)
+[  821.078066] ? kernfs_vma_page_mkwrite (fs/kernfs/file.c:267)
+[  821.079252] do_readv_writev (fs/read_write.c:842)
+[  821.080495] ? kernfs_vma_page_mkwrite (fs/kernfs/file.c:267)
+[  821.081644] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:599 kernel/locking/mutex.c:616)
+[  821.086535] ? __fdget_pos (fs/file.c:718)
+[  821.087447] ? __fdget_pos (fs/file.c:718)
+[  821.088363] ? rcu_read_lock_held (kernel/rcu/update.c:169)
+[  821.089425] vfs_writev (fs/read_write.c:881)
+[  821.090486] SyS_writev (fs/read_write.c:913 fs/read_write.c:905)
+[  821.091382] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
 
-29.09.2014, 19:03, "Juri Lelli" <juri.lelli@arm.com>:
-> Hi Kirill,
->
-> On 27/09/14 09:41, Kirill Tkhai wrote:
->> šFrom: Kirill Tkhai <ktkhai@parallels.com>
->>
->> šNow rq->curr task can't be dequeued in this function
->> š(it's possible only in __schedule()).
->
-> Could you please detail about "before", with a reference to the commit
-> that made this further change necessary?
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ kernel/sched/core.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-I wrote about unlocked context switching, but I've looked one more time
-and found that it used to be impossible before too.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e6cfd9b..91bfbbb 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5261,6 +5261,9 @@ static int sched_cpu_inactive(struct notifier_block *nfb,
+ {
+ 	unsigned long flags;
+ 	long cpu = (long)hcpu;
++	int ret;
++
++	rcu_read_lock();
+ 
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_DOWN_PREPARE:
+@@ -5277,13 +5280,19 @@ static int sched_cpu_inactive(struct notifier_block *nfb,
+ 			overflow = __dl_overflow(dl_b, cpus, 0, 0);
+ 			raw_spin_unlock_irqrestore(&dl_b->lock, flags);
+ 
++			ret = notifier_from_errno(-EBUSY);
+ 			if (overflow)
+-				return notifier_from_errno(-EBUSY);
++				goto done;
+ 		}
+-		return NOTIFY_OK;
++		ret = NOTIFY_OK;
++		goto done;
+ 	}
+ 
+-	return NOTIFY_DONE;
++	ret = NOTIFY_DONE;
++
++done:
++	rcu_read_unlock();
++	return ret;
+ }
+ 
+ static int __init migration_init(void)
+-- 
+1.7.10.4
 
-We set "rq->curr = next" before prepare_lock_switch(),
-so dequeued task wasn't able to be curr.
-
-I'll update both descriptions in v2.
-
-Thanks,
-Kirill
-
->
-> Thanks a lot,
->
-> - Juri
->> šAlso, delete "else" branch which is dead code.
->>
->> šSigned-off-by: Kirill Tkhai <ktkhai@parallels.com>
->> š---
->> šškernel/sched/deadline.c | šš50 +++++++++++++++++++++++------------------------
->> šš1 file changed, 24 insertions(+), 26 deletions(-)
->>
->> šdiff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
->> šindex 63f8b4a..38b4f19 100644
->> š--- a/kernel/sched/deadline.c
->> š+++ b/kernel/sched/deadline.c
->> š@@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
->> ššstatic void prio_changed_dl(struct rq *rq, struct task_struct *p,
->> ššššššššššššššššššššššššššššššint oldprio)
->> šš{
->> š- if (task_on_rq_queued(p) || rq->curr == p) {
->> š+ if (!task_on_rq_queued(p))
->> š+ return;
->> šš#ifdef CONFIG_SMP
->> š- /*
->> š- * This might be too much, but unfortunately
->> š- * we don't have the old deadline value, and
->> š- * we can't argue if the task is increasing
->> š- * or lowering its prio, so...
->> š- */
->> š- if (!rq->dl.overloaded)
->> š- pull_dl_task(rq);
->> š-
->> š- /*
->> š- * If we now have a earlier deadline task than p,
->> š- * then reschedule, provided p is still on this
->> š- * runqueue.
->> š- */
->> š- if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
->> š- šššrq->curr == p)
->> š- resched_curr(rq);
->> š-#else
->> š- /*
->> š- * Again, we don't know if p has a earlier
->> š- * or later deadline, so let's blindly set a
->> š- * (maybe not needed) rescheduling point.
->> š- */
->> š+ /*
->> š+ * This might be too much, but unfortunately
->> š+ * we don't have the old deadline value, and
->> š+ * we can't argue if the task is increasing
->> š+ * or lowering its prio, so...
->> š+ */
->> š+ if (!rq->dl.overloaded)
->> š+ pull_dl_task(rq);
->> š+ /*
->> š+ * If we now have a earlier deadline task than p,
->> š+ * then reschedule, provided p is still on this
->> š+ * runqueue.
->> š+ */
->> š+ if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
->> š+ šššrq->curr == p)
->> ššššššššššššššššššresched_curr(rq);
->> š+#else
->> š+ /*
->> š+ * Again, we don't know if p has a earlier
->> š+ * or later deadline, so let's blindly set a
->> š+ * (maybe not needed) rescheduling point.
->> š+ */
->> š+ resched_curr(rq);
->> šš#endif /* CONFIG_SMP */
->> š- } else
->> š- switched_to_dl(rq, p);
->> šš}
->>
->> ššconst struct sched_class dl_sched_class = {
