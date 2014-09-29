@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaI2QwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:52:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53202 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362AbaI2QwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:52:08 -0400
-Date: Mon, 29 Sep 2014 18:50:52 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v3] watchdog: add driver for Ricoh RN5T618 watchdog
-Message-ID: <20140929165052.GA2085@gmail.com>
-References: <1411943987-30738-1-git-send-email-b.galvani@gmail.com>
- <20140929063407.GQ26868@spo001.leaseweb.com>
- <20140929075845.GD7308@lee--X1>
- <20140929105120.GA32092@gmail.com>
- <20140929122411.GE7308@lee--X1>
+	id S1754792AbaI2Qw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:52:26 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:38403 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754738AbaI2QwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:52:25 -0400
+Message-ID: <54298E46.6050207@osg.samsung.com>
+Date: Mon, 29 Sep 2014 10:52:22 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929122411.GE7308@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 3.12 000/142] 3.12.29-stable review
+References: <cover.1411724723.git.jslaby@suse.cz>
+In-Reply-To: <cover.1411724723.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 01:24:11PM +0100, Lee Jones wrote:
-> On Mon, 29 Sep 2014, Beniamino Galvani wrote:
+On 09/26/2014 03:45 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.29 release.
+> There are 142 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> > On Mon, Sep 29, 2014 at 08:58:45AM +0100, Lee Jones wrote:
-> > > I'm not sure why a) this patch was sent to me in the first place and
-> > > b) why anyone would think this should go in through MFD?
-> > > 
-> > 
-> > Hi Lee,
-> > 
-> > from a previous mail [1] I (wrongly) assumed that this was going
-> > through the MFD tree. If this is not the case, Wim, can you pick the
-> > patch?
-> > 
-> > Beniamino
-> > 
-> > [1] https://lkml.org/lkml/2014/9/4/124
+> Responses should be made by Tue Sep 30 11:45:24 CEST 2014.
+> Anything received after that time might be too late.
 > 
-> Okay, I see what's happened.
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.29-rc1.xz
+> and the diffstat can be found below.
 > 
-> So actually if there are interdependencies between this and the other
-> patches in the set, which I think there are, then you should have kept
-> this in the set with the others.  Sending as an independent patch is
-> not the correct thing to do.
+> thanks,
+> js
 > 
-> Can you resend this, as a patch-set with all of the Acks you have
-> acquired please.  I will then take the set as a whole.
 
-The original series had 4 patches:
+Compiled and booted on my test system. No dmesg regressions.
 
-- MFD core support
-- regulator driver
-- watchdog driver
-- dts documentation
+-- Shuah
 
-As explained in the submission comment, all patches except watchdog
-one have already been applied (1 and 4 to MFD tree, 2 to
-regulator). Only the watchdog support is missing and it doesn't have
-compilation dependencies to other patches (the watchdog driver can't
-be enabled without the MFD core support).
 
-Do you want me to resend the entire patchset or should this go in
-through watchdog?
-
-Beniamino
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
