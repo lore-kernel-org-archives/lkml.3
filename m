@@ -1,95 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaI2HDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 03:03:11 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36814 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaI2HDJ (ORCPT
+	id S1751777AbaI2HQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 03:16:36 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:59111 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaI2HQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 03:03:09 -0400
-Date: Mon, 29 Sep 2014 11:02:53 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Dave Chinner <david@fromorbit.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH -mm 00/14] Per memcg slab shrinkers
-Message-ID: <20140929070252.GA16447@esperanza>
-References: <cover.1411301245.git.vdavydov@parallels.com>
+	Mon, 29 Sep 2014 03:16:34 -0400
+Date: Mon, 29 Sep 2014 09:16:26 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] ACPI / i915: Update the condition to ignore firmware
+ backlight change request
+Message-ID: <20140929071606.GA4109@phenom.ffwll.local>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	Aaron Lu <aaron.lu@intel.com>,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Hans de Goede <hdegoede@redhat.com>,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+	linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org
+References: <201409232206.02819@pali>
+ <201409251623.45636@pali>
+ <5424CFB0.4080102@intel.com>
+ <5560330.d2v72ZBmJs@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <cover.1411301245.git.vdavydov@parallels.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5560330.d2v72ZBmJs@vostro.rjw.lan>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+On Fri, Sep 26, 2014 at 11:52:09PM +0200, Rafael J. Wysocki wrote:
+> On Friday, September 26, 2014 10:30:08 AM Aaron Lu wrote:
+> > Some of the Thinkpads' firmware will issue a backlight change request
+> > through i915 operation region unconditionally on AC plug/unplug, the
+> > backlight level used is arbitrary and thus should be ignored. This is
+> > handled by commit 0b9f7d93ca61 (ACPI / i915: ignore firmware requests
+> > for backlight change). Then there is a Dell laptop whose vendor backlight
+> > interface also makes use of operation region to change backlight level
+> > and with the above commit, that interface no long works. The condition
+> > used to ignore the backlight change request from firmware is thus
+> > changed to: if the vendor backlight interface is not in use and the ACPI
+> > backlight interface is broken, we ignore the requests; oterwise, we keep
+> > processing them.
+> > 
+> > Reference: https://lkml.org/lkml/2014/9/23/854
+> > Reported-and-tested-by: Pali Rohár <pali.rohar@gmail.com>
+> > Cc: <stable@vger.kernel.org> # v3.16 and later
+> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> 
+> Daniel, any objections?
 
-On Sun, Sep 21, 2014 at 07:14:32PM +0400, Vladimir Davydov wrote:
-> Hi,
+Nope, ack from my side.
+-Daniel
+
 > 
-> Kmem accounting of memcg is unusable now, because it lacks slab shrinker
-> support. That means when we hit the limit we will get ENOMEM w/o any
-> chance to recover. What we should do then is to call shrink_slab, which
-> would reclaim old inode/dentry caches from this cgroup. This is what
-> this patch set is intended to do.
+> > ---
+> >  drivers/gpu/drm/i915/intel_opregion.c | 16 +++++++++++-----
+> >  1 file changed, 11 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/intel_opregion.c b/drivers/gpu/drm/i915/intel_opregion.c
+> > index ca52ad2ae7d1..d8de1d5140a7 100644
+> > --- a/drivers/gpu/drm/i915/intel_opregion.c
+> > +++ b/drivers/gpu/drm/i915/intel_opregion.c
+> > @@ -396,6 +396,16 @@ int intel_opregion_notify_adapter(struct drm_device *dev, pci_power_t state)
+> >  	return -EINVAL;
+> >  }
+> >  
+> > +/*
+> > + * If the vendor backlight interface is not in use and ACPI backlight interface
+> > + * is broken, do not bother processing backlight change requests from firmware.
+> > + */
+> > +static bool should_ignore_backlight_request(void)
+> > +{
+> > +	return acpi_video_backlight_support() &&
+> > +	       !acpi_video_verify_backlight_support();
+> > +}
+> > +
+> >  static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+> >  {
+> >  	struct drm_i915_private *dev_priv = dev->dev_private;
+> > @@ -404,11 +414,7 @@ static u32 asle_set_backlight(struct drm_device *dev, u32 bclp)
+> >  
+> >  	DRM_DEBUG_DRIVER("bclp = 0x%08x\n", bclp);
+> >  
+> > -	/*
+> > -	 * If the acpi_video interface is not supposed to be used, don't
+> > -	 * bother processing backlight level change requests from firmware.
+> > -	 */
+> > -	if (!acpi_video_verify_backlight_support()) {
+> > +	if (should_ignore_backlight_request()) {
+> >  		DRM_DEBUG_KMS("opregion backlight request ignored\n");
+> >  		return 0;
+> >  	}
+> > 
 > 
-> Basically, it does two things. First, it introduces the notion of
-> per-memcg slab shrinker. A shrinker that wants to reclaim objects per
-> cgroup should mark itself as SHRINKER_MEMCG_AWARE. Then it will be
-> passed the memory cgroup to scan from in shrink_control->memcg. For such
-> shrinkers shrink_slab iterates over the whole cgroup subtree under the
-> target cgroup and calls the shrinker for each kmem-active memory cgroup.
-> 
-> Secondly, this patch set makes the list_lru structure per-memcg. It's
-> done transparently to list_lru users - everything they have to do is to
-> tell list_lru_init that they want memcg-aware list_lru. Then the
-> list_lru will automatically distribute objects among per-memcg lists
-> basing on which cgroup the object is accounted to. This way to make FS
-> shrinkers (icache, dcache) memcg-aware we only need to make them use
-> memcg-aware list_lru, and this is what this patch set does.
-> 
-> The main difference of this patch set from my previous attempts to push
-> memcg aware shrinkers is in how it handles css offline. Now we don't let
-> list_lrus corresponding to dead memory cgroups hang around till all
-> objects are freed. Instead we move lru items to the parent cgroup's lru
-> list. This is really important, because this allows us to release
-> memcg_cache_id used for indexing in per-memcg arrays. If we don't do
-> this, the arrays will grow uncontrollably, which is really bad. Note, in
-> comparison to user memory reparenting, which Johannes is going to get
-> rid of, it's not racy and much easier to implement although it does
-> impose some limitations on how list_lru locking can be implemented.
-> Another difference is that it doesn't reparent charges, only list_lru
-> entries - the css will be dangling until the last kmem object is freed.
-> 
-> As before, this patch set only enables per-memcg kmem reclaim when the
-> pressure goes from memory.limit, not from memory.kmem.limit. Handling
-> memory.kmem.limit is going to be tricky due to GFP_NOFS allocations, it
-> will probably require a sort of soft limit to work properly. I'm leaving
-> this for future work.
-> 
-> The patch set basically consists of three main parts and organized as
-> follows:
-> 
->  - Patches 1-3 implement per-memcg shrinker core with patches 1 and 2
->    preparing list_lru users for upcoming changes and patch 3 tuning
->    shrink_slab.
-> 
->  - Patches 4-10 make memcg core release cache ids on offline doing a bit
->    of cleanup in the meanwhile. This is easy, because kmem_caches don't
->    need the cache id after css offline since there can't be allocations
->    going from a dead memcg. Note that most of these patches (namely 4-6,
->    and 8) were once merged, but then I decided to drop them, because I
->    didn't know how to deal with list_lrus at that time (see
->    https://lkml.org/lkml/2014/7/23/218).
-> 
->  - Finally patches 11-14 make list_lru per-memcg and mark FS shrinkers
->    as memcg-aware. This is the most difficult part of this patch set
->    with patch 13 (unlucky :-) doing the most important work.
-> 
-> Reviews are more than welcome.
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
