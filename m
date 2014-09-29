@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005AbaI2WAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 18:00:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871AbaI2WAn (ORCPT
+	id S1755086AbaI2WBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 18:01:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47979 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041AbaI2WBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 18:00:43 -0400
-Date: Mon, 29 Sep 2014 17:59:45 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: Tejun Heo <tj@kernel.org>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
-Message-ID: <20140929215945.GA1628@kroah.com>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
- <20140928150329.GC5023@mtj.dyndns.org>
- <20140929212208.GV17349@wotan.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929212208.GV17349@wotan.suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 29 Sep 2014 18:01:03 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH] i2c: qup: Fix order of runtime pm initialization
+Date: Mon, 29 Sep 2014 17:00:51 -0500
+Message-Id: <1412028051-21774-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:22:08PM +0200, Luis R. Rodriguez wrote:
-> On Sun, Sep 28, 2014 at 11:03:29AM -0400, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Fri, Sep 26, 2014 at 02:57:17PM -0700, Luis R. Rodriguez wrote:
-> > ...
-> > > Systemd should consider enabling async probe on device drivers
-> > > it loads through systemd-udev but probably does not want to
-> > > enable it for modules loaded through systemd-modules-load
-> > > (modules-load.d). At least on my booting enablign async probe
-> > > for all modules fails to boot as such in order to make this
-> > 
-> > Did you find out why boot failed with those modules?
-> 
-> No, it seems this was early in boot and I haven't been able to capture the logs
-> yet of the faults. More on this below.
-> 
-> > > a bit more useful we whitelist a few buses where it should be
-> > > at least in theory safe to try to enable async probe. This
-> > > way even if systemd tried to ask to enable async probe for all
-> > > its device drivers the kernel won't blindly do this. We also
-> > > have the sync_probe flag which device drivers can themselves
-> > > enable *iff* its known the device driver should never async
-> > > probe.
-> > > 
-> > > In order to help *test* things folks can use the bus.safe_mod_async_probe=1
-> > > kernel parameter which will work as if userspace would have
-> > > requested all modules to load with async probe. Daring folks can
-> > > also use bus.force_mod_async_probe=1 which will enable asynch probe
-> > > even on buses not tested in any way yet, if you use that though
-> > > you're on your own.
-> > 
-> > If those two knobs are meant for debugging, let's please make that
-> > fact immediately evident.  e.g. Make them ugly boot params like
-> > "__DEVEL__driver_force_mod_async_probe".  Devel/debug options ending
-> > up becoming stable interface are really nasty.
-> 
-> Sure make sense, I wasn't quite sure how to make this quite clear,
-> a naming convention seems good to me but I also had added at least
-> a print about this on the log. Ideally I think a TAIN_DEBUG would
-> be best and it seems it could be useful for many other cases in
-> the kernel, we could also just re-use TAINT_CRAP as well. Thoughts?
-> Greg?
+The runtime pm calls need to be done before populating the children via the
+i2c_add_adapter call.  If this is not done, a child can run into issues trying
+to do i2c read/writes due to the pm_runtime_sync failing.
 
-TAINT_CRAP is for drivers/staging/ code, don't try to repurpose it for
-some other horrid option.  There's no reason we can't add more taint
-flags for this.
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+---
+ drivers/i2c/busses/i2c-qup.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-greg k-h
+diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
+index 3a4d64e..092d89b 100644
+--- a/drivers/i2c/busses/i2c-qup.c
++++ b/drivers/i2c/busses/i2c-qup.c
+@@ -674,16 +674,20 @@ static int qup_i2c_probe(struct platform_device *pdev)
+ 	qup->adap.dev.of_node = pdev->dev.of_node;
+ 	strlcpy(qup->adap.name, "QUP I2C adapter", sizeof(qup->adap.name));
+ 
+-	ret = i2c_add_adapter(&qup->adap);
+-	if (ret)
+-		goto fail;
+-
+ 	pm_runtime_set_autosuspend_delay(qup->dev, MSEC_PER_SEC);
+ 	pm_runtime_use_autosuspend(qup->dev);
+ 	pm_runtime_set_active(qup->dev);
+ 	pm_runtime_enable(qup->dev);
++
++	ret = i2c_add_adapter(&qup->adap);
++	if (ret)
++		goto fail_runtime;
++
+ 	return 0;
+ 
++fail_runtime:
++	pm_runtime_disable(qup->dev);
++	pm_runtime_set_suspended(qup->dev);
+ fail:
+ 	qup_i2c_disable_clocks(qup);
+ 	return ret;
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
