@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaI2WW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 18:22:59 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551AbaI2WW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 18:22:58 -0400
-Message-ID: <5429DBC0.1010801@nod.at>
-Date: Tue, 30 Sep 2014 00:22:56 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755261AbaI2WYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 18:24:19 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:49602 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaI2WYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 18:24:17 -0400
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] UBI: Fix possible deadlock in erase_worker()
-References: <1411375536-20067-1-git-send-email-richard@nod.at>	 <1411375536-20067-3-git-send-email-richard@nod.at> <1411728032.23429.63.camel@sauron.fi.intel.com>
-In-Reply-To: <1411728032.23429.63.camel@sauron.fi.intel.com>
+In-Reply-To: <1410874236-3125-1-git-send-email-richard@nod.at>
+References: <1410874236-3125-1-git-send-email-richard@nod.at>
+Date: Tue, 30 Sep 2014 00:24:17 +0200
+Message-ID: <CAFLxGvyFdpSEiOqVGyGWoeqzMK_jRUrRWbHL8SvySU+bPjj57A@mail.gmail.com>
+Subject: Re: Two lame typo fixes
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.09.2014 12:40, schrieb Artem Bityutskiy:
-> On Mon, 2014-09-22 at 10:45 +0200, Richard Weinberger wrote:
->> If sync_erase() fails with EINTR, ENOMEM, EAGAIN or
->> EBUSY erase_worker() re-schedules the failed work.
->> This will lead to a deadlock because erase_worker() is called
->> with work_sem held in read mode. And schedule_erase() will take
->> this lock again.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
-> 
-> Did you manage to test it?
-> 
-> Why no -stable this time? Not that important, or just something
-> theoretical and you never actually hit this bug?
+On Tue, Sep 16, 2014 at 3:30 PM, Richard Weinberger <richard@nod.at> wrote:
+> ...found them while browsing.
+>
+> Thanks,
+> //richard
+>
+> [PATCH 1/2] UBI: Fix trivial typo in __schedule_ubi_work
+> [PATCH 2/2] UBIFS: Fix trivial typo in power_cut_emulated()
 
-It is something theoretical, I was only able to trigger it by injecting
-ENOMEM by hand.
+ping?
 
+-- 
 Thanks,
 //richard
