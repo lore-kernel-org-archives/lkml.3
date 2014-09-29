@@ -1,133 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaI2RVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:21:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49178 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752602AbaI2RVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:21:04 -0400
-Date: Mon, 29 Sep 2014 19:20:57 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
-Subject: Re: [PATCH v6 05/11] drm: add Atmel HLCDC Display Controller
- support
-Message-ID: <20140929192057.1ede0346@bbrezillon>
-In-Reply-To: <1412001864-3251-6-git-send-email-boris.brezillon@free-electrons.com>
-References: <1412001864-3251-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1412001864-3251-6-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754103AbaI2RZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:25:20 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:59324 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310AbaI2RZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 13:25:19 -0400
+Date: Mon, 29 Sep 2014 11:24:57 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Michael Mullin <masmullin@gmail.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net
+Subject: Re: [PATCH v10] tpm_tis: verify interrupt during init
+Message-ID: <20140929172457.GC15607@obsidianresearch.com>
+References: <20140908220238.GB6204@obsidianresearch.com>
+ <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
+ <20140922171338.GB28082@obsidianresearch.com>
+ <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain>
+ <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain>
+ <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain>
+ <5421A9F8.9070301@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409241936270.3152@localhost.localdomain>
+ <54231E52.2030501@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 16:44:18 +0200
-Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
+On Wed, Sep 24, 2014 at 10:41:10PM +0000, Scot Doyle wrote:
+> Some machines, such as the Acer C720 and Toshiba CB35, have TPMs that do
+> not send IRQs while also having an ACPI TPM entry indicating that they
+> will be sent. These machines freeze on resume while the tpm_tis module
+> waits for an IRQ, eventually timing out.
+> 
+> When in interrupt mode, the tpm_tis module should receive an IRQ during
+> module init. Fall back to polling mode if none is received when expected.
+> 
+> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+> Tested-by: Michael Mullin <masmullin@gmail.com>
 
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> 
-> The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
-> at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
-> controller device.
-> 
-> This display controller supports at least one primary plane and might
-> provide several overlays and an hardware cursor depending on the IP
-> version.
-> 
-> At the moment, this driver only implements an RGB connector to interface
-> with LCD panels, but support for other kind of external devices might be
-> added later.
-> 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> Reviewed-by: Rob Clark <robdclark@gmail.com>
-> Tested-by: Anthony Harivel <anthony.harivel@emtrion.de>
-> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> ---
->  drivers/gpu/drm/Kconfig                          |   2 +
->  drivers/gpu/drm/Makefile                         |   1 +
->  drivers/gpu/drm/atmel-hlcdc/Kconfig              |  13 +
->  drivers/gpu/drm/atmel-hlcdc/Makefile             |   7 +
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c   | 392 +++++++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c     | 527 ++++++++++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h     | 216 ++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c  | 659 ++++++++++++++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h  | 403 +++++++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c | 443 ++++++++++++
->  drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c  | 833 +++++++++++++++++++++++
->  11 files changed, 3496 insertions(+)
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
->  create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
-> 
-> diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-> index b066bb3..2d97f7e 100644
-> --- a/drivers/gpu/drm/Kconfig
-> +++ b/drivers/gpu/drm/Kconfig
-> @@ -185,6 +185,8 @@ source "drivers/gpu/drm/cirrus/Kconfig"
->  
+Looks good with enable fixed
 
-[...]
+Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
+>  drivers/char/tpm/tpm_tis.c | 75 +++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 61 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+> index 2c46734..cbef80e 100644
+> +++ b/drivers/char/tpm/tpm_tis.c
+> @@ -75,6 +75,10 @@ enum tis_defaults {
+>  #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
+>  #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
+> 
+> +struct priv_data {
+> +	bool irq_tested;
+> +};
 > +
-> +int atmel_hlcdc_crtc_mode_valid(struct drm_crtc *c,
-> +				struct drm_display_mode *mode)
+>  static LIST_HEAD(tis_chips);
+>  static DEFINE_MUTEX(tis_lock);
+> 
+> @@ -338,12 +342,26 @@ out_err:
+>  	return rc;
+>  }
+> 
+> +static void disable_interrupts(struct tpm_chip *chip)
 > +{
-> +	struct videomode vm;
-> +
-> +	vm.vfront_porch = mode->vsync_start - mode->vdisplay;
-> +	vm.vback_porch = mode->vtotal - mode->vsync_end;
-> +	vm.vsync_len = mode->vsync_end - mode->vsync_start;
-> +	vm.hfront_porch = mode->hsync_start - mode->hdisplay;
-> +	vm.hback_porch = mode->htotal - mode->hsync_end;
-> +	vm.hsync_len = mode->hsync_end - mode->hsync_start;
-> +
-> +	if (vm.hsync_len > 0x40 || vm.hsync_len < 1)
-> +		return MODE_HSYNC;
-> +
-> +	if (vm.vsync_len > 0x40 || vm.vsync_len < 1)
-> +		return MODE_VSYNC;
-> +
-> +	if (vm.vfront_porch > 0x40 || vm.hfront_porch < 1 ||
-> +	    vm.vback_porch > 0x40 || vm.vback_porch < 0 ||
-> +	    mode->hdisplay > 2048 || mode->hdisplay < 1)
-> +		return MODE_H_ILLEGAL;
-> +
-> +	if (vm.hfront_porch > 0x200 || vm.hfront_porch < 1 ||
-> +	    vm.hback_porch > 0x200 || vm.hback_porch < 1 ||
-> +	    mode->hdisplay > 2048 || mode->hdisplay < 1)
-> +		return MODE_V_ILLEGAL;
-> +
-> +	return MODE_OK;
+> +	u32 intmask;
+> +	intmask =
+> +	    ioread32(chip->vendor.iobase +
+> +		     TPM_INT_ENABLE(chip->vendor.locality));
+> +	intmask &= ~TPM_GLOBAL_INT_ENABLE;
+> +	iowrite32(intmask,
+> +		  chip->vendor.iobase +
+> +		  TPM_INT_ENABLE(chip->vendor.locality));
+> +	free_irq(chip->vendor.irq, chip);
+> +	chip->vendor.irq = 0;
 > +}
 > +
-
-I forgot to squash the commit removing this function which a vestige
-from one of my attempt to provide a common mode_valid function that can
-be called from the connector mode_valid function.
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+>  /*
+>   * If interrupts are used (signaled by an irq set in the vendor structure)
+>   * tpm.c can skip polling for the data to be available as the interrupt is
+>   * waited for here
+>   */
+> -static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+> +static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
+>  {
+>  	int rc;
+>  	u32 ordinal;
+> @@ -373,6 +391,30 @@ out_err:
+>  	return rc;
+>  }
+> 
+> +static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
+> +{
+> +	int rc, irq;
+> +	struct priv_data *priv = chip->vendor.priv;
+> +
+> +	if (!chip->vendor.irq || priv->irq_tested)
+> +		return tpm_tis_send_main(chip, buf, len);
+> +
+> +	/* Verify receipt of the expected IRQ */
+> +	irq = chip->vendor.irq;
+> +	chip->vendor.irq = 0;
+> +	rc = tpm_tis_send_main(chip, buf, len);
+> +	chip->vendor.irq = irq;
+> +	if (!priv->irq_tested)
+> +		msleep(1);
+> +	if (!priv->irq_tested) {
+> +		disable_interrupts(chip);
+> +		dev_err(chip->dev,
+> +			FW_BUG "TPM interrupt not working, polling instead\n");
+> +	}
+> +	priv->irq_tested = true;
+> +	return rc;
+> +}
+> +
+>  struct tis_vendor_timeout_override {
+>  	u32 did_vid;
+>  	unsigned long timeout_us[4];
+> @@ -505,6 +547,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+>  	if (interrupt == 0)
+>  		return IRQ_NONE;
+> 
+> +	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
+>  	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
+>  		wake_up_interruptible(&chip->vendor.read_queue);
+>  	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
+> @@ -534,9 +577,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+>  	u32 vendor, intfcaps, intmask;
+>  	int rc, i, irq_s, irq_e, probe;
+>  	struct tpm_chip *chip;
+> +	struct priv_data *priv;
+> 
+> +	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
+> +	if (priv == NULL)
+> +		return -ENOMEM;
+>  	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
+>  		return -ENODEV;
+> +	chip->vendor.priv = priv;
+> 
+>  	chip->vendor.iobase = ioremap(start, len);
+>  	if (!chip->vendor.iobase) {
+> @@ -605,19 +653,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+>  	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
+>  		dev_dbg(dev, "\tData Avail Int Support\n");
+> 
+> -	/* get the timeouts before testing for irqs */
+> -	if (tpm_get_timeouts(chip)) {
+> -		dev_err(dev, "Could not get TPM timeouts and durations\n");
+> -		rc = -ENODEV;
+> -		goto out_err;
+> -	}
+> -
+> -	if (tpm_do_selftest(chip)) {
+> -		dev_err(dev, "TPM self test failed\n");
+> -		rc = -ENODEV;
+> -		goto out_err;
+> -	}
+> -
+>  	/* INTERRUPT Setup */
+>  	init_waitqueue_head(&chip->vendor.read_queue);
+>  	init_waitqueue_head(&chip->vendor.int_queue);
+> @@ -719,6 +754,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+>  		}
+>  	}
+> 
+> +	if (tpm_get_timeouts(chip)) {
+> +		dev_err(dev, "Could not get TPM timeouts and durations\n");
+> +		rc = -ENODEV;
+> +		goto out_err;
+> +	}
+> +
+> +	if (tpm_do_selftest(chip)) {
+> +		dev_err(dev, "TPM self test failed\n");
+> +		rc = -ENODEV;
+> +		goto out_err;
+> +	}
+> +
+>  	INIT_LIST_HEAD(&chip->vendor.list);
+>  	mutex_lock(&tis_lock);
+>  	list_add(&chip->vendor.list, &tis_chips);
