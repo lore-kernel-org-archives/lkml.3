@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaI2RuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:50:06 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:65383 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753919AbaI2RuD (ORCPT
+	id S1754198AbaI2Ryc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:54:32 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32961 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaI2Ryb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:50:03 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvoNAB6bKVRbtA8r/2dsb2JhbABggw6BKrYYBQFyAZpWgRUXAXuEMS8jgRo3iCoDFQGvcog9FYcehhKJOwEBTx2ENQWRPYtrlV2DZTsvgQ+BOwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Evgeniy Dushistov <dushistov@mail.ru>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/ufs/balloc.c: remove unused variable
-Date: Mon, 29 Sep 2014 19:49:55 +0200
-Message-Id: <1412012995-13607-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Mon, 29 Sep 2014 13:54:31 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18wY71Ww2G/jXeCVDHjYw3s
+Date: Mon, 29 Sep 2014 10:54:27 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: He YunLei <heyunlei@huawei.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        wangbintian@huawei.com, liguozhu@hisilicon.com,
+        kong.kongxinwei@hisilicon.com
+Subject: Re: [RFC PATCH] pinctrl: pinctrl-single.c:  init pinctrl single at
+ arch_initcall time
+Message-ID: <20140929175427.GE3122@atomide.com>
+References: <542934F4.10303@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542934F4.10303@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ucg is defined and set in ufs_bitmap_search but never used.
+* He YunLei <heyunlei@huawei.com> [140929 03:32]:
+> On our arm platform, some modules (e.g. I2C bus driver) will use the
+> pinctrl-single driver to configure the SoC pin, but pinctrl-single driver
+> uses module_init time, that makes some modules initialize ahead the
+> pinctrl-single and fail to register.
+> 
+> This patch promotes the initialization priority of pinctrl-single from
+> module_init time to arch_initcall time.
 
-Cc: Evgeniy Dushistov <dushistov@mail.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ufs/balloc.c | 3 ---
- 1 file changed, 3 deletions(-)
+This has come up earlier and so far in all cases the problem
+is that you have custom initcall levels for your other drivers.
 
-diff --git a/fs/ufs/balloc.c b/fs/ufs/balloc.c
-index 7bc2080..2c10360 100644
---- a/fs/ufs/balloc.c
-+++ b/fs/ufs/balloc.c
-@@ -784,7 +784,6 @@ static u64 ufs_bitmap_search(struct super_block *sb,
- 		0x0, 0x2, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe
- 	};
- 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
--	struct ufs_cylinder_group *ucg;
- 	unsigned start, length, loc;
- 	unsigned pos, want, blockmap, mask, end;
- 	u64 result;
-@@ -792,8 +791,6 @@ static u64 ufs_bitmap_search(struct super_block *sb,
- 	UFSD("ENTER, cg %u, goal %llu, count %u\n", ucpi->c_cgx,
- 	     (unsigned long long)goal, count);
+Get rid of custom initcall levels for your drivers and the
+problem goes away. There's no need to init the drivers earlier
+nowadays. If you have other dependencies then deferred probe
+helps but should be only needed for a limited number of cases.
+
+We want to initialize things later, not earlier in general. That
+removes the issues of no proper debug output while booting the
+kernel.
+
+Regards,
+
+Tony
+
  
--	ucg = ubh_get_ucg(UCPI_UBH(ucpi));
--
- 	if (goal)
- 		start = ufs_dtogd(uspi, goal) >> 3;
- 	else
--- 
-1.9.3
-
+> Signed-off-by: Yunlei He <heyunlei@huawei.com>
+> Signed-off-by: Xinwei Kong <kong.kongxinwei@hisilicon.com>
+> ---
+>  drivers/pinctrl/pinctrl-single.c |   13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-single.c
+> b/drivers/pinctrl/pinctrl-single.c
+> index 95dd9cf..4b9e5b9 100644
+> --- a/drivers/pinctrl/pinctrl-single.c
+> +++ b/drivers/pinctrl/pinctrl-single.c
+> @@ -2012,7 +2012,18 @@ static struct platform_driver pcs_driver = {
+>  #endif
+>  };
+> 
+> -module_platform_driver(pcs_driver);
+> +static int __init pinctrl_single_init(void)
+> +{
+> +		return platform_driver_register(&pcs_driver);
+> +}
+> +
+> +static void __exit pinctrl_single_exit(void)
+> +{
+> +		platform_driver_unregister(&pcs_driver);
+> +}
+> +
+> +arch_initcall(pinctrl_single_init);
+> +module_exit(pinctrl_single_exit);
+> 
+>  MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
+>  MODULE_DESCRIPTION("One-register-per-pin type device tree based pinctrl
+> driver");
+> -- 
+> 1.7.9.5
+> 
