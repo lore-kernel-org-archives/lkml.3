@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119AbaI2SHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:07:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53231 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaI2SG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:06:58 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        gregkh@linuxfoundation.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 02/13] tty: serial: 8250: make serial8250_console_setup() non _init
-Date: Mon, 29 Sep 2014 20:06:38 +0200
-Message-Id: <1412014009-13315-3-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+	id S1755167AbaI2SHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:07:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33864 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755141AbaI2SHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 14:07:31 -0400
+Date: Mon, 29 Sep 2014 15:07:27 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH v4 1/2] perf tool: encapsulate dsos list head into struct
+ dsos
+Message-ID: <20140929180727.GF3879@kernel.org>
+References: <1411573540-8765-1-git-send-email-Waiman.Long@hp.com>
+ <1411573540-8765-2-git-send-email-Waiman.Long@hp.com>
+ <20140926141230.GB3879@kernel.org>
+ <5429965F.2070806@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5429965F.2070806@hp.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if I boot with console=ttyS0 and the omap driver is module I end up with
+Em Mon, Sep 29, 2014 at 01:26:55PM -0400, Waiman Long escreveu:
+> On 09/26/2014 10:12 AM, Arnaldo Carvalho de Melo wrote:
+> >Em Wed, Sep 24, 2014 at 11:45:39AM -0400, Waiman Long escreveu:
+> >>This is a precursor patch to enable long name searching of DSOs
+> >>using the rbtree. In this patch, a new dsos structure is created
+> >>which contains only a list head structure for the moment. The new
+> >>dsos structure is used, in turn, in the machine structure for the
+> >>user_dsos and kernel_dsos fields. Only the following 3 dsos functions
+> >>are modified to accept the new dsos structure parameter instead
+> >>of list_head:
+> >>  - dsos__add()
+> >>  - dsos__find()
+> >>  - __dsos__findnew()
+> >>
+> >>Because of the need to find out the corresponding dsos structure to
+> >>properly call dsos__add() in dso__load_sym() of util/symbol-elf.c,
+> >>a new dsos field is also added to the dso structure.
+> >What tree did you use to produce these patches? I just tried on my
+> >perf/core branch and I get some fuzzes:
+> >
+> >[acme@zoo linux]$ patch -p1<  /wb/1.patch
+> >patching file tools/perf/util/dso.c
+> >Hunk #1 succeeded at 755 (offset 2 lines).
+> >Hunk #2 succeeded at 852 (offset 2 lines).
+> >patching file tools/perf/util/dso.h
+> >patching file tools/perf/util/header.c
+> >patching file tools/perf/util/machine.c
+> >Hunk #2 succeeded at 72 (offset 2 lines).
+> >Hunk #3 succeeded at 477 (offset 29 lines).
+> >Hunk #4 succeeded at 994 (offset 29 lines).
+> >patching file tools/perf/util/machine.h
+> >Hunk #2 succeeded at 39 with fuzz 1 (offset 1 line).
+> >patching file tools/perf/util/probe-event.c
+> >patching file tools/perf/util/symbol-elf.c
+> >Hunk #1 succeeded at 929 (offset 13 lines).
+> >[acme@zoo linux]$
+> >
+> >I'll fix this up, probably harmless, just a heads up.
+> >
+> >- Arnaldo
+> 
+> I was using the latest linux 3.17 tree. I should have used the tip tree
+> instead. I will use that if I need to sent out a new patch.
 
-| console [ttyS0] disabled
-| omap8250 44e09000.serial: ttyS0 at MMIO 0x44e09000 (irq = 88, base_baud = 3000000) is a 8250
-| Unable to handle kernel paging request at virtual address c07a9de0
-| Modules linked in: 8250_omap(+)
-| CPU: 0 PID: 908 Comm: modprobe Not tainted 3.17.0-rc5+ #1593
-| PC is at serial8250_console_setup+0x0/0xc8
-| LR is at register_console+0x13c/0x3a4
-| [<c0078788>] (register_console) from [<c02d0340>] (uart_add_one_port+0x3cc/0x420)
-| [<c02d0340>] (uart_add_one_port) from [<c02d38a4>] (serial8250_register_8250_port+0x298/0x39c)
-| [<c02d38a4>] (serial8250_register_8250_port) from [<bf006274>] (omap8250_probe+0x218/0x3dc [8250_omap])
-| [<bf006274>] (omap8250_probe [8250_omap]) from [<c02e3424>] (platform_drv_probe+0x2c/0x5c)
-| [<c02e3424>] (platform_drv_probe) from [<c02e1eac>] (driver_probe_device+0x104/0x228)
-…
-| [<c009fa48>] (SyS_init_module) from [<c000e6e0>] (ret_fast_syscall+0x0/0x30)
-| Code: 7823603b f8314620 051b3013 491ed416 (44792204)
+Please do, tip/perf/urgent strictly for bug fixes, tip/perf/core for new
+features or bug fixes for things that are only in tip/perf/core.
 
-because serial8250_console_setup() is already gone.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/tty/serial/8250/8250_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index a1904628a2a1..159b72471622 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -3237,7 +3237,7 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
- 	serial8250_rpm_put(up);
- }
- 
--static int __init serial8250_console_setup(struct console *co, char *options)
-+static int serial8250_console_setup(struct console *co, char *options)
- {
- 	struct uart_port *port;
- 	int baud = 9600;
--- 
-2.1.0
-
+- Arnaldo
