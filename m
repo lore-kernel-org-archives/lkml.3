@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaI2PL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:11:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54386 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913AbaI2PL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:11:27 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] sched/nohz: add debugfs control over sched_tick_max_deferment
-References: <1411760732-14102-1-git-send-email-khilman@kernel.org>
-	<20140927165938.GB21729@lerouge>
-Date: Mon, 29 Sep 2014 08:11:25 -0700
-In-Reply-To: <20140927165938.GB21729@lerouge> (Frederic Weisbecker's message
-	of "Sat, 27 Sep 2014 18:59:39 +0200")
-Message-ID: <7hh9zq31ia.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754664AbaI2PLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:11:48 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43502 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173AbaI2PLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 11:11:46 -0400
+Date: Mon, 29 Sep 2014 08:11:39 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH 08/10] power/reset: keystone: Register with kernel
+ restart handler
+Message-ID: <20140929151139.GA16874@roeck-us.net>
+References: <1411779438-23127-1-git-send-email-linux@roeck-us.net>
+ <1411779438-23127-9-git-send-email-linux@roeck-us.net>
+ <5429644A.80108@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5429644A.80108@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
-
-> On Fri, Sep 26, 2014 at 12:45:32PM -0700, Kevin Hilman wrote:
->> From: Kevin Hilman <khilman@linaro.org>
->> 
->> Allow debugfs override of sched_tick_max_deferment in order to ease
->> finding/fixing the remaining issues with full nohz.
->> 
->> The value to be written is in jiffies, and -1 means the max deferment
->> is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
->> 
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Signed-off-by: Kevin Hilman <khilman@linaro.org>
->
-> So, I'm worried that it becomes a hack that everybody uses to shutdown
-> the tick completely then nobody will come and fix the issue that prevents
-> from doing it properly.
-
-OK.
-
-> I seriously doubt this will be used for development purpose to help
-> fixing the real problem. 
-
-Well, that's what I was using it for, until I was distracted by other
-tasks.
-
-> Quite the opposite. If developers want to do
-> testing, they can as well comment out the call to scheduler_max_tick_deferment().
-
-OK, fair enough.
+On Mon, Sep 29, 2014 at 04:53:14PM +0300, Ivan Khoronzhuk wrote:
+> On 09/27/2014 03:57 AM, Guenter Roeck wrote:
+> >Register with kernel restart handler instead of setting arm_pm_restart directly.
+> >
+> >Move notifier registration to the end of the probe function to avoid having to
+> >implement error handling.
+> >
+> >Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> >Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> >---
+> >  drivers/power/reset/keystone-reset.c | 18 ++++++++++++++----
+> >  1 file changed, 14 insertions(+), 4 deletions(-)
+> >
+> >diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
+> >index 408a18f..9d46586 100644
+> >--- a/drivers/power/reset/keystone-reset.c
+> >+++ b/drivers/power/reset/keystone-reset.c
+> >@@ -12,9 +12,9 @@
+> >  #include <linux/io.h>
+> >  #include <linux/module.h>
+> >+#include <linux/notifier.h>
+> >  #include <linux/reboot.h>
+> >  #include <linux/regmap.h>
+> >-#include <asm/system_misc.h>
+> >  #include <linux/mfd/syscon.h>
+> >  #include <linux/of_platform.h>
+> >@@ -52,7 +52,8 @@ static inline int rsctrl_enable_rspll_write(void)
+> >  				  RSCTRL_KEY_MASK, RSCTRL_KEY);
+> >  }
+> >-static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
+> >+static int rsctrl_restart_handler(struct notifier_block *this,
+> >+				  unsigned long mode, void *cmd)
+> >  {
+> >  	/* enable write access to RSTCTRL */
+> >  	rsctrl_enable_rspll_write();
+> >@@ -60,8 +61,15 @@ static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
+> >  	/* reset the SOC */
+> >  	regmap_update_bits(pllctrl_regs, rspll_offset + RSCTRL_RG,
+> >  			   RSCTRL_RESET_MASK, 0);
+> >+
+> >+	return NOTIFY_DONE;
+> >  }
+> >+static struct notifier_block rsctrl_restart_nb = {
+> >+	.notifier_call = rsctrl_restart_handler,
+> >+	.priority = 128,
+> >+};
+> >+
+> >  static struct of_device_id rsctrl_of_match[] = {
+> >  	{.compatible = "ti,keystone-reset", },
+> >  	{},
+> >@@ -114,8 +122,6 @@ static int rsctrl_probe(struct platform_device *pdev)
+> >  	if (ret)
+> >  		return ret;
+> >-	arm_pm_restart = rsctrl_restart;
+> >-
+> >  	/* disable a reset isolation for all module clocks */
+> >  	ret = regmap_write(pllctrl_regs, rspll_offset + RSISO_RG, 0);
+> >  	if (ret)
+> >@@ -147,6 +153,10 @@ static int rsctrl_probe(struct platform_device *pdev)
+> >  			return ret;
+> >  	}
+> >+	ret = register_restart_handler(&rsctrl_restart_nb);
+> >+	if (ret)
+> >+		dev_err(dev, "cannot register restart handler (err=%d)\n", ret);
+> 
+> What about return ret? Even the register_restart_handler() always
+> returns 0 currently.
+> 
+Yes, you have a point. I'll redo the series and return an error in this case,
+unless the driver has additional functionality (we don't want it to fail to
+load if it also provides poweroff handling, for example).
 
 Thanks,
-
-Kevin
+Guenter
