@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754949AbaI2QL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:11:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:26080 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753991AbaI2QL1 (ORCPT
+	id S1754983AbaI2QMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:12:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53055 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869AbaI2QMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:11:27 -0400
-Date: Mon, 29 Sep 2014 12:11:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Petr Mladek <pmladek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
- seq_puts()
-Message-ID: <20140929121125.4e2d6495@gandalf.local.home>
-In-Reply-To: <1412005610.4302.26.camel@joe-AO725>
-References: <20140926143721.52206f95@gandalf.local.home>
-	<20140929144121.GA30562@pathway.suse.cz>
-	<20140929112538.3929a9a2@gandalf.local.home>
-	<1412005610.4302.26.camel@joe-AO725>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Mon, 29 Sep 2014 12:12:30 -0400
+Date: Mon, 29 Sep 2014 17:12:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Message-ID: <20140929161217.GT16977@sirena.org.uk>
+References: <2771900.ce8bYznKIN@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6axCafNXXMM8qu6Q"
+Content-Disposition: inline
+In-Reply-To: <2771900.ce8bYznKIN@wuerfel>
+X-Cookie: Your own mileage may vary.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: davinci: vcif must be a module if SND_DAVINCI_SOC
+ is
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 08:46:50 -0700
-Joe Perches <joe@perches.com> wrote:
 
-> On Mon, 2014-09-29 at 11:25 -0400, Steven Rostedt wrote:
-> > Anyway, that should be a second patch, and we should get my current
-> > patch (the one to make putc and puts the same) in first, as that
-> > actually fixes the inconsistency between the two.
-> > 
-> > I'll post another patch to try to make seq_file operations a bit more
-> > consistent. Perhaps we can have m->count be what would have been
-> > written.
-> 
-> https://lkml.org/lkml/2013/9/11/801
-> 
+--6axCafNXXMM8qu6Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That has nothing to do with what I'm working on. I'm not touching the
-return value of the seq_*() functions. I may make them all return void
-though.
+On Mon, Sep 29, 2014 at 05:32:17PM +0200, Arnd Bergmann wrote:
+> It is possible to configure a kernel with SND_DAVINCI_SOC=m and
+> SND_DM365_VOICE_CODEC=y, which results in a link error:
 
-I may just make m->count == m->size + 1 for all cases. The m->count ==
-what would have been written is if seq_buf() needs it. Which I highly
-doubt it would.
+Applied, thanks.
 
--- Steve
+--6axCafNXXMM8qu6Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUKYTgAAoJECTWi3JdVIfQhSoH/jeEOwQkwtrvFGYV/24eEZF1
+ujE9yhVRtVnvQmhcYqFdTce8/cberOPg3w41nuqzTadyssOMJEXw3vuYVCoCwdE5
+ITaztKCarG+Q4TnRuzWe/uTuqUBYCVbPaBHK/zfTHR1yj9yEfVUqDl1Oe0ZyyRHj
+cFYSpV/LvwvXStJt0GKlGofcrlCNGXJVm3/Toaa6jiMcBgaKiBtHTs2gzxKAuK7g
+71AXh6/A6EBRdyONLa5djNV5DZd5PmEj5h7V+BquWA0jaf+65REwMnLObPllY4Yk
+HhynbNXCEFo/mDLBSvg8hndidPxZR1iGJqXFEgHh87PBsnaAqK5OrxkyNVNk8H8=
+=2imw
+-----END PGP SIGNATURE-----
+
+--6axCafNXXMM8qu6Q--
