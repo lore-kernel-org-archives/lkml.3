@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaI2ORV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:17:21 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:63801 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaI2ORT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:17:19 -0400
-X-IronPort-AV: E=Sophos;i="5.04,620,1406592000"; 
-   d="scan'208";a="176040867"
-Message-ID: <542969E6.1010104@citrix.com>
-Date: Mon, 29 Sep 2014 15:17:10 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1754113AbaI2ORe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:17:34 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:64876 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaI2ORc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:17:32 -0400
+Date: Mon, 29 Sep 2014 16:17:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: Dave Jones <davej@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86: Quark: Enable correct cache size/type reporting
+Message-ID: <20140929141727.GA19294@gmail.com>
+References: <1411956372-16469-1-git-send-email-pure.logic@nexus-software.ie>
+ <1411956372-16469-2-git-send-email-pure.logic@nexus-software.ie>
+ <20140929134008.GA7764@redhat.com>
+ <542968AE.3090407@nexus-software.ie>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Chen Gang <gang.chen.5i5j@gmail.com>
-CC: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <boris.ostrovsky@oracle.com>, <bhelgaas@google.com>, <jgross@suse.com>,
-        <yongjun_wei@trendmicro.com.cn>, <mukesh.rathor@oracle.com>,
-        <xen-devel@lists.xenproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
- of xenbus_switch_state()
-References: <5425961A.5000604@gmail.com> <20140929140229.GA28279@laptop.dumpdata.com>
-In-Reply-To: <20140929140229.GA28279@laptop.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542968AE.3090407@nexus-software.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/09/14 15:02, Konrad Rzeszutek Wilk wrote:
-> On Sat, Sep 27, 2014 at 12:36:42AM +0800, Chen Gang wrote:
->> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
-> 
-> Only on the first depth, not on the subsequent ones (as in if
-> the first xenbus_switch_fail fails, it won't try to call
-> xenbus_switch_state again and again).
-> 
->> internally, so need not return any status value, then use 'void' instead
->> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
-> 
-> When that switch occurs (to XenbusStateConnected) won't the watches
-> fire - meaning we MUST make sure that the watch functions - if they
-> use the xenbus_switch_state() they MUST not hold any locks - because
-> they could be executed once more?
-> 
-> Oh wait, we don't have to worry about that right now as the callbacks
-> that pick up the messages from the XenBus are all gated on one mutex
-> anyhow.
-> 
-> Hm, anyhow, I would add this extra piece of information to the patch:
-> 
-> 
-> diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-> index c214daa..f7399fd 100644
-> --- a/drivers/xen/xen-pciback/xenbus.c
-> +++ b/drivers/xen/xen-pciback/xenbus.c
-> @@ -661,6 +661,12 @@ static void xen_pcibk_be_watch(struct xenbus_watch *watch,
->  
->  	switch (xenbus_read_driver_state(pdev->xdev->nodename)) {
->  	case XenbusStateInitWait:
-> +		/*
-> +		 * xenbus_switch_state can call xenbus_switch_fatal which will
-> +		 * immediately set the state to XenbusStateClosing which
-> +		 * means if we were reading for it here we MUST drop any
-> +		 * locks so that we don't dead-lock.
-> +		 */
 
-Watches are asynchronous and serialised by the xenwatch thread.  I can't
-see what deadlock you're talking about here.  Particularly since the
-backend doesn't watch its own state node (it watches the frontend one).
+* Bryan O'Donoghue <pure.logic@nexus-software.ie> wrote:
 
->  		xen_pcibk_setup_backend(pdev);
->  		break;
->  
->>
->> Also need be sure that all callers which check the return value must let
->> 'err' be 0.
+> On 29/09/14 14:40, Dave Jones wrote:
+> >On Mon, Sep 29, 2014 at 03:06:12AM +0100, Bryan O'Donoghue wrote:
+> >  > Quark X1000 lacks cpuid(4). It has cpuid(2) but returns no cache
+> >  > descriptors we can work with i.e. cpuid(2) returns
+> >  > eax=0x00000001 ebx=0x00000000 ecx=0x00000000 edx=0x00000000
+> >  >
+> >  > Quark X1000 contains a 16k 4-way set associative unified L1 cache
+> >  > with 256 sets
+> >  >
+> >  > This patch emulates cpuid(4) in a similar way to other x86
+> >  > processors like AMDs which don't support cpuid(4). The Quark code
+> >  > is based on the existing AMD code.
+> >
+> >This looks like it would work, but I wonder if it would be a lot
+> >simpler to do something like what we do in centaur_size_cache()
+> >which is the other case I recall where we had to override
+> >the CPUs definition of cache size.
 > 
-> I am bit uncomfortable with that, that is due to:
+> Hi Dave.
 > 
+> It's working alright :)
 > 
-> .. snip..
->> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
->> index 9c47b89..b5c3d47 100644
->> --- a/drivers/net/xen-netback/xenbus.c
->> +++ b/drivers/net/xen-netback/xenbus.c
->> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
->>  	if (err)
->>  		pr_debug("Error writing multi-queue-max-queues\n");
->>  
->> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
->> -	if (err)
->> -		goto fail;
->> -
->> +	xenbus_switch_state(dev, XenbusStateInitWait);
-> 
-> Which if it fails it won't call:
-> 
-> 354 fail:                                                                           
-> 355         pr_debug("failed\n");                                                   
-> 356         netback_remove(dev);                                                    
-> 357         return err;         
-> 
-> 
-> And since there is no watch on the backend state to go in Closing it won't
-> ever call those and we leak memory.
+> My feeling is that we'll probably end up with less changes/new code taking
+> the approach of quirking.
 
-It's not leaking the memory.  All resources will be recovered when the
-device is removed.
+OTOH, if the Quark quirk is a .legacy_cache_size callback, it 
+will be compiled out on 64-bit kernels. With your patch it's 
+unconditional.
 
-> The same is for xen-blkback mechanism in the probe function.
+So Dave's suggestion makes sense.
 
-David
+Thanks,
 
+	Ingo
