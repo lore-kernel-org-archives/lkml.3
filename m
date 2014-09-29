@@ -1,96 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaI2LFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:05:47 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:59694 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751396AbaI2LFp convert rfc822-to-8bit (ORCPT
+	id S1753509AbaI2LJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:09:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64834 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751601AbaI2LJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:05:45 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Kees Cook'" <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
-        Xi Wang <xii@google.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH] tun: make sure interface usage can not overflow
-Thread-Topic: [PATCH] tun: make sure interface usage can not overflow
-Thread-Index: AQHP23O5ZibDxwfCgkiMJV4jx9aoxJwX8m+w
-Date: Mon, 29 Sep 2014 11:04:00 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1749FC70@AcuExch.aculab.com>
-References: <20140928232753.GA31180@www.outflux.net>
-In-Reply-To: <20140928232753.GA31180@www.outflux.net>
+	Mon, 29 Sep 2014 07:09:34 -0400
+Date: Mon, 29 Sep 2014 12:09:19 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stefan Wahren <stefan.wahren@i2se.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "festevam@gmail.com" <festevam@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
+Message-ID: <20140929110919.GB2432@leverpostej>
+References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
+ <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
+Thread-Topic: [PATCH 1/2] DT: add binding for mxs regulator
 Accept-Language: en-GB, en-US
 Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook
-> This makes the size argument a const, since it is always populated by
-> the caller.
-
-There is almost no point making parameters 'const.
-('const foo *' makes sense).
-
-> Additionally double-checks to make sure the copy_from_user
-> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
+On Sat, Sep 27, 2014 at 01:59:47AM +0100, Stefan Wahren wrote:
+> This patch adds the Device tree bindings for the Freescale MXS
+> on-chip regulators.
 > 
->    In function 'copy_from_user',
->        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
->        ... copy_from_user() buffer size is not provably correct
-
-If 'ifreq_len' could be too big then you want to error the ioctl, not panic.
-If it can't be too big you don't need the check.
-
-	David
-
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
 > ---
->  drivers/net/tun.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  .../bindings/regulator/mxs-regulator.txt           |   36 ++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
 > 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index acaaf6784179..a1f317cba206 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1855,7 +1855,7 @@ unlock:
->  }
-> 
->  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
-> -			    unsigned long arg, int ifreq_len)
-> +			    unsigned long arg, const size_t ifreq_len)
->  {
->  	struct tun_file *tfile = file->private_data;
->  	struct tun_struct *tun;
-> @@ -1869,6 +1869,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  	int ret;
-> 
->  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
-> +		BUG_ON(ifreq_len > sizeof(ifr));
->  		if (copy_from_user(&ifr, argp, ifreq_len))
->  			return -EFAULT;
->  	} else {
-> --
-> 1.9.1
-> 
-> 
-> --
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
+> new file mode 100644
+> index 0000000..e3133a4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
+> @@ -0,0 +1,36 @@
+> +MXS regulators
+> +
+> +Required node properties:
+> +- compatible: Should be "simple-bus"
 
+This does not look like an appropriate use of simple-bus.
 
+Why do you want the parent node to be a simple-bus?
+
+> +- #address-cells: Number of cells required to define regulator register,
+> +  must be 1
+> +- #size-cells: Number of cells required to define register size, must be 1
+
+Why must this be the case, given that the child node expects an absolute
+physical address?
+
+What's wrong with #address-cells = <2>, for example?
+
+> +- reg: Absolute physical address and size of the register set for the device
+
+Why is this here _and_ in the child node(s)?
+
+What is the difference between this node and its children?
+
+Can there be more than one sub-node?
+
+Mark.
+
+> +
+> +Required regulator properties:
+> +- compatible: Must be "fsl,mxs-regulator"
+> +- reg: Absolute physical address of the register set for the regulator
+> +
+> +Any regulator property defined as part of the core regulator
+> +binding, defined in regulator.txt, can also be used.
+> +
+> +Example:
+> +
+> +	power: power@80044000 {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		reg = <0x80044000 0x2000>;
+> +		ranges;
+> +
+> +		reg_vddd: regulator@80044040 {
+> +			reg = <0x80044040 0x10>;
+> +			compatible = "fsl,mxs-regulator";
+> +			regulator-name = "vddd";
+> +			regulator-min-microvolt = <800000>;
+> +			regulator-max-microvolt = <1575000>;
+> +			regulator-boot-on;
+> +			vddd-supply = <&reg_vdda>;
+> +		};
+> +	};
+> +
+> -- 
+> 1.7.9.5
+> 
+> 
