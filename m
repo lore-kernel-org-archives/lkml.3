@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaI2SJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:09:24 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53241 "EHLO
+	id S1755258AbaI2SJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:09:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53245 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015AbaI2SHA (ORCPT
+	with ESMTP id S1755028AbaI2SHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Sep 2014 14:07:00 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
         gregkh@linuxfoundation.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 06/13] tty: serial: 8250: allow to use custom DMA implementation
-Date: Mon, 29 Sep 2014 20:06:42 +0200
-Message-Id: <1412014009-13315-7-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 07/13] tty: serial: 8250_omap: add custom DMA-TX callback
+Date: Mon, 29 Sep 2014 20:06:43 +0200
+Message-Id: <1412014009-13315-8-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
 References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
@@ -26,94 +26,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OMAP has a few corner cases where it needs a share of kindness of
-affection to do the right thing. Heikki Krogerus suggested that instead
-adding the quirks into the default DMA implementation, OMAP could get
-its own copy of the function. And Alan suggested the same thing so here
-we go.
+This patch provides mostly a copy of serial8250_tx_dma() +
+__dma_tx_complete() with the following extensions:
 
-This patch provides callbacks for custom TX/RX DMA implementation. If
-there are not setup / used, then the default (current) implementation is
-used.
+- DMA bug
+  At least on AM335x the following problem exists: Even if the TX FIFO is
+  empty and a TX transfer is programmed (and started) the UART does not
+  trigger the DMA transfer.
+  After $TRESHOLD number of bytes have been written to the FIFO manually the
+  UART reevaluates the whole situation and decides that now there is enough
+  room in the FIFO and so the transfer begins.
+  This problem has not been seen on DRA7 or beagle board xm (OMAP3). I am not
+  sure if this is UART-IP core specific or DMA engine.
+
+  The workaround is to use a threshold of one byte, program the DMA
+  transfer minus one byte and then to put the first byte into the FIFO to
+  kick start the transfer.
+
+- support for runtime PM
+  RPM is enabled on start_tx(). We can't disable RPM on DMA complete callback
+  because there is still data in the FIFO which is being sent. We have to wait
+  until the FIFO is empty before we disable it.
+  For this to happen we fake a TX sent error and enable THRI. Once the
+  FIFO is empty we receive an interrupt and since the TTY-buffer is still
+  empty we "put RPM" via __stop_tx(). Should it been filed then in the
+  start_tx() path we should program the DMA transfer and remove the error
+  flag and the THRI bit.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/8250/8250.h      |  3 +++
- drivers/tty/serial/8250/8250_core.c | 11 ++++++++---
- drivers/tty/serial/8250/8250_dma.c  |  2 --
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/tty/serial/8250/8250_omap.c | 144 ++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/serial_reg.h     |   1 +
+ 2 files changed, 145 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index ebab625179d4..4bb831ab5db0 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -16,6 +16,9 @@
- #include <linux/dmaengine.h>
+diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
+index 2f653c48639d..5f183d197dfa 100644
+--- a/drivers/tty/serial/8250/8250_omap.c
++++ b/drivers/tty/serial/8250/8250_omap.c
+@@ -22,6 +22,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/console.h>
+ #include <linux/pm_qos.h>
++#include <linux/dma-mapping.h>
  
- struct uart_8250_dma {
-+	int (*tx_dma)(struct uart_8250_port *p);
-+	int (*rx_dma)(struct uart_8250_port *p, unsigned int iir);
+ #include "8250.h"
+ 
+@@ -29,6 +30,7 @@
+ 
+ #define UART_ERRATA_i202_MDR1_ACCESS	(1 << 0)
+ #define OMAP_UART_WER_HAS_TX_WAKEUP	(1 << 1)
++#define OMAP_DMA_TX_KICK		(1 << 2)
+ 
+ #define OMAP_UART_FCR_RX_TRIG		6
+ #define OMAP_UART_FCR_TX_TRIG		4
+@@ -616,6 +618,148 @@ static void omap_8250_unthrottle(struct uart_port *port)
+ 	pm_runtime_put_autosuspend(port->dev);
+ }
+ 
++#ifdef CONFIG_SERIAL_8250_DMA
++static int omap_8250_tx_dma(struct uart_8250_port *p);
 +
- 	dma_filter_fn		fn;
- 	void			*rx_param;
- 	void			*tx_param;
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index ea57c87f8528..93b0799936fd 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1350,7 +1350,7 @@ static void serial8250_start_tx(struct uart_port *port)
- 	struct uart_8250_port *up = up_to_u8250p(port);
- 
- 	serial8250_rpm_get_tx(up);
--	if (up->dma && !serial8250_tx_dma(up)) {
-+	if (up->dma && !up->dma->tx_dma(up)) {
- 		return;
- 	} else if (!(up->ier & UART_IER_THRI)) {
- 		up->ier |= UART_IER_THRI;
-@@ -1588,7 +1588,7 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
- 
- 	if (status & (UART_LSR_DR | UART_LSR_BI)) {
- 		if (up->dma)
--			dma_err = serial8250_rx_dma(up, iir);
-+			dma_err = up->dma->rx_dma(up, iir);
- 
- 		if (!up->dma || dma_err)
- 			status = serial8250_rx_chars(up, status);
-@@ -3624,8 +3624,13 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
- 			uart->dl_read = up->dl_read;
- 		if (up->dl_write)
- 			uart->dl_write = up->dl_write;
--		if (up->dma)
-+		if (up->dma) {
- 			uart->dma = up->dma;
-+			if (!uart->dma->tx_dma)
-+				uart->dma->tx_dma = serial8250_tx_dma;
-+			if (!uart->dma->rx_dma)
-+				uart->dma->rx_dma = serial8250_rx_dma;
++static void omap_8250_dma_tx_complete(void *param)
++{
++	struct uart_8250_port	*p = param;
++	struct uart_8250_dma	*dma = p->dma;
++	struct circ_buf		*xmit = &p->port.state->xmit;
++	unsigned long		flags;
++	bool			en_thri = false;
++
++	dma_sync_single_for_cpu(dma->txchan->device->dev, dma->tx_addr,
++				UART_XMIT_SIZE, DMA_TO_DEVICE);
++
++	spin_lock_irqsave(&p->port.lock, flags);
++
++	dma->tx_running = 0;
++
++	xmit->tail += dma->tx_size;
++	xmit->tail &= UART_XMIT_SIZE - 1;
++	p->port.icount.tx += dma->tx_size;
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(&p->port);
++
++	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port)) {
++		int ret;
++
++		ret = omap_8250_tx_dma(p);
++		if (ret)
++			en_thri = true;
++
++	} else if (p->capabilities & UART_CAP_RPM) {
++		en_thri = true;
++	}
++
++	if (en_thri) {
++		dma->tx_err = 1;
++		p->ier |= UART_IER_THRI;
++		serial_port_out(&p->port, UART_IER, p->ier);
++	}
++
++	spin_unlock_irqrestore(&p->port.lock, flags);
++}
++
++static int omap_8250_tx_dma(struct uart_8250_port *p)
++{
++	struct uart_8250_dma		*dma = p->dma;
++	struct omap8250_priv		*priv = p->port.private_data;
++	struct circ_buf			*xmit = &p->port.state->xmit;
++	struct dma_async_tx_descriptor	*desc;
++	unsigned int	skip_byte = 0;
++	int ret;
++
++	if (dma->tx_running)
++		return 0;
++	if (uart_tx_stopped(&p->port) || uart_circ_empty(xmit)) {
++
++		/*
++		 * Even if no data, we need to return an error for the two cases
++		 * below so serial8250_tx_chars() is invoked and properly clears
++		 * THRI and/or runtime suspend.
++		 */
++		if (dma->tx_err || p->capabilities & UART_CAP_RPM) {
++			ret = -EBUSY;
++			goto err;
 +		}
- 
- 		if (serial8250_isa_config != NULL)
- 			serial8250_isa_config(0, &uart->port,
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index db9eda3c12d6..258430b72039 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -118,7 +118,6 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	dma->tx_err = 1;
- 	return ret;
- }
--EXPORT_SYMBOL_GPL(serial8250_tx_dma);
- 
- int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
++		if (p->ier & UART_IER_THRI) {
++			p->ier &= ~UART_IER_THRI;
++			serial_out(p, UART_IER, p->ier);
++		}
++		return 0;
++	}
++
++	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
++	if (priv->habit & OMAP_DMA_TX_KICK) {
++		u8 tx_lvl;
++
++		/*
++		 * We need to put the first byte into the FIFO in order to start
++		 * the DMA transfer. For transfers smaller than four bytes we
++		 * don't bother doing DMA at all. It seem not matter if there
++		 * are still bytes in the FIFO from the last transfer (in case
++		 * we got here directly from omap_8250_dma_tx_complete()). Bytes
++		 * leaving the FIFO seem not to trigger the DMA transfer. It is
++		 * really the byte that we put into the FIFO.
++		 * If the FIFO is already full then we most likely got here from
++		 * omap_8250_dma_tx_complete(). And this means the DMA engine
++		 * just completed its work. We don't have to wait the complete
++		 * 86us at 115200,8n1 but around 60us (not to mention lower
++		 * baudrates). So in that case we take the interrupt and try
++		 * again with an empty FIFO.
++		 */
++		tx_lvl = serial_in(p, UART_OMAP_TX_LVL);
++		if (tx_lvl == p->tx_loadsz) {
++			ret = -EBUSY;
++			goto err;
++		}
++		if (dma->tx_size < 4) {
++			ret = -EINVAL;
++			goto err;
++		}
++		skip_byte = 1;
++	}
++
++	desc = dmaengine_prep_slave_single(dma->txchan,
++			dma->tx_addr + xmit->tail + skip_byte,
++			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
++			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++	if (!desc) {
++		ret = -EBUSY;
++		goto err;
++	}
++
++	dma->tx_running = 1;
++
++	desc->callback = omap_8250_dma_tx_complete;
++	desc->callback_param = p;
++
++	dma->tx_cookie = dmaengine_submit(desc);
++
++	dma_sync_single_for_device(dma->txchan->device->dev, dma->tx_addr,
++				   UART_XMIT_SIZE, DMA_TO_DEVICE);
++
++	dma_async_issue_pending(dma->txchan);
++	if (dma->tx_err)
++		dma->tx_err = 0;
++
++	if (p->ier & UART_IER_THRI) {
++		p->ier &= ~UART_IER_THRI;
++		serial_out(p, UART_IER, p->ier);
++	}
++	if (skip_byte)
++		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
++	return 0;
++err:
++	dma->tx_err = 1;
++	return ret;
++}
++
++#endif
++
+ static int omap8250_probe(struct platform_device *pdev)
  {
-@@ -165,7 +164,6 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
+index df6c9ab6b0cd..53af3b790129 100644
+--- a/include/uapi/linux/serial_reg.h
++++ b/include/uapi/linux/serial_reg.h
+@@ -359,6 +359,7 @@
+ #define UART_OMAP_SYSC		0x15	/* System configuration register */
+ #define UART_OMAP_SYSS		0x16	/* System status register */
+ #define UART_OMAP_WER		0x17	/* Wake-up enable register */
++#define UART_OMAP_TX_LVL	0x1a	/* TX FIFO level register */
  
- 	return 0;
- }
--EXPORT_SYMBOL_GPL(serial8250_rx_dma);
- 
- int serial8250_request_dma(struct uart_8250_port *p)
- {
+ /*
+  * These are the definitions for the MDR1 register
 -- 
 2.1.0
 
