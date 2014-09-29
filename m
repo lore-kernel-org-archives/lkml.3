@@ -1,30 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaI2Ppa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:45:30 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39079 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156AbaI2Pp1 (ORCPT
+	id S1754602AbaI2Pq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:46:56 -0400
+Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:56489 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753656AbaI2Pqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:45:27 -0400
-Message-ID: <1412005518.3817.23.camel@hornet>
-Subject: Re: [PATCH 1/2] perf: Add sampling of the raw monotonic clock
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Mon, 29 Sep 2014 16:45:18 +0100
-In-Reply-To: <20140929152832.GL4140@worktop.programming.kicks-ass.net>
-References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
-	 <1411050873-9310-2-git-send-email-pawel.moll@arm.com>
-	 <20140929152832.GL4140@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 29 Sep 2014 11:46:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:7652:7903:8985:9025:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stop56_5917d6f65ff4e
+X-Filterd-Recvd-Size: 1479
+Message-ID: <1412005610.4302.26.camel@joe-AO725>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
+ seq_puts()
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Petr Mladek <pmladek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 29 Sep 2014 08:46:50 -0700
+In-Reply-To: <20140929112538.3929a9a2@gandalf.local.home>
+References: <20140926143721.52206f95@gandalf.local.home>
+	 <20140929144121.GA30562@pathway.suse.cz>
+	 <20140929112538.3929a9a2@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -32,47 +33,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-29 at 16:28 +0100, Peter Zijlstra wrote:
-> On Thu, Sep 18, 2014 at 03:34:32PM +0100, Pawel Moll wrote:
-> > @@ -4456,6 +4459,13 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
-> >  		data->cpu_entry.cpu	 = raw_smp_processor_id();
-> >  		data->cpu_entry.reserved = 0;
-> >  	}
-> > +
-> > +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC) {
-> > +		struct timespec now;
-> > +
-> > +		getrawmonotonic(&now);
-> > +		data->clock_raw_monotonic = timespec_to_ns(&now);
-> > +	}
-> >  }
-> >  
+On Mon, 2014-09-29 at 11:25 -0400, Steven Rostedt wrote:
+> Anyway, that should be a second patch, and we should get my current
+> patch (the one to make putc and puts the same) in first, as that
+> actually fixes the inconsistency between the two.
 > 
-> This cannot work, getrawmonotonic() isn't NMI-safe and there's
-> nothing stopping this being used from NMI context.
-> 
-> Also getrawmonotonic() + timespec_to_ns() will make tglx sad, he's just
-> done a tree-wide eradication of silly conversions and now you're adding
-> a ns -> timespec -> ns dance right back.
+> I'll post another patch to try to make seq_file operations a bit more
+> consistent. Perhaps we can have m->count be what would have been
+> written.
 
-Last thing I want is to make Thomas sad... For obvious reasons ;-)
+https://lkml.org/lkml/2013/9/11/801
 
-> I _think_ you want ktime_get_mono_fast_ns(), 
-
-With pleasure, it's exactly what I need.
-
-> but this does bring us
-> right back to the question/discussion on which timebase you'd want to
-> sync again. MONO does make sense for most cases, but I think we've had
-> fairly sane stories for people wanting to sync against other clocks.
-
-Yes. I've asked the same question somewhere in the thread.
-
-ftrace has got a switch and a selection of trace_clocks in
-kernel/trace/trace.c - do we want something similar (in integer form
-probably, though) in perf_events.h with an additional "flag" in struct
-perf_event_attr? It could be used to pick a time source for
-PERF_SAMPLE_CLOCK (PERF_SAMPLE_TRACE_CLOCK?) sample.
-
-Pawel
 
