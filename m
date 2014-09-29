@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaI2PZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:25:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:19611 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751521AbaI2PZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:25:41 -0400
-Date: Mon, 29 Sep 2014 11:25:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
- seq_puts()
-Message-ID: <20140929112538.3929a9a2@gandalf.local.home>
-In-Reply-To: <20140929144121.GA30562@pathway.suse.cz>
-References: <20140926143721.52206f95@gandalf.local.home>
-	<20140929144121.GA30562@pathway.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754266AbaI2P07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:26:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60532 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976AbaI2P06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 11:26:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="393083601"
+Date: Mon, 29 Sep 2014 08:26:46 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, dave@sr71.net,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        x86@kernel.org, torvalds@linux-foundation.org,
+        Vitaly Mayatskikh <v.mayatskih@gmail.com>
+Subject: Re: [PATCH 2/2] x86: Only do a single page fault for
+ copy_from_user_nmi
+Message-ID: <20140929152646.GC1629@tassilo.jf.intel.com>
+References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
+ <1411774277-4198-3-git-send-email-andi@firstfloor.org>
+ <20140929115620.GH5430@worktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929115620.GH5430@worktop>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 16:41:22 +0200
-Petr Mladek <pmladek@suse.cz> wrote:
+> For now, changing the semantics of the function seems like a sure way to
+> fail in the future though.
 
+I doubt it. Nearly nobody uses the exact return value semantics.
 
-> This patch moves set_putc() from b) to c) because it leaves mess in the
-> last byte.
+(iirc it's mostly write() and some bizarre code in mount)
 
-Which removes the "b" section, and makes seq_putc() and seq_puts()
-function the same.
+In fact it's a regular mistake to assume it returns -errno.
 
+> > In theory we could also duplicate the whole copy_*_ path for cases
+> > where the caller doesn't care about the exact bytes. But that
+> > seems overkill for just this issue, and I'm not sure anyone
+> > else cares about how fast this is. The simpler check works
+> > as well for now.
 > 
-> 
-> The semantic looks weird in all categories:
-> 
-> add a) They report error even when there was not a real overflow.
->     Well, they do not know if there was overflow because
->     bitmap_scnprintf() does not report if it shrunk
->     the data or not.
-> 
-> add b) It does not report error even when seq_overflow() might later
->     report overflow.
-> 
-> add c) Any overflow invalidates the whole buffer because there might
->     be mess at the end. The overflow is not checked by read functions,
->     so they allow to read the mess.
-> 
-> 
-> I think that reasonable semantic would be:
-> 
->   + either signalize overflow another way (extra struct member and
->     leave count to point to the valid data) or always fill valid
->     data until the end of the buffer.
-> 
->     The second variant might be problem if we add only half of
->     an escape sequence.
-> 
-> 
->   + always return error when seq_overflow() would return overflow;
->     in fact, the full buffer means that the last write operation
->     was most likely incomplete
+> So I don't get that code, but why not fix it in general? Taking two
+> faults seems silly.
 
-I think this is probably the best option.
+It's really complicated to reconstruct the exact bytes, as an optimized
+memcpy is very complicated and has a lot of corner cases. 
 
-> 
->     Also we might rename it from "overflow" to "full" or "filled"
->     or "sealed" or "complete" that might describe the state more
->     precisely because there is not a real overflow in some situations
+I tried it originally when writing the original copy function, but
+failed. That is why people came up later with this two-fault
+scheme.
 
-We could make overflow be m->count > m->size, which would mean that
-m->count == m->size (full) isn't a problem. Although, I would have to
-audit the kernel to see if anything just assumes that m->count is
-always less than m->size.
+I think two fault is fine for most cases, just not for NMIs.
 
-This would mean overflow is the correct term, and wouldn't have to
-change it.
+-Andi
 
-Anyway, that should be a second patch, and we should get my current
-patch (the one to make putc and puts the same) in first, as that
-actually fixes the inconsistency between the two.
-
-I'll post another patch to try to make seq_file operations a bit more
-consistent. Perhaps we can have m->count be what would have been
-written.
-
--- Steve
+-- 
+ak@linux.intel.com -- Speaking for myself only
