@@ -1,225 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051AbaI2Q1B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:27:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754274AbaI2Q0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:26:19 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, linux-ide@vger.kernel.org
-Subject: [PATCH v5 3/5] AHCI: Move host activation code into ahci_host_activate()
-Date: Mon, 29 Sep 2014 18:25:59 +0200
-Message-Id: <548a7d45d36d59114aa49ba4871a4f8ec2de4293.1412007152.git.agordeev@redhat.com>
-In-Reply-To: <cover.1412007152.git.agordeev@redhat.com>
-References: <cover.1412007152.git.agordeev@redhat.com>
+	id S1755103AbaI2Q1S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:27:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52833 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073AbaI2Q1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:27:16 -0400
+Date: Mon, 29 Sep 2014 17:27:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mikhail Efremov <sem@altlinux.org>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+Message-ID: <20140929162714.GH7996@ZenIV.linux.org.uk>
+References: <20140926164442.GA26897@ZenIV.linux.org.uk>
+ <20140927044555.GS7996@ZenIV.linux.org.uk>
+ <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+ <20140927183139.GT7996@ZenIV.linux.org.uk>
+ <20140927191657.GU7996@ZenIV.linux.org.uk>
+ <20140928074747.GZ7996@ZenIV.linux.org.uk>
+ <20140928180556.GA7996@ZenIV.linux.org.uk>
+ <CA+55aFxZDsD94CSDYfyw9g3WWNkVApZDKxHVhK2zy0ycRsjcmA@mail.gmail.com>
+ <20140929155918.GG7996@ZenIV.linux.org.uk>
+ <CA+55aFyveyOABqssxLinsmHkBg9=95TwEGC1ZT1POe+RmTbj+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyveyOABqssxLinsmHkBg9=95TwEGC1ZT1POe+RmTbj+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently host activation done by calling either function
-ahci_host_activate() or ata_host_activate(). Consolidate
-the code by only calling ahci_host_activate() for all AHCI
-devices.
+On Mon, Sep 29, 2014 at 09:07:00AM -0700, Linus Torvalds wrote:
+> On Mon, Sep 29, 2014 at 8:59 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Now RCU lookup starts.  And on another CPU we move the first dentry over
+> > the third one.  copy_name() is called, it decrements the refcount down
+> > to 1 (__d_free() hasn't happened yet) and doesn't schedule any freeing.
+> 
+> Ahh. If we were to do *all* of the copy-name name freeing under RCU,
+> we'd be ok. But we don't. We do the refcount decrement immediately
+> (and have to, if we want to have the rcu/refcount union). Yeah, good
+> call, although I find that doubvle rcu grace period for the common
+> case to be very annoying.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/acard-ahci.c       |  3 +--
- drivers/ata/ahci.c             |  6 +----
- drivers/ata/ahci.h             |  3 ---
- drivers/ata/libahci.c          | 59 +++++++++++++++++++++++++-----------------
- drivers/ata/libahci_platform.c |  3 +--
- drivers/ata/sata_highbank.c    |  3 +--
- 6 files changed, 39 insertions(+), 38 deletions(-)
+See below (or in followup to what you were replying to); it *is* trivial to
+avoid double grace periods there.  Look: in free_dentry() we know if we want
+the name freed.  So let's have __d_free() for "just free dentry" and
+__d_free_ext() for "free dentry and name".  No looking at refcount in the
+latter - just choose which one to call_rcu() when free_dentry() does decrement.
+It's equivalent from the grace period POV to doing kfree_rcu(), but avoids
+double call_rcu(); it just that in case we'd want kfree_rcu() we
+schedule the call of a function that frees both.
 
-diff --git a/drivers/ata/acard-ahci.c b/drivers/ata/acard-ahci.c
-index 25d0ac3..c962886 100644
---- a/drivers/ata/acard-ahci.c
-+++ b/drivers/ata/acard-ahci.c
-@@ -498,8 +498,7 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id
- 	acard_ahci_pci_print_info(host);
- 
- 	pci_set_master(pdev);
--	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
--				 &acard_ahci_sht);
-+	return ahci_host_activate(host, pdev->irq, &acard_ahci_sht);
+What we get in free_dentry() is:
+	* external name not shared: refcount driven to 0, RCU-delayed
+call of "free dentry, free ext name"
+	* external name still shared: refcount positive after decrement,
+no freeing ext name
+	* no external name: no ext name to free
+In the last two cases we do what dentry_free() used to do, except that now
+__d_free() doesn't even look for ext name.  Just frees the dentry.  If
+it never had been hashed - directly called, otherwise - via call_rcu().
+
+Does that look OK for you?
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index cb25a1a..0cf5aff 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -235,20 +235,44 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
+ 	return dentry_string_cmp(cs, ct, tcount);
  }
  
- module_pci_driver(acard_ahci_pci_driver);
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 0b21604..d0ac38b 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1427,11 +1427,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	pci_set_master(pdev);
- 
--	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
--		return ahci_host_activate(host, pdev->irq, &ahci_sht);
--
--	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
--				 &ahci_sht);
-+	return ahci_host_activate(host, pdev->irq, &ahci_sht);
- }
- 
- module_pci_driver(ahci_pci_driver);
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 31b4c44..6a22055 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -388,9 +388,6 @@ int ahci_port_resume(struct ata_port *ap);
- void ahci_set_em_messages(struct ahci_host_priv *hpriv,
- 			  struct ata_port_info *pi);
- int ahci_reset_em(struct ata_host *host);
--irqreturn_t ahci_interrupt(int irq, void *dev_instance);
--irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance);
--irqreturn_t ahci_thread_fn(int irq, void *dev_instance);
- void ahci_print_info(struct ata_host *host, const char *scc_s);
- int ahci_host_activate(struct ata_host *host, int irq,
- 		       struct scsi_host_template *sht);
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 21bb427..0080551 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1789,7 +1789,7 @@ static void ahci_port_intr(struct ata_port *ap)
- 	ahci_handle_port_interrupt(ap, port_mmio, status);
- }
- 
--irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
-+static irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
- {
- 	struct ata_port *ap = dev_instance;
- 	struct ahci_port_priv *pp = ap->private_data;
-@@ -1809,7 +1809,6 @@ irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
- 
- 	return IRQ_HANDLED;
- }
--EXPORT_SYMBOL_GPL(ahci_thread_fn);
- 
- static void ahci_hw_port_interrupt(struct ata_port *ap)
- {
-@@ -1823,7 +1822,7 @@ static void ahci_hw_port_interrupt(struct ata_port *ap)
- 	pp->intr_status |= status;
- }
- 
--irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
-+static irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
- {
- 	struct ata_port *ap_this = dev_instance;
- 	struct ahci_port_priv *pp = ap_this->private_data;
-@@ -1877,9 +1876,8 @@ irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
- 
- 	return IRQ_WAKE_THREAD;
- }
--EXPORT_SYMBOL_GPL(ahci_hw_interrupt);
- 
--irqreturn_t ahci_interrupt(int irq, void *dev_instance)
-+static irqreturn_t ahci_interrupt(int irq, void *dev_instance)
- {
- 	struct ata_host *host = dev_instance;
- 	struct ahci_host_priv *hpriv;
-@@ -1938,7 +1936,6 @@ irqreturn_t ahci_interrupt(int irq, void *dev_instance)
- 
- 	return IRQ_RETVAL(handled);
- }
--EXPORT_SYMBOL_GPL(ahci_interrupt);
- 
- unsigned int ahci_qc_issue(struct ata_queued_cmd *qc)
- {
-@@ -2472,24 +2469,8 @@ void ahci_set_em_messages(struct ahci_host_priv *hpriv,
- }
- EXPORT_SYMBOL_GPL(ahci_set_em_messages);
- 
--/**
-- *	ahci_host_activate - start AHCI host, request IRQs and register it
-- *	@host: target ATA host
-- *	@irq: base IRQ number to request
-- *	@sht: scsi_host_template to use when registering the host
-- *
-- *	Similar to ata_host_activate, but requests IRQs according to AHCI-1.1
-- *	when multiple MSIs were allocated. That is one MSI per port, starting
-- *	from @irq.
-- *
-- *	LOCKING:
-- *	Inherited from calling layer (may sleep).
-- *
-- *	RETURNS:
-- *	0 on success, -errno otherwise.
-- */
--int ahci_host_activate(struct ata_host *host, int irq,
--		       struct scsi_host_template *sht)
-+static int ahci_host_activate_multi_irqs(struct ata_host *host, int irq,
-+					 struct scsi_host_template *sht)
- {
- 	int i, rc;
- 
-@@ -2531,6 +2512,36 @@ out_free_irqs:
- 
- 	return rc;
- }
++struct ext_name {
++	union {
++		atomic_t count;
++		struct rcu_head head;
++	};
++	unsigned char name[];
++};
 +
-+/**
-+ *	ahci_host_activate - start AHCI host, request IRQs and register it
-+ *	@host: target ATA host
-+ *	@irq: base IRQ number to request
-+ *	@sht: scsi_host_template to use when registering the host
-+ *
-+ *	Similar to ata_host_activate, but requests IRQs according to AHCI-1.1
-+ *	when multiple MSIs were allocated. That is one MSI per port, starting
-+ *	from @irq.
-+ *
-+ *	LOCKING:
-+ *	Inherited from calling layer (may sleep).
-+ *
-+ *	RETURNS:
-+ *	0 on success, -errno otherwise.
-+ */
-+int ahci_host_activate(struct ata_host *host, int irq,
-+		       struct scsi_host_template *sht)
++static inline struct ext_name *ext_name(struct dentry *dentry)
 +{
-+	struct ahci_host_priv *hpriv = host->private_data;
-+	int rc;
-+
-+	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
-+		rc = ahci_host_activate_multi_irqs(host, irq, sht);
-+	else
-+		rc = ata_host_activate(host, irq, ahci_interrupt,
-+				       IRQF_SHARED, sht);
-+	return rc;
++	if (likely(!dname_external(dentry)))
++		return NULL;
++	return container_of(dentry->d_name.name, struct ext_name, name[0]);
 +}
- EXPORT_SYMBOL_GPL(ahci_host_activate);
++
+ static void __d_free(struct rcu_head *head)
+ {
+ 	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
  
- MODULE_AUTHOR("Jeff Garzik");
-diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-index c7f787e..0b03f90 100644
---- a/drivers/ata/libahci_platform.c
-+++ b/drivers/ata/libahci_platform.c
-@@ -493,8 +493,7 @@ int ahci_platform_init_host(struct platform_device *pdev,
- 	ahci_init_controller(host);
- 	ahci_print_info(host, "platform");
- 
--	return ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
--				 &ahci_platform_sht);
-+	return ahci_host_activate(host, irq, &ahci_platform_sht);
+ 	WARN_ON(!hlist_unhashed(&dentry->d_alias));
+-	if (dname_external(dentry))
+-		kfree(dentry->d_name.name);
++	kmem_cache_free(dentry_cache, dentry); 
++}
++
++static void __d_free_ext(struct rcu_head *head)
++{
++	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
++	WARN_ON(!hlist_unhashed(&dentry->d_alias));
++	kfree(ext_name(dentry));
+ 	kmem_cache_free(dentry_cache, dentry); 
  }
- EXPORT_SYMBOL_GPL(ahci_platform_init_host);
  
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index da3bc27..ce2b99a 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -568,8 +568,7 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- 	ahci_init_controller(host);
- 	ahci_print_info(host, "platform");
+ static void dentry_free(struct dentry *dentry)
+ {
++	struct ext_name *p = ext_name(dentry);
++	if (unlikely(p) && likely(atomic_dec_and_test(&p->count)))
++		call_rcu(&dentry->d_u.d_rcu, __d_free_ext);
+ 	/* if dentry was never visible to RCU, immediate free is OK */
+-	if (!(dentry->d_flags & DCACHE_RCUACCESS))
++	else if (!(dentry->d_flags & DCACHE_RCUACCESS))
+ 		__d_free(&dentry->d_u.d_rcu);
+ 	else
+ 		call_rcu(&dentry->d_u.d_rcu, __d_free);
+@@ -1438,11 +1462,14 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+ 	 */
+ 	dentry->d_iname[DNAME_INLINE_LEN-1] = 0;
+ 	if (name->len > DNAME_INLINE_LEN-1) {
+-		dname = kmalloc(name->len + 1, GFP_KERNEL);
+-		if (!dname) {
++		size_t size = offsetof(struct ext_name, name) + name->len + 1;
++		struct ext_name *p = kmalloc(size, GFP_KERNEL);
++		if (!p) {
+ 			kmem_cache_free(dentry_cache, dentry); 
+ 			return NULL;
+ 		}
++		atomic_set(&p->count, 1);
++		dname = p->name;
+ 	} else  {
+ 		dname = dentry->d_iname;
+ 	}	
+@@ -2372,11 +2399,10 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
+ }
+ EXPORT_SYMBOL(dentry_update_name_case);
  
--	rc = ata_host_activate(host, irq, ahci_interrupt, 0,
--					&ahci_highbank_platform_sht);
-+	rc = ahci_host_activate(host, irq, &ahci_highbank_platform_sht);
- 	if (rc)
- 		goto err0;
+-static void switch_names(struct dentry *dentry, struct dentry *target,
+-			 bool exchange)
++static void swap_names(struct dentry *dentry, struct dentry *target)
+ {
+-	if (dname_external(target)) {
+-		if (dname_external(dentry)) {
++	if (unlikely(dname_external(target))) {
++		if (unlikely(dname_external(dentry))) {
+ 			/*
+ 			 * Both external: swap the pointers
+ 			 */
+@@ -2392,7 +2418,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+ 			target->d_name.name = target->d_iname;
+ 		}
+ 	} else {
+-		if (dname_external(dentry)) {
++		if (unlikely(dname_external(dentry))) {
+ 			/*
+ 			 * dentry:external, target:internal.  Give dentry's
+ 			 * storage to target and make dentry internal
+@@ -2407,12 +2433,6 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+ 			 */
+ 			unsigned int i;
+ 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
+-			if (!exchange) {
+-				memcpy(dentry->d_iname, target->d_name.name,
+-						target->d_name.len + 1);
+-				dentry->d_name.hash_len = target->d_name.hash_len;
+-				return;
+-			}
+ 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
+ 				swap(((long *) &dentry->d_iname)[i],
+ 				     ((long *) &target->d_iname)[i]);
+@@ -2422,6 +2442,22 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+ 	swap(dentry->d_name.hash_len, target->d_name.hash_len);
+ }
  
--- 
-1.8.3.1
-
++static void copy_name(struct dentry *dentry, struct dentry *target)
++{
++	struct ext_name *old_name = ext_name(dentry);
++	if (unlikely(dname_external(target))) {
++		atomic_inc(&ext_name(target)->count);
++		dentry->d_name = target->d_name;
++	} else {
++		memcpy(dentry->d_iname, target->d_name.name,
++				target->d_name.len + 1);
++		dentry->d_name.name = dentry->d_iname;
++		dentry->d_name.hash_len = target->d_name.hash_len;
++	}
++	if (unlikely(old_name) && likely(atomic_dec_and_test(&old_name->count)))
++		kfree_rcu(old_name, head);
++}
++
+ static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
+ {
+ 	/*
+@@ -2518,7 +2554,10 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+ 	}
+ 
+ 	/* Switch the names.. */
+-	switch_names(dentry, target, exchange);
++	if (exchange)
++		swap_names(dentry, target);
++	else
++		copy_name(dentry, target);
+ 
+ 	/* ... and switch them in the tree */
+ 	if (IS_ROOT(dentry)) {
