@@ -1,144 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353AbaI2PWD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:22:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57787 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245AbaI2PWB (ORCPT
+	id S1754053AbaI2PZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:25:42 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:19611 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751521AbaI2PZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:22:01 -0400
-Message-ID: <542978F7.5030405@pengutronix.de>
-Date: Mon, 29 Sep 2014 17:21:27 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 29 Sep 2014 11:25:41 -0400
+Date: Mon, 29 Sep 2014 11:25:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
+ seq_puts()
+Message-ID: <20140929112538.3929a9a2@gandalf.local.home>
+In-Reply-To: <20140929144121.GA30562@pathway.suse.cz>
+References: <20140926143721.52206f95@gandalf.local.home>
+	<20140929144121.GA30562@pathway.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Bart Tanghe <bart.tanghe@thomasmore.be>, thierry.reding@gmail.com
-CC: matt.porter@linaro.org, linux-rpi-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Subject: Re: [resend rfc v4]pwm: add BCM2835 PWM driver
-References: <1412001619-30001-1-git-send-email-bart.tanghe@thomasmore.be>
-In-Reply-To: <1412001619-30001-1-git-send-email-bart.tanghe@thomasmore.be>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="iF6iCCHuSwDQrkSjUVBaut6ROGfWMCiOg"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---iF6iCCHuSwDQrkSjUVBaut6ROGfWMCiOg
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 09/29/2014 04:40 PM, Bart Tanghe wrote:
-> +static int bcm2835_pwm_probe(struct platform_device *pdev)
-> +{
-> +	struct bcm2835_pwm *pwm;
-> +	int ret;
-> +	struct resource *r;
-> +	struct clk *clk;
-> +
-> +	pwm =3D devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-> +	if (!pwm)
-> +		return -ENOMEM;
-> +
-> +	pwm->dev =3D &pdev->dev;
-> +
-> +	clk =3D clk_get(&pdev->dev, NULL);
-
-Better use devm_, as you don't free the clock in case of an error and
-during remove()
-
-> +	if (IS_ERR(clk)) {
-> +		dev_err(&pdev->dev, "no clock found: %ld\n", PTR_ERR(clk));
-> +		return PTR_ERR(clk);
-> +	}
-> +
-> +	pwm->clk =3D clk;
-> +	clk_prepare_enable(pwm->clk);
-
-Please check the return value of clk_prepare_enable()
-
-> +	pwm->scaler =3D NSEC_PER_SEC / clk_get_rate(clk);
-> +
-> +	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	pwm->base =3D devm_ioremap_resource(&pdev->dev, r);
-> +	if (IS_ERR(pwm->base))
-> +		return PTR_ERR(pwm->base);
-> +
-> +	pwm->chip.dev =3D &pdev->dev;
-> +	pwm->chip.ops =3D &bcm2835_pwm_ops;
-> +	pwm->chip.npwm =3D 2;
-> +
-> +	ret =3D pwmchip_add(&pwm->chip);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-> +		return -1;
-
-Please propagate the error vlaue:
-
-    return ret;
-
-> +	}
-> +	platform_set_drvdata(pdev, pwm);
-
-Better do this before pwmchip_add()
-
-> +	return 0;
-> +}
-> +
-> +static int bcm2835_pwm_remove(struct platform_device *pdev)
-> +{
-> +	struct bcm2835_pwm *pc =3D platform_get_drvdata(pdev);
-> +	clk_disable_unprepare(pc->clk);
-> +	return pwmchip_remove(&pc->chip);
-> +}
-> +
-> +static const struct of_device_id bcm2835_pwm_of_match[] =3D {
-> +	{ .compatible =3D "brcm,bcm2835-pwm", },
-> +	{ /* sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, bcm2835_pwm_of_match);
-> +
-> +static struct platform_driver bcm2835_pwm_driver =3D {
-> +	.driver =3D {
-> +		.name =3D "bcm2835-pwm",
-> +		.of_match_table =3D bcm2835_pwm_of_match,
-> +	},
-> +	.probe =3D bcm2835_pwm_probe,
-> +	.remove =3D bcm2835_pwm_remove,
-> +};
-> +module_platform_driver(bcm2835_pwm_driver);
-> +
-> +MODULE_AUTHOR("Bart Tanghe <bart.tanghe@thomasmore.be");
-> +MODULE_DESCRIPTION("Broadcom BCM2835 PWM driver");
-> +MODULE_LICENSE("GPL v2");
-
-regards,
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+On Mon, 29 Sep 2014 16:41:22 +0200
+Petr Mladek <pmladek@suse.cz> wrote:
 
 
---iF6iCCHuSwDQrkSjUVBaut6ROGfWMCiOg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> This patch moves set_putc() from b) to c) because it leaves mess in the
+> last byte.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Which removes the "b" section, and makes seq_putc() and seq_puts()
+function the same.
 
-iEYEARECAAYFAlQpePcACgkQjTAFq1RaXHNQnwCfQEUOMCnhCfn0IolMHzvmoCBw
-EKIAniPg3OwYZnTyKgZ8FhA2JA9QYAho
-=HeOA
------END PGP SIGNATURE-----
+> 
+> 
+> The semantic looks weird in all categories:
+> 
+> add a) They report error even when there was not a real overflow.
+>     Well, they do not know if there was overflow because
+>     bitmap_scnprintf() does not report if it shrunk
+>     the data or not.
+> 
+> add b) It does not report error even when seq_overflow() might later
+>     report overflow.
+> 
+> add c) Any overflow invalidates the whole buffer because there might
+>     be mess at the end. The overflow is not checked by read functions,
+>     so they allow to read the mess.
+> 
+> 
+> I think that reasonable semantic would be:
+> 
+>   + either signalize overflow another way (extra struct member and
+>     leave count to point to the valid data) or always fill valid
+>     data until the end of the buffer.
+> 
+>     The second variant might be problem if we add only half of
+>     an escape sequence.
+> 
+> 
+>   + always return error when seq_overflow() would return overflow;
+>     in fact, the full buffer means that the last write operation
+>     was most likely incomplete
 
---iF6iCCHuSwDQrkSjUVBaut6ROGfWMCiOg--
+I think this is probably the best option.
+
+> 
+>     Also we might rename it from "overflow" to "full" or "filled"
+>     or "sealed" or "complete" that might describe the state more
+>     precisely because there is not a real overflow in some situations
+
+We could make overflow be m->count > m->size, which would mean that
+m->count == m->size (full) isn't a problem. Although, I would have to
+audit the kernel to see if anything just assumes that m->count is
+always less than m->size.
+
+This would mean overflow is the correct term, and wouldn't have to
+change it.
+
+Anyway, that should be a second patch, and we should get my current
+patch (the one to make putc and puts the same) in first, as that
+actually fixes the inconsistency between the two.
+
+I'll post another patch to try to make seq_file operations a bit more
+consistent. Perhaps we can have m->count be what would have been
+written.
+
+-- Steve
