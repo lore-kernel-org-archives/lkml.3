@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaI2QPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:15:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:2821 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754260AbaI2QPh (ORCPT
+	id S1754324AbaI2QVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:21:46 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:62051 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753821AbaI2QVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:15:37 -0400
-Date: Mon, 29 Sep 2014 12:15:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
- seq_puts()
-Message-ID: <20140929121534.34c3ebd9@gandalf.local.home>
-In-Reply-To: <1412006881.4302.29.camel@joe-AO725>
-References: <20140926143721.52206f95@gandalf.local.home>
-	<20140929144121.GA30562@pathway.suse.cz>
-	<20140929154711.GF7996@ZenIV.linux.org.uk>
-	<1412006881.4302.29.camel@joe-AO725>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 29 Sep 2014 12:21:44 -0400
+Message-ID: <1412007702.6334.71.camel@x220>
+Subject: Re: [PATCH v7] checkkconfigsymbols.sh: reimplementation in python
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>, akpm@linux-foundation.org,
+        Stefan Hengelein <stefan.hengelein@fau.de>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 29 Sep 2014 18:21:42 +0200
+In-Reply-To: <5429711C.4060008@suse.cz>
+References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
+		 <1411919729-5800-1-git-send-email-valentinrothberg@gmail.com>
+	 <1411986525.6334.32.camel@x220> <5429711C.4060008@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-OriginalArrivalTime: 29 Sep 2014 16:21:42.0868 (UTC) FILETIME=[74BD6140:01CFDC01]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 09:08:01 -0700
-Joe Perches <joe@perches.com> wrote:
+Hi Michal,
 
-> On Mon, 2014-09-29 at 16:47 +0100, Al Viro wrote:
-> > On Mon, Sep 29, 2014 at 04:41:22PM +0200, Petr Mladek wrote:
-> > > Hmm, this inconsistency seems to be in more functions. I would divide
-> > > it into three categories:
-> []
-> > No.  _Any_ caller that decides to report that error to its caller is fucking
-> > broken.  We had some cases like that.
-> []
-> > And let's make seq_printf and friends return void.  Any breakage we miss
-> > on grep will be caught by compiler.  Enough is enough.
+[This point I already conceded to Valentin, so my remarks are moot for
+Valentin's script.]
+
+On Mon, 2014-09-29 at 16:47 +0200, Michal Marek wrote:
+> On 2014-09-29 12:28, Paul Bolle wrote:
+> >> +STMT = r"^\s*(?:if|select|depends\s+on)\s+" + EXPR
+> > 
+> > Could please make that "depends on"? Yes, it seems the yacc grammar
+> > accepts any amount of whitespace, but that doesn't make it right to use
+> > anything other than a single space.
 > 
-> https://lkml.org/lkml/2013/12/11/8
+> But then lines that violate coding style would not be checked for real
+> errors.
+
+Perhaps my dislike of this element of the grammar won here. There are
+probably better ways to enforce proper use of "depends on".
+
+> > (Can the yacc grammar be tweaked to
+> > see "depends on" as one, well, token?)
 > 
+> I don't think this is a good idea. This is a style issue, why make it a
+> grammar issue.
 
-Since you like posting links:
+Well, a grammar that allows one of its keywords to be written in
+different ways makes style and grammar issues overlap. Whatever. I guess
+it's just me being annoyed with writing
+    git grep -w "depends\s\+on\s\+FOO"
 
-https://lkml.org/lkml/2013/12/11/76
+instead of
+    git grep -w "depends on FOO"
 
-If you want to resurrect your patches, go ahead. I'll pull them into my
-list. Probably should rename seq_overflow() to seq_is_full(), which
-makes it sound less of an error.
+Ditto for writing a parser for Kconfig files. (Real world examples are
+more complicated, but you catch my drift.)
 
-And as Al noted, only fix what's there (just the places that check the
-return values). Don't add anything else.
 
--- Steve
+Paul Bolle
+
