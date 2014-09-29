@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaI2Oc6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:32:58 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:64118 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaI2Ocz (ORCPT
+	id S1754681AbaI2OdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:33:22 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50570 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754267AbaI2ObM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:32:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <54294C0B.1060705@hurleysoftware.com>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
-	<5426CA0A.7000806@hurleysoftware.com>
-	<CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>
-	<54294C0B.1060705@hurleysoftware.com>
-Date: Mon, 29 Sep 2014 23:32:55 +0900
-Message-ID: <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Sep 2014 10:31:12 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [PATCH v13 01/12] asm-generic/io.h: Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+Date: Mon, 29 Sep 2014 15:29:20 +0100
+Message-Id: <1412000971-9242-2-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-29 21:09 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
-> On 09/27/2014 08:31 PM, Akinobu Mita wrote:
->> 2014-09-27 23:30 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
->>> On 04/15/2014 09:08 AM, Akinobu Mita wrote:
->>>> This patch set enhances the DMA Contiguous Memory Allocator on x86.
->
-> [...]
->
->>> What this patchset does is restrict all iommu configurations which can
->>> map all of system memory to one _very_ small physical region, thus disabling
->>> the whole point of an iommu.
->>>
->>> Now I know why my GPU is causing paging to disk! And why my RAID controller
->>> stalls for ages when I do a git log at the same time as a kernel build!
->>
->> The solution I have for this is that instead of trying to
->> dma_alloc_from_contiguous() firstly, call alloc_pages() in dma_alloc_coherent().
->> dma_alloc_from_contiguous() should be called only when alloc_pages() is failed
->> or DMA_ATTR_FORCE_CONTIGUOUS is specified in dma_attr.
->
-> Why is all this extra complexity being added when there are no X86 users
-> of DMA_ATTR_FORCE_CONTIGUOUS?
+The !CONFIG_GENERIC_IOMAP version of ioport_map() is wrong.  It returns a
+mapped, i.e., virtual, address that can start from zero and completely
+ignores the PCI_IOBASE and IO_SPACE_LIMIT that most architectures that use
+!CONFIG_GENERIC_MAP define.
 
-I misunderstood DMA_ATTR_FORCE_CONTIGUOUS.  It is specified to request
-that underlaying DMA mapping span physically contiguous with IOMMU.
-But current alloc_dma_coherent() for intel-iommu always returns
-physically contiguous memory, so it is ignored on x86.
+Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/io.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->>> And the apparent goal of this patchset is to enable DMA allocation below
->>> 4GB, which is already supported in the existing page allocator with the
->>> GFP_DMA32 flag?!
->>
->> The goal of this patchset is to enable huge DMA allocation which
->> alloc_pages() can't (> MAX_ORDER) for the devices that require it.
->
-> What x86 devices need > MAX_ORDER DMA allocation and why can't they allocate
-> directly from dma_alloc_from_contiguous()?
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 975e1cc..b8fdc57 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -331,7 +331,7 @@ static inline void iounmap(void __iomem *addr)
+ #ifndef CONFIG_GENERIC_IOMAP
+ static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+ {
+-	return (void __iomem *) port;
++	return PCI_IOBASE + (port & IO_SPACE_LIMIT);
+ }
+ 
+ static inline void ioport_unmap(void __iomem *p)
+-- 
+2.1.1
 
-I need this for UFS unified memory extension which is apparently not in
-mainline for now.
-http://www.jedec.org/standards-documents/docs/jesd220-1
-http://www.jedec.org/sites/default/files/T_Fujisawa_MF_2013.pdf
-
-But there must be some other use cases on x86, too.  Because I have
-received several emails privately from developers who care its status.
-
-And allocating directly from dma_alloc_from_contiguous() in the driver
-doesn't work with IOMMU, as it just returns memory regoin and doesn't
-create DMA mapping.
