@@ -1,276 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaI2N5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:57:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34321 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584AbaI2N5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:57:13 -0400
-Date: Mon, 29 Sep 2014 15:57:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: memcontrol: fix transparent huge page
- allocations under pressure
-Message-ID: <20140929135707.GA25956@dhcp22.suse.cz>
-References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
- <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
+	id S1754064AbaI2N5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:57:49 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25814 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaI2N5s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:57:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,620,1406592000"; 
+   d="scan'208";a="177097529"
+Message-ID: <54296559.5020301@citrix.com>
+Date: Mon, 29 Sep 2014 14:57:45 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chen Gang <gang.chen.5i5j@gmail.com>, Juergen Gross <jgross@suse.com>,
+        Jan Beulich <JBeulich@suse.com>
+CC: <xen-devel@lists.xenproject.org>, David Vrabel <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen-scsiback: Need go to fail after xenbus_dev_error()
+References: <5425967F.7020002@gmail.com> <5428E0ED.1050107@suse.com>	<54293742020000780003A48A@mail.emea.novell.com>	<54292707.90008@gmail.com> <542927C3.8010204@suse.com> <54292D6E.4060903@gmail.com>
+In-Reply-To: <54292D6E.4060903@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 11:08:58, Johannes Weiner wrote:
-> In a memcg with even just moderate cache pressure, success rates for
-> transparent huge page allocations drop to zero, wasting a lot of
-> effort that the allocator puts into assembling these pages.
+On 29/09/14 10:59, Chen Gang wrote:
 > 
-> The reason for this is that the memcg reclaim code was never designed
-> for higher-order charges.  It reclaims in small batches until there is
-> room for at least one page.  Huge page charges only succeed when these
-> batches add up over a series of huge faults, which is unlikely under
-> any significant load involving order-0 allocations in the group.
 > 
-> Remove that loop on the memcg side in favor of passing the actual
-> reclaim goal to direct reclaim, which is already set up and optimized
-> to meet higher-order goals efficiently.
+> If no any additional reply within 2 days, I shall send patch v2 for it:
+> 
+>   "use dev_warn() instead of xenbus_dev_error() and remove 'fail' code block"
 
-I had concerns the last time you were posting similar patch
-(http://marc.info/?l=linux-mm&m=140803277013080&w=2) but I do not see
-any of them neither mentioned nor addressed here. Especially unexpected
-long stalls and excessive swapout. 512 pages target for direct reclaim
-is too much. Especially for smaller memcgs where we would need to drop
-the priority considerably to even scan that many pages.
+I think this driver is fine as-is and does not need any changes.
 
-THP charges close to the limit are definitely a problem but this
-is way too risky to fix this problem IMO. Maybe a better approach
-would be to limit the reclaim to (clean) page cache (aka
-MEM_CGROUP_RECLAIM_NOSWAP). The risk of long stalls should be much
-lower and excessive swapouts shouldn't happen at all. What is the point
-to swap out a large number of pages just to allow THP charge which can
-be used very sparsely?
-
-> This brings memcg's THP policy in line with the system policy: if the
-> allocator painstakingly assembles a hugepage, memcg will at least make
-> an honest effort to charge it.  As a result, transparent hugepage
-> allocation rates amid cache activity are drastically improved:
-> 
->                                       vanilla                 patched
-> pgalloc                 4717530.80 (  +0.00%)   4451376.40 (  -5.64%)
-> pgfault                  491370.60 (  +0.00%)    225477.40 ( -54.11%)
-> pgmajfault                    2.00 (  +0.00%)         1.80 (  -6.67%)
-> thp_fault_alloc               0.00 (  +0.00%)       531.60 (+100.00%)
-> thp_fault_fallback          749.00 (  +0.00%)       217.40 ( -70.88%)
-
-What is the load and configuration that you have measured?
- 
-> [ Note: this may in turn increase memory consumption from internal
->   fragmentation, which is an inherent risk of transparent hugepages.
->   Some setups may have to adjust the memcg limits accordingly to
->   accomodate this - or, if the machine is already packed to capacity,
->   disable the transparent huge page feature. ]
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  include/linux/swap.h |  6 +++--
->  mm/memcontrol.c      | 69 +++++++++++++---------------------------------------
->  mm/vmscan.c          |  7 +++---
->  3 files changed, 25 insertions(+), 57 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index ea4f926e6b9b..37a585beef5c 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -327,8 +327,10 @@ extern void lru_cache_add_active_or_unevictable(struct page *page,
->  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  					gfp_t gfp_mask, nodemask_t *mask);
->  extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
-> -extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
-> -						  gfp_t gfp_mask, bool noswap);
-> +extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +						  unsigned long nr_pages,
-> +						  gfp_t gfp_mask,
-> +						  bool may_swap);
->  extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						gfp_t gfp_mask, bool noswap,
->  						struct zone *zone,
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 89c920156c2a..c2c75262a209 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -478,14 +478,6 @@ enum res_type {
->  #define OOM_CONTROL		(0)
->  
->  /*
-> - * Reclaim flags for mem_cgroup_hierarchical_reclaim
-> - */
-> -#define MEM_CGROUP_RECLAIM_NOSWAP_BIT	0x0
-> -#define MEM_CGROUP_RECLAIM_NOSWAP	(1 << MEM_CGROUP_RECLAIM_NOSWAP_BIT)
-> -#define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
-> -#define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
-> -
-> -/*
->   * The memcg_create_mutex will be held whenever a new cgroup is created.
->   * As a consequence, any change that needs to protect against new child cgroups
->   * appearing has to hold it as well.
-> @@ -1791,40 +1783,6 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  			 NULL, "Memory cgroup out of memory");
->  }
->  
-> -static unsigned long mem_cgroup_reclaim(struct mem_cgroup *memcg,
-> -					gfp_t gfp_mask,
-> -					unsigned long flags)
-> -{
-> -	unsigned long total = 0;
-> -	bool noswap = false;
-> -	int loop;
-> -
-> -	if (flags & MEM_CGROUP_RECLAIM_NOSWAP)
-> -		noswap = true;
-> -
-> -	for (loop = 0; loop < MEM_CGROUP_MAX_RECLAIM_LOOPS; loop++) {
-> -		if (loop)
-> -			drain_all_stock_async(memcg);
-> -		total += try_to_free_mem_cgroup_pages(memcg, gfp_mask, noswap);
-> -		/*
-> -		 * Allow limit shrinkers, which are triggered directly
-> -		 * by userspace, to catch signals and stop reclaim
-> -		 * after minimal progress, regardless of the margin.
-> -		 */
-> -		if (total && (flags & MEM_CGROUP_RECLAIM_SHRINK))
-> -			break;
-> -		if (mem_cgroup_margin(memcg))
-> -			break;
-> -		/*
-> -		 * If nothing was reclaimed after two attempts, there
-> -		 * may be no reclaimable pages in this hierarchy.
-> -		 */
-> -		if (loop && !total)
-> -			break;
-> -	}
-> -	return total;
-> -}
-> -
->  /**
->   * test_mem_cgroup_node_reclaimable
->   * @memcg: the target memcg
-> @@ -2527,8 +2485,9 @@ static int try_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  	struct mem_cgroup *mem_over_limit;
->  	struct res_counter *fail_res;
->  	unsigned long nr_reclaimed;
-> -	unsigned long flags = 0;
->  	unsigned long long size;
-> +	bool may_swap = true;
-> +	bool drained = false;
->  	int ret = 0;
->  
->  	if (mem_cgroup_is_root(memcg))
-> @@ -2547,7 +2506,7 @@ retry:
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
->  	} else {
->  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
-> -		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-> +		may_swap = false;
->  	}
->  
->  	if (batch > nr_pages) {
-> @@ -2572,11 +2531,18 @@ retry:
->  	if (!(gfp_mask & __GFP_WAIT))
->  		goto nomem;
->  
-> -	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-> +	nr_reclaimed = try_to_free_mem_cgroup_pages(mem_over_limit, nr_pages,
-> +						    gfp_mask, may_swap);
->  
->  	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
->  		goto retry;
->  
-> +	if (!drained) {
-> +		drain_all_stock_async(mem_over_limit);
-> +		drained = true;
-> +		goto retry;
-> +	}
-> +
->  	if (gfp_mask & __GFP_NORETRY)
->  		goto nomem;
->  	/*
-> @@ -3652,8 +3618,8 @@ static int mem_cgroup_resize_limit(struct mem_cgroup *memcg,
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> -				   MEM_CGROUP_RECLAIM_SHRINK);
-> +		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, true);
-> +
->  		curusage = res_counter_read_u64(&memcg->res, RES_USAGE);
->  		/* Usage is reduced ? */
->  		if (curusage >= oldusage)
-> @@ -3703,9 +3669,8 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  		if (!ret)
->  			break;
->  
-> -		mem_cgroup_reclaim(memcg, GFP_KERNEL,
-> -				   MEM_CGROUP_RECLAIM_NOSWAP |
-> -				   MEM_CGROUP_RECLAIM_SHRINK);
-> +		try_to_free_mem_cgroup_pages(memcg, 1, GFP_KERNEL, false);
-> +
->  		curusage = res_counter_read_u64(&memcg->memsw, RES_USAGE);
->  		/* Usage is reduced ? */
->  		if (curusage >= oldusage)
-> @@ -3954,8 +3919,8 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
->  		if (signal_pending(current))
->  			return -EINTR;
->  
-> -		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
-> -						false);
-> +		progress = try_to_free_mem_cgroup_pages(memcg, 1,
-> +							GFP_KERNEL, true);
->  		if (!progress) {
->  			nr_retries--;
->  			/* maybe some writeback is necessary */
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 06123f20a326..dcb47074ae03 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2759,21 +2759,22 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *memcg,
->  }
->  
->  unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
-> +					   unsigned long nr_pages,
->  					   gfp_t gfp_mask,
-> -					   bool noswap)
-> +					   bool may_swap)
->  {
->  	struct zonelist *zonelist;
->  	unsigned long nr_reclaimed;
->  	int nid;
->  	struct scan_control sc = {
-> -		.nr_to_reclaim = SWAP_CLUSTER_MAX,
-> +		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->  				(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK),
->  		.target_mem_cgroup = memcg,
->  		.priority = DEF_PRIORITY,
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
-> -		.may_swap = !noswap,
-> +		.may_swap = may_swap,
->  	};
->  
->  	/*
-> -- 
-> 2.1.0
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+David
