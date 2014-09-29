@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaI2Ssr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:48:47 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:16420 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750906AbaI2Ssp (ORCPT
+	id S1754230AbaI2Svo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:51:44 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:48265 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565AbaI2Svm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:48:45 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvoNAOCoKVRbtA8r/2dsb2JhbABggw6BKrYYBQFyAZpWgRUXAXuEMS8jgRo3iEIBr2CPcYYSigwdhDUFkT2La5Vdg2U7L4JKAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/affs/super.c: remove unused variable
-Date: Mon, 29 Sep 2014 20:48:35 +0200
-Message-Id: <1412016515-16592-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Mon, 29 Sep 2014 14:51:42 -0400
+Date: Mon, 29 Sep 2014 19:51:40 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring
+ support
+Message-ID: <20140929185140.GA14343@console-pimps.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-9-git-send-email-matt@console-pimps.org>
+ <874mvx6kgl.fsf@tassilo.jf.intel.com>
+ <20140924202739.GP18635@console-pimps.org>
+ <20140924203937.GD15923@two.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140924203937.GD15923@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-key is set in affs_fill_super but never used.
+On Wed, 24 Sep, at 10:39:37PM, Andi Kleen wrote:
+> On Wed, Sep 24, 2014 at 09:27:39PM +0100, Matt Fleming wrote:
+> > > > +static int __init intel_cqm_init(void)
+> > > > +{
+> > > > +	int i, cpu, ret;
+> > > > +
+> > > > +	if (!cpu_has(&boot_cpu_data, X86_FEATURE_CQM_OCCUP_LLC))
+> > > > +		return -ENODEV;
+> > > 
+> > > This should use cpufeature.h
+> >  
+> > What? Please be more explicit.
+> 
+> Using x86_match_cpu and friends, then it would work for module
+> auto loading too.
+ 
+OK, I'll take a look at that, thanks.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/affs/super.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> > > But in fact what good is the test then if you only
+> > > every likely check cpu #0?
+> > 
+> > We don't, we check every online cpu, not just cpu 0.
+> 
+> There are no other cpus online at this point?
 
-diff --git a/fs/affs/super.c b/fs/affs/super.c
-index 51f1a95..a67dc72 100644
---- a/fs/affs/super.c
-+++ b/fs/affs/super.c
-@@ -308,7 +308,6 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
- 	u32			 chksum;
- 	int			 num_bm;
- 	int			 i, j;
--	s32			 key;
- 	kuid_t			 uid;
- 	kgid_t			 gid;
- 	int			 reserved;
-@@ -367,7 +366,7 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
- 		i = j = blocksize;
- 		size = size / (blocksize / 512);
- 	}
--	for (blocksize = i, key = 0; blocksize <= j; blocksize <<= 1, size >>= 1) {
-+	for (blocksize = i; blocksize <= j; blocksize <<= 1, size >>= 1) {
- 		sbi->s_root_block = root_block;
- 		if (root_block < 0)
- 			sbi->s_root_block = (reserved + size - 1) / 2;
-@@ -399,7 +398,6 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
- 			    be32_to_cpu(AFFS_ROOT_TAIL(sb, root_bh)->stype) == ST_ROOT) {
- 				sbi->s_hashsize    = blocksize / 4 - 56;
- 				sbi->s_root_block += num_bm;
--				key                        = 1;
- 				goto got_root;
- 			}
- 			affs_brelse(root_bh);
+There are definitely other cpus online at this point, smp_init() gets
+called before do_initcalls().
+
 -- 
-1.9.3
-
+Matt Fleming, Intel Open Source Technology Center
