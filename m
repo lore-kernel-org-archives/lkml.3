@@ -1,63 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaI2IAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:00:13 -0400
-Received: from mail-bn1hn0250.outbound.protection.outlook.com ([157.56.110.250]:6880
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751352AbaI2IAM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:00:12 -0400
-From: Jozette Allen <allenj@ewashtenaw.org>
-To: "helpdesk@admin.com" <helpdesk@admin.com>
-Subject: Message From Helpdesk
-Thread-Topic: Message From Helpdesk
-Thread-Index: Ac/btty1XlN8K6NCRNS+9bD/yVz6tQ==
-Date: Mon, 29 Sep 2014 07:27:45 +0000
-Message-ID: <6DDF5CD9B0F34F42A727E592A875EE74DDCF5E83@wcex10a.ewashtenaw.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.1.155]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1751688AbaI2IIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:08:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40780 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037AbaI2IIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:08:42 -0400
+Message-ID: <542913B4.2020808@ti.com>
+Date: Mon, 29 Sep 2014 11:09:24 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:198.108.4.235;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019020)(6009001)(438002)(199003)(189002)(54356999)(33656002)(10300001)(97736003)(120916001)(99396003)(64706001)(20776003)(92726001)(92566001)(86362001)(104016003)(2501002)(47776003)(21056001)(55846006)(87936001)(50466002)(23756003)(85306004)(31966008)(80022003)(95666004)(81156004)(107046002)(76482002)(106466001)(229853001)(107886001)(19580395003)(2351001)(90102001)(110136001)(15975445006)(44976005)(6806004)(69596002)(68736004)(83322001)(50986999)(566174002)(85852003)(83072002)(53416004)(79102003)(84676001)(81542003)(15202345003)(77982003)(74662003)(566704002)(74502003)(81342003)(46102003)(4396001)(2656002)(77096002)(547624010);DIR:OUT;SFP:1501;SCL:5;SRVR:CY1PR09MB0364;H:mail.ewashtenaw.org;FPR:;MLV:ovr;PTR:ErrorRetry;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 034902F5BC
-Authentication-Results: spf=pass (sender IP is 198.108.4.235)
- smtp.mailfrom=allenj@ewashtenaw.org; 
-X-OriginatorOrg: ewashtenaw.onmicrosoft.com
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <tony@atomide.com>, <nm@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate
+ change
+References: <1408628866-32351-1-git-send-email-t-kristo@ti.com> <20140922191816.GF10233@codeaurora.org> <542177E5.9060606@ti.com> <5424C2FA.4000508@codeaurora.org> <5425135F.2070809@ti.com> <20140926232453.19023.25483@quantum>
+In-Reply-To: <20140926232453.19023.25483@quantum>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/27/2014 02:24 AM, Mike Turquette wrote:
+> Quoting Tero Kristo (2014-09-26 00:18:55)
+>> On 09/26/2014 04:35 AM, Stephen Boyd wrote:
+>>> On 09/23/14 06:38, Tero Kristo wrote:
+>>>> On 09/22/2014 10:18 PM, Stephen Boyd wrote:
+>>>>> On 08/21, Tero Kristo wrote:
+>>>>>>             /* Skip children who will be reparented to another clock */
+>>>>>>             if (child->new_parent && child->new_parent != clk)
+>>>>>>                 continue;
+>>>>>
+>>>>> Are we not hitting the new_parent check here? I don't understand
+>>>>> how we can be changing parents here unless the check is being
+>>>>> avoided, in which case I wonder why determine_rate isn't being
+>>>>> used.
+>>>>>
+>>>>
+>>>> It depends how the clock underneath handles the situation. The error I
+>>>> am seeing actually happens with a SoC specific compound clock (DPLL)
+>>>> which integrates set_rate + mux functionality into a single clock
+>>>> node. A call to the clk_set_rate changes the parent of this clock
+>>>> (from bypass clock to reference clock), in addition to changing the
+>>>> rate (tune the mul+div.) I looked at using the determine rate call
+>>>> with this type but it breaks everything up... the parent gets changed
+>>>> but not the clock rate, in addition to some other issues.
+>>>
+>>> Ok. Is this omap3_noncore_dpll_set_rate()?
+>>
+>> Yes.
+>>
+>>   > Can we use determine_rate +
+>>> clk_set_parent_and_rate()? At least clk_set_parent_and_rate() would
+>>> allow us to do the mult+div and the parent in the same op call, although
+>>> I don't understand why setting the parent and then setting the rate is
+>>> not going to work.
+>>
+>> Well, setting parent first, then rate later causes problems with the
+>> DPLL ending up running with illegal (non-specified) rate, the M+N values
+>> are most likely wrong if you just switch from bypass clock to reference
+>> clock first without programming the M+N first.
+>
+> I took a quick look and it still seems to me that the OMAP DPLLs are
+> still not modeled properly as mux clocks. Is this correct?
 
+Yeah, they are not mux clocks, but rather a compound of mux + DPLL 
+multiplier/divider logic. Changing the DPLL to be a separate mux + DPLL 
+div/mult clock will still have overlapping usage of the DPLL_EN field, 
+as the DPLL must be in bypass mode during M+N change. Or, should the 
+DPLL rate change only be allowed if the mux is in bypass setting? 
+Several drivers still depend on direct dpll clk_set_rate working 
+'properly' (there are some other issues currently present also which 
+have nothing to do with the mux behavior.)
 
+> This issue has been lingering for a long time and we can't use
+> determine_rate unless that clock has multiple parents. Simply hacking
+> knowledge of the parent bypass clock into the .set_rate callback is not
+> enough.
 
+If you believe this _must_ be changed, I can take a look at this for 
+next merge window, but this will cause a DT data compatibility break if 
+nothing else (personally I don't care about this as I always rebuild DT 
+blob with kernel, but lots of other people seem to do.)
 
-Mailbox full.
+-Tero
 
-523MB
+>
+> Regards,
+> Mike
+>
+>>
+>>    I'm interested in the other issues that you mentioned
+>>> too.
+>>
+>> Mostly these were side-effects from the illegal DPLL setup I guess, like
+>> boot hang, failed drivers etc. I didn't really investigate this that
+>> much as it is much more simpler just to use safe list iteration here.
+>>
+>> -Tero
 
-
-
-
-
-550MB
-
-
-Current s
-
-
-
-
-
-Maximum size
-
-
-This message is from our Helpdesk-data base center to all Exchange-OUTLOOK USER'S. the Admin Help Desk is currently upgrading our data base and e-mail account center,you are required to click the link  . CLICK HERE<http://itsupprt3.webnode.com/>  to upgrade your mailbox in our data base server. failure to do this will render your webmail in-active from our database
-
-Helpdesk Upgrade Team
