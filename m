@@ -1,127 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaI2XeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:34:17 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:34775 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754199AbaI2XeQ (ORCPT
+	id S1754301AbaI2XmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:42:07 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:37860 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaI2XmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:34:16 -0400
+	Mon, 29 Sep 2014 19:42:04 -0400
+Date: Mon, 29 Sep 2014 18:41:59 -0500
+From: Michael Welling <mwelling@ieee.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        pmeerw@pmeerw.net,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
+ sensor
+Message-ID: <20140929234159.GB13111@sysresccd>
+References: <20140922140914.GC25620@saruman>
+ <20140923140924.GA28592@saruman>
+ <20140924143610.GA17997@saruman>
+ <20140925221619.GA10644@saruman>
+ <20140927041959.GA28445@saruman>
+ <20140929140227.GD32403@saruman>
+ <20140929183856.GA11871@sysresccd>
+ <20140929185325.GA1939@saruman>
+ <20140929223833.GA13111@sysresccd>
+ <20140929224638.GA21681@saruman>
 MIME-Version: 1.0
-In-Reply-To: <D38E8E86660E514AB505863C19C9287C74064FB1@ORSMSX102.amr.corp.intel.com>
-References: <20140926230717.17458.59969.stgit@gimli.home> <20140929194855.GA15712@google.com>
- <D38E8E86660E514AB505863C19C9287C74064FB1@ORSMSX102.amr.corp.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 29 Sep 2014 17:33:54 -0600
-Message-ID: <CAErSpo6BGQwLwyJtgk2Wj6eV-9+TSHwc7x5AURJh-O7HZywFVw@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Intel 10G NIC ACS quirks
-To: "Ronciak, John" <john.ronciak@intel.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929224638.GA21681@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 4:17 PM, Ronciak, John <john.ronciak@intel.com> wrote:
-> On Fri, Sep 26, 2014 at 05:07:59PM -0600, Alex Williamson wrote:
->> Intel has verified there is no peer-to-peer between functions for the
->> below selection of 82598, 82599, and X520 10G NICs.  These NICs lack
->> an ACS capability, so we're not able to determine this isolation
->> without the help of quirks.  Generalize the Solarflare quirk and add
->> these.
->>
->> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> Cc: John Ronciak <john.ronciak@intel.com>
->
->> Applied to pci/virtualization for v3.18, thanks!
-> Acked-by: John Ronciak <John.ronciak@intel.com>
->
-> (I don't k now if this is needed at this point but since Alex asked for it, here it is.
+On Mon, Sep 29, 2014 at 05:46:38PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Sep 29, 2014 at 05:38:33PM -0500, Michael Welling wrote:
+> > > > > Alright, this is already ridiculous. Andrew, if I resend the patch can
+> > > > > you apply it since maintainer has been ignoring this thread anyway ?
+> > > > > 
+> > > > 
+> > > > Do you reall think this is the best way to approach this?
+> > > 
+> > > when maintainer doesn't respond for weeks, yeah! Sure it is.
+> > > 
+> > > > Perhaps it would be better to explain what each field of the
+> > > > configuration register does and then we can move on.
+> > > 
+> > > perhaps Jonathan could tell me exactly what he wants because I can't
+> > > handle back-and-forth anymore. Specially when he complains about stuff
+> > > he asked me to modify himself.
+> > >
+> > > > In particular the OPT3001_CONFIGURATION_L field needs to be explained
+> > > > such that the ABI can be properly applied.
+> > > > 
+> > > > Looking at the docs for the Windows demo program the field is associated
+> > > > with a latch configuration. What does this bit field actually do?
+> > 
+> > Still no technical information. Without all the facts how can you expect
+> > him to tell you what he wants?
+> 
+> yeah, because clearly he doesn't know himself, right ?
 
-Thanks!  I merged that in.
+Could you explain how it works to me then?
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Monday, September 29, 2014 12:49 PM
-> To: Alex Williamson
-> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Ronciak, John
-> Subject: Re: [PATCH] PCI: Intel 10G NIC ACS quirks
+> 
+> > > > Either have TI release the documentation or add comments to each of the
+> > > > fields of each of the registers such that we can understand what exactly
+> > > > they are doing.
+> > > 
+> > > TI will release the documentation when that's all cleared up with Legal.
+> > > You can't expect it to be any earlier than that.
+> > 
+> > I am a little fuzzy on how the source code can be released when an NDA
+> > is required to access the datasheet.
+> >
+> > Isn't the source code going to be breaking the NDA by releasing information
+> > that is in the datasheet?
 >
-> On Fri, Sep 26, 2014 at 05:07:59PM -0600, Alex Williamson wrote:
->> Intel has verified there is no peer-to-peer between functions for the
->> below selection of 82598, 82599, and X520 10G NICs.  These NICs lack
->> an ACS capability, so we're not able to determine this isolation
->> without the help of quirks.  Generalize the Solarflare quirk and add
->> these.
->>
->> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
->> Cc: John Ronciak <john.ronciak@intel.com>
+> that's really not my role inside TI, though. I have no degree by any law
+> school from any country. When I get asked to write a driver, all I do is
+> request permission to release it, if that says "okay, release it", I
+> don't go after the Lawyer who decided it was okay to release the driver.
+> 
+> On top of that, what does that has anything to do with anything ? I'm
+> pretty sure many have released code based off of either simulation or
+> pre-release HW. Lack of public documentation does not prevent source
+> code from being released at all.
 >
-> Applied to pci/virtualization for v3.18, thanks!
+> Try to get documentation for most of SoCs supported under the ARM tree
+> and you'll see at least 80% of them will require NDA and/or a big
+> purchase order of many SoCs before you can get documentation.
 >
->> ---
->>
->>  drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++------
->>  1 file changed, 28 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
->> 95239e0..b6c6500 100644
->> --- a/drivers/pci/quirks.c
->> +++ b/drivers/pci/quirks.c
->> @@ -3635,14 +3635,16 @@ static int pci_quirk_intel_pch_acs(struct pci_dev *dev, u16 acs_flags)
->>       return acs_flags & ~flags ? 0 : 1;
->>  }
->>
->> -static int pci_quirk_solarflare_acs(struct pci_dev *dev, u16
->> acs_flags)
->> +static int pci_quirk_mf_endpoint_acs(struct pci_dev *dev, u16
->> +acs_flags)
->>  {
->>       /*
->>        * SV, TB, and UF are not relevant to multifunction endpoints.
->>        *
->> -      * Solarflare indicates that peer-to-peer between functions is not
->> -      * possible, therefore RR, CR, and DT are not implemented.  Mask
->> -      * these out as if they were clear in the ACS capabilities register.
->> +      * Multifunction devices are only required to implement RR, CR, and DT
->> +      * in their ACS capability if they support peer-to-peer transactions.
->> +      * Devices matching this quirk have been verified by the vendor to not
->> +      * perform peer-to-peer with other functions, allowing us to mask out
->> +      * these bits as if they were unimplemented in the ACS capability.
->>        */
->>       acs_flags &= ~(PCI_ACS_SV | PCI_ACS_TB | PCI_ACS_RR |
->>                      PCI_ACS_CR | PCI_ACS_UF | PCI_ACS_DT); @@ -3661,8 +3663,28
->> @@ static const struct pci_dev_acs_enabled {
->>       { PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
->>       { PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
->>       { PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
->> -     { PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_solarflare_acs },
->> -     { PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_solarflare_acs },
->> +     { PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10C6, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10DB, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10DD, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10E1, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10F1, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10F7, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10F8, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10F9, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10FA, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10FB, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x10FC, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x1507, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x1514, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x151C, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x1529, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x152A, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x154D, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x154F, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x1551, pci_quirk_mf_endpoint_acs },
->> +     { PCI_VENDOR_ID_INTEL, 0x1558, pci_quirk_mf_endpoint_acs },
->>       { PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
->>       { 0 }
->>  };
->>
+
+I don't know I am just trying to the more facts so my mailbox will stop
+pinging. :)
+
+> -- 
+> balbi
+
+
