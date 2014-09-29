@@ -1,99 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaI2I3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:29:11 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:55931 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaI2I3I (ORCPT
+	id S1752092AbaI2IbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:31:00 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52675 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaI2Ia6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:29:08 -0400
-Date: Mon, 29 Sep 2014 10:29:05 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Cc: Mikko Perttunen <cyndis@kapsi.fi>, edubezval@gmail.com,
-        swarren@wwwdotorg.org, linux-pm@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, juha-matti.tilli@iki.fi,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v6 4/4] thermal: Add Tegra SOCTHERM thermal management
- driver
-Message-ID: <20140929082904.GF12506@ulmo>
-References: <1411724593-4037-1-git-send-email-cyndis@kapsi.fi>
- <1411724593-4037-5-git-send-email-cyndis@kapsi.fi>
- <20140926114533.GN31106@ulmo>
- <5425CC6F.2020309@kapsi.fi>
+	Mon, 29 Sep 2014 04:30:58 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH 02/15] powerpc/cell: Move data segment faulting code out of cell platform
+In-Reply-To: <1411028820-29933-3-git-send-email-mikey@neuling.org>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org> <1411028820-29933-3-git-send-email-mikey@neuling.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 29 Sep 2014 14:00:43 +0530
+Message-ID: <8738barfpo.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cyV/sMl4KAhiehtf"
-Content-Disposition: inline
-In-Reply-To: <5425CC6F.2020309@kapsi.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092908-7014-0000-0000-00000040EA88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michael Neuling <mikey@neuling.org> writes:
 
---cyV/sMl4KAhiehtf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: Ian Munsie <imunsie@au1.ibm.com>
+>
+> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> required for a particular EA and mm struct.
+>
+> This code is generically useful for other co-processors.  This moves the code
+> of the cell platform so it can be used by other powerpc code.
+>
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  arch/powerpc/include/asm/mmu-hash64.h  |  2 ++
+>  arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/mm/slb.c                  |  3 ---
+>  arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
+>  4 files changed, 54 insertions(+), 40 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+> index d765144..fd19a53 100644
+> --- a/arch/powerpc/include/asm/mmu-hash64.h
+> +++ b/arch/powerpc/include/asm/mmu-hash64.h
+> @@ -180,6 +180,8 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
+>   * we work in all cases including 4k page size.
+>   */
+>  #define VPN_SHIFT	12
+> +#define slb_vsid_shift(ssize)	\
+> +	((ssize) == MMU_SEGSIZE_256M ? SLB_VSID_SHIFT : SLB_VSID_SHIFT_1T)
 
-On Fri, Sep 26, 2014 at 11:28:31PM +0300, Mikko Perttunen wrote:
-> On 09/26/2014 02:45 PM, Thierry Reding wrote:
-[...]
-> > I think a more idiomatic way to write this would be:
-> >
-> > static int
-> > calculate_tsensor_calibration(const struct tegra_tsensor *sensor,
-> > 			      struct tsensor_shared_calibration shared,
-> > 			      u32 *calib)
->=20
-> If I do that, it will go over the 80 character limit by quite a few
-> characters, which is why I didn't use that style. Personally I'm fine with
-> either style.
+can it be static inline similar to segment_shift() ?
 
-The above doesn't exceed the 80 character limit. Putting the return
-value and the static keyword on a separate line is a pretty common way
-to reduce line length.
+>  
+>  /*
+>   * HPTE Large Page (LP) details
+> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> index ba7df14..4105a63 100644
+> --- a/arch/powerpc/mm/copro_fault.c
+> +++ b/arch/powerpc/mm/copro_fault.c
+> @@ -90,3 +90,51 @@ out_unlock:
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> +
+> +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
+> +{
+> +	int psize, ssize;
+> +
+> +	*esid = (ea & ESID_MASK) | SLB_ESID_V;
+> +
+> +	switch (REGION_ID(ea)) {
+> +	case USER_REGION_ID:
+> +		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
+> +#ifdef CONFIG_PPC_MM_SLICES
+> +		psize = get_slice_psize(mm, ea);
+> +#else
+> +		psize = mm->context.user_psize;
+> +#endif
 
-> >
-> >While at it, perhaps make shared a const * instead of passing it in by
-> >value?
->=20
-> That is possible, but I'm not sure what the difference would be. Is there=
- a
-> style rule forbidding by-value compound types? (Also if I change the styl=
-e,
-> it would go over 80 characters by even more.)
+We don't need that.
 
-No it doesn't. The below fits within 80 characters per line just fine:
+#ifdef CONFIG_PPC_STD_MMU_64
+#define get_slice_psize(mm, addr)	((mm)->context.user_psize)
 
-static int
-calculate_tsensor_calibration(const struct tegra_tsensor *sensor,
-			      const struct tsensor_shared_calibration *shared,
-			      u32 *calib)
 
-Thierry
 
---cyV/sMl4KAhiehtf
-Content-Type: application/pgp-signature
+> +		ssize = user_segment_size(ea);
+> +		*vsid = (get_vsid(mm->context.id, ea, ssize)
+> +			<< slb_vsid_shift(ssize)) | SLB_VSID_USER
+> +			| (ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
+> +		break;
+> +	case VMALLOC_REGION_ID:
+> +		pr_devel("copro_data_segment: 0x%llx -- VMALLOC_REGION_ID\n", ea);
+> +		if (ea < VMALLOC_END)
+> +			psize = mmu_vmalloc_psize;
+> +		else
+> +			psize = mmu_io_psize;
+> +		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
+> +			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
+> +			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
+> +		break;
+> +	case KERNEL_REGION_ID:
+> +		pr_devel("copro_data_segment: 0x%llx -- KERNEL_REGION_ID\n", ea);
+> +		psize = mmu_linear_psize;
+> +		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
+> +			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
+> +			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
+> +		break;
+> +	default:
+> +		/* Future: support kernel segments so that drivers can use the
+> +		 * CoProcessors */
+> +		pr_debug("invalid region access at %016llx\n", ea);
+> +		return 1;
+> +	}
+> +	*vsid |= mmu_psize_defs[psize].sllp;
+> +
+> +	return 0;
+> +}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+large part of this is same as what we do in hash_page. And we are not
+really updating vsid here, it is vsid slb encoding. So why not abstract
+the vsid part and use that in hash_page also ? That would have also taken
+care of the above #ifdef.
 
-iQIcBAEBAgAGBQJUKRhQAAoJEN0jrNd/PrOhLQ0P/iG7NEpJ0qlOMQD8oZX2hwsK
-hvMMFsS8d1ZdPVAKFDMUiur00lDLC3i9b/3WzotWNSWW4qtBWso4VI6wVygvtWIz
-KtLfoJPhBEn681p9kRzUnU1J2gG3hh0AYoFbp5mAsguuYVDMWVcOwNihfngrAxie
-H2ERRquXgJXngoD38DXhH0LftX6XkCK/irmc464/WKibRz7ZFhj835uSjxvMBhLZ
-3W//C41ABuQubyP29xg1qhvZ+g0EyHhAYkLi8JWXSKy7dwY2QoHJP75lYshMoNJt
-wzWVO4t8XMLmXKU8+5+w/s2IYb46JKrBHFOORncBM22QqGQ7EgSGkH2Ibq2pNRNc
-6twGAnQbFVQEi+KgM9GlZZa38T2EPIRB+7peRrDu7KBnmYIwbw4aunyA5Ilav9zd
-2C4eZp4TxK8wIqbKI1KN67crpza3rhlT+8jS9RFKPwURvFI6rL+okhzr1YEKz18D
-F3NYC4qhCykka/tZZjHcEwGE9H8XFLBwV6y7MpnAcP9wK0gq0T1axZsxREAWyADn
-YGwthpHGgNUa8GMu2fwI6JNybkP4K0mHlJqOya709xSuh3k39AFjB9gvnyQkMqPX
-m77qHFjiui31y7A82X30bZbZGGaJMLFYu6roXROd3bICLTBmzjF7telxCXDQQ4aC
-p79iiuJu9OkPIeNLu32a
-=J8Bb
------END PGP SIGNATURE-----
+> +EXPORT_SYMBOL_GPL(copro_data_segment);
+> diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
+> index 0399a67..6e450ca 100644
+> --- a/arch/powerpc/mm/slb.c
+> +++ b/arch/powerpc/mm/slb.c
+> @@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
+>  	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
+>  }
+>  
+> -#define slb_vsid_shift(ssize)	\
+> -	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
+> -
+>  static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
+>  					 unsigned long flags)
+>  {
+> diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
+> index 2930d1e..fe004b1 100644
+> --- a/arch/powerpc/platforms/cell/spu_base.c
+> +++ b/arch/powerpc/platforms/cell/spu_base.c
+> @@ -167,45 +167,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+>  
+>  static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
+>  {
+> -	struct mm_struct *mm = spu->mm;
+>  	struct spu_slb slb;
+> -	int psize;
+> -
+> -	pr_debug("%s\n", __func__);
+> -
+> -	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
+> +	int ret;
+>  
+> -	switch(REGION_ID(ea)) {
+> -	case USER_REGION_ID:
+> -#ifdef CONFIG_PPC_MM_SLICES
+> -		psize = get_slice_psize(mm, ea);
+> -#else
+> -		psize = mm->context.user_psize;
+> -#endif
+> -		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
+> -		break;
+> -	case VMALLOC_REGION_ID:
+> -		if (ea < VMALLOC_END)
+> -			psize = mmu_vmalloc_psize;
+> -		else
+> -			psize = mmu_io_psize;
+> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> -		break;
+> -	case KERNEL_REGION_ID:
+> -		psize = mmu_linear_psize;
+> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> -		break;
+> -	default:
+> -		/* Future: support kernel segments so that drivers
+> -		 * can use SPUs.
+> -		 */
+> -		pr_debug("invalid region access at %016lx\n", ea);
+> -		return 1;
+> -	}
+> -	slb.vsid |= mmu_psize_defs[psize].sllp;
+> +	ret = copro_data_segment(spu->mm, ea, &slb.esid, &slb.vsid);
+> +	if (ret)
+> +		return ret;
+>  
+>  	spu_load_slb(spu, spu->slb_replace, &slb);
+>  
 
---cyV/sMl4KAhiehtf--
+-aneesh
+
