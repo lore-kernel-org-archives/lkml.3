@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaI2Oh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:37:27 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33332 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaI2OhT (ORCPT
+	id S1754365AbaI2Oiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:38:46 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:52988 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaI2Oip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:37:19 -0400
-Date: Mon, 29 Sep 2014 16:36:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: Yuri Gribov <tetra2005@gmail.com>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory
- debugger.
-Message-ID: <20140929143654.GN5430@worktop>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <54259BD4.8090508@oracle.com>
- <CACT4Y+Y0fzbs4DPt3n30R33cYqXEZ8E86tzCfzL6RUE9f+-r=w@mail.gmail.com>
- <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
- <CACT4Y+bptO341KQAQMSzUVV22KsjuomdTeDip=HaHJ3+1kvraQ@mail.gmail.com>
- <CAJOtW+7UJQ2=66vELbyfXumQ=c9LknRAzXmd6Z6ea7i4oy6FwA@mail.gmail.com>
- <CACT4Y+ZGXV_+J7sR-6_HX5eAOWQAXw5gSvjh1rw_mCxt90iNtQ@mail.gmail.com>
+	Mon, 29 Sep 2014 10:38:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: suravee.suthikulpanit@amd.com
+Cc: will.deacon@arm.com, liviu.dudau@arm.com, marc.zyngier@arm.com,
+        mark.rutland@arm.com, catalin.marinas@arm.com, jason@lakedaemon.net,
+        tglx@linutronix.de, robh+dt@kernel.org, bhelgaas@google.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [RFC 3/4] arm64: Do not call enable PCI resources when specify PCI_PROBE_ONLY
+Date: Mon, 29 Sep 2014 16:38:09 +0200
+Message-ID: <4139946.HEULtVYyUh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1411937610-22125-4-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1411937610-22125-4-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACT4Y+ZGXV_+J7sR-6_HX5eAOWQAXw5gSvjh1rw_mCxt90iNtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:AYEE30SyKzDK2H8euu5subMO/pyO4ww3+Z7Ih7EKU/F
+ POvH7VYQyM1lNQ4h4O5sAm5l+GVtY52NXsNalJQ4sx6JBpcWsp
+ uAN3xIhCGjnpO/Qib84Z6HD15Y0BcE5lyUlfDNkbwe1qgFwp/x
+ /GgtNPz8g7hBhsWSL+g1ySahX6XLo7p9uYRPyXG3O3ZKXIxfK+
+ 5wlt7s1rxSRgIC7Az1R8gJfB3PfonkE9KmFyrxS6ABZvJKBkTD
+ if2CtxDO/dlgAdt/QYy6AcGJEzY8Xb+W6y8VxULpxixRW3+5AA
+ RMWf851/8S+OAygS+XXlfuvd6p9PWZO+byBpxv/eNBy+/aaMqz
+ w7gIe8CQlYa/5dJntFC0=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 06:22:46PM +0400, Dmitry Vyukov wrote:
-> But on the second though... what do we want to do with pre-build
-> modules? Can you envision that somebody distributes binary modules
-> built with asan?
+On Sunday 28 September 2014 15:53:29 suravee.suthikulpanit@amd.com wrote:
+> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
+> index ce5836c..7fd4d2b 100644
+> --- a/arch/arm64/kernel/pci.c
+> +++ b/arch/arm64/kernel/pci.c
+> @@ -68,3 +68,11 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
+>         bus->domain_nr = domain;
+>  }
+>  #endif
+> +
+> +int pcibios_enable_device(struct pci_dev *dev, int mask)
+> +{
+> +       if (pci_has_flag(PCI_PROBE_ONLY))
+> +               return 0;
+> +
+> +       return pci_enable_resources(dev, mask);
+> +}
 
-Nobody should ever care about binary modules other than inflicting the
-maximum pain and breakage on whoever does so.
+This doesn't look arm64 specific to me, and there is already a generic
+pcibios_enable_device() function in drivers/pci/pci.c. Would it
+be possible to move the check for PCI_PROBE_ONLY there without breaking
+other architectures?
+
+If that works, please do so.
+
+	Arnd
