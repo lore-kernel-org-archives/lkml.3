@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaI2JQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:16:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20729 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaI2JQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:16:37 -0400
-Date: Mon, 29 Sep 2014 12:13:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        kernel@pengutronix.de, Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-media@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: [PATCH v4 1/8] [media] soc_camera: Do not decrement endpoint
- node refcount in the loop
-Message-ID: <20140929091316.GA23154@mwanda>
-References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
- <1411978551-30480-2-git-send-email-p.zabel@pengutronix.de>
+	id S1751639AbaI2JV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:21:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037AbaI2JV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 05:21:57 -0400
+Date: Mon, 29 Sep 2014 11:21:17 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 02/11] perf tools: Refactor unit and scale function
+ parameters
+Message-ID: <20140929092117.GB1223@krava.brq.redhat.com>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-3-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411978551-30480-2-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1411567455-31264-3-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 10:15:44AM +0200, Philipp Zabel wrote:
-> In preparation for a following patch, stop decrementing the endpoint node
-> refcount in the loop. This temporarily leaks a reference to the endpoint node,
-> which will be fixed by having of_graph_get_next_endpoint decrement the refcount
-> of its prev argument instead.
+On Wed, Sep 24, 2014 at 03:04:06PM +0100, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
+> 
+> Passing pointers to alias modifiers 'unit' and 'scale' isn't very
+> future-proof since if we add more modifiers to the list we'll end up
+> passing more arguments.
+> 
+> Instead wrap everything up in a struct perf_pmu_info, which can easily
+> be expanded when additional alias modifiers are necessary in the future.
+> 
+> Cc: Jiri Olsa <jolsa@redhat.com>
 
-Don't do this...
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-My understanding (and I haven't invested much time into trying to
-understand this beyond glancing at the change) is that patch 1 and 2,
-introduce small bugs that are fixed in patch 3?
-
-Just fold all three patches into one patch.  We need an Ack from Mauro
-and Greg and then send the patch through Grant's tree.
-
-regards,
-dan carpenter
-
+thanks,
+jirka
