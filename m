@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaI2VsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 17:48:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49156 "EHLO comal.ext.ti.com"
+	id S1754952AbaI2Vt6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:49:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44393 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754017AbaI2VsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 17:48:17 -0400
-Message-ID: <5429D384.1040909@ti.com>
-Date: Mon, 29 Sep 2014 17:47:48 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751709AbaI2Vt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 17:49:57 -0400
+Date: Mon, 29 Sep 2014 23:49:54 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] btrfs: fix sparse address space warnings
+Message-ID: <20140929214954.GG11436@suse.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Omar Sandoval <osandov@osandov.com>,
+	Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1411894092-28784-1-git-send-email-osandov@osandov.com>
+ <1411894092-28784-2-git-send-email-osandov@osandov.com>
+ <20140929160738.GC11436@twin.jikos.cz>
+ <20140929194512.GA7038@mew.dhcp4.washington.edu>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <sandeep_n@ti.com>, <joe@perches.com>
-Subject: Re: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
-References: <1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>	<20140929.155200.2231132602322345812.davem@davemloft.net>	<5429BAD0.1050101@ti.com> <20140929.161253.1302757975839499212.davem@davemloft.net>
-In-Reply-To: <20140929.161253.1302757975839499212.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929194512.GA7038@mew.dhcp4.washington.edu>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 September 2014 04:12 PM, David Miller wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Date: Mon, 29 Sep 2014 16:02:24 -0400
+On Mon, Sep 29, 2014 at 12:45:12PM -0700, Omar Sandoval wrote:
+> > > @@ -639,8 +640,7 @@ static int send_header(struct send_ctx *sctx)
+> > > -	return write_buf(sctx->send_filp, &hdr, sizeof(hdr),
+> > > -					&sctx->send_off);
+> > > +	return write_buf(sctx->send_filp, &hdr, sizeof(hdr), &sctx->send_off);
+> > 
+> > >  	ret = write_buf(sctx->send_filp, sctx->send_buf, sctx->send_size,
+> > > -					&sctx->send_off);
+> > > +			&sctx->send_off);
+> > 
+> > Please do not fold unrelated changes.
 > 
->> We are badly missing mainline network driver support for the Keystone
->> and hence I request you to help here.
-> 
-> It is absolutely not reasonable for you depend specifically upon me
-> for top-level review of a given change, sorry.
-> 
-Sorry I didn't mean you specifically to review everything. But a guidance
-on how we can move forward. If you can suggest someone, we can try to
-request them to have a look. The design of driver is just now standard
-NIC card. We removed the controversial plug in framework after your
-and Jamal's suggestion. Jamal already commented on the offload design of
-the driver and we addressed them in the last version.
+> My metric for "related" here was that these were call sites of a function I
+> directly modified.
 
-We can follow it up on any comments, suggestions quickly so do let us
-know.
+The changes are only in the whitespace, that's not necessary. It's
+usually ok to fix style issues in the code you modify directly.
 
-Regards,
-Santosh
+> Is the preferred form to just split style fixes that we encounter into
+> a separate patch in the series?
 
+Well, I may only express my point of view. Yes, split the style-only
+changes into another patch and don't send it :)
 
+The problem with patches that do not effectively change anything is that
+they pollute git history and just add extra step when one has to look
+for a patch that broke something, or eg. change context of following
+patches and make backporting a bit more tedious. Code cleanups are fine,
+but there's usually a point of making the code more readable, compact,
+etc.
 
-
-
-
-
+The coding style should be perfect from the beginning. Nobody will
+probably point out minor style violations during review, because it just
+pointless for a patch that fixes a real bug.
