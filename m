@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaI2Jwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:52:40 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:58250 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaI2Jwh (ORCPT
+	id S1752969AbaI2Jxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:53:36 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61290 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaI2Jxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:52:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "chris@zankel.net" <chris@zankel.net>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "deller@gmx.de" <deller@gmx.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jcmvbkbc@gmail.com" <jcmvbkbc@gmail.com>,
-        "jesper.nilsson@axis.com" <jesper.nilsson@axis.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "sam@ravnborg.org" <sam@ravnborg.org>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "starvik@axis.com" <starvik@axis.com>,
-        "takata@linux-m32r.org" <takata@linux-m32r.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "daniel.thompson@linaro.org" <daniel.thompson@linaro.org>,
-        "broonie@linaro.org" <broonie@linaro.org>
-Subject: Re: [PATCH v3 00/17] Cross-architecture definitions of relaxed MMIO accessors
-Date: Mon, 29 Sep 2014 11:50:13 +0200
-Message-ID: <2012641.4eaGXZM5vo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140929082323.GE12506@ulmo>
-References: <1411579056-16966-1-git-send-email-will.deacon@arm.com> <3359318.XmOCYLZHTV@wuerfel> <20140929082323.GE12506@ulmo>
+	Mon, 29 Sep 2014 05:53:35 -0400
+Message-ID: <54292D6E.4060903@gmail.com>
+Date: Mon, 29 Sep 2014 17:59:10 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:kUjXB5Oe6XwdKkL2ocHAUTl2lzV0iriOitrWgfoHS3y
- Uxc0h2QUrZalaFj2tGKj4eYV0Z0rZXZ7vdYlTk2dDeE6Fma1Bd
- 4YUh/u9YgcsoYLmsRuDbIujBTaMpr84U2TNOGPO3o7cnR3XUav
- B98jIrHw9iw0VZ+W7gH4SseNF5fGYGiwp7RXC5hqYW/DdbWii/
- HgSC+t3uKzhwsputSdaBGMa7M7XpSIpMzCyJndbVBb2idDUSke
- of3+8bGNE3Nm7QJXQgZRV9LOnY+fXUn7qpZkxAdifHTh47Valg
- 21v2+NAPIMxMyZYGBJCivXH2E51tpZqmgdSiCvGGdB/lz+7va0
- 66IM5aj3ptvxCxxqAIeA=
-X-UI-Out-Filterresults: notjunk:1;
+To: Juergen Gross <jgross@suse.com>, Jan Beulich <JBeulich@suse.com>
+CC: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen-scsiback: Need go to fail after xenbus_dev_error()
+References: <5425967F.7020002@gmail.com> <5428E0ED.1050107@suse.com> <54293742020000780003A48A@mail.emea.novell.com> <54292707.90008@gmail.com> <542927C3.8010204@suse.com>
+In-Reply-To: <542927C3.8010204@suse.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 September 2014 10:23:25 Thierry Reding wrote:
+On 9/29/14 17:34, Juergen Gross wrote:
+> On 09/29/2014 11:31 AM, Chen Gang wrote:
+>> On 9/29/14 16:41, Jan Beulich wrote:
+>>>>>> On 29.09.14 at 06:32, <JGross@suse.com> wrote:
+>>>> On 09/26/2014 06:38 PM, Chen Gang wrote:
+>>>>> When failure occurs, after xenbus_dev_error(), need go to fail to let
+>>>>> upper caller know about it.
+>>>>>
+>>>>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>>>>> ---
+>>>>>    drivers/xen/xen-scsiback.c | 4 +++-
+>>>>>    1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/xen/xen-scsiback.c b/drivers/xen/xen-scsiback.c
+>>>>> index 847bc9c..3e430e1 100644
+>>>>> --- a/drivers/xen/xen-scsiback.c
+>>>>> +++ b/drivers/xen/xen-scsiback.c
+>>>>> @@ -1222,8 +1222,10 @@ static int scsiback_probe(struct xenbus_device *dev,
+>>>>>
+>>>>>        err = xenbus_printf(XBT_NIL, dev->nodename, "feature-sg-grant", "%u",
+>>>>>                    SG_ALL);
+>>>>> -    if (err)
+>>>>> +    if (err) {
+>>>>>            xenbus_dev_error(dev, err, "writing feature-sg-grant");
+>>>>> +        goto fail;
+>>>>> +    }
+>>>>>
+>>>>>        xenbus_switch_state(dev, XenbusStateInitWait);
+>>>>>        return 0;
+>>>>>
+>>>>
+>>>> Hmm, not testing for failure was on purpose. Advertising this feature
+>>>> is just for tuning purposes, not mandatory.
+>>>>
+>>>> OTOH it would really be a strange error if this xenbus_printf() fails
+>>>> but all other operations are working, and signaling an error at the
+>>>> time when it first shows up is a good thing. So:
+>>>
+>>> I disagree - failure to announce optional features should not lead to
+>>> general failure. And this should be consistent across drivers; for
+>>> existing examples see xen_blkbk_flush_diskcache() and
+>>> xen_blkbk_discard().
+>>>
+>>
+>> During scsiback_probe(), can we sure that "feature-sg-grant" is optional
+>> feature? For me, only according to its name, I guess not: it is about
+>> security which is always necessary in kernel (although SG_ALL).
 > 
-> How about if I keep iterating this series? It seems like most failures
-> can be reproduced by doing ARM defconfig and allmodconfig builds, so
-> I'll do those and fix up any issues I find. Hopefully I can squash all
-> these before 3.18-rc1, then we can take it into linux-next early for
-> 3.19? In the meantime perhaps I can work with Olof to get a branch with
-> these patches tested on his builder? And perhaps on the 0-day builder in
-> addition?
+> It is optional. Otherwise the interface would be broken, as I've added
+> this feature recently and "old" clients (pre 3.18) don't know about it.
+> 
+> The feature is NOT about security, but about capability to support
+> larger SCSI requests than the old interface did.
+> 
 
-Yes, definitely!
+OK, thanks. All of you said sounds reasonable to me: "it is optional, need
+print related warning and continue".
 
-Note that I saw a lot of problems only in randconfig build tests but
-not in any of the default configurations. I'll send you the fixup patch
-soon so you can integrate that in your series.
+If no any additional reply within 2 days, I shall send patch v2 for it:
 
-	Arnd
+  "use dev_warn() instead of xenbus_dev_error() and remove 'fail' code block"
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
