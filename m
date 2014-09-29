@@ -1,135 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281AbaI2PEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:04:51 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52650 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbaI2PEt (ORCPT
+	id S1754428AbaI2PFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:05:38 -0400
+Received: from 71-19-161-253.dedicated.allstream.net ([71.19.161.253]:60961
+	"EHLO nsa.nbspaymentsolutions.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751913AbaI2PFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:04:49 -0400
-Date: Mon, 29 Sep 2014 16:04:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20140929150445.GE7996@ZenIV.linux.org.uk>
-References: <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
- <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
- <20140926164442.GA26897@ZenIV.linux.org.uk>
- <20140927044555.GS7996@ZenIV.linux.org.uk>
- <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
- <20140927183139.GT7996@ZenIV.linux.org.uk>
- <20140927191657.GU7996@ZenIV.linux.org.uk>
- <20140928074747.GZ7996@ZenIV.linux.org.uk>
- <20140929131613.GL5015@linux.vnet.ibm.com>
+	Mon, 29 Sep 2014 11:05:37 -0400
+From: Bill Pringlemeir <bpringlemeir@nbsps.com>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Shawn Guo <shawn.guo@freescale.com>, linus.walleij@linaro.org,
+        gnurou@gmail.com, kernel@pengutronix.de, linux-gpio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] pinctrl: imx: add gpio pinmux support for vf610
+Organization: NBS Payment Solutions
+References: <cover.1411492954.git.stefan@agner.ch>
+	<bb68d2360314158cd8ccb9c6794877c3bb45d72e.1411492954.git.stefan@agner.ch>
+	<20140925024712.GB6405@dragon>
+	<1d3735aff5e0961c43d349d673a1c2b2@agner.ch>
+	<20140925090714.GH6405@dragon>
+	<26008fa68a3eaf5f806a7dc4df48f77e@agner.ch> <877g0rlkh3.fsf@nbsps.com>
+	<e9ddcd256056187ffea0b05b7b31c1a6@agner.ch>
+Date: Mon, 29 Sep 2014 11:05:49 -0400
+Message-ID: <87sijaeab6.fsf@nbsps.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929131613.GL5015@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 06:16:13AM -0700, Paul E. McKenney wrote:
 
-> The "textbook" approach is to avoid starting the grace period until
-> the after the final reference count is dropped (and of course after
-> the name has been made inaccessible to all readers).  Not sure what
-> the best way to adapt the current code to this approach (if it is
-> in fact feasible to begin with), but one approach would be something
-> like this:
+>> On 25 Sep 2014, stefan@agner.ch wrote:
 
-> static void __d_free(struct rcu_head *head)
-> {
-> 	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
-> 
-> 	WARN_ON(!hlist_unhashed(&dentry->d_alias));
-> 	if (dname_external(dentry) && atomic_dec_return(&dentry->refcnt))
-> 		call_rcu(&dentry->rh, __d_free_name_rcu);
-> 	kmem_cache_free(dentry_cache, dentry); 
-> }
-> 
-> Of course, this means that the link side has to do something like
-> atomic_add_unless(&&dentry->refcnt, 1, 0), and create a new name
-> if the old one is on its way out.  If that is too painful, another
+>>> IMHO, fully orthogonal is not possible, since on Vybrid those two
+>>> depend on each other. But in order to make it "more orthogonal", we
+>>> maybe should force applying the full configuration in
+>>> imx_pmx_gpio_request_enable (e.g. drive strenght etc), rather then
+>>> only mux the pad to to GPIO...
+>>> What do you think?
 
-What do you mean, "link"?  Rename, perhaps?
+> Am 2014-09-25 18:43, schrieb Bill Pringlemeir:
 
-> approach is to increment the count for the grace period and decrement
-> it at the end of the grace period, and to skip the free if non-zero
-> after that decrement.  And this means adding an rcu_head to the
-> qstr structure, which might not help memory footprint.
+>> The muxing must have been done, that is correct.  However, this could
+>> be by a boot loader, by some other API, etc.  People maybe concerned
+>> about Linux affecting 'CAN' (or some 'mission critical' pins) muxing
+>> for instance, but want the A5 to handle GPIO.
+>>
+>> If somewhere, somehow the pin was muxed properly and the GPIO code
+>> still works, I believe this is a win.  I see that this flexibility
+>> makes it more difficult to get something that just works.  I think
+>> the device trees take care of this for normal users.  It might be
+>> appropriate to add a DT node that sets 'GPIO_CONTROL' and put a note
+>> in the DT-GPIO document, that pinctrl is needed for a normal case or
+>> if some external muxing is used or not needed, then 'control=false'
+>> can be set (or whatever good DT terminology)?  Then the
+>> 'GPIO_CONTROL' check would be in the 'vf610_gpio_direction_input()'
+>> functions.  The 'pinctrl' functions are currently compiled to stubs
+>> if that is configured out.
 
-> Presumably the write_seqcount_begin() prevents confusion from ephemeral
-> names...
+On 26 Sep 2014, stefan@agner.ch wrote:
 
-We hold rename_lock, so __d_move() is serialized.  *And* both arguments
-are pinned, so they couldn't have reached free_dentry() yet.
+> Currently pinctrl is not optional for Vybrid (Kconfig mandates pinctrl
+> by "select PINCTRL_VF610").
 
-> > +static void copy_name(struct dentry *dentry, struct dentry *target)
-> > +{
-> > +	struct ext_name *old_name = ext_name(dentry);
-> > +	if (unlikely(dname_external(target))) {
-> > +		atomic_inc(&ext_name(target)->count);
-> 
-> I might be missing something, but I believe that the above needs to
-> be atomic_add_unless().
+> IMHO there is no real value having a way to mark a pin as "muxed
+> externally" (control=false). If we use a pin, we should configure and
+> mux that properly in Linux, and if we don't have valid
+> configuration/mux information, we should not touch that pin.
 
-It would better not; both dentry and target are pinned.
+I didn't mean per-pin, I meant for the GPIO controller as a whole.  I
+was also looking at a IOMUX controlled by the M4 and/or a boot loader.
+I agree it is not possible with the mainline.  This just makes it even
+less possible.  This is great if we know we are going that route.
 
-> Might also need to be in an RCU read-side critical section, but I am not
-> so sure about that.  If it is not in an RCU read-side critical section,
-> I don't see how the kfree_rcu() knows how long to wait before freeing
-> the name.
+> In v2 of this patchset, the GPIO code only worked when there _is_ a
+> pinctrl entry for that GPIO pin in the DT. This is because I need the
+> register offset, which is provided by the entry itself. But the pad
+> configuration is another point, which I did not consider in v2. But in
+> v3, the GPIO code also writes the pad control.
 
-It is a *writer*, not reader.  Readers of ->d_name are either under
-rcu_read_lock(), or have hard exclusion wrt that __d_move() one way or another
-and hold a reference to dentry, preventing dentry_free().  We really
-need to care only about the ones under rcu_read_lock(), so kfree_rcu()
-will do.  Non-RCU readers are relying on something like "I'm holding
-a reference to dentry and ->i_mutex on the parent directory or
-->s_vfs_rename_mutex on the entire filesystem".  Or "I'm holding that
-reference and I know that on this filesystem nothing could lead to
-d_move() and friends".
+I was a little concerned about this as the pin may have pull-ups and
+pull-downs.  We would not want to dynamically change this.  However, I
+don't fully understand this path.
 
-Anyway, see followup to that patch; it's equivalent to this one, but instead
-of separately delayed freeing of dentry and ext name it makes __d_free()
-free just the dentry itself and __d_free_ext() freeing both.  With
-free_dentry() choosing which one to call_rcu().
+[snip]
 
-FWIW, the thing I had been worrying about turned out to be a red herring (for
-the same reason why RCU list removals don't need barriers - call_rcu() acts
-as a barrier, so that reader managing to see the old pointer after
-rcu_read_lock() will be seen by call_rcu() from writer, making the callback
-delayed until that reader does rcu_read_unlock(); AFAICS, that's guaranteed
-by smp_mb() in __call_rcu()).  However, the readers are, indeed, in trouble.
-Already.  There's a data dependency - we want to make sure that the string
-we observe via ->d_name.name is NUL-terminated.  We have dentry allocation
-doing this
-        dname[name->len] = 0;
+>> Then there is 'multi-machine' support with DT and compile time
+>> selects with CONFIG_PINCTRL and I don't think there is a lot of
+>> additional code or confusion?
 
-        /* Make sure we always see the terminating NUL character */
-        smp_wmb();
-        dentry->d_name.name = dname;
-and dentry_cmp() (one of the RCU readers) has
-        cs = ACCESS_ONCE(dentry->d_name.name);
-        smp_read_barrier_depends();
-before looking at the string itself.  However, another such reader
-(prepend_name()) doesn't - it just does ACCESS_ONCE() and assumes that
-store of terminating NUL will be seen.  AFAICS, not guaranteed on Alpha,
-so we need the same smp_read_barrier_depends() there.
+> I don't understand that.
 
-Another thing: dentry_free() is called only when all non-RCU readers can't
-see the dentry.  So that's where we need to decrement the refcount of ext
-name, AFAICS.  Same in copy_name() (from __d_move()) where we lose the
-reference to old name.  Again, non-RCU readers are not a problem - they
-have exclusion wrt __d_move().  For them it's atomic.
+I was thinking of a modified Vybrid which would allow us to not select
+PINCTRL.  As per Shawn's comment, it is suppose to be
+optional/orthogonal to the GPIO controller.  If someone made the change
+to not select PINCTRL_VF610, then the GPIO code calls would currently
+compile to stubs.  To get the same things with a multi-machine
+(Vybrid/Imx with/without pinctrl), then you could use the DT property
+which would avoid the pinctrl calls.
 
-Refcount is equal to the number of dentries visible to non-RCU readers with
-->d_name.name pointing to that external name.  Freeing isn't scheduled until
-that reaches 0 and is done via kfree_rcu() (or, in the later version of patch,
-kfree_rcu() on one path and call_rcu() on another)...
+The more required modules we require for each feature, the harder it is
+to partition the AIPS peripherals between cores.  It sort of makes the
+mainline Linux only useful for the VF5xx non-secure parts.
+
+I guess another option is to make another pinctrl module for the Vybrid
+which uses some inter-core communications to alter the MUX
+configuration.  This makes sense for the pinctrl and the CCM/clock
+modules.  Each and every driver depends on them, so it is probably good
+for sanity to require that Linux has some version of these modules.  If
+the 'M4' was to control the pins and/or clock, then some other modules
+could be written that makes some calls to that CPU (or world).
+
+For other AIPS peripherals, it would be nice if they could be either
+configured out and/or set to disabled by the device tree.
+
+Regards,
+Bill Pringlemeir.
