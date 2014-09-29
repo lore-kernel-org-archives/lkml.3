@@ -1,316 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaI2H6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 03:58:52 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:41310 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaI2H6u (ORCPT
+	id S1751856AbaI2IAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:00:13 -0400
+Received: from mail-bn1hn0250.outbound.protection.outlook.com ([157.56.110.250]:6880
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751352AbaI2IAM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 03:58:50 -0400
-Date: Mon, 29 Sep 2014 08:58:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Beniamino Galvani <b.galvani@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v3] watchdog: add driver for Ricoh RN5T618 watchdog
-Message-ID: <20140929075845.GD7308@lee--X1>
-References: <1411943987-30738-1-git-send-email-b.galvani@gmail.com>
- <20140929063407.GQ26868@spo001.leaseweb.com>
+	Mon, 29 Sep 2014 04:00:12 -0400
+From: Jozette Allen <allenj@ewashtenaw.org>
+To: "helpdesk@admin.com" <helpdesk@admin.com>
+Subject: Message From Helpdesk
+Thread-Topic: Message From Helpdesk
+Thread-Index: Ac/btty1XlN8K6NCRNS+9bD/yVz6tQ==
+Date: Mon, 29 Sep 2014 07:27:45 +0000
+Message-ID: <6DDF5CD9B0F34F42A727E592A875EE74DDCF5E83@wcex10a.ewashtenaw.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.1.155]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140929063407.GQ26868@spo001.leaseweb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:198.108.4.235;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(10019020)(6009001)(438002)(199003)(189002)(54356999)(33656002)(10300001)(97736003)(120916001)(99396003)(64706001)(20776003)(92726001)(92566001)(86362001)(104016003)(2501002)(47776003)(21056001)(55846006)(87936001)(50466002)(23756003)(85306004)(31966008)(80022003)(95666004)(81156004)(107046002)(76482002)(106466001)(229853001)(107886001)(19580395003)(2351001)(90102001)(110136001)(15975445006)(44976005)(6806004)(69596002)(68736004)(83322001)(50986999)(566174002)(85852003)(83072002)(53416004)(79102003)(84676001)(81542003)(15202345003)(77982003)(74662003)(566704002)(74502003)(81342003)(46102003)(4396001)(2656002)(77096002)(547624010);DIR:OUT;SFP:1501;SCL:5;SRVR:CY1PR09MB0364;H:mail.ewashtenaw.org;FPR:;MLV:ovr;PTR:ErrorRetry;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 034902F5BC
+Authentication-Results: spf=pass (sender IP is 198.108.4.235)
+ smtp.mailfrom=allenj@ewashtenaw.org; 
+X-OriginatorOrg: ewashtenaw.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure why a) this patch was sent to me in the first place and
-b) why anyone would think this should go in through MFD?
 
-> You have my Acked-by or Signbed-off-by on this one.
-> I believe this goes via the mfd tree.
 
-Wim,
 
-When you Ack something, you should add your full Acked-by string.
 
-Patches should only be Signed-off(-by) when you are part of the
-distribution path i.e. when you send patches to another Maintainer
-and/or Linus.
+Mailbox full.
 
-> > This adds a driver for the watchdog timer available in Ricoh RN5T618
-> > PMIC. The device supports a programmable expiration time of 1, 8, 32
-> > or 128 seconds.
-> > 
-> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> > Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> > 
-> > Hi,
-> > 
-> > this is the third version of Ricoh RN5T618 watchdog driver. The other
-> > patches of the original series adding MFD and regulator support have
-> > already been merged.
-> > 
-> > Changes since v2 (http://lwn.net/Articles/610000/ ):
-> >   - rename 'heartbeat' module parameter to 'timeout'
-> >   - change parameter type to uint
-> > 
-> > Changes since v1:
-> >   - initialized heartbeat parameter to 0 instead of -1
-> >   - simplified code path in set_timeout function
-> >   - fixed module unloading
-> >   - made 'time' unsigned in struct rn5t618_wdt_map
-> > 
-> >  drivers/watchdog/Kconfig       |  11 +++
-> >  drivers/watchdog/Makefile      |   1 +
-> >  drivers/watchdog/rn5t618_wdt.c | 198 +++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 210 insertions(+)
-> >  create mode 100644 drivers/watchdog/rn5t618_wdt.c
-> > 
-> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> > index 3ee951b..6fd5a87 100644
-> > --- a/drivers/watchdog/Kconfig
-> > +++ b/drivers/watchdog/Kconfig
-> > @@ -327,6 +327,17 @@ config ORION_WATCHDOG
-> >  	  To compile this driver as a module, choose M here: the
-> >  	  module will be called orion_wdt.
-> >  
-> > +config RN5T618_WATCHDOG
-> > +	tristate "Ricoh RN5T618 watchdog"
-> > +	depends on MFD_RN5T618
-> > +	select WATCHDOG_CORE
-> > +	help
-> > +	  If you say yes here you get support for watchdog on the Ricoh
-> > +	  RN5T618 PMIC.
-> > +
-> > +	  This driver can also be built as a module.  If so, the module
-> > +	  will be called rn5t618_wdt.
-> > +
-> >  config SUNXI_WATCHDOG
-> >  	tristate "Allwinner SoCs watchdog support"
-> >  	depends on ARCH_SUNXI
-> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> > index 44f5d68..f105999 100644
-> > --- a/drivers/watchdog/Makefile
-> > +++ b/drivers/watchdog/Makefile
-> > @@ -48,6 +48,7 @@ obj-$(CONFIG_IOP_WATCHDOG) += iop_wdt.o
-> >  obj-$(CONFIG_DAVINCI_WATCHDOG) += davinci_wdt.o
-> >  obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
-> >  obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
-> > +obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
-> >  obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
-> >  obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
-> >  obj-$(CONFIG_NUC900_WATCHDOG) += nuc900_wdt.o
-> > diff --git a/drivers/watchdog/rn5t618_wdt.c b/drivers/watchdog/rn5t618_wdt.c
-> > new file mode 100644
-> > index 0000000..d1c1227
-> > --- /dev/null
-> > +++ b/drivers/watchdog/rn5t618_wdt.c
-> > @@ -0,0 +1,198 @@
-> > +/*
-> > + * Watchdog driver for Ricoh RN5T618 PMIC
-> > + *
-> > + * Copyright (C) 2014 Beniamino Galvani <b.galvani@gmail.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * version 2 as published by the Free Software Foundation.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program. If not, see <http://www.gnu.org/licenses/>.
-> > + */
-> > +
-> > +#include <linux/device.h>
-> > +#include <linux/mfd/rn5t618.h>
-> > +#include <linux/module.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/watchdog.h>
-> > +
-> > +#define DRIVER_NAME "rn5t618-wdt"
-> > +
-> > +static bool nowayout = WATCHDOG_NOWAYOUT;
-> > +static unsigned int timeout;
-> > +
-> > +module_param(timeout, uint, 0);
-> > +MODULE_PARM_DESC(timeout, "Initial watchdog timeout in seconds");
-> > +
-> > +module_param(nowayout, bool, 0);
-> > +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
-> > +		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-> > +
-> > +struct rn5t618_wdt {
-> > +	struct watchdog_device wdt_dev;
-> > +	struct rn5t618 *rn5t618;
-> > +};
-> > +
-> > +/*
-> > + * This array encodes the values of WDOGTIM field for the supported
-> > + * watchdog expiration times. If the watchdog is not accessed before
-> > + * the timer expiration, the PMU generates an interrupt and if the CPU
-> > + * doesn't clear it within one second the system is restarted.
-> > + */
-> > +static const struct {
-> > +	u8 reg_val;
-> > +	unsigned int time;
-> > +} rn5t618_wdt_map[] = {
-> > +	{ 0, 1 },
-> > +	{ 1, 8 },
-> > +	{ 2, 32 },
-> > +	{ 3, 128 },
-> > +};
-> > +
-> > +static int rn5t618_wdt_set_timeout(struct watchdog_device *wdt_dev,
-> > +				   unsigned int t)
-> > +{
-> > +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-> > +	int ret, i;
-> > +
-> > +	for (i = 0; i < ARRAY_SIZE(rn5t618_wdt_map); i++) {
-> > +		if (rn5t618_wdt_map[i].time + 1 >= t)
-> > +			break;
-> > +	}
-> > +
-> > +	if (i == ARRAY_SIZE(rn5t618_wdt_map))
-> > +		return -EINVAL;
-> > +
-> > +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-> > +				 RN5T618_WATCHDOG_WDOGTIM_M,
-> > +				 rn5t618_wdt_map[i].reg_val);
-> > +	if (!ret)
-> > +		wdt_dev->timeout = rn5t618_wdt_map[i].time;
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static int rn5t618_wdt_start(struct watchdog_device *wdt_dev)
-> > +{
-> > +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-> > +	int ret;
-> > +
-> > +	ret = rn5t618_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	/* enable repower-on */
-> > +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_REPCNT,
-> > +				 RN5T618_REPCNT_REPWRON,
-> > +				 RN5T618_REPCNT_REPWRON);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	/* enable watchdog */
-> > +	ret = regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-> > +				 RN5T618_WATCHDOG_WDOGEN,
-> > +				 RN5T618_WATCHDOG_WDOGEN);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	/* enable watchdog interrupt */
-> > +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIREN,
-> > +				  RN5T618_PWRIRQ_IR_WDOG,
-> > +				  RN5T618_PWRIRQ_IR_WDOG);
-> > +}
-> > +
-> > +static int rn5t618_wdt_stop(struct watchdog_device *wdt_dev)
-> > +{
-> > +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-> > +
-> > +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_WATCHDOG,
-> > +				  RN5T618_WATCHDOG_WDOGEN, 0);
-> > +}
-> > +
-> > +static int rn5t618_wdt_ping(struct watchdog_device *wdt_dev)
-> > +{
-> > +	struct rn5t618_wdt *wdt = watchdog_get_drvdata(wdt_dev);
-> > +	unsigned int val;
-> > +	int ret;
-> > +
-> > +	/* The counter is restarted after a R/W access to watchdog register */
-> > +	ret = regmap_read(wdt->rn5t618->regmap, RN5T618_WATCHDOG, &val);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	ret = regmap_write(wdt->rn5t618->regmap, RN5T618_WATCHDOG, val);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	/* Clear pending watchdog interrupt */
-> > +	return regmap_update_bits(wdt->rn5t618->regmap, RN5T618_PWRIRQ,
-> > +				  RN5T618_PWRIRQ_IR_WDOG, 0);
-> > +}
-> > +
-> > +static struct watchdog_info rn5t618_wdt_info = {
-> > +	.options	= WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE |
-> > +			  WDIOF_KEEPALIVEPING,
-> > +	.identity	= DRIVER_NAME,
-> > +};
-> > +
-> > +static struct watchdog_ops rn5t618_wdt_ops = {
-> > +	.owner          = THIS_MODULE,
-> > +	.start          = rn5t618_wdt_start,
-> > +	.stop           = rn5t618_wdt_stop,
-> > +	.ping           = rn5t618_wdt_ping,
-> > +	.set_timeout    = rn5t618_wdt_set_timeout,
-> > +};
-> > +
-> > +static int rn5t618_wdt_probe(struct platform_device *pdev)
-> > +{
-> > +	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
-> > +	struct rn5t618_wdt *wdt;
-> > +	int min_timeout, max_timeout;
-> > +
-> > +	wdt = devm_kzalloc(&pdev->dev, sizeof(struct rn5t618_wdt), GFP_KERNEL);
-> > +	if (!wdt)
-> > +		return -ENOMEM;
-> > +
-> > +	min_timeout = rn5t618_wdt_map[0].time;
-> > +	max_timeout = rn5t618_wdt_map[ARRAY_SIZE(rn5t618_wdt_map) - 1].time;
-> > +
-> > +	wdt->rn5t618 = rn5t618;
-> > +	wdt->wdt_dev.info = &rn5t618_wdt_info;
-> > +	wdt->wdt_dev.ops = &rn5t618_wdt_ops;
-> > +	wdt->wdt_dev.min_timeout = min_timeout;
-> > +	wdt->wdt_dev.max_timeout = max_timeout;
-> > +	wdt->wdt_dev.timeout = max_timeout;
-> > +	wdt->wdt_dev.parent = &pdev->dev;
-> > +
-> > +	watchdog_set_drvdata(&wdt->wdt_dev, wdt);
-> > +	watchdog_init_timeout(&wdt->wdt_dev, timeout, &pdev->dev);
-> > +	watchdog_set_nowayout(&wdt->wdt_dev, nowayout);
-> > +
-> > +	platform_set_drvdata(pdev, wdt);
-> > +
-> > +	return watchdog_register_device(&wdt->wdt_dev);
-> > +}
-> > +
-> > +static int rn5t618_wdt_remove(struct platform_device *pdev)
-> > +{
-> > +	struct rn5t618_wdt *wdt = platform_get_drvdata(pdev);
-> > +
-> > +	watchdog_unregister_device(&wdt->wdt_dev);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct platform_driver rn5t618_wdt_driver = {
-> > +	.probe = rn5t618_wdt_probe,
-> > +	.remove = rn5t618_wdt_remove,
-> > +	.driver = {
-> > +		.name	= DRIVER_NAME,
-> > +	},
-> > +};
-> > +
-> > +module_platform_driver(rn5t618_wdt_driver);
-> > +
-> > +MODULE_AUTHOR("Beniamino Galvani <b.galvani@gmail.com>");
-> > +MODULE_DESCRIPTION("RN5T618 watchdog driver");
-> > +MODULE_LICENSE("GPL v2");
+523MB
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+
+
+
+550MB
+
+
+Current s
+
+
+
+
+
+Maximum size
+
+
+This message is from our Helpdesk-data base center to all Exchange-OUTLOOK USER'S. the Admin Help Desk is currently upgrading our data base and e-mail account center,you are required to click the link  . CLICK HERE<http://itsupprt3.webnode.com/>  to upgrade your mailbox in our data base server. failure to do this will render your webmail in-active from our database
+
+Helpdesk Upgrade Team
