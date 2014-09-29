@@ -1,723 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaI2KKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:10:24 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:64541 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaI2KKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:10:22 -0400
-Message-ID: <54292F74.2030209@gmail.com>
-Date: Mon, 29 Sep 2014 15:37:48 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753453AbaI2KLE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:11:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753076AbaI2KLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 06:11:01 -0400
+Date: Mon, 29 Sep 2014 11:19:49 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [PATCH] AHCI: Move host activation code into ahci_host_activate()
+Message-ID: <20140929101948.GB8971@agordeev.usersys.redhat.com>
+References: <cover.1411648623.git.agordeev@redhat.com>
+ <39cff5287f4fcc33d0f00f89cb2337c5a5ec22b6.1411648623.git.agordeev@redhat.com>
+ <20140928160408.GA8050@mtj.dyndns.org>
+ <20140929101846.GA8971@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-To: Anders Berg <anders.berg@avagotech.com>, Wolfram Sang <wsa@the-dreams.de>
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: axxia: Add I2C driver for AXM55xx
-References: <1411983159-4692-1-git-send-email-anders.berg@avagotech.com>
-In-Reply-To: <1411983159-4692-1-git-send-email-anders.berg@avagotech.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929101846.GA8971@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 03:02 PM, Anders Berg wrote:
-> Add I2C bus driver for the controller found in the LSI Axxia family SoCs. The
-> driver implements 10-bit addressing and SMBus transfer modes via emulation
-> (including SMBus block data read).
->
-> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
-> ---
->
-> Changelog
->
-> v2:
->      - Document the len <= 255 limitation
->      - return IRQ_HANDLED on unexpected IRQs
->      - fixed a number of style issues
->      - handle zero-length messages
->      - use reinit_completion() where appropriate
->      - enable for COMPILE_TEST
->
->   .../devicetree/bindings/i2c/i2c-axxia.txt          |  30 ++
->   drivers/i2c/busses/Kconfig                         |  11 +
->   drivers/i2c/busses/Makefile                        |   1 +
->   drivers/i2c/busses/i2c-axxia.c                     | 561 +++++++++++++++++++++
->   4 files changed, 603 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/i2c/i2c-axxia.txt
->   create mode 100644 drivers/i2c/busses/i2c-axxia.c
->
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-axxia.txt b/Documentation/devicetree/bindings/i2c/i2c-axxia.txt
-> new file mode 100644
-> index 0000000..2296d78
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-axxia.txt
-> @@ -0,0 +1,30 @@
-> +LSI Axxia I2C
-> +
-> +Required properties :
-> +- compatible : Must be "lsi,api2c"
-> +- reg : Offset and length of the register set for the device
-> +- interrupts : the interrupt specifier
-> +- #address-cells : Must be <1>;
-> +- #size-cells : Must be <0>;
-> +- clock-names : Must contain "i2c".
-> +- clocks: Must contain an entry for each name in clock-names. See the common
-> +  clock bindings.
-> +
-> +Optional properties :
-> +- clock-frequency : Desired I2C bus clock frequency in Hz. If not specified,
-> +  the default 100 kHz frequency will be used. As only Normal and Fast modes
-> +  are supported, possible values are 100000 and 400000.
-> +
-> +Example :
-> +
-> +i2c@02010084000 {
-> +	compatible = "lsi,api2c";
-> +	device_type = "i2c";
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +	reg = <0x20 0x10084000 0x00 0x1000>;
-> +	interrupts = <0 19 4>;
-> +	clocks = <&clk_per>;
-> +	clock-names = "i2c";
-> +	clock-frequency = <400000>;
-> +};
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index 2ac87fa..8983474 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -77,6 +77,17 @@ config I2C_AMD8111
->   	  This driver can also be built as a module.  If so, the module
->   	  will be called i2c-amd8111.
->   
-> +config I2C_AXXIA
-> +	tristate "Axxia I2C controller"
-> +	depends on ARCH_AXXIA || COMPILE_TEST
-> +	default ARCH_AXXIA
-> +	help
-> +	  Say yes if you want to support the I2C bus on Axxia platforms.
-> +
-> +	  Please note that this controller is limited to transfers of maximum
-> +	  255 bytes in length. Any attempt to to a larger transfer will return
-> +	  an error.
-> +
->   config I2C_I801
->   	tristate "Intel 82801 (ICH/PCH)"
->   	depends on PCI
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 49bf07e..5899edb 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -12,6 +12,7 @@ obj-$(CONFIG_I2C_ALI15X3)	+= i2c-ali15x3.o
->   obj-$(CONFIG_I2C_AMD756)	+= i2c-amd756.o
->   obj-$(CONFIG_I2C_AMD756_S4882)	+= i2c-amd756-s4882.o
->   obj-$(CONFIG_I2C_AMD8111)	+= i2c-amd8111.o
-> +obj-$(CONFIG_I2C_AXXIA)		+= i2c-axxia.o
->   obj-$(CONFIG_I2C_I801)		+= i2c-i801.o
->   obj-$(CONFIG_I2C_ISCH)		+= i2c-isch.o
->   obj-$(CONFIG_I2C_ISMT)		+= i2c-ismt.o
-> diff --git a/drivers/i2c/busses/i2c-axxia.c b/drivers/i2c/busses/i2c-axxia.c
-> new file mode 100644
-> index 0000000..c6faca1
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-axxia.c
-> @@ -0,0 +1,561 @@
-> +/*
-> + * This driver implements I2C master functionality using the LSI API2C
-> + * controller.
-> + *
-> + * NOTE: The controller has a limitation in that it can only do transfers of
-> + * maximum 255 bytes at a time. If a larger transfer is attempted, error code
-> + * (-EINVAL) is returned.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + */
-> +#include <linux/clk.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/err.h>
-> +#include <linux/i2c.h>
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/module.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define SCL_WAIT_TIMEOUT_NS 25000000
-> +#define I2C_XFER_TIMEOUT    (msecs_to_jiffies(250))
-> +#define I2C_STOP_TIMEOUT    (msecs_to_jiffies(100))
-> +#define FIFO_SIZE           8
-> +
-> +#define GLOBAL_CONTROL		0x00
-> +#define   GLOBAL_MST_EN         BIT(0)
-> +#define   GLOBAL_SLV_EN         BIT(1)
-> +#define   GLOBAL_IBML_EN        BIT(2)
-> +#define INTERRUPT_STATUS	0x04
-> +#define INTERRUPT_ENABLE	0x08
-> +#define   INT_SLV               BIT(1)
-> +#define   INT_MST               BIT(0)
-> +#define WAIT_TIMER_CONTROL	0x0c
-> +#define   WT_EN			BIT(15)
-> +#define   WT_VALUE(_x)		((_x) & 0x7fff)
-> +#define IBML_TIMEOUT		0x10
-> +#define IBML_LOW_MEXT		0x14
-> +#define IBML_LOW_SEXT		0x18
-> +#define TIMER_CLOCK_DIV		0x1c
-> +#define I2C_BUS_MONITOR		0x20
-> +#define SOFT_RESET		0x24
-> +#define MST_COMMAND		0x28
-> +#define   CMD_BUSY		(1<<3)
-> +#define   CMD_MANUAL		(0x00 | CMD_BUSY)
-> +#define   CMD_AUTO		(0x01 | CMD_BUSY)
-> +#define MST_RX_XFER		0x2c
-> +#define MST_TX_XFER		0x30
-> +#define MST_ADDR_1		0x34
-> +#define MST_ADDR_2		0x38
-> +#define MST_DATA		0x3c
-> +#define MST_TX_FIFO		0x40
-> +#define MST_RX_FIFO		0x44
-> +#define MST_INT_ENABLE		0x48
-> +#define MST_INT_STATUS		0x4c
-> +#define   MST_STATUS_RFL	(1 << 13) /* RX FIFO serivce */
-> +#define   MST_STATUS_TFL	(1 << 12) /* TX FIFO service */
-> +#define   MST_STATUS_SNS	(1 << 11) /* Manual mode done */
-> +#define   MST_STATUS_SS		(1 << 10) /* Automatic mode done */
-> +#define   MST_STATUS_SCC	(1 << 9)  /* Stop complete */
-> +#define   MST_STATUS_IP		(1 << 8)  /* Invalid parameter */
-> +#define   MST_STATUS_TSS	(1 << 7)  /* Timeout */
-> +#define   MST_STATUS_AL		(1 << 6)  /* Arbitration lost */
-> +#define   MST_STATUS_ND		(1 << 5)  /* NAK on data phase */
-> +#define   MST_STATUS_NA		(1 << 4)  /* NAK on address phase */
-> +#define   MST_STATUS_NAK	(MST_STATUS_NA | \
-> +				 MST_STATUS_ND)
-> +#define   MST_STATUS_ERR	(MST_STATUS_NAK | \
-> +				 MST_STATUS_AL  | \
-> +				 MST_STATUS_IP  | \
-> +				 MST_STATUS_TSS)
-> +#define MST_TX_BYTES_XFRD	0x50
-> +#define MST_RX_BYTES_XFRD	0x54
-> +#define SCL_HIGH_PERIOD		0x80
-> +#define SCL_LOW_PERIOD		0x84
-> +#define SPIKE_FLTR_LEN		0x88
-> +#define SDA_SETUP_TIME		0x8c
-> +#define SDA_HOLD_TIME		0x90
-> +
-> +/**
-> + * axxia_i2c_dev - I2C device context
-> + * @base: pointer to register struct
-> + * @msg: pointer to current message
-> + * @msg_xfrd: number of bytes transferred in msg
-> + * @msg_err: error code for completed message
-> + * @msg_complete: xfer completion object
-> + * @dev: device reference
-> + * @adapter: core i2c abstraction
-> + * @i2c_clk: clock reference for i2c input clock
-> + * @bus_clk_rate: current i2c bus clock rate
-> + */
-> +struct axxia_i2c_dev {
-> +	void __iomem *base;
-> +	struct i2c_msg *msg;
-> +	size_t msg_xfrd;
-> +	int msg_err;
-> +	struct completion msg_complete;
-> +	struct device *dev;
-> +	struct i2c_adapter adapter;
-> +	struct clk *i2c_clk;
-> +	u32 bus_clk_rate;
-> +};
-> +
-> +static void i2c_int_disable(struct axxia_i2c_dev *idev, u32 mask)
-> +{
-> +	u32 int_en;
-> +
-> +	int_en = readl(idev->base + MST_INT_ENABLE);
-> +	writel(int_en & ~mask, idev->base + MST_INT_ENABLE);
-> +}
-> +
-> +static void i2c_int_enable(struct axxia_i2c_dev *idev, u32 mask)
-> +{
-> +	u32 int_en;
-> +
-> +	int_en = readl(idev->base + MST_INT_ENABLE);
-> +	writel(int_en | mask, idev->base + MST_INT_ENABLE);
-> +}
-> +
-> +/**
-> + * ns_to_clk - Convert time (ns) to clock cycles for the given clock frequency.
-> + */
-> +static u32 ns_to_clk(u64 ns, u32 clk_mhz)
-> +{
-> +	return div_u64(ns * clk_mhz, 1000);
-> +}
-> +
-> +static int axxia_i2c_init(struct axxia_i2c_dev *idev)
-> +{
-> +	u32 divisor = clk_get_rate(idev->i2c_clk) / idev->bus_clk_rate;
-> +	u32 clk_mhz = clk_get_rate(idev->i2c_clk) / 1000000;
-> +	u32 t_setup;
-> +	u32 t_high, t_low;
-> +	u32 tmo_clk;
-> +	u32 prescale;
-> +	unsigned long timeout;
-> +
-> +	dev_dbg(idev->dev, "rate=%uHz per_clk=%uMHz -> ratio=1:%u\n",
-> +		idev->bus_clk_rate, clk_mhz, divisor);
-> +
-> +	/* Reset controller */
-> +	writel(0x01, idev->base + SOFT_RESET);
-> +	timeout = jiffies + msecs_to_jiffies(100);
-> +	while (readl(idev->base + SOFT_RESET) & 1) {
-> +		if (time_after(jiffies, timeout)) {
-> +			dev_warn(idev->dev, "Soft reset failed\n");
-> +			break;
-> +		}
-> +	}
-> +
-> +	/* Enable Master Mode */
-> +	writel(0x1, idev->base + GLOBAL_CONTROL);
-> +
-> +	if (idev->bus_clk_rate <= 100000) {
-> +		/* Standard mode SCL 50/50, tSU:DAT = 250 ns */
-> +		t_high = divisor * 1 / 2;
-> +		t_low = divisor * 1 / 2;
-> +		t_setup = ns_to_clk(250, clk_mhz);
-> +	} else {
-> +		/* Fast mode SCL 33/66, tSU:DAT = 100 ns */
-> +		t_high = divisor * 1 / 3;
-> +		t_low = divisor * 2 / 3;
-> +		t_setup = ns_to_clk(100, clk_mhz);
-> +	}
-> +
-> +	/* SCL High Time */
-> +	writel(t_high, idev->base + SCL_HIGH_PERIOD);
-> +	/* SCL Low Time */
-> +	writel(t_low, idev->base + SCL_LOW_PERIOD);
-> +	/* SDA Setup Time */
-> +	writel(t_setup, idev->base + SDA_SETUP_TIME);
-> +	/* SDA Hold Time, 300ns */
-> +	writel(ns_to_clk(300, clk_mhz), idev->base + SDA_HOLD_TIME);
-> +	/* Filter <50ns spikes */
-> +	writel(ns_to_clk(50, clk_mhz), idev->base + SPIKE_FLTR_LEN);
-> +
-> +	/* Configure Time-Out Registers */
-> +	tmo_clk = ns_to_clk(SCL_WAIT_TIMEOUT_NS, clk_mhz);
-> +
-> +	/* Find prescaler value that makes tmo_clk fit in 15-bits counter. */
-> +	for (prescale = 0; prescale < 15; ++prescale) {
-> +		if (tmo_clk <= 0x7fff)
-> +			break;
-> +		tmo_clk >>= 1;
-> +	}
-> +	if (tmo_clk > 0x7fff)
-> +		tmo_clk = 0x7fff;
-> +
-> +	/* Prescale divider (log2) */
-> +	writel(prescale, idev->base + TIMER_CLOCK_DIV);
-> +	/* Timeout in divided clocks */
-> +	writel(WT_EN | WT_VALUE(tmo_clk), idev->base + WAIT_TIMER_CONTROL);
-> +
-> +	/* Mask all master interrupt bits */
-> +	i2c_int_disable(idev, ~0);
-> +
-> +	/* Interrupt enable */
-> +	writel(0x01, idev->base + INTERRUPT_ENABLE);
-> +
-> +	return 0;
-> +}
-> +
-> +static int i2c_m_rd(const struct i2c_msg *msg)
-> +{
-> +	return (msg->flags & I2C_M_RD) != 0;
-> +}
-> +
-> +static int i2c_m_ten(const struct i2c_msg *msg)
-> +{
-> +	return (msg->flags & I2C_M_TEN) != 0;
-> +}
-> +
-> +static int i2c_m_recv_len(const struct i2c_msg *msg)
-> +{
-> +	return (msg->flags & I2C_M_RECV_LEN) != 0;
-> +}
-> +
-> +/**
-> + * axxia_i2c_empty_rx_fifo - Fetch data from RX FIFO and update SMBus block
-> + * transfer length if this is the first byte of such a transfer.
-> + */
-> +static int axxia_i2c_empty_rx_fifo(struct axxia_i2c_dev *idev)
-> +{
-> +	struct i2c_msg *msg = idev->msg;
-> +	size_t rx_fifo_avail = readl(idev->base + MST_RX_FIFO);
-> +	int bytes_to_transfer = min(rx_fifo_avail, msg->len - idev->msg_xfrd);
-> +
-> +	while (bytes_to_transfer-- > 0) {
-> +		int c = readl(idev->base + MST_DATA);
-> +
-> +		if (idev->msg_xfrd == 0 && i2c_m_recv_len(msg)) {
-> +			/*
-> +			 * Check length byte for SMBus block read
-> +			 */
-> +			if (c <= 0 || c > I2C_SMBUS_BLOCK_MAX) {
-> +				idev->msg_err = -EPROTO;
-> +				i2c_int_disable(idev, ~0);
-> +				complete(&idev->msg_complete);
-> +				break;
-> +			}
-> +			msg->len = 1 + c;
-> +			writel(msg->len, idev->base + MST_RX_XFER);
-> +		}
-> +		msg->buf[idev->msg_xfrd++] = c;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * axxia_i2c_fill_tx_fifo - Fill TX FIFO from current message buffer.
-> + * @return: Number of bytes left to transfer.
-> + */
-> +static int axxia_i2c_fill_tx_fifo(struct axxia_i2c_dev *idev)
-> +{
-> +	struct i2c_msg *msg = idev->msg;
-> +	size_t tx_fifo_avail = FIFO_SIZE - readl(idev->base + MST_TX_FIFO);
-> +	int bytes_to_transfer = min(tx_fifo_avail, msg->len - idev->msg_xfrd);
-> +	int ret = msg->len - idev->msg_xfrd - bytes_to_transfer;
-> +
-> +	while (bytes_to_transfer-- > 0)
-> +		writel(msg->buf[idev->msg_xfrd++], idev->base + MST_DATA);
-> +
-> +	return ret;
-> +}
-> +
-> +static irqreturn_t axxia_i2c_isr(int irq, void *_dev)
-> +{
-> +	struct axxia_i2c_dev *idev = _dev;
-> +	u32 status;
-> +
-> +	if (!(readl(idev->base + INTERRUPT_STATUS) & INT_MST))
-> +		return IRQ_NONE;
-> +
-> +	/* Read interrupt status bits */
-> +	status = readl(idev->base + MST_INT_STATUS);
-> +
-> +	if (!idev->msg) {
-> +		dev_warn(idev->dev, "unexpected interrupt");
+Currently host activation done by calling either function
+ahci_host_activate() or ata_host_activate(). Consolidate
+the code by only calling ahci_host_activate() for all AHCI
+devices.
 
-Missed terminating new line '\n'
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-ide@vger.kernel.org
+---
+ drivers/ata/acard-ahci.c       |  3 +-
+ drivers/ata/ahci.c             | 66 +--------------------------------
+ drivers/ata/ahci.h             |  6 +--
+ drivers/ata/libahci.c          | 84 +++++++++++++++++++++++++++++++++++++++---
+ drivers/ata/libahci_platform.c |  3 +-
+ drivers/ata/sata_highbank.c    |  3 +-
+ 6 files changed, 84 insertions(+), 81 deletions(-)
 
-> +		goto out;
-> +	}
-> +
-> +	/* RX FIFO needs service? */
-> +	if (i2c_m_rd(idev->msg) && (status & MST_STATUS_RFL))
-> +		axxia_i2c_empty_rx_fifo(idev);
-> +
-> +	/* TX FIFO needs service? */
-> +	if (!i2c_m_rd(idev->msg) && (status & MST_STATUS_TFL)) {
-> +		if (axxia_i2c_fill_tx_fifo(idev) == 0)
-> +			i2c_int_disable(idev, MST_STATUS_TFL);
-> +	}
-> +
-> +	if (status & MST_STATUS_SCC) {
-> +		/* Stop completed */
-> +		i2c_int_disable(idev, ~0);
-> +		complete(&idev->msg_complete);
-> +	} else if (status & MST_STATUS_SNS) {
-> +		/* Transfer done */
-> +		i2c_int_disable(idev, ~0);
-> +		if (i2c_m_rd(idev->msg) && idev->msg_xfrd < idev->msg->len)
-> +			axxia_i2c_empty_rx_fifo(idev);
-> +		complete(&idev->msg_complete);
-> +	} else if (unlikely(status & MST_STATUS_ERR)) {
-> +		/* Transfer error */
-> +		i2c_int_disable(idev, ~0);
-> +		if (status & MST_STATUS_AL)
-> +			idev->msg_err = -EAGAIN;
-> +		else if (status & MST_STATUS_NAK)
-> +			idev->msg_err = -ENXIO;
-> +		else
-> +			idev->msg_err = -EIO;
-> +		dev_dbg(idev->dev, "error %#x, addr=%#x rx=%u/%u tx=%u/%u\n",
-> +			status,
-> +			idev->msg->addr,
-> +			readl(idev->base + MST_RX_BYTES_XFRD),
-> +			readl(idev->base + MST_RX_XFER),
-> +			readl(idev->base + MST_TX_BYTES_XFRD),
-> +			readl(idev->base + MST_TX_XFER));
-> +		complete(&idev->msg_complete);
-> +	}
-> +
-> +out:
-> +	/* Clear interrupt */
-> +	writel(INT_MST, idev->base + INTERRUPT_STATUS);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-
-Its looks good if we move the entire ISR above probe/remove functionalities...
-
-> +static int axxia_i2c_xfer_msg(struct axxia_i2c_dev *idev, struct i2c_msg *msg)
-> +{
-> +	u32 int_mask = MST_STATUS_ERR | MST_STATUS_SNS;
-> +	u32 rx_xfer, tx_xfer;
-> +	u32 addr_1, addr_2;
-> +	int ret;
-> +
-> +	if (msg->len > 255) {
-> +		dev_warn(idev->dev, "unsupported length %u\n", msg->len);
-> +		return -EINVAL;
-> +	}
-> +
-> +	idev->msg = msg;
-> +	idev->msg_xfrd = 0;
-> +	idev->msg_err = 0;
-> +	reinit_completion(&idev->msg_complete);
-> +
-> +	if (i2c_m_ten(msg)) {
-> +		/* 10-bit address
-> +		 *   addr_1: 5'b11110 | addr[9:8] | (R/nW)
-> +		 *   addr_2: addr[7:0]
-> +		 */
-> +		addr_1 = 0xF0 | ((msg->addr >> 7) & 0x06);
-> +		addr_2 = msg->addr & 0xFF;
-> +	} else {
-> +		/* 7-bit address
-> +		 *   addr_1: addr[6:0] | (R/nW)
-> +		 *   addr_2: dont care
-> +		 */
-> +		addr_1 = (msg->addr << 1) & 0xFF;
-> +		addr_2 = 0;
-> +	}
-> +
-> +	if (i2c_m_rd(msg)) {
-> +		/* I2C read transfer */
-> +		rx_xfer = i2c_m_recv_len(msg) ? I2C_SMBUS_BLOCK_MAX : msg->len;
-> +		tx_xfer = 0;
-> +		addr_1 |= 1;	/* Set the R/nW bit of the address */
-> +	} else {
-> +		/* I2C write transfer */
-> +		rx_xfer = 0;
-> +		tx_xfer = msg->len;
-> +	}
-> +
-> +	writel(rx_xfer, idev->base + MST_RX_XFER);
-> +	writel(tx_xfer, idev->base + MST_TX_XFER);
-> +	writel(addr_1, idev->base + MST_ADDR_1);
-> +	writel(addr_2, idev->base + MST_ADDR_2);
-> +
-> +	if (i2c_m_rd(msg))
-> +		int_mask |= MST_STATUS_RFL;
-> +	else if (axxia_i2c_fill_tx_fifo(idev) != 0)
-> +		int_mask |= MST_STATUS_TFL;
-> +
-> +	/* Start manual mode */
-> +	writel(CMD_MANUAL, idev->base + MST_COMMAND);
-> +
-> +	i2c_int_enable(idev, int_mask);
-> +
-> +	ret = wait_for_completion_timeout(&idev->msg_complete,
-> +					  I2C_XFER_TIMEOUT);
-> +
-> +	i2c_int_disable(idev, int_mask);
-> +
-> +	if (readl(idev->base + MST_COMMAND) & CMD_BUSY)
-> +		dev_warn(idev->dev, "busy after xfer");
-
-'\n'
-
-> +
-> +	if (ret == 0)
-> +		idev->msg_err = -ETIMEDOUT;
-> +
-> +	if (unlikely(idev->msg_err) && idev->msg_err != -ENXIO)
-> +		axxia_i2c_init(idev);
-> +
-> +	return idev->msg_err;
-> +}
-> +
-> +static int axxia_i2c_stop(struct axxia_i2c_dev *idev)
-> +{
-> +	u32 int_mask = MST_STATUS_ERR | MST_STATUS_SCC;
-> +	int ret;
-> +
-> +	reinit_completion(&idev->msg_complete);
-> +
-> +	/* Issue stop */
-> +	writel(0xb, idev->base + MST_COMMAND);
-> +	i2c_int_enable(idev, int_mask);
-> +	ret = wait_for_completion_timeout(&idev->msg_complete,
-> +					  I2C_STOP_TIMEOUT);
-> +	i2c_int_disable(idev, int_mask);
-> +	if (ret == 0)
-> +		return -ETIMEDOUT;
-> +
-> +	if (readl(idev->base + MST_COMMAND) & CMD_BUSY)
-> +		dev_warn(idev->dev, "busy after stop");
-
-'\n'
-
-> +
-> +	return 0;
-> +}
-> +
-> +static int
-> +axxia_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
-> +{
-> +	struct axxia_i2c_dev *idev = i2c_get_adapdata(adap);
-> +	int i;
-> +	int ret = 0;
-> +
-> +	for (i = 0; ret == 0 && i < num; ++i)
-> +		ret = axxia_i2c_xfer_msg(idev, &msgs[i]);
-> +
-> +	axxia_i2c_stop(idev);
-> +
-> +	return ret ? : i;
-> +}
-> +
-> +static u32 axxia_i2c_func(struct i2c_adapter *adap)
-> +{
-> +	u32 caps = (I2C_FUNC_I2C |
-> +		    I2C_FUNC_10BIT_ADDR |
-> +		    I2C_FUNC_SMBUS_EMUL | I2C_FUNC_SMBUS_BLOCK_DATA);
-> +	return caps;
-
-return (I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR |
-	I2C_FUNC_SMBUS_EMUL | I2C_FUNC_SMBUS_BLOCK_DATA);
-
-> +}
-> +
-> +static const struct i2c_algorithm axxia_i2c_algo = {
-> +	.master_xfer = axxia_i2c_xfer,
-> +	.functionality = axxia_i2c_func,
-> +};
-> +
-> +static int axxia_i2c_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct axxia_i2c_dev *idev = NULL;
-> +	struct resource *res;
-> +	void __iomem *base;
-> +	int irq;
-> +	int ret = 0;
-> +
-> +	idev = devm_kzalloc(&pdev->dev, sizeof(*idev), GFP_KERNEL);
-> +	if (!idev)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
-Error checking on *res*...?
-
-We should *return* on platform_get_resource() failure..
-
-> +	base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(base))
-> +		return PTR_ERR(base);
-> +
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq < 0) {
-> +		dev_err(&pdev->dev, "missing interrupt resource\n");
-> +		return irq;
-> +	}
-> +
-> +	idev->i2c_clk = devm_clk_get(&pdev->dev, "i2c");
-> +	if (IS_ERR(idev->i2c_clk)) {
-> +		dev_err(&pdev->dev, "missing clock");
-
-Missed terminating new line '\n'
-
-> +		return PTR_ERR(idev->i2c_clk);
-> +	}
-> +
-> +	idev->base = base;
-> +	idev->dev = &pdev->dev;
-> +	init_completion(&idev->msg_complete);
-> +
-> +	of_property_read_u32(np, "clock-frequency", &idev->bus_clk_rate);
-> +	if (idev->bus_clk_rate == 0)
-> +		idev->bus_clk_rate = 100000;	/* default clock rate */
-> +
-> +	ret = axxia_i2c_init(idev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to initialize");
-
-Missed terminating new line '\n'
-
-> +		return ret;
-> +	}
-> +
-> +	ret = devm_request_irq(&pdev->dev, irq, axxia_i2c_isr, 0,
-> +			       pdev->name, idev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to claim IRQ%d\n", irq);
-> +		return ret;
-> +	}
-> +
-> +	clk_prepare_enable(idev->i2c_clk);
-> +
-> +	i2c_set_adapdata(&idev->adapter, idev);
-> +	strlcpy(idev->adapter.name, pdev->name, sizeof(idev->adapter.name));
-> +	idev->adapter.owner = THIS_MODULE;
-> +	idev->adapter.class = I2C_CLASS_HWMON;
-> +	idev->adapter.algo = &axxia_i2c_algo;
-> +	idev->adapter.dev.parent = &pdev->dev;
-> +	idev->adapter.dev.of_node = pdev->dev.of_node;
-> +
-> +	platform_set_drvdata(pdev, idev);
-> +
-> +	ret = i2c_add_adapter(&idev->adapter);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to add adapter\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int axxia_i2c_remove(struct platform_device *pdev)
-> +{
-> +	struct axxia_i2c_dev *idev = platform_get_drvdata(pdev);
-> +
-> +	clk_disable_unprepare(idev->i2c_clk);
-> +	i2c_del_adapter(&idev->adapter);
-> +
-> +	return 0;
-> +}
-> +
-> +/* Match table for of_platform binding */
-> +static const struct of_device_id axxia_i2c_of_match[] = {
-> +	{ .compatible = "lsi,api2c", },
-> +	{},
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, axxia_i2c_of_match);
-> +
-> +static struct platform_driver axxia_i2c_driver = {
-> +	.probe = axxia_i2c_probe,
-> +	.remove = axxia_i2c_remove,
-> +	.driver = {
-> +		.name = "axxia-i2c",
-> +		.of_match_table = axxia_i2c_of_match,
-> +	},
-> +};
-> +
-> +module_platform_driver(axxia_i2c_driver);
-> +
-> +MODULE_DESCRIPTION("Axxia I2C Bus driver");
-> +MODULE_AUTHOR("Anders Berg <anders.berg@lsi.com>");
-> +MODULE_LICENSE("GPL v2");
-
+diff --git a/drivers/ata/acard-ahci.c b/drivers/ata/acard-ahci.c
+index 25d0ac3..c962886 100644
+--- a/drivers/ata/acard-ahci.c
++++ b/drivers/ata/acard-ahci.c
+@@ -498,8 +498,7 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id
+ 	acard_ahci_pci_print_info(host);
+ 
+ 	pci_set_master(pdev);
+-	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
+-				 &acard_ahci_sht);
++	return ahci_host_activate(host, pdev->irq, &acard_ahci_sht);
+ }
+ 
+ module_pci_driver(acard_ahci_pci_driver);
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index f68a995..d0ac38b 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1226,66 +1226,6 @@ intx:
+ 	return 0;
+ }
+ 
+-/**
+- *	ahci_host_activate - start AHCI host, request IRQs and register it
+- *	@host: target ATA host
+- *	@irq: base IRQ number to request
+- *	@irq_handler: irq_handler used when requesting IRQs
+- *	@irq_flags: irq_flags used when requesting IRQs
+- *
+- *	Similar to ata_host_activate, but requests IRQs according to AHCI-1.1
+- *	when multiple MSIs were allocated. That is one MSI per port, starting
+- *	from @irq.
+- *
+- *	LOCKING:
+- *	Inherited from calling layer (may sleep).
+- *
+- *	RETURNS:
+- *	0 on success, -errno otherwise.
+- */
+-int ahci_host_activate(struct ata_host *host, int irq)
+-{
+-	int i, rc;
+-
+-	rc = ata_host_start(host);
+-	if (rc)
+-		return rc;
+-
+-	for (i = 0; i < host->n_ports; i++) {
+-		struct ahci_port_priv *pp = host->ports[i]->private_data;
+-
+-		/* Do not receive interrupts sent by dummy ports */
+-		if (!pp) {
+-			disable_irq(irq + i);
+-			continue;
+-		}
+-
+-		rc = devm_request_threaded_irq(host->dev, irq + i,
+-					       ahci_hw_interrupt,
+-					       ahci_thread_fn, IRQF_SHARED,
+-					       pp->irq_desc, host->ports[i]);
+-		if (rc)
+-			goto out_free_irqs;
+-	}
+-
+-	for (i = 0; i < host->n_ports; i++)
+-		ata_port_desc(host->ports[i], "irq %d", irq + i);
+-
+-	rc = ata_host_register(host, &ahci_sht);
+-	if (rc)
+-		goto out_free_all_irqs;
+-
+-	return 0;
+-
+-out_free_all_irqs:
+-	i = host->n_ports;
+-out_free_irqs:
+-	for (i--; i >= 0; i--)
+-		devm_free_irq(host->dev, irq + i, host->ports[i]);
+-
+-	return rc;
+-}
+-
+ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	unsigned int board_id = ent->driver_data;
+@@ -1487,11 +1427,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	pci_set_master(pdev);
+ 
+-	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
+-		return ahci_host_activate(host, pdev->irq);
+-
+-	return ata_host_activate(host, pdev->irq, ahci_interrupt, IRQF_SHARED,
+-				 &ahci_sht);
++	return ahci_host_activate(host, pdev->irq, &ahci_sht);
+ }
+ 
+ module_pci_driver(ahci_pci_driver);
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index a074c73..6a22055 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -388,11 +388,9 @@ int ahci_port_resume(struct ata_port *ap);
+ void ahci_set_em_messages(struct ahci_host_priv *hpriv,
+ 			  struct ata_port_info *pi);
+ int ahci_reset_em(struct ata_host *host);
+-irqreturn_t ahci_interrupt(int irq, void *dev_instance);
+-irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance);
+-irqreturn_t ahci_thread_fn(int irq, void *dev_instance);
+ void ahci_print_info(struct ata_host *host, const char *scc_s);
+-int ahci_host_activate(struct ata_host *host, int irq);
++int ahci_host_activate(struct ata_host *host, int irq,
++		       struct scsi_host_template *sht);
+ void ahci_error_handler(struct ata_port *ap);
+ 
+ static inline void __iomem *__ahci_port_base(struct ata_host *host,
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index b784e9d..0080551 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1789,7 +1789,7 @@ static void ahci_port_intr(struct ata_port *ap)
+ 	ahci_handle_port_interrupt(ap, port_mmio, status);
+ }
+ 
+-irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
++static irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
+ {
+ 	struct ata_port *ap = dev_instance;
+ 	struct ahci_port_priv *pp = ap->private_data;
+@@ -1809,7 +1809,6 @@ irqreturn_t ahci_thread_fn(int irq, void *dev_instance)
+ 
+ 	return IRQ_HANDLED;
+ }
+-EXPORT_SYMBOL_GPL(ahci_thread_fn);
+ 
+ static void ahci_hw_port_interrupt(struct ata_port *ap)
+ {
+@@ -1823,7 +1822,7 @@ static void ahci_hw_port_interrupt(struct ata_port *ap)
+ 	pp->intr_status |= status;
+ }
+ 
+-irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
++static irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
+ {
+ 	struct ata_port *ap_this = dev_instance;
+ 	struct ahci_port_priv *pp = ap_this->private_data;
+@@ -1877,9 +1876,8 @@ irqreturn_t ahci_hw_interrupt(int irq, void *dev_instance)
+ 
+ 	return IRQ_WAKE_THREAD;
+ }
+-EXPORT_SYMBOL_GPL(ahci_hw_interrupt);
+ 
+-irqreturn_t ahci_interrupt(int irq, void *dev_instance)
++static irqreturn_t ahci_interrupt(int irq, void *dev_instance)
+ {
+ 	struct ata_host *host = dev_instance;
+ 	struct ahci_host_priv *hpriv;
+@@ -1938,7 +1936,6 @@ irqreturn_t ahci_interrupt(int irq, void *dev_instance)
+ 
+ 	return IRQ_RETVAL(handled);
+ }
+-EXPORT_SYMBOL_GPL(ahci_interrupt);
+ 
+ unsigned int ahci_qc_issue(struct ata_queued_cmd *qc)
+ {
+@@ -2472,6 +2469,81 @@ void ahci_set_em_messages(struct ahci_host_priv *hpriv,
+ }
+ EXPORT_SYMBOL_GPL(ahci_set_em_messages);
+ 
++static int ahci_host_activate_multi_irqs(struct ata_host *host, int irq,
++					 struct scsi_host_template *sht)
++{
++	int i, rc;
++
++	rc = ata_host_start(host);
++	if (rc)
++		return rc;
++
++	for (i = 0; i < host->n_ports; i++) {
++		struct ahci_port_priv *pp = host->ports[i]->private_data;
++
++		/* Do not receive interrupts sent by dummy ports */
++		if (!pp) {
++			disable_irq(irq + i);
++			continue;
++		}
++
++		rc = devm_request_threaded_irq(host->dev, irq + i,
++					       ahci_hw_interrupt,
++					       ahci_thread_fn, IRQF_SHARED,
++					       pp->irq_desc, host->ports[i]);
++		if (rc)
++			goto out_free_irqs;
++	}
++
++	for (i = 0; i < host->n_ports; i++)
++		ata_port_desc(host->ports[i], "irq %d", irq + i);
++
++	rc = ata_host_register(host, sht);
++	if (rc)
++		goto out_free_all_irqs;
++
++	return 0;
++
++out_free_all_irqs:
++	i = host->n_ports;
++out_free_irqs:
++	for (i--; i >= 0; i--)
++		devm_free_irq(host->dev, irq + i, host->ports[i]);
++
++	return rc;
++}
++
++/**
++ *	ahci_host_activate - start AHCI host, request IRQs and register it
++ *	@host: target ATA host
++ *	@irq: base IRQ number to request
++ *	@sht: scsi_host_template to use when registering the host
++ *
++ *	Similar to ata_host_activate, but requests IRQs according to AHCI-1.1
++ *	when multiple MSIs were allocated. That is one MSI per port, starting
++ *	from @irq.
++ *
++ *	LOCKING:
++ *	Inherited from calling layer (may sleep).
++ *
++ *	RETURNS:
++ *	0 on success, -errno otherwise.
++ */
++int ahci_host_activate(struct ata_host *host, int irq,
++		       struct scsi_host_template *sht)
++{
++	struct ahci_host_priv *hpriv = host->private_data;
++	int rc;
++
++	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI)
++		rc = ahci_host_activate_multi_irqs(host, irq, sht);
++	else
++		rc = ata_host_activate(host, irq, ahci_interrupt,
++				       IRQF_SHARED, sht);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(ahci_host_activate);
++
+ MODULE_AUTHOR("Jeff Garzik");
+ MODULE_DESCRIPTION("Common AHCI SATA low-level routines");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+index c7f787e..0b03f90 100644
+--- a/drivers/ata/libahci_platform.c
++++ b/drivers/ata/libahci_platform.c
+@@ -493,8 +493,7 @@ int ahci_platform_init_host(struct platform_device *pdev,
+ 	ahci_init_controller(host);
+ 	ahci_print_info(host, "platform");
+ 
+-	return ata_host_activate(host, irq, ahci_interrupt, IRQF_SHARED,
+-				 &ahci_platform_sht);
++	return ahci_host_activate(host, irq, &ahci_platform_sht);
+ }
+ EXPORT_SYMBOL_GPL(ahci_platform_init_host);
+ 
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index da3bc27..ce2b99a 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -568,8 +568,7 @@ static int ahci_highbank_probe(struct platform_device *pdev)
+ 	ahci_init_controller(host);
+ 	ahci_print_info(host, "platform");
+ 
+-	rc = ata_host_activate(host, irq, ahci_interrupt, 0,
+-					&ahci_highbank_platform_sht);
++	rc = ahci_host_activate(host, irq, &ahci_highbank_platform_sht);
+ 	if (rc)
+ 		goto err0;
+ 
+-- 
+1.8.3.1
 
 -- 
 Regards,
-Varka Bhadram.
-
+Alexander Gordeev
+agordeev@redhat.com
