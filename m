@@ -1,136 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371AbaI3AhW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:37:22 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10886 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754816AbaI3Aev (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:34:51 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [RFC 2/7] soc: qcom: Add device tree binding for SMD
-Date: Mon, 29 Sep 2014 17:34:46 -0700
-Message-ID: <1412037291-16880-3-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
+	id S1755405AbaI3AiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:38:07 -0400
+Received: from mail-bn1on0135.outbound.protection.outlook.com ([157.56.110.135]:11488
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755389AbaI3AiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 20:38:05 -0400
+X-Greylist: delayed 4737 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 20:38:05 EDT
+From: Jojy Varghese <jojyv@juniper.net>
+To: Guenter Roeck <linux@roeck-us.net>, Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <groeck@juniper.net>,
+        "hongtao.jia@freescale.com" <hongtao.jia@freescale.com>
+Subject: Re: [PATCH] powerpc/fsl: Add support for pci(e) machine check
+ exception on E500MC / E5500
+Thread-Topic: [PATCH] powerpc/fsl: Add support for pci(e) machine check
+ exception on E500MC / E5500
+Thread-Index: AQHP3AU6xL0ppKreQk6rqjZx79AU1JwYcGsAgAAIjYD//8zWgA==
+Date: Mon, 29 Sep 2014 23:03:37 +0000
+Message-ID: <D04F3201.10DEB%jojyv@juniper.net>
+In-Reply-To: <20140929190643.GA20189@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [66.129.239.13]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB518;
+x-forefront-prvs: 034902F5BC
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(479174003)(51704005)(24454002)(164054003)(377424004)(199003)(189002)(15202345003)(99396003)(120916001)(10300001)(4396001)(66066001)(92566001)(107046002)(86362001)(99286002)(92726001)(80022003)(46102003)(64706001)(31966008)(76482002)(54356999)(50986999)(19580405001)(95666004)(105586002)(106356001)(19580395003)(106116001)(87936001)(97736003)(85306004)(20776003)(21056001)(36756003)(15975445006)(85852003)(2656002)(101416001)(7059020);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB518;H:CO2PR05MB761.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="euc-kr"
+Content-ID: <6AB96FD972EE894EA66115811162952E@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8U0cB3d018103
 
-Add device tree binding documentation for the Qualcomm Shared Memory
-Device.
 
-Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
----
 
-I was looking at having one smd node per remote processor - e.g flatten the
-first and second level. As all the channels, for all the remote processors are
-allocated from the same pool this does however not feel very natural.
+On 9/29/14 12:06 PM, "Guenter Roeck" <linux@roeck-us.net> wrote:
 
- .../devicetree/bindings/soc/qcom/qcom,smd.txt      |   82 ++++++++++++++++++++
- 1 file changed, 82 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,smd.txt
+>On Mon, Sep 29, 2014 at 01:36:06PM -0500, Scott Wood wrote:
+>> On Mon, 2014-09-29 at 09:48 -0700, Guenter Roeck wrote:
+>> > From: Jojy G Varghese <jojyv@juniper.net>
+>> > 
+>> > For E500MC and E5500, a machine check exception in pci(e) memory space
+>> > crashes the kernel.
+>> > 
+>> > Testing shows that the MCAR(U) register is zero on a MC exception for
+>>the
+>> > E5500 core. At the same time, DEAR register has been found to have the
+>> > address of the faulty load address during an MC exception for this
+>>core.
+>> > 
+>> > This fix changes the current behavior to fixup the result register
+>> > and instruction pointers in the case of a load operation on a faulty
+>> > PCI address.
+>> > 
+>> > The changes are:
+>> > - Added the hook to pci machine check handing to the e500mc machine
+>>check
+>> >   exception handler.
+>> > - For the E5500 core, load faulting address from SPRN_DEAR register.
+>> >   As mentioned above, this is necessary because the E5500 core does
+>>not
+>> >   report the fault address in the MCAR register.
+>> > 
+>> > Cc: Scott Wood <scottwood@freescale.com>
+>> > Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
+>> > [Guenter Roeck: updated description]
+>> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
+>> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> > ---
+>> >  arch/powerpc/kernel/traps.c   | 3 ++-
+>> >  arch/powerpc/sysdev/fsl_pci.c | 5 +++++
+>> >  2 files changed, 7 insertions(+), 1 deletion(-)
+>> > 
+>> > diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+>> > index 0dc43f9..ecb709b 100644
+>> > --- a/arch/powerpc/kernel/traps.c
+>> > +++ b/arch/powerpc/kernel/traps.c
+>> > @@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
+>> >  	int recoverable = 1;
+>> >  
+>> >  	if (reason & MCSR_LD) {
+>> > -		recoverable = fsl_rio_mcheck_exception(regs);
+>> > +		recoverable = fsl_rio_mcheck_exception(regs) ||
+>> > +			fsl_pci_mcheck_exception(regs);
+>> >  		if (recoverable == 1)
+>> >  			goto silent_out;
+>> >  	}
+>> > diff --git a/arch/powerpc/sysdev/fsl_pci.c
+>>b/arch/powerpc/sysdev/fsl_pci.c
+>> > index c507767..bdb956b 100644
+>> > --- a/arch/powerpc/sysdev/fsl_pci.c
+>> > +++ b/arch/powerpc/sysdev/fsl_pci.c
+>> > @@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs
+>>*regs)
+>> >  #endif
+>> >  	addr += mfspr(SPRN_MCAR);
+>> >  
+>> > +#ifdef CONFIG_E5500_CPU
+>> > +	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
+>> > +		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
+>> > +#endif
+>> 
+>> Kconfig tells you what hardware is supported, not what hardware you're
+>> actually running on.
+>> 
+>Hi Scott,
+>
+>Good point. Jojy, guess we'll have to check if the CPU is actually an
+>E5500.
+>Can you look into that ?
 
-diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,smd.txt b/Documentation/devicetree/bindings/soc/qcom/qcom,smd.txt
-new file mode 100644
-index 0000000..c56e4fc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/soc/qcom/qcom,smd.txt
-@@ -0,0 +1,82 @@
-+Qualcomm Shared Memory Driver (SMD) binding
-+
-+This binding describes the Qualcomm Shared Memory Driver, a fifo based
-+communication channel for sending data between the various subsystems in
-+Qualcomm platforms.
-+
-+- compatible:
-+	Usage: required
-+	Value type: <stringlist>
-+	Definition: must be "qcom,smd"
-+
-+- qcom,smem:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: reference to a smem node managing the shared memory items
-+		    used for smd
-+
-+= EDGES
-+
-+Each subnode of the SMD node represents a remote subsystem, i.e. a remote
-+processor of some sort - in SMD language called an "edge". The name of the
-+edges are not important.
-+
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: should specify the IRQ used by the remote processor to
-+		    signal this processor about communication related updates
-+
-+- qcom,ipc:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: three entries specifying the outgoing ipc bit used for
-+		    signaling the remote processor:
-+		    - phandle to a syscon node representing the apcs registers
-+		    - u32 representing offset to the register within the syscon
-+		    - u32 representing the ipc bit within the register
-+
-+- qcom,smd-edge:
-+	Usage: required
-+	Value type: <u32>
-+	Definition: an identifier representing the remote processor
-+
-+= SMD DEVICES
-+
-+In turn, subnodes of the "edges" represent devices tied to SMD channels on that
-+"edge". The names of the devices are not important. The properties of these
-+nodes are defined by the individual bindings for the SMD devices - but must
-+contain the following property:
-+
-+- qcom,smd-channels:
-+	Usage: required
-+	Value type: <stringlist>
-+	Definition: a list of channels tied to this device, used for matching
-+		    the device to channels
-+
-+= EXAMPLE
-+
-+The following example represents a smd node, with one edge representing the
-+"rpm" subsystem. For the "rpm" subsystem we have a device tied to the
-+"rpm_request" channel.
-+
-+        smd {
-+                compatible = "qcom,smd";
-+                qcom,smem = <&smem>;
-+
-+                rpm {
-+                        interrupts = <0 168 1>;
-+                        qcom,ipc = <&apcs 8 0>;
-+                        qcom,smd-edge = <15>;
-+
-+                        rpm_requests {
-+                                compatible = "qcom,rpm-msm8974";
-+                                qcom,smd-channels = "rpm_requests";
-+
-+                                #address-cells = <1>;
-+                                #size-cells = <0>;
-+
-+				...
-+			};
-+		};
-+	};
--- 
-1.7.9.5
 
+"/proc/cpuinfo" shows the cpu as "e5500". Scott, are you suggesting that
+we use a runtime method of determining the cpu type (cpu_spec's cpu_name
+for
+example).  
+
+
+>
+>> Jia Hongtao, do you know anything about this issue?  Is there an
+>> erratum?  What chips are affected by the the erratum covered by
+>> <http://patchwork.ozlabs.org/patch/240239/>?
+>> 
+>We already have and use the above patch(es) in our kernel. It works fine
+>for E500 (P2020), but does not address E5500 (P5020/P5040).
+>
+>> Can we rely on DEAR or is this just a side effect of likely having taken
+>> a TLB miss for the address recently?  Perhaps we should use the
+>> instruction emulation to determine the effective address instead.
+>> 
+>> Guenter, is this patch intended to deal with an erratum or are you
+>> covering up legitimate errors?
+>> 
+>Those are errors related to PCIe hotplug, and are seen with unexpected
+>PCIe
+>device removals (triggered, for example, by removing power from a PCIe
+>adapter).
+>The behavior we see on E5500 is quite similar to the same behavior on
+>E500:
+>If unhandled, the CPU keeps executing the same instruction over and over
+>again
+>if there is an error on a PCIe access and thus stalls. I don't know if
+>this
+>is considered an erratum or expected behavior, but it is one we have to
+>address
+>since we have to be able to handle that condition. Ultimately, we'll want
+>to
+>implement PCIe error handlers for the affected drivers, but that will be
+>a next
+>step.
+
+According to the spec, we MCAR is supposed to hold the faulty data address
+but for 5500 core, we found that MCAR is zero. You are right that DEAR
+entry could
+be a resultOf a TLB miss but that©ˆs the register we could rely on.
+
+What do you mean by "instruction emulation"? Are you suggesting that we
+examine the RD, RS 
+registers for the instruction?
+
+
+
+>
+>Please let me know if you have a better solution to address this problem.
+>
+>Thanks,
+>Guenter
+
+
+Thanks
+Jojy
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
