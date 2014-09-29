@@ -1,85 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaI2OYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:24:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53036 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891AbaI2OYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:24:38 -0400
-Date: Mon, 29 Sep 2014 10:21:10 -0400
-From: David Jeffery <djeffery@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Return short read or 0 at end of a raw device, not EIO
-Message-ID: <20140929142110.GA12562@fury.redhat.com>
+	id S1753313AbaI2O1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:27:54 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:49831 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaI2O1w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:27:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411562649-28231-14-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com> <1411562649-28231-14-git-send-email-a.ryabinin@samsung.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Mon, 29 Sep 2014 18:27:30 +0400
+Message-ID: <CACT4Y+aPNJ6c_FDTG75PFhCKToZuzqTdZN+njPOdQSLoCx7R2A@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 13/13] kasan: introduce inline instrumentation
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes to the basic direct I/O code have broken the raw driver when reading
-to the end of a raw device.  Instead of returning a short read for a read that
-extends partially beyond the device's end or 0 when at the end of the device,
-these reads now return EIO.
+On Wed, Sep 24, 2014 at 4:44 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> This patch only demonstration how easy this could be achieved.
+> GCC doesn't support this feature yet. Two patches required for this:
+>     https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00452.html
+>     https://gcc.gnu.org/ml/gcc-patches/2014-09/msg00605.html
+>
+> In inline instrumentation mode compiler directly inserts code
+> checking shadow memory instead of __asan_load/__asan_store
+> calls.
+> This is usually faster than outline. In some workloads inline is
+> 2 times faster than outline instrumentation.
+>
+> The downside of inline instrumentation is bloated kernel's .text size:
+>
+> size noasan/vmlinux
+>    text     data     bss      dec     hex    filename
+> 11759720  1566560  946176  14272456  d9c7c8  noasan/vmlinux
+>
+> size outline/vmlinux
+>    text    data     bss      dec      hex    filename
+> 16553474  1602592  950272  19106338  1238a22 outline/vmlinux
+>
+> size inline/vmlinux
+>    text    data     bss      dec      hex    filename
+> 32064759  1598688  946176  34609623  21019d7 inline/vmlinux
+>
+> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+> ---
+>  Makefile          |  5 +++++
+>  lib/Kconfig.kasan | 24 ++++++++++++++++++++++++
+>  mm/kasan/report.c | 45 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 74 insertions(+)
+>
+> diff --git a/Makefile b/Makefile
+> index 6cefe5e..fe7c534 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -773,6 +773,11 @@ KBUILD_CFLAGS += $(call cc-option, -fno-inline-functions-called-once)
+>  endif
+>
+>  ifdef CONFIG_KASAN
+> +ifdef CONFIG_KASAN_INLINE
+> +CFLAGS_KASAN += $(call cc-option, -fasan-shadow-offset=$(CONFIG_KASAN_SHADOW_OFFSET)) \
+> +                $(call cc-option, --param asan-instrumentation-with-call-threshold=10000)
+> +endif
+> +
+>    ifeq ($(CFLAGS_KASAN),)
+>      $(warning Cannot use CONFIG_KASAN: \
+>               -fsanitize=kernel-address not supported by compiler)
+> diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
+> index faddb0e..c4ac040 100644
+> --- a/lib/Kconfig.kasan
+> +++ b/lib/Kconfig.kasan
+> @@ -27,4 +27,28 @@ config TEST_KASAN
+>           out of bounds accesses, use after free. It is usefull for testing
+>           kernel debugging features like kernel address sanitizer.
+>
+> +choice
+> +       prompt "Instrumentation type"
+> +       depends on KASAN
+> +       default KASAN_INLINE if X86_64
+> +
+> +config KASAN_OUTLINE
+> +       bool "Outline instrumentation"
+> +       help
+> +         Before every memory access compiler insert function call
+> +         __asan_load*/__asan_store*. These functions performs check
+> +         of shadow memory. This is slower than inline instrumentation,
+> +         however it doesn't bloat size of kernel's .text section so
+> +         much as inline does.
+> +
+> +config KASAN_INLINE
+> +       bool "Inline instrumentation"
+> +       help
+> +         Compiler directly inserts code checking shadow memory before
+> +         memory accesses. This is faster than outline (in some workloads
+> +         it gives about x2 boost over outline instrumentation), but
+> +         make kernel's .text size much bigger.
+> +
+> +endchoice
+> +
+>  endif
+> diff --git a/mm/kasan/report.c b/mm/kasan/report.c
+> index c42f6ba..a9262f8 100644
+> --- a/mm/kasan/report.c
+> +++ b/mm/kasan/report.c
+> @@ -212,3 +212,48 @@ void kasan_report_user_access(struct access_info *info)
+>                 "=================================\n");
+>         spin_unlock_irqrestore(&report_lock, flags);
+>  }
+> +
+> +#define CALL_KASAN_REPORT(__addr, __size, __is_write) \
+> +       struct access_info info;                      \
+> +       info.access_addr = __addr;                    \
+> +       info.access_size = __size;                    \
+> +       info.is_write = __is_write;                   \
+> +       info.ip = _RET_IP_;                           \
+> +       kasan_report_error(&info)
 
-The raw driver needs the same end of device handling as was added for normal
-block devices.  Using blkdev_read_iter, which has the needed size checks,
-prevents the EIO conditions at the end of the device.
 
-Signed-off-by: David Jeffery <djeffery@redhat.com>
----
-
- drivers/char/raw.c |    2 +-
- fs/block_dev.c     |    3 ++-
- include/linux/fs.h |    1 +
- 3 files changed, 4 insertions(+), 2 deletions(-)
+Make it a function. And also call it from check_memory_region.
+It uses _RET_IP_, but check_memory_region uses _RET_IP_ as well and
+relies on __always_inline.
 
 
-diff --git a/drivers/char/raw.c b/drivers/char/raw.c
-index 0102dc7..a24891b 100644
---- a/drivers/char/raw.c
-+++ b/drivers/char/raw.c
-@@ -285,7 +285,7 @@ static long raw_ctl_compat_ioctl(struct file *file, unsigned int cmd,
- 
- static const struct file_operations raw_fops = {
- 	.read		= new_sync_read,
--	.read_iter	= generic_file_read_iter,
-+	.read_iter	= blkdev_read_iter,
- 	.write		= new_sync_write,
- 	.write_iter	= blkdev_write_iter,
- 	.fsync		= blkdev_fsync,
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 6d72746..12aa041 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1591,7 +1591,7 @@ ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *from)
- }
- EXPORT_SYMBOL_GPL(blkdev_write_iter);
- 
--static ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *to)
-+ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *to)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *bd_inode = file->f_mapping->host;
-@@ -1605,6 +1605,7 @@ static ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *to)
- 	iov_iter_truncate(to, size);
- 	return generic_file_read_iter(iocb, to);
- }
-+EXPORT_SYMBOL_GPL(blkdev_read_iter);
- 
- /*
-  * Try to release a page associated with block device when the system
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9418772..0c20168 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2455,6 +2455,7 @@ extern ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, lo
- extern ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos);
- 
- /* fs/block_dev.c */
-+extern ssize_t blkdev_read_iter(struct kiocb *iocb, struct iov_iter *to);
- extern ssize_t blkdev_write_iter(struct kiocb *iocb, struct iov_iter *from);
- extern int blkdev_fsync(struct file *filp, loff_t start, loff_t end,
- 			int datasync);
+Otherwise looks good to me.
+
+
+> +#define DEFINE_ASAN_REPORT_LOAD(size)                     \
+> +void __asan_report_recover_load##size(unsigned long addr) \
+> +{                                                         \
+> +       CALL_KASAN_REPORT(addr, size, false);             \
+> +}                                                         \
+> +EXPORT_SYMBOL(__asan_report_recover_load##size)
+> +
+> +#define DEFINE_ASAN_REPORT_STORE(size)                     \
+> +void __asan_report_recover_store##size(unsigned long addr) \
+> +{                                                          \
+> +       CALL_KASAN_REPORT(addr, size, true);               \
+> +}                                                          \
+> +EXPORT_SYMBOL(__asan_report_recover_store##size)
+> +
+> +DEFINE_ASAN_REPORT_LOAD(1);
+> +DEFINE_ASAN_REPORT_LOAD(2);
+> +DEFINE_ASAN_REPORT_LOAD(4);
+> +DEFINE_ASAN_REPORT_LOAD(8);
+> +DEFINE_ASAN_REPORT_LOAD(16);
+> +DEFINE_ASAN_REPORT_STORE(1);
+> +DEFINE_ASAN_REPORT_STORE(2);
+> +DEFINE_ASAN_REPORT_STORE(4);
+> +DEFINE_ASAN_REPORT_STORE(8);
+> +DEFINE_ASAN_REPORT_STORE(16);
+> +
+> +void __asan_report_recover_load_n(unsigned long addr, size_t size)
+> +{
+> +       CALL_KASAN_REPORT(addr, size, false);
+> +}
+> +EXPORT_SYMBOL(__asan_report_recover_load_n);
+> +
+> +void __asan_report_recover_store_n(unsigned long addr, size_t size)
+> +{
+> +       CALL_KASAN_REPORT(addr, size, true);
+> +}
+> +EXPORT_SYMBOL(__asan_report_recover_store_n);
+> --
+> 2.1.1
+>
