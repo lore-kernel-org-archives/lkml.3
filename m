@@ -1,226 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbaI2XJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:09:19 -0400
-Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:47453 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755318AbaI2XJN (ORCPT
+	id S1755366AbaI2XJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:09:26 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49428 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755318AbaI2XJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:09:13 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1345:1359:1535:1605:1730:1747:1777:1792:2393:2559:2562:2897:3138:3139:3140:3141:3142:3876:3877:4049:4118:5007:6114:6261:6642:8957:9592:10004:10026:10848:11026:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229:13972:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wren39_1544f5bfd684c
-X-Filterd-Recvd-Size: 7873
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
-Date: Mon, 29 Sep 2014 16:08:27 -0700
-Message-Id: <c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1412031505.git.joe@perches.com>
-References: <20140929124246.3e39dac8@gandalf.local.home> <cover.1412031505.git.joe@perches.com>
+	Mon, 29 Sep 2014 19:09:23 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 30 Sep 2014 08:10:22 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com,
+        "seungho1.park" <seungho1.park@lge.com>
+Subject: Re: [PATCH v4] zsmalloc: merge size_class to reduce fragmentation
+Message-ID: <20140929231022.GC18318@bbox>
+References: <1411976727-29421-1-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411976727-29421-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-seq_printf doesn't return a useful value, so remove
-these misuses.
+Hey Joonsoo,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/mtd/devices/docg3.c | 112 ++++++++++++++++++++------------------------
- 1 file changed, 52 insertions(+), 60 deletions(-)
+On Mon, Sep 29, 2014 at 04:45:27PM +0900, Joonsoo Kim wrote:
+> zsmalloc has many size_classes to reduce fragmentation and they are
+> in 16 bytes unit, for example, 16, 32, 48, etc., if PAGE_SIZE is 4096.
+> And, zsmalloc has constraint that each zspage has 4 pages at maximum.
+> 
+> In this situation, we can see interesting aspect.
+> Let's think about size_class for 1488, 1472, ..., 1376.
+> To prevent external fragmentation, they uses 4 pages per zspage and
+> so all they can contain 11 objects at maximum.
+> 
+> 16384 (4096 * 4) = 1488 * 11 + remains
+> 16384 (4096 * 4) = 1472 * 11 + remains
+> 16384 (4096 * 4) = ...
+> 16384 (4096 * 4) = 1376 * 11 + remains
+> 
+> It means that they have same characteristics and classification between
+> them isn't needed. If we use one size_class for them, we can reduce
+> fragementation and save some memory since both the 1488 and 1472 sized
+> classes can only fit 11 objects into 4 pages, and an object that's
+> 1472 bytes can fit into an object that's 1488 bytes, merging these
+> classes to always use objects that are 1488 bytes will reduce the total
+> number of size classes. And reducing the total number of size classes
+> reduces overall fragmentation, because a wider range of compressed pages
+> can fit into a single size class, leaving less unused objects in each
+> size class.
+> 
+> For this purpose, this patch implement size_class merging. If there is
+> size_class that have same pages_per_zspage and same number of objects
+> per zspage with previous size_class, we don't create new size_class.
+> Instead, we use previous, same characteristic size_class. With this way,
+> above example sizes (1488, 1472, ..., 1376) use just one size_class
+> so we can get much more memory utilization.
+> 
+> Below is result of my simple test.
+> 
+> TEST ENV: EXT4 on zram, mount with discard option
+> WORKLOAD: untar kernel source code, remove directory in descending order
+> in size. (drivers arch fs sound include net Documentation firmware
+> kernel tools)
+> 
+> Each line represents orig_data_size, compr_data_size, mem_used_total,
+> fragmentation overhead (mem_used - compr_data_size) and overhead ratio
+> (overhead to compr_data_size), respectively, after untar and remove
+> operation is executed.
+> 
+> * untar-nomerge.out
+> 
+> orig_size compr_size used_size overhead overhead_ratio
+> 525.88MB 199.16MB 210.23MB  11.08MB 5.56%
+> 288.32MB  97.43MB 105.63MB   8.20MB 8.41%
+> 177.32MB  61.12MB  69.40MB   8.28MB 13.55%
+> 146.47MB  47.32MB  56.10MB   8.78MB 18.55%
+> 124.16MB  38.85MB  48.41MB   9.55MB 24.58%
+> 103.93MB  31.68MB  40.93MB   9.25MB 29.21%
+>  84.34MB  22.86MB  32.72MB   9.86MB 43.13%
+>  66.87MB  14.83MB  23.83MB   9.00MB 60.70%
+>  60.67MB  11.11MB  18.60MB   7.49MB 67.48%
+>  55.86MB   8.83MB  16.61MB   7.77MB 88.03%
+>  53.32MB   8.01MB  15.32MB   7.31MB 91.24%
+> 
+> * untar-merge.out
+> 
+> orig_size compr_size used_size overhead overhead_ratio
+> 526.23MB 199.18MB 209.81MB  10.64MB 5.34%
+> 288.68MB  97.45MB 104.08MB   6.63MB 6.80%
+> 177.68MB  61.14MB  66.93MB   5.79MB 9.47%
+> 146.83MB  47.34MB  52.79MB   5.45MB 11.51%
+> 124.52MB  38.87MB  44.30MB   5.43MB 13.96%
+> 104.29MB  31.70MB  36.83MB   5.13MB 16.19%
+>  84.70MB  22.88MB  27.92MB   5.04MB 22.04%
+>  67.11MB  14.83MB  19.26MB   4.43MB 29.86%
+>  60.82MB  11.10MB  14.90MB   3.79MB 34.17%
+>  55.90MB   8.82MB  12.61MB   3.79MB 42.97%
+>  53.32MB   8.01MB  11.73MB   3.73MB 46.53%
+> 
+> As you can see above result, merged one has better utilization (overhead
+> ratio, 5th column) and uses less memory (mem_used_total, 3rd column).
+> 
+> Changes from v1:
+> - More commit description about what to do in this patch.
+> - Remove nr_obj in size_class, because it isn't need after initialization.
+> - Rename __size_class to size_class, size_class to merged_size_class.
+> - Add code comment for merged_size_class of struct zs_pool.
+> - Add code comment how merging works in zs_create_pool().
+> 
+> Changes from v2:
+> - Add more commit description (Dan)
+> - dynamically allocate size_class structure (Dan)
+> - rename objs_per_zspage to get_maxobj_per_zspage (Minchan)
+> 
+> Changes from v3:
+> - Add error handling logic in zs_create_pool (Dan)
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/zsmalloc.c |   84 +++++++++++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 70 insertions(+), 14 deletions(-)
+> 
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index c4a9157..11556ae 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -187,6 +187,7 @@ enum fullness_group {
+>  static const int fullness_threshold_frac = 4;
+>  
+>  struct size_class {
+> +	int ref;
 
-diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
-index 21cc4b6..68ff83c 100644
---- a/drivers/mtd/devices/docg3.c
-+++ b/drivers/mtd/devices/docg3.c
-@@ -1655,22 +1655,21 @@ static int dbg_flashctrl_show(struct seq_file *s, void *p)
- {
- 	struct docg3 *docg3 = (struct docg3 *)s->private;
- 
--	int pos = 0;
- 	u8 fctrl;
- 
- 	mutex_lock(&docg3->cascade->lock);
- 	fctrl = doc_register_readb(docg3, DOC_FLASHCONTROL);
- 	mutex_unlock(&docg3->cascade->lock);
- 
--	pos += seq_printf(s,
--		 "FlashControl : 0x%02x (%s,CE# %s,%s,%s,flash %s)\n",
--		 fctrl,
--		 fctrl & DOC_CTRL_VIOLATION ? "protocol violation" : "-",
--		 fctrl & DOC_CTRL_CE ? "active" : "inactive",
--		 fctrl & DOC_CTRL_PROTECTION_ERROR ? "protection error" : "-",
--		 fctrl & DOC_CTRL_SEQUENCE_ERROR ? "sequence error" : "-",
--		 fctrl & DOC_CTRL_FLASHREADY ? "ready" : "not ready");
--	return pos;
-+	seq_printf(s, "FlashControl : 0x%02x (%s,CE# %s,%s,%s,flash %s)\n",
-+		   fctrl,
-+		   fctrl & DOC_CTRL_VIOLATION ? "protocol violation" : "-",
-+		   fctrl & DOC_CTRL_CE ? "active" : "inactive",
-+		   fctrl & DOC_CTRL_PROTECTION_ERROR ? "protection error" : "-",
-+		   fctrl & DOC_CTRL_SEQUENCE_ERROR ? "sequence error" : "-",
-+		   fctrl & DOC_CTRL_FLASHREADY ? "ready" : "not ready");
-+
-+	return 0;
- }
- DEBUGFS_RO_ATTR(flashcontrol, dbg_flashctrl_show);
- 
-@@ -1678,58 +1677,56 @@ static int dbg_asicmode_show(struct seq_file *s, void *p)
- {
- 	struct docg3 *docg3 = (struct docg3 *)s->private;
- 
--	int pos = 0, pctrl, mode;
-+	int pctrl, mode;
- 
- 	mutex_lock(&docg3->cascade->lock);
- 	pctrl = doc_register_readb(docg3, DOC_ASICMODE);
- 	mode = pctrl & 0x03;
- 	mutex_unlock(&docg3->cascade->lock);
- 
--	pos += seq_printf(s,
--			 "%04x : RAM_WE=%d,RSTIN_RESET=%d,BDETCT_RESET=%d,WRITE_ENABLE=%d,POWERDOWN=%d,MODE=%d%d (",
--			 pctrl,
--			 pctrl & DOC_ASICMODE_RAM_WE ? 1 : 0,
--			 pctrl & DOC_ASICMODE_RSTIN_RESET ? 1 : 0,
--			 pctrl & DOC_ASICMODE_BDETCT_RESET ? 1 : 0,
--			 pctrl & DOC_ASICMODE_MDWREN ? 1 : 0,
--			 pctrl & DOC_ASICMODE_POWERDOWN ? 1 : 0,
--			 mode >> 1, mode & 0x1);
-+	seq_printf(s,
-+		   "%04x : RAM_WE=%d,RSTIN_RESET=%d,BDETCT_RESET=%d,WRITE_ENABLE=%d,POWERDOWN=%d,MODE=%d%d (",
-+		   pctrl,
-+		   pctrl & DOC_ASICMODE_RAM_WE ? 1 : 0,
-+		   pctrl & DOC_ASICMODE_RSTIN_RESET ? 1 : 0,
-+		   pctrl & DOC_ASICMODE_BDETCT_RESET ? 1 : 0,
-+		   pctrl & DOC_ASICMODE_MDWREN ? 1 : 0,
-+		   pctrl & DOC_ASICMODE_POWERDOWN ? 1 : 0,
-+		   mode >> 1, mode & 0x1);
- 
- 	switch (mode) {
- 	case DOC_ASICMODE_RESET:
--		pos += seq_puts(s, "reset");
-+		seq_puts(s, "reset");
- 		break;
- 	case DOC_ASICMODE_NORMAL:
--		pos += seq_puts(s, "normal");
-+		seq_puts(s, "normal");
- 		break;
- 	case DOC_ASICMODE_POWERDOWN:
--		pos += seq_puts(s, "powerdown");
-+		seq_puts(s, "powerdown");
- 		break;
- 	}
--	pos += seq_puts(s, ")\n");
--	return pos;
-+	seq_puts(s, ")\n");
-+	return 0;
- }
- DEBUGFS_RO_ATTR(asic_mode, dbg_asicmode_show);
- 
- static int dbg_device_id_show(struct seq_file *s, void *p)
- {
- 	struct docg3 *docg3 = (struct docg3 *)s->private;
--	int pos = 0;
- 	int id;
- 
- 	mutex_lock(&docg3->cascade->lock);
- 	id = doc_register_readb(docg3, DOC_DEVICESELECT);
- 	mutex_unlock(&docg3->cascade->lock);
- 
--	pos += seq_printf(s, "DeviceId = %d\n", id);
--	return pos;
-+	seq_printf(s, "DeviceId = %d\n", id);
-+	return 0;
- }
- DEBUGFS_RO_ATTR(device_id, dbg_device_id_show);
- 
- static int dbg_protection_show(struct seq_file *s, void *p)
- {
- 	struct docg3 *docg3 = (struct docg3 *)s->private;
--	int pos = 0;
- 	int protect, dps0, dps0_low, dps0_high, dps1, dps1_low, dps1_high;
- 
- 	mutex_lock(&docg3->cascade->lock);
-@@ -1742,45 +1739,40 @@ static int dbg_protection_show(struct seq_file *s, void *p)
- 	dps1_high = doc_register_readw(docg3, DOC_DPS1_ADDRHIGH);
- 	mutex_unlock(&docg3->cascade->lock);
- 
--	pos += seq_printf(s, "Protection = 0x%02x (",
--			 protect);
-+	seq_printf(s, "Protection = 0x%02x (", protect);
- 	if (protect & DOC_PROTECT_FOUNDRY_OTP_LOCK)
--		pos += seq_puts(s, "FOUNDRY_OTP_LOCK,");
-+		seq_puts(s, "FOUNDRY_OTP_LOCK,");
- 	if (protect & DOC_PROTECT_CUSTOMER_OTP_LOCK)
--		pos += seq_puts(s, "CUSTOMER_OTP_LOCK,");
-+		seq_puts(s, "CUSTOMER_OTP_LOCK,");
- 	if (protect & DOC_PROTECT_LOCK_INPUT)
--		pos += seq_puts(s, "LOCK_INPUT,");
-+		seq_puts(s, "LOCK_INPUT,");
- 	if (protect & DOC_PROTECT_STICKY_LOCK)
--		pos += seq_puts(s, "STICKY_LOCK,");
-+		seq_puts(s, "STICKY_LOCK,");
- 	if (protect & DOC_PROTECT_PROTECTION_ENABLED)
--		pos += seq_puts(s, "PROTECTION ON,");
-+		seq_puts(s, "PROTECTION ON,");
- 	if (protect & DOC_PROTECT_IPL_DOWNLOAD_LOCK)
--		pos += seq_puts(s, "IPL_DOWNLOAD_LOCK,");
-+		seq_puts(s, "IPL_DOWNLOAD_LOCK,");
- 	if (protect & DOC_PROTECT_PROTECTION_ERROR)
--		pos += seq_puts(s, "PROTECT_ERR,");
-+		seq_puts(s, "PROTECT_ERR,");
- 	else
--		pos += seq_puts(s, "NO_PROTECT_ERR");
--	pos += seq_puts(s, ")\n");
--
--	pos += seq_printf(s, "DPS0 = 0x%02x : "
--			 "Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, "
--			 "WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
--			 dps0, dps0_low, dps0_high,
--			 !!(dps0 & DOC_DPS_OTP_PROTECTED),
--			 !!(dps0 & DOC_DPS_READ_PROTECTED),
--			 !!(dps0 & DOC_DPS_WRITE_PROTECTED),
--			 !!(dps0 & DOC_DPS_HW_LOCK_ENABLED),
--			 !!(dps0 & DOC_DPS_KEY_OK));
--	pos += seq_printf(s, "DPS1 = 0x%02x : "
--			 "Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, "
--			 "WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
--			 dps1, dps1_low, dps1_high,
--			 !!(dps1 & DOC_DPS_OTP_PROTECTED),
--			 !!(dps1 & DOC_DPS_READ_PROTECTED),
--			 !!(dps1 & DOC_DPS_WRITE_PROTECTED),
--			 !!(dps1 & DOC_DPS_HW_LOCK_ENABLED),
--			 !!(dps1 & DOC_DPS_KEY_OK));
--	return pos;
-+		seq_puts(s, "NO_PROTECT_ERR");
-+	seq_puts(s, ")\n");
-+
-+	seq_printf(s, "DPS0 = 0x%02x : Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
-+		   dps0, dps0_low, dps0_high,
-+		   !!(dps0 & DOC_DPS_OTP_PROTECTED),
-+		   !!(dps0 & DOC_DPS_READ_PROTECTED),
-+		   !!(dps0 & DOC_DPS_WRITE_PROTECTED),
-+		   !!(dps0 & DOC_DPS_HW_LOCK_ENABLED),
-+		   !!(dps0 & DOC_DPS_KEY_OK));
-+	seq_printf(s, "DPS1 = 0x%02x : Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
-+		   dps1, dps1_low, dps1_high,
-+		   !!(dps1 & DOC_DPS_OTP_PROTECTED),
-+		   !!(dps1 & DOC_DPS_READ_PROTECTED),
-+		   !!(dps1 & DOC_DPS_WRITE_PROTECTED),
-+		   !!(dps1 & DOC_DPS_HW_LOCK_ENABLED),
-+		   !!(dps1 & DOC_DPS_KEY_OK));
-+	return 0;
- }
- DEBUGFS_RO_ATTR(protection, dbg_protection_show);
- 
+Couldn't we remove the ref from size_class by making zs_destroy_pool
+aware of merged size class like zs_create_pool?
+
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Kind regards,
+Minchan Kim
