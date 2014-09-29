@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaI2L7O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:59:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29886 "EHLO mx1.redhat.com"
+	id S1753880AbaI2L7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:59:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59341 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228AbaI2L7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:59:10 -0400
-Date: Mon, 29 Sep 2014 15:02:28 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
-        Xi Wang <xii@google.com>,
-        stephen hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org
-Subject: Re: [PATCH] tun: make sure interface usage can not overflow
-Message-ID: <20140929120228.GA1151@redhat.com>
-References: <20140928232753.GA31180@www.outflux.net>
- <20140929114849.GA913@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929114849.GA913@redhat.com>
+	id S1753941AbaI2L7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:59:18 -0400
+From: Hannes Reinecke <hare@suse.de>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
+        Robert Elliott <elliott@hp.com>, Hannes Reinecke <hare@suse.de>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 33/38] libata: use __scsi_print_command()
+Date: Mon, 29 Sep 2014 13:59:02 +0200
+Message-Id: <1411991947-130166-34-git-send-email-hare@suse.de>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1411991947-130166-1-git-send-email-hare@suse.de>
+References: <1411991947-130166-1-git-send-email-hare@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 02:48:49PM +0300, Michael S. Tsirkin wrote:
-> On Sun, Sep 28, 2014 at 04:27:53PM -0700, Kees Cook wrote:
-> > This makes the size argument a const, since it is always populated by
-> > the caller. Additionally double-checks to make sure the copy_from_user
-> > can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
-> > 
-> >    In function 'copy_from_user',
-> >        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
-> >        ... copy_from_user() buffer size is not provably correct
-> > 
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> 
-> What exactly is the issue here?
-> __tun_chr_ioctl is called with sizeof(struct compat_ifreq)
-> or  sizeof (struct ifreq) as the last argument.
-> 
-> So this looks like a false positive, but
-> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS machinery is supposed
-> to avoid false positives.
-> 
-> On which architecture is this?
+libata already uses an internal buffer, so we should be using
+__scsi_print_command() here.
 
+Cc: Tejun Heo <tj@kernel.org>
+Cc: linux-ide@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+---
+ drivers/ata/libata-eh.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-Also - which kernel?
-Does your kernel include: commit 3df7b41aa5e7797f391d0a41f8b0dce1fe366a09
-    x86: Unify copy_from_user() size checking
-?
-
-
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index dad83df..74c5652 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2509,15 +2509,11 @@ static void ata_eh_link_report(struct ata_link *link)
  
-> > ---
-> >  drivers/net/tun.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > index acaaf6784179..a1f317cba206 100644
-> > --- a/drivers/net/tun.c
-> > +++ b/drivers/net/tun.c
-> > @@ -1855,7 +1855,7 @@ unlock:
-> >  }
-> >  
-> >  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
-> > -			    unsigned long arg, int ifreq_len)
-> > +			    unsigned long arg, const size_t ifreq_len)
-> >  {
-> >  	struct tun_file *tfile = file->private_data;
-> >  	struct tun_struct *tun;
-> > @@ -1869,6 +1869,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
-> >  	int ret;
-> >  
-> >  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
-> > +		BUG_ON(ifreq_len > sizeof(ifr));
-> >  		if (copy_from_user(&ifr, argp, ifreq_len))
-> >  			return -EFAULT;
-> >  	} else {
-> > -- 
-> > 1.9.1
-> > 
-> > 
-> > -- 
-> > Kees Cook
-> > Chrome OS Security
+ 		if (ata_is_atapi(qc->tf.protocol)) {
+ 			if (qc->scsicmd)
+-				scsi_print_command(qc->scsicmd);
++				__scsi_print_command(cdb_buf, sizeof(cdb_buf),
++						     qc->scsicmd->cmnd);
+ 			else
+-				snprintf(cdb_buf, sizeof(cdb_buf),
+-				 "cdb %02x %02x %02x %02x %02x %02x %02x %02x  "
+-				 "%02x %02x %02x %02x %02x %02x %02x %02x\n         ",
+-				 cdb[0], cdb[1], cdb[2], cdb[3],
+-				 cdb[4], cdb[5], cdb[6], cdb[7],
+-				 cdb[8], cdb[9], cdb[10], cdb[11],
+-				 cdb[12], cdb[13], cdb[14], cdb[15]);
++				__scsi_print_command(cdb_buf, sizeof(cdb_buf),
++						     (unsigned char *)cdb);
+ 		} else {
+ 			const char *descr = ata_get_cmd_descript(cmd->command);
+ 			if (descr)
+-- 
+1.8.5.2
+
