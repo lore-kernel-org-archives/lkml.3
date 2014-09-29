@@ -1,164 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaI2K3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:29:01 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:52520 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753362AbaI2K26 (ORCPT
+	id S1753477AbaI2Kau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:30:50 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:45424 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751917AbaI2Kar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:28:58 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-Message-ID: <542933E1.8010809@smartplayin.com>
-Date: Mon, 29 Sep 2014 15:56:41 +0530
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 29 Sep 2014 06:30:47 -0400
+X-ASG-Debug-ID: 1411986644-0759e74bdc53e010002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 29 Sep 2014 12:30:43 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, <tony@atomide.com>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140929103042.GA31111@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <20140912094010.GE28458@ci00147.xsens-tech.local>
+ <5412C21A.8020203@linutronix.de>
+ <20140912102816.GF28458@ci00147.xsens-tech.local>
+ <541716DC.9020904@linutronix.de>
+ <20140917102812.GA20438@ci00147.xsens-tech.local>
+ <20140921204100.GA10111@linutronix.de>
+ <20140922092853.GH20438@ci00147.xsens-tech.local>
+ <20140925151403.GH19396@linutronix.de>
+ <20140929085042.GA13952@ci00147.xsens-tech.local>
+ <20140929095440.GB13142@linutronix.de>
 MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-CC: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        broonie@kernel.org, lee.jones@linaro.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-msm@vger.kernel.org,
-        bjorn.andersson@sonymobile.com
-Subject: Re: [PATCH 3/4] ARM: DT: apq8064: Add USB OTG support
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
-In-Reply-To: <1411982127-8048-1-git-send-email-srinivas.kandagatla@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140929095440.GB13142@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411986644
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10018
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srinivas,
+On Mon, Sep 29, 2014 at 11:54:40AM +0200, Sebastian Andrzej Siewior wrote:
+> There is a patch named "ARM: edma: unconditionally ack the error
+> interrupt". I have the feeling that this is not really required once we
+> delay set_termios. I couldn't reproduce the bug with beagleblack with my
+> usual test case.
 
-Some review are comments inline.
+I think so too. I didn't need it either.
 
-On Monday 29 September 2014 02:45 PM, Srinivas Kandagatla wrote:
-> This patch adds USB OTG support on USB1 of APQ8064 SOC.
-> Tested on IFC6410 with ethernet gadget.
+
+> For your "too much work for irq" problem: Could you add trace_printk()
+> in tx/rx dma start/complete, and irq routine? The interresting part is
+> what is the irq routine doing once entered. It might be a condition that
+> is ignored at first and "acked" later while serving another event. Or it
+> is really doing something and this is more or less "legal".
+
+I'll have a look at that.
+
 > 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> ---
->  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts | 14 +++++++++
->  arch/arm/boot/dts/qcom-apq8064.dtsi        | 46 ++++++++++++++++++++++++++++++
->  2 files changed, 60 insertions(+)
+> >Thanks,
+> >Frans
 > 
-> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> index d6036b8..f41fb39 100644
-> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> @@ -40,6 +40,11 @@
->  			};
->  		};
->  
-> +		/* OTG */
-> +		usb1_phy:phy@12500000 {
-> +			status = "ok";
-
-Its canonical value is "okay" (although in practice anything
-other than "disabled" should work).
-
-> +		};
-> +
->  		usb3_phy:phy@12520000 {
->  			status = "ok";
->  		};
-> @@ -48,6 +53,15 @@
->  			status = "ok";
->  		};
->  
-> +		gadget1:gadget@12500000 {
-> +			status = "ok";
-> +		};
-> +
-> +		/* OTG */
-> +		usb1: usb@12500000 {
-> +			status = "ok";
-> +		};
-> +
->  		usb3: usb@12520000 {
->  			status = "ok";
->  		};
-> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> index 491a136..38d3efa 100644
-> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> @@ -284,6 +284,16 @@
->  				qcom,boot-load = <50000>;
->  			};
->  
-> +			pm8921_l4: pm8921-l4 {
-> +				compatible	= "qcom,rpm-pm8921-pldo";
-> +				reg		= <QCOM_RPM_PM8921_LDO4>;
-> +
-> +				regulator-min-microvolt = <1000000>;
-> +				regulator-max-microvolt = <1800000>;
-> +				regulator-always-on;
-> +				qcom,boot-load = <50000>;
-> +			};
-> +
->  			pm8921_l23: pm8921-l23 {
->  				compatible	= "qcom,rpm-pm8921-pldo";
->  				reg		= <QCOM_RPM_PM8921_LDO23>;
-> @@ -296,6 +306,25 @@
->  
->  		};
->  
-> +		usb1_phy:phy@12500000 {
-> +			compatible	= "qcom,usb-otg-ci";
-> +			reg		= <0x12500000 0x400>;
-> +			interrupts	= <0 100 0>;
-
-The trailing 0 might be IRQ_TYPE_NONE?
-
-> +			status		= "disabled";
-
-Usually the status property goes first.
-
-
-> +			dr_mode		= "host";
-> +
-> +			clocks		= <&gcc USB_HS1_XCVR_CLK>,
-> +					  <&gcc USB_HS1_H_CLK>;
-> +			clock-names	= "core", "iface";
-> +
-> +			vddcx-supply	= <&pm8921_s3>;
-> +			v3p3-supply	= <&pm8921_l3>;
-> +			v1p8-supply	= <&pm8921_l4>;
-> +
-> +			resets		= <&gcc USB_HS1_RESET>;
-> +			reset-names	= "link";
-> +		};
-> +
->  		usb3_phy:phy@12520000 {
->  			compatible	= "qcom,usb-otg-ci";
->  			reg		= <0x12520000 0x400>;
-> @@ -334,6 +363,23 @@
->  			reset-names	= "link";
->  		};
->  
-> +		gadget1:gadget@12500000 {
-> +			compatible	= "qcom,ci-hdrc";
-> +			reg		= <0x12500000 0x400>;
-> +			status		= "disabled";
-> +			dr_mode		= "peripheral";
-> +			interrupts	= <0 100 0>;
-> +			usb-phy		= <&usb1_phy>;
-> +		};
-> +
-> +		usb1: usb@12500000 {
-> +			compatible	= "qcom,ehci-host";
-> +			reg		= <0x12500000 0x400>;
-> +			interrupts	= <0 100 0>;
-> +			status		= "disabled";
-> +			usb-phy		= <&usb1_phy>;
-> +		};
-> +
->  		usb3: usb@12520000 {
->  			compatible	= "qcom,ehci-host";
->  			reg		= <0x12520000 0x400>;
-> 
-
+> Sebastian
