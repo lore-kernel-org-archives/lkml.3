@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaI2SNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:13:20 -0400
-Received: from pegasus3.altlinux.org ([194.107.17.103]:52963 "EHLO
-	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991AbaI2SNQ (ORCPT
+	id S1754673AbaI2SNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:13:18 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:38926 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaI2SNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Sep 2014 14:13:16 -0400
-X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 14:13:16 EDT
-Date: Mon, 29 Sep 2014 22:04:45 +0400
-From: "Dmitry V. Levin" <ldv@altlinux.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Rob Jones <rob.jones@codethink.co.uk>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND v3 PATCH 1/3] Documentation: update seq_file
-Message-ID: <20140929180445.GA15829@altlinux.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+MIME-Version: 1.0
+In-Reply-To: <87ppefi29s.fsf@sejong.aot.lge.com>
+References: <CAPp4yYwTHbXiypxR_1WJGS9DYQNJ24t_Ykdo_sfQ48Ak-K3Z7g@mail.gmail.com>
+	<20140911150123.GH10158@kernel.org>
+	<CAPp4yYzRwoTBzH1_TwcdvAOryZppV9-BwnX2bOtN1qrEqrdBww@mail.gmail.com>
+	<20140911203806.GA25763@kernel.org>
+	<CAPp4yYzT66+J_dHC5_0TiTEdSK874OS-PH9nAtcr5-Luj69+7w@mail.gmail.com>
+	<CAPp4yYxripyJvr87TtVqNMi5=K+UQGeKTomQiJarFnVGyjtofA@mail.gmail.com>
+	<87fvffj5o0.fsf@sejong.aot.lge.com>
+	<CAPp4yYzPR-FozYeuDUFqR0hhE5tioSqNy22cZ7WjSdBXoxeNxw@mail.gmail.com>
+	<87ppefi29s.fsf@sejong.aot.lge.com>
+Date: Mon, 29 Sep 2014 11:13:13 -0700
+Message-ID: <CAPp4yYxVSUMBBXdVPUETu=uM2K5P9GoeQjH0YgayVL2qco-gYg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] perf tools: Fix Symbol Address for ET_DYN
+From: Tong Shen <endlessroad@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-perf-users@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date: Wed, 17 Oct 2012 20:29:22 +0400
+On Sun, Sep 28, 2014 at 7:33 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+>
+> Hmm.. IIUC for normal dso (ET_DYN), shdr->offset == shdr->sh_addr for
+> text section right?  And we always adjust ET_EXEC and ET_REL..  What
+> about always trying to adjust symbol address then?  We may precalculate
+> adjust offset and subtracting it from symbol values.  And the offset of
+> 0 effectively means no adjust.  This way we can simplify the logic IMHO.
 
-Starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
-changes the value of root.
-Starting with commit v3.2-rc7-104-g8c9379e, some arguments of seq_path()
-and seq_path_root() are const.
+Yeah I'd like to do that too; but (shdr->offset == shdr->sh_addr for
+normal ET_DYN && shdr->offset != shdr->sh_addr for non-relocatable
+ET_DYN) is only true for .text section. It does not hold for .data
+section.
 
-Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
-Acked-by: Rob Landley <rob@landley.net>
----
- Documentation/filesystems/seq_file.txt | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index 8ea3e90..a193c1d 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -198,16 +198,16 @@ which is in the string esc will be represented in octal form in the output.
- 
- There is also a pair of functions for printing filenames:
- 
--	int seq_path(struct seq_file *m, struct path *path, char *esc);
--	int seq_path_root(struct seq_file *m, struct path *path,
--			  struct path *root, char *esc)
-+	int seq_path(struct seq_file *m, const struct path *path,
-+		     const char *esc);
-+	int seq_path_root(struct seq_file *m, const struct path *path,
-+			  const struct path *root, const char *esc)
- 
- Here, path indicates the file of interest, and esc is a set of characters
- which should be escaped in the output.  A call to seq_path() will output
- the path relative to the current process's filesystem root.  If a different
--root is desired, it can be used with seq_path_root().  Note that, if it
--turns out that path cannot be reached from root, the value of root will be
--changed in seq_file_root() to a root which *does* work.
-+root is desired, it can be used with seq_path_root().  If it turns out that
-+path cannot be reached from root, seq_path_root() returns SEQ_SKIP.
- 
- 
- Making it all work
+I didn't dig deep into the code; if we only care about symbols in
+.text section (function names), we can do what you said. Otherwise we
+may want to keep it the way it is...
+
 -- 
-ldv
-
+Best Regards, Tong Shen
