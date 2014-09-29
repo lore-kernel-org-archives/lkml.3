@@ -1,115 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaI2Jid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:38:33 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:60669 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaI2Jib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:38:31 -0400
-X-ASG-Debug-ID: 1411983505-0759e74bdc52eec0002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Mon, 29 Sep 2014 11:38:23 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-serial@vger.kernel.org>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/16] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140929093823.GD13952@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH 06/16] tty: serial: Add 8250-core based omap driver
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-7-git-send-email-bigeasy@linutronix.de>
+	id S1751052AbaI2Jm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:42:28 -0400
+Received: from mail-bn1bon0110.outbound.protection.outlook.com ([157.56.111.110]:41440
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751501AbaI2JmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 05:42:25 -0400
+Date: Mon, 29 Sep 2014 17:42:55 +0800
+From: Chenhui Zhao <chenhui.zhao@freescale.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <leoli@freescale.com>,
+        <Jason.Jin@freescale.com>, <Zhuoyu.Zhang@freescale.com>
+Subject: Re: [PATCH 3/3] arm: pm: add deep sleep support for LS1
+Message-ID: <20140929094255.GA14086@udp189498uds.ap.freescale.net>
+References: <1411730703-25836-1-git-send-email-chenhui.zhao@freescale.com>
+ <1411730703-25836-4-git-send-email-chenhui.zhao@freescale.com>
+ <20140926121427.GO5182@n2100.arm.linux.org.uk>
+ <20140928110640.GB9797@udp189498uds.ap.freescale.net>
+ <20140928142632.GG5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1410377411-26656-7-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1411983505
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10016
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <20140928142632.GG5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(33656002)(26826002)(31966008)(84676001)(83506001)(87936001)(92566001)(83322001)(85852003)(92726001)(83072002)(6806004)(68736004)(76176999)(44976005)(47776003)(46406003)(50986999)(20776003)(54356999)(97756001)(102836001)(86362001)(64706001)(104016003)(57986006)(93886004)(76482002)(85306004)(107046002)(23726002)(10300001)(99396003)(21056001)(90102001)(4396001)(50466002)(97736003)(120916001)(80022003)(74662003)(110136001)(76506005)(74502003)(105606002)(95666004)(79102003)(81542003)(77982003)(81342003)(106466001)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB380;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB380;
+X-Forefront-PRVS: 034902F5BC
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=chenhui.zhao@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB1141;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:30:01PM +0200, Sebastian Andrzej Siewior wrote:
-> +	/*
-> +	 * We enable TRIG_GRANU for RX and TX and additionaly we set
-> +	 * SCR_TX_EMPTY bit. The result is the following:
-> +	 * - RX_TRIGGER amount of bytes in the FIFO will cause an interrupt.
-> +	 * - less than RX_TRIGGER number of bytes will also cause an interrupt
-> +	 *   once the UART decides that there no new bytes arriving.
-> +	 * - Once THRE is enabled, the interrupt will be fired once the FIFO is
-> +	 *   empty - the trigger level is ignored here.
-> +	 *
-> +	 * Once DMA is enabled:
-> +	 * - UART will assert the TX DMA line once there is room for TX_TRIGGER
-> +	 *   bytes in the TX FIFO. On each assert the DMA engine will move
-> +	 *   TX_TRIGGER bytes into the FIFO.
-> +	 * - UART will assert the RX DMA line once there are RX_TRIGGER bytes in
-> +	 *   the FIFO and move RX_TRIGGER bytes.
-> +	 * This is because treshold and trigger values are the same.
+On Sun, Sep 28, 2014 at 03:26:33PM +0100, Russell King - ARM Linux wrote:
+> On Sun, Sep 28, 2014 at 07:06:40PM +0800, Chenhui Zhao wrote:
+> > On Fri, Sep 26, 2014 at 01:14:27PM +0100, Russell King - ARM Linux wrote:
+> > > On Fri, Sep 26, 2014 at 07:25:03PM +0800, Chenhui Zhao wrote:
+> > > > +/*
+> > > > + * r0: the physical entry address of SRAM code
+> > > > + *
+> > > > + */
+> > > > +ENTRY(ls1_do_deepsleep)
+> > > > +	mov	r13, r0
+> > > > +
+> > > > +	/* flush cache */
+> > > > +	bl	v7_flush_dcache_all
+> > > 
+> > > Please explain the purpose of this call via a comment in the code.
+> > > 
+> > > The generic code will have saved the CPU state, and will have called
+> > > flush_cache_louis() to flush the caches to the point of unification.
+> > > 
+> > > The only data which will have been loaded into the cache between that
+> > > point is the stack for the return from __cpu_suspend_save, and
+> > > speculative prefetches.
+> > > 
+> > > So, the only reason I can gather is that you need to flush data from
+> > > lower levels of the cache below the point of unification.
+> > > 
+> > 
+> > In deep sleep process, all caches will lost, so flush all caches to prevent
+> > data loss.
+> 
+> You haven't answered my question.
+> 
 
-threshold
+I want to flush L1 and L2 caches of Cortex-A7 in LS1021. However,
+flush_cache_louis() only flushed L1 cache. Therefore, call
+v7_flush_dcache_all() to flush L1 and L2 cache. 
 
-> +	/*
-> +	 * It claims to be 16C750 compatible however it is a little different.
-> +	 * It has EFR and has no FCR7_64byte bit. The AFE (which it claims to
-> +	 * have) is enabled via EFR instead of MCR. The type is set here 8250
-> +	 * just to get things going. UNKNOWN does not work for a few reasons and
-> +	 * we don't need our own type since we don't use 8250's set_termios()
-> +	 * and our "bugs" are handeld via the bug member.
+> > > > +
+> > > > +	/* disable cache, C bit in SCTLR */
+> > > > +	mrc	p15, 0, r0, c1, c0, 0
+> > > > +	bic	r0, r0, #(1 << 2)
+> > > > +	mcr	p15, 0, r0, c1, c0, 0
+> > > > +	isb
+> > > > +
+> > > > +	/* disable coherency, SMP bit in ACTLR */
+> > > > +	mrc	p15, 0, r0, c1, c0, 1
+> > > > +	bic	r0, r0, #(1 << 6)
+> > > > +	mcr	p15, 0, r0, c1, c0, 1
+> > > > +	isb
+> > > > +	dsb
+> > > > +
+> > > > +	/* disable MMU, M bit in SCTLR */
+> > > > +	mrc	p15, 0, r0, c1, c0, 0
+> > > > +	bic	r0, r0, #1
+> > > > +	mcr	p15, 0, r0, c1, c0, 0
+> > > > +	isb
+> > > > +
+> > > > +	/* jump to sram code using physical address */
+> > > > +	bx	r13
+> > > 
+> > > This looks extremely fragile.  You are running in virtual space, and you
+> > > turn the MMU off.  You are reliant on the MMU still being on for the
+> > > following instructions to already be in the pipeline.  That's not a
+> > > very good assumption to make (we've made it in the past and it breaks
+> > > every so often when things change, eg when the code is no longer laid
+> > > out how we expect.)
+> > > 
+> > > You need to disable the MMU safely, which means using the identity map
+> > > page tables and executing code in the identity map region.
+> > 
+> > Yes, the code will switch off MMU, and switch to physical address space.
+> > On LS1021, the DDR memory located at the physical address space started from
+> > 0x80000000, the kernel space also started at 0x80000000 (CONFIG_PAGE_OFFSET = 0x80000000).
+> > So the virtual address of kernel code is equal to the physical address.
+> 
+> You can't rely on that.
+> 
+> Sorry, NAK.
 
-handled
+I'll try to use a safer method to implement it.
 
-> +	 */
-> +	up.port.type = PORT_8250;
-> +	up.port.iotype = UPIO_MEM;
-> +	up.port.flags = UPF_FIXED_PORT | UPF_FIXED_TYPE | UPF_SOFT_FLOW |
-> +		UPF_HARD_FLOW;
-> +	up.port.private_data = priv;
-> +
-> +	up.port.regshift = 2;
-> +	up.port.fifosize = 64;
-> +	up.tx_loadsz = 64;
-> +	up.capabilities = UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP;
-> +#ifdef CONFIG_PM_RUNTIME
-> +	/*
-> +	 * PM_RUNTIME is mostly transparent. However to do it right we need to a
-
-need to _do_ a ...?
-
-> +	 * TX empty interrupt before we can put the device to auto idle. So if
-> +	 * PM_RUNTIME is not enabled we don't add that flag and can spare that
-> +	 * one extra interrupt in the TX path.
-> +	 */
-
-<snip>
-
-> +config SERIAL_8250_OMAP
-> +	tristate "Support for OMAP internal UART (8250 based driver)"
-> +	depends on SERIAL_8250 && ARCH_OMAP2PLUS
-> +	help
-> +	  If you have a machine based on an Texas Instruments OMAP CPU you
-> +	  can enable its onboard serial ports by enabling this option.
-> +
-> +	  This driver is in early stage and uses ttyS instead of ttyO.
-> +
-
-I just wondered if this driver should be marked experimental?
-
-
-Thanks,
-Frans
+Chenhui
