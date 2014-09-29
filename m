@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaI2Tsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:48:50 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:53225 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaI2Tss (ORCPT
+	id S1754866AbaI2TtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:49:10 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:40313 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740AbaI2TtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:48:48 -0400
+	Mon, 29 Sep 2014 15:49:06 -0400
+Date: Mon, 29 Sep 2014 13:48:55 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John Ronciak <john.ronciak@intel.com>
+Subject: Re: [PATCH] PCI: Intel 10G NIC ACS quirks
+Message-ID: <20140929194855.GA15712@google.com>
+References: <20140926230717.17458.59969.stgit@gimli.home>
 MIME-Version: 1.0
-In-Reply-To: <20140929114849.GA913@redhat.com>
-References: <20140928232753.GA31180@www.outflux.net>
-	<20140929114849.GA913@redhat.com>
-Date: Mon, 29 Sep 2014 12:48:47 -0700
-X-Google-Sender-Auth: -SJY_mI797LfB6zYT7nqxhzeH54
-Message-ID: <CAGXu5j+x5pg6-9y72o=mE9TiNEyFqTTE=o8ETh1Ao8R20KNRwA@mail.gmail.com>
-Subject: Re: [PATCH] tun: make sure interface usage can not overflow
-From: Kees Cook <keescook@chromium.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
-        Xi Wang <xii@google.com>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140926230717.17458.59969.stgit@gimli.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 4:48 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Sun, Sep 28, 2014 at 04:27:53PM -0700, Kees Cook wrote:
->> This makes the size argument a const, since it is always populated by
->> the caller. Additionally double-checks to make sure the copy_from_user
->> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
->>
->>    In function 'copy_from_user',
->>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
->>        ... copy_from_user() buffer size is not provably correct
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> What exactly is the issue here?
-> __tun_chr_ioctl is called with sizeof(struct compat_ifreq)
-> or  sizeof (struct ifreq) as the last argument.
+On Fri, Sep 26, 2014 at 05:07:59PM -0600, Alex Williamson wrote:
+> Intel has verified there is no peer-to-peer between functions for the
+> below selection of 82598, 82599, and X520 10G NICs.  These NICs lack
+> an ACS capability, so we're not able to determine this isolation
+> without the help of quirks.  Generalize the Solarflare quirk and add
+> these.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: John Ronciak <john.ronciak@intel.com>
 
-Correct. There is no vulnerability here; I am attempting to both make
-the code more defensive to future changes, and to keep
-CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy.
+Applied to pci/virtualization for v3.18, thanks!
 
-> So this looks like a false positive, but
-> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS machinery is supposed
-> to avoid false positives.
-
-The support in GCC is currently a bit faulty, and it seems that it
-didn't notice the two callers were static values, so instead, adding
-an explicit test keeps it happy.
-
-> On which architecture is this?
-
-This is on x86, but with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
-correctly enabled (gcc after 4.6 broke its ability to correctly
-optimize), which I've been playing with trying to get gcc working
-again. I sent the patch because it seems like it's a reasonable
-defensive change to make.
-
-If you want to look more deeply, there's some background here:
-https://code.google.com/p/chromium/issues/detail?id=371036
-
-https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/commit/?h=gcc-bug&id=92dd7154932d8775a05dfd3de5564124c05a4150
-
-Thanks,
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+> ---
+> 
+>  drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++------
+>  1 file changed, 28 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 95239e0..b6c6500 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3635,14 +3635,16 @@ static int pci_quirk_intel_pch_acs(struct pci_dev *dev, u16 acs_flags)
+>  	return acs_flags & ~flags ? 0 : 1;
+>  }
+>  
+> -static int pci_quirk_solarflare_acs(struct pci_dev *dev, u16 acs_flags)
+> +static int pci_quirk_mf_endpoint_acs(struct pci_dev *dev, u16 acs_flags)
+>  {
+>  	/*
+>  	 * SV, TB, and UF are not relevant to multifunction endpoints.
+>  	 *
+> -	 * Solarflare indicates that peer-to-peer between functions is not
+> -	 * possible, therefore RR, CR, and DT are not implemented.  Mask
+> -	 * these out as if they were clear in the ACS capabilities register.
+> +	 * Multifunction devices are only required to implement RR, CR, and DT
+> +	 * in their ACS capability if they support peer-to-peer transactions.
+> +	 * Devices matching this quirk have been verified by the vendor to not
+> +	 * perform peer-to-peer with other functions, allowing us to mask out
+> +	 * these bits as if they were unimplemented in the ACS capability.
+>  	 */
+>  	acs_flags &= ~(PCI_ACS_SV | PCI_ACS_TB | PCI_ACS_RR |
+>  		       PCI_ACS_CR | PCI_ACS_UF | PCI_ACS_DT);
+> @@ -3661,8 +3663,28 @@ static const struct pci_dev_acs_enabled {
+>  	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
+> -	{ PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_solarflare_acs },
+> -	{ PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_solarflare_acs },
+> +	{ PCI_VENDOR_ID_SOLARFLARE, 0x0903, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_SOLARFLARE, 0x0923, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10C6, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10DB, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10DD, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10E1, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10F1, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10F7, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10F8, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10F9, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10FA, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10FB, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x10FC, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x1507, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x1514, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x151C, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x1529, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x152A, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x154D, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x154F, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x1551, pci_quirk_mf_endpoint_acs },
+> +	{ PCI_VENDOR_ID_INTEL, 0x1558, pci_quirk_mf_endpoint_acs },
+>  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
+>  	{ 0 }
+>  };
+> 
