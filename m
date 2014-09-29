@@ -1,192 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbaI2E6Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 00:58:16 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:45500 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaI2E6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 00:58:15 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arun Sharma <asharma@fb.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH v2 1/2] perf callchain: Create an address space per thread
-Date: Mon, 29 Sep 2014 13:58:11 +0900
-Message-Id: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.1.0
+	id S1751580AbaI2FJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 01:09:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48388 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaI2FJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 01:09:43 -0400
+Message-ID: <5428E97F.7040608@suse.com>
+Date: Mon, 29 Sep 2014 07:09:19 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        ian.campbell@citrix.com, wei.liu2@citrix.com,
+        boris.ostrovsky@oracle.com, bhelgaas@google.com,
+        yongjun_wei@trendmicro.com.cn, mukesh.rathor@oracle.com
+CC: xen-devel@lists.xenproject.org, linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xenbus: Use 'void' instead of 'int' for
+ the return of xenbus_switch_state()
+References: <5425961A.5000604@gmail.com>
+In-Reply-To: <5425961A.5000604@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unw_addr_space_t in libunwind represents an address space to be
-used for stack unwinding.  It doesn't need to be create/destory
-everytime to unwind callchain (as in get_entries) and can have a same
-lifetime as thread (unless exec called).
+On 09/26/2014 06:36 PM, Chen Gang wrote:
+> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+> internally, so need not return any status value, then use 'void' instead
+> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
+>
+> Also need be sure that all callers which check the return value must let
+> 'err' be 0.
+>
+> And also need change the related comments for xenbus_switch_state().
+>
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-So move the address space construction/destruction logic to the thread
-lifetime handling functions.  This is a preparation to enable caching
-in the unwind library.
+Acked-by: Juergen Gross <jgross@suse.com>
 
-Note that it saves unw_addr_space_t object using thread__set_priv().
-It seems currently only used by perf trace and perf kvm stat commands
-which don't use callchain.
-
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/thread.c           |  6 ++++++
- tools/perf/util/unwind-libunwind.c | 30 +++++++++++++++++++++++++-----
- tools/perf/util/unwind.h           | 17 +++++++++++++++++
- 3 files changed, 48 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index a9df7f2c6dc9..2b7b2d91c016 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,6 +7,7 @@
- #include "util.h"
- #include "debug.h"
- #include "comm.h"
-+#include "unwind.h"
- 
- int thread__init_map_groups(struct thread *thread, struct machine *machine)
- {
-@@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		thread->cpu = -1;
- 		INIT_LIST_HEAD(&thread->comm_list);
- 
-+		if (unwind__prepare_access(thread) < 0)
-+			goto err_thread;
-+
- 		comm_str = malloc(32);
- 		if (!comm_str)
- 			goto err_thread;
-@@ -48,6 +52,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 			goto err_thread;
- 
- 		list_add(&comm->list, &thread->comm_list);
-+
- 	}
- 
- 	return thread;
-@@ -69,6 +74,7 @@ void thread__delete(struct thread *thread)
- 		list_del(&comm->list);
- 		comm__free(comm);
- 	}
-+	unwind__finish_access(thread);
- 
- 	free(thread);
- }
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index 92b56db52471..76ec25663c95 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -525,12 +525,9 @@ static unw_accessors_t accessors = {
- 	.get_proc_name		= get_proc_name,
- };
- 
--static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
--		       void *arg, int max_stack)
-+int unwind__prepare_access(struct thread *thread)
- {
- 	unw_addr_space_t addr_space;
--	unw_cursor_t c;
--	int ret;
- 
- 	addr_space = unw_create_addr_space(&accessors, 0);
- 	if (!addr_space) {
-@@ -538,6 +535,30 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 		return -ENOMEM;
- 	}
- 
-+	thread__set_priv(thread, addr_space);
-+
-+	return 0;
-+}
-+
-+void unwind__finish_access(struct thread *thread)
-+{
-+	unw_addr_space_t addr_space;
-+
-+	addr_space = thread__priv(thread);
-+	unw_destroy_addr_space(addr_space);
-+}
-+
-+static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
-+		       void *arg, int max_stack)
-+{
-+	unw_addr_space_t addr_space;
-+	unw_cursor_t c;
-+	int ret;
-+
-+	addr_space = thread__priv(ui->thread);
-+	if (addr_space == NULL)
-+		return -1;
-+
- 	ret = unw_init_remote(&c, addr_space, ui);
- 	if (ret)
- 		display_error(ret);
-@@ -549,7 +570,6 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- 		ret = ip ? entry(ip, ui->thread, ui->machine, cb, arg) : 0;
- 	}
- 
--	unw_destroy_addr_space(addr_space);
- 	return ret;
- }
- 
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index f03061260b4e..4b99c6280c2a 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -4,6 +4,7 @@
- #include <linux/types.h>
- #include "event.h"
- #include "symbol.h"
-+#include "thread.h"
- 
- struct unwind_entry {
- 	struct map	*map;
-@@ -21,6 +22,15 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- /* libunwind specific */
- #ifdef HAVE_LIBUNWIND_SUPPORT
- int libunwind__arch_reg_id(int regnum);
-+int unwind__prepare_access(struct thread *thread);
-+void unwind__finish_access(struct thread *thread);
-+#else
-+static inline int unwind__prepare_access(struct thread *thread)
-+{
-+	return 0;
-+}
-+
-+static inline void unwind__finish_access(struct thread *thread) {}
- #endif
- #else
- static inline int
-@@ -33,5 +43,12 @@ unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
- {
- 	return 0;
- }
-+
-+static inline int unwind__prepare_access(struct thread *thread)
-+{
-+	return 0;
-+}
-+
-+static inline void unwind__finish_access(struct thread *thread) {}
- #endif /* HAVE_DWARF_UNWIND_SUPPORT */
- #endif /* __UNWIND_H */
--- 
-2.1.0
+> ---
+>   drivers/block/xen-blkback/xenbus.c |  9 ++-------
+>   drivers/net/xen-netback/xenbus.c   |  5 +----
+>   drivers/pci/xen-pcifront.c         | 15 ++++++---------
+>   drivers/xen/xen-pciback/xenbus.c   | 21 ++++-----------------
+>   drivers/xen/xen-scsiback.c         |  5 +----
+>   drivers/xen/xenbus/xenbus_client.c | 16 ++++++++--------
+>   include/xen/xenbus.h               |  3 ++-
+>   7 files changed, 24 insertions(+), 50 deletions(-)
+>
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> index 3a8b810..fdcc584 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -587,9 +587,7 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
+>   	if (err)
+>   		goto fail;
+>
+> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+> -	if (err)
+> -		goto fail;
+> +	xenbus_switch_state(dev, XenbusStateInitWait);
+>
+>   	return 0;
+>
+> @@ -837,10 +835,7 @@ again:
+>   	if (err)
+>   		xenbus_dev_fatal(dev, err, "ending transaction");
+>
+> -	err = xenbus_switch_state(dev, XenbusStateConnected);
+> -	if (err)
+> -		xenbus_dev_fatal(dev, err, "%s: switching to Connected state",
+> -				 dev->nodename);
+> +	xenbus_switch_state(dev, XenbusStateConnected);
+>
+>   	return;
+>    abort:
+> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+> index 9c47b89..b5c3d47 100644
+> --- a/drivers/net/xen-netback/xenbus.c
+> +++ b/drivers/net/xen-netback/xenbus.c
+> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
+>   	if (err)
+>   		pr_debug("Error writing multi-queue-max-queues\n");
+>
+> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+> -	if (err)
+> -		goto fail;
+> -
+> +	xenbus_switch_state(dev, XenbusStateInitWait);
+>   	be->state = XenbusStateInitWait;
+>
+>   	/* This kicks hotplug scripts, so do it immediately. */
+> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+> index 53df39a..c1d73b7 100644
+> --- a/drivers/pci/xen-pcifront.c
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -901,18 +901,16 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
+>   		}
+>   	}
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateConnected);
+> -
+> +	xenbus_switch_state(pdev->xdev, XenbusStateConnected);
+> +	return 0;
+>   out:
+>   	return err;
+>   }
+>
+>   static int pcifront_try_disconnect(struct pcifront_device *pdev)
+>   {
+> -	int err = 0;
+>   	enum xenbus_state prev_state;
+>
+> -
+>   	prev_state = xenbus_read_driver_state(pdev->xdev->nodename);
+>
+>   	if (prev_state >= XenbusStateClosing)
+> @@ -923,11 +921,10 @@ static int pcifront_try_disconnect(struct pcifront_device *pdev)
+>   		pcifront_disconnect(pdev);
+>   	}
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateClosed);
+> +	xenbus_switch_state(pdev->xdev, XenbusStateClosed);
+>
+>   out:
+> -
+> -	return err;
+> +	return 0;
+>   }
+>
+>   static int pcifront_attach_devices(struct pcifront_device *pdev)
+> @@ -1060,8 +1057,8 @@ static int pcifront_detach_devices(struct pcifront_device *pdev)
+>   			domain, bus, slot, func);
+>   	}
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateReconfiguring);
+> -
+> +	xenbus_switch_state(pdev->xdev, XenbusStateReconfiguring);
+> +	return 0;
+>   out:
+>   	return err;
+>   }
+> diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+> index c214daa..630a215 100644
+> --- a/drivers/xen/xen-pciback/xenbus.c
+> +++ b/drivers/xen/xen-pciback/xenbus.c
+> @@ -184,10 +184,7 @@ static int xen_pcibk_attach(struct xen_pcibk_device *pdev)
+>
+>   	dev_dbg(&pdev->xdev->dev, "Connecting...\n");
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateConnected);
+> -	if (err)
+> -		xenbus_dev_fatal(pdev->xdev, err,
+> -				 "Error switching to connected state!");
+> +	xenbus_switch_state(pdev->xdev, XenbusStateConnected);
+>
+>   	dev_dbg(&pdev->xdev->dev, "Connected? %d\n", err);
+>   out:
+> @@ -500,12 +497,7 @@ static int xen_pcibk_reconfigure(struct xen_pcibk_device *pdev)
+>   		}
+>   	}
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateReconfigured);
+> -	if (err) {
+> -		xenbus_dev_fatal(pdev->xdev, err,
+> -				 "Error switching to reconfigured state!");
+> -		goto out;
+> -	}
+> +	xenbus_switch_state(pdev->xdev, XenbusStateReconfigured);
+>
+>   out:
+>   	mutex_unlock(&pdev->dev_lock);
+> @@ -640,10 +632,7 @@ static int xen_pcibk_setup_backend(struct xen_pcibk_device *pdev)
+>   		goto out;
+>   	}
+>
+> -	err = xenbus_switch_state(pdev->xdev, XenbusStateInitialised);
+> -	if (err)
+> -		xenbus_dev_fatal(pdev->xdev, err,
+> -				 "Error switching to initialised state!");
+> +	xenbus_switch_state(pdev->xdev, XenbusStateInitialised);
+>
+>   out:
+>   	mutex_unlock(&pdev->dev_lock);
+> @@ -683,9 +672,7 @@ static int xen_pcibk_xenbus_probe(struct xenbus_device *dev,
+>   	}
+>
+>   	/* wait for xend to configure us */
+> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+> -	if (err)
+> -		goto out;
+> +	xenbus_switch_state(dev, XenbusStateInitWait);
+>
+>   	/* watch the backend node for backend configuration information */
+>   	err = xenbus_watch_path(dev, dev->nodename, &pdev->be_watch,
+> diff --git a/drivers/xen/xen-scsiback.c b/drivers/xen/xen-scsiback.c
+> index ad11258..847bc9c 100644
+> --- a/drivers/xen/xen-scsiback.c
+> +++ b/drivers/xen/xen-scsiback.c
+> @@ -1225,10 +1225,7 @@ static int scsiback_probe(struct xenbus_device *dev,
+>   	if (err)
+>   		xenbus_dev_error(dev, err, "writing feature-sg-grant");
+>
+> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+> -	if (err)
+> -		goto fail;
+> -
+> +	xenbus_switch_state(dev, XenbusStateInitWait);
+>   	return 0;
+>
+>   fail:
+> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+> index ca74410..e2bcd1d 100644
+> --- a/drivers/xen/xenbus/xenbus_client.c
+> +++ b/drivers/xen/xenbus/xenbus_client.c
+> @@ -166,7 +166,7 @@ EXPORT_SYMBOL_GPL(xenbus_watch_pathfmt);
+>   static void xenbus_switch_fatal(struct xenbus_device *, int, int,
+>   				const char *, ...);
+>
+> -static int
+> +static void
+>   __xenbus_switch_state(struct xenbus_device *dev,
+>   		      enum xenbus_state state, int depth)
+>   {
+> @@ -188,7 +188,7 @@ __xenbus_switch_state(struct xenbus_device *dev,
+>   	int err, abort;
+>
+>   	if (state == dev->state)
+> -		return 0;
+> +		return;
+>
+>   again:
+>   	abort = 1;
+> @@ -196,7 +196,7 @@ again:
+>   	err = xenbus_transaction_start(&xbt);
+>   	if (err) {
+>   		xenbus_switch_fatal(dev, depth, err, "starting transaction");
+> -		return 0;
+> +		return;
+>   	}
+>
+>   	err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
+> @@ -219,7 +219,7 @@ abort:
+>   	} else
+>   		dev->state = state;
+>
+> -	return 0;
+> +	return;
+>   }
+>
+>   /**
+> @@ -228,12 +228,12 @@ abort:
+>    * @state: new state
+>    *
+>    * Advertise in the store a change of the given driver to the given new_state.
+> - * Return 0 on success, or -errno on error.  On error, the device will switch
+> - * to XenbusStateClosing, and the error will be saved in the store.
+> + * When failure occurs, it will call xenbus_switch_fatal() internally, so need
+> + * not return value to notify upper caller.
+>    */
+> -int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
+> +void xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state state)
+>   {
+> -	return __xenbus_switch_state(dev, state, 0);
+> +	__xenbus_switch_state(dev, state, 0);
+>   }
+>
+>   EXPORT_SYMBOL_GPL(xenbus_switch_state);
+> diff --git a/include/xen/xenbus.h b/include/xen/xenbus.h
+> index 0324c6d..587c53d 100644
+> --- a/include/xen/xenbus.h
+> +++ b/include/xen/xenbus.h
+> @@ -195,7 +195,8 @@ int xenbus_watch_pathfmt(struct xenbus_device *dev, struct xenbus_watch *watch,
+>   					  const char **, unsigned int),
+>   			 const char *pathfmt, ...);
+>
+> -int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state new_state);
+> +void xenbus_switch_state(struct xenbus_device *dev,
+> +			 enum xenbus_state new_state);
+>   int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn);
+>   int xenbus_map_ring_valloc(struct xenbus_device *dev,
+>   			   int gnt_ref, void **vaddr);
+>
 
