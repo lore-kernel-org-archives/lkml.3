@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbaI2VBn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 17:01:43 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:41025 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaI2VBm (ORCPT
+	id S1754758AbaI2VC1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:02:27 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:32784 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaI2VCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 17:01:42 -0400
-Date: Mon, 29 Sep 2014 21:01:32 +0000
-From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: nhorman@tuxdriver.com, mroos@linux.ee, David Miller <davem@davemloft.net>
-Subject: [PATCH v3] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
-Message-ID: <20140929210132.GD15737@erable>
+	Mon, 29 Sep 2014 17:02:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412022964.6334.104.camel@x220>
+References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
+	<5421A4B4.1040604@infradead.org>
+	<1411492210.30136.15.camel@nebuchadnezzar>
+	<5421A9D5.8020503@infradead.org>
+	<1411496822.31476.1.camel@nebuchadnezzar>
+	<1412021904.6334.97.camel@x220>
+	<CAD3Xx4K5hg-sZb5Ek=q=cgPt59+Y8wgAs1iEWOFx2EMcz3EZAg@mail.gmail.com>
+	<1412022964.6334.104.camel@x220>
+Date: Mon, 29 Sep 2014 14:02:24 -0700
+X-Google-Sender-Auth: TJHFEvV_Amv8noB_KUVa1kA_agg
+Message-ID: <CAGXu5jKqVospq01gcP1zAbnevipqESA6MkjQ_vbSiYDGC6O9-Q@mail.gmail.com>
+Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
+From: Kees Cook <keescook@chromium.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
-  # 3c59x: Add dma error checking and recovery
-the intent is to split out the mapping from the byte-swapping in order to
-insert a dma_mapping_error() check.
+On Mon, Sep 29, 2014 at 1:36 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Mon, 2014-09-29 at 22:25 +0200, Valentin Rothberg wrote:
+>> On Mon, Sep 29, 2014 at 10:18 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> > Maybe something like "TEST_MODULE_LOAD"?
+>>
+>> It has been merged already, see [1]. Sorry, I did not check if you
+>> were in the CC to let you know.
+>>
+>> [1] http://ozlabs.org/~akpm/mmotm/broken-out/lib-rename-test_module-to-test_lkm.patch
+>
+> That didn't hit lkml, did it? Don't know whether mmotm is set in stone
+> nor whether Kees has strong feelings about the name of this feature. (I
+> suspect I'm wandering into bicycle shed territory here...).
 
-Kinda this semantic patch:
+Oooh! Nope, I hadn't seen this thread. Thanks for CCing me!
 
-    // See http://coccinelle.lip6.fr/
-    //
-    // Beware, grouik-and-dirty!
-    @@
-    expression DEV, X, Y, Z;
-    @@
-    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
-    +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
-    +   if (dma_mapping_error(&DEV->dev, addr))
-    +       /* snip */;
-    +   cpu_to_le32(addr)
+I have no problem at all with changing the Kconfig name. I prefer
+TEST_LKM over TEST_MODULE_MODULE, FWIW. :)
 
-However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
+Thanks,
 
-    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
-    +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
-    //                    ^^^^^^^^^^^
-    //                    That mismatches the 3 other changes!
-    +   if (dma_mapping_error(&DEV->dev, addr))
-    +       /* snip */;
-    +   cpu_to_le32(addr)
-
-Let's remove the leftover cpu_to_le32() for coherency.
-
-v2: Better changelog.
-v3: Add Acked-by
-
-Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
-  # 3c59x: Add dma error checking and recovery
-Cc: Meelis Roos <mroos@linux.ee>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
----
- drivers/net/ethernet/3com/3c59x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-index 8ca49f04..0a3108b3 100644
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		}
- 	}
- #else
--	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
-+	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
- 	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
- 		goto out_dma_err;
- 	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
--- 
-1.7.10.4
-
-Regards,
-Sylvain "ythier" Hitier
+-Kees
 
 -- 
-Business is about being busy, not being rich...
-Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
-There's THE room for ideals in this mechanical place!
+Kees Cook
+Chrome OS Security
