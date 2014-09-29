@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbaI2U3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:29:44 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:64512 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaI2U3n (ORCPT
+	id S1754885AbaI2Ua0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:30:26 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:42251 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaI2UaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:29:43 -0400
+	Mon, 29 Sep 2014 16:30:25 -0400
+Date: Mon, 29 Sep 2014 22:30:23 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        dave@sr71.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        eranian@google.com, x86@kernel.org
+Subject: Re: [PATCH 1/2] Use faster check for modules in backtrace on 64bit
+Message-ID: <20140929203023.GA8196@two.firstfloor.org>
+References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
+ <1411774277-4198-2-git-send-email-andi@firstfloor.org>
+ <20140929114212.GG5430@worktop>
+ <20140929152145.GB1629@tassilo.jf.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <5429BAA7.8060406@zytor.com>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
- <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
- <CALCETrX7yce2PfYi-Gqkf116a1rXUzjKkO3JAf==zd3WuZuDsQ@mail.gmail.com>
- <alpine.DEB.2.02.1409292135090.22082@ionos.tec.linutronix.de>
- <5429B664.4060003@zytor.com> <alpine.DEB.2.02.1409292152270.22082@ionos.tec.linutronix.de>
- <5429BAA7.8060406@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 29 Sep 2014 13:29:22 -0700
-Message-ID: <CALCETrW-b_61Fqdo3ckxochLqcEs_hQK5Pu7t=y46M=_YBx=tQ@mail.gmail.com>
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Sebastian Lackner <sebastian@fds-team.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929152145.GB1629@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 1:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 09/29/2014 12:57 PM, Thomas Gleixner wrote:
->>
->>> I think we should mask the bit anyway.
->>
->> I tend to disagree. If we clear it there we need to consequentely
->> audit ALL other possibilites and if there are any we need to clear the
->> bit there as well. Just to make buggy user space happy?
->>
->
-> The entry options into the kernel are: interrupt/exception (already
-> known to be OK),
+On Mon, Sep 29, 2014 at 08:21:45AM -0700, Andi Kleen wrote:
+> On Mon, Sep 29, 2014 at 01:42:12PM +0200, Peter Zijlstra wrote:
+> > On Fri, Sep 26, 2014 at 04:31:16PM -0700, Andi Kleen wrote:
+> > > 
+> > > This has the (small) potential to get a false positive on a pointer to a
+> > > data segment in a module.  However since we also use the frame pointer
+> > > chain as initial sanity check I think the danger of this is very low.
+> > > 
+> > 
+> > So this has come up several times; and the answer has always been, why
+> > not make the __module_address() thing a rb-tree instead of a linear
+> > loop. So I suppose I'll ask that again, why not?
+> 
+> Why do things complicated, if they can be done simple too?
 
-> SYSENTER32,
+Also I investigated it now, but we don't have RCU support for rbtrees.
+So it would need some kind of locking for the reader, which is a show
+stopper.
 
-I don't immediately see how to fix that without adding overhead.
-Maybe do it in CLEAR_RREGS?  This won't do any good if EFI ever starts
-using IRET, though.  We could suck it up and fix it on entry, adding
-maybe ten cycles (wild guess).
-
-> SYSCALL32
-
-This should happen for free if we fix SYSCALL64, I think.
-
-Also, I thought entry_64.S was a mess.  Eww, ia32entry.S.
-
-I can try to write the patch later today.  But I don't want to touch
-the actual 32-bit kernel code -- I'll stick to the 64-bit native and
-compat stuff, thanks.
-
---Andy
-
- and SYSCALL64.  It is not too
-> much to work through those issues, I don't think.
->
->         -hpa
->
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+-Andi
