@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaI2Jpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:45:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60459 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaI2Jpe (ORCPT
+	id S1751429AbaI2Jq0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:46:26 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:34231 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaI2JqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:45:34 -0400
-Message-ID: <1411983923.3050.1.camel@pengutronix.de>
-Subject: Re: [PATCH v4 1/8] [media] soc_camera: Do not decrement endpoint
- node refcount in the loop
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Grant Likely <grant.likely@linaro.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        kernel@pengutronix.de, Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-media@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Date: Mon, 29 Sep 2014 11:45:23 +0200
-In-Reply-To: <20140929091316.GA23154@mwanda>
-References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
-	 <1411978551-30480-2-git-send-email-p.zabel@pengutronix.de>
-	 <20140929091316.GA23154@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Sep 2014 05:46:24 -0400
+X-ASG-Debug-ID: 1411983982-0759e74bdc530f60002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 29 Sep 2014 11:46:20 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-serial@vger.kernel.org>, <tony@atomide.com>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <mika.westerberg@linux.intel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 02/16] tty: serial: 8250_core: add run time pm
+Message-ID: <20140929094620.GE13952@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 02/16] tty: serial: 8250_core: add run time pm
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+ <1410377411-26656-3-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1410377411-26656-3-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.160]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1411983982
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10016
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 29.09.2014, 12:13 +0300 schrieb Dan Carpenter:
-> On Mon, Sep 29, 2014 at 10:15:44AM +0200, Philipp Zabel wrote:
-> > In preparation for a following patch, stop decrementing the endpoint node
-> > refcount in the loop. This temporarily leaks a reference to the endpoint node,
-> > which will be fixed by having of_graph_get_next_endpoint decrement the refcount
-> > of its prev argument instead.
-> 
-> Don't do this...
-> 
-> My understanding (and I haven't invested much time into trying to
-> understand this beyond glancing at the change) is that patch 1 and 2,
-> introduce small bugs that are fixed in patch 3?
->
-> Just fold all three patches into one patch.  We need an Ack from Mauro
-> and Greg and then send the patch through Grant's tree.
+On Wed, Sep 10, 2014 at 09:29:57PM +0200, Sebastian Andrzej Siewior wrote:
+> +/*
+> + * This two wrapper ensure, that enable_runtime_pm_tx() can be called more than
 
-Yes. Patches 1 and 2 leak a reference on of_nodes touched by the loop.
-As far as I am aware, all users of this code don't use the reference
-counting (CONFIG_OF_DYNAMIC is disabled), so this bug should be
-theoretical.
+These two wrappers ensure that enable_runtime_pm_tx() ...
 
-I'd be happy do as you suggest if Mauro and Greg agree.
+> + * once and disable_runtime_pm_tx() will still disable RPM because the fifo is
+> + * empty and the HW can idle again.
+> + */
+> +static void serial8250_rpm_get_tx(struct uart_8250_port *p)
+> +{
+> +	unsigned char rpm_active;
+> +
+> +	if (!(p->capabilities & UART_CAP_RPM))
+> +		return;
+> +
+> +	rpm_active = xchg(&p->rpm_tx_active, 1);
+> +	if (rpm_active)
+> +		return;
+> +	pm_runtime_get_sync(p->port.dev);
+> +}
+> +
+> +static void serial8250_rpm_put_tx(struct uart_8250_port *p)
+> +{
+> +	unsigned char rpm_active;
+> +
+> +	if (!(p->capabilities & UART_CAP_RPM))
+> +		return;
+> +
+> +	rpm_active = xchg(&p->rpm_tx_active, 0);
+> +	if (!rpm_active)
+> +		return;
+> +	pm_runtime_mark_last_busy(p->port.dev);
+> +	pm_runtime_put_autosuspend(p->port.dev);
+> +}
+> +
 
-regards
-Philipp
 
+> @@ -1469,7 +1531,12 @@ void serial8250_tx_chars(struct uart_8250_port *up)
+>  
+>  	DEBUG_INTR("THRE...");
+>  
+> -	if (uart_circ_empty(xmit))
+> +	/*
+> +	 * With RPM enabled, we have to wait once the FIFO is empty before the
+
+s,once,until,? Or do I not understand the sentence correctly?
+
+> +	 * HW can go idle. So we get here once again with empty FIFO and disable
+> +	 * the interrupt and RPM in __stop_tx()
+> +	 */
+> +	if (uart_circ_empty(xmit) && !(up->capabilities & UART_CAP_RPM))
+>  		__stop_tx(up);
+>  }
+>  EXPORT_SYMBOL_GPL(serial8250_tx_chars);
