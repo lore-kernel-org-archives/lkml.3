@@ -1,93 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026AbaI2NWH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:22:07 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:59825 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753403AbaI2NWG (ORCPT
+	id S1754082AbaI2NYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:24:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34984 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752243AbaI2NYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:22:06 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: sdhci-pxav3: Fix Sparse warning of duplicate set_uhs_signaling entry
-Date: Mon, 29 Sep 2014 18:55:37 +0530
-Message-Id: <1411997137-13034-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 29 Sep 2014 09:24:01 -0400
+Date: Mon, 29 Sep 2014 14:23:34 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Stefan Wahren <stefan.wahren@i2se.com>
+Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "festevam@gmail.com" <festevam@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
+Message-ID: <20140929132334.GE2432@leverpostej>
+References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
+ <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
+ <20140929110919.GB2432@leverpostej>
+ <54294832.8000702@i2se.com>
+ <20140929124137.GD2432@leverpostej>
+ <54295A2F.3070700@i2se.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54295A2F.3070700@i2se.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes below sparse warning:
-drivers/mmc/host/sdhci-pxav3.c:227:10: warning: Initializer entry defined twice
-drivers/mmc/host/sdhci-pxav3.c:232:10:   also defined here
+On Mon, Sep 29, 2014 at 02:10:07PM +0100, Stefan Wahren wrote:
+> Hi,
+> 
+> Am 29.09.2014 um 14:41 schrieb Mark Rutland:
+> > Well, the simple-bus will cause the children to be probed. But it looks
+> > like you care about properties of the parent. I don't think that
+> > simple-bus is appropriate because it's not being handled as a
+> > transparent bridge from the PoV of the children.
+> 
+> actually i need the address of the power status register. In this
+> version i get the base address from the parent node add an offset.
+> 
+> Do you prefer to define the address of the power status register like a
+> second address cell:
+> 
+> reg_vddd: regulator@80044040 {
+> 	reg = <0x80044040 0x10
+> 	       0x800440c0 0x01>;
+>         ...
+> };
+> 
+> or do i need special properties like this:
+> 
+> reg_vddd: regulator@80044040 {
+> 	reg = <0x80044040 0x10>;
+> 	fsl,mxs-status-reg = <0x800440c0>;
+>         ...
+> };
 
-by removing duplicate initialization of .set_uhs_signaling in
-struct sdhci_ops. Also does away with duplcated function.
+I would prefer a top level node for the subsystem that is not a
+simple-bus.
 
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/mmc/host/sdhci-pxav3.c |   37 -------------------------------------
- 1 file changed, 37 deletions(-)
+Give it a compatible string and a well-defined set of base properties
+(looks like you just need the reg for now). Match that and probe the
+child nodes as appropriate.
 
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index 6f842fb..fd93e60 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -186,45 +186,8 @@ static void pxav3_gen_init_74_clocks(struct sdhci_host *host, u8 power_mode)
- 	pxa->power_mode = power_mode;
- }
- 
--static void pxav3_set_uhs_signaling(struct sdhci_host *host, unsigned int uhs)
--{
--	u16 ctrl_2;
--
--	/*
--	 * Set V18_EN -- UHS modes do not work without this.
--	 * does not change signaling voltage
--	 */
--	ctrl_2 = sdhci_readw(host, SDHCI_HOST_CONTROL2);
--
--	/* Select Bus Speed Mode for host */
--	ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
--	switch (uhs) {
--	case MMC_TIMING_UHS_SDR12:
--		ctrl_2 |= SDHCI_CTRL_UHS_SDR12;
--		break;
--	case MMC_TIMING_UHS_SDR25:
--		ctrl_2 |= SDHCI_CTRL_UHS_SDR25;
--		break;
--	case MMC_TIMING_UHS_SDR50:
--		ctrl_2 |= SDHCI_CTRL_UHS_SDR50 | SDHCI_CTRL_VDD_180;
--		break;
--	case MMC_TIMING_UHS_SDR104:
--		ctrl_2 |= SDHCI_CTRL_UHS_SDR104 | SDHCI_CTRL_VDD_180;
--		break;
--	case MMC_TIMING_UHS_DDR50:
--		ctrl_2 |= SDHCI_CTRL_UHS_DDR50 | SDHCI_CTRL_VDD_180;
--		break;
--	}
--
--	sdhci_writew(host, ctrl_2, SDHCI_HOST_CONTROL2);
--	dev_dbg(mmc_dev(host->mmc),
--		"%s uhs = %d, ctrl_2 = %04X\n",
--		__func__, uhs, ctrl_2);
--}
--
- static const struct sdhci_ops pxav3_sdhci_ops = {
- 	.set_clock = sdhci_set_clock,
--	.set_uhs_signaling = pxav3_set_uhs_signaling,
- 	.platform_send_init_74_clocks = pxav3_gen_init_74_clocks,
- 	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
- 	.set_bus_width = sdhci_set_bus_width,
--- 
-1.7.9.5
+> >> Do we need a extra driver?
+> > Perhaps, but it's relatively simple to match on a compatible string and
+> > probe children if you just wantto start small for now.
+> 
+> Okay. Would be great if someone has a good example. At first, i thought
+> of power/anatop.
 
+While I believe there are examples in the kernel, I can't think
+immediately of any instances.
+
+> >>>> +- #address-cells: Number of cells required to define regulator register,
+> >>>> +  must be 1
+> >>>> +- #size-cells: Number of cells required to define register size, must be 1
+> >>> Why must this be the case, given that the child node expects an absolute
+> >>> physical address?
+> >> I need a property to define the control register for the regulators
+> >> without defining vendor specific properties like "fsl,mxs-control-reg"
+> >> or something.
+> > You misunderstand me. I was querying the "must be 1" rather than the
+> > proeprties themselves.
+> >
+> >>> What's wrong with #address-cells = <2>, for example?
+> >> Nothing
+> > Then we shouldn't specify "must be 1", no?
+> 
+> Right, must be at least 1.
+
+Why not just say that #address-cells, #size-cells and ranges must be
+present as appropriate to map children?
+
+> 
+> >>>> +- reg: Absolute physical address and size of the register set for the device
+> >>> Why is this here _and_ in the child node(s)?
+> >> The parent of the power node is also a simple bus. I use this to
+> >> calculate the power status register per offset.
+> >>
+> >>> What is the difference between this node and its children?
+> >> The parent node represent the power sub system and the regulators are
+> >> part of this sub system.
+> >>
+> >>> Can there be more than one sub-node?
+> >> In the i.MX28 are at least 4 voltage regulators, 1 current regulator and
+> >> many more. At first, the driver should implement only 3 voltage
+> >> regulators (vddd, vdda, vddio).
+> > Ok.
+> >
+> > I think you need a binding for the power subsystem, and a trivial driver
+> > that can match on that and probe the child regulators. Are there
+> > components other than voltage or current regulators in the sub system?
+> 
+> Yes, according to the reference manual there is a dc-dc converter, a
+> battery charger, battery monitor, ...
+> 
+> In short a lot of developing time ;-)
+
+Sure, but not everything needs to be supported fomr the outset.
+
+Mark.
