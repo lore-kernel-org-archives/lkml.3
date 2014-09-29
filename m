@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaI2MvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 08:51:06 -0400
-Received: from sauhun.de ([89.238.76.85]:58370 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaI2MvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 08:51:04 -0400
-Date: Mon, 29 Sep 2014 14:51:36 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: Anders Berg <anders.berg@avagotech.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: axxia: Add I2C driver for AXM55xx
-Message-ID: <20140929125135.GA1327@katana>
-References: <1411983159-4692-1-git-send-email-anders.berg@avagotech.com>
- <54292F74.2030209@gmail.com>
- <CAE0=X_0guSvMqZxHvdS39Zxx4G7qVvnddv96t72rp4FwpJLgfA@mail.gmail.com>
- <54293F2C.2090206@gmail.com>
+	id S1753926AbaI2MzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:55:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:57768 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591AbaI2MzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 08:55:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Peter Griffin <peter.griffin@linaro.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] USB: host: st: fix ehci/ohci driver selection
+Date: Mon, 29 Sep 2014 14:54:34 +0200
+Message-ID: <2536929.C0XC0THfdJ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
-Content-Disposition: inline
-In-Reply-To: <54293F2C.2090206@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:4NkklfXWw+3oAmX7ZSFqoxlKSV4+Ic9DWlnl+wntcB8
+ M9O3BinzPtH+ZClkZZxpAsUjXor0TcH6MRMwXgkD7dubFe/1Q+
+ cXKDDX3+sz9JzDCQJRIUKhVOwGp2f2H0GiHXVDb9iKNqc8c8Gx
+ mVqq1T5+nVv9ygabNeUKJV1AvXMlxkP6ifnGlj20oPI/9bV755
+ 1OaphNjX2scnRodmChqjKtgLBDRiNMlZehE8q/KsjnepTkPacw
+ jF/WnKTqg8WuN5Wb91E1wbxTf5iVc67XAo6b3DqzDVj90OWR/c
+ DtnrDBjHIgFaJRx9o0y1TlaspWMDtsEuqBDgA/qOcD9iOxF0ej
+ APu+1uYlWT4yEGVFSxyg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The newly added sti ehci and ohci drivers come with a single
+Kconfig entry that does not depend on either of the base drivers,
+which leads to a link error when they are disabled:
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+drivers/built-in.o: In function `ohci_platform_init':
+:(.init.text+0x14788): undefined reference to `ohci_init_driver'
 
-> >>Its looks good if we move the entire ISR above probe/remove
-> >>functionalities...
-> >>
-> >Not sure what you mean here... The ISR _is_ above probe/remove.
->=20
-> I mean ISR should immediately above probe functionality. So that we can s=
-ee
-> devm_request_irq(..,isr_name,..) ISR directly with isr name..
+To fix that, this patch introduces two separate Kconfig options
+with proper dependencies, which avoids the problem and is also
+more consistent with the other glue drivers.
 
-Not so important to me, '*' in vim does that whereever the function is.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: d115837259ada ("usb: host: ohci-st: Add OHCI driver support for ST STB devices")
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peter Griffin <peter.griffin@linaro.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org
 
-Still, thanks for the review!
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index b943545f862c..002ba1d5bcf5 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -174,6 +174,15 @@ config USB_EHCI_HCD_SPEAR
+           Enables support for the on-chip EHCI controller on
+           ST SPEAr chips.
+ 
++config USB_EHCI_HCD_STI
++	tristate "Support for ST STiHxxx on-chip EHCI USB controller"
++	depends on ARCH_STI && OF
++	select GENERIC_PHY
++	select USB_EHCI_HCD_PLATFORM
++	help
++	  Enable support for the on-chip EHCI controller found on
++	  STMicroelectronics consumer electronics SoC's.
++
+ config USB_EHCI_HCD_AT91
+         tristate  "Support for Atmel on-chip EHCI USB controller"
+         depends on USB_EHCI_HCD && ARCH_AT91
+@@ -402,6 +411,15 @@ config USB_OHCI_HCD_SPEAR
+           Enables support for the on-chip OHCI controller on
+           ST SPEAr chips.
+ 
++config USB_OHCI_HCD_STI
++	tristate "Support for ST STiHxxx on-chip OHCI USB controller"
++	depends on ARCH_STI && OF
++	select GENERIC_PHY
++	select USB_OHCI_HCD_PLATFORM
++	help
++	  Enable support for the on-chip OHCI controller found on
++	  STMicroelectronics consumer electronics SoC's.
++
+ config USB_OHCI_HCD_S3C2410
+         tristate "OHCI support for Samsung S3C24xx/S3C64xx SoC series"
+         depends on USB_OHCI_HCD && (ARCH_S3C24XX || ARCH_S3C64XX)
+@@ -761,14 +779,6 @@ config USB_HCD_SSB
+ 
+ 	  If unsure, say N.
+ 
+-config USB_HCD_ST
+-	tristate "ST USB driver for ST SoC Series"
+-	depends on ARCH_STI && OF
+-	select GENERIC_PHY
+-	help
+-	  Enable support for the on-chip OHCI & EHCI controller found on
+-	  STMicroelectronics consumer electronics SoC's.
+-
+ config USB_HCD_TEST_MODE
+ 	bool "HCD test mode support"
+ 	---help---
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index ae2db0b87993..0336bb2c0e6f 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -38,6 +38,7 @@ obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
+ obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
+ obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
+ obj-$(CONFIG_USB_EHCI_HCD_SPEAR)	+= ehci-spear.o
++obj-$(CONFIG_USB_EHCI_HCD_ST)	+= ehci-st.o
+ obj-$(CONFIG_USB_EHCI_EXYNOS)	+= ehci-exynos.o
+ obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+ obj-$(CONFIG_USB_EHCI_MSM)	+= ehci-msm.o
+@@ -55,6 +56,7 @@ obj-$(CONFIG_USB_OHCI_EXYNOS)	+= ohci-exynos.o
+ obj-$(CONFIG_USB_OHCI_HCD_OMAP1)	+= ohci-omap.o
+ obj-$(CONFIG_USB_OHCI_HCD_OMAP3)	+= ohci-omap3.o
+ obj-$(CONFIG_USB_OHCI_HCD_SPEAR)	+= ohci-spear.o
++obj-$(CONFIG_USB_OHCI_HCD_STI)	+= ohci-st.o
+ obj-$(CONFIG_USB_OHCI_HCD_AT91)	+= ohci-at91.o
+ obj-$(CONFIG_USB_OHCI_HCD_S3C2410)	+= ohci-s3c2410.o
+ obj-$(CONFIG_USB_OHCI_HCD_LPC32XX)	+= ohci-nxp.o
+@@ -77,4 +79,3 @@ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
+ obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
+ obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
+ obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
+-obj-$(CONFIG_USB_HCD_ST)	+= ehci-st.o ohci-st.o
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUKVXXAAoJEBQN5MwUoCm2x5cP/j4hOcPDPDd2N79y+YfY46Xi
-M1CFTPQJi9kSikY+0pPnd/zDd5Wk3Gm3fR9oxBTAW2Zzt+EPlkiYr8YFd5STWc92
-l8dKoLd0OIgWS20FQkFqnfNg1pXS+T0OTnbt7fbFR2W2/zJi6TAMVWQ/fXtok3N2
-mYvAkklO7m7p+cpBkHuw0+uBYtbasDyFh/QEJI4mGxry8TzXZs0D23Vi2JfkP3Wd
-xKHH4D2AfO8ktBm+lVVMFtH09+inxqCEitNqyBhTtg35ELd7LpIai3EEBJPuod/p
-eRBvtqxRVQeIuf/DKp26eesTDpj8h17qCeWatl2R2zkTtZ/as4t+EMwKq/HNIX5I
-hnKYwz0K0T4dd9BeeC46j3gMXtwTqzCqtEvpgQvYEgkRvXg1yfZqRmtwUHm34TTV
-+fTGjRzLPb3jZrJ+U3VXl4D+l1nWmUj8HVn7eaUFKohUMv8nfLqUVdm30ZzDJzMI
-aiiOq8z/BLVB8EpE0gbbibIevgReXaf7ikZMPUDFodpK5hyBUm1ToQiF6iKfjUws
-oPuLGOLcQi0CPCYUHbJQClbjMPucd5x7Ho0i1Z4IohLbIXX0s0FZJeK6naU+K1b4
-5W5zzz0RRLliU0YSLlmXaaXjylmd1GJ5f0s3BIEUvdtLrlb5aZcMIlPpDxPQt461
-UxXgXm52Pwl+vUcbsNOa
-=euqh
------END PGP SIGNATURE-----
-
---a8Wt8u1KmwUX3Y2C--
