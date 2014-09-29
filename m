@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaI2LoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:44:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58830 "EHLO mx2.suse.de"
+	id S1753326AbaI2Lpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:45:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936AbaI2LoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:44:11 -0400
-Date: Mon, 29 Sep 2014 13:44:08 +0200
-From: Jan Kara <jack@suse.cz>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, jack@suse.cz,
-        linux-ext4@vger.kernel.org, tytso@mit.edu, adilger.kernel@dilger.ca
-Subject: Re: ext4: 3.17? problems
-Message-ID: <20140929114408.GC2738@quack.suse.cz>
-References: <20140928104456.GA17400@amd>
+	id S1751932AbaI2Lpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:45:31 -0400
+Date: Mon, 29 Sep 2014 14:48:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH] tun: make sure interface usage can not overflow
+Message-ID: <20140929114849.GA913@redhat.com>
+References: <20140928232753.GA31180@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140928104456.GA17400@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140928232753.GA31180@www.outflux.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
-
-On Sun 28-09-14 12:44:56, Pavel Machek wrote:
-> After update to debian testing, my machine sometimes fails to
-> reboot. (aptitude upgrade seems to be the trigger).
+On Sun, Sep 28, 2014 at 04:27:53PM -0700, Kees Cook wrote:
+> This makes the size argument a const, since it is always populated by
+> the caller. Additionally double-checks to make sure the copy_from_user
+> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
 > 
-> So I had to hard power-down the machine. That should be perfectly
-> safe, as ext4 has a journal, and this is plain SATA disk, right?
-  Yes, it should be safe.
-
-> On next boot to Debian stable, I got stacktrace, and messages about
-> ext4 corruption. Back to Debian testing. systemd ran fsck, determined
-  It would be really good to get those messages... Ideally you could also
-use
-  e2image -r <partition> | bzip2 -c
-to store fs metadata before doing anything else with the fs to a usb stick.
-That is invaluable for future analysis.
-
-> it can't fix it, dropped me into emergency shell, _but mounted the
-> filesstem, anyway_. Oops.
-  What kernel versions are you running in Debian testing and stable?
-My guess would be that kernel had problems only during orphan inode
-recovery (i.e. when deleting already deleted files) and we let the mount
-proceed if this fails because it's a relatively harmless problem.
-
-> Now I'm getting
+>    In function 'copy_from_user',
+>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+>        ... copy_from_user() buffer size is not provably correct
 > 
-> fsck 1.42.12
-> ...
-> Inodes that were part of a corrupted orphan linked list found <y>
-> Deleted inode has zero dtime <y>
-> (6 inodes) was part of the orphaned inode list. FIXED.
-> Block bitmap differences.
-> Free inode counts wrong.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+What exactly is the issue here?
+__tun_chr_ioctl is called with sizeof(struct compat_ifreq)
+or  sizeof (struct ifreq) as the last argument.
+
+So this looks like a false positive, but
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS machinery is supposed
+to avoid false positives.
+
+On which architecture is this?
+
+
+> ---
+>  drivers/net/tun.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index acaaf6784179..a1f317cba206 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1855,7 +1855,7 @@ unlock:
+>  }
+>  
+>  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+> -			    unsigned long arg, int ifreq_len)
+> +			    unsigned long arg, const size_t ifreq_len)
+>  {
+>  	struct tun_file *tfile = file->private_data;
+>  	struct tun_struct *tun;
+> @@ -1869,6 +1869,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  	int ret;
+>  
+>  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
+> +		BUG_ON(ifreq_len > sizeof(ifr));
+>  		if (copy_from_user(&ifr, argp, ifreq_len))
+>  			return -EFAULT;
+>  	} else {
+> -- 
+> 1.9.1
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
