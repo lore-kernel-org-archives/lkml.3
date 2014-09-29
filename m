@@ -1,158 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaI2Ra6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:30:58 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:47397 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaI2Ray (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:30:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140926100025.GC4476@leverpostej>
-References: <1410454801-14231-1-git-send-email-dianders@chromium.org> <20140926100025.GC4476@leverpostej>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Mon, 29 Sep 2014 10:30:32 -0700
-X-Google-Sender-Auth: -rCoIqFt3_15blgGbRn1OMeEHM8
-Message-ID: <CAPz6YkWZWgm--6EJxoV1s3zqTNpAF6+CBOrRc5qxdm5=hFzj1w@mail.gmail.com>
-Subject: Re: [PATCH v3] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Doug Anderson <dianders@chromium.org>, "olof@lixom.net" <olof@lixom.net>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	id S1754113AbaI2RiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:38:14 -0400
+Received: from omr1.cc.vt.edu ([198.82.141.52]:59049 "EHLO omr1.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249AbaI2RiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 13:38:12 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: Tightening up rdpmc permissions?
+In-Reply-To: Your message of "Mon, 29 Sep 2014 09:39:16 -0700."
+             <CALCETrU3nNvG6+-7iScYT8LDRFnq8kYnpK0cdW1bgW5O4EGrUg@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <CALCETrU3nNvG6+-7iScYT8LDRFnq8kYnpK0cdW1bgW5O4EGrUg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1412012181_2318P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 29 Sep 2014 13:36:22 -0400
+Message-ID: <9930.1412012182@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 3:00 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Sep 11, 2014 at 06:00:01PM +0100, Doug Anderson wrote:
->> Some 32-bit (ARMv7) systems are architected like this:
->>
->> * The firmware doesn't know and doesn't care about hypervisor mode and
->>   we don't want to add the complexity of hypervisor there.
->>
->> * The firmware isn't involved in SMP bringup or resume.
->>
->> * The ARCH timer come up with an uninitialized offset between the
->>   virtual and physical counters.  Each core gets a different random
->>   offset.
->>
->> * The device boots in "Secure SVC" mode.
->>
->> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
->>   CNTHCTL.PL1PCTEN (both default to 1 at reset)
->>
->> On systems like the above, it doesn't make sense to use the virtual
->> counter.  There's nobody managing the offset and each time a core goes
->> down and comes back up it will get reinitialized to some other random
->> value.
->>
->> Let's add a property to the device tree to say that we shouldn't use
->> the virtual timer.  Firmware could potentially remove this property
->> before passing the device tree to the kernel if it really wants the
->> kernel to use a virtual timer.
->>
->> Note that it's been said that ARM64 (ARMv8) systems the firmware and
->> kernel really can't be architected as described above.  That means
->> using the physical timer like this really only makes sense for ARMv7
->> systems.
->>
->> In order for this patch to do anything useful, we also need Sonny's
->> patch at <https://patchwork.kernel.org/patch/4790921/>
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->> ---
->> Changes in v3:
->> - Wording changes to bindings and patch desc as per Will Deacon
->>
->> Changes in v2:
->> - Add "#ifdef CONFIG_ARM" as per Will Deacon
->>
->>  Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
->>  drivers/clocksource/arm_arch_timer.c                 | 5 +++++
->>  2 files changed, 11 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
->> index 37b2caf..e28fced 100644
->> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
->> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
->> @@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
->>  - always-on : a boolean property. If present, the timer is powered through an
->>    always-on power domain, therefore it never loses context.
->>
->> +** Optional properties:
->> +
->> +- arm,use-physical-timer : Don't ever use the virtual timer, just use the
->> +  physical one.  Only supported for ARM (not ARM64).
->
-> I'm still not keen on telling the kernel what to do rather than
-> describing the actual state of affairs and having the kernel decide what
-> to do. Perhaps what we actually need is:
->
-> - cntvoff-not-fw-configured: Firmware does not configure CNTVOFF, which
->   may reset to (different) arbitrary values on each CPU.
->
-> This also doesn't describe that CNTHCTL.PL1PC(T)EN must both be 1. While
-> that is the reset state, it still feels dodbgy to me to rely on that.
->
-> Mark.
+--==_Exmh_1412012181_2318P
+Content-Type: text/plain; charset=us-ascii
 
-Mark, I'm happy to repost it with that name for Doug.
+On Mon, 29 Sep 2014 09:39:16 -0700, Andy Lutomirski said:
 
-I think it's fair to describe this state in the binding, and if a
-firmware were to put this property into the device-tree for and
-CNTHCTL.PL1P(T)CEN also have configured to 0, then the kernel can
-merely consider that to be a broken usage of this property.   We
-certainly can't protect against all of the possible invalid states
-caused and probably shouldn't try.  If we implement something like
-Christopher's suggestion for transitioning from secure svc to NS hyp
-mode then the kernel can simply ignore this property at that point.
+> Would it make sense to restrict rdpmc to tasks that are in mms that
+> have a perf_event mapping?  After all, unless I misunderstand
+> something, user code can't reliably use rdpmc unless they've mapped a
+> perf_event object to check the rdpmc bit and figure out what ecx value
+> to use.
 
->> +
->> +
->>  Example:
->>
->>       timer {
->> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
->> index 5163ec1..e7aa256 100644
->> --- a/drivers/clocksource/arm_arch_timer.c
->> +++ b/drivers/clocksource/arm_arch_timer.c
->> @@ -649,6 +649,11 @@ static void __init arch_timer_init(struct device_node *np)
->>               arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
->>       arch_timer_detect_rate(NULL, np);
->>
->> +#ifdef CONFIG_ARM
->> +     if (of_property_read_bool(np, "arm,use-physical-timer"))
->> +             arch_timer_use_virtual = false;
->> +#endif
->> +
->>       /*
->>        * If HYP mode is available, we know that the physical timer
->>        * has been configured to be accessible from PL1. Use it, so
->> --
->> 2.1.0.rc2.206.gedb03e5
->>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Wouldn't that be trivially easy for an attacker to bypass? Just map a dummy
+perf_event object  and then go to town?
+
+--==_Exmh_1412012181_2318P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVCmYlQdmEQWDXROgAQJyFA//enFNilqa4+HBkAK48ZG9i2YmyojtcGTL
+AXAuT3XHq979DYzlZcxnaKnWD4DV87fUZgig10Sk5ziAecLhzI7wRcSLpbje/aBN
+mPwyzD4Qt8DH2kw+4rkNliZQI163fcpGHhxMArHgs2U95PKkeP+1ZTdNqsiTamTp
+ziPf1wcdIxZqc87G/KwEgYALbjVb5Nzdj061FxFDbBOyEMLWmSQvLWhPMFNKljpp
+m1IB7udKHr1Z+suOrhwPkKLNBppEiE8FSjuxEJpgJKn1+bE037dB3kRi+P+/CKBS
+xUoOsO31d4Mp446tDlqBbZkp4aIR3lnTU7WcgYYvYmC2nF42y+5E5P0W558yXnJ1
+gEF4m90o392/9EnVB3InTC0c6KxKHt1zNEoJIIB/TWSHXTxpzKVt+JkblK80T7WH
+JIDQTL2Xn21lMX7fGeEBm9wlvHKU29zAT/A8ISzPNUACtxKAyzcQJ2YIOjYZSSON
+uRUbufgIZdMF1uukp13g8XRedsfQ8aPc04B2PCe1WZoeRZNW/b93thdDeZPKU7ZB
+Svlip91Rd3AOMq1Ts0naMQfc4au44hnsHSap29iFRSNCGDJ0RAzC3sUjzoVSZw2O
+FHam8IW2tlphvf8fb6dkrlRWeQGMSOUFBoyENwCPhcTTQRiK093cj8kfWJJ48/1f
+oQmWlIkSfYs=
+=zAL1
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1412012181_2318P--
