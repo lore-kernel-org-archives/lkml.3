@@ -1,161 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaI2KFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:05:14 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:42283 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaI2KFL (ORCPT
+	id S1752889AbaI2KHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:07:33 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:60861 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaI2KHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:05:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140929095344.GE4388@lukather>
-References: <1411570141-29960-1-git-send-email-wens@csie.org>
- <1411570141-29960-5-git-send-email-wens@csie.org> <20140925133427.GI15315@lukather>
- <CAGb2v65Yu=3rgQ+G6USJubKOPzcMJ5bqhe7d9wrYjpT9aFaZuw@mail.gmail.com> <20140929095344.GE4388@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Mon, 29 Sep 2014 18:04:50 +0800
-X-Google-Sender-Auth: PEFAm8WOrv-P3amGtibHhj90SC0
-Message-ID: <CAGb2v64-zshYgcPo-WR0TVebUDY3=LKBA9DfTVDKk2PA6VSiUA@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] ARM: dts: sun9i: Add A80 Optimus Board support
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        ctl <ctl@merrii.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
+	Mon, 29 Sep 2014 06:07:32 -0400
+Date: Mon, 29 Sep 2014 12:07:23 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Prisk <linux@prisktech.co.nz>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv4 0/4] pwm: imx: support output polarity inversion
+Message-ID: <20140929120723.62e7d73c@ipc1.ka-ro>
+In-Reply-To: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
+References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 5:53 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Sat, Sep 27, 2014 at 09:10:48PM +0800, Chen-Yu Tsai wrote:
->> On Thu, Sep 25, 2014 at 9:34 PM, Maxime Ripard
->> <maxime.ripard@free-electrons.com> wrote:
->> > On Wed, Sep 24, 2014 at 10:48:58PM +0800, Chen-Yu Tsai wrote:
->> >> The A80 Optimus Board is was launched with the Allwinner A80 SoC.
->> >> It was jointly developed by Allwinner and Merrii.
->> >>
->> >> This board has a UART port, a JTAG connector, USB host ports, a USB
->> >> 3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
->> >> 4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
->> >> jack, IR receiver, and additional GPIO headers.
->> >>
->> >> This patch adds only basic support.
->> >>
->> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->> >> ---
->> >>  arch/arm/boot/dts/Makefile              |  2 +
->> >>  arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
->> >>  2 files changed, 68 insertions(+)
->> >>  create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
->> >>
->> >> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
->> >> index 2f42b18..098f319 100644
->> >> --- a/arch/arm/boot/dts/Makefile
->> >> +++ b/arch/arm/boot/dts/Makefile
->> >> @@ -424,6 +424,8 @@ dtb-$(CONFIG_MACH_SUN7I) += \
->> >>       sun7i-a20-pcduino3.dtb
->> >>  dtb-$(CONFIG_MACH_SUN8I) += \
->> >>       sun8i-a23-ippo-q8h-v5.dtb
->> >> +dtb-$(CONFIG_MACH_SUN9I) += \
->> >> +     sun9i-a80-optimus.dtb
->> >>  dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
->> >>       tegra20-iris-512.dtb \
->> >>       tegra20-medcom-wide.dtb \
->> >> diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/sun9i-a80-optimus.dts
->> >> new file mode 100644
->> >> index 0000000..f83abab
->> >> --- /dev/null
->> >> +++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
->> >> @@ -0,0 +1,66 @@
->> >> +/*
->> >> + * Copyright 2014 Chen-Yu Tsai
->> >> + *
->> >> + * Chen-Yu Tsai <wens@csie.org>
->> >> + *
->> >> + * This file is dual-licensed: you can use it either under the terms
->> >> + * of the GPL or the X11 license, at your option. Note that this dual
->> >> + * licensing only applies to this file, and not this project as a
->> >> + * whole.
->> >> + *
->> >> + *  a) This library is free software; you can redistribute it and/or
->> >> + *     modify it under the terms of the GNU General Public License as
->> >> + *     published by the Free Software Foundation; either version 2 of the
->> >> + *     License, or (at your option) any later version.
->> >> + *
->> >> + *     This library is distributed in the hope that it will be useful,
->> >> + *     but WITHOUT ANY WARRANTY; without even the implied warranty of
->> >> + *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> >> + *     GNU General Public License for more details.
->> >> + *
->> >> + *     You should have received a copy of the GNU General Public
->> >> + *     License along with this library; if not, write to the Free
->> >> + *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
->> >> + *     MA 02110-1301 USA
->> >> + *
->> >> + * Or, alternatively,
->> >> + *
->> >> + *  b) Permission is hereby granted, free of charge, to any person
->> >> + *     obtaining a copy of this software and associated documentation
->> >> + *     files (the "Software"), to deal in the Software without
->> >> + *     restriction, including without limitation the rights to use,
->> >> + *     copy, modify, merge, publish, distribute, sublicense, and/or
->> >> + *     sell copies of the Software, and to permit persons to whom the
->> >> + *     Software is furnished to do so, subject to the following
->> >> + *     conditions:
->> >> + *
->> >> + *     The above copyright notice and this permission notice shall be
->> >> + *     included in all copies or substantial portions of the Software.
->> >> + *
->> >> + *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
->> >> + *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
->> >> + *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
->> >> + *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
->> >> + *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
->> >> + *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
->> >> + *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
->> >> + *     OTHER DEALINGS IN THE SOFTWARE.
->> >> + */
->> >> +
->> >> +/dts-v1/;
->> >> +/include/ "sun9i-a80.dtsi"
->> >> +
->> >> +/ {
->> >> +     model = "Merrii A80 Optimus Board";
->> >> +     compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
->> >> +
->> >> +     chosen {
->> >> +             bootargs = "earlyprintk console=ttyS0,115200";
->> >> +     };
->> >
->> > Since you changed the memory node in the DTSI, you should probably add
->> > one here too, don't you?
->>
->> I thought we left fixing that to the bootloader?
->> I don't see any memory nodes in our other DTS.
->
-> Yes, but does the A80 bootloader supports DT and actually fixes it? If
-> not, then you'll still have to have a memory node, just like on the
-> A31 (and presumably on the A23).
+Hi,
 
-Not at the moment no. But last I checked none of our board dts files
-have separate memory nodes. We only have them in the dtsi, with the
-largest supported ram size as its value. Also the bootloader
-(u-boot that is) can pass the memory size via atags I think.
-
-At least I'm only getting 512MB RAM on my Optimus, due to u-boot
-incorrectly assuming I only have as much. But that's another problem. :(
-
-Would this be a problem when using Android fastboot from the stock
-u-boot?
+Lothar Waßmann wrote:
+> This patch series adds support for polarity inversion to the pwm-imx
+> driver. The patches have been tested on i.MX6, i.MX53 and with the
+> ti-ehrpwm.c driver.
+> 
+> Changes wrt. v2:
+> - make the use of '#pwm-cells = <3>' optional, so that the change does
+>   not break existing DT blobs as suggested by Arnd Bergmann and Sascha
+>   Hauer.
+> 
+> Changes wrt. v3:
+> - implemented the approach suggested by Sascha Hauer 
+> - don't modify struct pwm_ops in the imx_pwm probe function
+> 
+> 
+Ping?
+It's now over a month without any reaction. What should I do with these
+patches?
 
 
-Cheers
-ChenYu
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
