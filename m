@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaI2SKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:10:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53237 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008AbaI2SG7 (ORCPT
+	id S1754829AbaI2SNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:13:20 -0400
+Received: from pegasus3.altlinux.org ([194.107.17.103]:52963 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753991AbaI2SNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:06:59 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
-        gregkh@linuxfoundation.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 04/13] tty: serial: 8250_dma: handle error on TX submit
-Date: Mon, 29 Sep 2014 20:06:40 +0200
-Message-Id: <1412014009-13315-5-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Mon, 29 Sep 2014 14:13:16 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 14:13:16 EDT
+Date: Mon, 29 Sep 2014 22:04:45 +0400
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Rob Jones <rob.jones@codethink.co.uk>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND v3 PATCH 1/3] Documentation: update seq_file
+Message-ID: <20140929180445.GA15829@altlinux.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now it is possible that serial8250_tx_dma() fails and returns
--EBUSY. The caller (serial8250_start_tx()) will then enable
-UART_IER_THRI which will generate an interrupt once the TX FIFO is
-empty.
-In serial8250_handle_irq() nothing will happen because up->dma is set
-and so serial8250_tx_chars() won't be invoked. We end up with plenty of
-interrupts and some "too much work for irq" output.
+Date: Wed, 17 Oct 2012 20:29:22 +0400
 
-This patch introduces dma_tx_err in struct uart_8250_port to signal that
-the last invocation of serial8250_tx_dma() failed so we can fill the TX
-FIFO manually. Should the next invocation of serial8250_start_tx()
-succeed then the dma_tx_err flag along with the THRI bit is removed and
-DMA only usage may continue.
+Starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
+changes the value of root.
+Starting with commit v3.2-rc7-104-g8c9379e, some arguments of seq_path()
+and seq_path_root() are const.
 
-Reviewed-by: Tony Lindgren <tony@atomide.com>
-Tested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+Acked-by: Rob Landley <rob@landley.net>
 ---
- drivers/tty/serial/8250/8250.h      |  1 +
- drivers/tty/serial/8250/8250_core.c |  3 ++-
- drivers/tty/serial/8250/8250_dma.c  | 30 +++++++++++++++++++++++++-----
- 3 files changed, 28 insertions(+), 6 deletions(-)
+ Documentation/filesystems/seq_file.txt | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index 1bcb4b2141a6..a63d198f8d03 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -41,6 +41,7 @@ struct uart_8250_dma {
- 	size_t			tx_size;
+diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
+index 8ea3e90..a193c1d 100644
+--- a/Documentation/filesystems/seq_file.txt
++++ b/Documentation/filesystems/seq_file.txt
+@@ -198,16 +198,16 @@ which is in the string esc will be represented in octal form in the output.
  
- 	unsigned char		tx_running:1;
-+	unsigned char		tx_err: 1;
- };
+ There is also a pair of functions for printing filenames:
  
- struct old_serial_port {
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 159b72471622..ea57c87f8528 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1594,7 +1594,8 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
- 			status = serial8250_rx_chars(up, status);
- 	}
- 	serial8250_modem_status(up);
--	if (!up->dma && (status & UART_LSR_THRE))
-+	if ((!up->dma || (up->dma && up->dma->tx_err)) &&
-+	    (status & UART_LSR_THRE))
- 		serial8250_tx_chars(up);
+-	int seq_path(struct seq_file *m, struct path *path, char *esc);
+-	int seq_path_root(struct seq_file *m, struct path *path,
+-			  struct path *root, char *esc)
++	int seq_path(struct seq_file *m, const struct path *path,
++		     const char *esc);
++	int seq_path_root(struct seq_file *m, const struct path *path,
++			  const struct path *root, const char *esc)
  
- 	spin_unlock_irqrestore(&port->lock, flags);
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 148ffe4c232f..69e54abb6e71 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -36,8 +36,16 @@ static void __dma_tx_complete(void *param)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(&p->port);
+ Here, path indicates the file of interest, and esc is a set of characters
+ which should be escaped in the output.  A call to seq_path() will output
+ the path relative to the current process's filesystem root.  If a different
+-root is desired, it can be used with seq_path_root().  Note that, if it
+-turns out that path cannot be reached from root, the value of root will be
+-changed in seq_file_root() to a root which *does* work.
++root is desired, it can be used with seq_path_root().  If it turns out that
++path cannot be reached from root, seq_path_root() returns SEQ_SKIP.
  
--	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port))
--		serial8250_tx_dma(p);
-+	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port)) {
-+		int ret;
-+
-+		ret = serial8250_tx_dma(p);
-+		if (ret) {
-+			dma->tx_err = 1;
-+			p->ier |= UART_IER_THRI;
-+			serial_port_out(&p->port, UART_IER, p->ier);
-+		}
-+	}
  
- 	spin_unlock_irqrestore(&p->port.lock, flags);
- }
-@@ -69,6 +77,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	struct uart_8250_dma		*dma = p->dma;
- 	struct circ_buf			*xmit = &p->port.state->xmit;
- 	struct dma_async_tx_descriptor	*desc;
-+	int ret;
- 
- 	if (uart_tx_stopped(&p->port) || dma->tx_running ||
- 	    uart_circ_empty(xmit))
-@@ -80,8 +89,10 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 					   dma->tx_addr + xmit->tail,
- 					   dma->tx_size, DMA_MEM_TO_DEV,
- 					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
--	if (!desc)
--		return -EBUSY;
-+	if (!desc) {
-+		ret = -EBUSY;
-+		goto err;
-+	}
- 
- 	dma->tx_running = 1;
- 
-@@ -94,8 +105,17 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 				   UART_XMIT_SIZE, DMA_TO_DEVICE);
- 
- 	dma_async_issue_pending(dma->txchan);
--
-+	if (dma->tx_err) {
-+		dma->tx_err = 0;
-+		if (p->ier & UART_IER_THRI) {
-+			p->ier &= ~UART_IER_THRI;
-+			serial_out(p, UART_IER, p->ier);
-+		}
-+	}
- 	return 0;
-+err:
-+	dma->tx_err = 1;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(serial8250_tx_dma);
- 
+ Making it all work
 -- 
-2.1.0
+ldv
 
