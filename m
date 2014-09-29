@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaI2QJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:09:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:53295 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751971AbaI2QJn (ORCPT
+	id S1754861AbaI2QKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:10:33 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:55534 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129AbaI2QKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:09:43 -0400
-Date: Mon, 29 Sep 2014 12:09:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Petr Mladek <pmladek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
- seq_puts()
-Message-ID: <20140929120927.7e05f485@gandalf.local.home>
-In-Reply-To: <20140929154711.GF7996@ZenIV.linux.org.uk>
-References: <20140926143721.52206f95@gandalf.local.home>
-	<20140929144121.GA30562@pathway.suse.cz>
-	<20140929154711.GF7996@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Mon, 29 Sep 2014 12:10:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <54297D10.9050907@linaro.org>
+References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com>
+	<542970CF.6040405@linaro.org>
+	<CAMf-jSmdNibSK+ffBOdcuVjyhmHFcfi5s4nQzctrS0dK889+FA@mail.gmail.com>
+	<54297D10.9050907@linaro.org>
+Date: Mon, 29 Sep 2014 21:40:29 +0530
+Message-ID: <CAMf-jSnDVw+UEXKwSNmJJ+whuq-Rf07avXP9uPZUxmOE53jg_A@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 16:47:12 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Mon, Sep 29, 2014 at 9:08 PM, Srinivas Kandagatla
+<srinivas.kandagatla@linaro.org> wrote:
+>
+>
+> On 29/09/14 16:05, Pramod Gurav wrote:
+>>>
+>>> >I think the correct fix is:
+>>> >
+>>> >diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+>>> >index 5475374..4060c30 100644
+>>> >--- a/drivers/pinctrl/pinctrl-st.c
+>>> >+++ b/drivers/pinctrl/pinctrl-st.c
+>>> >@@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
+>>> > st_pinctrl
+>>> >*info,
+>>> >                                              gpio_irq,
+>>> > st_gpio_irq_handler);
+>>> >         }
+>>> >
+>>> >-       if (info->irqmux_base > 0 || gpio_irq > 0) {
+>>> >+       if (!IS_ERR(info->irqmux_base) || gpio_irq > 0) {
+>>> >                 err = gpiochip_irqchip_add(&bank->gpio_chip,
+>>
+>> But if I am not wrong in function st_pctl_probe_dt, This is already done:
+>>
+>> if (IS_ERR(info->irqmux_base))
+>>              return PTR_ERR(info->irqmux_base);
+>>
+>> That is the reason I thought there is no need to recheck the pointer
+>> info->irqmux_base.
+>> Am I misunderstanding something?
+>
+>
+> Ok, we want to add the irqchip only when there is a valid irqmux_base or a
+> valid gpio_irq per bank.
+>
+> As st_gpiolib_register_bank() is used by both types of irq wirings and it
+> does not know if irqmux or gpio irq is in use, so we need this explicit
+> check. Also we want to make sure that atleast one type is valid before
+> adding irqchip.
+>
+> If you just check for only gpio_irq in this code, you would miss the case
+> where irqmux is used.
+>
+> As Dan pointed you could check if irqmux_base is valid and not remove it
+> totally. Removing it will *break* the irqmux support as I explained.
+Thanks Srini, Will resend the patch.
+>
+> thanks,
+> srini
+>
+>
+>
+>>> >&st_gpio_irqchip,
+>>> >                                            0, handle_simple_irq,
+>>> >                                            IRQ_TYPE_LEVEL_LOW);
+>>> >
+>>> >
 
-> What we need is a helper along the lines of seq_already_overflown() that
-> could be used by the few places that really want that hint.  As in
-> 	if (seq_already_overflown(m))
-> 		return 0; // we'll be called again with bigger buffer anyway
 
-We already have that, it's called seq_overflow(), but it's a static
-function in seq_file.c. We can easily move that to seq_file.h. If you
-want to rename it to seq_already_overflown() that would be fine.
 
-> 
-> And let's make seq_printf and friends return void.  Any breakage we miss
-> on grep will be caught by compiler.  Enough is enough.
-
-I'm good with this.
-
-Note, I'm trying to make a seq_buf.c file that consolidates the code in
-trace_seq.c and seq_file.c. This will extend slightly the use cases of
-the seq_buf functions, but I think all the seq_*() functions from
-seq_file.c can be turned into functions that return void.
-
-I'm thinking of making m->count > m->size be what returns overflow as
-true, as m->count == m->size can have all the data, that is, nothing
-lost.
-
-I'll start writing up some patches.
-
--- Steve
+-- 
+Thanks and Regards
+Pramod
