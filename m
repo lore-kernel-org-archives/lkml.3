@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaI2Gze (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 02:55:34 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:42276 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaI2Gzd (ORCPT
+	id S1752334AbaI2HAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 03:00:01 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:35759 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaI2HAA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 02:55:33 -0400
-Message-ID: <542903B1.1000601@gmail.com>
-Date: Mon, 29 Sep 2014 15:01:05 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 29 Sep 2014 03:00:00 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-CC: Michal Simek <michal.simek@xilinx.com>, monstr@monstr.eu,
-        linux-usb@vger.kernel.org,
+In-Reply-To: <5425A008.2030901@arm.com>
+References: <1411750918-25220-1-git-send-email-will.deacon@arm.com>
+	<5425A008.2030901@arm.com>
+Date: Mon, 29 Sep 2014 08:59:59 +0200
+Message-ID: <CAFrcx1=s4Ae2z6OAC3dUR34rhd=HpKA+O9DAtM=QVNpJ7oNnEg@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: fix build breakage on arm and arm64 targets
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>, "acme@redhat.com" <acme@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/usb/host/ehci-xilinx-of.c: Include "linux/of_irq.h"
- to avoid compiling error
-References: <e0dec78e-193e-43ee-bdb0-fa776a6dd044@BY2FFO11FD030.protection.gbl> <Pine.LNX.4.44L0.1409241141260.1580-100000@iolanthe.rowland.org> <20140929015224.GB27008@kroah.com>
-In-Reply-To: <20140929015224.GB27008@kroah.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/29/14 9:52, Greg Kroah-Hartman wrote:
-> On Wed, Sep 24, 2014 at 11:41:55AM -0400, Alan Stern wrote:
->> On Mon, 22 Sep 2014, Michal Simek wrote:
+Hi Will,
+
+On 26 September 2014 19:19, Sudeep Holla <sudeep.holla@arm.com> wrote:
+>
+> On 26/09/14 18:01, Will Deacon wrote:
 >>
->>> Alan: Can you please add this patch to your queue?
->>> Greg: If Alan is not maintaining this part of kernel, is this patch in your queue?
->>>
->>> I have also not a problem to add this patch through my microblaze tree
->>> but I think it will be much better to use any USB tree.
+>> Attempting to build the perf tool on arm or arm64 targets results in the
+>> following failure:
 >>
->> Greg should be able to accept a trivial patch like this one directly.
-> 
-> I can, if someone will resend it so I can apply it :)
-> 
+>> arch/arm/util/unwind-libunwind.c: In function ‘libunwind__arch_reg_id’:
+>> arch/arm/util/unwind-libunwind.c:43:3: error: implicit declaration of
+>> function ‘pr_err’ [-Werror=implicit-function-declaration]
+>>     pr_err("unwind: invalid reg id %d\n", regnum);
+>>     ^
+>> This is due to commit 84f5d36f4866 ("perf tools: Move pr_* debug macros
+>> into debug object") moving the pr_* macros into a new header file, but
+>> failing to update architectures other than x86.
+>>
+>> This patch adds the missing includes, and fixes the build again.
 
-This patch you have already applied (applied this patch in 2014-09-24),
-so I need not resend it.
+The fix for ARM is already in the tip tree at
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=29a3ce31c38c8f73f4e076b7ffc0876b4f5dd6c3.
 
-Thank all of you for your work.
+Regards,
+Jean
 
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>>
+>
+> For ARM64, we also need the patch[1] "perf tools: Fix arm64 build error"
+> which is already queued in linux-next.
+>
+> Regards,
+> Sudeep
+>
+> [1] https://lkml.org/lkml/2014/6/24/1024
+>
