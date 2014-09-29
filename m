@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaI2U4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:56:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39627 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaI2U4H (ORCPT
+	id S1754027AbaI2VBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 17:01:43 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:41025 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742AbaI2VBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:56:07 -0400
-Date: Mon, 29 Sep 2014 13:56:04 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] dell-smo8800: Add more acpi ids and change description
- of driver
-Message-ID: <20140929205604.GA34181@vmdeb7>
-References: <1411994748-11229-1-git-send-email-pali.rohar@gmail.com>
+	Mon, 29 Sep 2014 17:01:42 -0400
+Date: Mon, 29 Sep 2014 21:01:32 +0000
+From: "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: nhorman@tuxdriver.com, mroos@linux.ee, David Miller <davem@davemloft.net>
+Subject: [PATCH v3] 3c59x: fix bad split of cpu_to_le32(pci_map_single())
+Message-ID: <20140929210132.GD15737@erable>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411994748-11229-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 02:45:48PM +0200, Pali Rohár wrote:
+In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
+  # 3c59x: Add dma error checking and recovery
+the intent is to split out the mapping from the byte-swapping in order to
+insert a dma_mapping_error() check.
 
-Please see Documentation/SubmittingPatches, 15) The canonical patch format, and
-provide a complete message body.
+Kinda this semantic patch:
 
-Have you validated each of the 6 ACPI IDs added to the driver?
+    // See http://coccinelle.lip6.fr/
+    //
+    // Beware, grouik-and-dirty!
+    @@
+    expression DEV, X, Y, Z;
+    @@
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
 
+However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/platform/x86/Kconfig        |    4 ++--
->  drivers/platform/x86/dell-smo8800.c |   10 ++++++++--
->  2 files changed, 10 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 3bbcbf1..ba9ee4f 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -128,10 +128,10 @@ config DELL_WMI_AIO
->  	  be called dell-wmi-aio.
->  
->  config DELL_SMO8800
-> -	tristate "Dell Latitude freefall driver (ACPI SMO8800/SMO8810)"
-> +	tristate "Dell Latitude freefall driver (ACPI SMO88XX)"
->  	depends on ACPI
->  	---help---
-> -	  Say Y here if you want to support SMO8800/SMO8810 freefall device
-> +	  Say Y here if you want to support SMO88XX freefall device
+    -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+    +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
+    //                    ^^^^^^^^^^^
+    //                    That mismatches the 3 other changes!
+    +   if (dma_mapping_error(&DEV->dev, addr))
+    +       /* snip */;
+    +   cpu_to_le32(addr)
 
-"devices" now that multiple are supported.
+Let's remove the leftover cpu_to_le32() for coherency.
 
-Thanks,
+v2: Better changelog.
+v3: Add Acked-by
+
+Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
+  # 3c59x: Add dma error checking and recovery
+Cc: Meelis Roos <mroos@linux.ee>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+---
+ drivers/net/ethernet/3com/3c59x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
+index 8ca49f04..0a3108b3 100644
+--- a/drivers/net/ethernet/3com/3c59x.c
++++ b/drivers/net/ethernet/3com/3c59x.c
+@@ -2214,7 +2214,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 	}
+ #else
+-	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
++	dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE);
+ 	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
+ 		goto out_dma_err;
+ 	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
+-- 
+1.7.10.4
+
+Regards,
+Sylvain "ythier" Hitier
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+Business is about being busy, not being rich...
+Lived 777 days in a Debian package => http://en.wikipedia.org/wiki/Apt,_Vaucluse
+There's THE room for ideals in this mechanical place!
