@@ -1,233 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbaI3HcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:32:20 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:45957 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaI3HcS convert rfc822-to-8bit (ORCPT
+	id S1752033AbaI3Hfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:35:52 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36103 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaI3Hfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:32:18 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, arnd@arndb.de, b29396@freescale.com,
-        lee.jones@linaro.org, boris.brezillon@free-electrons.com,
-        tomasz.figa@gmail.com, linux@arm.linux.org.uk,
-        vikas.sajjan@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
-        kgene.kim@samsung.com, Li.Xiubo@freescale.com, geert+renesas@glider.be,
-        swarren@nvidia.com, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH v6] mfd: syscon: Decouple syscon interface from platform devices
-Date: Tue, 30 Sep 2014 09:32:05 +0200
-Message-ID: <2435679.p6uTNH9s2e@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <000d01cfdc63$99576bb0$cc064310$@samsung.com>
-References: <1411980458-32329-1-git-send-email-pankaj.dubey@samsung.com> <1617081.XFKIz4hM4O@phil> <000d01cfdc63$99576bb0$cc064310$@samsung.com>
+	Tue, 30 Sep 2014 03:35:50 -0400
+Date: Mon, 29 Sep 2014 11:42:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mikhail Efremov <sem@altlinux.org>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+Message-ID: <20140929184218.GN5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
+ <20140924201813.GI7996@ZenIV.linux.org.uk>
+ <20140925044601.GL7996@ZenIV.linux.org.uk>
+ <20140926164442.GA26897@ZenIV.linux.org.uk>
+ <20140927044555.GS7996@ZenIV.linux.org.uk>
+ <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+ <20140927183139.GT7996@ZenIV.linux.org.uk>
+ <20140927191657.GU7996@ZenIV.linux.org.uk>
+ <20140928074747.GZ7996@ZenIV.linux.org.uk>
+ <20140928180556.GA7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140928180556.GA7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14093007-0928-0000-0000-000005420BA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+On Sun, Sep 28, 2014 at 07:05:56PM +0100, Al Viro wrote:
+> On Sun, Sep 28, 2014 at 08:47:47AM +0100, Al Viro wrote:
+> 
+> > The root cause, of course, is that we delay decrementing the refcount on
+> > dentry_free() path...  One variant is to rip freeing these suckers out of
+> > __d_free() and have dentry_free() do atomic_dec_and_test + kfree_rcu.
+> > That works (and we don't need to set DCACHE_RCUACCESS in copy_name();
+> > the interesting part of never-hashed case is for short names anyway), but
+> > the cost is twice the number of rcu callbacks on freeing long-name dentries.
+> > Is that really painful enough to care?  If not, something like the following
+> > would do; if it is... well, we could probably do make free_dentry() mark
+> > dentry->d_flags for __d_free() with "free the external name hanging off
+> > this one" in case if refcount decrement has ended up with zero.  Doable,
+> > but more complicated (and somewhat messy, since ->d_lock is not held
+> > at that point; OTOH, we could play with ->d_name instead of ->d_flags...).
+> > Anyway, the delta below might suffice.  Comments?
+> 
+> Now that I've got some sleep...  It's easy to avoid extra call_rcu, of
+> course - just have two variants of __d_free(), one freeing the external
+> name (always called via call_rcu()) and another just freeing the dentry
+> itself.
 
-Am Dienstag, 30. September 2014, 09:33:38 schrieb Pankaj Dubey:
-> Hi,
-> 
-> On Monday, September 29, 2014 9:38 PM, Heiko Stübner wrote,
-> 
-> > Am Montag, 29. September 2014, 14:17:38 schrieb Pankaj Dubey:
-> > > Currently a syscon entity can be only registered directly through a
-> > > platform device that binds to a dedicated syscon driver. However in
-> > > certain use cases it is desirable to make a device used with another
-> > > driver a syscon interface provider.
-> > > 
-> > > For example, certain SoCs (e.g. Exynos) contain system controller
-> > > blocks which perform various functions such as power domain control,
-> > > CPU power management, low power mode control, but in addition contain
-> > > certain IP integration glue, such as various signal masks, coprocessor
-> > > power control, etc. In such case, there is a need to have a dedicated
-> > > driver for such system controller but also share registers with other
-> > > drivers. The latter is where the syscon interface is helpful.
-> > > 
-> > > In case of DT based platforms, this patch decouples syscon object from
-> > > syscon platform driver, and allows to create syscon objects first time
-> > > when it is required by calling of syscon_regmap_lookup_by APIs and
-> > > keep a list of such syscon objects along with syscon provider
-> > > device_nodes and regmap handles.
-> > > 
-> > > For non-DT based platforms, this patch keeps syscon platform driver
-> > > structure where is can be probed and such non-DT based drivers can use
-> > > syscon_regmap_lookup_by_pdev API and get access to regmap handles.
-> > > Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
-> > > we can completely remove platform driver of syscon, and keep only
-> > > helper functions to get regmap handles.
-> > > 
-> > > Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> > > Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
-> > > Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
-> > > Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > > ---
-> > 
-> > On Rockchip boards during core clock init (aka before timers)
-> > Tested-by: Heiko Stuebner <heiko@sntech.de>
-> 
-> Thanks for testing.
-> 
-> > Except one issue described inline below
-> > Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-> > 
-> > 
-> > And I'm really looking forward to having this in the kernel :-)
-> > 
-> > Thanks for working on this
-> > Heiko
-> 
-> [snip]
-> 
-> > >  drivers/mfd/syscon.c |  106
-> > > 
-> > > +++++++++++++++++++++++++++++++++++++++----------- 1 file
-> > 
-> > changed, 84
-> > 
-> > > insertions(+), 22 deletions(-)
-> > > 
-> > > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c index
-> > > ca15878..00a8410 100644
-> > > --- a/drivers/mfd/syscon.c
-> > > +++ b/drivers/mfd/syscon.c
-> > > @@ -15,6 +15,7 @@
-> > > 
-> > >  #include <linux/err.h>
-> > >  #include <linux/io.h>
-> > >  #include <linux/module.h>
-> > > 
-> > > +#include <linux/list.h>
-> > > 
-> > >  #include <linux/of.h>
-> > >  #include <linux/of_address.h>
-> > >  #include <linux/of_platform.h>
-> > > 
-> > > @@ -22,31 +23,104 @@
-> > > 
-> > >  #include <linux/platform_device.h>
-> > >  #include <linux/regmap.h>
-> > >  #include <linux/mfd/syscon.h>
-> > > 
-> > > +#include <linux/slab.h>
-> > > 
-> > >  static struct platform_driver syscon_driver;
-> > > 
-> > > +static DEFINE_SPINLOCK(syscon_list_slock);
-> > > +static LIST_HEAD(syscon_list);
-> > > +
-> > > 
-> > >  struct syscon {
-> > > 
-> > > +	struct device_node *np;
-> > > 
-> > >  	struct regmap *regmap;
-> > > 
-> > > +	struct list_head list;
-> > > +};
-> > > +
-> > > +static struct regmap_config syscon_regmap_config = {
-> > > +	.reg_bits = 32,
-> > > +	.val_bits = 32,
-> > > +	.reg_stride = 4,
-> > > 
-> > >  };
-> > > 
-> > > -static int syscon_match_node(struct device *dev, void *data)
-> > > +static struct syscon *of_syscon_register(struct device_node *np)
-> > > 
-> > >  {
-> > > 
-> > > -	struct device_node *dn = data;
-> > > +	struct syscon *syscon;
-> > > +	struct regmap *regmap;
-> > > +	void __iomem *base;
-> > > +	int ret;
-> > > +	enum regmap_endian endian = REGMAP_ENDIAN_DEFAULT;
-> > > +
-> > > +	if (!of_device_is_compatible(np, "syscon"))
-> > > +		return ERR_PTR(-EINVAL);
-> > > +
-> > > +	syscon = kzalloc(sizeof(*syscon), GFP_KERNEL);
-> > > +	if (!syscon)
-> > > +		return ERR_PTR(-ENOMEM);
-> > > +
-> > > +	base = of_iomap(np, 0);
-> > > +	if (!base) {
-> > > +		ret = -ENOMEM;
-> > > +		goto err_map;
-> > > +	}
-> > > +
-> > > +	/* Parse the device's DT node for an endianness specification */
-> > > +	if (of_property_read_bool(np, "big-endian"))
-> > > +		endian = REGMAP_ENDIAN_BIG;
-> > > +	 else if (of_property_read_bool(np, "little-endian"))
-> > > +		endian = REGMAP_ENDIAN_LITTLE;
-> > > +
-> > > +	/* If the endianness was specified in DT, use that */
-> > > +	if (endian != REGMAP_ENDIAN_DEFAULT)
-> > > +		syscon_regmap_config.val_format_endian = endian;
-> > > +
-> > > +	regmap = regmap_init_mmio(NULL, base, &syscon_regmap_config);
-> > > +	if (IS_ERR(regmap)) {
-> > > +		pr_err("regmap init failed\n");
-> > > +		ret = PTR_ERR(regmap);
-> > > +		goto err_regmap;
-> > > +	}
-> > > +
-> > > +	syscon->regmap = regmap;
-> > > +	syscon->np = np;
-> > > +
-> > > +	spin_lock(&syscon_list_slock);
-> > > +	list_add_tail(&syscon->list, &syscon_list);
-> > > +	spin_unlock(&syscon_list_slock);
-> > > 
-> > > -	return (dev->of_node == dn) ? 1 : 0;
-> > > +	/* Change back endianness of syscon_regmap_config.
-> > > +	 * As this is static config in this file and in one system we may
-> > > +	 * have more than one syscon
-> > > +	 */
-> > > +	syscon_regmap_config.val_format_endian =
-> > 
-> > REGMAP_ENDIAN_DEFAULT;
-> > 
-> > This should also be done in the error case. Currently when you goto
-> 
-> err_regmap the
-> 
-> > overridden value will be left in the struct.
-> 
-> Thanks, will handle this in error condition also.
-> 
-> > While on this, is there a concurrency issue here, aka of_syscon_register
-> 
-> could be
-> 
-> > called in parallel and what happens with
-> 
-> syscon_regmap_config.val_format_endian
-> 
-> > then?
-> 
-> I can think of two approaches to solve this.
-> 
-> 1: Updating syscon_regmap_config, under spin_lock "syscon_list_slock".
-> 2: Creation of local copy of syscon_regmap_config in "of_syscon_register"
-> and using
-> it. In this case changing back of endianness in syscon_regmap_config, will
-> not be needed
-> and code will be a bit cleaner.
-> 
-> I would prefer second one, what is your opinion?
+Assuming that incrementing the external name's reference count is
+atomic_add_unless, I could believe this part.  Or if you have some
+locking that makes it impossible to increment the reference count
+in any case where there is any risk that it might be decremented
+to zero, I guess.
 
-I would also vote for the second option.
+Which might well be the pair of write_seqcount_begin() calls in __d_move(),
+now that I look more carefully.  So if the name has to be in use somewhere
+before it can be copied, then a copy can only be created if there is at
+least one copy that is not currently being removed?  If so, OK.
 
+>          So free_dentry() would
+> 	* decrement the refcount on external name and if that has reached
+> zero - call_rcu the full variant.
+> 	* if there had been no external name or if its refcount has not
+> reached zero - call_rcu the variant that just frees dentry itself or
+> just do a direct call of the same if dentry has never been RCU-visible.
+> 
+> One thing that worries me is the barriers that might be needed on assignments
+> to ->d_name.name.  We should be no worse than we are right now - either RCU
+> accessors are careful enough with ACCESS_ONCE() and everything's fine,
+> or they are not, in which case we already have a bug in mainline - swapping
+> ->d_name followed by dput() and freeing of target is no better than
+> copying ->d_name from target to source followed by kfree_rcu() of what
+> used to be ->d_name.name of source.  IOW, if RCU lookup could pick
+> a value of ->d_name.name that got obsolete by d_move() happening
+> before our read_lock_rcu(), we would be in trouble anyway - it might
+> already have had its freeing RCU-scheduled and thus not delayed
+> by read_lock_rcu() done afterwards.
 
-Heiko
+Yep!  Of course, the usual advice is to wait until the structure is
+inaccessible to readers before starting the grace period.
+
+>                                      So I think the patch below doesn't
+> introduce new problems of that sort, but I'd really appreciate if RCU
+> people would take a look at the situation with barriers in that area.
+> Are those ACCESS_ONCE() in dentry_cmp() and prepend_name() enough, or
+> do we need some barriers in switch_names() as well?
+> 
+> Folks, care to review and test the following?
+> 
+> Allow sharing external names after __d_move()
+> 
+> * external dentry names get a small structure prepended to them
+> (struct ext_name).
+> * it contains an atomic refcount, matching the number of struct dentry
+> instances that have ->d_name.name pointing to that ext name.  The
+> first thing free_dentry() does is decrementing refcount of ext name,
+> so the instances between the call of free_dentry() and RCU-delayed
+> actual freeing do not contribute.
+> * __d_move(x, y, false) makes the name of x equal to the name of y,
+> external or not.  If y has an external name, extra reference is grabbed
+> and put into x->d_name.name.  If x used to have an external name, the
+> reference to it is dropped and, should it reach zero, freeing is scheduled
+> via kfree_rcu().
+> 
+> All non-RCU accesses to dentry ext name are safe wrt freeing since they
+> all should happen before free_dentry() is called.  RCU accesses might run
+> into a dentry seen by free_dentry() or into an old name that got already
+> dropped by __d_move(); however, in both cases dentry must have been
+> alive and refer to that name at some point after we'd done rcu_read_lock(),
+> which means that any freeing must be still pending.
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index cb25a1a..0cf5aff 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -235,20 +235,44 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
+>  	return dentry_string_cmp(cs, ct, tcount);
+>  }
+> 
+> +struct ext_name {
+> +	union {
+> +		atomic_t count;
+> +		struct rcu_head head;
+> +	};
+
+The usual trick to simplify handling string lengths is to put the
+length in the same structure as the name.  Probably doesn't play well
+with your swap operation, though.  I cannot find the code to which
+this patch applies, but vaguely recall something about nul termination.
+
+> +	unsigned char name[];
+> +};
+> +
+> +static inline struct ext_name *ext_name(struct dentry *dentry)
+> +{
+> +	if (likely(!dname_external(dentry)))
+> +		return NULL;
+> +	return container_of(dentry->d_name.name, struct ext_name, name[0]);
+> +}
+> +
+>  static void __d_free(struct rcu_head *head)
+>  {
+>  	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
+> 
+>  	WARN_ON(!hlist_unhashed(&dentry->d_alias));
+> -	if (dname_external(dentry))
+> -		kfree(dentry->d_name.name);
+> +	kmem_cache_free(dentry_cache, dentry); 
+> +}
+> +
+> +static void __d_free_ext(struct rcu_head *head)
+> +{
+> +	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
+> +	WARN_ON(!hlist_unhashed(&dentry->d_alias));
+> +	kfree(ext_name(dentry));
+>  	kmem_cache_free(dentry_cache, dentry); 
+>  }
+> 
+>  static void dentry_free(struct dentry *dentry)
+>  {
+> +	struct ext_name *p = ext_name(dentry);
+> +	if (unlikely(p) && likely(atomic_dec_and_test(&p->count)))
+> +		call_rcu(&dentry->d_u.d_rcu, __d_free_ext);
+>  	/* if dentry was never visible to RCU, immediate free is OK */
+> -	if (!(dentry->d_flags & DCACHE_RCUACCESS))
+> +	else if (!(dentry->d_flags & DCACHE_RCUACCESS))
+>  		__d_free(&dentry->d_u.d_rcu);
+>  	else
+>  		call_rcu(&dentry->d_u.d_rcu, __d_free);
+> @@ -1438,11 +1462,14 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+>  	 */
+>  	dentry->d_iname[DNAME_INLINE_LEN-1] = 0;
+>  	if (name->len > DNAME_INLINE_LEN-1) {
+> -		dname = kmalloc(name->len + 1, GFP_KERNEL);
+> -		if (!dname) {
+> +		size_t size = offsetof(struct ext_name, name) + name->len + 1;
+> +		struct ext_name *p = kmalloc(size, GFP_KERNEL);
+> +		if (!p) {
+>  			kmem_cache_free(dentry_cache, dentry); 
+>  			return NULL;
+>  		}
+> +		atomic_set(&p->count, 1);
+> +		dname = p->name;
+>  	} else  {
+>  		dname = dentry->d_iname;
+>  	}	
+> @@ -2372,11 +2399,10 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
+>  }
+>  EXPORT_SYMBOL(dentry_update_name_case);
+> 
+> -static void switch_names(struct dentry *dentry, struct dentry *target,
+> -			 bool exchange)
+> +static void swap_names(struct dentry *dentry, struct dentry *target)
+>  {
+> -	if (dname_external(target)) {
+> -		if (dname_external(dentry)) {
+> +	if (unlikely(dname_external(target))) {
+> +		if (unlikely(dname_external(dentry))) {
+>  			/*
+>  			 * Both external: swap the pointers
+>  			 */
+> @@ -2392,7 +2418,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+>  			target->d_name.name = target->d_iname;
+>  		}
+>  	} else {
+> -		if (dname_external(dentry)) {
+> +		if (unlikely(dname_external(dentry))) {
+>  			/*
+>  			 * dentry:external, target:internal.  Give dentry's
+>  			 * storage to target and make dentry internal
+> @@ -2407,12 +2433,6 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+>  			 */
+>  			unsigned int i;
+>  			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
+> -			if (!exchange) {
+> -				memcpy(dentry->d_iname, target->d_name.name,
+> -						target->d_name.len + 1);
+> -				dentry->d_name.hash_len = target->d_name.hash_len;
+> -				return;
+> -			}
+>  			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
+>  				swap(((long *) &dentry->d_iname)[i],
+>  				     ((long *) &target->d_iname)[i]);
+> @@ -2422,6 +2442,22 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
+>  	swap(dentry->d_name.hash_len, target->d_name.hash_len);
+>  }
+> 
+> +static void copy_name(struct dentry *dentry, struct dentry *target)
+> +{
+> +	struct ext_name *old_name = ext_name(dentry);
+> +	if (unlikely(dname_external(target))) {
+> +		atomic_inc(&ext_name(target)->count);
+> +		dentry->d_name = target->d_name;
+> +	} else {
+> +		memcpy(dentry->d_iname, target->d_name.name,
+> +				target->d_name.len + 1);
+> +		dentry->d_name.name = dentry->d_iname;
+> +		dentry->d_name.hash_len = target->d_name.hash_len;
+> +	}
+> +	if (unlikely(old_name) && likely(atomic_dec_and_test(&old_name->count)))
+> +		kfree_rcu(old_name, head);
+> +}
+> +
+>  static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
+>  {
+>  	/*
+> @@ -2518,7 +2554,10 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+>  	}
+> 
+>  	/* Switch the names.. */
+> -	switch_names(dentry, target, exchange);
+> +	if (exchange)
+> +		swap_names(dentry, target);
+> +	else
+> +		copy_name(dentry, target);
+> 
+>  	/* ... and switch them in the tree */
+>  	if (IS_ROOT(dentry)) {
+> 
+
