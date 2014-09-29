@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaI2IQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:16:32 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48325 "EHLO
+	id S1753076AbaI2IQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:16:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48345 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaI2IQa (ORCPT
+	with ESMTP id S1752086AbaI2IQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:16:30 -0400
+	Mon, 29 Sep 2014 04:16:38 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -17,10 +17,12 @@ Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v4 0/8] Add of-graph helpers to loop over endpoints and find ports by id
-Date: Mon, 29 Sep 2014 10:15:43 +0200
-Message-Id: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v4 6/8] drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
+Date: Mon, 29 Sep 2014 10:15:49 +0200
+Message-Id: <1411978551-30480-7-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
+References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
 X-SA-Exim-Connect-IP: 10.1.0.120
 X-SA-Exim-Mail-From: p.zabel@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -29,61 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Using the for_each_... macro should make the code a bit shorter and
+easier to read.
 
-in theory, I'd like the first five patches to go in together through Grant's
-tree, but in practice that might not be necessary; changes in of_node
-reference counting are only relevant if CONFIG_OF_DYNAMIC is enabled.
-Since patch 2 depends on (or would trivially conflict with) 30e94a564d07
-in the staging tree, it might be better to merge this one through staging.
-What do you think?
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ drivers/gpu/drm/drm_of.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-The three 'use for_each_endpoint_of_node macro in ...' patches can be resent
-later, separately.
-
-This series converts all existing users of of_graph_get_next_endpoint that pass
-a non-NULL prev argument to the function and decrement its refcount themselves
-to stop doing that. The of_node_put is moved into of_graph_get_next_endpoint
-instead.
-This allows to add a for_each_endpoint_of_node helper macro to loop over all
-endpoints in a device tree node.
-The third of patch adds a of_graph_get_port_by_id function to retrieve a port
-by its known port id from the device tree.
-Finally, the last three patches convert functions in drm_of.c and imx-drm-core.c
-to use the for_each_endpoint_of_node macro instead of of_graph_get_next_endpoint.
-
-Changes since v3:
- - Moved of_node_put for the break case after the loop in patch 1 and 8
- - Rebased patch 2 on top of 30e94a564d07 (staging: imx-drm: Lines over 80
-   characters fixed.), which added a blank line in the function we remove,
-   imx_drm_of_get_next_endpoint.
-
-The previous version can be found here: https://lkml.org/lkml/2014/9/11/696
-
-regards
-Philipp
-
-Philipp Zabel (8):
-  [media] soc_camera: Do not decrement endpoint node refcount in the
-    loop
-  imx-drm: Do not decrement endpoint node refcount in the loop
-  of: Decrement refcount of previous endpoint in
-    of_graph_get_next_endpoint
-  of: Add for_each_endpoint_of_node helper macro
-  of: Add of_graph_get_port_by_id function
-  drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
-  imx-drm: use for_each_endpoint_of_node macro in
-    imx_drm_encoder_get_mux_id
-  imx-drm: use for_each_endpoint_of_node macro in
-    imx_drm_encoder_parse_of
-
- drivers/gpu/drm/drm_of.c                       |  8 ++----
- drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
- drivers/of/base.c                              | 35 ++++++++++++++++++++------
- drivers/staging/imx-drm/imx-drm-core.c         | 29 ++++++---------------
- include/linux/of_graph.h                       | 18 +++++++++++++
- 5 files changed, 56 insertions(+), 37 deletions(-)
-
+diff --git a/drivers/gpu/drm/drm_of.c b/drivers/gpu/drm/drm_of.c
+index 16150a0..024fa77 100644
+--- a/drivers/gpu/drm/drm_of.c
++++ b/drivers/gpu/drm/drm_of.c
+@@ -46,11 +46,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
+ 	struct device_node *remote_port, *ep = NULL;
+ 	uint32_t possible_crtcs = 0;
+ 
+-	do {
+-		ep = of_graph_get_next_endpoint(port, ep);
+-		if (!ep)
+-			break;
+-
++	for_each_endpoint_of_node(port, ep) {
+ 		remote_port = of_graph_get_remote_port(ep);
+ 		if (!remote_port) {
+ 			of_node_put(ep);
+@@ -60,7 +56,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device *dev,
+ 		possible_crtcs |= drm_crtc_port_mask(dev, remote_port);
+ 
+ 		of_node_put(remote_port);
+-	} while (1);
++	}
+ 
+ 	return possible_crtcs;
+ }
 -- 
 2.1.0
 
