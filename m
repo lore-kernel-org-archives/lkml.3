@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaI2Pmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:42:54 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:38377 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaI2Pmx (ORCPT
+	id S1754791AbaI2PpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:45:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44264 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290AbaI2PpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:42:53 -0400
-Message-ID: <54297DF9.5080003@codethink.co.uk>
-Date: Mon, 29 Sep 2014 16:42:49 +0100
-From: Rob Jones <rob.jones@codethink.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Mon, 29 Sep 2014 11:45:04 -0400
+Message-ID: <54297E7E.1030306@wwwdotorg.org>
+Date: Mon, 29 Sep 2014 09:45:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: dhowells@redhat.com
-CC: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
-        linux-kernel@codethink.co.uk
-Subject: Re: [PATCH] fs/fscache/object-list.c: use __seq_open_private()
-References: <1410944200-24288-1-git-send-email-rob.jones@codethink.co.uk>
-In-Reply-To: <1410944200-24288-1-git-send-email-rob.jones@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vidya Sagar <vidyas@nvidia.com>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com> <5420731E.6040104@wwwdotorg.org> <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
+In-Reply-To: <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I submitted the patch below on 17th September but have had no feedback.
+On 09/29/2014 04:25 AM, Vidya Sagar wrote:
+>
+>> -----Original Message-----
+>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+>> Sent: Tuesday, September 23, 2014 12:36 AM
+>> To: Vidya Sagar
+>> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
+>> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+>> tree
+>>
+>> On 09/22/2014 11:57 AM, Vidya Sagar wrote:
+>>> sd4 is an always on regulator which is turned on at boot time.
+>>> It is externally controller through gpio. This change reflects the
+>>> same in Jetson TK1 device tree
+>>
+>> In the schematics, the "Power Sequencing" timing diagram says "S/W
+>> controlled" for SD4/+1.05V_RUN. I also don't see an "ENABLE1" pin on the
+>> AS3722, which would be required for ...
 
-It seems to me a worthwhile change (well, I wouldn't have written it
-otherwise) but does anybody else have any comments on it?
+Can you please comment on this aspect of the issue?
 
-On 17/09/14 09:56, Rob Jones wrote:
-> Reduce boilerplate code by using __seq_open_private() instead of seq_open()
-> in fscache_objlist_open().
+>>> +					ams,ext-control = <1>;
+>>
+>> ... to be valid.
+>>
+>> What's the source of information behind this change?
+>>
+>> What symptoms does this patch correct?
 >
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-> ---
->
-> Note that sparse generates a warning on this file but it is outside the
-> remit of this patch.
->
-> Note 2, it looks to me like the sparse warning may be a false positive.
->
->   fs/fscache/object-list.c |   16 ++--------------
->   1 file changed, 2 insertions(+), 14 deletions(-)
->
-> diff --git a/fs/fscache/object-list.c b/fs/fscache/object-list.c
-> index b5ebc2d..a1ca2f9 100644
-> --- a/fs/fscache/object-list.c
-> +++ b/fs/fscache/object-list.c
-> @@ -380,26 +380,14 @@ no_config:
->   static int fscache_objlist_open(struct inode *inode, struct file *file)
->   {
->   	struct fscache_objlist_data *data;
-> -	struct seq_file *m;
-> -	int ret;
->
-> -	ret = seq_open(file, &fscache_objlist_ops);
-> -	if (ret < 0)
-> -		return ret;
-> -
-> -	m = file->private_data;
-> -
-> -	/* buffer for key extraction */
-> -	data = kmalloc(sizeof(struct fscache_objlist_data), GFP_KERNEL);
-> -	if (!data) {
-> -		seq_release(inode, file);
-> +	data = __seq_open_private(file, &fscache_objlist_ops, sizeof(*data));
-> +	if (!data)
->   		return -ENOMEM;
-> -	}
->
->   	/* get the configuration key */
->   	fscache_objlist_config(data);
->
-> -	m->private = data;
->   	return 0;
->   }
->
->
+> I'm seeing one issue when I add support for PCIe suspend/resume functionality.
+> The issue is that, when regulator_bulk_diable() is called, disabling one of the power rails (which is deriving its voltage from SD4) of PCIe is failing.
+> The reason being, I2C controller is getting power gated
 
--- 
-Rob Jones
-Codethink Ltd
-mailto:rob.jones@codethink.co.uk
-tel:+44 161 236 5575
+Why is the fix being applied to SD4 if the issue is with a power rail 
+derived from SD4? Shouldn't any fix be applied directly to the 
+problematic rail rather than some parent rail?
+
+Since the I2C controller is part of the SoC and we don't have power 
+domain support yet, the only way the I2C controller can get power gated 
+is when the SoC as a whole is turned off.
+
+ > before power rail disable is called.
+
+... so without making SD4 dependant on ext-control, since no SW can be 
+running at this point, the only way SD4 could get turned off is that the 
+PMIC turns it off itself at the appropriate point in the system power 
+sequence based on its OTP programming, or the board HW is already set up 
+to turn off SD4 at the appropriate time somehow. Is that not happening? 
+That would imply incorrect PMIC programming wouldn't it?
+
+> Hence SD4 is made dependent on ENABLE1, which is nothing but the deep sleep signal coming from Tegra,
+> So eventually, SD4 will be powered off when system enters into deep-sleep state.
+
+This sounds like a workaround that happens to make the system do what 
+you want rather than a root-cause fix.
+
+> Source of information is from downstream kernel
+
+We need to use HW schematics and other primary data to determine the 
+correct approach.
