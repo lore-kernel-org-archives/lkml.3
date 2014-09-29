@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaI2Wip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 18:38:45 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:53055 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755072AbaI2Wim (ORCPT
+	id S1754850AbaI2WnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 18:43:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54459 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaI2WnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 18:38:42 -0400
-Date: Mon, 29 Sep 2014 17:38:33 -0500
-From: Michael Welling <mwelling@ieee.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        pmeerw@pmeerw.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
- sensor
-Message-ID: <20140929223833.GA13111@sysresccd>
-References: <20140918133631.GA24847@saruman.home>
- <20140919162129.GE26946@saruman.home>
- <20140922140914.GC25620@saruman>
- <20140923140924.GA28592@saruman>
- <20140924143610.GA17997@saruman>
- <20140925221619.GA10644@saruman>
- <20140927041959.GA28445@saruman>
- <20140929140227.GD32403@saruman>
- <20140929183856.GA11871@sysresccd>
- <20140929185325.GA1939@saruman>
+	Mon, 29 Sep 2014 18:43:06 -0400
+Date: Tue, 30 Sep 2014 00:43:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Dmitry Torokhov <dtor@google.com>, Eric Caruso <ejcaruso@google.com>,
+        linux-kernel@vger.kernel.org, Benson Leung <bleung@google.com>
+Subject: Re: irq mask swapping during suspend/resume
+In-Reply-To: <2213339.XxHo9Gxm0z@vostro.rjw.lan>
+Message-ID: <alpine.DEB.2.02.1409300042000.22082@ionos.tec.linutronix.de>
+References: <CAA9CXT07f01KW4UeoPPy4k1NM6qfxdtsOQXXSPjTKx7mG_v7Rw@mail.gmail.com> <30052021.2q1IqLHYpU@dtor-glaptop> <alpine.DEB.2.10.1409181326140.4206@nanos> <2213339.XxHo9Gxm0z@vostro.rjw.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929185325.GA1939@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 01:53:25PM -0500, Felipe Balbi wrote:
-> Hi,
+On Sun, 21 Sep 2014, Rafael J. Wysocki wrote:
+> So I'd rather put that into the struct wakeup_source pointed to by
+> the wakeup pointer in struct dev_pm_info.  That would give us a mapping
+> between wakeup source objects and wakeup interrupts and which would make
+> a fair amount of sense in my view.
 > 
-> On Mon, Sep 29, 2014 at 01:38:56PM -0500, Michael Welling wrote:
-> > On Mon, Sep 29, 2014 at 09:02:27AM -0500, Felipe Balbi wrote:
-> > > Alright, this is already ridiculous. Andrew, if I resend the patch can
-> > > you apply it since maintainer has been ignoring this thread anyway ?
-> > > 
-> > 
-> > Do you reall think this is the best way to approach this?
+> Then, we could simply walk the list of wakeup source objects before
+> suspend_device_irqs() and call enable_irq_wake() etc. for all of the
+> interrupts in question without drivers having to worry about that.
+> We also could save the current IRQ type for them at that point and
+> restore it during resume.
 > 
-> when maintainer doesn't respond for weeks, yeah! Sure it is.
+> Of course, that would require some changes to wakeup_source_create()
+> and friends, but is probably worth doing.
 > 
-> > Perhaps it would be better to explain what each field of the
-> > configuration register does and then we can move on.
+> Still, before we start making those changes, here's a bunch of questions
+> to answer:
 > 
-> perhaps Jonathan could tell me exactly what he wants because I can't
-> handle back-and-forth anymore. Specially when he complains about stuff
-> he asked me to modify himself.
->
-> > In particular the OPT3001_CONFIGURATION_L field needs to be explained
-> > such that the ABI can be properly applied.
-> > 
-> > Looking at the docs for the Windows demo program the field is associated
-> > with a latch configuration. What does this bit field actually do?
+> (1) Say a wakeup interrupt is shared between two drivers and one of them
+>     asks for a different "IRQ type for sleep" than the other one.  How are
+>     we going to resolve such conflicts?
 
-Still no technical information. Without all the facts how can you expect
-him to tell you what he wants?
+Not at all. There is no solution to that problem other than aborting
+and yelling about it.
+ 
+> (2) Can platforms place restrictions on the IRQ type to be used with a given
+>     line?  If so, how do we handle situations in which the requested
+>     "IRQ type for sleep" is different from what the given line can use?
+>     Do we need to resolve that at the struct wakeup_source creation time or
+>     can we do that later (during suspend?) and how?
 
-> > 
-> > Either have TI release the documentation or add comments to each of the
-> > fields of each of the registers such that we can understand what exactly
-> > they are doing.
-> 
-> TI will release the documentation when that's all cleared up with Legal.
-> You can't expect it to be any earlier than that.
+If the type request fails, bail out and be done with it. Same as #1
 
-I am a little fuzzy on how the source code can be released when an NDA
-is required to access the datasheet.
+Thanks,
 
-Isn't the source code going to be breaking the NDA by releasing information
-that is in the datasheet?
-
-> 
-> -- 
-> balbi
-
-
+	tglx
