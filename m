@@ -1,193 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103AbaI2RZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:25:20 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:59324 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310AbaI2RZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:25:19 -0400
-Date: Mon, 29 Sep 2014 11:24:57 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Michael Mullin <masmullin@gmail.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH v10] tpm_tis: verify interrupt during init
-Message-ID: <20140929172457.GC15607@obsidianresearch.com>
-References: <20140908220238.GB6204@obsidianresearch.com>
- <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
- <20140922171338.GB28082@obsidianresearch.com>
- <alpine.DEB.2.11.1409230232080.3995@localhost.localdomain>
- <alpine.DEB.2.11.1409230247010.4292@localhost.localdomain>
- <alpine.DEB.2.11.1409231136410.2947@localhost.localdomain>
- <5421A9F8.9070301@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409241936270.3152@localhost.localdomain>
- <54231E52.2030501@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain>
+	id S1753665AbaI2RZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:25:28 -0400
+Received: from mail.kmu-office.ch ([178.209.48.102]:33941 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177AbaI2RZY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 13:25:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409242234220.2311@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Type: text/plain; charset=
+Content-Transfer-Encoding: 7bit
+Date: Mon, 29 Sep 2014 19:25:18 +0200
+From: Stefan Agner <stefan@agner.ch>
+To: Bill Pringlemeir <bpringlemeir@nbsps.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, linus.walleij@linaro.org,
+        gnurou@gmail.com, kernel@pengutronix.de, linux-gpio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] pinctrl: imx: add gpio pinmux support for vf610
+In-Reply-To: <87sijaeab6.fsf@nbsps.com>
+References: <cover.1411492954.git.stefan@agner.ch>
+ <bb68d2360314158cd8ccb9c6794877c3bb45d72e.1411492954.git.stefan@agner.ch>
+ <20140925024712.GB6405@dragon> <1d3735aff5e0961c43d349d673a1c2b2@agner.ch>
+ <20140925090714.GH6405@dragon> <26008fa68a3eaf5f806a7dc4df48f77e@agner.ch>
+ <877g0rlkh3.fsf@nbsps.com> <e9ddcd256056187ffea0b05b7b31c1a6@agner.ch>
+ <87sijaeab6.fsf@nbsps.com>
+Message-ID: <3bdbe13465f857fe29248c0fdfd54019@agner.ch>
+User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 10:41:10PM +0000, Scot Doyle wrote:
-> Some machines, such as the Acer C720 and Toshiba CB35, have TPMs that do
-> not send IRQs while also having an ACPI TPM entry indicating that they
-> will be sent. These machines freeze on resume while the tpm_tis module
-> waits for an IRQ, eventually timing out.
+Am 2014-09-29 17:05, schrieb Bill Pringlemeir:
+>>> On 25 Sep 2014, stefan@agner.ch wrote:
 > 
-> When in interrupt mode, the tpm_tis module should receive an IRQ during
-> module init. Fall back to polling mode if none is received when expected.
+>>>> IMHO, fully orthogonal is not possible, since on Vybrid those two
+>>>> depend on each other. But in order to make it "more orthogonal", we
+>>>> maybe should force applying the full configuration in
+>>>> imx_pmx_gpio_request_enable (e.g. drive strenght etc), rather then
+>>>> only mux the pad to to GPIO...
+>>>> What do you think?
 > 
-> Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
-> Tested-by: Michael Mullin <masmullin@gmail.com>
+>> Am 2014-09-25 18:43, schrieb Bill Pringlemeir:
+> 
+>>> The muxing must have been done, that is correct.  However, this could
+>>> be by a boot loader, by some other API, etc.  People maybe concerned
+>>> about Linux affecting 'CAN' (or some 'mission critical' pins) muxing
+>>> for instance, but want the A5 to handle GPIO.
+>>>
+>>> If somewhere, somehow the pin was muxed properly and the GPIO code
+>>> still works, I believe this is a win.  I see that this flexibility
+>>> makes it more difficult to get something that just works.  I think
+>>> the device trees take care of this for normal users.  It might be
+>>> appropriate to add a DT node that sets 'GPIO_CONTROL' and put a note
+>>> in the DT-GPIO document, that pinctrl is needed for a normal case or
+>>> if some external muxing is used or not needed, then 'control=false'
+>>> can be set (or whatever good DT terminology)?  Then the
+>>> 'GPIO_CONTROL' check would be in the 'vf610_gpio_direction_input()'
+>>> functions.  The 'pinctrl' functions are currently compiled to stubs
+>>> if that is configured out.
+> 
+> On 26 Sep 2014, stefan@agner.ch wrote:
+> 
+>> Currently pinctrl is not optional for Vybrid (Kconfig mandates pinctrl
+>> by "select PINCTRL_VF610").
+> 
+>> IMHO there is no real value having a way to mark a pin as "muxed
+>> externally" (control=false). If we use a pin, we should configure and
+>> mux that properly in Linux, and if we don't have valid
+>> configuration/mux information, we should not touch that pin.
+> 
+> I didn't mean per-pin, I meant for the GPIO controller as a whole.  I
+> was also looking at a IOMUX controlled by the M4 and/or a boot loader.
+> I agree it is not possible with the mainline.  This just makes it even
+> less possible.  This is great if we know we are going that route.
 
-Looks good with enable fixed
+Ok, but this patch doesn't make it less possible then before: You can
+disable the GPIO driver or disable all gpio device tree entries.
 
-Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> 
+>> In v2 of this patchset, the GPIO code only worked when there _is_ a
+>> pinctrl entry for that GPIO pin in the DT. This is because I need the
+>> register offset, which is provided by the entry itself. But the pad
+>> configuration is another point, which I did not consider in v2. But in
+>> v3, the GPIO code also writes the pad control.
+> 
+> I was a little concerned about this as the pin may have pull-ups and
+> pull-downs.  We would not want to dynamically change this.  However, I
+> don't fully understand this path.
+> 
+> [snip]
+> 
+>>> Then there is 'multi-machine' support with DT and compile time
+>>> selects with CONFIG_PINCTRL and I don't think there is a lot of
+>>> additional code or confusion?
+> 
+>> I don't understand that.
+> 
+> I was thinking of a modified Vybrid which would allow us to not select
+> PINCTRL.  As per Shawn's comment, it is suppose to be
+> optional/orthogonal to the GPIO controller.  If someone made the change
+> to not select PINCTRL_VF610, then the GPIO code calls would currently
+> compile to stubs.  To get the same things with a multi-machine
+> (Vybrid/Imx with/without pinctrl), then you could use the DT property
+> which would avoid the pinctrl calls.
 
->  drivers/char/tpm/tpm_tis.c | 75 +++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 61 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index 2c46734..cbef80e 100644
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -75,6 +75,10 @@ enum tis_defaults {
->  #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
->  #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
-> 
-> +struct priv_data {
-> +	bool irq_tested;
-> +};
-> +
->  static LIST_HEAD(tis_chips);
->  static DEFINE_MUTEX(tis_lock);
-> 
-> @@ -338,12 +342,26 @@ out_err:
->  	return rc;
->  }
-> 
-> +static void disable_interrupts(struct tpm_chip *chip)
-> +{
-> +	u32 intmask;
-> +	intmask =
-> +	    ioread32(chip->vendor.iobase +
-> +		     TPM_INT_ENABLE(chip->vendor.locality));
-> +	intmask &= ~TPM_GLOBAL_INT_ENABLE;
-> +	iowrite32(intmask,
-> +		  chip->vendor.iobase +
-> +		  TPM_INT_ENABLE(chip->vendor.locality));
-> +	free_irq(chip->vendor.irq, chip);
-> +	chip->vendor.irq = 0;
-> +}
-> +
->  /*
->   * If interrupts are used (signaled by an irq set in the vendor structure)
->   * tpm.c can skip polling for the data to be available as the interrupt is
->   * waited for here
->   */
-> -static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
->  {
->  	int rc;
->  	u32 ordinal;
-> @@ -373,6 +391,30 @@ out_err:
->  	return rc;
->  }
-> 
-> +static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +{
-> +	int rc, irq;
-> +	struct priv_data *priv = chip->vendor.priv;
-> +
-> +	if (!chip->vendor.irq || priv->irq_tested)
-> +		return tpm_tis_send_main(chip, buf, len);
-> +
-> +	/* Verify receipt of the expected IRQ */
-> +	irq = chip->vendor.irq;
-> +	chip->vendor.irq = 0;
-> +	rc = tpm_tis_send_main(chip, buf, len);
-> +	chip->vendor.irq = irq;
-> +	if (!priv->irq_tested)
-> +		msleep(1);
-> +	if (!priv->irq_tested) {
-> +		disable_interrupts(chip);
-> +		dev_err(chip->dev,
-> +			FW_BUG "TPM interrupt not working, polling instead\n");
-> +	}
-> +	priv->irq_tested = true;
-> +	return rc;
-> +}
-> +
->  struct tis_vendor_timeout_override {
->  	u32 did_vid;
->  	unsigned long timeout_us[4];
-> @@ -505,6 +547,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
->  	if (interrupt == 0)
->  		return IRQ_NONE;
-> 
-> +	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
->  	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
->  		wake_up_interruptible(&chip->vendor.read_queue);
->  	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
-> @@ -534,9 +577,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->  	u32 vendor, intfcaps, intmask;
->  	int rc, i, irq_s, irq_e, probe;
->  	struct tpm_chip *chip;
-> +	struct priv_data *priv;
-> 
-> +	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
-> +	if (priv == NULL)
-> +		return -ENOMEM;
->  	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
->  		return -ENODEV;
-> +	chip->vendor.priv = priv;
-> 
->  	chip->vendor.iobase = ioremap(start, len);
->  	if (!chip->vendor.iobase) {
-> @@ -605,19 +653,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->  	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
->  		dev_dbg(dev, "\tData Avail Int Support\n");
-> 
-> -	/* get the timeouts before testing for irqs */
-> -	if (tpm_get_timeouts(chip)) {
-> -		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
-> -	if (tpm_do_selftest(chip)) {
-> -		dev_err(dev, "TPM self test failed\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
->  	/* INTERRUPT Setup */
->  	init_waitqueue_head(&chip->vendor.read_queue);
->  	init_waitqueue_head(&chip->vendor.int_queue);
-> @@ -719,6 +754,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->  		}
->  	}
-> 
-> +	if (tpm_get_timeouts(chip)) {
-> +		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> +	if (tpm_do_selftest(chip)) {
-> +		dev_err(dev, "TPM self test failed\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
->  	INIT_LIST_HEAD(&chip->vendor.list);
->  	mutex_lock(&tis_lock);
->  	list_add(&chip->vendor.list, &tis_chips);
+Now I understand, you mean a kernel with PINCTRL support but having an
+option to still disable the pinctrl functionality for Vybrids GPIOs.
+
+I think if you descide to use a pin as GPIO from Linux on A5, you also
+want that pin to be "pinctrl"ed by Linux. I don't see a reason why you
+want a pin configured by something else (bootloader or firmware on M4),
+but then use that same pin as GPIO from Linux. IMHO, it's good to get
+this as a package (GPIO which does pinctrl).
+
+In the IOMUXC module each pin has its own register, so here it's ok to
+have multiple sytems fiddling with it, as long as the systems are not
+touching the same pins at the same time.
+
+> The more required modules we require for each feature, the harder it is
+> to partition the AIPS peripherals between cores.  It sort of makes the
+> mainline Linux only useful for the VF5xx non-secure parts.
+
+I agree, having the option to partition AIPS peripherals is useful,
+especially on Vybrid (and i.MX6SX). And this is perfectly possible with
+device tree. Just disable the gpio device tree sections (which are
+compatible = "fsl,vf610-gpio") which you don't plan to use on Linux.
+Linux creates 5 instances of the driver when all 5 gpio device tree
+entries are active. However, you can create a board file with only one
+gpio section, and you get only one instance of the driver which takes
+care of the associated 32 pins. Or even no gpio device tree sections at
+all, and you have the same situation before this driver was merged...
+However, sub GPIO/PORT bank partitioning is not possible... The PORT and
+GPIO module have shared register for 32 pins, and some operation might
+not be atomic, so locking would be required. Having two system accessing
+the same PORT/GPIO bank would certainly impose problems, for instance
+when handling a PORT interrupt.
+
+
+> I guess another option is to make another pinctrl module for the Vybrid
+> which uses some inter-core communications to alter the MUX
+> configuration.  This makes sense for the pinctrl and the CCM/clock
+> modules.  Each and every driver depends on them, so it is probably good
+> for sanity to require that Linux has some version of these modules.  If
+> the 'M4' was to control the pins and/or clock, then some other modules
+> could be written that makes some calls to that CPU (or world).
+
+I also have some M4 firmwares running (eCos, bare-metal), and usually we
+just let them access the CCM in a "read-only" mode. It works fairly
+well, however I agree this solution is not perfect. The hardware
+designers gave us hardware semaphores and CPU to CPU interrupts, so we
+could build a configuration interface (and maybe a resource allocation
+as well) around this. This would then implicate an ABI, and this
+certainly would need some time and discussion to make it good enough for
+mainline, if possible at all.
+
+> For other AIPS peripherals, it would be nice if they could be either
+> configured out and/or set to disabled by the device tree.
+
+Agreed, we should do this as much as possible for Vybrid. 
+
+--
+Stefan
+
