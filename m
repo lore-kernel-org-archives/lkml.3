@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaI2P07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:26:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60532 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976AbaI2P06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:26:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393083601"
-Date: Mon, 29 Sep 2014 08:26:46 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, dave@sr71.net,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        x86@kernel.org, torvalds@linux-foundation.org,
-        Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Subject: Re: [PATCH 2/2] x86: Only do a single page fault for
- copy_from_user_nmi
-Message-ID: <20140929152646.GC1629@tassilo.jf.intel.com>
-References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
- <1411774277-4198-3-git-send-email-andi@firstfloor.org>
- <20140929115620.GH5430@worktop>
+	id S1754474AbaI2P2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:28:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38540 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbaI2P2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 11:28:35 -0400
+Date: Mon, 29 Sep 2014 17:28:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] perf: Add sampling of the raw monotonic clock
+Message-ID: <20140929152832.GL4140@worktop.programming.kicks-ass.net>
+References: <1411050873-9310-1-git-send-email-pawel.moll@arm.com>
+ <1411050873-9310-2-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140929115620.GH5430@worktop>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411050873-9310-2-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For now, changing the semantics of the function seems like a sure way to
-> fail in the future though.
+On Thu, Sep 18, 2014 at 03:34:32PM +0100, Pawel Moll wrote:
+> @@ -4456,6 +4459,13 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+>  		data->cpu_entry.cpu	 = raw_smp_processor_id();
+>  		data->cpu_entry.reserved = 0;
+>  	}
+> +
+> +	if (sample_type & PERF_SAMPLE_CLOCK_RAW_MONOTONIC) {
+> +		struct timespec now;
+> +
+> +		getrawmonotonic(&now);
+> +		data->clock_raw_monotonic = timespec_to_ns(&now);
+> +	}
+>  }
+>  
 
-I doubt it. Nearly nobody uses the exact return value semantics.
+This cannot work, getrawmonotonic() isn't NMI-safe and there's
+nothing stopping this being used from NMI context.
 
-(iirc it's mostly write() and some bizarre code in mount)
+Also getrawmonotonic() + timespec_to_ns() will make tglx sad, he's just
+done a tree-wide eradication of silly conversions and now you're adding
+a ns -> timespec -> ns dance right back.
 
-In fact it's a regular mistake to assume it returns -errno.
+I _think_ you want ktime_get_mono_fast_ns(), but this does bring us
+right back to the question/discussion on which timebase you'd want to
+sync again. MONO does make sense for most cases, but I think we've had
+fairly sane stories for people wanting to sync against other clocks.
 
-> > In theory we could also duplicate the whole copy_*_ path for cases
-> > where the caller doesn't care about the exact bytes. But that
-> > seems overkill for just this issue, and I'm not sure anyone
-> > else cares about how fast this is. The simpler check works
-> > as well for now.
-> 
-> So I don't get that code, but why not fix it in general? Taking two
-> faults seems silly.
-
-It's really complicated to reconstruct the exact bytes, as an optimized
-memcpy is very complicated and has a lot of corner cases. 
-
-I tried it originally when writing the original copy function, but
-failed. That is why people came up later with this two-fault
-scheme.
-
-I think two fault is fine for most cases, just not for NMIs.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+A well.. 
