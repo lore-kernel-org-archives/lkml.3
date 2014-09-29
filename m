@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988AbaI2EwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 00:52:00 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:53539 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaI2Eth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751807AbaI2Eth (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Sep 2014 00:49:37 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:61387 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662AbaI2Etf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 00:49:35 -0400
 From: Chris Rorvick <chris@rorvick.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
         Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org
-Subject: [RFC RESEND 04/10] fusbh200: Remove duplicate ehci-dbgp declarations
-Date: Sun, 28 Sep 2014 23:48:52 -0500
-Message-Id: <1411966138-3053-5-git-send-email-chris@rorvick.com>
+Subject: [RFC RESEND 02/10] fusbh200: Make Xen notificaiton consistent with EHCI
+Date: Sun, 28 Sep 2014 23:48:50 -0500
+Message-Id: <1411966138-3053-3-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411966138-3053-1-git-send-email-chris@rorvick.com>
 References: <1411966138-3053-1-git-send-email-chris@rorvick.com>
@@ -22,72 +22,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that ehci-dbgp has its own header, use it rather than duplicating
-the declarations, etc.
+If CONFIG_XEN_DOM0 is enabled, the ehci-dbgp driver notifies Xen of
+controller reset events via xen_dbgp_reset_prep() and
+xen_dbgp_external_startup() (via calls to xen_dbgp_op().)  Otherwise
+<linux/usb/ehci_def.h> defines them as no-ops to disable this logic.
+
+The fusbh200 driver copies much of the dbgp code from ehci_def.h, but it
+unconditionally defines the Xen hooks as no-ops, effectively disabling
+these notifications when CONFIG_EARLY_PRINTK_DBGP is disabled.  When
+enabled, though, notifying Xen is dependent on CONFIG_XEN_DOM0 due to
+fusbh200 leveraging the ehci-dbgp driver.
+
+The following table compares the implementations of xen_dbgp_reset_prep()
+and xen_dbgp_external_startup() in the ehci-dbgp and fusbh200 drivers
+under the relevant configurations:
+
+  EARLY_PRINTK_DBGP?  XEN_DOM0?  ehci-dbgp      fusbh200
+  ------------------  ---------  -------------  -------------
+  n                   n          no-op          no-op
+  n                   y          xen_dbgp_op()  no-op
+  y                   n          no-op          no-op
+  y                   y          xen_dbgp_op()  xen_dbgp_op()
+
+This suggests that fusbh200 is, at best, indifferent to whether Xen is
+notified of these events.  Make fusbh200 consistent with ehci-dbgp as a
+step towards consolidating this code duplication.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 ---
- drivers/usb/host/fusbh200.h | 40 ++--------------------------------------
- 1 file changed, 2 insertions(+), 38 deletions(-)
+ drivers/usb/host/fusbh200.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/drivers/usb/host/fusbh200.h b/drivers/usb/host/fusbh200.h
-index da7152b..47aecfc 100644
+index 6b719e0..6e7b8c1 100644
 --- a/drivers/usb/host/fusbh200.h
 +++ b/drivers/usb/host/fusbh200.h
-@@ -1,6 +1,8 @@
- #ifndef __LINUX_FUSBH200_H
- #define __LINUX_FUSBH200_H
+@@ -318,6 +318,10 @@ extern struct console early_dbgp_console;
  
-+#include <linux/usb/ehci-dbgp.h>
-+
- /* definitions used for the EHCI driver */
+ struct usb_hcd;
  
- /*
-@@ -296,44 +298,6 @@ struct fusbh200_dbg_port {
- 	u32	address;
- };
++#ifdef CONFIG_XEN_DOM0
++extern int xen_dbgp_reset_prep(struct usb_hcd *);
++extern int xen_dbgp_external_startup(struct usb_hcd *);
++#else
+ static inline int xen_dbgp_reset_prep(struct usb_hcd *hcd)
+ {
+ 	return 1; /* Shouldn't this be 0? */
+@@ -327,6 +331,7 @@ static inline int xen_dbgp_external_startup(struct usb_hcd *hcd)
+ {
+ 	return -1;
+ }
++#endif
  
--#ifdef CONFIG_EARLY_PRINTK_DBGP
--#include <linux/init.h>
--extern int __init early_dbgp_init(char *s);
--extern struct console early_dbgp_console;
--#endif /* CONFIG_EARLY_PRINTK_DBGP */
--
--struct usb_hcd;
--
--#ifdef CONFIG_XEN_DOM0
--extern int xen_dbgp_reset_prep(struct usb_hcd *);
--extern int xen_dbgp_external_startup(struct usb_hcd *);
--#else
--static inline int xen_dbgp_reset_prep(struct usb_hcd *hcd)
--{
--	return 1; /* Shouldn't this be 0? */
--}
--
--static inline int xen_dbgp_external_startup(struct usb_hcd *hcd)
--{
--	return -1;
--}
--#endif
--
--#ifdef CONFIG_EARLY_PRINTK_DBGP
--/* Call backs from fusbh200 host driver to fusbh200 debug driver */
--extern int dbgp_external_startup(struct usb_hcd *);
--extern int dbgp_reset_prep(struct usb_hcd *hcd);
--#else
--static inline int dbgp_reset_prep(struct usb_hcd *hcd)
--{
--	return xen_dbgp_reset_prep(hcd);
--}
--static inline int dbgp_external_startup(struct usb_hcd *hcd)
--{
--	return xen_dbgp_external_startup(hcd);
--}
--#endif
--
- /*-------------------------------------------------------------------------*/
- 
- #define	QTD_NEXT(fusbh200, dma)	cpu_to_hc32(fusbh200, (u32)dma)
+ #ifdef CONFIG_EARLY_PRINTK_DBGP
+ /* Call backs from fusbh200 host driver to fusbh200 debug driver */
 -- 
 1.9.3
 
