@@ -1,244 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144AbaI2XIt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:08:49 -0400
-Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:46102 "EHLO
+	id S1755078AbaI2XIp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:08:45 -0400
+Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:46094 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751946AbaI2XIq (ORCPT
+	by vger.kernel.org with ESMTP id S1751946AbaI2XIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:08:46 -0400
+	Mon, 29 Sep 2014 19:08:43 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,::::::::::::::::::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:982:988:989:1260:1345:1359:1431:1437:1535:1605:1730:1747:1777:1792:1801:2393:2553:2559:2562:2689:2693:2895:2898:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3874:4049:4119:4321:4384:4605:5007:6119:6261:7875:7904:8603:8660:9163:9592:10004:10026:10226:10848:11026:11232:11658:11914:12043:12296:12517:12519:12555:13148:13161:13229:13230:13255:14096:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bead20_11f592d37ea1d
-X-Filterd-Recvd-Size: 8067
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:69:355:379:541:967:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1801:1981:2194:2199:2393:2525:2553:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3865:3866:3867:3870:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4605:5007:6119:6261:6742:7550:7875:8985:9025:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12679:12740:14096:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: linen89_1161f366fa715
+X-Filterd-Recvd-Size: 3550
 From: Joe Perches <joe@perches.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Alexander Viro <viro@ZenIV.linux.org.uk>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 1/7] seq_file: Rename static bool seq_overflow to public bool seq_is_full
-Date: Mon, 29 Sep 2014 16:08:21 -0700
-Message-Id: <848ac7e3d1c31cddf638a8526fa3c59fa6fdeb8a.1412031505.git.joe@perches.com>
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, netdev@vger.kernel.org,
+        cluster-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: [PATCH 0/7] seq_printf cleanups
+Date: Mon, 29 Sep 2014 16:08:20 -0700
+Message-Id: <cover.1412031505.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1412031505.git.joe@perches.com>
-References: <20140929124246.3e39dac8@gandalf.local.home> <cover.1412031505.git.joe@perches.com>
+In-Reply-To: <20140929124246.3e39dac8@gandalf.local.home>
+References: <20140929124246.3e39dac8@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return values of seq_printf/puts/putc are frequently misused.
+seq_printf should return void.
 
-Start down a path to remove all the return value uses of these
-functions.
+Add a public bool seq_is_full function that can be used to shortcut
+unnecesary seq_printf/seq_puts calls when the seq buffer is full.
 
-Make the static bool seq_overflow public along with a rename of
-the function to seq_is_full.  Rename the still static
-seq_set_overflow to seq_set_full.
+Start removing the misuses of the seq_printf/seq_puts return value.
 
-Update the documentation to not show return types for seq_printf
-et al.  Add a description of seq_is_full.
+Patchset brought forward from an unreplied to set of changes from
+back in December 2013.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- Documentation/filesystems/seq_file.txt | 28 ++++++++++++++++------------
- fs/seq_file.c                          | 28 ++++++++++++++--------------
- include/linux/seq_file.h               |  8 ++++++++
- 3 files changed, 38 insertions(+), 26 deletions(-)
+https://lkml.org/lkml/2013/12/11/713
 
-diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-index 8ea3e90..e19c636 100644
---- a/Documentation/filesystems/seq_file.txt
-+++ b/Documentation/filesystems/seq_file.txt
-@@ -180,27 +180,23 @@ output must be passed to the seq_file code. Some utility functions have
- been defined which make this task easy.
- 
- Most code will simply use seq_printf(), which works pretty much like
--printk(), but which requires the seq_file pointer as an argument. It is
--common to ignore the return value from seq_printf(), but a function
--producing complicated output may want to check that value and quit if
--something non-zero is returned; an error return means that the seq_file
--buffer has been filled and further output will be discarded.
-+printk(), but which requires the seq_file pointer as an argument.
- 
- For straight character output, the following functions may be used:
- 
--	int seq_putc(struct seq_file *m, char c);
--	int seq_puts(struct seq_file *m, const char *s);
--	int seq_escape(struct seq_file *m, const char *s, const char *esc);
-+	seq_putc(struct seq_file *m, char c);
-+	seq_puts(struct seq_file *m, const char *s);
-+	seq_escape(struct seq_file *m, const char *s, const char *esc);
- 
- The first two output a single character and a string, just like one would
- expect. seq_escape() is like seq_puts(), except that any character in s
- which is in the string esc will be represented in octal form in the output.
- 
--There is also a pair of functions for printing filenames:
-+There are also a pair of functions for printing filenames:
- 
--	int seq_path(struct seq_file *m, struct path *path, char *esc);
--	int seq_path_root(struct seq_file *m, struct path *path,
--			  struct path *root, char *esc)
-+	seq_path(struct seq_file *m, struct path *path, char *esc);
-+	seq_path_root(struct seq_file *m, struct path *path,
-+		      struct path *root, char *esc)
- 
- Here, path indicates the file of interest, and esc is a set of characters
- which should be escaped in the output.  A call to seq_path() will output
-@@ -209,6 +205,14 @@ root is desired, it can be used with seq_path_root().  Note that, if it
- turns out that path cannot be reached from root, the value of root will be
- changed in seq_file_root() to a root which *does* work.
- 
-+A function producing complicated output may want to check
-+	bool seq_is_full(struct seq_file *m);
-+and avoid further seq_<output> calls if true is returned.
-+
-+A true return from seq_is_full means that the seq_file buffer is full
-+and further output will be discarded.  The seq_show function will attempt
-+to allocate a larger buffer and retry printing.
-+
- 
- Making it all work
- 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index 3857b72..555aed6 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -16,18 +16,18 @@
- #include <asm/uaccess.h>
- #include <asm/page.h>
- 
--
- /*
-- * seq_files have a buffer which can may overflow. When this happens a larger
-+ * seq_files have a buffer which may overflow. When this happens a larger
-  * buffer is reallocated and all the data will be printed again.
-  * The overflow state is true when m->count == m->size.
-  */
--static bool seq_overflow(struct seq_file *m)
-+bool seq_is_full(struct seq_file *m)
- {
- 	return m->count == m->size;
- }
-+EXPORT_SYMBOL(seq_is_full);
- 
--static void seq_set_overflow(struct seq_file *m)
-+static void seq_set_full(struct seq_file *m)
- {
- 	m->count = m->size;
- }
-@@ -124,7 +124,7 @@ static int traverse(struct seq_file *m, loff_t offset)
- 			error = 0;
- 			m->count = 0;
- 		}
--		if (seq_overflow(m))
-+		if (seq_is_full(m))
- 			goto Eoverflow;
- 		if (pos + m->count > offset) {
- 			m->from = offset - pos;
-@@ -267,7 +267,7 @@ Fill:
- 			break;
- 		}
- 		err = m->op->show(m, p);
--		if (seq_overflow(m) || err) {
-+		if (seq_is_full(m) || err) {
- 			m->count = offs;
- 			if (likely(err <= 0))
- 				break;
-@@ -396,7 +396,7 @@ int seq_escape(struct seq_file *m, const char *s, const char *esc)
- 			*p++ = '0' + (c & 07);
- 			continue;
- 		}
--		seq_set_overflow(m);
-+		seq_set_full(m);
- 		return -1;
-         }
- 	m->count = p - m->buf;
-@@ -415,7 +415,7 @@ int seq_vprintf(struct seq_file *m, const char *f, va_list args)
- 			return 0;
- 		}
- 	}
--	seq_set_overflow(m);
-+	seq_set_full(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_vprintf);
-@@ -557,7 +557,7 @@ int seq_bitmap(struct seq_file *m, const unsigned long *bits,
- 			return 0;
- 		}
- 	}
--	seq_set_overflow(m);
-+	seq_set_full(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_bitmap);
-@@ -573,7 +573,7 @@ int seq_bitmap_list(struct seq_file *m, const unsigned long *bits,
- 			return 0;
- 		}
- 	}
--	seq_set_overflow(m);
-+	seq_set_full(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_bitmap_list);
-@@ -702,7 +702,7 @@ int seq_puts(struct seq_file *m, const char *s)
- 		m->count += len;
- 		return 0;
- 	}
--	seq_set_overflow(m);
-+	seq_set_full(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_puts);
-@@ -736,7 +736,7 @@ int seq_put_decimal_ull(struct seq_file *m, char delimiter,
- 	m->count += len;
- 	return 0;
- overflow:
--	seq_set_overflow(m);
-+	seq_set_full(m);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_put_decimal_ull);
-@@ -746,7 +746,7 @@ int seq_put_decimal_ll(struct seq_file *m, char delimiter,
- {
- 	if (num < 0) {
- 		if (m->count + 3 >= m->size) {
--			seq_set_overflow(m);
-+			seq_set_full(m);
- 			return -1;
- 		}
- 		if (delimiter)
-@@ -774,7 +774,7 @@ int seq_write(struct seq_file *seq, const void *data, size_t len)
- 		seq->count += len;
- 		return 0;
- 	}
--	seq_set_overflow(seq);
-+	seq_set_full(seq);
- 	return -1;
- }
- EXPORT_SYMBOL(seq_write);
-diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-index 52e0097..1f36da8 100644
---- a/include/linux/seq_file.h
-+++ b/include/linux/seq_file.h
-@@ -43,6 +43,14 @@ struct seq_operations {
- #define SEQ_SKIP 1
- 
- /**
-+ * seq_is_full - check if the buffer associated to seq_file is full
-+ * @m: the seq_file handle
-+ *
-+ * Returns true if the buffer is full
-+ */
-+bool seq_is_full(struct seq_file *m);
-+
-+/**
-  * seq_get_buf - get buffer to write arbitrary data to
-  * @m: the seq_file handle
-  * @bufp: the beginning of the buffer is stored here
+Renamed seq_is_buf_full to seq_is_full.
+
+Joe Perches (7):
+  seq_file: Rename static bool seq_overflow to public bool seq_is_full
+  netfilter: Convert print_tuple functions to return void
+  dlm: Use seq_is_full - remove seq_printf returns
+  dlm: Use seq_puts, remove unnecessary trailing spaces
+  fs: Convert show_fdinfo functions to void
+  debugfs: Fix misuse of seq_printf return value
+  docg3: Fix mixuse of seq_printf return value
+
+ Documentation/filesystems/seq_file.txt       |  28 +--
+ Documentation/filesystems/vfs.txt            |   2 +-
+ drivers/mtd/devices/docg3.c                  | 112 ++++++------
+ drivers/net/tun.c                            |   4 +-
+ fs/debugfs/file.c                            |  14 +-
+ fs/dlm/debug_fs.c                            | 260 +++++++++++++--------------
+ fs/eventfd.c                                 |  15 +-
+ fs/eventpoll.c                               |  19 +-
+ fs/notify/fdinfo.c                           |  76 ++++----
+ fs/notify/fdinfo.h                           |   4 +-
+ fs/proc/fd.c                                 |   2 +-
+ fs/seq_file.c                                |  28 +--
+ fs/signalfd.c                                |  10 +-
+ fs/timerfd.c                                 |  27 +--
+ include/linux/fs.h                           |   2 +-
+ include/linux/seq_file.h                     |   8 +
+ include/net/netfilter/nf_conntrack_core.h    |   2 +-
+ include/net/netfilter/nf_conntrack_l3proto.h |   4 +-
+ include/net/netfilter/nf_conntrack_l4proto.h |   4 +-
+ net/netfilter/nf_conntrack_l3proto_generic.c |   5 +-
+ net/netfilter/nf_conntrack_proto_dccp.c      |  10 +-
+ net/netfilter/nf_conntrack_proto_generic.c   |   5 +-
+ net/netfilter/nf_conntrack_proto_gre.c       |  10 +-
+ net/netfilter/nf_conntrack_proto_sctp.c      |  10 +-
+ net/netfilter/nf_conntrack_proto_tcp.c       |  10 +-
+ net/netfilter/nf_conntrack_proto_udp.c       |  10 +-
+ net/netfilter/nf_conntrack_proto_udplite.c   |  10 +-
+ net/netfilter/nf_conntrack_standalone.c      |  15 +-
+ 28 files changed, 333 insertions(+), 373 deletions(-)
+
 -- 
 1.8.1.2.459.gbcd45b4.dirty
-
