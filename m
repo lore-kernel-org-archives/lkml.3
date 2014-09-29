@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaI2O3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:29:03 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:53532 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967AbaI2O3B (ORCPT
+	id S1754468AbaI2ObU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:31:20 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50536 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752540AbaI2ObK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:29:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org, Akihiro Tsukada <tskd08@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] [media] pt3: remove bogus module_is_live() check
-Date: Mon, 29 Sep 2014 16:28:55 +0200
-Message-ID: <6460819.BmnhuA22YH@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:6xUkiURbxUHIhkWe8N+DauVGaHNuajb35l98JFNqPfG
- 6MjIYqeNzMJJujEKwtZv6mZPNO2KzizB3e9STKbYblgPTwXaUm
- wIj1Lc3rJqBBqPdDfbzoXuSqH0FjEXt+E4zQo+GR5ZGKxSpZSv
- 7ae2YCjV9nYES8/zSQovrYl8kGiJ09bkrBnMCvXxU+7M5uxk4C
- PSVFrMg+OrZ0rdEmUXatRE+5NBaBqBnnUSenYvaQoUDKL5RkPp
- di8Fo6xkJESWBClDxqbo90Z5GHxQGZ30CqvVROeCWf07UKcSxd
- H4RNWpK8x7DZIZIzmDG2sei6Kr+M2JX/T0/YATctoJRruinxHs
- 76utm2BLk9KnfyzRJxrw=
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 29 Sep 2014 10:31:10 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [PATCH v13 10/12] PCI: Assign unassigned bus resources in pci_scan_root_bus()
+Date: Mon, 29 Sep 2014 15:29:29 +0100
+Message-Id: <1412000971-9242-11-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new pt3 driver checks the module reference for presence
-before dropping it, which fails to compile when modules
-are disabled:
+If the firmware has not assigned all the bus resources and we are not just
+probing the PCI buses, it makes sense to assign the unassigned resources
+in pci_scan_root_bus().
 
-media/pci/pt3/pt3.c: In function 'pt3_attach_fe':
-media/pci/pt3/pt3.c:433:6: error: implicit declaration of function 'module_is_live' [-Werror=implicit-function-declaration]
-      module_is_live(pt3->adaps[i]->i2c_tuner->dev.driver->owner))
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Rob Herring <robh+dt@kernel.org>
+---
+ drivers/pci/probe.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-As far as I can tell however, this check is not needed at all, because
-the module will not go away as long as pt3 is holding a reference on
-it. Also the previous check for NULL pointer is not needed at all,
-because module_put has the same check.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/drivers/media/pci/pt3/pt3.c b/drivers/media/pci/pt3/pt3.c
-index 90f86ce7a001..39305f07dc2e 100644
---- a/drivers/media/pci/pt3/pt3.c
-+++ b/drivers/media/pci/pt3/pt3.c
-@@ -429,14 +429,10 @@ static int pt3_attach_fe(struct pt3_board *pt3, int i)
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 636d1c9..d2ebd49 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1951,6 +1951,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+ 	if (!found)
+ 		pci_bus_update_busn_res_end(b, max);
  
- err_tuner:
- 	i2c_unregister_device(pt3->adaps[i]->i2c_tuner);
--	if (pt3->adaps[i]->i2c_tuner->dev.driver->owner &&
--	    module_is_live(pt3->adaps[i]->i2c_tuner->dev.driver->owner))
--		module_put(pt3->adaps[i]->i2c_tuner->dev.driver->owner);
-+	module_put(pt3->adaps[i]->i2c_tuner->dev.driver->owner);
- err_demod:
- 	i2c_unregister_device(pt3->adaps[i]->i2c_demod);
--	if (pt3->adaps[i]->i2c_demod->dev.driver->owner &&
--	    module_is_live(pt3->adaps[i]->i2c_demod->dev.driver->owner))
--		module_put(pt3->adaps[i]->i2c_demod->dev.driver->owner);
-+	module_put(pt3->adaps[i]->i2c_demod->dev.driver->owner);
- 	return ret;
++	if (!pci_has_flag(PCI_PROBE_ONLY))
++		pci_assign_unassigned_bus_resources(b);
++
+ 	pci_bus_add_devices(b);
+ 	return b;
  }
- 
+-- 
+2.1.1
 
