@@ -1,107 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaI2OhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:37:13 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60218 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbaI2OhK (ORCPT
+	id S1754556AbaI2Oh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:37:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33332 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538AbaI2OhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:37:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: suravee.suthikulpanit@amd.com
-Cc: will.deacon@arm.com, liviu.dudau@arm.com, marc.zyngier@arm.com,
-        mark.rutland@arm.com, catalin.marinas@arm.com, jason@lakedaemon.net,
-        tglx@linutronix.de, robh+dt@kernel.org, bhelgaas@google.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Date: Mon, 29 Sep 2014 16:36:30 +0200
-Message-ID: <8631927.qWHZsjCs8e@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
+	Mon, 29 Sep 2014 10:37:19 -0400
+Date: Mon, 29 Sep 2014 16:36:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dmitry Vyukov <dvyukov@google.com>
+Cc: Yuri Gribov <tetra2005@gmail.com>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory
+ debugger.
+Message-ID: <20140929143654.GN5430@worktop>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+ <54259BD4.8090508@oracle.com>
+ <CACT4Y+Y0fzbs4DPt3n30R33cYqXEZ8E86tzCfzL6RUE9f+-r=w@mail.gmail.com>
+ <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
+ <CACT4Y+bptO341KQAQMSzUVV22KsjuomdTeDip=HaHJ3+1kvraQ@mail.gmail.com>
+ <CAJOtW+7UJQ2=66vELbyfXumQ=c9LknRAzXmd6Z6ea7i4oy6FwA@mail.gmail.com>
+ <CACT4Y+ZGXV_+J7sR-6_HX5eAOWQAXw5gSvjh1rw_mCxt90iNtQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ccYuLVE3tFDeSBHAVt1nu0wYD3leYXOdqSGaVp86b+t
- kgPG7NhxRnYFskpvpCAqfKAVlnhHc8mu0K+5zAq45myWv1mlXr
- EGc80F/Pz7IsOIrqJHKwebPtO62dvHHg26MMcHF5fwU/md0wca
- 0zfZFhJ4bwF6s8pc0tpmEYg5P1FHB2B+ycmQlYZP+xxyf9rndq
- 4BzEExKWmJaQ2bKbhxbD+xqm9u38vWfroTveneK/D69QRIbf0E
- 7nxxNwNnWhlabSMnQKbj6psIqmfIACQzFS1KqdhB38OVrldezv
- re/qx/49xhDlahQJVL88aCpkFwmS19vvMQUff0SYckZjUJ7nF3
- dL5IHf3H+bAr+l7POosE=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACT4Y+ZGXV_+J7sR-6_HX5eAOWQAXw5gSvjh1rw_mCxt90iNtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 28 September 2014 15:53:28 suravee.suthikulpanit@amd.com wrote:
-> +
-> +#ifdef CONFIG_ARM64
-> +struct pci_bus *gen_scan_root_bus(struct device *parent, int bus,
-> +                                      struct pci_ops *ops, void *sysdata,
-> +                                      struct list_head *resources)
-> +{
+On Mon, Sep 29, 2014 at 06:22:46PM +0400, Dmitry Vyukov wrote:
+> But on the second though... what do we want to do with pre-build
+> modules? Can you envision that somebody distributes binary modules
+> built with asan?
 
-I don't see anything ARM64 specific in this, the function only uses
-the newly added generic helpers.
-
->  static int gen_pci_probe(struct platform_device *pdev)
->  {
-> @@ -326,6 +385,7 @@ static int gen_pci_probe(struct platform_device *pdev)
->         struct device *dev = &pdev->dev;
->         struct device_node *np = dev->of_node;
->         struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
-> +#ifndef CONFIG_ARM64
->         struct hw_pci hw = {
->                 .nr_controllers = 1,
->                 .private_data   = (void **)&pci,
-> @@ -333,6 +393,7 @@ static int gen_pci_probe(struct platform_device *pdev)
->                 .map_irq        = of_irq_parse_and_map_pci,
->                 .ops            = &gen_pci_ops,
->         };
-> +#endif
->  
-
-Same here, I'd suggest marking this "#ifdef CONFIG_ARM" instead, as hw_pci
-is an arm32 specific data structure.
-
->         if (!pci)
->                 return -ENOMEM;
-> @@ -368,8 +429,24 @@ static int gen_pci_probe(struct platform_device *pdev)
->                 gen_pci_release_of_pci_ranges(pci);
->                 return err;
->         }
-> +#ifdef CONFIG_ARM64
->  
-> +#ifdef CONFIG_PCI_MSI
-> +       pci->msi_parent = of_parse_phandle(np, "msi-parent", 0);
-> +       if (!pci->msi_parent) {
-> +               dev_err(&pdev->dev, "Failed to allocate msi-parent.\n");
-> +               return -EINVAL;
-> +       }
-> +#endif
-
-We probably want to enable MSI unconditionally on ARM64, so the #ifdef is
-not necessary here. However, I don't think that a missing msi-parent should
-be a fatal error here: we can still continue without MSI support if this
-case.
-
-> +       if (!gen_scan_root_bus(&pdev->dev, pci->cfg.bus_range.start,
-> +                              &gen_pci_ops, pci, &pci->resources)) {
-> +               dev_err(&pdev->dev, "failed to enable PCIe ports\n");
-> +               return -ENODEV;
-> +       }
-> +#else
->         pci_common_init_dev(dev, &hw);
-> +#endif /* CONFIG_ARM64 */
-> 
-
-Again, just make the pci_common_init_dev() call #ifdef CONFIG_ARM, and move
-the generic case after it, outside of the #ifdef.
-
-	Arnd
+Nobody should ever care about binary modules other than inflicting the
+maximum pain and breakage on whoever does so.
