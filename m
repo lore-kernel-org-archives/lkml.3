@@ -1,284 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942AbaI2Okc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:40:32 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:45605 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897AbaI2OkZ (ORCPT
+	id S1754921AbaI2Oka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:40:30 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:62404 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbaI2Ok1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:40:25 -0400
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-To: thierry.reding@gmail.com
-Cc: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        bart.tanghe@thomasmore.be
-Subject: [resend rfc v4]pwm: add BCM2835 PWM driver
-Date: Mon, 29 Sep 2014 16:40:19 +0200
-Message-Id: <1412001619-30001-1-git-send-email-bart.tanghe@thomasmore.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 29 Sep 2014 10:40:27 -0400
+Date: Mon, 29 Sep 2014 16:40:24 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] video: move mediabus format definition to a more
+ standard place
+Message-ID: <20140929144023.GB2273@ulmo>
+References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
+Content-Disposition: inline
+In-Reply-To: <1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pwm driver for Broadcom BCM2835 processor (Raspberry Pi) 
-Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
----
-Changes in v4:
- - add the second pwm channel (tested on raspberry pi B+)
- - add the code and code style recommendations
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-new file mode 100644
-index 0000000..0a0c84e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-@@ -0,0 +1,13 @@
-+BCM2835 PWM controller (Raspberry Pi controller)
-+
-+Required properties:
-+- compatible: should be "brcm,bcm2835-pwm"
-+- reg: physical base address and length of the controller's registers
-+
-+Examples:
-+
-+pwm@2020c000 {
-+	compatible = "bcrm,bcm2835-pwm";
-+	reg = <0x2020c000 0x28>;
-+	clocks = <&clk_pwm>;
-+};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 22f2f28..a277256 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -62,6 +62,15 @@ config PWM_ATMEL_TCB
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel-tcb.
- 
-+config PWM_BCM2835
-+	tristate "BCM2835 PWM support"
-+	depends on MACH_BCM2835 || MACH_BCM2708
-+	help
-+	  PWM framework driver for BCM2835 controller (Raspberry Pi)
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-bcm2835.
-+
- config PWM_BFIN
- 	tristate "Blackfin PWM support"
- 	depends on BFIN_GPTIMERS
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index d8906ec..9863590 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -3,6 +3,7 @@ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
-+obj-$(CONFIG_PWM_BCM2835)	+= pwm-bcm2835.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
-new file mode 100644
-index 0000000..50a079d
---- /dev/null
-+++ b/drivers/pwm/pwm-bcm2835.c
-@@ -0,0 +1,198 @@
-+/*
-+ * Copyright (C) 2014 Thomas more
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+#define DUTY		0x14
-+#define PERIOD		0x10
-+#define CHANNEL		0x10
-+
-+#define PWM_ENABLE	(1 << 0)
-+#define PWM_POLARITY	(1 << 4)
-+
-+#define PWM_CONTROL_MASK	0xff
-+#define PWM_CONTROL_ENABLE	0x80
-+#define PWM_CONTROL_DISABLE	0xff
-+#define MIN_PERIOD		108		/* 9.2Mhz max pwm clock */
-+
-+struct bcm2835_pwm {
-+	struct pwm_chip chip;
-+	struct device *dev;
-+	int channel;
-+	unsigned long scaler;
-+	void __iomem *base;
-+	struct clk *clk;
-+};
-+
-+static inline struct bcm2835_pwm  *to_bcm2835_pwm(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct bcm2835_pwm, chip);
-+}
-+
-+static int bcm2835_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base) & ~(PWM_CONTROL_MASK << 8 * pwm->pwm);
-+	value |= (PWM_CONTROL_ENABLE << (8 * pwm->pwm));
-+	writel(value, pc->base);
-+	return 0;
-+}
-+
-+static void bcm2835_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base) & ~(PWM_CONTROL_MASK << 8 * pwm->pwm);
-+	value &= (~PWM_CONTROL_DISABLE << (8 * pwm->pwm));
-+	writel(value, pc->base);
-+}
-+
-+static int bcm2835_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      int duty_ns, int period_ns)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+
-+	if (period_ns > MIN_PERIOD) {
-+		writel(duty_ns / pc->scaler,
-+			 pc->base + DUTY + pwm->pwm * CHANNEL);
-+		writel(period_ns / pc->scaler,
-+			pc->base + PERIOD + pwm->pwm * CHANNEL);
-+	} else {
-+		dev_err(pc->dev, "Period not supported\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int bcm2835_pwm_enable(struct pwm_chip *chip,
-+			      struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base);
-+	value |= (PWM_ENABLE << (8 * pwm->pwm));
-+	writel(value, pc->base);
-+	return 0;
-+}
-+
-+static void bcm2835_pwm_disable(struct pwm_chip *chip,
-+				struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base);
-+	value &= ~(PWM_ENABLE << (8 * pwm->pwm));
-+	writel(value, pc->base);
-+}
-+
-+static int bcm2835_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				enum pwm_polarity polarity)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	if (polarity == PWM_POLARITY_NORMAL) {
-+		value = readl(pc->base);
-+		value &= ~(PWM_POLARITY << 8 * pwm->pwm);
-+		writel(value, pc->base);
-+	} else if (polarity == PWM_POLARITY_INVERSED) {
-+		value = readl(pc->base);
-+		value |= PWM_POLARITY << (8 * pwm->pwm);
-+		writel(value, pc->base);
-+	}
-+	return 0;
-+}
-+
-+static const struct pwm_ops bcm2835_pwm_ops = {
-+	.request = bcm2835_pwm_request,
-+	.free = bcm2835_pwm_free,
-+	.config = bcm2835_pwm_config,
-+	.enable = bcm2835_pwm_enable,
-+	.disable = bcm2835_pwm_disable,
-+	.set_polarity = bcm2835_set_polarity,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int bcm2835_pwm_probe(struct platform_device *pdev)
-+{
-+	struct bcm2835_pwm *pwm;
-+	int ret;
-+	struct resource *r;
-+	struct clk *clk;
-+
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm)
-+		return -ENOMEM;
-+
-+	pwm->dev = &pdev->dev;
-+
-+	clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "no clock found: %ld\n", PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
-+
-+	pwm->clk = clk;
-+	clk_prepare_enable(pwm->clk);
-+	pwm->scaler = NSEC_PER_SEC / clk_get_rate(clk);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pwm->base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(pwm->base))
-+		return PTR_ERR(pwm->base);
-+
-+	pwm->chip.dev = &pdev->dev;
-+	pwm->chip.ops = &bcm2835_pwm_ops;
-+	pwm->chip.npwm = 2;
-+
-+	ret = pwmchip_add(&pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		return -1;
-+	}
-+	platform_set_drvdata(pdev, pwm);
-+	return 0;
-+}
-+
-+static int bcm2835_pwm_remove(struct platform_device *pdev)
-+{
-+	struct bcm2835_pwm *pc = platform_get_drvdata(pdev);
-+	clk_disable_unprepare(pc->clk);
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static const struct of_device_id bcm2835_pwm_of_match[] = {
-+	{ .compatible = "brcm,bcm2835-pwm", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, bcm2835_pwm_of_match);
-+
-+static struct platform_driver bcm2835_pwm_driver = {
-+	.driver = {
-+		.name = "bcm2835-pwm",
-+		.of_match_table = bcm2835_pwm_of_match,
-+	},
-+	.probe = bcm2835_pwm_probe,
-+	.remove = bcm2835_pwm_remove,
-+};
-+module_platform_driver(bcm2835_pwm_driver);
-+
-+MODULE_AUTHOR("Bart Tanghe <bart.tanghe@thomasmore.be");
-+MODULE_DESCRIPTION("Broadcom BCM2835 PWM driver");
-+MODULE_LICENSE("GPL v2");
+--O5XBE6gyVG5Rl6Rj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Sep 29, 2014 at 04:02:39PM +0200, Boris Brezillon wrote:
+> Rename mediabus formats and move the enum into a separate header file so
+> that it can be used by DRM/KMS subsystem without any reference to the V4L2
+> subsystem.
+>=20
+> Old V4L2_MBUS_FMT_ definitions are now macros that points to VIDEO_BUS_FM=
+T_
+> definitions.
+>=20
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  include/uapi/linux/Kbuild             |   1 +
+>  include/uapi/linux/v4l2-mediabus.h    | 183 +++++++++++++++-------------=
+------
+>  include/uapi/linux/video-bus-format.h | 127 +++++++++++++++++++++++
+>  3 files changed, 207 insertions(+), 104 deletions(-)
+>  create mode 100644 include/uapi/linux/video-bus-format.h
+
+Hi Mauro,
+
+Do you have any objections to me merging patches 1 and 2 through the
+drm/panel tree given the dependency of the later patches in the series
+on these new constants? If you want I can provide a stable branch once
+v3.18-rc1 is out for you to pull into you tree to resolve possible
+conflicts.
+
+Thierry
+
+--O5XBE6gyVG5Rl6Rj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUKW9XAAoJEN0jrNd/PrOhdGEQAIGS5+E6bA05hTMqi1sV0j+5
+XlSqV2sdTiVg2p+MzLHI0sYI62QJGOZ0UZR7yCKNrBuN9Awmr9sWlMplqQWVkxdo
+0X4xoS+Sx5yQNQKDMLnYvGlzTU8b1BEfEffTHeauNhN3fC9KxqKdUwH+hG+QARbW
+Lk4jMPg7tMF+hkEnUxowA5Oh6o+qGTdH3EVIiGqXGSbdutBU0WL930nKk3DOi/Ql
+9pWOhQp1a0kJddvLz1/JWaeKhcPM3RurdFsyeOOMZ91l+jVg/v3I9vl+mUPox0NA
+lNnTIUqE/sfO90SqfBOfdRbZSbfuJuOSqNRmf0hy6k70heJiYV9zWkdEvO2NDNaf
+aE146rEc4OsNvxEDjF3XxlMg5WT8FbuqkmWzzKRm8l7C3L71CwxxWbDew8uwWhIf
+Oboab86AGCdaralrnbBdQ6nWWK31dptqd07BTzl5s/6c0oHqjOu6X5NKFW/wet3d
+7P1AhkSm7XvGnnzL7zIQcHHLupehyYJ5rlw0YvMoeO+cuh8Fq+MRFxiqqW5pUZLG
+kpqcDXG1XQSzkuypQhlAR6r2SzjI2o4ianCSy+Pm8YqmIzvEmcBl27NjmpIhR17q
+0v0RFIp7REQzsIQc/7JlVJwHf9CfTaG1x1ZlgtJ/Z967It8zM+n57ou2rEuKq89z
+aVGPS6o/GInxWCkQEm1F
+=r626
+-----END PGP SIGNATURE-----
+
+--O5XBE6gyVG5Rl6Rj--
