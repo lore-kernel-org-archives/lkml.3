@@ -1,112 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaI2S6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:58:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53583 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaI2S6o (ORCPT
+	id S1754776AbaI2TAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:00:21 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43736 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950AbaI2TAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:58:44 -0400
-Date: Mon, 29 Sep 2014 20:59:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Anish Bhatt <anish@chelsio.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mingo@redhat.com, hpa@zytor.com, sebastian@fds-team.de
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-In-Reply-To: <54299979.6080705@amacapital.net>
-Message-ID: <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com> <54299979.6080705@amacapital.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-646430505-1412017152=:22082"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Mon, 29 Sep 2014 15:00:19 -0400
+Message-ID: <1412017217.30721.38.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: 3.17-rc1 oops during network interface configuration
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        LKML Kernel <linux-kernel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Saeed Mahameed <saeedm@mellanox.com>, Tal Alon <talal@mellanox.com>,
+        Yevgeny Petrilin <yevgenyp@mellanox.com>,
+        Roland Dreier <roland@kernel.org>
+Date: Mon, 29 Sep 2014 12:00:17 -0700
+In-Reply-To: <6C43129E-4365-4BEF-ADAD-963B8F386789@oracle.com>
+References: <53F1EF18.7010909@acm.org> <53F47917.8080003@mellanox.com>
+	 <F580F466-28A5-4BDD-A338-D5C065A760C1@oracle.com>
+	 <541000F1.5000805@mellanox.com>
+	 <6C43129E-4365-4BEF-ADAD-963B8F386789@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 2014-09-29 at 14:52 -0400, Chuck Lever wrote:
 
---8323329-646430505-1412017152=:22082
-Content-Type: TEXT/PLAIN; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+> Is there a bugzilla report filed for this issue? Has there been any progress
+> towards a fix?
 
-On Mon, 29 Sep 2014, Andy Lutomirski wrote:
-> On 09/25/2014 12:42 PM, Anish Bhatt wrote:
-> > The MSR_SYSCALL_MASK, which is responsible for clearing specific EFLAGS on
-> >  syscall entry, should also clear the nested task (NT) flag to be safe from
-> >  userspace injection. Without this fix the application segmentation
-> >  faults on syscall return because of the changed meaning of the IRET
-> >  instruction.
-> > 
-> > Further details can be seen here https://bugs.winehq.org/show_bug.cgi?id=33275
-> > 
-> > Signed-off-by: Anish Bhatt <anish@chelsio.com>
-> > Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
-> > ---
-> >  arch/x86/kernel/cpu/common.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> > index e4ab2b4..3126558 100644
-> > --- a/arch/x86/kernel/cpu/common.c
-> > +++ b/arch/x86/kernel/cpu/common.c
-> > @@ -1184,7 +1184,7 @@ void syscall_init(void)
-> >  	/* Flags to clear on syscall */
-> >  	wrmsrl(MSR_SYSCALL_MASK,
-> >  	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
-> > -	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-> > +	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
-> 
-> Something's weird here, and at the very least the changelog is
-> insufficiently informative.
-> 
-> The Intel SDM says:
-> 
-> If the NT flag is set and the processor is in IA-32e mode, the IRET
-> instruction causes a general protection exception.
-> 
-> Presumably interrupt delivery clears NT.  I haven't spotted where that's
-> documented yet. 
+This is fixed in Linus tree.
 
-Nope, that's unrelated.
+http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=257117862634d89de33fec74858b1a0ba5ab444b
 
-See Volume 3, chapter 7.4 "Task linking":
-
-"The previous task link field of the TSS (sometimes called the
- “backlink”) and the NT flag in the EFLAGS register are used to return
- execution to the previous task. EFLAGS.NT = 1 indicates that the
- currently executing task is nested within the execution of another
- task.
-
- When a CALL instruction, an interrupt, or an exception causes a task
- switch: the processor copies the segment selector for the current TSS
- to the previous task link field of the TSS for the new task; it then
- sets EFLAGS.NT = 1.  If software uses an IRET instruction to suspend
- the new task, the processor checks for EFLAGS.NT = 1; it then uses the
- value in the previous task link field to return to the previous
- task. See Figures 7-8."
-
-Now, Linux does not care about that. Thread management is done purely
-in software. So nothing uses and nothing can use the TSS backlink and
-NT mode.
-
-In IA-32e mode a IRET seing EFLAGS.NT=1 will cause #GP. In non IA-32e
-mode it would simply explode by returning to TSS.back_link, which is
-reliably NULL.
-
-So there is nothing to see here other than the stupid user space task
-fiddling with the NT flag being killed rightfully.
-
-Thanks,
-
-	tglx
+http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=b49fe36208b45f76dfbcfcd3afd952a33fa9f5ce
 
 
-
-
-
-
---8323329-646430505-1412017152=:22082--
