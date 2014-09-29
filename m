@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaI2OEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:04:13 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:39662 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaI2OEK (ORCPT
+	id S1754580AbaI2OEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:04:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47361 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754480AbaI2OEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:04:10 -0400
-Date: Mon, 29 Sep 2014 10:04:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH] AHCI: Move host activation code into ahci_host_activate()
-Message-ID: <20140929140401.GA15925@htj.dyndns.org>
-References: <cover.1411648623.git.agordeev@redhat.com>
- <39cff5287f4fcc33d0f00f89cb2337c5a5ec22b6.1411648623.git.agordeev@redhat.com>
- <20140928160408.GA8050@mtj.dyndns.org>
- <20140929101846.GA8971@agordeev.usersys.redhat.com>
- <20140929101948.GB8971@agordeev.usersys.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929101948.GB8971@agordeev.usersys.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 29 Sep 2014 10:04:01 -0400
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 5/5] drm: panel: simple-panel: add bus format information for foxlink panel
+Date: Mon, 29 Sep 2014 16:02:43 +0200
+Message-Id: <1411999363-28770-6-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:19:49AM +0100, Alexander Gordeev wrote:
-> Currently host activation done by calling either function
-> ahci_host_activate() or ata_host_activate(). Consolidate
-> the code by only calling ahci_host_activate() for all AHCI
-> devices.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: linux-ide@vger.kernel.org
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-I reverted 2-3.  Can you please respin the patches so that code
-movement is separate from other changes?
+Foxlink's fl500wvr00-a0t supports RGB888 format.
 
-Thanks.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/gpu/drm/panel/panel-simple.c | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index eb3a17e..11bff3f 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -521,6 +521,7 @@ static const struct panel_desc foxlink_fl500wvr00_a0t = {
+ 		.width = 108,
+ 		.height = 65,
+ 	},
++	.bus_format = VIDEO_BUS_FMT_RGB888_1X24,
+ };
+ 
+ static const struct drm_display_mode innolux_n116bge_mode = {
 -- 
-tejun
+1.9.1
+
