@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaI2RCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:02:16 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24700 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182AbaI2RCP (ORCPT
+	id S1754015AbaI2RDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:03:21 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46691 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaI2RDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:02:15 -0400
-Message-ID: <5429906D.2030106@oracle.com>
-Date: Mon, 29 Sep 2014 13:01:33 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 29 Sep 2014 13:03:19 -0400
+Date: Mon, 29 Sep 2014 10:03:15 -0700
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] [FIXED] [PATCH 1/3] mm/slab: use percpu allocator
+ for cpu cache
+Message-ID: <20140929170315.GA1365@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org
+References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140928062449.GA1277@hudson.localdomain>
+ <20140929074418.GA29310@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Cong Wang <cwang@twopensource.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-References: <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu> <20140910083136.GP6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu> <541059C9.1040200@oracle.com> <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu> <20140910143306.GD4783@worktop.ger.corp.intel.com> <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu> <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com> <542789E5.7090805@oracle.com> <20140929111111.GF5430@worktop>
-In-Reply-To: <20140929111111.GF5430@worktop>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929074418.GA29310@js1304-P5Q-DELUXE>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 07:11 AM, Peter Zijlstra wrote:
-> On Sun, Sep 28, 2014 at 12:09:09AM -0400, Sasha Levin wrote:
+Joonsoo,
+
+On Mon, Sep 29, 2014 at 04:44:18PM +0900, Joonsoo Kim wrote:
+> On Sat, Sep 27, 2014 at 11:24:49PM -0700, Jeremiah Mahler wrote:
+> > On Thu, Aug 21, 2014 at 05:11:13PM +0900, Joonsoo Kim wrote:
+> > > Because of chicken and egg problem, initializaion of SLAB is really
+> > > complicated. We need to allocate cpu cache through SLAB to make
+> > > the kmem_cache works, but, before initialization of kmem_cache,
+> > > allocation through SLAB is impossible.
+> > > 
+> > > On the other hand, SLUB does initialization with more simple way. It
+> > > uses percpu allocator to allocate cpu cache so there is no chicken and
+> > > egg problem.
+> > > 
+> > > So, this patch try to use percpu allocator in SLAB. This simplify
+> > > initialization step in SLAB so that we could maintain SLAB code more
+> > > easily.
+> > > 
+> > > From my testing, there is no performance difference.
+> > > 
+> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > I just encountered a problem on a Lenovo Carbon X1 where it will
+> > suspend but won't resume.  A bisect indicated that this patch
+> > is causing the problem.
+> > 
+> > 997888488ef92da365b870247de773255227ce1f
+> > 
+> > I imagine the patch author, Joonsoo Kim, might have a better idea
+> > why this is happening than I do.  But if I can provide any information
+> > or run any tests that might be of help just let me know.
 > 
->> > [  690.801720] 2 locks held by trinity-c95/17888:
->> > [  690.801738] #0: (cpu_hotplug.lock){++++++}, at: get_online_cpus (kernel/cpu.c:92)
->> > [  690.801754] #1: (&ctx->lock){-.-...}, at: perf_lock_task_context (kernel/events/core.c:988)
->> > [  690.801758]
->> > [  690.801758] stack backtrace:
->> > [  690.801766] CPU: 21 PID: 17888 Comm: trinity-c95 Not tainted 3.17.0-rc6-next-20140926-sasha-00051-g9253dff-dirty #1242
->> > [  690.801779]  ffffffff92b7f320 0000000000000000 ffffffff92afbee0 ffff8804078179c8
->> > [  690.801798]  ffffffff8ef0070f 0000000000000011 ffffffff92ab6aa0 ffff880407817a18
->> > [  690.801813]  ffffffff8a24ec2c ffff880407817aa8 ffff880409c00000 ffff880407817a18
->> > [  690.801818] Call Trace:
->> > [  690.801836] dump_stack (lib/dump_stack.c:52)
->> > [  690.801845] print_circular_bug (kernel/locking/lockdep.c:1217)
->> > [  690.801856] __lock_acquire (kernel/locking/lockdep.c:1842 kernel/locking/lockdep.c:1947 kernel/locking/lockdep.c:2133 kernel/locking/lockdep.c:3184)
->> > [  690.801872] lock_acquire (kernel/locking/lockdep.c:3610)
->> > [  690.801892] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
->> > [  690.801921] __queue_work (kernel/workqueue.c:1325)
->> > [  690.801943] queue_work_on (kernel/workqueue.c:1403)
->> > [  690.801956] free_object (lib/debugobjects.c:209)
->> > [  690.801967] __debug_check_no_obj_freed (lib/debugobjects.c:718)
->> > [  690.801983] debug_check_no_obj_freed (lib/debugobjects.c:727)
->> > [  690.801995] kmem_cache_free (mm/slub.c:2687 mm/slub.c:2715)
->> > [  690.802016] free_task (kernel/fork.c:221)
->> > [  690.802026] __put_task_struct (kernel/fork.c:251)
->> > [  690.802037] put_ctx (include/linux/sched.h:1864 kernel/events/core.c:904)
->> > [  690.802049] find_get_context (kernel/events/core.c:913 kernel/events/core.c:3222)
->> > [  690.802078] SYSC_perf_event_open (kernel/events/core.c:7347)
->> > [  690.802111] SyS_perf_event_open (kernel/events/core.c:7210)
->> > [  690.802120] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
-> This doesn't make sense; perf_lock_task_context() isn't supposed to
-> return with ctx->lock held and therefore it should not still be held in
-> find_get_context() when calling put_ctx().
+> Hello,
 > 
-> Now, the only put_ctx() call in find_get_context() is in the !ctx path
-> of the perf_lock_task_context() call, furthermore there is a
-> mutex_lock() - which implies a might_sleep() - before that, so we can't
-> still be holding a spinlock().
+> Yeah, there is a bug. Below will fix your issue.
+> Could you test it and report the result?
+> 
+> Thanks for reporting it.
+> 
+> --------->8---------------
+> From e03ed6cc554e038b86d7b3a72b89d94e9ea808ba Mon Sep 17 00:00:00 2001
+> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Date: Mon, 29 Sep 2014 16:30:43 +0900
+> Subject: [PATCH] mm/slab: fix cpu on/off handling
+> 
+> When cpu off, we flush all cpu cached objects to it's own slab.
+> free_block() is used for this purpose and it's role is just to flush
+> objects from array_cache to proper slab. It doesn't adjust array_cache's
+> internal fields so we should manually reset them to proper value.
+> Without this fix, we maintain free objects duplicately, one is in
+> cpu cache, and, the other one is in the slab. So system would be broken.
+> 
+> Reported-by: Jeremiah Mahler <jmmahler@gmail.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  mm/slab.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 1162f0e..ce289b4 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1102,8 +1102,10 @@ static void cpuup_canceled(long cpu)
+>  
+>  		/* cpu is dead; no one can alloc from it. */
+>  		nc = per_cpu_ptr(cachep->cpu_cache, cpu);
+> -		if (nc)
+> +		if (nc) {
+>  			free_block(cachep, nc->entry, nc->avail, node, &list);
+> +			nc->avail = 0;
+> +		}
+>  
+>  		if (!cpumask_empty(mask)) {
+>  			spin_unlock_irq(&n->list_lock);
+> -- 
+> 1.7.9.5
+> 
 
-I think you missed the put_ctx() call in the other branch in find_get_context(),
-which is the call described by the trace above:
+That fixed the problem.  Thanks!
 
-	find_get_context()
-		unclone_ctx()
-			put_ctx()
+Tested-by: Jeremiah Mahler <jmmahler@gmail.com>
 
-
-Thanks,
-Sasha
+-- 
+Jeremiah Mahler
+jmmahler@gmail.com
+http://github.com/jmahler
