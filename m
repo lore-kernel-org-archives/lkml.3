@@ -1,499 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaI2MLK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 08:11:10 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57577 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaI2MLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 08:11:08 -0400
-Message-ID: <54294C55.3030204@hitachi.com>
-Date: Mon, 29 Sep 2014 21:11:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754205AbaI2MLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:11:46 -0400
+Received: from submit2.sa.ew.hu ([212.108.200.72]:58394 "EHLO submit2.sa.ew.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469AbaI2MLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 08:11:44 -0400
+Message-ID: <54294C78.6050006@denx.de>
+Date: Mon, 29 Sep 2014 14:11:36 +0200
+From: Heiko Schocher <hs@denx.de>
+Reply-To: hs@denx.de
+Organization: DENX Software Engineering
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH ftrace/for-next v6] ftracetest: Add POSIX.3 standard and
- XFAIL result codes
-References: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal>
-In-Reply-To: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal>
-Content-Type: text/plain; charset=UTF-8
+To: Lars Melin <larsm17@gmail.com>
+CC: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Macpaul Lin <macpaul@gmail.com>, "Meier, Roger" <r.meier@siemens.com>
+Subject: Re: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for
+ rndis
+References: <1411541339-32400-1-git-send-email-hs@denx.de> <5422B83A.8030406@gmail.com> <5422C33F.400@denx.de> <5422D39D.70006@gmail.com>
+In-Reply-To: <5422D39D.70006@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-PMX-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
+ SXL_IP_DYNAMIC 3, MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, SUPERLONG_LINE 0.05, BODY_SIZE_4000_4999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __C230066_P3_2 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FORWARDED_MSG 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __IN_REP_TO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __STOCK_SYMBOL1 0, __STOCK_SYMBOL_X1 0, __SUBJ_ALPHA_END 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven, could you pick this instead of old v5 patch?
+Hello Lars,
 
-As you pointed, this version shows the log of "unsuppoted" test result.
+sorry for my late answer ...
 
-Thank you,
+Am 24.09.2014 16:22, schrieb Lars Melin:
+> On 2014-09-24 20:12, Heiko Schocher wrote:
+>> Hello Lars,
+>>
+>> Am 24.09.2014 14:25, schrieb Lars Melin:
+>>> On 2014-09-24 13:48, Heiko Schocher wrote:
+>>>> use the values for RNDIS over Ethernet as defined in
+>>>> http://www.usb.org/developers/defined_class
+>>>> (search for RDNIS):
+>>>>
+>>>> - baseclass: 0xef (miscellaneous)
+>>>> - subclass: 0x04
+>>>> - protocol: 0x01
+>>>>
+>>> That is usb class, it is not the same thing as communication device class.
+>>>> --- a/include/uapi/linux/usb/cdc.h
+>>>> +++ b/include/uapi/linux/usb/cdc.h
+>>>> @@ -12,6 +12,7 @@
+>>>> #include <linux/types.h>
+>>>> #define USB_CDC_SUBCLASS_ACM 0x02
+>>>> +#define USB_CDC_SUBCLASS_RNDIS 0x04
+>>> No, no, no.
+>>> There is no CDC_SUBCLASS_RNDIS and you can not define one over an already used cdc subclass number, 0x04 is Multi-Channel Control Model
+>>
+>> Ah, ok, so I have to define this values in a new header file, as there
+>> is no current file for the USB_CLASS_MISC defines? Or is there a proper
+>> place for them?
+>>
+>> BTW: where do I find the "cdc subclass number, 0x04 is Multi-Channel
+>> Control Model" define?
+>>
+>> bye,
+>> Heiko
+>
+> You can still find the original specification usbcdc11.pdf on the net if you google for it, it has been pulled from usb.org where you could download it until a few years ago.
+> It is old but covers a lot of what you need to know.
 
-(2014/09/29 21:02), Masami Hiramatsu wrote:
-> Add XFAIL and POSIX 1003.3 standard codes (UNRESOLVED/
-> UNTESTED/UNSUPPORTED) as result codes. These are used for the
-> results that test case is expected to fail or unsupported
-> feature (by config).
-> 
-> To return these result code, this introduces exit_unresolved,
-> exit_untested, exit_unsupported and exit_xfail functions,
-> which use real-time signals to notify the result code to
-> ftracetest.
-> 
-> This also set "errexit" option for the testcases, so that
-> the tests don't need to exit explicitly.
-> 
-> Note that if the test returns UNRESOLVED/UNSUPPORTED/FAIL,
-> its test log including executed commands is shown on console
-> and main logfile as below.
-> 
->   ------
->   # ./ftracetest samples/
->   === Ftrace unit tests ===
->   [1] failure-case example        [FAIL]
->   execute: /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/fail.tc
->   + . /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/fail.tc
->   ++ cat non-exist-file
->   cat: non-exist-file: No such file or directory
->   [2] pass-case example   [PASS]
->   [3] unresolved-case example     [UNRESOLVED]
->   execute: /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/unresolved.tc
->   + . /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/unresolved.tc
->   ++ trap exit_unresolved INT
->   ++ kill -INT 29324
->   +++ exit_unresolved
->   +++ kill -s 38 29265
->   +++ exit 0
->   [4] unsupported-case example    [UNSUPPORTED]
->   execute: /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/unsupported.tc
->   + . /home/fedora/ksrc/linux-3/tools/testing/selftests/ftrace/samples/unsupported.tc
->   ++ exit_unsupported
->   ++ kill -s 40 29265
->   ++ exit 0
->   [5] untested-case example       [UNTESTED]
->   [6] xfail-case example  [XFAIL]
-> 
->   # of passed:  1
->   # of failed:  1
->   # of unresolved:  1
->   # of untested:  1
->   # of unsupported:  1
->   # of xfailed:  1
->   # of undefined(test bug):  0
->   ------
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> 
-> ---
-> Changes in v6:
->  - Show the test log of UNSUPPORTED result.
->  - Check the test results and return 1 if any of them is failed.
-> 
-> Changes in v4:
->  - Remove XPASS and short-names.
->  - Use real-time signals for result code.
->  - Simplify test cases by using errexit option.
->  - Add sample scripts for result code.
-> 
-> Changes in v3:
->  - Add UNRESOLVED/UNTESTED codes.
->  - Fix to handle undefined codes.
->  - Add a document about return codes.
->  - Fix to show failure logs.
->  - Don't use -e option for echo since dash doesn't support it.
-> ---
->  tools/testing/selftests/ftrace/README              |   37 ++++++
->  tools/testing/selftests/ftrace/ftracetest          |  124 ++++++++++++++++++--
->  tools/testing/selftests/ftrace/samples/fail.tc     |    4 +
->  tools/testing/selftests/ftrace/samples/pass.tc     |    3 
->  .../testing/selftests/ftrace/samples/unresolved.tc |    4 +
->  .../selftests/ftrace/samples/unsupported.tc        |    3 
->  tools/testing/selftests/ftrace/samples/untested.tc |    3 
->  tools/testing/selftests/ftrace/samples/xfail.tc    |    3 
->  .../selftests/ftrace/test.d/00basic/basic2.tc      |    3 
->  .../selftests/ftrace/test.d/00basic/basic3.tc      |    6 -
->  .../ftrace/test.d/kprobe/add_and_remove.tc         |   12 +-
->  .../selftests/ftrace/test.d/kprobe/busy_check.tc   |   15 +-
->  tools/testing/selftests/ftrace/test.d/template     |    5 +
->  13 files changed, 189 insertions(+), 33 deletions(-)
->  create mode 100644 tools/testing/selftests/ftrace/samples/fail.tc
->  create mode 100644 tools/testing/selftests/ftrace/samples/pass.tc
->  create mode 100644 tools/testing/selftests/ftrace/samples/unresolved.tc
->  create mode 100644 tools/testing/selftests/ftrace/samples/unsupported.tc
->  create mode 100644 tools/testing/selftests/ftrace/samples/untested.tc
->  create mode 100644 tools/testing/selftests/ftrace/samples/xfail.tc
-> 
-> diff --git a/tools/testing/selftests/ftrace/README b/tools/testing/selftests/ftrace/README
-> index b8631f0..182e76f 100644
-> --- a/tools/testing/selftests/ftrace/README
-> +++ b/tools/testing/selftests/ftrace/README
-> @@ -38,6 +38,43 @@ extension) and rewrite the test description line.
->   * The test cases should run on dash (busybox shell) for testing on
->     minimal cross-build environments.
->  
-> + * Note that the tests are run with "set -e" (errexit) option. If any
-> +   command fails, the test will be terminated immediately.
-> +
-> + * The tests can return some result codes instead of pass or fail by
-> +   using exit_unresolved, exit_untested, exit_unsupported and exit_xfail.
-> +
-> +Result code
-> +===========
-> +
-> +Ftracetest supports following result codes.
-> +
-> + * PASS: The test succeeded as expected. The test which exits with 0 is
-> +         counted as passed test.
-> +
-> + * FAIL: The test failed, but was expected to succeed. The test which exits
-> +         with !0 is counted as failed test.
-> +
-> + * UNRESOLVED: The test produced unclear or intermidiate results.
-> +             for example, the test was interrupted
-> +                       or the test depends on a previous test, which failed.
-> +                       or the test was set up incorrectly
-> +             The test which is in above situation, must call exit_unresolved.
-> +
-> + * UNTESTED: The test was not run, currently just a placeholder.
-> +             In this case, the test must call exit_untested.
-> +
-> + * UNSUPPORTED: The test failed because of lack of feature.
-> +               In this case, the test must call exit_unsupported.
-> +
-> + * XFAIL: The test failed, and was expected to fail.
-> +          To return XFAIL, call exit_xfail from the test.
-> +
-> +There are some sample test scripts for result code under samples/.
-> +You can also run samples as below:
-> +
-> +  # ./ftracetest samples/
-> +
->  TODO
->  ====
->  
-> diff --git a/tools/testing/selftests/ftrace/ftracetest b/tools/testing/selftests/ftrace/ftracetest
-> index 4c6c2fa..a8f81c7 100755
-> --- a/tools/testing/selftests/ftrace/ftracetest
-> +++ b/tools/testing/selftests/ftrace/ftracetest
-> @@ -114,22 +114,106 @@ prlog "=== Ftrace unit tests ==="
->  
->  
->  # Testcase management
-> +# Test result codes - Dejagnu extended code
-> +PASS=0	# The test succeeded.
-> +FAIL=1	# The test failed, but was expected to succeed.
-> +UNRESOLVED=2  # The test produced indeterminate results. (e.g. interrupted)
-> +UNTESTED=3    # The test was not run, currently just a placeholder.
-> +UNSUPPORTED=4 # The test failed because of lack of feature.
-> +XFAIL=5	# The test failed, and was expected to fail.
-> +
-> +# Accumulations
->  PASSED_CASES=
->  FAILED_CASES=
-> +UNRESOLVED_CASES=
-> +UNTESTED_CASES=
-> +UNSUPPORTED_CASES=
-> +XFAILED_CASES=
-> +UNDEFINED_CASES=
-> +TOTAL_RESULT=0
-> +
->  CASENO=0
->  testcase() { # testfile
->    CASENO=$((CASENO+1))
->    prlog -n "[$CASENO]"`grep "^#[ \t]*description:" $1 | cut -f2 -d:`
->  }
-> -failed() {
-> -  prlog "	[FAIL]"
-> -  FAILED_CASES="$FAILED_CASES $CASENO"
-> +
-> +eval_result() { # retval sigval
-> +  local retval=$2
-> +  if [ $2 -eq 0 ]; then
-> +    test $1 -ne 0 && retval=$FAIL
-> +  fi
-> +  case $retval in
-> +    $PASS)
-> +      prlog "	[PASS]"
-> +      PASSED_CASES="$PASSED_CASES $CASENO"
-> +      return 0
-> +    ;;
-> +    $FAIL)
-> +      prlog "	[FAIL]"
-> +      FAILED_CASES="$FAILED_CASES $CASENO"
-> +      return 1 # this is a bug.
-> +    ;;
-> +    $UNRESOLVED)
-> +      prlog "	[UNRESOLVED]"
-> +      UNRESOLVED_CASES="$UNRESOLVED_CASES $CASENO"
-> +      return 1 # this is a kind of bug.. something happened.
-> +    ;;
-> +    $UNTESTED)
-> +      prlog "	[UNTESTED]"
-> +      UNTESTED_CASES="$UNTESTED_CASES $CASENO"
-> +      return 0
-> +    ;;
-> +    $UNSUPPORTED)
-> +      prlog "	[UNSUPPORTED]"
-> +      UNSUPPORTED_CASES="$UNSUPPORTED_CASES $CASENO"
-> +      return 1 # this is not a bug, but the result should be reported.
-> +    ;;
-> +    $XFAIL)
-> +      prlog "	[XFAIL]"
-> +      XFAILED_CASES="$XFAILED_CASES $CASENO"
-> +      return 0
-> +    ;;
-> +    *)
-> +      prlog "	[UNDEFINED]"
-> +      UNDEFINED_CASES="$UNDEFINED_CASES $CASENO"
-> +      return 1 # this must be a test bug
-> +    ;;
-> +  esac
-> +}
-> +
-> +# Signal handling for result codes
-> +SIG_RESULT=
-> +SIG_BASE=36	# Use realtime signals
-> +SIG_PID=$$
-> +
-> +SIG_UNRESOLVED=$((SIG_BASE + UNRESOLVED))
-> +exit_unresolved () {
-> +  kill -s $SIG_UNRESOLVED $SIG_PID
-> +  exit 0
-> +}
-> +trap 'SIG_RESULT=$UNRESOLVED' $SIG_UNRESOLVED
-> +
-> +SIG_UNTESTED=$((SIG_BASE + UNTESTED))
-> +exit_untested () {
-> +  kill -s $SIG_UNTESTED $SIG_PID
-> +  exit 0
->  }
-> -passed() {
-> -  prlog "	[PASS]"
-> -  PASSED_CASES="$PASSED_CASES $CASENO"
-> +trap 'SIG_RESULT=$UNTESTED' $SIG_UNTESTED
-> +
-> +SIG_UNSUPPORTED=$((SIG_BASE + UNSUPPORTED))
-> +exit_unsupported () {
-> +  kill -s $SIG_UNSUPPORTED $SIG_PID
-> +  exit 0
->  }
-> +trap 'SIG_RESULT=$UNSUPPORTED' $SIG_UNSUPPORTED
->  
-> +SIG_XFAIL=$((SIG_BASE + XFAIL))
-> +exit_xfail () {
-> +  kill -s $SIG_XFAIL $SIG_PID
-> +  exit 0
-> +}
-> +trap 'SIG_RESULT=$XFAIL' $SIG_XFAIL
->  
->  # Run one test case
->  run_test() { # testfile
-> @@ -137,14 +221,17 @@ run_test() { # testfile
->    local testlog=`mktemp --tmpdir=$LOG_DIR ${testname}-XXXXXX.log`
->    testcase $1
->    echo "execute: "$1 > $testlog
-> -  (cd $TRACING_DIR; set -x ; . $1) >> $testlog 2>&1
-> -  ret=$?
-> -  if [ $ret -ne 0 ]; then
-> -    failed
-> -    catlog $testlog
-> -  else
-> -    passed
-> +  SIG_RESULT=0
-> +  # setup PID and PPID, $$ is not updated.
-> +  (cd $TRACING_DIR; read PID _ < /proc/self/stat ;
-> +   set -e; set -x; . $1) >> $testlog 2>&1
-> +  eval_result $? $SIG_RESULT
-> +  if [ $? -eq 0 ]; then
-> +    # Remove test log if the test was done as it was expected.
->      [ $KEEP_LOG -eq 0 ] && rm $testlog
-> +  else
-> +    catlog $testlog
-> +    TOTAL_RESULT=1
->    fi
->  }
->  
-> @@ -152,8 +239,15 @@ run_test() { # testfile
->  for t in $TEST_CASES; do
->    run_test $t
->  done
-> +
->  prlog ""
->  prlog "# of passed: " `echo $PASSED_CASES | wc -w`
->  prlog "# of failed: " `echo $FAILED_CASES | wc -w`
-> -
-> -test -z "$FAILED_CASES" # if no error, return 0
-> +prlog "# of unresolved: " `echo $UNRESOLVED_CASES | wc -w`
-> +prlog "# of untested: " `echo $UNTESTED_CASES | wc -w`
-> +prlog "# of unsupported: " `echo $UNSUPPORTED_CASES | wc -w`
-> +prlog "# of xfailed: " `echo $XFAILED_CASES | wc -w`
-> +prlog "# of undefined(test bug): " `echo $UNDEFINED_CASES | wc -w`
-> +
-> +# if no error, return 0
-> +exit $TOTAL_RESULT
-> diff --git a/tools/testing/selftests/ftrace/samples/fail.tc b/tools/testing/selftests/ftrace/samples/fail.tc
-> new file mode 100644
-> index 0000000..15e35b9
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/fail.tc
-> @@ -0,0 +1,4 @@
-> +#!/bin/sh
-> +# description: failure-case example
-> +cat non-exist-file
-> +echo "this is not executed"
-> diff --git a/tools/testing/selftests/ftrace/samples/pass.tc b/tools/testing/selftests/ftrace/samples/pass.tc
-> new file mode 100644
-> index 0000000..d015493
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/pass.tc
-> @@ -0,0 +1,3 @@
-> +#!/bin/sh
-> +# description: pass-case example
-> +return 0
-> diff --git a/tools/testing/selftests/ftrace/samples/unresolved.tc b/tools/testing/selftests/ftrace/samples/unresolved.tc
-> new file mode 100644
-> index 0000000..41e99d3
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/unresolved.tc
-> @@ -0,0 +1,4 @@
-> +#!/bin/sh
-> +# description: unresolved-case example
-> +trap exit_unresolved INT
-> +kill -INT $PID
-> diff --git a/tools/testing/selftests/ftrace/samples/unsupported.tc b/tools/testing/selftests/ftrace/samples/unsupported.tc
-> new file mode 100644
-> index 0000000..45910ff
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/unsupported.tc
-> @@ -0,0 +1,3 @@
-> +#!/bin/sh
-> +# description: unsupported-case example
-> +exit_unsupported
-> diff --git a/tools/testing/selftests/ftrace/samples/untested.tc b/tools/testing/selftests/ftrace/samples/untested.tc
-> new file mode 100644
-> index 0000000..35a4594
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/untested.tc
-> @@ -0,0 +1,3 @@
-> +#!/bin/sh
-> +# description: untested-case example
-> +exit_untested
-> diff --git a/tools/testing/selftests/ftrace/samples/xfail.tc b/tools/testing/selftests/ftrace/samples/xfail.tc
-> new file mode 100644
-> index 0000000..9dd3953
-> --- /dev/null
-> +++ b/tools/testing/selftests/ftrace/samples/xfail.tc
-> @@ -0,0 +1,3 @@
-> +#!/bin/sh
-> +# description: xfail-case example
-> +cat non-exist-file || exit_xfail
-> diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-> index b04f30d..bf9a7b0 100644
-> --- a/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-> @@ -1,6 +1,7 @@
->  #!/bin/sh
->  # description: Basic test for tracers
-> +test -f available_tracers
->  for t in `cat available_tracers`; do
-> -  echo $t > current_tracer || exit 1
-> +  echo $t > current_tracer
->  done
->  echo nop > current_tracer
-> diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-> index 0c1a3a2..bde6625 100644
-> --- a/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-> @@ -1,8 +1,8 @@
->  #!/bin/sh
->  # description: Basic trace clock test
-> -[ -f trace_clock ] || exit 1
-> +test -f trace_clock
->  for c in `cat trace_clock | tr  -d \[\]`; do
-> -  echo $c > trace_clock || exit 1
-> -  grep '\['$c'\]' trace_clock || exit 1
-> +  echo $c > trace_clock
-> +  grep '\['$c'\]' trace_clock
->  done
->  echo local > trace_clock
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> index 5ddfb47..1b8b665 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
-> @@ -1,11 +1,11 @@
->  #!/bin/sh
->  # description: Kprobe dynamic event - adding and removing
->  
-> -[ -f kprobe_events ] || exit 1
-> +[ -f kprobe_events ] || exit_unsupported # this is configurable
->  
-> -echo 0 > events/enable || exit 1
-> -echo > kprobe_events || exit 1
-> -echo p:myevent do_fork > kprobe_events || exit 1
-> -grep myevent kprobe_events || exit 1
-> -[ -d events/kprobes/myevent ] || exit 1
-> +echo 0 > events/enable
-> +echo > kprobe_events
-> +echo p:myevent do_fork > kprobe_events
-> +grep myevent kprobe_events
-> +test -d events/kprobes/myevent
->  echo > kprobe_events
-> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> index 588fde97..b55c840 100644
-> --- a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
-> @@ -1,14 +1,13 @@
->  #!/bin/sh
->  # description: Kprobe dynamic event - busy event check
->  
-> -[ -f kprobe_events ] || exit 1
-> +[ -f kprobe_events ] || exit_unsupported
->  
-> -echo 0 > events/enable || exit 1
-> -echo > kprobe_events || exit 1
-> -echo p:myevent do_fork > kprobe_events || exit 1
-> -[ -d events/kprobes/myevent ] || exit 1
-> -echo 1 > events/kprobes/myevent/enable || exit 1
-> +echo 0 > events/enable
-> +echo > kprobe_events
-> +echo p:myevent do_fork > kprobe_events
-> +test -d events/kprobes/myevent
-> +echo 1 > events/kprobes/myevent/enable
->  echo > kprobe_events && exit 1 # this must fail
-> -echo 0 > events/kprobes/myevent/enable || exit 1
-> +echo 0 > events/kprobes/myevent/enable
->  echo > kprobe_events # this must succeed
-> -
-> diff --git a/tools/testing/selftests/ftrace/test.d/template b/tools/testing/selftests/ftrace/test.d/template
-> index ce5f735..5448f7a 100644
-> --- a/tools/testing/selftests/ftrace/test.d/template
-> +++ b/tools/testing/selftests/ftrace/test.d/template
-> @@ -1,4 +1,9 @@
->  #!/bin/sh
->  # description: %HERE DESCRIBE WHAT THIS DOES%
->  # you have to add ".tc" extention for your testcase file
-> +# Note that all tests are run with "errexit" option.
-> +
->  exit 0 # Return 0 if the test is passed, otherwise return !0
-> +# If the test could not run because of lack of feature, call exit_unsupported
-> +# If the test returned unclear results, call exit_unresolved
-> +# If the test is a dummy, or a placeholder, call exit_untested
-> 
-> 
-> 
+Hmm.. maybe I am to dummy for finding this docment...
 
+http://www.usb.org/results?q=usbcdc11.pdf&submit=Search
 
+does not find this document ... could you send me a direct link?
+
+I found with the above search:
+
+http://www.usb.org/developers/defined_class
+
+and this site, exactly describes the values for RNDIS over ethernet,
+as my patch changes [1]
+
+> Linux has afaik only the cdc.h definition file, everything else is coded by class/subclass in respectively drivers when needed.
+
+why not in header files? I thought, magical values are not welcome
+in source code ...
+
+As for the is_rndis() function case, this function is defined in
+2 places:
+
+- drivers/net/usb/cdc_ether.c
+- drivers/usb/core/generic.c
+
+Has this a special reason? This seems suboptimal to me ...
+
+> 02/02/ff or e0/01/03 are the most common interface attribute for rndis, both of them together with a data interface with attributes 0a/00/00.
+
+I must admit, I am not a USB nor a RNDIS expert ...
+
+> Please check the whitelisting in drivers/net/usb/rndis_host.c and also blacklistings in other net drivers under the same path, it should give you an idea how to bind an interface to a specific driver by interface attributes and/or usb vid:pid.
+> You should be able to do the same for your particular device.
+
+Hmm.. I did not understand you here ... so, one step back:
+
+I got from a customer this patch (in a similiar version) and
+he did tests with [3] and saw, that a board which runs linux,
+is seen in [3] with the values [2] ... so he changed the
+values in drivers/usb/gadget/function/f_rndis.c to the
+values [1], which are documented in [4] and with them
+the test [3] is happy ... and the file
+"Documentation/usb/linux.inf" is not longer needed on the
+windows pc!
+
+So he (and at the end I too) thought, that this is the proper
+way to make [3] happy ... (maybe [3] is incorrect ? )
+
+Is current ML code correct? And if yes, why?
+
+If the values [2] in current ML linux are correct,
+could you say me, where they are documented?
+
+(and sorry for my stupid questions ...)
+
+Thanks!
+
+bye,
+Heiko
+
+[1] values which my patch sets for RNDIS over ethernet
+- baseclass: 0xef (miscellaneous)
+- subclass: 0x04
+- protocol: 0x01
+
+[2] currently used values for RNDIS over ethernet
+- baseclass: 0x02 (USB_CLASS_COMM)
+- subclass: 0x02
+- protocol: 0xff
+
+[3] "USB Compliance test suite which runs Windows", see:
+http://www.usb.org/developers/tools/usb20_tools/#usb20cv
+
+[4] http://www.usb.org/developers/defined_class
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
