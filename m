@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037AbaI2NMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:12:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35036 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaI2NMa (ORCPT
+	id S1754167AbaI2NPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:15:06 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:34969 "EHLO
+	homiemail-a99.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751753AbaI2NPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:12:30 -0400
-Message-ID: <54295ABA.1010806@codeaurora.org>
-Date: Mon, 29 Sep 2014 09:12:26 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: olof@lixom.net, mark.rutland@arm.com, devicetree@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, galak@codeaurora.org, robh+dt@kernel.org,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-References: <1410454801-14231-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1410454801-14231-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Sep 2014 09:15:01 -0400
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: peterz@infradead.org, mingo@kernel.org, dave@stgolabs.net,
+        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>
+Subject: [PATCH 2/4] locktorture: Fix __acquire annotation for spinlock irq
+Date: Mon, 29 Sep 2014 06:14:24 -0700
+Message-Id: <1411996466-11488-3-git-send-email-dave@stgolabs.net>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1411996466-11488-1-git-send-email-dave@stgolabs.net>
+References: <1411996466-11488-1-git-send-email-dave@stgolabs.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+Its quite easy to get mixed up with the names -- 'torture_spinlock_irq'
+is not actually a valid spinlock name.
 
-On 09/11/2014 01:00 PM, Doug Anderson wrote:
-> Some 32-bit (ARMv7) systems are architected like this:
-> 
-> * The firmware doesn't know and doesn't care about hypervisor mode and
->   we don't want to add the complexity of hypervisor there.
-> 
-> * The firmware isn't involved in SMP bringup or resume.
-> 
-> * The ARCH timer come up with an uninitialized offset between the
->   virtual and physical counters.  Each core gets a different random
->   offset.
-> 
-> * The device boots in "Secure SVC" mode.
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+---
+ kernel/locking/locktorture.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I believe this can safely be detected by whether a write to CNTFRQ succeeds
-(handling the UNDEF on failure). I've tested this approach in what I've
-determined to be the 19 valid combinations of the following options.
-
-* AArch64 EL3, AArch32 EL3, no EL3
-* AArch64 EL2, AArch32 EL2, no EL2
-* Start in SVC_N, SVC_S, HYP_N, MON_S
-
-Christopher
-
+diff --git a/kernel/locking/locktorture.c b/kernel/locking/locktorture.c
+index 0762b25..9e9cd11 100644
+--- a/kernel/locking/locktorture.c
++++ b/kernel/locking/locktorture.c
+@@ -205,7 +205,7 @@ static struct lock_torture_ops spin_lock_ops = {
+ };
+ 
+ static int torture_spin_lock_write_lock_irq(void)
+-__acquires(torture_spinlock_irq)
++__acquires(torture_spinlock)
+ {
+ 	unsigned long flags;
+ 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.8.4.5
+
