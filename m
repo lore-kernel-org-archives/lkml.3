@@ -1,56 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaI2PIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:08:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48328 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751420AbaI2PIl (ORCPT
+	id S1754646AbaI2PJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:09:55 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:51726 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaI2PJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:08:41 -0400
-Date: Mon, 29 Sep 2014 17:08:37 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de, arnd@arndb.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140929150837.GD8912@kwain>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
+	Mon, 29 Sep 2014 11:09:54 -0400
+Message-ID: <54297645.7030208@linaro.org>
+Date: Mon, 29 Sep 2014 16:09:57 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Pramod Gurav <pramod.gurav@smartplayin.com>,
+        linux-kernel@vger.kernel.org
+CC: Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
+References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com> <542970CF.6040405@linaro.org>
+In-Reply-To: <542970CF.6040405@linaro.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, Arnd, Felipe,
+On 29/09/14 15:46, Srinivas Kandagatla wrote:
+> On 29/09/14 14:48, Pramod Gurav wrote:
+>> This change fixes below sparse error,
+>> drivers/pinctrl/pinctrl-st.c:1515:31: error: incompatible types for
+>> operation (>)
+>> drivers/pinctrl/pinctrl-st.c:1515:31:    left side has type void
+>> [noderef] <asn:2>*irqmux_base
+>> drivers/pinctrl/pinctrl-st.c:1515:31:    right side has type int
+>>
+>> The fix is done by removing a check on info->irqmux_base as
+>> info->irqmux_base has already been checked  for error when allocating it.
+>> Hence there is no need to redo the check.
+>>
+>> Cc: Maxime Coquelin <maxime.coquelin@st.com>
+>> Cc: Patrice Chotard <patrice.chotard@st.com>
+>> CC: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+>> ---
+>>   drivers/pinctrl/pinctrl-st.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+>> index 5475374..ddeaeda 100644
+>> --- a/drivers/pinctrl/pinctrl-st.c
+>> +++ b/drivers/pinctrl/pinctrl-st.c
+>> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
+>> st_pinctrl *info,
+>>                            gpio_irq, st_gpio_irq_handler);
+>>       }
+>>
+>> -    if (info->irqmux_base > 0 || gpio_irq > 0) {
+>> +    if (gpio_irq > 0) {
+>>           err = gpiochip_irqchip_add(&bank->gpio_chip, &st_gpio_irqchip,
+>>                          0, handle_simple_irq,
+>>                          IRQ_TYPE_LEVEL_LOW);
+> 
+> This is not the correct fix. Please see why irqmux_base and gpio_irq are
+> used in the driver.
+> You are breaking the logic here...
+> 
+> please read the below comment from the code.
+> 
+>     /**
+>      * GPIO bank can have one of the two possible types of
+>      * interrupt-wirings.
+>      *
+>      * First type is via irqmux, single interrupt is used by multiple
+>      * gpio banks. This reduces number of overall interrupts numbers
+>      * required. All these banks belong to a single pincontroller.
+>      *          _________
+>      *         |       |----> [gpio-bank (n)    ]
+>      *         |       |----> [gpio-bank (n + 1)]
+>      *    [irqN]-- | irq-mux |----> [gpio-bank (n + 2)]
+>      *         |       |----> [gpio-bank (...  )]
+>      *         |_________|----> [gpio-bank (n + 7)]
+>      *
+>      * Second type has a dedicated interrupt per each gpio bank.
+>      *
+>      *    [irqN]----> [gpio-bank (n)]
+>      */
+> 
+> 
+> so irqmux_base is first type and gpio_irq is second type.
+> if you remove check for irqmux_base here you would end up NOT adding
+> irqchip the gpiochip in first type so you break the existing logic here.
+> 
+> 
+> I think the correct fix is:
+> 
+> diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+> index 5475374..4060c30 100644
+> --- a/drivers/pinctrl/pinctrl-st.c
+> +++ b/drivers/pinctrl/pinctrl-st.c
+> @@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct
+> st_pinctrl *info,
+>                                              gpio_irq,
+> st_gpio_irq_handler);
+>         }
+> 
+> -       if (info->irqmux_base > 0 || gpio_irq > 0) {
+> +       if (!IS_ERR(info->irqmux_base) || gpio_irq > 0) {
+>                 err = gpiochip_irqchip_add(&bank->gpio_chip,
+> &st_gpio_irqchip,
+>                                            0, handle_simple_irq,
+>                                            IRQ_TYPE_LEVEL_LOW);
 
-On Tue, Sep 23, 2014 at 12:28:03PM +0200, Antoine Tenart wrote:
-> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> and DMA mask, to support USB2 ChipIdea controllers that don't need
-> specific functions.
+IS_ERR() should be irrelavent because the allocation code bombs out on
+error. Shouldn't this just be a NULL pointer check?
 
-Did we agree on the modifications needed to get this accepted? If so,
-can one of you sum up what's need to be done, I got a bit lost reading
-all the discussions on this thread.
+  if(info->irqmux_base || gpio_irq > 0)
 
-Anyway, that would be good to get this series accepted as the Berlin USB
-support depends on it. This series has been out since the beginning of
-June and non-critical changes can be added by future series.
 
-Thanks,
+Daniel.
 
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
