@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaI2Jyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:54:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49849 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaI2Jyv (ORCPT
+	id S1753507AbaI2JzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:55:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45416 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753238AbaI2JzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:54:51 -0400
-Date: Mon, 29 Sep 2014 11:54:40 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140929095440.GB13142@linutronix.de>
-References: <54129F6C.7040508@linutronix.de>
- <20140912094010.GE28458@ci00147.xsens-tech.local>
- <5412C21A.8020203@linutronix.de>
- <20140912102816.GF28458@ci00147.xsens-tech.local>
- <541716DC.9020904@linutronix.de>
- <20140917102812.GA20438@ci00147.xsens-tech.local>
- <20140921204100.GA10111@linutronix.de>
- <20140922092853.GH20438@ci00147.xsens-tech.local>
- <20140925151403.GH19396@linutronix.de>
- <20140929085042.GA13952@ci00147.xsens-tech.local>
+	Mon, 29 Sep 2014 05:55:05 -0400
+Date: Mon, 29 Sep 2014 11:52:27 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        ctl <ctl@merrii.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 6/7] devicetree: bindings: Document supported
+ Allwinner sunxi SoCs
+Message-ID: <20140929095227.GD4388@lukather>
+References: <1411570141-29960-1-git-send-email-wens@csie.org>
+ <1411570141-29960-7-git-send-email-wens@csie.org>
+ <20140925133609.GK15315@lukather>
+ <CAGb2v65pKo=6BC-HaMsEMq-bcQcoHZNc9GiX+kfTBgP1PE5wMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TD8GDToEDw0WLGOL"
 Content-Disposition: inline
-In-Reply-To: <20140929085042.GA13952@ci00147.xsens-tech.local>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <CAGb2v65pKo=6BC-HaMsEMq-bcQcoHZNc9GiX+kfTBgP1PE5wMg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frans Klaver | 2014-09-29 10:50:42 [+0200]:
 
->This version fixes the console things for us. It also increases the
->amount of data we can push over the serial port. If I push the data
->towards our requirements, we're not there yet. I get the "too much work
->for irq" notice still. However, I don't think you'd need to be fixing
->that in this series (or at all). We had similar issues there with
->omap-serial as well.
->
->As far as I'm concerned, this is
->
->Tested-by: Frans Klaver <frans.klaver@xsens.com>
+--TD8GDToEDw0WLGOL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks a lot.
-There is a patch named "ARM: edma: unconditionally ack the error
-interrupt". I have the feeling that this is not really required once we
-delay set_termios. I couldn't reproduce the bug with beagleblack with my
-usual test case.
+On Sat, Sep 27, 2014 at 09:08:46PM +0800, Chen-Yu Tsai wrote:
+> On Thu, Sep 25, 2014 at 9:36 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Wed, Sep 24, 2014 at 10:49:00PM +0800, Chen-Yu Tsai wrote:
+> >> This adds a list of supported Allwinner SoC bindings.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  Documentation/devicetree/bindings/arm/sunxi.txt | 12 ++++++++++++
+> >>  1 file changed, 12 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/arm/sunxi.txt
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/arm/sunxi.txt b/Documen=
+tation/devicetree/bindings/arm/sunxi.txt
+> >> new file mode 100644
+> >> index 0000000..d7d1039
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/arm/sunxi.txt
+> >> @@ -0,0 +1,12 @@
+> >> +Allwinner sunXi Platforms Device Tree Bindings
+> >> +
+> >> +Each device tree must specify which Allwinner SoC it uses,
+> >> +using one of the following compatible stirngs:
+> >                                          ^ strings
+>=20
+> Will fix.
+>=20
+> >> +
+> >> +  allwinner,sun4i-a10
+> >> +  allwinner,sun5i-a10s
+> >> +  allwinner,sun5i-a13
+> >> +  allwinner,sun6i-a31
+> >> +  allwinner,sun7i-a20
+> >> +  allwinner,sun8i-a23
+> >> +  allwinner,sun9i-a80
+> >
+> > Maybe you can just add this info to the already existing README?
+>=20
+> AFAIK the bindings are where they're supposed to be.
+>=20
+> Putting the bindings outside of devicetree/bindings is unexpected
+> and confusing.
 
-For your "too much work for irq" problem: Could you add trace_printk()
-in tx/rx dma start/complete, and irq routine? The interresting part is
-what is the irq routine doing once entered. It might be a condition that
-is ignored at first and "acked" later while serving another event. Or it
-is really doing something and this is more or less "legal".
+Ah, yes...
 
->Thanks,
->Frans
+Sorry about the noise, I was somehow convinced our README were under
+that directory, but you're obviously right :)
 
-Sebastian
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--TD8GDToEDw0WLGOL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUKSvbAAoJEBx+YmzsjxAgV8sP/00C1oriJbCIQ3jqAr9v1gv4
+Gqdk5t3LNlNTr/J2x5E+NfPlk3y0QcT9oLZHew23V//nPO5b4eI/FOCkA7tWu+fA
+5G48apmYsBHxu6mYXClKh7sNimnAIdt38OVghz/5bJSss1SkUozYzExLEDPxvL1k
+/OOpOD6VNku83uFpmbDXdywQujBKK92qheBfDNJF6+xzgt4bySEyBPDTps+FksgR
++leZ/3Qf0uqE88vKuAlEftn9pc9dOAW98WD5fbiZvIplv/wQirzBRI6+EZ4fM6vj
+HJHWnDU6Di5teooNuasxpHINYeDBdnAr6ZkowRxoowwCxLsxCKpbdMl1cAZAOX9g
+Log3WKz8sEZHUSWTFonQs/0QBIkxg3gsR96ydivQoUadxy0gg6XUHYr6H+AQLaLA
+yAgcYR8l5AIeREKvCQckOjIOEWmkTeR7gItlhCo6/Ahf1/jJWdKwRQFmXI+p3ZRL
+Ms8/shR3hA90Zsz6r4Zr1NIIMiE5cpiaZA5jqwwq7CGmM4O5u0s67NiyB/dfPrWD
+0FU2RA9fU5za7Zg5XO5kCC4bIyxuNIdg1tt9a7k+tJXoAQ64c2RPGMpioP7oXUcK
+pTUR5f3TLNo7DD++hhorgRzTityqaQP4Zuoqvy2xbKUZE9rSebAt1gkOXVZ0y5nS
+88nMGEVlGNmccGtoDCMi
+=61GK
+-----END PGP SIGNATURE-----
+
+--TD8GDToEDw0WLGOL--
