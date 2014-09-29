@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaI2RA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:00:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46379 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaI2RA2 (ORCPT
+	id S1754274AbaI2RAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:00:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38897 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaI2RAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:00:28 -0400
-Date: Mon, 29 Sep 2014 19:00:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: Use RCU read lock on all calls to dl_bw_of()
-Message-ID: <20140929170022.GA18926@worktop.programming.kicks-ass.net>
-References: <1412003970-25277-1-git-send-email-sasha.levin@oracle.com>
- <1412009027.20287.17.camel@tkhai>
- <20140929165418.GQ5430@worktop>
+	Mon, 29 Sep 2014 13:00:33 -0400
+Date: Mon, 29 Sep 2014 12:59:37 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        kernel@pengutronix.de, Grant Likely <grant.likely@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v4 1/8] [media] soc_camera: Do not decrement endpoint
+ node refcount in the loop
+Message-ID: <20140929165937.GB13163@kroah.com>
+References: <1411978551-30480-1-git-send-email-p.zabel@pengutronix.de>
+ <1411978551-30480-2-git-send-email-p.zabel@pengutronix.de>
+ <20140929091316.GA23154@mwanda>
+ <1411983923.3050.1.camel@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140929165418.GQ5430@worktop>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411983923.3050.1.camel@pengutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 06:54:18PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 29, 2014 at 08:43:47PM +0400, Kirill Tkhai wrote:
-> > Thanks for your report. It looks like your fix is not enough, because
-> > we check for rcu_read_lock_sched_held() in dl_bw_of(). It still warns
-> > even if rcu_read_lock() is held.
+On Mon, Sep 29, 2014 at 11:45:23AM +0200, Philipp Zabel wrote:
+> Am Montag, den 29.09.2014, 12:13 +0300 schrieb Dan Carpenter:
+> > On Mon, Sep 29, 2014 at 10:15:44AM +0200, Philipp Zabel wrote:
+> > > In preparation for a following patch, stop decrementing the endpoint node
+> > > refcount in the loop. This temporarily leaks a reference to the endpoint node,
+> > > which will be fixed by having of_graph_get_next_endpoint decrement the refcount
+> > > of its prev argument instead.
 > > 
-> > I used rcu_read_lock_sched_held() because we free root_domain using
-> > call_rcu_sched(). So, it's necessary to held rcu_read_lock_sched(),
-> > and my initial commit has this problem too.
+> > Don't do this...
 > > 
-> > It looks like we should fix it in a way like this:
-> > 
-> > [PATCH]sched: Use dl_bw_of() under rcu_read_lock_sched()
-> > 
-> > rq->rd is freed using call_rcu_sched(), and it's accessed with preemption
-> > disabled in the most cases.
-> > 
-> > So in other places we should use rcu_read_lock_sched() to access it to fit
-> > the scheme:
-> > 
-> > rcu_read_lock_sched() or preempt_disable() <==> call_rcu_sched().
+> > My understanding (and I haven't invested much time into trying to
+> > understand this beyond glancing at the change) is that patch 1 and 2,
+> > introduce small bugs that are fixed in patch 3?
+> >
+> > Just fold all three patches into one patch.  We need an Ack from Mauro
+> > and Greg and then send the patch through Grant's tree.
 > 
-> Hmm, sad that. I cannot remember why that is rcu_sched, I suspect
-> because we rely on it someplace but I cannot remember where.
+> Yes. Patches 1 and 2 leak a reference on of_nodes touched by the loop.
+> As far as I am aware, all users of this code don't use the reference
+> counting (CONFIG_OF_DYNAMIC is disabled), so this bug should be
+> theoretical.
 > 
-> We could of course do a double take on that and use call_rcu after
-> call_rcu_sched(), such that either or both are sufficient.
-> 
-> I would very much prefer not to add extra preempt_disable()s if
-> possible.
+> I'd be happy do as you suggest if Mauro and Greg agree.
 
-Ah wait, if we simply move that preempt_disable() inside the
-for_each_cpu() loop there's no harm done. Having them outside is painful
-though.
+Let's see the correct patch, don't break things and then later on fix
+them...
+
+thanks,
+
+greg k-h
