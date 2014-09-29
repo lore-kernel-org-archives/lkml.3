@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547AbaI2Eqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 00:46:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50617 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaI2Eqi (ORCPT
+	id S1751620AbaI2Etb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 00:49:31 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:50907 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaI2Et3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 00:46:38 -0400
-Message-ID: <5428E42A.6090206@codeaurora.org>
-Date: Mon, 29 Sep 2014 07:46:34 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Jeremiah Mahler <jmmahler@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
-References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <20140928181354.GB2782@hudson.localdomain>
-In-Reply-To: <20140928181354.GB2782@hudson.localdomain>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Sep 2014 00:49:29 -0400
+From: Chris Rorvick <chris@rorvick.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Chris Rorvick <chris@rorvick.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [RFC RESEND 00/10] Create separate header for ehci-dbgp driver
+Date: Sun, 28 Sep 2014 23:48:48 -0500
+Message-Id: <1411966138-3053-1-git-send-email-chris@rorvick.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremiah,
+Is there any interest in something like this?
 
-On 9/28/2014 9:13 PM, Jeremiah Mahler wrote:
-> Tanya,
->
-> On Sun, Sep 28, 2014 at 09:37:00AM +0300, Tanya Brokhman wrote:
->> The need for performing read disturb is determined according to new
->> statistics collected per eraseblock:
->> - read counter: incremented at each read operation
->>                  reset at each erase
->> - last erase time stamp: updated at each erase
->>
->> This patch adds the infrastructure for the above statistics
->>
->> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->> ---
-> ...
->> @@ -385,6 +402,38 @@ static ssize_t dev_attribute_show(struct device *dev,
->>   	return ret;
->>   }
->>
->> +static ssize_t dev_attribute_store(struct device *dev,
->> +			   struct device_attribute *attr,
->> +			   const char *buf, size_t count)
->> +{
->> +	int value;
->> +	struct ubi_device *ubi;
->> +
->> +	ubi = container_of(dev, struct ubi_device, dev);
->> +	ubi = ubi_get_device(ubi->ubi_num);
->> +	if (!ubi)
->> +		return -ENODEV;
->> +
->> +	if (kstrtos32(buf, 10, &value))
->> +		return -EINVAL;
->> +	/* Consider triggering full scan if threshods change */
->> +	else if (attr == &dev_dt_threshold) {
->> +		if (value < UBI_MAX_DT_THRESHOLD)
->> +			ubi->dt_threshold = value;
->> +		else
->> +			pr_err("Max supported threshold value is %d",
->> +				   UBI_MAX_DT_THRESHOLD);
->> +	} else if (attr == &dev_rd_threshold) {
->> +		if (value < UBI_MAX_READCOUNTER)
->> +			ubi->rd_threshold = value;
->> +		else
->> +			pr_err("Max supported threshold value is %d",
->> +				   UBI_MAX_READCOUNTER);
->> +	}
->> +
->> +	return count;
->> +}
->> +
-> ...
->
-> One small style nit.  As per Documentation/CodingStyle [line 169] if
-> one branch in a conditional uses braces then all branches should use
-> braces.
->
+Original:
 
-I'm sorry but I understand it differently. From CodingStyle:
-"This does not apply if only one branch of a conditional statement is a 
-single
-statement; in the latter case use braces in both branches:
+The FUSBH200 and FOTG210 are not EHCI-compatible and require standalone
+drivers.  See discussion at:
 
-if (condition) {
-	do_this();
-	do_that();
-} else {
-	otherwise();
-}"
-According to my understanding this doesn't mean {} should be added in 
-case of an if statement inside an if statement. So the above code seems 
-to be complaint with the coding style.
-Please correct me if I'm misunderstanding something.
+  http://comments.gmane.org/gmane.linux.usb.general/84169
 
-Thanks,
-- Tanya Brokhman
+But these controllers do implement an EHCI-compatible debug port and
+therefore leverage the ehci-dbgp driver.  Rather than pulling in the
+necessary declarations from <linux/usb/ehci_def.h>, each driver copies
+this code into their own header.  The goal of this series is to pull the
+ehci-dbgp related code into its own header to remove the need for this
+redundancy.
+
+I have done only minimal testing on this, and I don't use either of
+these controller so my ability to test the changes is limited.  But I
+thought I'd push it out for comment to see if there was interest.
+
+The only actual change should be when CONFIG_EARLY_PRINTK_DBGP is
+disabled and CONFIG_XEN_DOM0 is enabled.  Currently each of these does
+not notify Xen of reset events under this configuration.  Since these
+events are propagated when CONFIG_EARLY_PRINTK_DBGP and CONFIG_XEN_DOM0
+are both enabled, though, it seems that is not a problem (and maybe not
+sending them in the former case is a bug?)  Regardless, the motivation
+for this change is for consistancy as a step towrads consolidation.  As
+I said above, I am not able to actually test these changes on either
+controller.
+
+First time submission, so I look forward to any feedback.  If this is of
+any interest I will work on testing the various configations and boot
+parameters.
+
+Regards,
+
+Chris Rorvick
+
+Chris Rorvick (10):
+  usb: Create separate header for ehci-dbgp
+  fusbh200: Make Xen notificaiton consistent with EHCI
+  fusbh200: Remove superfluous macro definitions
+  fusbh200: Remove duplicate ehci-dbgp declarations
+  fusbh200: Use ehci_dbg_port struct
+  fotg210: Make Xen notificaiton consistent with EHCI
+  fotg210: Remove superfluous macro definitions
+  fotg210: Remove duplicate ehci-dbgp declarations
+  fotg210: Use ehci_dbg_port struct
+  usb: Remove __init from early_dbgp_init() prototype
+
+ drivers/usb/host/fotg210.h    | 62 ++------------------------------
+ drivers/usb/host/fusbh200.h   | 62 ++------------------------------
+ include/linux/usb/ehci-dbgp.h | 83 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/ehci_def.h  | 65 ++-------------------------------
+ 4 files changed, 91 insertions(+), 181 deletions(-)
+ create mode 100644 include/linux/usb/ehci-dbgp.h
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation
+1.9.3
+
