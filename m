@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193AbaI2Nct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:32:49 -0400
+	id S1754299AbaI2Nc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:32:57 -0400
 Received: from mga11.intel.com ([192.55.52.93]:2354 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaI2Ncq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:32:46 -0400
+	id S1752243AbaI2Ncy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:32:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393029917"
+   d="scan'208";a="393029978"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 01/18] mei: add hbm and pg state in devstate debugfs print
-Date: Mon, 29 Sep 2014 16:31:33 +0300
-Message-Id: <1411997510-29094-2-git-send-email-tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 05/18] mei: fix style warning: Missing a blank line after declarations
+Date: Mon, 29 Sep 2014 16:31:37 +0300
+Message-Id: <1411997510-29094-6-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
 References: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
@@ -24,116 +23,445 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+fix new style warning: Missing a blank line after declarations
 
-Add hbm state, pg enablement and state to devstate file in debugfs
-(<debugfs>/mei/devstate)
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/debugfs.c |  7 ++++++-
- drivers/misc/mei/hbm.c     | 16 ++++++++++++++++
- drivers/misc/mei/hbm.h     |  2 ++
- drivers/misc/mei/init.c    | 12 ++++++++++++
- drivers/misc/mei/mei_dev.h |  2 ++
- 5 files changed, 38 insertions(+), 1 deletion(-)
+ drivers/misc/mei/amthif.c  |  1 +
+ drivers/misc/mei/client.c  |  1 +
+ drivers/misc/mei/debugfs.c |  1 +
+ drivers/misc/mei/hbm.c     |  5 +++++
+ drivers/misc/mei/hw-me.c   | 12 ++++++++++++
+ drivers/misc/mei/hw-txe.c  | 29 +++++++++++++++++++++++++----
+ drivers/misc/mei/init.c    |  6 ++++--
+ drivers/misc/mei/nfc.c     |  1 +
+ drivers/misc/mei/pci-txe.c |  1 +
+ 9 files changed, 51 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 4114758..46241a6 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -130,6 +130,7 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+ 						struct file *file)
+ {
+ 	struct mei_cl_cb *cb;
++
+ 	list_for_each_entry(cb, &dev->amthif_rd_complete_list.list, list)
+ 		if (cb->file_object == file)
+ 			return cb;
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index 449bb45..b7f21d4 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -1065,6 +1065,7 @@ void mei_cl_all_disconnect(struct mei_device *dev)
+ void mei_cl_all_wakeup(struct mei_device *dev)
+ {
+ 	struct mei_cl *cl;
++
+ 	list_for_each_entry(cl, &dev->file_list, link) {
+ 		if (waitqueue_active(&cl->rx_wait)) {
+ 			cl_dbg(dev, cl, "Waking up reading client!\n");
 diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index 3b03288..2399b31 100644
+index be16c4b..f15139d 100644
 --- a/drivers/misc/mei/debugfs.c
 +++ b/drivers/misc/mei/debugfs.c
-@@ -134,8 +134,13 @@ static ssize_t mei_dbgfs_read_devstate(struct file *fp, char __user *ubuf,
- 	if  (!buf)
+@@ -179,6 +179,7 @@ void mei_dbgfs_deregister(struct mei_device *dev)
+ int mei_dbgfs_register(struct mei_device *dev, const char *name)
+ {
+ 	struct dentry *dir, *f;
++
+ 	dir = debugfs_create_dir(name, NULL);
+ 	if (!dir)
  		return -ENOMEM;
- 
--	pos += scnprintf(buf + pos, bufsz - pos, "%s\n",
-+	pos += scnprintf(buf + pos, bufsz - pos, "dev: %s\n",
- 			mei_dev_state_str(dev->dev_state));
-+	pos += scnprintf(buf + pos, bufsz - pos, "hbm: %s\n",
-+			mei_hbm_state_str(dev->hbm_state));
-+	pos += scnprintf(buf + pos, bufsz - pos, "pg:  %s, %s\n",
-+			mei_pg_is_enabled(dev) ? "ENABLED" : "DISABLED",
-+			mei_pg_state_str(mei_pg_state(dev)));
- 	ret = simple_read_from_buffer(ubuf, cnt, ppos, buf, pos);
- 	kfree(buf);
- 	return ret;
 diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 9fc051b..3311b5c 100644
+index 3311b5c..24534ff 100644
 --- a/drivers/misc/mei/hbm.c
 +++ b/drivers/misc/mei/hbm.c
-@@ -56,6 +56,22 @@ static const char *mei_cl_conn_status_str(enum mei_cl_connect_status status)
- #undef MEI_CL_CCS
+@@ -111,6 +111,7 @@ void mei_hbm_idle(struct mei_device *dev)
+ static void mei_me_cl_remove_all(struct mei_device *dev)
+ {
+ 	struct mei_me_client *me_cl, *next;
++
+ 	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
+ 			list_del(&me_cl->list);
+ 			kfree(me_cl);
+@@ -449,6 +450,7 @@ static int mei_hbm_stop_req(struct mei_device *dev)
+ int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl)
+ {
+ 	const size_t len = sizeof(struct hbm_flow_control);
++
+ 	cl_dbg(dev, cl, "sending flow control\n");
+ 	return mei_hbm_cl_write(dev, cl, MEI_FLOW_CONTROL_CMD, len);
+ }
+@@ -520,6 +522,7 @@ static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
+ int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl)
+ {
+ 	const size_t len = sizeof(struct hbm_client_connect_request);
++
+ 	return mei_hbm_cl_write(dev, cl, CLIENT_DISCONNECT_REQ_CMD, len);
  }
  
-+const char *mei_hbm_state_str(enum mei_hbm_state state)
-+{
-+#define MEI_HBM_STATE(state) case MEI_HBM_##state: return #state
-+	switch (state) {
-+	MEI_HBM_STATE(IDLE);
-+	MEI_HBM_STATE(STARTING);
-+	MEI_HBM_STATE(STARTED);
-+	MEI_HBM_STATE(ENUM_CLIENTS);
-+	MEI_HBM_STATE(CLIENT_PROPERTIES);
-+	MEI_HBM_STATE(STOPPED);
-+	default:
-+		return "unknown";
-+	}
-+#undef MEI_HBM_STATE
-+}
+@@ -534,6 +537,7 @@ int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl)
+ int mei_hbm_cl_disconnect_rsp(struct mei_device *dev, struct mei_cl *cl)
+ {
+ 	const size_t len = sizeof(struct hbm_client_connect_response);
 +
- /**
-  * mei_cl_conn_status_to_errno - convert client connect response
-  * status to error code
-diff --git a/drivers/misc/mei/hbm.h b/drivers/misc/mei/hbm.h
-index 80920f0..efcb0d4 100644
---- a/drivers/misc/mei/hbm.h
-+++ b/drivers/misc/mei/hbm.h
-@@ -40,6 +40,8 @@ enum mei_hbm_state {
- 	MEI_HBM_STOPPED,
- };
+ 	return mei_hbm_cl_write(dev, cl, CLIENT_DISCONNECT_RES_CMD, len);
+ }
  
-+const char *mei_hbm_state_str(enum mei_hbm_state state);
+@@ -569,6 +573,7 @@ static void mei_hbm_cl_disconnect_res(struct mei_cl *cl,
+ int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl)
+ {
+ 	const size_t len = sizeof(struct hbm_client_connect_request);
 +
- int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr);
+ 	return mei_hbm_cl_write(dev, cl, CLIENT_CONNECT_REQ_CMD, len);
+ }
  
- static inline void mei_hbm_hdr(struct mei_msg_hdr *hdr, size_t length)
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 241eae5..56a9caa 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -127,6 +127,7 @@ static void mei_me_hw_config(struct mei_device *dev)
+ static inline enum mei_pg_state mei_me_pg_state(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++
+ 	return hw->pg_state;
+ }
+ 
+@@ -139,6 +140,7 @@ static void mei_me_intr_clear(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
+ 	u32 hcsr = mei_hcsr_read(hw);
++
+ 	if ((hcsr & H_IS) == H_IS)
+ 		mei_me_reg_write(hw, H_CSR, hcsr);
+ }
+@@ -151,6 +153,7 @@ static void mei_me_intr_enable(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
+ 	u32 hcsr = mei_hcsr_read(hw);
++
+ 	hcsr |= H_IE;
+ 	mei_hcsr_set(hw, hcsr);
+ }
+@@ -164,6 +167,7 @@ static void mei_me_intr_disable(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
+ 	u32 hcsr = mei_hcsr_read(hw);
++
+ 	hcsr  &= ~H_IE;
+ 	mei_hcsr_set(hw, hcsr);
+ }
+@@ -234,6 +238,7 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
+ static void mei_me_host_set_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++
+ 	hw->host_hw_state = mei_hcsr_read(hw);
+ 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
+ 	mei_hcsr_set(hw, hw->host_hw_state);
+@@ -247,6 +252,7 @@ static void mei_me_host_set_ready(struct mei_device *dev)
+ static bool mei_me_host_is_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++
+ 	hw->host_hw_state = mei_hcsr_read(hw);
+ 	return (hw->host_hw_state & H_RDY) == H_RDY;
+ }
+@@ -260,6 +266,7 @@ static bool mei_me_host_is_ready(struct mei_device *dev)
+ static bool mei_me_hw_is_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++
+ 	hw->me_hw_state = mei_me_mecsr_read(hw);
+ 	return (hw->me_hw_state & ME_RDY_HRA) == ME_RDY_HRA;
+ }
+@@ -283,6 +290,7 @@ static int mei_me_hw_ready_wait(struct mei_device *dev)
+ static int mei_me_hw_start(struct mei_device *dev)
+ {
+ 	int ret = mei_me_hw_ready_wait(dev);
++
+ 	if (ret)
+ 		return ret;
+ 	dev_dbg(&dev->pdev->dev, "hw is ready\n");
+@@ -390,6 +398,7 @@ static int mei_me_write_message(struct mei_device *dev,
+ 	rem = length & 0x3;
+ 	if (rem > 0) {
+ 		u32 reg = 0;
++
+ 		memcpy(&reg, &buf[length - rem], rem);
+ 		mei_me_reg_write(hw, H_CB_WW, reg);
+ 	}
+@@ -448,6 +457,7 @@ static int mei_me_read_slots(struct mei_device *dev, unsigned char *buffer,
+ 
+ 	if (buffer_length > 0) {
+ 		u32 reg = mei_me_mecbrw_read(dev);
++
+ 		memcpy(reg_buf, &reg, buffer_length);
+ 	}
+ 
+@@ -465,6 +475,7 @@ static void mei_me_pg_enter(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
+ 	u32 reg = mei_me_reg_read(hw, H_HPG_CSR);
++
+ 	reg |= H_HPG_CSR_PGI;
+ 	mei_me_reg_write(hw, H_HPG_CSR, reg);
+ }
+@@ -732,6 +743,7 @@ static const struct mei_hw_ops mei_me_hw_ops = {
+ static bool mei_me_fw_type_nm(struct pci_dev *pdev)
+ {
+ 	u32 reg;
++
+ 	pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
+ 	/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
+ 	return (reg & 0x600) == 0x200;
+diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
+index f1cd166..1855b3b 100644
+--- a/drivers/misc/mei/hw-txe.c
++++ b/drivers/misc/mei/hw-txe.c
+@@ -177,6 +177,7 @@ static u32 mei_txe_aliveness_req_get(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
+ 	u32 reg;
++
+ 	reg = mei_txe_br_reg_read(hw, SICR_HOST_ALIVENESS_REQ_REG);
+ 	return reg & SICR_HOST_ALIVENESS_REQ_REQUESTED;
+ }
+@@ -192,6 +193,7 @@ static u32 mei_txe_aliveness_get(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
+ 	u32 reg;
++
+ 	reg = mei_txe_br_reg_read(hw, HICR_HOST_ALIVENESS_RESP_REG);
+ 	return reg & HICR_HOST_ALIVENESS_RESP_ACK;
+ }
+@@ -307,6 +309,7 @@ static bool mei_txe_pg_is_enabled(struct mei_device *dev)
+ static inline enum mei_pg_state mei_txe_pg_state(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	return hw->aliveness ? MEI_PG_OFF : MEI_PG_ON;
+ }
+ 
+@@ -358,6 +361,7 @@ static bool mei_txe_is_input_ready(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
+ 	u32 status;
++
+ 	status = mei_txe_sec_reg_read(hw, SEC_IPC_INPUT_STATUS_REG);
+ 	return !!(SEC_IPC_INPUT_STATUS_RDY & status);
+ }
+@@ -370,6 +374,7 @@ static bool mei_txe_is_input_ready(struct mei_device *dev)
+ static inline void mei_txe_intr_clear(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_sec_reg_write_silent(hw, SEC_IPC_HOST_INT_STATUS_REG,
+ 		SEC_IPC_HOST_INT_STATUS_PENDING);
+ 	mei_txe_br_reg_write(hw, HISR_REG, HISR_INT_STS_MSK);
+@@ -384,6 +389,7 @@ static inline void mei_txe_intr_clear(struct mei_device *dev)
+ static void mei_txe_intr_disable(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_br_reg_write(hw, HHIER_REG, 0);
+ 	mei_txe_br_reg_write(hw, HIER_REG, 0);
+ }
+@@ -395,6 +401,7 @@ static void mei_txe_intr_disable(struct mei_device *dev)
+ static void mei_txe_intr_enable(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_br_reg_write(hw, HHIER_REG, IPC_HHIER_MSK);
+ 	mei_txe_br_reg_write(hw, HIER_REG, HIER_INT_EN_MSK);
+ }
+@@ -440,6 +447,7 @@ static void mei_txe_input_payload_write(struct mei_device *dev,
+ 			unsigned long idx, u32 value)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_sec_reg_write(hw, SEC_IPC_INPUT_PAYLOAD_REG +
+ 			(idx * sizeof(u32)), value);
+ }
+@@ -457,6 +465,7 @@ static u32 mei_txe_out_data_read(const struct mei_device *dev,
+ 					unsigned long idx)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	return mei_txe_br_reg_read(hw,
+ 		BRIDGE_IPC_OUTPUT_PAYLOAD_REG + (idx * sizeof(u32)));
+ }
+@@ -471,6 +480,7 @@ static u32 mei_txe_out_data_read(const struct mei_device *dev,
+ static void mei_txe_readiness_set_host_rdy(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_br_reg_write(hw,
+ 		SICR_HOST_IPC_READINESS_REQ_REG,
+ 		SICR_HOST_IPC_READINESS_HOST_RDY);
+@@ -484,6 +494,7 @@ static void mei_txe_readiness_set_host_rdy(struct mei_device *dev)
+ static void mei_txe_readiness_clear(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	mei_txe_br_reg_write(hw, SICR_HOST_IPC_READINESS_REQ_REG,
+ 				SICR_HOST_IPC_READINESS_RDY_CLR);
+ }
+@@ -496,6 +507,7 @@ static void mei_txe_readiness_clear(struct mei_device *dev)
+ static u32 mei_txe_readiness_get(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	return mei_txe_br_reg_read(hw, HICR_SEC_IPC_READINESS_REG);
+ }
+ 
+@@ -519,6 +531,7 @@ static inline bool mei_txe_readiness_is_sec_rdy(u32 readiness)
+ static bool mei_txe_hw_is_ready(struct mei_device *dev)
+ {
+ 	u32 readiness =  mei_txe_readiness_get(dev);
++
+ 	return mei_txe_readiness_is_sec_rdy(readiness);
+ }
+ 
+@@ -531,6 +544,7 @@ static inline bool mei_txe_host_is_ready(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
+ 	u32 reg = mei_txe_br_reg_read(hw, HICR_SEC_IPC_READINESS_REG);
++
+ 	return !!(reg & HICR_SEC_IPC_READINESS_HOST_RDY);
+ }
+ 
+@@ -571,6 +585,7 @@ static void mei_txe_hw_config(struct mei_device *dev)
+ {
+ 
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	/* Doesn't change in runtime */
+ 	dev->hbuf_depth = PAYLOAD_SIZE / 4;
+ 
+@@ -621,6 +636,7 @@ static int mei_txe_write(struct mei_device *dev,
+ 
+ 	if (!mei_txe_is_input_ready(dev)) {
+ 		struct mei_fw_status fw_status;
++
+ 		mei_fw_status(dev, &fw_status);
+ 		dev_err(&dev->pdev->dev, "Input is not ready " FW_STS_FMT "\n",
+ 			FW_STS_PRM(fw_status));
+@@ -635,6 +651,7 @@ static int mei_txe_write(struct mei_device *dev,
+ 	rem = length & 0x3;
+ 	if (rem > 0) {
+ 		u32 reg = 0;
++
+ 		memcpy(&reg, &buf[length - rem], rem);
+ 		mei_txe_input_payload_write(dev, i + 1, reg);
+ 	}
+@@ -670,6 +687,7 @@ static size_t mei_txe_hbuf_max_len(const struct mei_device *dev)
+ static int mei_txe_hbuf_empty_slots(struct mei_device *dev)
+ {
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++
+ 	return hw->slots;
+ }
+ 
+@@ -712,26 +730,29 @@ static int mei_txe_read(struct mei_device *dev,
+ {
+ 
+ 	struct mei_txe_hw *hw = to_txe_hw(dev);
++	u32 *reg_buf, reg;
++	u32 rem;
+ 	u32 i;
+-	u32 *reg_buf = (u32 *)buf;
+-	u32 rem = len & 0x3;
+ 
+ 	if (WARN_ON(!buf || !len))
+ 		return -EINVAL;
+ 
++	reg_buf = (u32 *)buf;
++	rem = len & 0x3;
++
+ 	dev_dbg(&dev->pdev->dev,
+ 		"buffer-length = %lu buf[0]0x%08X\n",
+ 		len, mei_txe_out_data_read(dev, 0));
+ 
+ 	for (i = 0; i < len / 4; i++) {
+ 		/* skip header: index starts from 1 */
+-		u32 reg = mei_txe_out_data_read(dev, i + 1);
++		reg = mei_txe_out_data_read(dev, i + 1);
+ 		dev_dbg(&dev->pdev->dev, "buf[%d] = 0x%08X\n", i, reg);
+ 		*reg_buf++ = reg;
+ 	}
+ 
+ 	if (rem) {
+-		u32 reg = mei_txe_out_data_read(dev, i + 1);
++		reg = mei_txe_out_data_read(dev, i + 1);
+ 		memcpy(reg_buf, &reg, rem);
+ 	}
+ 
 diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 9f635be..81695e4 100644
+index 81695e4..5c41f58 100644
 --- a/drivers/misc/mei/init.c
 +++ b/drivers/misc/mei/init.c
-@@ -43,6 +43,18 @@ const char *mei_dev_state_str(int state)
- #undef MEI_DEV_STATE
+@@ -88,6 +88,7 @@ int mei_reset(struct mei_device *dev)
+ 	    state != MEI_DEV_POWER_DOWN &&
+ 	    state != MEI_DEV_POWER_UP) {
+ 		struct mei_fw_status fw_status;
++
+ 		mei_fw_status(dev, &fw_status);
+ 		dev_warn(&dev->pdev->dev,
+ 			"unexpected reset: dev_state = %s " FW_STS_FMT "\n",
+@@ -180,6 +181,7 @@ EXPORT_SYMBOL_GPL(mei_reset);
+ int mei_start(struct mei_device *dev)
+ {
+ 	int ret;
++
+ 	mutex_lock(&dev->device_lock);
+ 
+ 	/* acknowledge interrupt and stop interrupts */
+@@ -344,15 +346,15 @@ EXPORT_SYMBOL_GPL(mei_write_is_idle);
+ 
+ int mei_fw_status(struct mei_device *dev, struct mei_fw_status *fw_status)
+ {
+-	int i;
+ 	const struct mei_fw_status *fw_src = &dev->cfg->fw_status;
++	int ret;
++	int i;
+ 
+ 	if (!fw_status)
+ 		return -EINVAL;
+ 
+ 	fw_status->count = fw_src->count;
+ 	for (i = 0; i < fw_src->count && i < MEI_FW_STATUS_MAX; i++) {
+-		int ret;
+ 		ret = pci_read_config_dword(dev->pdev,
+ 			fw_src->status[i], &fw_status->status[i]);
+ 		if (ret)
+diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+index e0e75d4..2888e6f 100644
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -550,6 +550,7 @@ err:
+ void mei_nfc_host_exit(struct mei_device *dev)
+ {
+ 	struct mei_nfc_dev *ndev = &nfc_dev;
++
+ 	cancel_work_sync(&ndev->init_work);
  }
  
-+const char *mei_pg_state_str(enum mei_pg_state state)
-+{
-+#define MEI_PG_STATE(state) case MEI_PG_##state: return #state
-+	switch (state) {
-+	MEI_PG_STATE(OFF);
-+	MEI_PG_STATE(ON);
-+	default:
-+		return "unknown";
-+	}
-+#undef MEI_PG_STATE
-+}
+diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
+index 19de573..a5ce2ab 100644
+--- a/drivers/misc/mei/pci-txe.c
++++ b/drivers/misc/mei/pci-txe.c
+@@ -52,6 +52,7 @@ static inline void mei_txe_unset_pm_domain(struct mei_device *dev) {}
+ static void mei_txe_pci_iounmap(struct pci_dev *pdev, struct mei_txe_hw *hw)
+ {
+ 	int i;
 +
- 
- /**
-  * mei_cancel_work. Cancel mei background jobs
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 719edee..be7b147 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -375,6 +375,8 @@ enum mei_pg_state {
- 	MEI_PG_ON =  1,
- };
- 
-+const char *mei_pg_state_str(enum mei_pg_state state);
-+
- /*
-  * mei_cfg
-  *
+ 	for (i = SEC_BAR; i < NUM_OF_MEM_BARS; i++) {
+ 		if (hw->mem_addr[i]) {
+ 			pci_iounmap(pdev, hw->mem_addr[i]);
 -- 
 1.9.3
 
