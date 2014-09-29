@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaI2Obx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:31:53 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50760 "EHLO
+	id S1754437AbaI2ObS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:31:18 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50506 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754472AbaI2ObY (ORCPT
+	by vger.kernel.org with ESMTP id S1754068AbaI2ObI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:31:24 -0400
+	Mon, 29 Sep 2014 10:31:08 -0400
 From: Liviu Dudau <Liviu.Dudau@arm.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
         Rob Herring <robh+dt@kernel.org>,
@@ -26,192 +26,89 @@ Cc: Tanmay Inamdar <tinamdar@apm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Device Tree ML <devicetree@vger.kernel.org>,
         LAKML <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH v13 02/12] of/pci: Add pci_register_io_range() and pci_pio_to_address()
-Date: Mon, 29 Sep 2014 15:29:21 +0100
-Message-Id: <1412000971-9242-3-git-send-email-Liviu.Dudau@arm.com>
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [PATCH v13 00/12] Support for creating generic PCI host bridges from DT
+Date: Mon, 29 Sep 2014 15:29:19 +0100
+Message-Id: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
 X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some architectures do not have a simple view of the PCI I/O space and
-instead use a range of CPU addresses that map to bus addresses.  For some
-architectures these ranges will be expressed by OF bindings in a device
-tree file.
+This is my version 13 of the attempt at adding support for generic PCI host
+bridge controllers. It contains only cleanups to make it play nice with the
+linux-next tree as of 09/25. If Bjorn deems it safe, now that it looks like
+asm-generic is going to revert some of its more aggresive patches, he has the
+choice of queueing it into linux-next again.
 
-This patch introduces a pci_register_io_range() helper function with a
-generic implementation that can be used by such architectures to keep track
-of the I/O ranges described by the PCI bindings.  If the PCI_IOBASE macro
-is not defined, that signals lack of support for PCI and we return an
-error.
+Changes from v12:
+- refreshed the whole series based on what Bjorn has submitted into linux-next.
+  He has added Signed-off-bys and change the title of some commits, plus
+  reworked the patches that move of_pci_range_to_resource() from of_address.h into
+  address.c.
+- updated "[PATCH 01/12] asm-generic/io.h: Fix ioport_map() for !CONFIG_GENERIC_IOMAP"
+  to match the patch that Thierry Reding has submitted through the asm-generic branch.
+  If his series lands first upstream this patch will be skipped.
+- updated "[PATCH 03/12] ARM: Define PCI_IOBASE as the base of virtual PCI IO space" to
+  cast the PCI_IOBASE value to (void __iomem *) as is the case with most #defined versions
+- dropped the patch that was changing the order of initialisation between pci_host_bridge
+  and root bus in pci_create_root_bus()
+- fixed "[PATCH 07/12] PCI: Add generic domain handling" to account for the previous patch
+  being removed
+- fixed the title of commit 08/12 to reflect the name of the functions that are actually
+  added (s/of_pci_get_domain_nr/pci_get_new_domain_nr/)
 
-In order to retrieve the CPU address associated with an I/O port, a new
-helper function pci_pio_to_address() is introduced.  This will search in
-the list of ranges registered with pci_register_io_range() and return the
-CPU address that corresponds to the given port.
+v12 thread here: https://lkml.org/lkml/2014/9/23/852
+v11 thread here: https://lkml.org/lkml/2014/9/17/732
+v10 thread here: https://lkml.org/lkml/2014/9/8/333
+v9 thread here, with links to previous threads: https://lkml.org/lkml/2014/8/12/361
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Rob Herring <robh@kernel.org>
-CC: Grant Likely <grant.likely@linaro.org>
-CC: Arnd Bergmann <arnd@arndb.de>
----
- drivers/of/address.c       | 109 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_address.h |   2 +
- 2 files changed, 111 insertions(+)
+Best regards,
+Liviu
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index e371825..758d4f0 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -5,6 +5,8 @@
- #include <linux/module.h>
- #include <linux/of_address.h>
- #include <linux/pci_regs.h>
-+#include <linux/sizes.h>
-+#include <linux/slab.h>
- #include <linux/string.h>
- 
- /* Max address size we deal with */
-@@ -601,12 +603,119 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
- }
- EXPORT_SYMBOL(of_get_address);
- 
-+#ifdef PCI_IOBASE
-+struct io_range {
-+	struct list_head list;
-+	phys_addr_t start;
-+	resource_size_t size;
-+};
-+
-+static LIST_HEAD(io_range_list);
-+static DEFINE_SPINLOCK(io_range_lock);
-+#endif
-+
-+/*
-+ * Record the PCI IO range (expressed as CPU physical address + size).
-+ * Return a negative value if an error has occured, zero otherwise
-+ */
-+int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-+{
-+	int err = 0;
-+
-+#ifdef PCI_IOBASE
-+	struct io_range *range;
-+	resource_size_t allocated_size = 0;
-+
-+	/* check if the range hasn't been previously recorded */
-+	spin_lock(&io_range_lock);
-+	list_for_each_entry(range, &io_range_list, list) {
-+		if (addr >= range->start && addr + size <= range->start + size) {
-+			/* range already registered, bail out */
-+			goto end_register;
-+		}
-+		allocated_size += range->size;
-+	}
-+
-+	/* range not registed yet, check for available space */
-+	if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
-+		/* if it's too big check if 64K space can be reserved */
-+		if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT) {
-+			err = -E2BIG;
-+			goto end_register;
-+		}
-+
-+		size = SZ_64K;
-+		pr_warn("Requested IO range too big, new size set to 64K\n");
-+	}
-+
-+	/* add the range to the list */
-+	range = kzalloc(sizeof(*range), GFP_KERNEL);
-+	if (!range) {
-+		err = -ENOMEM;
-+		goto end_register;
-+	}
-+
-+	range->start = addr;
-+	range->size = size;
-+
-+	list_add_tail(&range->list, &io_range_list);
-+
-+end_register:
-+	spin_unlock(&io_range_lock);
-+#endif
-+
-+	return err;
-+}
-+
-+phys_addr_t pci_pio_to_address(unsigned long pio)
-+{
-+	phys_addr_t address = (phys_addr_t)OF_BAD_ADDR;
-+
-+#ifdef PCI_IOBASE
-+	struct io_range *range;
-+	resource_size_t allocated_size = 0;
-+
-+	if (pio > IO_SPACE_LIMIT)
-+		return address;
-+
-+	spin_lock(&io_range_lock);
-+	list_for_each_entry(range, &io_range_list, list) {
-+		if (pio >= allocated_size && pio < allocated_size + range->size) {
-+			address = range->start + pio - allocated_size;
-+			break;
-+		}
-+		allocated_size += range->size;
-+	}
-+	spin_unlock(&io_range_lock);
-+#endif
-+
-+	return address;
-+}
-+
- unsigned long __weak pci_address_to_pio(phys_addr_t address)
- {
-+#ifdef PCI_IOBASE
-+	struct io_range *res;
-+	resource_size_t offset = 0;
-+	unsigned long addr = -1;
-+
-+	spin_lock(&io_range_lock);
-+	list_for_each_entry(res, &io_range_list, list) {
-+		if (address >= res->start && address < res->start + res->size) {
-+			addr = res->start - address + offset;
-+			break;
-+		}
-+		offset += res->size;
-+	}
-+	spin_unlock(&io_range_lock);
-+
-+	return addr;
-+#else
- 	if (address > IO_SPACE_LIMIT)
- 		return (unsigned long)-1;
- 
- 	return (unsigned long) address;
-+#endif
- }
- 
- static int __of_address_to_resource(struct device_node *dev,
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index fb7b722..f8cc7da 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -55,7 +55,9 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
- extern const __be32 *of_get_address(struct device_node *dev, int index,
- 			   u64 *size, unsigned int *flags);
- 
-+extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
- extern unsigned long pci_address_to_pio(phys_addr_t addr);
-+extern phys_addr_t pci_pio_to_address(unsigned long pio);
- 
- extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
- 			struct device_node *node);
+
+Bjorn Helgaas (1):
+  of/pci: Define of_pci_range_to_resource() only when CONFIG_PCI=y
+
+Catalin Marinas (1):
+  PCI: Add generic domain handling
+
+Liviu Dudau (10):
+  asm-generic/io.h: Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+  of/pci: Add pci_register_io_range() and pci_pio_to_address()
+  ARM: Define PCI_IOBASE as the base of virtual PCI IO space
+  of/pci: Move of_pci_range_to_resources() to of/address.c
+  of/pci: Fix the conversion of IO ranges into IO resources
+  of/pci: Add pci_get_new_domain_nr() and of_get_pci_domain_nr()
+  of/pci: Add support for parsing PCI host bridge resources from DT
+  PCI: Assign unassigned bus resources in pci_scan_root_bus()
+  PCI: Add pci_remap_iospace() to map bus I/O resources
+  arm64: Add architectural support for PCI
+
+ arch/arm/include/asm/io.h         |   1 +
+ arch/arm/mach-integrator/pci_v3.c |  23 +++---
+ arch/arm64/Kconfig                |  22 +++++-
+ arch/arm64/include/asm/Kbuild     |   1 +
+ arch/arm64/include/asm/io.h       |   3 +-
+ arch/arm64/include/asm/pci.h      |  37 +++++++++
+ arch/arm64/include/asm/pgtable.h  |   2 +
+ arch/arm64/kernel/Makefile        |   1 +
+ arch/arm64/kernel/pci.c           |  70 +++++++++++++++++
+ drivers/of/address.c              | 154 ++++++++++++++++++++++++++++++++++++++
+ drivers/of/of_pci.c               | 142 +++++++++++++++++++++++++++++++++++
+ drivers/pci/host/pci-tegra.c      |  10 ++-
+ drivers/pci/host/pcie-rcar.c      |  21 ++++--
+ drivers/pci/pci.c                 |  40 ++++++++++
+ drivers/pci/probe.c               |  14 +++-
+ include/asm-generic/io.h          |   2 +-
+ include/asm-generic/pgtable.h     |   4 +
+ include/linux/of_address.h        |  17 ++---
+ include/linux/of_pci.h            |  13 ++++
+ include/linux/pci.h               |  27 +++++++
+ 20 files changed, 566 insertions(+), 38 deletions(-)
+ create mode 100644 arch/arm64/include/asm/pci.h
+ create mode 100644 arch/arm64/kernel/pci.c
+
 -- 
 2.1.1
 
