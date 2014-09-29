@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaI2Ml4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 08:41:56 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34241 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754091AbaI2Mly (ORCPT
+	id S1753985AbaI2Mmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:42:36 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:64928 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538AbaI2Mmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 08:41:54 -0400
-Date: Mon, 29 Sep 2014 13:41:38 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "festevam@gmail.com" <festevam@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
-Message-ID: <20140929124137.GD2432@leverpostej>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
- <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
- <20140929110919.GB2432@leverpostej>
- <54294832.8000702@i2se.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54294832.8000702@i2se.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Sep 2014 08:42:33 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-53-542953b5d758
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RESEND PATCH v2 1/4] dmaengine: pl330: Remove non-NULL check for
+ pl330_submit_req parameters
+Date: Mon, 29 Sep 2014 14:42:18 +0200
+Message-id: <1411994541-31494-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xK7pbgzVDDB6tMLLYOGM9q8Xrf9NZ
+	LKZPvcBosXrqXyD3haHF2aY37BZLJs9ntbi8aw6bxdojd9kt3r2MsHjZt5/Fgdtj8Z6XTB5L
+	3hxi9fj49BaLR9+WVYwenzfJeez9/JslgC2KyyYlNSezLLVI3y6BK2Pz42dsBVe4KuaePc7Y
+	wPiUo4uRk0NCwETi1em3rBC2mMSFe+vZuhi5OIQEljJKvHt4gRHC6WOS6Lj6khmkik3AWGLz
+	8iVgVSICrUwSL2Z+YgFxmAWOMkpM733L1MXIwSEskCHx6FAEiMkioCqxbAIvSC+vgLvEvKmn
+	2CC2yUmcPDaZdQIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIUH1dQfj0mNWhxgF
+	OBiVeHg5VmiECLEmlhVX5h5ilOBgVhLhtbPVDBHiTUmsrEotyo8vKs1JLT7EyMTBKdXAGFTw
+	pC216pJNjiW/1J/tbDLiX2I1L3fG1BY02in3LBA89ztpUb6O73mPf7LB4eG3M/4YvDOOcdm5
+	J4u1YeYKVcZk95mfbXIcdS/0NVo5rFt7YmMn28ZfYhkSE0pfeHMf7twUZ7pDvWzatY0NrD4h
+	GbHliVd73s1U2fj+91dujWN7u6ZVPnmkxFKckWioxVxUnAgA4J0+RwgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 12:53:22PM +0100, Stefan Wahren wrote:
-> Hi Mark,
-> 
-> Am 29.09.2014 um 13:09 schrieb Mark Rutland:
-> > On Sat, Sep 27, 2014 at 01:59:47AM +0100, Stefan Wahren wrote:
-> >> This patch adds the Device tree bindings for the Freescale MXS
-> >> on-chip regulators.
-> >>
-> >> Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
-> >> ---
-> >>  .../bindings/regulator/mxs-regulator.txt           |   36 ++++++++++++++++++++
-> >>  1 file changed, 36 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> >> new file mode 100644
-> >> index 0000000..e3133a4
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
-> >> @@ -0,0 +1,36 @@
-> >> +MXS regulators
-> >> +
-> >> +Required node properties:
-> >> +- compatible: Should be "simple-bus"
-> > This does not look like an appropriate use of simple-bus.
-> >
-> > Why do you want the parent node to be a simple-bus?
-> 
-> the current parent node in imx28.dtsi looks like a placeholder for the
-> power sub system:
-> 
-> power: power@80044000 {
-> 	reg = <0x80044000 0x2000>;
-> 	status = "disabled";
-> };
-> 
-> I want to trigger the probing of the child nodes (regulators) without
-> writing a driver for the complete power sub system. The simple-bus
-> avoids that.
+The pl330_submit_req() checked supplied 'struct pl330_thread thrd' and
+'struct dma_pl330_desc desc' parameters for non-NULL. However these
+checks are useless because supplied arguments won't be NULL.
 
-Well, the simple-bus will cause the children to be probed. But it looks
-like you care about properties of the parent. I don't think that
-simple-bus is appropriate because it's not being handled as a
-transparent bridge from the PoV of the children.
+The pl330_submit_req() is called in only one place and:
+1. 'desc' is already dereferenced in fill_queue() before calling
+   pl330_submit_req().
+2. 'thrd' is always dereferenced after calling
+   fill_queue()->pl330_submit_req().
 
-> 
-> Do we need a extra driver?
+Removing the checks for non-NULL values fixes following warning:
+drivers/dma/pl330.c:1376 pl330_submit_req() warn: variable dereferenced before check 'thrd' (see line 1367)
 
-Perhaps, but it's relatively simple to match on a compatible string and
-probe children if you just wantto start small for now.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-> >
-> >> +- #address-cells: Number of cells required to define regulator register,
-> >> +  must be 1
-> >> +- #size-cells: Number of cells required to define register size, must be 1
-> > Why must this be the case, given that the child node expects an absolute
-> > physical address?
-> 
-> I need a property to define the control register for the regulators
-> without defining vendor specific properties like "fsl,mxs-control-reg"
-> or something.
+---
 
-You misunderstand me. I was querying the "must be 1" rather than the
-proeprties themselves.
+Changes since v1:
+=================
+1. Remove the checks for non-NULL completely instead of moving them
+   before dereference. Suggested by Lars-Peter Clausen.
+---
+ drivers/dma/pl330.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-> 
-> > What's wrong with #address-cells = <2>, for example?
-> 
-> Nothing
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index d5149aacd2fe..57049f84d0c0 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -1372,10 +1372,6 @@ static int pl330_submit_req(struct pl330_thread *thrd,
+ 	u32 ccr;
+ 	int ret = 0;
+ 
+-	/* No Req or Unacquired Channel or DMAC */
+-	if (!desc || !thrd || thrd->free)
+-		return -EINVAL;
+-
+ 	regs = thrd->dmac->base;
+ 
+ 	if (pl330->state == DYING
+-- 
+1.9.1
 
-Then we shouldn't specify "must be 1", no?
-
-> 
-> >
-> >> +- reg: Absolute physical address and size of the register set for the device
-> > Why is this here _and_ in the child node(s)?
-> 
-> The parent of the power node is also a simple bus. I use this to
-> calculate the power status register per offset.
-> 
-> > What is the difference between this node and its children?
-> 
-> The parent node represent the power sub system and the regulators are
-> part of this sub system.
-> 
-> > Can there be more than one sub-node?
-> 
-> In the i.MX28 are at least 4 voltage regulators, 1 current regulator and
-> many more. At first, the driver should implement only 3 voltage
-> regulators (vddd, vdda, vddio).
-
-Ok.
-
-I think you need a binding for the power subsystem, and a trivial driver
-that can match on that and probe the child regulators. Are there
-components other than voltage or current regulators in the sub system?
-
-Mark.
