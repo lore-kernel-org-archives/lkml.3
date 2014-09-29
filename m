@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343AbaI2FkU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 01:40:20 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:54598 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaI2FkS (ORCPT
+	id S1751192AbaI2GBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 02:01:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:58539 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaI2GBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 01:40:18 -0400
-Date: Mon, 29 Sep 2014 11:10:04 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 1/1 linux-next] ACPI / SBS: fix sparse warning
-Message-ID: <20140929054004.GA4144@sudip-PC>
-References: <1411929887-2440-1-git-send-email-fabf@skynet.be>
+	Mon, 29 Sep 2014 02:01:22 -0400
+Message-ID: <5428F592.3020809@i2se.com>
+Date: Mon, 29 Sep 2014 08:00:50 +0200
+From: Stefan Wahren <stefan.wahren@i2se.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411929887-2440-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: lgirdwood@gmail.com, shawn.guo@linaro.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        festevam@gmail.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
+References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com> <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com> <20140928102202.GM27755@sirena.org.uk>
+In-Reply-To: <20140928102202.GM27755@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:udFk/AzBbQUqkbX4z1eWXfsShxWgWH6PlSokp7aiFlQ
+ 8HAhaFir9BOQy4RFWbl0Xs8aHdN6bxNoM6KB3iWmsgowy841Kb
+ frYb1eVIFPvpBdILTZepMzGdT4T8Lu8fLfWjdvktENJbPZ9Kb/
+ 9XT6d+BKZ0zJprmT+UXWE+Nr10nnlau6AVDso2KjrIu3NajmvD
+ PbusdEtfr0iHYtr4kAgfS+WOMaLrQ+rj/TF7Onjqck4Y7H4TS0
+ YBJ8CiVAk9PP3c0T036oAzmbzn0vjfbFABwSMZPf7YdoMRxQW0
+ ud/6WLJROo4PbE+5rIbr6GcZ0vp1hF0hXFIk3f5E64ZNsTOITc
+ fKlErm6pO2drrOSGnTVY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 08:44:47PM +0200, Fabian Frederick wrote:
-> Adding parentheses around expression to avoid:
-> drivers/acpi/sbs.c:444:28: warning: dubious: !x & y
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/acpi/sbs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
-> index 32aecea..a7a3edd 100644
-> --- a/drivers/acpi/sbs.c
-> +++ b/drivers/acpi/sbs.c
-> @@ -441,7 +441,7 @@ static int acpi_ac_get_present(struct acpi_sbs *sbs)
->  	 * The spec requires that bit 4 always be 1. If it's not set, assume
->  	 * that the implementation doesn't support an SBS charger
->  	 */
-> -	if (!(status >> 4) & 0x1)
-> +	if (!((status >> 4) & 0x1))
+Hi Mark,
 
-i think the logic changed over here.
-it was !x & y , but now it has become !(x & y)
-! is having higher priority than & so !x & y will mean ((!x) & y)
+Am 28.09.2014 um 12:22 schrieb Mark Brown:
+> On Sat, Sep 27, 2014 at 12:59:47AM +0000, Stefan Wahren wrote:
+>> This patch adds the Device tree bindings for the Freescale MXS
+>> on-chip regulators.
+> Use subject lines matching the style for the subsystem.
 
-thanks
-sudip
->  		return -ENODEV;
->  
->  	sbs->charger_present = (status >> 15) & 0x1;
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+sorry i'm not sure what's wrong with the subject lines.
+
+Did you expect "[PATCH 1/2] regulator: add binding for mxs regulator"?
+
+>
+>> +Required regulator properties:
+>> +- compatible: Must be "fsl,mxs-regulator"
+>> +- reg: Absolute physical address of the register set for the regulator
+>> +
+>> +Any regulator property defined as part of the core regulator
+>> +binding, defined in regulator.txt, can also be used.
+> While this should be using compatibles to identify which regulator is
+> being supported note that the binding doesn't document the fact that the
+> code makes regulator-name mandatory or what values are required.
+
+Is the following better?
+
+- fsl,mxs-regulator-vddd
+- fsl,mxs-regulator-vdda
+- fsl,mxs-regulator-vddio
+
+Thanks
+
+Stefan
