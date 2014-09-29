@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaI2Ihy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:37:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50338 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639AbaI2Ihw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:37:52 -0400
-Message-ID: <1411979850.2625.7.camel@pengutronix.de>
-Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
- in all platforms
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Liviu Dudau <liviu@dudau.co.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
-        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
-        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
-        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Date: Mon, 29 Sep 2014 10:37:30 +0200
-In-Reply-To: <5427A6A0.5040703@huawei.com>
-References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
-	 <20140925074235.GN12423@ulmo> <20140925144855.GB31157@bart.dudau.co.uk>
-	 <20140925164937.GB30382@ulmo> <20140925171612.GC31157@bart.dudau.co.uk>
-	 <542505B3.7040208@huawei.com> <20140926085430.GG31106@ulmo>
-	 <20140926090537.GH31106@ulmo> <54277327.6070500@huawei.com>
-	 <5427A6A0.5040703@huawei.com>
+	id S1753035AbaI2IiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:38:22 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58337 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971AbaI2IiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:38:19 -0400
+Message-ID: <1411979902.5395.2.camel@iivanov-dev>
+Subject: Re: [PATCH v2] iio: iadc: Qualcomm SPMI PMIC current ADC driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lee Jones <lee.jones@linaro.org>, Philippe Reynes <tremyfr@yahoo.fr>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Mon, 29 Sep 2014 11:38:22 +0300
+In-Reply-To: <5426886D.4050602@kernel.org>
+References: <1411567103-2380-1-git-send-email-iivanov@mm-sol.com>
+		 <20140924145527.GI5729@leverpostej>
+	 <1411574442.18580.95.camel@iivanov-dev>
+		 <20140924170522.GL5729@leverpostej>
+		 <1411638435.18580.126.camel@iivanov-dev>
+		 <20140925160215.GB6531@leverpostej> <1411672895.28648.3.camel@mm-sol.com>
+	 <5426886D.4050602@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1 
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 28.09.2014, 14:11 +0800 schrieb Yijing Wang:
-> On 2014/9/28 10:32, Yijing Wang wrote:
-> > On 2014/9/26 17:05, Thierry Reding wrote:
-> >> On Fri, Sep 26, 2014 at 10:54:32AM +0200, Thierry Reding wrote:
-> >> [...]
-> >>> At least for Tegra it's trivial to just hook it up in tegra_pcie_scan_bus()
-> >>> directly (patch attached).
-> >>
-> >> Really attached this time.
-> >>
-> >> Thierry
-> >>
-> > 
-> > It looks good to me, so I will update the arm pci hostbridge driver to assign
-> > pci root bus the msi chip instead of current pcibios_add_bus(). But for other
-> > platforms which only have a one msi chip, I will kept the arch_find_msi_chip()
-> > temporarily for more comments, especially from Bjorn.
-> 
-> Oh, sorry, I found designware and rcar use pci_scan_root_bus(), so we can not simply
-> assign msi chip to root bus in all host drivers's scan functions.
+On Sat, 2014-09-27 at 10:50 +0100, Jonathan Cameron wrote:
+> On 25/09/14 20:21, Ivan T. Ivanov wrote:
+> > On Thu, 2014-09-25 at 17:02 +0100, Mark Rutland wrote:
+> >> On Thu, Sep 25, 2014 at 10:47:15AM +0100, Ivan T. Ivanov wrote:
 
-Designware will switch away from pci_scan_root_bus() in the 3.18 cycle
-and I would think it would be no problem to to the same with rcar.
+<snip>
+
+> >>
+> >>>>>>> +- interrupts:
+> >>>>>>> +    Usage: optional
+> >>>>>>> +    Value type: <prop-encoded-array>
+> >>>>>>> +    Definition: End of conversion interrupt number. If property is
+> >>>>>>> +            missing driver will use polling to detect end of conversion
+> >>>>>>> +            completion.
+> >>>>>>
+> >>>>>> Driver details shouldn't be in the binding. If the driver can poll,
+> >>>>>> that's good, but it should be dropped form this description.
+> >>>>>>
+> >>>>>
+> >>>>> Will remove driver details.
+> >>>>>
+> >>>>>> Is this the only interrupt?
+> >>>>>>
+> >>>>>
+> >>>>> Yes.
+> >>>>>
+> >>>>>> What do you mean be "End of conversion interrupt number"? Just describe
+> >>>>>> what the interrupt logically is from the PoV of the device -- interrupts
+> >>>>>> is a standard property so we don't need to be too explicit about the
+> >>>>>> type.
+> >>>>>
+> >>>>> Badly worded. Just, "End of conversion interrupt"?
+> >>>>
+> >>>> The part I didn't understand was what was meant by "End of conversion",
+> >>>> but dropping "number" is certainly better.
+> >>>
+> >>> It is clear now, right? End of ADC conversion.
+> >>
+> >> Sorry if I'm being thick here, but it's still somewhat confusing to me.
+> >> That's a consequence of me not being familiar with the HW more than
+> >> anything, I'm just missing simple details regarding the model of
+> >> operation, suchs as exactly what the "end of ADC conversion" entails.
+> >> There are a few things that could potentially mean depending on how the
+> >> HW was designed and intended to be used.
+> >>
+> >> Does the  device periodically sample, convert some number of values
+> >> (possibly just 1), and trigger an interrupt to state that a buffer is
+> >> full / values are available? Or is the interrupt triggered for some
+> >> other reason?
+> > 
+> > Interrupt is triggered after ADC convert analog signal to digital.
+> > Other details are irrelevant, I believe. 
+> Often called a data ready interrupt.  However, here it is per channel
+> so perhaps that description is confusing as well...
+
+Not exactly. There is only one interrupt. Simultaneous conversions are 
+not possible.
 
 Regards,
-Lucas
+Ivan 
 
--- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
