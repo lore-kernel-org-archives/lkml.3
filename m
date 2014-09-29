@@ -1,137 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaI2QFc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:05:32 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:61889 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaI2QFa (ORCPT
+	id S1754650AbaI2QHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:07:03 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:62667 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919AbaI2QHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:05:30 -0400
-Message-ID: <54298341.1080504@gmail.com>
-Date: Mon, 29 Sep 2014 23:05:21 +0700
-From: Lars Melin <larsm17@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 29 Sep 2014 12:07:01 -0400
 MIME-Version: 1.0
-To: hs@denx.de
-CC: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Macpaul Lin <macpaul@gmail.com>, "Meier, Roger" <r.meier@siemens.com>
-Subject: Re: [PATCH] usb: gadget: f_rndis: fix usb_interface_descriptor for
- rndis
-References: <1411541339-32400-1-git-send-email-hs@denx.de> <5422B83A.8030406@gmail.com> <5422C33F.400@denx.de> <5422D39D.70006@gmail.com> <54294C78.6050006@denx.de>
-In-Reply-To: <54294C78.6050006@denx.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140929155918.GG7996@ZenIV.linux.org.uk>
+References: <20140924201813.GI7996@ZenIV.linux.org.uk>
+	<20140925044601.GL7996@ZenIV.linux.org.uk>
+	<20140926164442.GA26897@ZenIV.linux.org.uk>
+	<20140927044555.GS7996@ZenIV.linux.org.uk>
+	<CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+	<20140927183139.GT7996@ZenIV.linux.org.uk>
+	<20140927191657.GU7996@ZenIV.linux.org.uk>
+	<20140928074747.GZ7996@ZenIV.linux.org.uk>
+	<20140928180556.GA7996@ZenIV.linux.org.uk>
+	<CA+55aFxZDsD94CSDYfyw9g3WWNkVApZDKxHVhK2zy0ycRsjcmA@mail.gmail.com>
+	<20140929155918.GG7996@ZenIV.linux.org.uk>
+Date: Mon, 29 Sep 2014 09:07:00 -0700
+X-Google-Sender-Auth: Sjudkdu9rqRlsZJRm6GJ4QlU7rs
+Message-ID: <CA+55aFyveyOABqssxLinsmHkBg9=95TwEGC1ZT1POe+RmTbj+A@mail.gmail.com>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mikhail Efremov <sem@altlinux.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-29 19:11, Heiko Schocher wrote:
-> Hello Lars,
+On Mon, Sep 29, 2014 at 8:59 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> sorry for my late answer ...
->
-> Am 24.09.2014 16:22, schrieb Lars Melin:
->> On 2014-09-24 20:12, Heiko Schocher wrote:
->>> Hello Lars,
->>>
->>> Am 24.09.2014 14:25, schrieb Lars Melin:
->>>> On 2014-09-24 13:48, Heiko Schocher wrote:
->>>>> use the values for RNDIS over Ethernet as defined in
->>>>> http://www.usb.org/developers/defined_class
->>>>> (search for RDNIS):
->>>>>
->>>>> - baseclass: 0xef (miscellaneous)
->>>>> - subclass: 0x04
->>>>> - protocol: 0x01
->>>>>
->>>> That is usb class, it is not the same thing as communication device 
->>>> class.
->>>>> --- a/include/uapi/linux/usb/cdc.h
->>>>> +++ b/include/uapi/linux/usb/cdc.h
->>>>> @@ -12,6 +12,7 @@
->>>>> #include <linux/types.h>
->>>>> #define USB_CDC_SUBCLASS_ACM 0x02
->>>>> +#define USB_CDC_SUBCLASS_RNDIS 0x04
->>>> No, no, no.
->>>> There is no CDC_SUBCLASS_RNDIS and you can not define one over an 
->>>> already used cdc subclass number, 0x04 is Multi-Channel Control Model
->>>
->>> Ah, ok, so I have to define this values in a new header file, as there
->>> is no current file for the USB_CLASS_MISC defines? Or is there a proper
->>> place for them?
->>>
->>> BTW: where do I find the "cdc subclass number, 0x04 is Multi-Channel
->>> Control Model" define?
->>>
->>> bye,
->>> Heiko
->>
->> You can still find the original specification usbcdc11.pdf on the net 
->> if you google for it, it has been pulled from usb.org where you could 
->> download it until a few years ago.
->> It is old but covers a lot of what you need to know.
->
-> Hmm.. maybe I am to dummy for finding this docment...
->
-> http://www.usb.org/results?q=usbcdc11.pdf&submit=Search
->
-> does not find this document ... could you send me a direct link?
->
-> I found with the above search:
->
-> http://www.usb.org/developers/defined_class
+> Now RCU lookup starts.  And on another CPU we move the first dentry over
+> the third one.  copy_name() is called, it decrements the refcount down
+> to 1 (__d_free() hasn't happened yet) and doesn't schedule any freeing.
 
-I don't know if it is a good idea to provide a link here to a document 
-which usb.org has made unavailable, I told you to google for the file 
-name , not to search for it on usb.org
-> and this site, exactly describes the values for RNDIS over ethernet,
-> as my patch changes [1]
->
->> Linux has afaik only the cdc.h definition file, everything else is 
->> coded by class/subclass in respectively drivers when needed.
->
-> why not in header files? I thought, magical values are not welcome
-> in source code ...
->
+Ahh. If we were to do *all* of the copy-name name freeing under RCU,
+we'd be ok. But we don't. We do the refcount decrement immediately
+(and have to, if we want to have the rcu/refcount union). Yeah, good
+call, although I find that doubvle rcu grace period for the common
+case to be very annoying.
 
-I was wrong, usb class definitions are included in 
-../include/uapi/linux/usb/ch9.h
-> As for the is_rndis() function case, this function is defined in
-> 2 places:
->
-> - drivers/net/usb/cdc_ether.c
-> - drivers/usb/core/generic.c
->
-> Has this a special reason? This seems suboptimal to me ...
-Yes it has, but the core driver is not an interface driver so it is not 
-of relevance in this case.
-cdc_ether handles interfaces of device connected to the usb bus, not 
-interfaces of gadget devices
-created by linux.
-> I got from a customer this patch (in a similiar version) and
-> he did tests with [3] and saw, that a board which runs linux,
-> is seen in [3] with the values [2] ... so he changed the
-> values in drivers/usb/gadget/function/f_rndis.c to the
-> values [1], which are documented in [4] and with them
-> the test [3] is happy ... and the file
-> "Documentation/usb/linux.inf" is not longer needed on the
-> windows pc!
->
-The patch from your customer removed  the most common rndis interface 
-attributes and substituted them
-with one of many other interface attributes which Microsoft uses, this 
-is not the right way of doing it.
-Why did he patch  ../core/generic.c  and ../net/usb/cdc_ether.c  if he 
-wants to change the interface attributes of g_rndis?
+Ugh. I'm starting to be sorry I ever suggested this cleanup. Maybe
+we're better off with the horrid hack (which is equivalent to what we
+did before) after all.
 
-
-Lars
-
-
-
+               Linus
