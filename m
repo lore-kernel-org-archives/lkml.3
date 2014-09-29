@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbaI2Tpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:45:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35016 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147AbaI2Tpr (ORCPT
+	id S1754604AbaI2Tsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:48:50 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:53225 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaI2Tss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:45:47 -0400
-Date: Mon, 29 Sep 2014 14:45:30 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Daniel Baluta <daniel.baluta@gmail.com>
-CC: <balbi@ti.com>, Michael Welling <mwelling@ieee.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
- sensor
-Message-ID: <20140929194530.GD1939@saruman>
-Reply-To: <balbi@ti.com>
-References: <20140919162129.GE26946@saruman.home>
- <20140922140914.GC25620@saruman>
- <20140923140924.GA28592@saruman>
- <20140924143610.GA17997@saruman>
- <20140925221619.GA10644@saruman>
- <20140927041959.GA28445@saruman>
- <20140929140227.GD32403@saruman>
- <20140929183856.GA11871@sysresccd>
- <20140929185325.GA1939@saruman>
- <CAEnQRZDgrwXuVxD8851i+c6eV5MRjsN+CmWxkOpWnbpkTLH1XQ@mail.gmail.com>
+	Mon, 29 Sep 2014 15:48:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mJm6k4Vb/yFcL9ZU"
-Content-Disposition: inline
-In-Reply-To: <CAEnQRZDgrwXuVxD8851i+c6eV5MRjsN+CmWxkOpWnbpkTLH1XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140929114849.GA913@redhat.com>
+References: <20140928232753.GA31180@www.outflux.net>
+	<20140929114849.GA913@redhat.com>
+Date: Mon, 29 Sep 2014 12:48:47 -0700
+X-Google-Sender-Auth: -SJY_mI797LfB6zYT7nqxhzeH54
+Message-ID: <CAGXu5j+x5pg6-9y72o=mE9TiNEyFqTTE=o8ETh1Ao8R20KNRwA@mail.gmail.com>
+Subject: Re: [PATCH] tun: make sure interface usage can not overflow
+From: Kees Cook <keescook@chromium.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mJm6k4Vb/yFcL9ZU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 29, 2014 at 4:48 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Sun, Sep 28, 2014 at 04:27:53PM -0700, Kees Cook wrote:
+>> This makes the size argument a const, since it is always populated by
+>> the caller. Additionally double-checks to make sure the copy_from_user
+>> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
+>>
+>>    In function 'copy_from_user',
+>>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+>>        ... copy_from_user() buffer size is not provably correct
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> What exactly is the issue here?
+> __tun_chr_ioctl is called with sizeof(struct compat_ifreq)
+> or  sizeof (struct ifreq) as the last argument.
 
-On Mon, Sep 29, 2014 at 10:07:32PM +0300, Daniel Baluta wrote:
-> On Mon, Sep 29, 2014 at 9:53 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Mon, Sep 29, 2014 at 01:38:56PM -0500, Michael Welling wrote:
-> >> On Mon, Sep 29, 2014 at 09:02:27AM -0500, Felipe Balbi wrote:
-> >> > Alright, this is already ridiculous. Andrew, if I resend the patch c=
-an
-> >> > you apply it since maintainer has been ignoring this thread anyway ?
-> >> >
-> >>
-> >> Do you reall think this is the best way to approach this?
-> >
-> > when maintainer doesn't respond for weeks, yeah! Sure it is.
->=20
-> This is ridiculous! Jonathan asked you some questions about the implement=
-ation,
-> but you ignored the request. Instead you've send 9 ping emails!
+Correct. There is no vulnerability here; I am attempting to both make
+the code more defensive to future changes, and to keep
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy.
 
-I ignored ? I replied straight away asking him to tell me exactly what
-he needed and pointing out all the things which he's complaining about
-that he asked me to get rid of himself. For example, original driver was
-using devm_*, Jonathan asked to remove, I tried arguing and he said he
-wanted them out, so I removed, now he's asking me why I didn't use
-devm_* to start with.
+> So this looks like a false positive, but
+> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS machinery is supposed
+> to avoid false positives.
 
-That's ridiculous, that's what pointless and a total waste of time.
+The support in GCC is currently a bit faulty, and it seems that it
+didn't notice the two callers were static values, so instead, adding
+an explicit test keeps it happy.
 
-Not to mention that there was a long hiatus from Jonathan for weeks
-until he said "yeah, sorry, I had forgotten about this". Because of
-Jonathan alone, we lost a merge window. I send the original driver
-because v3.17-rc1 was even tagged and now you tell me that it's
-ridiculous I'm upset with Jonathan's lazy responses ?
+> On which architecture is this?
 
-gimme a break
+This is on x86, but with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+correctly enabled (gcc after 4.6 broke its ability to correctly
+optimize), which I've been playing with trying to get gcc working
+again. I sent the patch because it seems like it's a reasonable
+defensive change to make.
 
---=20
-balbi
+If you want to look more deeply, there's some background here:
+https://code.google.com/p/chromium/issues/detail?id=371036
 
---mJm6k4Vb/yFcL9ZU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/commit/?h=gcc-bug&id=92dd7154932d8775a05dfd3de5564124c05a4150
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks,
 
-iQIcBAEBAgAGBQJUKbbaAAoJEIaOsuA1yqREq7kP/R0enwo/pG8eVMnXGcuXtxBa
-JxjEMIC3Cq6/u5J1Wf6SVFVAeIzV56AtAzaVrZYAUNpzIY3PkAeFF3nY5t+rkf30
-I+natJVegDDwKoxQRCHE4DSrtNISlR4RYjaFeLm8eNFXyTS+kcb/lUvn2XqtPXbx
-yq4TcTEd/zQIUDDY8cziUxMB7ORWh13b2LWhVY7psYT34puNd4i6uUgmKe/HtI8e
-BrcZg+XM/ikJOD2/TMsAcsmg0iV3EKCBDdRnrOBcKcSq4O5/cZjW5ns5cJh9aG3/
-RXGPsb6qJ6T3WgPZhQn05kXa07qNB5BKFVT8ICkXSjGUzNzpC9MY6ALT6tQUSAuS
-0l8IGqKTwP+fNnpqMpekrfzJyHeJYJJ5/BVLmPMLUo9PP6/CJyvcXK1lffXWh165
-RnZ7I4dkxEHfOaF5D846JfhSP26TQ1zmIRqI0pOUAM3JA6dK6P7Ugz0SED+0Cq+H
-+Ql+kGXeoqDpv2lqgZQU+i0Mb+15rSVkUX7/BOigBn7YwsRvIjsh84XJOEdII1fz
-RKYOUQCSCSrAc1hJuIsv22EmrnaKAXy110ni9QJh2zLo33cYKN4eR4faz8p39I0+
-3Ws2FFksEscXEu7NgNTraHwheeQBxwxUrI4L59OpKR7BerQiQOOM6vL7B6qUirwl
-odq4N3X3TBEWNI3AAIpY
-=KITa
------END PGP SIGNATURE-----
+-Kees
 
---mJm6k4Vb/yFcL9ZU--
+-- 
+Kees Cook
+Chrome OS Security
