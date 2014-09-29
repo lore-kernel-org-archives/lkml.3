@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaI2RkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 13:40:15 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:33368 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaI2RkN (ORCPT
+	id S1754187AbaI2RuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:50:06 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:65383 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753919AbaI2RuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 13:40:13 -0400
-Message-ID: <54299979.6080705@amacapital.net>
-Date: Mon, 29 Sep 2014 10:40:09 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Anish Bhatt <anish@chelsio.com>, linux-kernel@vger.kernel.org
-CC: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        sebastian@fds-team.de
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
-In-Reply-To: <1411674171-24442-1-git-send-email-anish@chelsio.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Sep 2014 13:50:03 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvoNAB6bKVRbtA8r/2dsb2JhbABggw6BKrYYBQFyAZpWgRUXAXuEMS8jgRo3iCoDFQGvcog9FYcehhKJOwEBTx2ENQWRPYtrlV2DZTsvgQ+BOwEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Evgeniy Dushistov <dushistov@mail.ru>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/ufs/balloc.c: remove unused variable
+Date: Mon, 29 Sep 2014 19:49:55 +0200
+Message-Id: <1412012995-13607-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 12:42 PM, Anish Bhatt wrote:
-> The MSR_SYSCALL_MASK, which is responsible for clearing specific EFLAGS on
->  syscall entry, should also clear the nested task (NT) flag to be safe from
->  userspace injection. Without this fix the application segmentation
->  faults on syscall return because of the changed meaning of the IRET
->  instruction.
-> 
-> Further details can be seen here https://bugs.winehq.org/show_bug.cgi?id=33275
-> 
-> Signed-off-by: Anish Bhatt <anish@chelsio.com>
-> Signed-off-by: Sebastian Lackner <sebastian@fds-team.de>
-> ---
->  arch/x86/kernel/cpu/common.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index e4ab2b4..3126558 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1184,7 +1184,7 @@ void syscall_init(void)
->  	/* Flags to clear on syscall */
->  	wrmsrl(MSR_SYSCALL_MASK,
->  	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
-> -	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-> +	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ucg is defined and set in ufs_bitmap_search but never used.
 
-Something's weird here, and at the very least the changelog is
-insufficiently informative.
+Cc: Evgeniy Dushistov <dushistov@mail.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ufs/balloc.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-The Intel SDM says:
+diff --git a/fs/ufs/balloc.c b/fs/ufs/balloc.c
+index 7bc2080..2c10360 100644
+--- a/fs/ufs/balloc.c
++++ b/fs/ufs/balloc.c
+@@ -784,7 +784,6 @@ static u64 ufs_bitmap_search(struct super_block *sb,
+ 		0x0, 0x2, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe
+ 	};
+ 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
+-	struct ufs_cylinder_group *ucg;
+ 	unsigned start, length, loc;
+ 	unsigned pos, want, blockmap, mask, end;
+ 	u64 result;
+@@ -792,8 +791,6 @@ static u64 ufs_bitmap_search(struct super_block *sb,
+ 	UFSD("ENTER, cg %u, goal %llu, count %u\n", ucpi->c_cgx,
+ 	     (unsigned long long)goal, count);
+ 
+-	ucg = ubh_get_ucg(UCPI_UBH(ucpi));
+-
+ 	if (goal)
+ 		start = ufs_dtogd(uspi, goal) >> 3;
+ 	else
+-- 
+1.9.3
 
-If the NT flag is set and the processor is in IA-32e mode, the IRET
-instruction causes a general protection exception.
-
-Presumably interrupt delivery clears NT.  I haven't spotted where that's
-documented yet.
-
-sysret doesn't appear to care about NT at all.
-
-So: the test code doesn't appear to do anything interesting *unless* it
-goes through syscall followed by the iret exit path.  Then it receives
-#GP on return, which turns into a signal.
-
-On the premise that the slow and fast return paths ought to be
-indistinguishable from userspace, I think we should fix this.  But I
-want to understand it better first.
-
-Also, 32-bit may need more care here.
-
---Andy
