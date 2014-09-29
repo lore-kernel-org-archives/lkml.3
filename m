@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaI2KYe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:24:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52640 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaI2KYc (ORCPT
+	id S1753625AbaI2KZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:25:12 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13036 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaI2KZK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:24:32 -0400
-Date: Mon, 29 Sep 2014 11:23:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Cc: lgirdwood@gmail.com, shawn.guo@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        festevam@gmail.com, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@pengutronix.de
-Message-ID: <20140929102352.GO16977@sirena.org.uk>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
- <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com>
- <20140928102202.GM27755@sirena.org.uk>
- <5428F592.3020809@i2se.com>
+	Mon, 29 Sep 2014 06:25:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 29 Sep 2014 03:24:26 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+Thread-Topic: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+Thread-Index: AQHP1o7ln/2GHwUnqkWm/7z0JBMChZwNg2cAgApja8A=
+Date: Mon, 29 Sep 2014 10:25:03 +0000
+Message-ID: <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
+References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
+ <5420731E.6040104@wwwdotorg.org>
+In-Reply-To: <5420731E.6040104@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.24.46.46]
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iEWWOZ/QYGWEaBRW"
-Content-Disposition: inline
-In-Reply-To: <5428F592.3020809@i2se.com>
-X-Cookie: Your own mileage may vary.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---iEWWOZ/QYGWEaBRW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Tuesday, September 23, 2014 12:36 AM
+> To: Vidya Sagar
+> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
+> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+> tree
+> 
+> On 09/22/2014 11:57 AM, Vidya Sagar wrote:
+> > sd4 is an always on regulator which is turned on at boot time.
+> > It is externally controller through gpio. This change reflects the
+> > same in Jetson TK1 device tree
+> 
+> In the schematics, the "Power Sequencing" timing diagram says "S/W
+> controlled" for SD4/+1.05V_RUN. I also don't see an "ENABLE1" pin on the
+> AS3722, which would be required for ...
+> 
+> > +					ams,ext-control = <1>;
+> 
+> ... to be valid.
+> 
+> What's the source of information behind this change?
+> 
+> What symptoms does this patch correct?
 
-On Mon, Sep 29, 2014 at 08:00:50AM +0200, Stefan Wahren wrote:
-> Am 28.09.2014 um 12:22 schrieb Mark Brown:
+I'm seeing one issue when I add support for PCIe suspend/resume functionality.
+The issue is that, when regulator_bulk_diable() is called, disabling one of the power rails (which is deriving its voltage from SD4) of PCIe is failing.
+The reason being, I2C controller is getting power gated before power rail disable is called.
+Hence SD4 is made dependent on ENABLE1, which is nothing but the deep sleep signal coming from Tegra,
+So eventually, SD4 will be powered off when system enters into deep-sleep state.
+Source of information is from downstream kernel 
 
-> > Use subject lines matching the style for the subsystem.
 
-> sorry i'm not sure what's wrong with the subject lines.
-
-> Did you expect "[PATCH 1/2] regulator: add binding for mxs regulator"?
-
-Yes.
-
-> > While this should be using compatibles to identify which regulator is
-> > being supported note that the binding doesn't document the fact that the
-> > code makes regulator-name mandatory or what values are required.
-
-> Is the following better?
-
-> - fsl,mxs-regulator-vddd
-> - fsl,mxs-regulator-vdda
-> - fsl,mxs-regulator-vddio
-
-Yes.
-
---iEWWOZ/QYGWEaBRW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUKTMzAAoJECTWi3JdVIfQfx0H/iylZ4g8pS5Fu8LP8XqMt5sp
-oNPHAui6VdJ/RWUvk0m8NuZSXUV+6g3+HG5Y1MODP+pdhJ7g405N+GlDXxi3SNbP
-kzC2r55fGbqTtduMDZDv2Ffy7op/meJp1urjtLvq2VD/CtXJ0B4hNjotkPhzv+cS
-thrZ6+5EtsiLodfn2/PKfSS9WfsoP46nT7oWHd7L0EYJF6G5M31nL5BkaU5gThwk
-Wd1SLEv8xa0tCQQsuYfwe9tUzscK6cV8QM52pUsaUUaIu8hBXENdsoTpgpfq+Ymx
-okXLdwvBcPsCQMFRbzwpX82M8oHg4ijLuBUF6ACcPBBCUOVnhFIs7EgeVXgwvp0=
-=S+g5
------END PGP SIGNATURE-----
-
---iEWWOZ/QYGWEaBRW--
