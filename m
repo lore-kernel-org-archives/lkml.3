@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaI2UkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:40:09 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58824 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaI2UkI (ORCPT
+	id S1754719AbaI2UlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:41:05 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49639 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaI2UlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:40:08 -0400
-Date: Mon, 29 Sep 2014 22:40:04 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: alsa-devel@alsa-project.org, Andreas Mohr <andi@lisas.de>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ES938 support for ES18xx driver
-Message-ID: <20140929204004.GA5037@rhlx01.hs-esslingen.de>
-References: <1412020242-8752-1-git-send-email-linux@rainbow-software.org>
+	Mon, 29 Sep 2014 16:41:03 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] video: move mediabus format definition to a more standard place
+Date: Mon, 29 Sep 2014 23:41:09 +0300
+Message-ID: <3849580.CgKEmcV7as@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
+References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com> <1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412020242-8752-1-git-send-email-linux@rainbow-software.org>
-X-Priority: none
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Boris,
 
-On Mon, Sep 29, 2014 at 09:50:42PM +0200, Ondrej Zary wrote:
-> +	if (mpu_port[dev] > 0 && mpu_port[dev] != SNDRV_AUTO_PORT)
-> +		/* no error if this fails because ES938 is optional */
-> +		if (snd_es938_init(&chip->es938, card, 0, 0) == 0)
-> +			snd_printk(KERN_DEBUG "found ES938 audio processor\n");
-> +
-> +	return 0;
+Thank you for the patch.
 
-Hmm, how's the braces policy here?
-Given a double "if" I'd suspect that the outer "if" would want braces then.
-(perhaps checkpatch.pl has something to say here)
+On Monday 29 September 2014 16:02:39 Boris Brezillon wrote:
+> Rename mediabus formats and move the enum into a separate header file so
+> that it can be used by DRM/KMS subsystem without any reference to the V4L2
+> subsystem.
+> 
+> Old V4L2_MBUS_FMT_ definitions are now macros that points to VIDEO_BUS_FMT_
+> definitions.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  include/uapi/linux/Kbuild             |   1 +
+>  include/uapi/linux/v4l2-mediabus.h    | 183 +++++++++++++------------------
+>  include/uapi/linux/video-bus-format.h | 127 +++++++++++++++++++++++
+>  3 files changed, 207 insertions(+), 104 deletions(-)
+>  create mode 100644 include/uapi/linux/video-bus-format.h
 
-Not to mention that I'm having strong doubts about the kernel's
-"if" coding style guidelines in general:
-IMHO *all* uses of "if" ought to be braced:
-witness the Apple-specific OpenSSL bug catastrophy ("goto fail;"),
-where people said that adding braces to conditionals would have made things
-obvious.
-Plus the annoyance that for an addition commit to an existing conditional
-the diff will *not* contain the addition only (one line),
-but rather *three* lines, and the first line rather needlessly getting
-modified even!
+One of the self-inflicted rules in V4L2 is to properly document every new 
+media bus format when adding it to the kernel. The documentation is located in 
+Documentation/DocBook/media/v4l/subdev-formats.xml. If we move the formats to 
+a centralized header (which I believe is a good idea), we should also update 
+the documentation, and possibly its location. I really want to avoid getting 
+undocumented formats merged, and this will happen if we don't make the rule 
+clear and/or don't make the documentation easily accessible.
 
-+ if (is_foo)
-+   bar;
+Incidentally, patch 2/5 in this series is missing a documentation update ;-)
 
-So, given a ridiculously simple one-line addition:
+-- 
+Regards,
 
-- if (is_foo)
-+ if (is_foo) {
-    bar;
-+   boo;
-+ }
+Laurent Pinchart
 
-Rather than:
-
-+ if (is_foo) {
-+   bar;
-+ }
-
-if (is_foo) {
-  bar;
-+ boo;
-}
-
-
-(SIX changed lines vs. 4!)
-
-
-Not to mention my pet peeve about large sections of coding style documents -
-they establish Golden Rules to never be broken, but then
-Fail To Elaborate Why - STUPID!
-(that does not fully apply to our "if" CodingStyle paragraph though)
-What a great way to hamper properly thought out evolution of guidelines...
-
-Perhaps we should have a seasoned discussion about that coding style issue,
-and others? (any update of Documentation/CodingStyle
-would need to directly include an update to checkpatch.pl, too, though)
-
-(sorry about that part being rather OT to your particular nice patch)
-
-> +	struct snd_es938_sysex_reg req = {
-> +		.midi_cmd = MIDI_CMD_COMMON_SYSEX,
-> +		.id = ES938_ID,
-> +		.cmd = ES938_CMD_REG_R,
-> +		.reg = reg,
-> +		.midi_end = MIDI_CMD_COMMON_SYSEX_END,
-> +	};
-
-Hmm, perhaps const? :)
-(and dito probably a const void * cast further below, to forego receiving
-the optionally activated gcc non-const cast warnings)
-
-> +	end_time = ktime_add_ms(ktime_get(), 100);
-
-Yay! One driver less which is advertising
-less precise deprecated implementation style :)
-
-> +	/* check if the reply is our and has SYSEX_END at the end */
-
-"ours"
-
-Thanks,
-
-Andreas Mohr
