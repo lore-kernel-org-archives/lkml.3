@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313AbaI2XJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:09:09 -0400
-Received: from smtprelay0233.hostedemail.com ([216.40.44.233]:46125 "EHLO
+	id S1755352AbaI2XJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:09:19 -0400
+Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:47453 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755159AbaI2XJF (ORCPT
+	by vger.kernel.org with ESMTP id S1755318AbaI2XJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:09:05 -0400
+	Mon, 29 Sep 2014 19:09:13 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3868:3871:4321:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fork28_14e8136ad9f45
-X-Filterd-Recvd-Size: 2071
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1345:1359:1535:1605:1730:1747:1777:1792:2393:2559:2562:2897:3138:3139:3140:3141:3142:3876:3877:4049:4118:5007:6114:6261:6642:8957:9592:10004:10026:10848:11026:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229:13972:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wren39_1544f5bfd684c
+X-Filterd-Recvd-Size: 7873
 From: Joe Perches <joe@perches.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] debugfs: Fix misuse of seq_printf return value
-Date: Mon, 29 Sep 2014 16:08:26 -0700
-Message-Id: <2634b19eb1c04a9d31148c1fe6f1f3819be95349.1412031505.git.joe@perches.com>
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
+Date: Mon, 29 Sep 2014 16:08:27 -0700
+Message-Id: <c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1412031505.git.joe@perches.com>
 References: <20140929124246.3e39dac8@gandalf.local.home> <cover.1412031505.git.joe@perches.com>
@@ -28,43 +29,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding repeated -1 to the return is not correct.
-
-Use seq_is_full to test for unnecessary seq_printf uses
-and always return 0.
+seq_printf doesn't return a useful value, so remove
+these misuses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/debugfs/file.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/mtd/devices/docg3.c | 112 ++++++++++++++++++++------------------------
+ 1 file changed, 52 insertions(+), 60 deletions(-)
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 76c08c2..c24e578 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -695,15 +695,17 @@ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
- int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
- 			   int nregs, void __iomem *base, char *prefix)
+diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
+index 21cc4b6..68ff83c 100644
+--- a/drivers/mtd/devices/docg3.c
++++ b/drivers/mtd/devices/docg3.c
+@@ -1655,22 +1655,21 @@ static int dbg_flashctrl_show(struct seq_file *s, void *p)
  {
--	int i, ret = 0;
-+	int i;
+ 	struct docg3 *docg3 = (struct docg3 *)s->private;
  
- 	for (i = 0; i < nregs; i++, regs++) {
--		if (prefix)
--			ret += seq_printf(s, "%s", prefix);
--		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
--				  readl(base + regs->offset));
-+		seq_printf(s, "%s%s = 0x%08x\n",
-+			   prefix ? prefix : "",
-+			   regs->name, readl(base + regs->offset));
-+		if (seq_is_full(s))
-+			break;
- 	}
--	return ret;
+-	int pos = 0;
+ 	u8 fctrl;
+ 
+ 	mutex_lock(&docg3->cascade->lock);
+ 	fctrl = doc_register_readb(docg3, DOC_FLASHCONTROL);
+ 	mutex_unlock(&docg3->cascade->lock);
+ 
+-	pos += seq_printf(s,
+-		 "FlashControl : 0x%02x (%s,CE# %s,%s,%s,flash %s)\n",
+-		 fctrl,
+-		 fctrl & DOC_CTRL_VIOLATION ? "protocol violation" : "-",
+-		 fctrl & DOC_CTRL_CE ? "active" : "inactive",
+-		 fctrl & DOC_CTRL_PROTECTION_ERROR ? "protection error" : "-",
+-		 fctrl & DOC_CTRL_SEQUENCE_ERROR ? "sequence error" : "-",
+-		 fctrl & DOC_CTRL_FLASHREADY ? "ready" : "not ready");
+-	return pos;
++	seq_printf(s, "FlashControl : 0x%02x (%s,CE# %s,%s,%s,flash %s)\n",
++		   fctrl,
++		   fctrl & DOC_CTRL_VIOLATION ? "protocol violation" : "-",
++		   fctrl & DOC_CTRL_CE ? "active" : "inactive",
++		   fctrl & DOC_CTRL_PROTECTION_ERROR ? "protection error" : "-",
++		   fctrl & DOC_CTRL_SEQUENCE_ERROR ? "sequence error" : "-",
++		   fctrl & DOC_CTRL_FLASHREADY ? "ready" : "not ready");
 +
 +	return 0;
  }
- EXPORT_SYMBOL_GPL(debugfs_print_regs32);
+ DEBUGFS_RO_ATTR(flashcontrol, dbg_flashctrl_show);
+ 
+@@ -1678,58 +1677,56 @@ static int dbg_asicmode_show(struct seq_file *s, void *p)
+ {
+ 	struct docg3 *docg3 = (struct docg3 *)s->private;
+ 
+-	int pos = 0, pctrl, mode;
++	int pctrl, mode;
+ 
+ 	mutex_lock(&docg3->cascade->lock);
+ 	pctrl = doc_register_readb(docg3, DOC_ASICMODE);
+ 	mode = pctrl & 0x03;
+ 	mutex_unlock(&docg3->cascade->lock);
+ 
+-	pos += seq_printf(s,
+-			 "%04x : RAM_WE=%d,RSTIN_RESET=%d,BDETCT_RESET=%d,WRITE_ENABLE=%d,POWERDOWN=%d,MODE=%d%d (",
+-			 pctrl,
+-			 pctrl & DOC_ASICMODE_RAM_WE ? 1 : 0,
+-			 pctrl & DOC_ASICMODE_RSTIN_RESET ? 1 : 0,
+-			 pctrl & DOC_ASICMODE_BDETCT_RESET ? 1 : 0,
+-			 pctrl & DOC_ASICMODE_MDWREN ? 1 : 0,
+-			 pctrl & DOC_ASICMODE_POWERDOWN ? 1 : 0,
+-			 mode >> 1, mode & 0x1);
++	seq_printf(s,
++		   "%04x : RAM_WE=%d,RSTIN_RESET=%d,BDETCT_RESET=%d,WRITE_ENABLE=%d,POWERDOWN=%d,MODE=%d%d (",
++		   pctrl,
++		   pctrl & DOC_ASICMODE_RAM_WE ? 1 : 0,
++		   pctrl & DOC_ASICMODE_RSTIN_RESET ? 1 : 0,
++		   pctrl & DOC_ASICMODE_BDETCT_RESET ? 1 : 0,
++		   pctrl & DOC_ASICMODE_MDWREN ? 1 : 0,
++		   pctrl & DOC_ASICMODE_POWERDOWN ? 1 : 0,
++		   mode >> 1, mode & 0x1);
+ 
+ 	switch (mode) {
+ 	case DOC_ASICMODE_RESET:
+-		pos += seq_puts(s, "reset");
++		seq_puts(s, "reset");
+ 		break;
+ 	case DOC_ASICMODE_NORMAL:
+-		pos += seq_puts(s, "normal");
++		seq_puts(s, "normal");
+ 		break;
+ 	case DOC_ASICMODE_POWERDOWN:
+-		pos += seq_puts(s, "powerdown");
++		seq_puts(s, "powerdown");
+ 		break;
+ 	}
+-	pos += seq_puts(s, ")\n");
+-	return pos;
++	seq_puts(s, ")\n");
++	return 0;
+ }
+ DEBUGFS_RO_ATTR(asic_mode, dbg_asicmode_show);
+ 
+ static int dbg_device_id_show(struct seq_file *s, void *p)
+ {
+ 	struct docg3 *docg3 = (struct docg3 *)s->private;
+-	int pos = 0;
+ 	int id;
+ 
+ 	mutex_lock(&docg3->cascade->lock);
+ 	id = doc_register_readb(docg3, DOC_DEVICESELECT);
+ 	mutex_unlock(&docg3->cascade->lock);
+ 
+-	pos += seq_printf(s, "DeviceId = %d\n", id);
+-	return pos;
++	seq_printf(s, "DeviceId = %d\n", id);
++	return 0;
+ }
+ DEBUGFS_RO_ATTR(device_id, dbg_device_id_show);
+ 
+ static int dbg_protection_show(struct seq_file *s, void *p)
+ {
+ 	struct docg3 *docg3 = (struct docg3 *)s->private;
+-	int pos = 0;
+ 	int protect, dps0, dps0_low, dps0_high, dps1, dps1_low, dps1_high;
+ 
+ 	mutex_lock(&docg3->cascade->lock);
+@@ -1742,45 +1739,40 @@ static int dbg_protection_show(struct seq_file *s, void *p)
+ 	dps1_high = doc_register_readw(docg3, DOC_DPS1_ADDRHIGH);
+ 	mutex_unlock(&docg3->cascade->lock);
+ 
+-	pos += seq_printf(s, "Protection = 0x%02x (",
+-			 protect);
++	seq_printf(s, "Protection = 0x%02x (", protect);
+ 	if (protect & DOC_PROTECT_FOUNDRY_OTP_LOCK)
+-		pos += seq_puts(s, "FOUNDRY_OTP_LOCK,");
++		seq_puts(s, "FOUNDRY_OTP_LOCK,");
+ 	if (protect & DOC_PROTECT_CUSTOMER_OTP_LOCK)
+-		pos += seq_puts(s, "CUSTOMER_OTP_LOCK,");
++		seq_puts(s, "CUSTOMER_OTP_LOCK,");
+ 	if (protect & DOC_PROTECT_LOCK_INPUT)
+-		pos += seq_puts(s, "LOCK_INPUT,");
++		seq_puts(s, "LOCK_INPUT,");
+ 	if (protect & DOC_PROTECT_STICKY_LOCK)
+-		pos += seq_puts(s, "STICKY_LOCK,");
++		seq_puts(s, "STICKY_LOCK,");
+ 	if (protect & DOC_PROTECT_PROTECTION_ENABLED)
+-		pos += seq_puts(s, "PROTECTION ON,");
++		seq_puts(s, "PROTECTION ON,");
+ 	if (protect & DOC_PROTECT_IPL_DOWNLOAD_LOCK)
+-		pos += seq_puts(s, "IPL_DOWNLOAD_LOCK,");
++		seq_puts(s, "IPL_DOWNLOAD_LOCK,");
+ 	if (protect & DOC_PROTECT_PROTECTION_ERROR)
+-		pos += seq_puts(s, "PROTECT_ERR,");
++		seq_puts(s, "PROTECT_ERR,");
+ 	else
+-		pos += seq_puts(s, "NO_PROTECT_ERR");
+-	pos += seq_puts(s, ")\n");
+-
+-	pos += seq_printf(s, "DPS0 = 0x%02x : "
+-			 "Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, "
+-			 "WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
+-			 dps0, dps0_low, dps0_high,
+-			 !!(dps0 & DOC_DPS_OTP_PROTECTED),
+-			 !!(dps0 & DOC_DPS_READ_PROTECTED),
+-			 !!(dps0 & DOC_DPS_WRITE_PROTECTED),
+-			 !!(dps0 & DOC_DPS_HW_LOCK_ENABLED),
+-			 !!(dps0 & DOC_DPS_KEY_OK));
+-	pos += seq_printf(s, "DPS1 = 0x%02x : "
+-			 "Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, "
+-			 "WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
+-			 dps1, dps1_low, dps1_high,
+-			 !!(dps1 & DOC_DPS_OTP_PROTECTED),
+-			 !!(dps1 & DOC_DPS_READ_PROTECTED),
+-			 !!(dps1 & DOC_DPS_WRITE_PROTECTED),
+-			 !!(dps1 & DOC_DPS_HW_LOCK_ENABLED),
+-			 !!(dps1 & DOC_DPS_KEY_OK));
+-	return pos;
++		seq_puts(s, "NO_PROTECT_ERR");
++	seq_puts(s, ")\n");
++
++	seq_printf(s, "DPS0 = 0x%02x : Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
++		   dps0, dps0_low, dps0_high,
++		   !!(dps0 & DOC_DPS_OTP_PROTECTED),
++		   !!(dps0 & DOC_DPS_READ_PROTECTED),
++		   !!(dps0 & DOC_DPS_WRITE_PROTECTED),
++		   !!(dps0 & DOC_DPS_HW_LOCK_ENABLED),
++		   !!(dps0 & DOC_DPS_KEY_OK));
++	seq_printf(s, "DPS1 = 0x%02x : Protected area [0x%x - 0x%x] : OTP=%d, READ=%d, WRITE=%d, HW_LOCK=%d, KEY_OK=%d\n",
++		   dps1, dps1_low, dps1_high,
++		   !!(dps1 & DOC_DPS_OTP_PROTECTED),
++		   !!(dps1 & DOC_DPS_READ_PROTECTED),
++		   !!(dps1 & DOC_DPS_WRITE_PROTECTED),
++		   !!(dps1 & DOC_DPS_HW_LOCK_ENABLED),
++		   !!(dps1 & DOC_DPS_KEY_OK));
++	return 0;
+ }
+ DEBUGFS_RO_ATTR(protection, dbg_protection_show);
  
 -- 
 1.8.1.2.459.gbcd45b4.dirty
