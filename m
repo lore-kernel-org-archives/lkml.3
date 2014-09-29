@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaI2TRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:17:50 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:64488 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaI2TRt (ORCPT
+	id S1754659AbaI2TSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:18:49 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:46834 "EHLO
+	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754053AbaI2TSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:17:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
- <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 29 Sep 2014 12:17:27 -0700
-Message-ID: <CALCETrX7yce2PfYi-Gqkf116a1rXUzjKkO3JAf==zd3WuZuDsQ@mail.gmail.com>
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Sebastian Lackner <sebastian@fds-team.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Sep 2014 15:18:48 -0400
+Date: Mon, 29 Sep 2014 21:18:44 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v3] watchdog: add driver for Ricoh RN5T618 watchdog
+Message-ID: <20140929191844.GT26868@spo001.leaseweb.com>
+References: <1411943987-30738-1-git-send-email-b.galvani@gmail.com> <20140929063407.GQ26868@spo001.leaseweb.com> <20140929075845.GD7308@lee--X1> <20140929105120.GA32092@gmail.com> <20140929122411.GE7308@lee--X1> <20140929165052.GA2085@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929165052.GA2085@gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:59 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 29 Sep 2014, Andy Lutomirski wrote:
->> Presumably interrupt delivery clears NT.  I haven't spotted where that's
->> documented yet.
->
-> Nope, that's unrelated.
+Hi Beniamino,
 
-If it weren't the case, then we'd be totally screwed.  Fortunately, it
-is.  I found it: SDM Volume 3 6.12.1.2 says:
+> On Mon, Sep 29, 2014 at 01:24:11PM +0100, Lee Jones wrote:
+> > On Mon, 29 Sep 2014, Beniamino Galvani wrote:
+> > 
+> > > On Mon, Sep 29, 2014 at 08:58:45AM +0100, Lee Jones wrote:
+> > > > I'm not sure why a) this patch was sent to me in the first place and
+> > > > b) why anyone would think this should go in through MFD?
+> > > > 
+> > > 
+> > > Hi Lee,
+> > > 
+> > > from a previous mail [1] I (wrongly) assumed that this was going
+> > > through the MFD tree. If this is not the case, Wim, can you pick the
+> > > patch?
+> > > 
+> > > Beniamino
+> > > 
+> > > [1] https://lkml.org/lkml/2014/9/4/124
+> > 
+> > Okay, I see what's happened.
+> > 
+> > So actually if there are interdependencies between this and the other
+> > patches in the set, which I think there are, then you should have kept
+> > this in the set with the others.  Sending as an independent patch is
+> > not the correct thing to do.
+> > 
+> > Can you resend this, as a patch-set with all of the Acks you have
+> > acquired please.  I will then take the set as a whole.
+> 
+> The original series had 4 patches:
+> 
+> - MFD core support
+> - regulator driver
+> - watchdog driver
+> - dts documentation
+> 
+> As explained in the submission comment, all patches except watchdog
+> one have already been applied (1 and 4 to MFD tree, 2 to
+> regulator). Only the watchdog support is missing and it doesn't have
+> compilation dependencies to other patches (the watchdog driver can't
+> be enabled without the MFD core support).
+> 
+> Do you want me to resend the entire patchset or should this go in
+> through watchdog?
 
-(On calls to exception and interrupt
-handlers, the processor also clears the VM, RF, and NT flags in the
-EFLAGS register,
-after they are saved on the stack.)
+I'll add it to the watchdog tree then.
 
---Andy
+Kind regads,
+Wim.
+
