@@ -1,149 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaI2XJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:09:26 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:49428 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318AbaI2XJX (ORCPT
+	id S1755266AbaI2XJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:09:03 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59557 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755159AbaI2XIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:09:23 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 30 Sep 2014 08:10:22 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com,
-        "seungho1.park" <seungho1.park@lge.com>
-Subject: Re: [PATCH v4] zsmalloc: merge size_class to reduce fragmentation
-Message-ID: <20140929231022.GC18318@bbox>
-References: <1411976727-29421-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Mon, 29 Sep 2014 19:08:55 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
+Date: Tue, 30 Sep 2014 01:28:50 +0200
+Message-ID: <128377046.aOTypBOIY8@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5429330A.7000103@linux.vnet.ibm.com>
+References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com> <541A4D4F.1090307@linux.vnet.ibm.com> <5429330A.7000103@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1411976727-29421-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Joonsoo,
+On Monday, September 29, 2014 03:53:06 PM Shreyas B Prabhu wrote:
+> Hi,
+> Any updates on this patch series?
 
-On Mon, Sep 29, 2014 at 04:45:27PM +0900, Joonsoo Kim wrote:
-> zsmalloc has many size_classes to reduce fragmentation and they are
-> in 16 bytes unit, for example, 16, 32, 48, etc., if PAGE_SIZE is 4096.
-> And, zsmalloc has constraint that each zspage has 4 pages at maximum.
-> 
-> In this situation, we can see interesting aspect.
-> Let's think about size_class for 1488, 1472, ..., 1376.
-> To prevent external fragmentation, they uses 4 pages per zspage and
-> so all they can contain 11 objects at maximum.
-> 
-> 16384 (4096 * 4) = 1488 * 11 + remains
-> 16384 (4096 * 4) = 1472 * 11 + remains
-> 16384 (4096 * 4) = ...
-> 16384 (4096 * 4) = 1376 * 11 + remains
-> 
-> It means that they have same characteristics and classification between
-> them isn't needed. If we use one size_class for them, we can reduce
-> fragementation and save some memory since both the 1488 and 1472 sized
-> classes can only fit 11 objects into 4 pages, and an object that's
-> 1472 bytes can fit into an object that's 1488 bytes, merging these
-> classes to always use objects that are 1488 bytes will reduce the total
-> number of size classes. And reducing the total number of size classes
-> reduces overall fragmentation, because a wider range of compressed pages
-> can fit into a single size class, leaving less unused objects in each
-> size class.
-> 
-> For this purpose, this patch implement size_class merging. If there is
-> size_class that have same pages_per_zspage and same number of objects
-> per zspage with previous size_class, we don't create new size_class.
-> Instead, we use previous, same characteristic size_class. With this way,
-> above example sizes (1488, 1472, ..., 1376) use just one size_class
-> so we can get much more memory utilization.
-> 
-> Below is result of my simple test.
-> 
-> TEST ENV: EXT4 on zram, mount with discard option
-> WORKLOAD: untar kernel source code, remove directory in descending order
-> in size. (drivers arch fs sound include net Documentation firmware
-> kernel tools)
-> 
-> Each line represents orig_data_size, compr_data_size, mem_used_total,
-> fragmentation overhead (mem_used - compr_data_size) and overhead ratio
-> (overhead to compr_data_size), respectively, after untar and remove
-> operation is executed.
-> 
-> * untar-nomerge.out
-> 
-> orig_size compr_size used_size overhead overhead_ratio
-> 525.88MB 199.16MB 210.23MB  11.08MB 5.56%
-> 288.32MB  97.43MB 105.63MB   8.20MB 8.41%
-> 177.32MB  61.12MB  69.40MB   8.28MB 13.55%
-> 146.47MB  47.32MB  56.10MB   8.78MB 18.55%
-> 124.16MB  38.85MB  48.41MB   9.55MB 24.58%
-> 103.93MB  31.68MB  40.93MB   9.25MB 29.21%
->  84.34MB  22.86MB  32.72MB   9.86MB 43.13%
->  66.87MB  14.83MB  23.83MB   9.00MB 60.70%
->  60.67MB  11.11MB  18.60MB   7.49MB 67.48%
->  55.86MB   8.83MB  16.61MB   7.77MB 88.03%
->  53.32MB   8.01MB  15.32MB   7.31MB 91.24%
-> 
-> * untar-merge.out
-> 
-> orig_size compr_size used_size overhead overhead_ratio
-> 526.23MB 199.18MB 209.81MB  10.64MB 5.34%
-> 288.68MB  97.45MB 104.08MB   6.63MB 6.80%
-> 177.68MB  61.14MB  66.93MB   5.79MB 9.47%
-> 146.83MB  47.34MB  52.79MB   5.45MB 11.51%
-> 124.52MB  38.87MB  44.30MB   5.43MB 13.96%
-> 104.29MB  31.70MB  36.83MB   5.13MB 16.19%
->  84.70MB  22.88MB  27.92MB   5.04MB 22.04%
->  67.11MB  14.83MB  19.26MB   4.43MB 29.86%
->  60.82MB  11.10MB  14.90MB   3.79MB 34.17%
->  55.90MB   8.82MB  12.61MB   3.79MB 42.97%
->  53.32MB   8.01MB  11.73MB   3.73MB 46.53%
-> 
-> As you can see above result, merged one has better utilization (overhead
-> ratio, 5th column) and uses less memory (mem_used_total, 3rd column).
-> 
-> Changes from v1:
-> - More commit description about what to do in this patch.
-> - Remove nr_obj in size_class, because it isn't need after initialization.
-> - Rename __size_class to size_class, size_class to merged_size_class.
-> - Add code comment for merged_size_class of struct zs_pool.
-> - Add code comment how merging works in zs_create_pool().
-> 
-> Changes from v2:
-> - Add more commit description (Dan)
-> - dynamically allocate size_class structure (Dan)
-> - rename objs_per_zspage to get_maxobj_per_zspage (Minchan)
-> 
-> Changes from v3:
-> - Add error handling logic in zs_create_pool (Dan)
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->  mm/zsmalloc.c |   84 +++++++++++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 70 insertions(+), 14 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index c4a9157..11556ae 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -187,6 +187,7 @@ enum fullness_group {
->  static const int fullness_threshold_frac = 4;
->  
->  struct size_class {
-> +	int ref;
+I have a couple of patches from there in my tree it seems.  Please have a look
+at linux-pm.git/linux-next and please let me know if that's the case.
 
-Couldn't we remove the ref from size_class by making zs_destroy_pool
-aware of merged size class like zs_create_pool?
+
+> On Thursday 18 September 2014 08:41 AM, Shreyas B Prabhu wrote:
+> > Hi,
+> > 
+> > In this patch series we use winkle for offlined cores. I successfully
+> > tested the working of this with subcore functionality.
+> > 
+> > Test scenario was as follows:
+> > 1. Set SMT mode to 1, Set subores-per-core to 1
+> > 2. Offline a core, in this case cpu 32 (sending it to winkle)
+> > 3. Set subcores-per-core to 4
+> > 4. Online the core
+> > 5. Start a guest (Topology 1 core 2 threads) on a subcore, in this case
+> > on cpu 36
+> > 
+> > This works without any glitch.
+> > 
+> > Thanks,
+> > Shreyas
+> > 
+> > On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
+> >> Fast sleep is an idle state, where the core and the L1 and L2
+> >> caches are brought down to a threshold voltage. This also means that
+> >> the communication between L2 and L3 caches have to be fenced. However
+> >> the current P8 chips have a bug wherein this fencing between L2 and
+> >> L3 caches get delayed by a cpu cycle. This can delay L3 response to
+> >> the other cpus if they request for data during this time. Thus they
+> >> would fetch the same data from the memory which could lead to data
+> >> corruption if L3 cache is not flushed.
+> >> Patch 4 adds support to work around this.
+> >>
+> >> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
+> >> off. While it offers higher power savings, it is at the cost of losing
+> >> hypervisor register state and higher latency.
+> >> Patch 5-9 adds support for winkle and uses it for offline cpus.
+> >>
+> >> Patch 1 - Moves parameters required discover idle states to a location 
+> >> common to both cpuidle driver and powernv core code
+> >> Patch 2 - Populates idle state details from device tree
+> >> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
+> >>
+> >>
+> >> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >> Cc: Paul Mackerras <paulus@samba.org>
+> >> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> >> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> >> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
+> >> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+> >> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> >> Cc: Rob Herring <robh+dt@kernel.org>
+> >> Cc: Grant Likely <grant.likely@linaro.org>
+> >> Cc: devicetree@vger.kernel.org
+> >> Cc: linux-pm@vger.kernel.org
+> >> Cc: linuxppc-dev@lists.ozlabs.org
+> >>
+> >> Preeti U Murthy (2):
+> >>   cpuidle/powernv: Populate cpuidle state details by querying the
+> >>     device-tree
+> >>   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
+> >>
+> >> Shreyas B. Prabhu (6):
+> >>   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
+> >>     fast-sleep
+> >>   powerpc/powernv: Add OPAL call to save and restore
+> >>   powerpc: Adding macro for accessing Thread Switch Control Register
+> >>   powerpc/powernv: Add winkle infrastructure
+> >>   powerpc/powernv: Discover and enable winkle
+> >>   powerpc/powernv: Enter deepest supported idle state in offline
+> >>
+> >> Srivatsa S. Bhat (1):
+> >>   powerpc/powernv: Enable Offline CPUs to enter deep idle states
+> >>
+> >>  arch/powerpc/include/asm/machdep.h             |   4 +
+> >>  arch/powerpc/include/asm/opal.h                |  10 ++
+> >>  arch/powerpc/include/asm/paca.h                |   3 +
+> >>  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
+> >>  arch/powerpc/include/asm/processor.h           |   6 +-
+> >>  arch/powerpc/include/asm/reg.h                 |   1 +
+> >>  arch/powerpc/kernel/asm-offsets.c              |   1 +
+> >>  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
+> >>  arch/powerpc/kernel/idle.c                     |  30 ++++
+> >>  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
+> >>  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
+> >>  arch/powerpc/platforms/powernv/powernv.h       |   8 +
+> >>  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
+> >>  arch/powerpc/platforms/powernv/smp.c           |  13 +-
+> >>  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
+> >>  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
+> >>  16 files changed, 439 insertions(+), 33 deletions(-)
+> >>
+> 
 
 -- 
-Kind regards,
-Minchan Kim
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
