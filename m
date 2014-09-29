@@ -1,45 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaI2KPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:15:52 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61592 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaI2KPu (ORCPT
+	id S1752565AbaI2KVZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:21:25 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:43819 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaI2KVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:15:50 -0400
-Message-ID: <542930BC.4040806@gmail.com>
-Date: Mon, 29 Sep 2014 15:43:16 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 29 Sep 2014 06:21:23 -0400
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Anders Berg <anders.berg@avagotech.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: axxia: Add I2C driver for AXM55xx
-References: <1411983159-4692-1-git-send-email-anders.berg@avagotech.com> <54292F74.2030209@gmail.com> <20140929101319.GB1559@katana>
-In-Reply-To: <20140929101319.GB1559@katana>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2a01:e35:2434:4600:1a4:faed:8b74:35f6]
+In-Reply-To: <1411762736.7360.42.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-11-git-send-email-a.motakis@virtualopensystems.com>
+ <1411513277.24563.61.camel@ul30vt.home> <CAG8rG2wECWL2w9Xyvs7tZx8bqdMqk2SP8gfYpq=ZY0_Jk0Q+-g@mail.gmail.com>
+ <1411762736.7360.42.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Mon, 29 Sep 2014 12:21:02 +0200
+Message-ID: <CAG8rG2xNN9=47NEZ2vMVQy3eSvDN+_DMzqHiELQQfTyPYiYwVA@mail.gmail.com>
+Subject: Re: [PATCHv7 10/26] vfio: platform: probe to devices on the platform bus
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:ABI/API" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 03:43 PM, Wolfram Sang wrote:
->>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> Error checking on *res*...?
+On Fri, Sep 26, 2014 at 10:18 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Fri, 2014-09-26 at 17:30 +0200, Antonios Motakis wrote:
+>> On Wed, Sep 24, 2014 at 1:01 AM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> >
+>> > On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+>> > > Driver to bind to Linux platform devices, and callbacks to discover their
+>> > > resources to be used by the main VFIO PLATFORM code.
+>> > >
+>> > > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> > > ---
+>> > >  drivers/vfio/platform/vfio_platform.c | 96 +++++++++++++++++++++++++++++++++++
+>> > >  include/uapi/linux/vfio.h             |  1 +
+>> > >  2 files changed, 97 insertions(+)
+>> > >  create mode 100644 drivers/vfio/platform/vfio_platform.c
+>> > >
+>> > > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+>> > > new file mode 100644
+>> > > index 0000000..024c026
+>> > > --- /dev/null
+>> > > +++ b/drivers/vfio/platform/vfio_platform.c
+>> > > @@ -0,0 +1,96 @@
+>> > > +/*
+>> > > + * Copyright (C) 2013 - Virtual Open Systems
+>> > > + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> > > + *
+>> > > + * This program is free software; you can redistribute it and/or modify
+>> > > + * it under the terms of the GNU General Public License, version 2, as
+>> > > + * published by the Free Software Foundation.
+>> > > + *
+>> > > + * This program is distributed in the hope that it will be useful,
+>> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> > > + * GNU General Public License for more details.
+>> > > + */
+>> > > +
+>> > > +#include <linux/device.h>
+>> > > +#include <linux/eventfd.h>
+>> > > +#include <linux/interrupt.h>
+>> > > +#include <linux/iommu.h>
+>> > > +#include <linux/module.h>
+>> > > +#include <linux/mutex.h>
+>> > > +#include <linux/notifier.h>
+>> > > +#include <linux/pm_runtime.h>
+>> > > +#include <linux/slab.h>
+>> > > +#include <linux/types.h>
+>> > > +#include <linux/uaccess.h>
+>> > > +#include <linux/vfio.h>
+>> > > +#include <linux/io.h>
+>> > > +#include <linux/platform_device.h>
+>> > > +#include <linux/irq.h>
+>> > > +
+>> > > +#include "vfio_platform_private.h"
+>> > > +
+>> > > +#define DRIVER_VERSION  "0.7"
+>> > > +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+>> > > +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
+>> > > +
+>> > > +/* probing devices from the linux platform bus */
+>> > > +
+>> > > +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
+>> > > +                                             int i)
+>> > > +{
+>> > > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
+>> > > +
+>> > > +     return platform_get_resource(pdev, IORESOURCE_MEM, i);
+>> >
+>> > ARM may only support IORESOURCE_MEM, but I don't think platform devices
+>> > are limited to MMIO, right?  vfio-platform shouldn't be either.
+>> >
 >>
->> We should *return* on platform_get_resource() failure..
+>> Indeed. Should we however implement this lacking a target to verify it
+>> is working correctly?
 >>
->>> +	base = devm_ioremap_resource(&pdev->dev, res);
-> Nope. devm_ioremap_resource does that.
+>> Leaving it out would mean PIO resources for those devices would not be
+>> exposed before an update to VFIO, but we wouldn't have to break
+>> backward compatibility I think.
+>>
+>> Would you prefer to have it implemented regardless?
 >
-Yes it will [1]. Thanks for the clarification.
+> I think we need to have PIO figured out at least enough to have stubbed
+> read/write handlers that could be filled in by someone with test
+> hardware.  I'm not sure I fully understand how a user associates a
+> region index to a device tree description, whether it's ordering or
+> something more complicated, so I'm not sure if simply listing all the
+> PIO resources after the MMIO resources is sufficient and compatible.
+> Maybe you have some thoughts on that.  Thanks,
 
-[1]:http://lxr.free-electrons.com/source/lib/devres.c#L117
+You are right. I'm not aware if the Linux calls used are guaranteed to
+preserve ordering of PIO/MMIO resources, I will investigate a bit on
+that.
+
+>
+> Alex
+>
+>> > > +}
+>> > > +
+>> > > +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
+>> > > +{
+>> > > +     struct platform_device *pdev = (struct platform_device *) vdev->opaque;
+>> > > +
+>> > > +     return platform_get_irq(pdev, i);
+>> > > +}
+>> > > +
+>> > > +
+>> > > +static int vfio_platform_probe(struct platform_device *pdev)
+>> > > +{
+>> > > +     struct vfio_platform_device *vdev;
+>> > > +     int ret;
+>> > > +
+>> > > +     vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
+>> > > +     if (!vdev)
+>> > > +             return -ENOMEM;
+>> > > +
+>> > > +     vdev->opaque = (void *) pdev;
+>> > > +     vdev->name = pdev->name;
+>> > > +     vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
+>> > > +     vdev->get_resource = get_platform_resource;
+>> > > +     vdev->get_irq = get_platform_irq;
+>> > > +
+>> > > +     ret = vfio_platform_probe_common(vdev, &pdev->dev);
+>> > > +     if (ret)
+>> > > +             kfree(vdev);
+>> > > +
+>> > > +     return ret;
+>> > > +}
+>> > > +
+>> > > +static int vfio_platform_remove(struct platform_device *pdev)
+>> > > +{
+>> > > +     return vfio_platform_remove_common(&pdev->dev);
+>> > > +}
+>> > > +
+>> > > +static struct platform_driver vfio_platform_driver = {
+>> > > +     .probe          = vfio_platform_probe,
+>> > > +     .remove         = vfio_platform_remove,
+>> > > +     .driver = {
+>> > > +             .name   = "vfio-platform",
+>> > > +             .owner  = THIS_MODULE,
+>> > > +     },
+>> > > +};
+>> > > +
+>> > > +module_platform_driver(vfio_platform_driver);
+>> > > +
+>> > > +MODULE_VERSION(DRIVER_VERSION);
+>> > > +MODULE_LICENSE("GPL v2");
+>> > > +MODULE_AUTHOR(DRIVER_AUTHOR);
+>> > > +MODULE_DESCRIPTION(DRIVER_DESC);
+>> > > diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+>> > > index 30f630c..b022a25 100644
+>> > > --- a/include/uapi/linux/vfio.h
+>> > > +++ b/include/uapi/linux/vfio.h
+>> > > @@ -158,6 +158,7 @@ struct vfio_device_info {
+>> > >       __u32   flags;
+>> > >  #define VFIO_DEVICE_FLAGS_RESET      (1 << 0)        /* Device supports reset */
+>> > >  #define VFIO_DEVICE_FLAGS_PCI        (1 << 1)        /* vfio-pci device */
+>> > > +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)  /* vfio-platform device */
+>> > >       __u32   num_regions;    /* Max region index + 1 */
+>> > >       __u32   num_irqs;       /* Max IRQ index + 1 */
+>> > >  };
+>> >
+>> >
+>> >
+>>
+>>
+>>
+>
+>
+>
+
+
 
 -- 
-Regards,
-Varka Bhadram.
-
+Antonios Motakis
+Virtual Open Systems
