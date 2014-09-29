@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaI2G2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 02:28:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53891 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaI2G2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 02:28:24 -0400
-Message-ID: <5428FBFF.6050804@ti.com>
-Date: Mon, 29 Sep 2014 11:58:15 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/6] phy: improved lookup method
-References: <5411C0B2.3060505@ti.com> <20140912140720.GC30816@xps8300> <54130729.5010206@ti.com> <20140915123508.GA16653@xps8300> <20140918102505.GB8567@xps8300> <54200A13.6050201@ti.com> <20140923105311.GB18814@xps8300> <5421536D.4050601@ti.com> <20140923114353.GC18814@xps8300> <54229276.5050000@ti.com> <20140925070034.GA15854@xps8300>
-In-Reply-To: <20140925070034.GA15854@xps8300>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1751615AbaI2Gc1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 02:32:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61106 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791AbaI2Gc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 02:32:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,618,1406617200"; 
+   d="scan'208";a="598134366"
+From: Weike Chen <alvin.chen@intel.com>
+To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>, Alvin Chen <alvin.chen@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 0/2 v2] SPI: spi-pxa2xx: Add support for Intel Quark X1000 SPI controller
+Date: Mon, 29 Sep 2014 07:22:26 -0700
+Message-Id: <1412000548-9908-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+Intel Quark X1000 consists of two SPI controllers which can be PCI enumerated.
+SPI-PXA2XX PCI layer doesn't support it. Thus, we add support for Intel Quark
+X1000 SPI as well.
 
+---
+v2:
+  Split into two patches: one is for helper functions,
+  and another is for quark supporting.
 
-On Thursday 25 September 2014 12:30 PM, Heikki Krogerus wrote:
->>>>>>>>> Assume you have 2 phys in your system..
->>>>>>>>> static struct phy_lookup usb_lookup = {
->>>>>>>>> 	.phy_name	= "phy-usb.0",
->>>>>>>>> 	.dev_id		= "usb.0",
->>>>>>>>> 	.con_id		= "usb",
->>>>>>>>> };
->>>>>>>>>
->>>>>>>>> static struct phy_lookup sata_lookup = {
->>>>>>>>> 	.phy_name	= "sata-usb.1",
->>>>>>>>> 	.dev_id		= "sata.0",
->>>>>>>>> 	.con_id		= "sata",
->>>>>>>>> };
->>>>>>>>>
->>>>>>>>> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
->>>>>>>>> creates the PHY. The phy-core will find a free id (now it will be 0) and then
->>>>>>>>> name the phy as phy-usb.0.
->>>>>>>>> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
->>>>>>>>>
->>>>>>>>> This is an ideal case where the .phy_name in phy_lookup matches.
->>>>>>>>>
->>>>>>>>> Consider if the order is flipped and the user does modprobe phy-sata first. The
->>>>>>>>> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
->>>>>>>
->>>>>>> Actually, I don't think there would be this problem if we used the
->>>>>>> name of the actual device which is the parent of phy devices, right?
->>>>>>
->>>>>> hmm.. but if the parent is a multi-phy phy provider (like pipe3 PHY driver), we
->>>>>> might end up with the same problem.
->>>>>
->>>>> I'm not completely sure what you mean? If you are talking about
->>>>> platforms with multiple instances of a single phy, I don't see how
->>>>> there could ever be a scenario where we did not know the order in
->>>>> which they were enumerated. Can you give an example again?
->>>>
->>>> If a single IP implements multiple PHYs (phy-miphy365x.c in linux-phy next),
->>>> the parent for all the phy devices would be the same.
-> 
-> Hold on...
-> 
-> Let's take a step back here. Where could we actually have a scenario
-> where the phy device, the dev_id (consumer) and the con_id would all
-> be the same? There can't be such a case.
-> 
-> It's not like you could ever have a driver requesting multiple phys
-> with the same con_id. You would just get the same phy handle even if
-> you used dt.
-> 
->         phy1 = phy_get(dev, "phy");
->         ...
->         phy2 = phy_get(dev, "phy");
-> 
-> And if the drivers requesting those phys are different, your consumers
-> are different.
+[PATCH 1/2]
+* Add helper functions to access registers.
+* Use 'switch' instead of 'if-else'.
+[PATCH 2/2]
+* Use 'switch' instead of 'if-else'.
+* Add comments for the 'dds'&'clk_div' caculation.
+* A couple of minor fixes.
 
-sounds right to me.
+Weike Chen (2):
+  SPI: spi-pxa2xx: Add helpers for regiseters' accessing
+  SPI: spi-pxa2xx: SPI support for Intel Quark X1000
 
-Cheers
-Kishon
+ drivers/spi/spi-pxa2xx-pci.c |    8 ++
+ drivers/spi/spi-pxa2xx.c     |  306 ++++++++++++++++++++++++++++++++++++------
+ drivers/spi/spi-pxa2xx.h     |   16 ++-
+ include/linux/pxa2xx_ssp.h   |   21 +++
+ 4 files changed, 306 insertions(+), 45 deletions(-)
+
+-- 
+1.7.9.5
+
