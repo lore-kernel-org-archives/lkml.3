@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaI2L7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:59:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59341 "EHLO mx2.suse.de"
+	id S1754187AbaI2L75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:59:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59328 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753941AbaI2L7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:59:18 -0400
+	id S1753815AbaI2L7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:59:17 -0400
 From: Hannes Reinecke <hare@suse.de>
 To: James Bottomley <jbottomley@parallels.com>
 Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
         Robert Elliott <elliott@hp.com>, Hannes Reinecke <hare@suse.de>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 33/38] libata: use __scsi_print_command()
-Date: Mon, 29 Sep 2014 13:59:02 +0200
-Message-Id: <1411991947-130166-34-git-send-email-hare@suse.de>
+Subject: [PATCH 27/38] Rearrange buffer formatting in printk()
+Date: Mon, 29 Sep 2014 13:58:56 +0200
+Message-Id: <1411991947-130166-28-git-send-email-hare@suse.de>
 X-Mailer: git-send-email 1.8.5.2
 In-Reply-To: <1411991947-130166-1-git-send-email-hare@suse.de>
 References: <1411991947-130166-1-git-send-email-hare@suse.de>
@@ -22,41 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-libata already uses an internal buffer, so we should be using
-__scsi_print_command() here.
+Move buffer formatting to the start of the function as it
+doesn't require to be done under any locks.
+No functional change, required by the next patch.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
 Signed-off-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/ata/libata-eh.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ kernel/printk/printk.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index dad83df..74c5652 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2509,15 +2509,11 @@ static void ata_eh_link_report(struct ata_link *link)
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce7706..d13675e 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1633,8 +1633,18 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	if (level == SCHED_MESSAGE_LOGLEVEL) {
+ 		level = -1;
+ 		in_sched = true;
++
++		/*
++		 * The printf needs to come first; we need the syslog
++		 * prefix which might be passed-in as a parameter.
++		 */
++		text_len = scnprintf(text, sizeof(textbuf),
++				     KERN_WARNING "[sched_delayed] ");
+ 	}
  
- 		if (ata_is_atapi(qc->tf.protocol)) {
- 			if (qc->scsicmd)
--				scsi_print_command(qc->scsicmd);
-+				__scsi_print_command(cdb_buf, sizeof(cdb_buf),
-+						     qc->scsicmd->cmnd);
- 			else
--				snprintf(cdb_buf, sizeof(cdb_buf),
--				 "cdb %02x %02x %02x %02x %02x %02x %02x %02x  "
--				 "%02x %02x %02x %02x %02x %02x %02x %02x\n         ",
--				 cdb[0], cdb[1], cdb[2], cdb[3],
--				 cdb[4], cdb[5], cdb[6], cdb[7],
--				 cdb[8], cdb[9], cdb[10], cdb[11],
--				 cdb[12], cdb[13], cdb[14], cdb[15]);
-+				__scsi_print_command(cdb_buf, sizeof(cdb_buf),
-+						     (unsigned char *)cdb);
- 		} else {
- 			const char *descr = ata_get_cmd_descript(cmd->command);
- 			if (descr)
++	text_len += vscnprintf(text + text_len,
++			       sizeof(textbuf) - text_len, fmt, args);
++
+ 	boot_delay_msec(level);
+ 	printk_delay();
+ 
+@@ -1676,17 +1686,6 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 					 strlen(recursion_msg));
+ 	}
+ 
+-	/*
+-	 * The printf needs to come first; we need the syslog
+-	 * prefix which might be passed-in as a parameter.
+-	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+-
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
+-
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
+ 		text_len--;
 -- 
 1.8.5.2
 
