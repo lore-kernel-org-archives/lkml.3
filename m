@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290AbaI2MGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 08:06:00 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48891 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261AbaI2MFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 08:05:55 -0400
-From: zhang.lyra@gmail.com
-To: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
-        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
-        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com, orsonzhai@gmail.com,
-        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
-Subject: [PATCH 6/6] Documentation: Add entry for Spreadtrum's Shark64 SoC
-Date: Mon, 29 Sep 2014 20:04:53 +0800
-Message-Id: <1411992293-7729-7-git-send-email-zhang.lyra@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
+	id S1754227AbaI2MFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 08:05:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52702 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751753AbaI2MFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 08:05:50 -0400
+Date: Mon, 29 Sep 2014 14:05:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: tony.luck@intel.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
+ machine_check_poll() resets it
+Message-ID: <20140929120546.GB6495@pd.tnic>
+References: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
+ <1411460354.25617.3.camel@debian>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1411460354.25617.3.camel@debian>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+On Tue, Sep 23, 2014 at 04:19:14PM +0800, Chen Yucong wrote:
+> machine_check_poll() will reset IA32_MCi_STATUS register to zero.
+> So we need to save the content of IA32_MCi_STATUS MSRs before
+> calling machine_check_poll() for logging threshold interrupt event.
+> 
+> mce_setup() does not gather the content of IA32_MCG_STATUS, so it
+> should be read explicitly.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c |   13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> index f8c56bd..9148b4d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> @@ -275,6 +275,12 @@ static void amd_threshold_interrupt(void)
+>  
+>  	mce_setup(&m);
+>  
+> +	/*
+> +	 * mce_setup() can't gather the content of IA32_MCG_STATUS,
+> +	 * so it should be read explicitly.
+> +	 */
 
-Adds a devicetree binding documentation for Spreadtrum's Shark64 SoC.
+No need for that comment.
 
-Signed-off-by: chunyan.zhang <chunyan.zhang@spreadtrum.com>
----
- Documentation/devicetree/bindings/arm/sprd.txt |    6 ++++++
- 1 file changed, 6 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+> +	rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus);
+> +
+>  	/* assume first bank caused it */
+>  	for (bank = 0; bank < mca_cfg.banks; ++bank) {
+>  		if (!(per_cpu(bank_map, m.cpu) & (1 << bank)))
+> @@ -305,6 +311,12 @@ static void amd_threshold_interrupt(void)
+>  			     (high & MASK_LOCKED_HI))
+>  				continue;
+>  
+> +			/*
+> +			 * machine_check_poll() will reset IA32_MCi_STATUS
+> +			 * register to zero, save it for use later.
+> +			 */
+> +			rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
 
-diff --git a/Documentation/devicetree/bindings/arm/sprd.txt b/Documentation/devicetree/bindings/arm/sprd.txt
-new file mode 100644
-index 0000000..b6dc143
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/sprd.txt
-@@ -0,0 +1,6 @@
-+Spreadtrum Platforms Device Tree Bindings
-+----------------------------------------------------
-+
-+Shark64 Board
-+Required root node properties:
-+        - compatible = "sprd,shark64";
+Actually, to be more future-proof, I'd like to do the AMD-specific
+logging first, i.e. before machine_check_poll() so that any future
+changes there don't influence what we do in mce_amd.c.
+
+So please move the machine_check_poll() call behind the
+
+	if (high & MASK_OVERFLOW_HI) {
+
+test and drop the return.
+
+But the patch makes sense so good catch!
+
+Thanks.
+
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
