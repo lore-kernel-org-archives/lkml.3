@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaI2PjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:39:00 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:36793 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739AbaI2Pi7 (ORCPT
+	id S1754644AbaI2PlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:41:18 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42948 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538AbaI2PlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:38:59 -0400
-Message-ID: <54297D10.9050907@linaro.org>
-Date: Mon, 29 Sep 2014 16:38:56 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 29 Sep 2014 11:41:16 -0400
+Date: Mon, 29 Sep 2014 11:40:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, ian.campbell@citrix.com,
+        wei.liu2@citrix.com, boris.ostrovsky@oracle.com, bhelgaas@google.com,
+        jgross@suse.com, yongjun_wei@trendmicro.com.cn,
+        mukesh.rathor@oracle.com, xen-devel@lists.xenproject.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-pci@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
+ of xenbus_switch_state()
+Message-ID: <20140929154055.GA31952@laptop.dumpdata.com>
+References: <5425961A.5000604@gmail.com>
+ <20140929140229.GA28279@laptop.dumpdata.com>
+ <542969E6.1010104@citrix.com>
 MIME-Version: 1.0
-To: Pramod Gurav <pramod.gurav.etc@gmail.com>
-CC: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: st: Fix Sparse error
-References: <1411998499-20300-1-git-send-email-pramod.gurav@smartplayin.com>	<542970CF.6040405@linaro.org> <CAMf-jSmdNibSK+ffBOdcuVjyhmHFcfi5s4nQzctrS0dK889+FA@mail.gmail.com>
-In-Reply-To: <CAMf-jSmdNibSK+ffBOdcuVjyhmHFcfi5s4nQzctrS0dK889+FA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542969E6.1010104@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 29, 2014 at 03:17:10PM +0100, David Vrabel wrote:
+> On 29/09/14 15:02, Konrad Rzeszutek Wilk wrote:
+> > On Sat, Sep 27, 2014 at 12:36:42AM +0800, Chen Gang wrote:
+> >> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+> > 
+> > Only on the first depth, not on the subsequent ones (as in if
+> > the first xenbus_switch_fail fails, it won't try to call
+> > xenbus_switch_state again and again).
+> > 
+> >> internally, so need not return any status value, then use 'void' instead
+> >> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
+> > 
+> > When that switch occurs (to XenbusStateConnected) won't the watches
+> > fire - meaning we MUST make sure that the watch functions - if they
+> > use the xenbus_switch_state() they MUST not hold any locks - because
+> > they could be executed once more?
+> > 
+> > Oh wait, we don't have to worry about that right now as the callbacks
+> > that pick up the messages from the XenBus are all gated on one mutex
+> > anyhow.
+> > 
+> > Hm, anyhow, I would add this extra piece of information to the patch:
+> > 
+> > 
+> > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+> > index c214daa..f7399fd 100644
+> > --- a/drivers/xen/xen-pciback/xenbus.c
+> > +++ b/drivers/xen/xen-pciback/xenbus.c
+> > @@ -661,6 +661,12 @@ static void xen_pcibk_be_watch(struct xenbus_watch *watch,
+> >  
+> >  	switch (xenbus_read_driver_state(pdev->xdev->nodename)) {
+> >  	case XenbusStateInitWait:
+> > +		/*
+> > +		 * xenbus_switch_state can call xenbus_switch_fatal which will
+> > +		 * immediately set the state to XenbusStateClosing which
+> > +		 * means if we were reading for it here we MUST drop any
+> > +		 * locks so that we don't dead-lock.
+> > +		 */
+> 
+> Watches are asynchronous and serialised by the xenwatch thread.  I can't
+> see what deadlock you're talking about here.  Particularly since the
+> backend doesn't watch its own state node (it watches the frontend one).
+> 
+> >  		xen_pcibk_setup_backend(pdev);
+> >  		break;
+> >  
+> >>
+> >> Also need be sure that all callers which check the return value must let
+> >> 'err' be 0.
+> > 
+> > I am bit uncomfortable with that, that is due to:
+> > 
+> > 
+> > .. snip..
+> >> diff --git a/drivers/net/xen-netback/xenbus.c b/drivers/net/xen-netback/xenbus.c
+> >> index 9c47b89..b5c3d47 100644
+> >> --- a/drivers/net/xen-netback/xenbus.c
+> >> +++ b/drivers/net/xen-netback/xenbus.c
+> >> @@ -337,10 +337,7 @@ static int netback_probe(struct xenbus_device *dev,
+> >>  	if (err)
+> >>  		pr_debug("Error writing multi-queue-max-queues\n");
+> >>  
+> >> -	err = xenbus_switch_state(dev, XenbusStateInitWait);
+> >> -	if (err)
+> >> -		goto fail;
+> >> -
+> >> +	xenbus_switch_state(dev, XenbusStateInitWait);
+> > 
+> > Which if it fails it won't call:
+> > 
+> > 354 fail:                                                                           
+> > 355         pr_debug("failed\n");                                                   
+> > 356         netback_remove(dev);                                                    
+> > 357         return err;         
+> > 
+> > 
+> > And since there is no watch on the backend state to go in Closing it won't
+> > ever call those and we leak memory.
+> 
+> It's not leaking the memory.  All resources will be recovered when the
+> device is removed.
+
+I presume you mean when the XenBus entries are torn down? It does look
+like it would call the .remove functionality. That should take care of that.
+
+In which case we can just remove all of the 'netback_remove()' and also
+remove some of the labels.
 
 
-On 29/09/14 16:05, Pramod Gurav wrote:
->> >I think the correct fix is:
->> >
->> >diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
->> >index 5475374..4060c30 100644
->> >--- a/drivers/pinctrl/pinctrl-st.c
->> >+++ b/drivers/pinctrl/pinctrl-st.c
->> >@@ -1512,7 +1512,7 @@ static int st_gpiolib_register_bank(struct st_pinctrl
->> >*info,
->> >                                              gpio_irq, st_gpio_irq_handler);
->> >         }
->> >
->> >-       if (info->irqmux_base > 0 || gpio_irq > 0) {
->> >+       if (!IS_ERR(info->irqmux_base) || gpio_irq > 0) {
->> >                 err = gpiochip_irqchip_add(&bank->gpio_chip,
-> But if I am not wrong in function st_pctl_probe_dt, This is already done:
->
-> if (IS_ERR(info->irqmux_base))
->              return PTR_ERR(info->irqmux_base);
->
-> That is the reason I thought there is no need to recheck the pointer
-> info->irqmux_base.
-> Am I misunderstanding something?
-
-Ok, we want to add the irqchip only when there is a valid irqmux_base or 
-a valid gpio_irq per bank.
-
-As st_gpiolib_register_bank() is used by both types of irq wirings and 
-it does not know if irqmux or gpio irq is in use, so we need this 
-explicit check. Also we want to make sure that atleast one type is valid 
-before adding irqchip.
-
-If you just check for only gpio_irq in this code, you would miss the 
-case where irqmux is used.
-
-As Dan pointed you could check if irqmux_base is valid and not remove it 
-totally. Removing it will *break* the irqmux support as I explained.
-
-thanks,
-srini
-
-
-
->> >&st_gpio_irqchip,
->> >                                            0, handle_simple_irq,
->> >                                            IRQ_TYPE_LEVEL_LOW);
->> >
->> >
+> 
+> > The same is for xen-blkback mechanism in the probe function.
+> 
+> David
+> 
