@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaI2K6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:58:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53022 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052AbaI2K6t (ORCPT
+	id S1753274AbaI2LFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:05:47 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:59694 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751396AbaI2LFp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:58:49 -0400
-Date: Mon, 29 Sep 2014 12:58:42 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 0/4] pwm: imx: support output polarity inversion
-Message-ID: <20140929105842.GG4958@pengutronix.de>
-References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
- <20140826092409.7dea5530@ipc1.ka-ro>
+	Mon, 29 Sep 2014 07:05:45 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Kees Cook'" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "David S. Miller" <davem@davemloft.net>, Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH] tun: make sure interface usage can not overflow
+Thread-Topic: [PATCH] tun: make sure interface usage can not overflow
+Thread-Index: AQHP23O5ZibDxwfCgkiMJV4jx9aoxJwX8m+w
+Date: Mon, 29 Sep 2014 11:04:00 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1749FC70@AcuExch.aculab.com>
+References: <20140928232753.GA31180@www.outflux.net>
+In-Reply-To: <20140928232753.GA31180@www.outflux.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140826092409.7dea5530@ipc1.ka-ro>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:47:48 up 19 days,  3:35, 80 users,  load average: 0.05, 0.10,
- 0.13
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 09:24:09AM +0200, Lothar Waßmann wrote:
-> Hi,
+From: Kees Cook
+> This makes the size argument a const, since it is always populated by
+> the caller.
+
+There is almost no point making parameters 'const.
+('const foo *' makes sense).
+
+> Additionally double-checks to make sure the copy_from_user
+> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
 > 
-> Lothar Waßmann wrote:
-> > This patch series adds support for polarity inversion to the pwm-imx
-> > driver. The patches have been tested on i.MX6, i.MX53 and with the
-> > ti-ehrpwm.c driver.
-> > 
-> > Changes wrt. v2:
-> > - make the use of '#pwm-cells = <3>' optional, so that the change does
-> >   not break existing DT blobs as suggested by Arnd Bergmann and Sascha
-> >   Hauer.
-> > 
-> > Changes wrt. v3:
-> > - implemented the approach suggested by Sascha Hauer 
-> > - don't modify struct pwm_ops in the imx_pwm probe function
-> > 
-> > 
-> Any further comments?
+>    In function 'copy_from_user',
+>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+>        ... copy_from_user() buffer size is not provably correct
 
-No, except this one:
+If 'ifreq_len' could be too big then you want to error the ioctl, not panic.
+If it can't be too big you don't need the check.
 
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+	David
 
-Sascha
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/net/tun.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index acaaf6784179..a1f317cba206 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1855,7 +1855,7 @@ unlock:
+>  }
+> 
+>  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+> -			    unsigned long arg, int ifreq_len)
+> +			    unsigned long arg, const size_t ifreq_len)
+>  {
+>  	struct tun_file *tfile = file->private_data;
+>  	struct tun_struct *tun;
+> @@ -1869,6 +1869,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>  	int ret;
+> 
+>  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
+> +		BUG_ON(ifreq_len > sizeof(ifr));
+>  		if (copy_from_user(&ifr, argp, ifreq_len))
+>  			return -EFAULT;
+>  	} else {
+> --
+> 1.9.1
+> 
+> 
+> --
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
