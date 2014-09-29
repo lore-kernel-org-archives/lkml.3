@@ -1,51 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaI2IxC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:53:02 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42645 "EHLO comal.ext.ti.com"
+	id S1753591AbaI2IxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:53:13 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:39896 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604AbaI2Iw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:52:59 -0400
-Message-ID: <54291E30.6040503@ti.com>
-Date: Mon, 29 Sep 2014 11:54:08 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <mturquette@linaro.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: ti: dra7-atl-clock: Mark the device as pm_runtime_irq_safe
-References: <1411978233-25139-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1411978233-25139-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752604AbaI2IxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:53:09 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, Eric Paris <eparis@redhat.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        stable@vger.kernel.org, linux-api@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Subject: [PATCHv8.1] fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
+Date: Mon, 29 Sep 2014 10:49:15 +0200
+Message-Id: <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.3
+References: <cover.1411562410.git.ydroneaud@opteya.com> <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com> <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain> <542666B2.9080700@gmx.de>
+In-Reply-To: <542666B2.9080700@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 11:10 AM, Peter Ujfalusi wrote:
-> It is safe to call the pm sync calls in interrupt context in this driver.
->
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+According to commit 80af258867648 ('fanotify: groups can specify
+their f_flags for new fd'), file descriptors created as part of
+file access notification events inherit flags from the
+event_f_flags argument passed to syscall fanotify_init(2).
 
-Thanks, applied to for-v3.18/ti-clk-drv.
+So while it is legal for userspace to call fanotify_init() with
+O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
+silently ignored.
 
--Tero
+Indeed event_f_flags are only given to dentry_open(), which only
+seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
+O_DIRECT in open_check_o_direct() and O_LARGEFILE in
+generic_file_open().
 
-> ---
->   drivers/clk/ti/clk-dra7-atl.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/clk/ti/clk-dra7-atl.c b/drivers/clk/ti/clk-dra7-atl.c
-> index af29359677da..f18d149acd65 100644
-> --- a/drivers/clk/ti/clk-dra7-atl.c
-> +++ b/drivers/clk/ti/clk-dra7-atl.c
-> @@ -228,6 +228,7 @@ static int of_dra7_atl_clk_probe(struct platform_device *pdev)
->   	cinfo->iobase = of_iomap(node, 0);
->   	cinfo->dev = &pdev->dev;
->   	pm_runtime_enable(cinfo->dev);
-> +	pm_runtime_irq_safe(cinfo->dev);
->
->   	pm_runtime_get_sync(cinfo->dev);
->   	atl_write(cinfo, DRA7_ATL_PCLKMUX_REG(0), DRA7_ATL_PCLKMUX);
->
+But it seems logical to set close-on-exec flag on the file
+descriptor if userspace is allowed to request it with O_CLOEXEC.
+
+In fact, according to some lookup on http://codesearch.debian.net/
+and various search engine, there's already some userspace code
+requesting it:
+
+- in systemd's readahead[2]:
+
+    fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+
+- in clsync[3]:
+
+    #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
+
+    int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
+
+- in examples [4] from "Filesystem monitoring in the Linux
+  kernel" article[5] by Aleksander Morgado:
+
+    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
+
+Lookup also returned some wrong usage of the syscall:
+
+- in Gonk HAL from Mozilla Firefox OS sources[6]:
+
+    mFd = fanotify_init(FAN_CLASS_NOTIF, FAN_CLOEXEC);
+
+Adding support for O_CLOEXEC in fanotify_init() won't magically
+enable it for Gonk since FAN_CLOEXEC is defined as 0x1, which
+is likely equal to O_WRONLY when used in open flag context. In
+the other hand, it won't hurt it either.
+
+So this patch replaces call to macro get_unused_fd() by a call
+to function get_unused_fd_flags() with event_f_flags value as
+argument. This way O_CLOEXEC flag in the second argument of
+fanotify_init(2) syscall is interpreted so that close-on-exec
+get enabled when requested.
+
+[1] http://blog.ffwll.ch/2013/11/botching-up-ioctls.html
+[2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
+[3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
+    https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
+[4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+[5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
+[6] http://hg.mozilla.org/mozilla-central/file/325c74addeba/hal/gonk/GonkDiskSpaceWatcher.cpp#l167
+
+Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@vger.kernel.org
+Cc: linux-api@vger.kernel.org
+Reviewed by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+---
+Hi Andrew and Henrich,
+
+Please find an updated patch with a commit message fixed regarding
+the obsolote comments on code which is now updated, thanks to
+Heinrich's patch.
+
+Changes from v8:
+- fixed commit message
+- added Reviewed-by:
+
+Regards.
+
+Yann Droneaud,
+OPTEYA
+
+ fs/notify/fanotify/fanotify_user.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index b13992a41bd9..c991616acca9 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -78,7 +78,7 @@ static int create_fd(struct fsnotify_group *group,
+ 
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+ 
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
+ 	if (client_fd < 0)
+ 		return client_fd;
+ 
+-- 
+1.9.3
 
