@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbaI2XLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 19:11:09 -0400
-Received: from smtprelay0039.hostedemail.com ([216.40.44.39]:48938 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755207AbaI2XI6 (ORCPT
+	id S1755214AbaI2XQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 19:16:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54822 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815AbaI2XQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 19:08:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:4321:4419:5007:6119:6261:7903:10004:10026:10848:11026:11658:11914:12296:12517:12519:12555:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: spy16_13c32f40ca735
-X-Filterd-Recvd-Size: 2872
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] dlm: Use seq_puts, remove unnecessary trailing spaces
-Date: Mon, 29 Sep 2014 16:08:24 -0700
-Message-Id: <b416b016f4a6e49115ba736cad6ea2709a8bc1c4.1412031505.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1412031505.git.joe@perches.com>
-References: <20140929124246.3e39dac8@gandalf.local.home> <cover.1412031505.git.joe@perches.com>
+	Mon, 29 Sep 2014 19:16:33 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <3073358.myrKz9QbdW@vostro.rjw.lan>
+References: <1411996251-13455-1-git-send-email-pali.rohar@gmail.com> <20140929213028.GB34181@vmdeb7> <3073358.myrKz9QbdW@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] dell-wmi: Fix access out of memory
+From: Darren Hart <dvhart@infradead.org>
+Date: Mon, 29 Sep 2014 16:16:23 -0700
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Message-ID: <55C20A75-AB0A-4A4E-9E91-3428B5F868BB@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the seq_printf output with constant strings to seq_puts.
-Remove unnecessary trailing spaces from seq_(printf/puts) output.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/dlm/debug_fs.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
-index 27c8335..c69a766 100644
---- a/fs/dlm/debug_fs.c
-+++ b/fs/dlm/debug_fs.c
-@@ -279,7 +279,7 @@ static void print_format3(struct dlm_rsb *r, struct seq_file *s)
- 			print_name = 0;
- 	}
- 
--	seq_printf(s, "%s", print_name ? "str " : "hex");
-+	seq_puts(s, print_name ? "str " : "hex");
- 
- 	for (i = 0; i < r->res_length; i++) {
- 		if (print_name)
-@@ -353,7 +353,7 @@ static void print_format4(struct dlm_rsb *r, struct seq_file *s)
- 			print_name = 0;
- 	}
- 
--	seq_printf(s, "%s", print_name ? "str " : "hex");
-+	seq_puts(s, print_name ? "str " : "hex");
- 
- 	for (i = 0; i < r->res_length; i++) {
- 		if (print_name)
-@@ -391,23 +391,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
- 		break;
- 	case 2:
- 		if (ri->header) {
--			seq_printf(seq, "id nodeid remid pid xid exflags "
--					"flags sts grmode rqmode time_ms "
--					"r_nodeid r_len r_name\n");
-+			seq_puts(seq, "id nodeid remid pid xid exflags flags sts grmode rqmode time_ms r_nodeid r_len r_name\n");
- 			ri->header = 0;
- 		}
- 		print_format2(ri->rsb, seq);
- 		break;
- 	case 3:
- 		if (ri->header) {
--			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
-+			seq_puts(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
- 			ri->header = 0;
- 		}
- 		print_format3(ri->rsb, seq);
- 		break;
- 	case 4:
- 		if (ri->header) {
--			seq_printf(seq, "version 4 rsb 2\n");
-+			seq_puts(seq, "version 4 rsb 2\n");
- 			ri->header = 0;
- 		}
- 		print_format4(ri->rsb, seq);
+On September 29, 2014 4:26:03 PM PDT, "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+>On Monday, September 29, 2014 02:30:29 PM Darren Hart wrote:
+>> On Mon, Sep 29, 2014 at 03:10:51PM +0200, Pali Rohár wrote:
+>> > Without this patch driver dell-wmi is trying to access elements of
+>dynamically
+>> > allocated array without checking array size. This can lead to
+>memory corruption
+>> > or kernel panic. This patch adds missing checks for array size.
+>> > 
+>> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>> 
+>> Looks good to me. Rafael, any concerns?
+>
+>Not anything obvious.
+
+Queued, thanks.
+
+>
+>> 
+>> Cc: linux-acpi
+>
+>Thanks!
+>
+>
+>> > ---
+>> > This patch should be probably applied to stable kernel trees as it
+>fixing
+>> > possible memory corruption.
+>> > ---
+>> >  drivers/platform/x86/dell-wmi.c |   12 +++++++++---
+>> >  1 file changed, 9 insertions(+), 3 deletions(-)
+>> > 
+>> > diff --git a/drivers/platform/x86/dell-wmi.c
+>b/drivers/platform/x86/dell-wmi.c
+>> > index 390e8e3..25721bf 100644
+>> > --- a/drivers/platform/x86/dell-wmi.c
+>> > +++ b/drivers/platform/x86/dell-wmi.c
+>> > @@ -163,18 +163,24 @@ static void dell_wmi_notify(u32 value, void
+>*context)
+>> >  		const struct key_entry *key;
+>> >  		int reported_key;
+>> >  		u16 *buffer_entry = (u16 *)obj->buffer.pointer;
+>> > +		int buffer_size = obj->buffer.length/2;
+>> >  
+>> > -		if (dell_new_hk_type && (buffer_entry[1] != 0x10)) {
+>> > +		if (buffer_size >= 2 && dell_new_hk_type && buffer_entry[1] !=
+>0x10) {
+>> >  			pr_info("Received unknown WMI event (0x%x)\n",
+>> >  				buffer_entry[1]);
+>> >  			kfree(obj);
+>> >  			return;
+>> >  		}
+>> >  
+>> > -		if (dell_new_hk_type || buffer_entry[1] == 0x0)
+>> > +		if (buffer_size >= 3 && (dell_new_hk_type || buffer_entry[1] ==
+>0x0))
+>> >  			reported_key = (int)buffer_entry[2];
+>> > -		else
+>> > +		else if (buffer_size >= 2)
+>> >  			reported_key = (int)buffer_entry[1] & 0xffff;
+>> > +		else {
+>> > +			pr_info("Received unknown WMI event\n");
+>> > +			kfree(obj);
+>> > +			return;
+>> > +		}
+>> >  
+>> >  		key = sparse_keymap_entry_from_scancode(dell_wmi_input_dev,
+>> >  							reported_key);
+>> 
+>> 
+
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Sent from my Android device with K-9 Mail. Please excuse my brevity.
