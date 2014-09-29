@@ -1,69 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaI2Kda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:33:30 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:37987 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbaI2Kd3 (ORCPT
+	id S1753128AbaI2Kic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:38:32 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:56099 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaI2Kia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:33:29 -0400
-Message-ID: <54293572.9010108@hitachi.com>
-Date: Mon, 29 Sep 2014 19:33:22 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 29 Sep 2014 06:38:30 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-References: <20140923173846.603cb49c@gandalf.local.home> <5422336A.6030304@hitachi.com> <20140924114235.4287f4a1@gandalf.local.home> <20140924115811.6eeeab8c@gandalf.local.home> <5422EAE2.6080005@osg.samsung.com> <20140924120853.0a717b7e@gandalf.local.home> <5422EFB4.2050104@osg.samsung.com> <20140924123007.7fcb0099@gandalf.local.home> <5422F328.2040707@osg.samsung.com> <5425564A.4020107@hitachi.com> <20140926101840.7d495620@gandalf.local.home>
-In-Reply-To: <20140926101840.7d495620@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2a01:e35:2434:4600:1a4:faed:8b74:35f6]
+In-Reply-To: <1411763257.7360.49.camel@ul30vt.home>
+References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1411483586-29304-7-git-send-email-a.motakis@virtualopensystems.com>
+ <1411512059.24563.57.camel@ul30vt.home> <CAG8rG2z14gT28jec66o3UQ=z-omNv+bC43moJT-FhdUtd2OJDg@mail.gmail.com>
+ <1411763257.7360.49.camel@ul30vt.home>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Mon, 29 Sep 2014 12:38:10 +0200
+Message-ID: <CAG8rG2ykooVtOo83hMrDvaeWvpvOpDi5X6XsHBf-BeD5WpG9Nw@mail.gmail.com>
+Subject: Re: [PATCHv7 06/26] vfio/iommu_type1: implement the
+ VFIO_DMA_MAP_FLAG_NOEXEC flag
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/26 23:18), Steven Rostedt wrote:
-> On Fri, 26 Sep 2014 21:04:26 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
-> 
->>> Please go ahead and get them in. The framework might have to wait
->>> until 3.19, so there is no need to have it gate test development.
->>> We can evolve them as we go. If tests require special, it means that
->>> they aren't suitable for certain envs such as qemu boot with busybox.
->>> There is a plan to add test targets to cover such cases.
+On Fri, Sep 26, 2014 at 10:27 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> On Fri, 2014-09-26 at 17:39 +0200, Antonios Motakis wrote:
+>> On Wed, Sep 24, 2014 at 12:40 AM, Alex Williamson
+>> <alex.williamson@redhat.com> wrote:
+>> > On Tue, 2014-09-23 at 16:46 +0200, Antonios Motakis wrote:
+>> >> Some IOMMU drivers, such as the ARM SMMU driver, make available the
+>> >> IOMMU_NOEXEC flag, to set the page tables for a device as XN (execute never).
+>> >> This affects devices such as the ARM PL330 DMA Controller, which respects
+>> >> this flag and will refuse to fetch DMA instructions from memory where the
+>> >> XN flag has been set.
+>> >>
+>> >> The flag can be used only if all IOMMU domains behind the container support
+>> >> the IOMMU_NOEXEC flag. Also, if any mappings are created with the flag, any
+>> >> new domains with devices will have to support it as well.
+>> >>
+>> >> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> >> ---
+>> >>  drivers/vfio/vfio_iommu_type1.c | 38 +++++++++++++++++++++++++++++++++++++-
+>> >>  1 file changed, 37 insertions(+), 1 deletion(-)
+>> >>
+>> >> diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+>> >> index 0734fbe..09e5064 100644
+>> >> --- a/drivers/vfio/vfio_iommu_type1.c
+>> >> +++ b/drivers/vfio/vfio_iommu_type1.c
+>> >> @@ -81,6 +81,26 @@ struct vfio_group {
+>> >>  };
+>> >>
+>> >>  /*
+>> >> + * This function returns true only if _all_ domains support the capability.
+>> >> + */
+>> >> +static int vfio_all_domains_have_iommu_noexec(struct vfio_iommu *iommu)
+>> >
+>> > Rename to vfio_domains_have_iommu_noexec() for consistency with the
+>> > cache version.
+>> >
 >>
->> Agreed, anyway, in some env those tools(commands) may not supported
->> by busybox because of the memory size etc. In that case, we can just
->> mark the test unsupported or xfail.
+>> The logic here is a slightly different logic between the two. For
+>> IOMMU_CACHE we generally check if any domain includes it,
+>
+> Not true, all the domains must support IOMMU_CACHE for the function to
+> return 1.  In fact, the code is so identical that if we were to cache
+> IOMMU_CAP_NOEXEC into domain->prot, we should probably only have one
+> function:
+>
+> static int vfio_domains_have_iommu_flag(struct vfio_iommu *iommu, int flag);
+>
+
+You are absolutely correct, I managed to confuse myself when switching
+from vfio_domains_have_iommu_exec to vfio_domains_have_iommu_noexec.
+
+I will implement the shared function.
+
+>>  for NOEXEC
+>> in contract we need all domains to support it, otherwise we can't
+>> expose the capability. Hence the _all_ addition in the name of the
+>> function.
 >>
-> 
-> Note, if memory size is such a big issue it that other tools may not be
-> there, then most of the ftrace features will probably be disabled due
-> to memory constraints on the kernel itself.
+>> >> +{
+>> >> +     struct vfio_domain *d;
+>> >> +     int ret = 1;
+>> >> +
+>> >> +     mutex_lock(&iommu->lock);
+>> >> +     list_for_each_entry(d, &iommu->domain_list, next) {
+>> >> +             if (!iommu_domain_has_cap(d->domain, IOMMU_CAP_NOEXEC)) {
+>> >
+>> > Should we cache this in domain->prot like we do for IOMMU_CACHE?
+>> >
+>> >> +                     ret = 0;
+>> >> +                     break;
+>> >> +             }
+>> >> +     }
+>> >> +     mutex_unlock(&iommu->lock);
+>> >> +
+>> >> +     return ret;
+>> >> +}
+>> >> +
+>> >> +/*
+>> >>   * This code handles mapping and unmapping of user data buffers
+>> >>   * into DMA'ble space using the IOMMU
+>> >>   */
+>> >> @@ -546,6 +566,11 @@ static int vfio_dma_do_map(struct vfio_iommu *iommu,
+>> >>               prot |= IOMMU_WRITE;
+>> >>       if (map->flags & VFIO_DMA_MAP_FLAG_READ)
+>> >>               prot |= IOMMU_READ;
+>> >> +     if (map->flags & VFIO_DMA_MAP_FLAG_NOEXEC) {
+>> >> +             if (!vfio_all_domains_have_iommu_noexec(iommu))
+>> >> +                     return -EINVAL;
+>> >> +             prot |= IOMMU_NOEXEC;
+>> >> +     }
+>> >>
+>> >>       if (!prot || !size || (size | iova | vaddr) & mask)
+>> >>               return -EINVAL;
+>> >> @@ -636,6 +661,12 @@ static int vfio_iommu_replay(struct vfio_iommu *iommu,
+>> >>               dma = rb_entry(n, struct vfio_dma, node);
+>> >>               iova = dma->iova;
+>> >>
+>> >> +             /* if any of the mappings to be replayed has the NOEXEC flag
+>> >> +              * set, then the new iommu domain must support it */
+>> >
+>> > nit, please fix the comment style to match the rest of the file.
+>> >
+>>
+>> Ack
+>>
+>> >> +             if ((dma->prot | IOMMU_NOEXEC) &&
+>> >> +                 !iommu_domain_has_cap(domain->domain, IOMMU_CAP_NOEXEC))
+>> >> +                     return -EINVAL;
+>> >> +
+>> >>               while (iova < dma->iova + dma->size) {
+>> >>                       phys_addr_t phys = iommu_iova_to_phys(d->domain, iova);
+>> >>                       size_t size;
+>> >> @@ -890,6 +921,10 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>> >>                       if (!iommu)
+>> >>                               return 0;
+>> >>                       return vfio_domains_have_iommu_cache(iommu);
+>> >> +             case VFIO_IOMMU_PROT_NOEXEC:
+>> >> +                     if (!iommu)
+>> >> +                             return 0;
+>> >> +                     return vfio_all_domains_have_iommu_noexec(iommu);
+>> >>               default:
+>> >>                       return 0;
+>> >>               }
+>> >> @@ -913,7 +948,8 @@ static long vfio_iommu_type1_ioctl(void *iommu_data,
+>> >>       } else if (cmd == VFIO_IOMMU_MAP_DMA) {
+>> >>               struct vfio_iommu_type1_dma_map map;
+>> >>               uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
+>> >> -                             VFIO_DMA_MAP_FLAG_WRITE;
+>> >> +                             VFIO_DMA_MAP_FLAG_WRITE |
+>> >> +                             VFIO_DMA_MAP_FLAG_NOEXEC;
+>> >>
+>> >>               minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
+>> >>
+>> >
+>> >
+>> >
+>>
+>>
+>>
+>
+>
+>
 
-Agreed :)
 
-> 
-> As we have a way to state "unsupported" we can just return that from
-> tests that require tools not available, and say why it is the case.
-
-OK, if we can count "unsupported" as a test failure (yes, it is
-unexpectedly failed), it is easy to fix. I'll update XFAIL and
-other error code support patch and send it.
-
-Thank you,
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Antonios Motakis
+Virtual Open Systems
