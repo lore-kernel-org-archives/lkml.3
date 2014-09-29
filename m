@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaI2UPD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:15:03 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53961 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaI2UPB (ORCPT
+	id S1754517AbaI2UQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:16:46 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:50025 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaI2UQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:15:01 -0400
-Date: Mon, 29 Sep 2014 22:15:28 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frantisek Hrbata <fhrbata@redhat.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
-        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
-        hannsj_uhl@de.ibm.com, torvalds@linux-foundation.org
-Subject: Re: [RESEND PATCH 2/4] x86: add phys addr validity check for /dev/mem
- mmap
-In-Reply-To: <1411990382-11902-3-git-send-email-fhrbata@redhat.com>
-Message-ID: <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de>
-References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com> <1411990382-11902-3-git-send-email-fhrbata@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 29 Sep 2014 16:16:45 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.DEB.2.02.1409292135090.22082@ionos.tec.linutronix.de>
+References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
+ <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
+ <CALCETrX7yce2PfYi-Gqkf116a1rXUzjKkO3JAf==zd3WuZuDsQ@mail.gmail.com> <alpine.DEB.2.02.1409292135090.22082@ionos.tec.linutronix.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 29 Sep 2014 13:16:23 -0700
+Message-ID: <CALCETrW=PMe6y4E+i7KoDQg0nqukWy-X0XsVr0eMFjJ9NTyA-g@mail.gmail.com>
+Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014, Frantisek Hrbata wrote:
-> V2: fix pfn check in valid_mmap_phys_addr_range, thanks to Dave Hansen
+On Mon, Sep 29, 2014 at 12:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 29 Sep 2014, Andy Lutomirski wrote:
+>> On Mon, Sep 29, 2014 at 11:59 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Mon, 29 Sep 2014, Andy Lutomirski wrote:
+>> >> Presumably interrupt delivery clears NT.  I haven't spotted where that's
+>> >> documented yet.
+>> >
+>> > Nope, that's unrelated.
+>>
+>> If it weren't the case, then we'd be totally screwed.  Fortunately, it
+>> is.  I found it: SDM Volume 3 6.12.1.2 says:
+>>
+>> (On calls to exception and interrupt
+>> handlers, the processor also clears the VM, RF, and NT flags in the
+>> EFLAGS register,
+>> after they are saved on the stack.)
+>
+> Sorry, I misunderstood your question.
+>
+> And yes on exception and interrupt entry it is cleared. Otherwise the
+> whole feature would not work at all ...
+>
+> But that's why I'm really not worried about it. While we can mask out
+> the stupid bit easily, it does not provide any value except protecting
+> silly userspace from rightfully raised exceptions.
+>
+> When I first saw that patch, I was worried about the security impact,
+> but after staring long enough at the SDM and the code, the only way it
+> can explode is when returning to user space. It cannot explode in the
+> kernel.
 
-AFAICT, Dave also asked you to change size_t count into something more
-intuitive, i.e. nr_bytes or such.
+This is only true as long as the only use of lret from a system call
+(or kernel thread started from a system call) is to return to
+userspace.
 
-> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+For example, __efi64_thunk uses lretq, so mixed-mode EFI doesn't
+violate this assumption, but __efi64_thunk could just as easily have
+used iret.
 
-And right he is. I really had to look twice to see that count is
-actually number of bytes and not number of pages, which is what you
-expect after pfn.
+IOW, I don't think there's any vulnerability here, but this makes me nervous.
 
-> +{
-> +	return arch_pfn_possible(pfn + (count >> PAGE_SHIFT));
-> +}
-
-Thanks,
-
-	tglx
+--Andy
