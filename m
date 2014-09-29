@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaI2Orq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:47:46 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39022 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166AbaI2Oro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:47:44 -0400
-Message-ID: <1412002056.3817.10.camel@hornet>
-Subject: Re: [PATCH v2 1/2] perf: Add sampling of the raw monotonic clock
-From: Pawel Moll <pawel.moll@arm.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Mon, 29 Sep 2014 15:47:36 +0100
-In-Reply-To: <5425BD94.4030006@gmail.com>
-References: <1411491787-25938-1-git-send-email-pawel.moll@arm.com>
-	 <1411491787-25938-2-git-send-email-pawel.moll@arm.com>
-	 <87sijhk21x.fsf@sejong.aot.lge.com> <1411642198.4768.30.camel@hornet>
-	 <8738bekith.fsf@sejong.aot.lge.com>  <1411729103.3852.19.camel@hornet>
-	 <1411742306.1669.6.camel@leonhard> <1411743959.3852.45.camel@hornet>
-	 <5425BD94.4030006@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1754488AbaI2OsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:48:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35405 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045AbaI2OsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:48:04 -0400
+Message-ID: <5429711C.4060008@suse.cz>
+Date: Mon, 29 Sep 2014 16:47:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Valentin Rothberg <valentinrothberg@gmail.com>, akpm@linux-foundation.org,
+        Stefan Hengelein <stefan.hengelein@fau.de>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7] checkkconfigsymbols.sh: reimplementation in python
+References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>	 <1411919729-5800-1-git-send-email-valentinrothberg@gmail.com> <1411986525.6334.32.camel@x220>
+In-Reply-To: <1411986525.6334.32.camel@x220>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-26 at 20:25 +0100, David Ahern wrote:
-> On 9/26/14, 9:05 AM, Pawel Moll wrote:
-> > To do the correlation you need both timestamps to be "taken"
-> > simultaneously:
-> >
-> >          perf event     user event
-> >         -----O--------------+-------------O------> t_mono
-> >              :              |             :
-> >              :              V             :
-> >         -----O----------------------------O------> t_perf
-> >
-> > Of course it's not possible get both values literally at the same time,
-> > but placing them in a atomic context a couple of instructions from each
-> > other still gives pretty good results. The larger this distance is, the
+On 2014-09-29 12:28, Paul Bolle wrote:
+>> +STMT = r"^\s*(?:if|select|depends\s+on)\s+" + EXPR
 > 
-> An early patchset on this topic added the realtime clock as an event and 
-> an ioctl was used to push a sample into the event stream. 
+> Could please make that "depends on"? Yes, it seems the yacc grammar
+> accepts any amount of whitespace, but that doesn't make it right to use
+> anything other than a single space.
 
-Yeah, I remember. If I remember correctly correctly the pushback was on
-a custom event type, right?
+But then lines that violate coding style would not be checked for real
+errors.
 
-Generally speaking I don't mind any solution that we'll get us to the
-place both you and I want to be (just being able to time stamp some
-performance data in userspace, how difficult can this be! ;-) but I like
-the flexibility of an extra sample - one can pick and mix events and
-samples at one's leisure.
 
-> In that case 
-> you have wall clock and perf-clock samples taken in the same kernel 
-> context and about as close together as you can get.
+> (Can the yacc grammar be tweaked to
+> see "depends on" as one, well, token?)
 
-Yep, that's what I was saying - we can't quite get two timestamps at the
-*same*, but getting them within a single atomic block of instructions
-gives reasonable accuracy.
+I don't think this is a good idea. This is a style issue, why make it a
+grammar issue.
 
-Thanks!
-
-Pawel
-
+Michal
