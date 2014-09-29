@@ -1,47 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaI2Pq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 11:46:56 -0400
-Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:56489 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753656AbaI2Pqz (ORCPT
+	id S1754822AbaI2PrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 11:47:17 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52709 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821AbaI2PrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 11:46:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:7652:7903:8985:9025:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: stop56_5917d6f65ff4e
-X-Filterd-Recvd-Size: 1479
-Message-ID: <1412005610.4302.26.camel@joe-AO725>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with
- seq_puts()
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Petr Mladek <pmladek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+	Mon, 29 Sep 2014 11:47:15 -0400
+Date: Mon, 29 Sep 2014 16:47:12 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Petr Mladek <pmladek@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 29 Sep 2014 08:46:50 -0700
-In-Reply-To: <20140929112538.3929a9a2@gandalf.local.home>
+Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with seq_puts()
+Message-ID: <20140929154711.GF7996@ZenIV.linux.org.uk>
 References: <20140926143721.52206f95@gandalf.local.home>
-	 <20140929144121.GA30562@pathway.suse.cz>
-	 <20140929112538.3929a9a2@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <20140929144121.GA30562@pathway.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929144121.GA30562@pathway.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-29 at 11:25 -0400, Steven Rostedt wrote:
-> Anyway, that should be a second patch, and we should get my current
-> patch (the one to make putc and puts the same) in first, as that
-> actually fixes the inconsistency between the two.
+On Mon, Sep 29, 2014 at 04:41:22PM +0200, Petr Mladek wrote:
+
+> Hmm, this inconsistency seems to be in more functions. I would divide
+> it into three categories:
 > 
-> I'll post another patch to try to make seq_file operations a bit more
-> consistent. Perhaps we can have m->count be what would have been
-> written.
+> a) Functions that writes valid data until the end of the buffer
+>    and returns -1 when the operation makes it full (m->count ==
+>    m->size) or when they are not able to write at all:
+> 
+> 	seq_bitmap()
+> 	seq_bitmap_list()
 
-https://lkml.org/lkml/2013/9/11/801
+> b) Functions that writes the full buffer but they report -1 only
+>    when they cannot write at all:
+> 
+> 	set_putc()
 
+> c) Functions that leave mess at the end of the buffer when they could
+>    not write all data; they mark it as full and return -1 when this happens:
+> 
+> 	set_puts()
+> 	seq_put_decimal_ull()
+> 	seq_put_decimal_ll()
+> 	seq_write()
 
+... and they really should not return *anything*.
+
+>   + always return error when seq_overflow() would return overflow;
+>     in fact, the full buffer means that the last write operation
+>     was most likely incomplete
+
+No.  _Any_ caller that decides to report that error to its caller is fucking
+broken.  We had some cases like that.
+
+<greps>
+
+Oh, lovely - notify_fdinfo() is broken.  Exactly that way - "we get an error,
+better report it to caller".  Bad idea - overflow is *NOT* something ->show()
+must report to seq_read().  In that case you just return 0.  Returning -1
+means something very different - "have read(2) fail with EPERM".
+
+fanotify_fdinfo(): ditto.
+
+seq_puts() ones: drivers/parisc/ccio-dma.c:ccio_proc_bitmap_info() - bogus,
+but harmless (it assumes for some reason that seq_puts() returns the number
+of characters written; return values are added up and ignored).
+
+drivers/regulator/dbx500-prcmu.c:
+        err = seq_puts(s, "ux500-regulator status:\n");
+        if (err < 0)
+                dev_err(dev, "seq_puts overflow\n");
+No, you don't - it's not an error.
+
+drivers/watchdog/bcm_kona_wdt.c: EPERM-from-read() bug.
+
+fs/dlm/debug_fs.c: ditto.
+
+drivers/usb/gadget/udc/goku_udc.c: unique case of seq_puts() return value
+used correctly.  I.e. "if it's already overflown, don't bother with
+producing the rest of output, you'll be called again on bigger buffer
+anyway; just return 0 and be done with it" hint.  And yes, it is the
+only place in the tree that looks at return value of seq_puts() and uses
+it correctly.
+
+<greps for seq_printf>
+
+arch/arm/plat-pxa/dma.c:59:     pos += seq_printf(s, "DMA channel %d requesters list :\n", chan);
+Bogus.  seq_printf() returns 0 or -1, again with the same kind of semantics
+("don't bother with more output, you've already overflown" hint).
+
+arch/microblaze/kernel/cpu/mb.c: same bogosity, but there it at least
+ignores the sum and just returns 0 in the end.  Why the hell add them
+up is a mystery...
+
+drivers/base/power/wakeup.c: called in a helper, returned to caller, which
+promptly ignores it.
+
+drivers/mtd/devices/docg3.c: bogus, overflow leads to read(2) returning
+more or less random error.
+
+drivers/parisc/ccio-dma.c: added up and ignored.
+drivers/parisc/sba_iommu.c: added up and ignored.
+
+conntrack ct_seq_show() and friends: used properly.
+
+net/netfilter/nf_log.c: bogus, EPERM-from-read() kind.
+
+OK, I'm convinced - we do need to make those suckers return nothing at all,
+preventing the well-intentioned bugs of that sort.  There had been a discussion
+of that a while ago, but it hadn't gone anywhere.  Time to end that
+depravity, let's bury the body...
+
+What we need is a helper along the lines of seq_already_overflown() that
+could be used by the few places that really want that hint.  As in
+	if (seq_already_overflown(m))
+		return 0; // we'll be called again with bigger buffer anyway
+
+And let's make seq_printf and friends return void.  Any breakage we miss
+on grep will be caught by compiler.  Enough is enough.
