@@ -1,206 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaI2IbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:31:00 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52675 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaI2Ia6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:30:58 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH 02/15] powerpc/cell: Move data segment faulting code out of cell platform
-In-Reply-To: <1411028820-29933-3-git-send-email-mikey@neuling.org>
-References: <1411028820-29933-1-git-send-email-mikey@neuling.org> <1411028820-29933-3-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 29 Sep 2014 14:00:43 +0530
-Message-ID: <8738barfpo.fsf@linux.vnet.ibm.com>
+	id S1751554AbaI2IfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 04:35:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970AbaI2IfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 04:35:10 -0400
+Date: Mon, 29 Sep 2014 10:34:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH v2 1/2] perf callchain: Create an address space per thread
+Message-ID: <20140929083452.GA1223@krava.brq.redhat.com>
+References: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14092908-7014-0000-0000-00000040EA88
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
-
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
-> required for a particular EA and mm struct.
->
-> This code is generically useful for other co-processors.  This moves the code
-> of the cell platform so it can be used by other powerpc code.
->
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
+On Mon, Sep 29, 2014 at 01:58:11PM +0900, Namhyung Kim wrote:
+> The unw_addr_space_t in libunwind represents an address space to be
+> used for stack unwinding.  It doesn't need to be create/destory
+> everytime to unwind callchain (as in get_entries) and can have a same
+> lifetime as thread (unless exec called).
+> 
+> So move the address space construction/destruction logic to the thread
+> lifetime handling functions.  This is a preparation to enable caching
+> in the unwind library.
+> 
+> Note that it saves unw_addr_space_t object using thread__set_priv().
+> It seems currently only used by perf trace and perf kvm stat commands
+> which don't use callchain.
+> 
+> Acked-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > ---
->  arch/powerpc/include/asm/mmu-hash64.h  |  2 ++
->  arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
->  arch/powerpc/mm/slb.c                  |  3 ---
->  arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
->  4 files changed, 54 insertions(+), 40 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> index d765144..fd19a53 100644
-> --- a/arch/powerpc/include/asm/mmu-hash64.h
-> +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> @@ -180,6 +180,8 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
->   * we work in all cases including 4k page size.
->   */
->  #define VPN_SHIFT	12
-> +#define slb_vsid_shift(ssize)	\
-> +	((ssize) == MMU_SEGSIZE_256M ? SLB_VSID_SHIFT : SLB_VSID_SHIFT_1T)
-
-can it be static inline similar to segment_shift() ?
-
+>  tools/perf/util/thread.c           |  6 ++++++
+>  tools/perf/util/unwind-libunwind.c | 30 +++++++++++++++++++++++++-----
+>  tools/perf/util/unwind.h           | 17 +++++++++++++++++
+>  3 files changed, 48 insertions(+), 5 deletions(-)
+> 
+> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+> index a9df7f2c6dc9..2b7b2d91c016 100644
+> --- a/tools/perf/util/thread.c
+> +++ b/tools/perf/util/thread.c
+> @@ -7,6 +7,7 @@
+>  #include "util.h"
+>  #include "debug.h"
+>  #include "comm.h"
+> +#include "unwind.h"
 >  
->  /*
->   * HPTE Large Page (LP) details
-> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-> index ba7df14..4105a63 100644
-> --- a/arch/powerpc/mm/copro_fault.c
-> +++ b/arch/powerpc/mm/copro_fault.c
-> @@ -90,3 +90,51 @@ out_unlock:
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-> +
-> +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
-> +{
-> +	int psize, ssize;
-> +
-> +	*esid = (ea & ESID_MASK) | SLB_ESID_V;
-> +
-> +	switch (REGION_ID(ea)) {
-> +	case USER_REGION_ID:
-> +		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
-> +#ifdef CONFIG_PPC_MM_SLICES
-> +		psize = get_slice_psize(mm, ea);
-> +#else
-> +		psize = mm->context.user_psize;
-> +#endif
-
-We don't need that.
-
-#ifdef CONFIG_PPC_STD_MMU_64
-#define get_slice_psize(mm, addr)	((mm)->context.user_psize)
-
-
-
-> +		ssize = user_segment_size(ea);
-> +		*vsid = (get_vsid(mm->context.id, ea, ssize)
-> +			<< slb_vsid_shift(ssize)) | SLB_VSID_USER
-> +			| (ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-> +		break;
-> +	case VMALLOC_REGION_ID:
-> +		pr_devel("copro_data_segment: 0x%llx -- VMALLOC_REGION_ID\n", ea);
-> +		if (ea < VMALLOC_END)
-> +			psize = mmu_vmalloc_psize;
-> +		else
-> +			psize = mmu_io_psize;
-> +		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
-> +			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
-> +			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-> +		break;
-> +	case KERNEL_REGION_ID:
-> +		pr_devel("copro_data_segment: 0x%llx -- KERNEL_REGION_ID\n", ea);
-> +		psize = mmu_linear_psize;
-> +		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
-> +			<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL
-> +			| (mmu_kernel_ssize == MMU_SEGSIZE_1T ? SLB_VSID_B_1T : 0);
-> +		break;
-> +	default:
-> +		/* Future: support kernel segments so that drivers can use the
-> +		 * CoProcessors */
-> +		pr_debug("invalid region access at %016llx\n", ea);
-> +		return 1;
-> +	}
-> +	*vsid |= mmu_psize_defs[psize].sllp;
-> +
-> +	return 0;
-> +}
-
-large part of this is same as what we do in hash_page. And we are not
-really updating vsid here, it is vsid slb encoding. So why not abstract
-the vsid part and use that in hash_page also ? That would have also taken
-care of the above #ifdef.
-
-> +EXPORT_SYMBOL_GPL(copro_data_segment);
-> diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
-> index 0399a67..6e450ca 100644
-> --- a/arch/powerpc/mm/slb.c
-> +++ b/arch/powerpc/mm/slb.c
-> @@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
->  	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
->  }
->  
-> -#define slb_vsid_shift(ssize)	\
-> -	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
-> -
->  static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
->  					 unsigned long flags)
+>  int thread__init_map_groups(struct thread *thread, struct machine *machine)
 >  {
-> diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
-> index 2930d1e..fe004b1 100644
-> --- a/arch/powerpc/platforms/cell/spu_base.c
-> +++ b/arch/powerpc/platforms/cell/spu_base.c
-> @@ -167,45 +167,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+> @@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+>  		thread->cpu = -1;
+>  		INIT_LIST_HEAD(&thread->comm_list);
 >  
->  static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
->  {
-> -	struct mm_struct *mm = spu->mm;
->  	struct spu_slb slb;
-> -	int psize;
-> -
-> -	pr_debug("%s\n", __func__);
-> -
-> -	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
-> +	int ret;
->  
-> -	switch(REGION_ID(ea)) {
-> -	case USER_REGION_ID:
-> -#ifdef CONFIG_PPC_MM_SLICES
-> -		psize = get_slice_psize(mm, ea);
-> -#else
-> -		psize = mm->context.user_psize;
-> -#endif
-> -		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
-> -		break;
-> -	case VMALLOC_REGION_ID:
-> -		if (ea < VMALLOC_END)
-> -			psize = mmu_vmalloc_psize;
-> -		else
-> -			psize = mmu_io_psize;
-> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
-> -		break;
-> -	case KERNEL_REGION_ID:
-> -		psize = mmu_linear_psize;
-> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
-> -		break;
-> -	default:
-> -		/* Future: support kernel segments so that drivers
-> -		 * can use SPUs.
-> -		 */
-> -		pr_debug("invalid region access at %016lx\n", ea);
-> -		return 1;
-> -	}
-> -	slb.vsid |= mmu_psize_defs[psize].sllp;
-> +	ret = copro_data_segment(spu->mm, ea, &slb.esid, &slb.vsid);
-> +	if (ret)
-> +		return ret;
->  
->  	spu_load_slb(spu, spu->slb_replace, &slb);
->  
+> +		if (unwind__prepare_access(thread) < 0)
+> +			goto err_thread;
 
--aneesh
+So this is something we need to do only for DWARF unwind via libunwind.
+Do we want some condition to bypass this in for the rest of the cases?
 
+I think we could check for symbol_conf.use_callchain and for the
+PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER sample types in evlist,
+something like:
+
+  bool has_dwarf_data_for_callchains = symbol_conf.use_callchain && evlist_sample_type_has(evlist, PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER)
+
+;-)
+
+thanks,
+jirka
