@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaI2KHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 06:07:33 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:60861 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaI2KHc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 06:07:32 -0400
-Date: Mon, 29 Sep 2014 12:07:23 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 0/4] pwm: imx: support output polarity inversion
-Message-ID: <20140929120723.62e7d73c@ipc1.ka-ro>
-In-Reply-To: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
-References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752950AbaI2KKA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25628 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717AbaI2KJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 06:09:58 -0400
+Date: Mon, 29 Sep 2014 11:18:46 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v4 2/4] AHCI: Move host activation code into
+ ahci_host_activate()
+Message-ID: <20140929101846.GA8971@agordeev.usersys.redhat.com>
+References: <cover.1411648623.git.agordeev@redhat.com>
+ <39cff5287f4fcc33d0f00f89cb2337c5a5ec22b6.1411648623.git.agordeev@redhat.com>
+ <20140928160408.GA8050@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140928160408.GA8050@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Sep 28, 2014 at 12:04:08PM -0400, Tejun Heo wrote:
+> It's generally a bad idea to mix code movement w/ other changes.  I'm
+> applying this one but please separate code movements to separate
+> patches from now on.
 
-Lothar Waßmann wrote:
-> This patch series adds support for polarity inversion to the pwm-imx
-> driver. The patches have been tested on i.MX6, i.MX53 and with the
-> ti-ehrpwm.c driver.
-> 
-> Changes wrt. v2:
-> - make the use of '#pwm-cells = <3>' optional, so that the change does
->   not break existing DT blobs as suggested by Arnd Bergmann and Sascha
->   Hauer.
-> 
-> Changes wrt. v3:
-> - implemented the approach suggested by Sascha Hauer 
-> - don't modify struct pwm_ops in the imx_pwm probe function
-> 
-> 
-Ping?
-It's now over a month without any reaction. What should I do with these
-patches?
+This patch lacks the hunk below, which causes build error.
 
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -568,8 +568,7 @@ static int ahci_highbank_probe(struct platform_device *pdev)
+ 	ahci_init_controller(host);
+ 	ahci_print_info(host, "platform");
+ 
+-	rc = ata_host_activate(host, irq, ahci_interrupt, 0,
+-					&ahci_highbank_platform_sht);
++	rc = ahci_host_activate(host, irq, &ahci_highbank_platform_sht);
+ 	if (rc)
+ 		goto err0;
+ 
+> Thanks.
+> 
+> -- 
+> tejun
 
-Lothar Waßmann
 -- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
