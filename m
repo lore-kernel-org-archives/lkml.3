@@ -1,70 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaI2SeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:34:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:35961 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602AbaI2SeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:34:01 -0400
-Date: Mon, 29 Sep 2014 15:33:57 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf session: Add option to copy events when queueing
-Message-ID: <20140929183357.GI3879@kernel.org>
-References: <1411060059-23589-1-git-send-email-yarygin@linux.vnet.ibm.com>
- <1411060059-23589-2-git-send-email-yarygin@linux.vnet.ibm.com>
- <20140922070410.GA3108@krava.brq.redhat.com>
+	id S1754291AbaI2SgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:36:17 -0400
+Received: from mail-bn1bon0117.outbound.protection.outlook.com ([157.56.111.117]:39808
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750906AbaI2SgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 14:36:16 -0400
+Message-ID: <1412015766.13320.253.camel@snotra.buserror.net>
+Subject: Re: [PATCH] powerpc/fsl: Add support for pci(e) machine check
+ exception on E500MC / E5500
+From: Scott Wood <scottwood@freescale.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, "Jojy G Varghese" <jojyv@juniper.net>,
+        Guenter Roeck <groeck@juniper.net>, <hongtao.jia@freescale.com>
+Date: Mon, 29 Sep 2014 13:36:06 -0500
+In-Reply-To: <1412009312-7400-1-git-send-email-linux@roeck-us.net>
+References: <1412009312-7400-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140922070410.GA3108@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:cc8b:f9eb:f03b:cf1d]
+X-ClientProxiedBy: BLUPR08CA0063.namprd08.prod.outlook.com (10.141.200.43) To
+ CY1PR0301MB0731.namprd03.prod.outlook.com (25.160.159.149)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0731;
+X-Forefront-PRVS: 034902F5BC
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(377424004)(51704005)(199003)(83072002)(79102003)(80022003)(74502003)(81542003)(77982003)(81342003)(89996001)(46102003)(74662003)(101416001)(15202345003)(20776003)(85852003)(15975445006)(10300001)(120916001)(23676002)(76482002)(99396003)(103116003)(50466002)(42186005)(50986999)(76176999)(64706001)(47776003)(87286001)(104166001)(102836001)(87976001)(21056001)(92566001)(19580395003)(88136002)(93916002)(86362001)(92726001)(50226001)(4396001)(19580405001)(83322001)(31966008)(33646002)(90102001)(85306004)(95666004)(106356001)(77156001)(105586002)(97736003)(62966002)(110136001)(107046002)(77096002)(7059020);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0731;H:[IPv6:2601:2:5800:3f7:cc8b:f9eb:f03b:cf1d];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Sep 22, 2014 at 09:04:10AM +0200, Jiri Olsa escreveu:
-> On Thu, Sep 18, 2014 at 09:07:38PM +0400, Alexander Yarygin wrote:
-> > +++ b/tools/perf/util/session.c
-> > @@ -542,7 +542,13 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
-> >  		return -ENOMEM;
-
-> >  	new->file_offset = file_offset;
-> > -	new->event = event;
-
-> > +	if (s->copy_on_queue) {
-> > +		new->event = malloc(event->header.size);
-> > +		memcpy(new->event, event, event->header.size);
-
-> we have memdup, and you need to check for allocation failure
-
-Right.
- 
-> hum.. how about allocation limits?
- 
-> Now have report.queue-size to keep track and limit the ordered_events
-> memory size. I think we should add this allocation size under this
-> limit as well.
-
-Yup.
- 
-> > +	} else
-> > +		new->event = event;
-> > +
+On Mon, 2014-09-29 at 09:48 -0700, Guenter Roeck wrote:
+> From: Jojy G Varghese <jojyv@juniper.net>
 > 
-> also the copy_on_queue flag and the logic above feels more like
-> it belongs to 'ordered_events' object to me
+> For E500MC and E5500, a machine check exception in pci(e) memory space
+> crashes the kernel.
+> 
+> Testing shows that the MCAR(U) register is zero on a MC exception for the
+> E5500 core. At the same time, DEAR register has been found to have the
+> address of the faulty load address during an MC exception for this core.
+> 
+> This fix changes the current behavior to fixup the result register
+> and instruction pointers in the case of a load operation on a faulty
+> PCI address.
+> 
+> The changes are:
+> - Added the hook to pci machine check handing to the e500mc machine check
+>   exception handler.
+> - For the E5500 core, load faulting address from SPRN_DEAR register.
+>   As mentioned above, this is necessary because the E5500 core does not
+>   report the fault address in the MCAR register.
+> 
+> Cc: Scott Wood <scottwood@freescale.com>
+> Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
+> [Guenter Roeck: updated description]
+> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  arch/powerpc/kernel/traps.c   | 3 ++-
+>  arch/powerpc/sysdev/fsl_pci.c | 5 +++++
+>  2 files changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+> index 0dc43f9..ecb709b 100644
+> --- a/arch/powerpc/kernel/traps.c
+> +++ b/arch/powerpc/kernel/traps.c
+> @@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
+>  	int recoverable = 1;
+>  
+>  	if (reason & MCSR_LD) {
+> -		recoverable = fsl_rio_mcheck_exception(regs);
+> +		recoverable = fsl_rio_mcheck_exception(regs) ||
+> +			fsl_pci_mcheck_exception(regs);
+>  		if (recoverable == 1)
+>  			goto silent_out;
+>  	}
+> diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+> index c507767..bdb956b 100644
+> --- a/arch/powerpc/sysdev/fsl_pci.c
+> +++ b/arch/powerpc/sysdev/fsl_pci.c
+> @@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs *regs)
+>  #endif
+>  	addr += mfspr(SPRN_MCAR);
+>  
+> +#ifdef CONFIG_E5500_CPU
+> +	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
+> +		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
+> +#endif
 
-Agreed.
+Kconfig tells you what hardware is supported, not what hardware you're
+actually running on.
 
-- Arnaldo
+Jia Hongtao, do you know anything about this issue?  Is there an
+erratum?  What chips are affected by the the erratum covered by
+<http://patchwork.ozlabs.org/patch/240239/>?
+
+Can we rely on DEAR or is this just a side effect of likely having taken
+a TLB miss for the address recently?  Perhaps we should use the
+instruction emulation to determine the effective address instead.
+
+Guenter, is this patch intended to deal with an erratum or are you
+covering up legitimate errors?
+
+-Scott
+
+
