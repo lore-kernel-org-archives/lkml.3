@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaI2Tdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:33:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53731 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaI2Tda (ORCPT
+	id S1754301AbaI2Tdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:33:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53418 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaI2Tdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:33:30 -0400
-Date: Mon, 29 Sep 2014 21:33:58 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Lackner <sebastian@fds-team.de>
-cc: Andy Lutomirski <luto@amacapital.net>, Anish Bhatt <anish@chelsio.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-In-Reply-To: <5429A556.50507@fds-team.de>
-Message-ID: <alpine.DEB.2.02.1409292059530.22082@ionos.tec.linutronix.de>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com> <54299979.6080705@amacapital.net> <5429A556.50507@fds-team.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 29 Sep 2014 15:33:31 -0400
+Date: Mon, 29 Sep 2014 20:33:29 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Dmitry V. Levin" <ldv@altlinux.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND v3 PATCH 3/3] vfs: make mounts and mountstats honor root
+ dir like mountinfo does
+Message-ID: <20140929193329.GL7996@ZenIV.linux.org.uk>
+References: <20140929180523.GC15829@altlinux.org>
+ <20140929183222.GJ7996@ZenIV.linux.org.uk>
+ <20140929184333.GD15829@altlinux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929184333.GD15829@altlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014, Sebastian Lackner wrote:
-> On 29.09.2014 19:40, Andy Lutomirski wrote:
-> Well, the best documentation I've found is something like
-> http://www.fermimn.gov.it/linux/quarta/x86/int.htm
+On Mon, Sep 29, 2014 at 10:43:33PM +0400, Dmitry V. Levin wrote:
+> On Mon, Sep 29, 2014 at 07:32:22PM +0100, Al Viro wrote:
+> > On Mon, Sep 29, 2014 at 10:05:23PM +0400, Dmitry V. Levin wrote:
+> > > Date: Wed, 17 Oct 2012 20:29:55 +0400
+> > > 
+> > > Change show_vfsmnt() and show_vfsstat() to show mountpoints relative
+> > > to the root directory and skip mountpoints outside of chroot jail
+> > > the same way as show_mountinfo() does.
+> > 
+> > Sigh...  Repeat after me:  We  Do  Not  Break  Userland.  Care to explain
+> > why that change won't do just that?
 > 
-> which states:
-> 
-> --- snip ---
-> INTERRUPT-TO-INNER-PRIVILEGE:
->    [...]
->    TF := 0;
->    NT := 0;
-> --- snip ---
-> (Doesn't say anything about HW interrupts though)
-> 
-> This also makes sense at my opinion, since the interrupt handler has
-> to know if it should return to the previous task (when NT=1) or to
-> the same task (when NT=0).
+> This is definitely an information leak, and I cannot imagine how these
+> unaccessible entries listed in /proc/self/mounts and /proc/self/mountstats
+> could be used sanely.
 
-No, it does not. Simply because Linux does not support nested tasks at
-all, because the TSS is not accessible and the TSS.back_link is
-sturdily NULL. So even if it would not explode with a #GP in IA-32e
-mode it would explode while trying to execute the instruction at NULL.
+How do you think any existing script running chrooted is going to parse
+/proc/mounts?  One obvious way is to filter on known prefix and strip it
+away.  With your change it will instantly break.  Moreover, any script
+working with *new* semantics will break as soon as you boot an older
+kernel.
 
-> That might be possible. It probably makes sense to review other
-> parts of the code, for similar issues.
+Existing behaviour had been there since mid-90s (at least) and I'm absolutely
+certain that such scripts do exist.  I know that, since I had to write such.
+Again, we do not break userland.  Especially since the behaviour you want
+is trivial to obtain - just create a new namespace instead of messing with
+chroot.  Then, in that namespace, pivot_root the sucker to root and unmount
+everything else.  Voila.
 
-What's the issue? Stupid user space programs segfaulting?
-
-Thanks,
-
-	tglx
+NAK.  And you really need to realize that changing ABI in a way that breaks
+real-world userland code is not acceptable.  Even when the new semantics is
+nicer.  And when you cannot imagine how somebody could possibly write code
+that would depend on the old one.
