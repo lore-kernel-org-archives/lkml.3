@@ -1,123 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaI2SFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:05:42 -0400
-Received: from mercury.cora.nwra.com ([4.28.99.165]:36349 "EHLO
-	mail.cora.nwra.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883AbaI2SFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:05:35 -0400
-X-Greylist: delayed 2187 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 14:05:34 EDT
-Message-ID: <542996DB.8000502@cora.nwra.com>
-Date: Mon, 29 Sep 2014 11:28:59 -0600
-From: Orion Poplawski <orion@cora.nwra.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754965AbaI2SGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:06:41 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:2139 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754770AbaI2SGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 14:06:40 -0400
+X-IronPort-AV: E=Sophos;i="5.04,621,1406592000"; 
+   d="scan'208";a="177209778"
+Message-ID: <54299F8F.304@citrix.com>
+Date: Mon, 29 Sep 2014 19:06:07 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 001/001] mm: Use KERN_INFO log level for memory configuration
- boot messages
-Content-Type: text/plain; charset=utf-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <sgruszka@redhat.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH] Revert "xen/acpi-processor: fix enabling interrupts on
+ syscore_resume"
+References: <1412002276-30873-1-git-send-email-konrad.wilk@oracle.com> <5429730E.1050506@citrix.com> <20140929175517.GA5000@laptop.dumpdata.com>
+In-Reply-To: <20140929175517.GA5000@laptop.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Orion Poplawski <orion@cora.nwra.com>
+On 29/09/14 18:55, Konrad Rzeszutek Wilk wrote:
+> 
+> This patch should be a good start to discussing the fix.
+> 
+> From 3544815f7c44508e2c9a0c55caf4a32cc8283685 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Mon, 29 Sep 2014 13:48:57 -0400
+> Subject: [PATCH] xen-acpi-processor: Use spinlock and GFP_ATOMIC to deal with
+>  resume
+> 
+> hitting the IRQs being enabled during resume.
+> 
+> WARNING: CPU: 0 PID: 6733 at drivers/base/syscore.c:104 syscore_resume+0x9a/0xe0()
+> Interrupts enabled after xen_acpi_processor_resume+0x0/0x34 [xen_acpi_processor]
+> 
+> Call Trace:
+>  [<ffffffff81667a8b>] dump_stack+0x45/0x56
+>  [<ffffffff8106921d>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff8106928c>] warn_slowpath_fmt+0x4c/0x50
+>  [<ffffffffa0261bb0>] ? xen_upload_processor_pm_data+0x300/0x300 [xen_acpi_processor]
+>  [<ffffffff814055fa>] syscore_resume+0x9a/0xe0
+>  [<ffffffff810aef42>] suspend_devices_and_enter+0x402/0x470
+>  [<ffffffff810af128>] pm_suspend+0x178/0x260
+> 
+> Converting the mutex to a spinlock and all of the GPF_KERNEL
+> to GFP_ATOMIC take care of that.
 
-While trying look at just "warning" or stronger messages with "journalctl --priority 0..4" I keep
-seeing:
+Do we need to load this into Xen so early?  I'd much prefer not adding a
+bunch of GFP_ATOMIC allocations into the resume path.
 
-Sep 29 07:10:29 barry kernel: Zone ranges:
-Sep 29 07:10:29 barry kernel:   DMA      [mem 0x00001000-0x00ffffff]
-Sep 29 07:10:29 barry kernel:   DMA32    [mem 0x01000000-0xffffffff]
-Sep 29 07:10:29 barry kernel:   Normal   [mem 0x100000000-0x61fffffff]
-Sep 29 07:10:29 barry kernel: Movable zone start for each node
-Sep 29 07:10:29 barry kernel: Early memory node ranges
-Sep 29 07:10:29 barry kernel:   node   0: [mem 0x00001000-0x0009dfff]
-Sep 29 07:10:29 barry kernel:   node   0: [mem 0x00100000-0xdfdf8fff]
-Sep 29 07:10:29 barry kernel:   node   0: [mem 0x100000000-0x61fffffff]
-Sep 29 07:10:29 barry kernel: Built 1 zonelists in Zone order, mobility grouping on.  Total pages
-Sep 29 07:10:29 barry kernel: Policy zone: Normal
-Sep 29 07:10:29 barry kernel: Memory: 24673284K/25163352K available (7245K kernel code, 1127K rwd
+I'd probably just schedule some work in the syscore resume to do the load.
 
-which strike me as purely informational.  This patch sets the level of these messages accordingly.
-This is to current git master.
-
-Signed-off-by: Orion Poplawski <orion@cora.nwra.com>
-
----
- mm/page_alloc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 18cee0d..b8205e8 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3899,14 +3899,14 @@ void __ref build_all_zonelists(pg_data_t *pgdat, struct zone *zone)
-        else
-                page_group_by_mobility_disabled = 0;
-
--       printk("Built %i zonelists in %s order, mobility grouping %s.  "
-+       printk(KERN_INFO "Built %i zonelists in %s order, mobility grouping %s.  "
-                "Total pages: %ld\n",
-                        nr_online_nodes,
-                        zonelist_order_name[current_zonelist_order],
-                        page_group_by_mobility_disabled ? "off" : "on",
-                        vm_total_pages);
- #ifdef CONFIG_NUMA
--       printk("Policy zone: %s\n", zone_names[policy_zone]);
-+       printk(KERN_INFO "Policy zone: %s\n", zone_names[policy_zone]);
- #endif
- }
-
-@@ -5338,7 +5338,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
-        find_zone_movable_pfns_for_nodes();
-
-        /* Print out the zone ranges */
--       printk("Zone ranges:\n");
-+       printk(KERN_INFO "Zone ranges:\n");
-        for (i = 0; i < MAX_NR_ZONES; i++) {
-                if (i == ZONE_MOVABLE)
-                        continue;
-@@ -5354,17 +5354,17 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
-        }
-
-        /* Print out the PFNs ZONE_MOVABLE begins at in each node */
--       printk("Movable zone start for each node\n");
-+       printk(KERN_INFO "Movable zone start for each node\n");
-        for (i = 0; i < MAX_NUMNODES; i++) {
-                if (zone_movable_pfn[i])
--                       printk("  Node %d: %#010lx\n", i,
-+                       printk(KERN_INFO "  Node %d: %#010lx\n", i,
-                               zone_movable_pfn[i] << PAGE_SHIFT);
-        }
-
-        /* Print out the early node map */
--       printk("Early memory node ranges\n");
-+       printk(KERN_INFO "Early memory node ranges\n");
-        for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
--               printk("  node %3d: [mem %#010lx-%#010lx]\n", nid,
-+               printk(KERN_INFO "  node %3d: [mem %#010lx-%#010lx]\n", nid,
-                       start_pfn << PAGE_SHIFT, (end_pfn << PAGE_SHIFT) - 1);
-
-        /* Initialise every node */
-@@ -5500,7 +5500,7 @@ void __init mem_init_print_info(const char *str)
-
- #undef adj_init_size
-
--       printk("Memory: %luK/%luK available "
-+       printk(KERN_INFO "Memory: %luK/%luK available "
-               "(%luK kernel code, %luK rwdata, %luK rodata, "
-               "%luK init, %luK bss, %luK reserved"
- #ifdef CONFIG_HIGHMEM
---
-1.9.3
-
-
--- 
-Orion Poplawski
-Technical Manager                     303-415-9701 x222
-NWRA, Boulder/CoRA Office             FAX: 303-415-9702
-3380 Mitchell Lane                       orion@nwra.com
-Boulder, CO 80301                   http://www.nwra.com
+David
