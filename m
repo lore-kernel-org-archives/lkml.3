@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaI2Ofh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:35:37 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50474 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753411AbaI2ObH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:31:07 -0400
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
-Subject: [PATCH v13 03/12] ARM: Define PCI_IOBASE as the base of virtual PCI IO space
-Date: Mon, 29 Sep 2014 15:29:22 +0100
-Message-Id: <1412000971-9242-4-git-send-email-Liviu.Dudau@arm.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+	id S1754669AbaI2OgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:36:15 -0400
+Received: from smtp-69.nebula.fi ([83.145.220.69]:36810 "EHLO smtp.nebula.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753035AbaI2OgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 10:36:14 -0400
+Date: Mon, 29 Sep 2014 17:34:53 +0300
+From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] ASoC: ssm2602: add device tree bindings
+Message-ID: <20140929143452.GA11763@chokladfabriken.org>
+References: <1411891072-22637-1-git-send-email-stefan.kristiansson@saunalahti.fi>
+ <54291D50.30002@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54291D50.30002@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed for calls into OF code that parses PCI ranges.  It signals
-support for memory mapped PCI I/O accesses that are described by device
-trees.
+On Mon, Sep 29, 2014 at 10:50:24AM +0200, Lars-Peter Clausen wrote:
+> On 09/28/2014 09:57 AM, Stefan Kristiansson wrote:
+> >Allow the ssm2602/ssm2603/ssm2604 codec driver to be
+> >instantiated from the device tree.
+> >
+> >Also, add Kconfig prompts to allow manual selection of both the
+> >I2C and SPI configuration versions of the driver.
+> >
+> >Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+> 
+> Looks mostly good, but you should Cc both the devicetree and the
+> ASoC maintainers.
+> 
 
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Rob Herring <robh+dt@kernel.org>
----
- arch/arm/include/asm/io.h | 1 +
- 1 file changed, 1 insertion(+)
+Ok, I'll make sure to do that in v2.
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 3d23418..1805674 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -178,6 +178,7 @@ static inline void __iomem *__typesafe_io(unsigned long addr)
- 
- /* PCI fixed i/o mapping */
- #define PCI_IO_VIRT_BASE	0xfee00000
-+#define PCI_IOBASE		((void __iomem *)PCI_IO_VIRT_BASE)
- 
- #if defined(CONFIG_PCI)
- void pci_ioremap_set_mem_type(int mem_type);
--- 
-2.1.1
+> [...]
+> >diff --git a/sound/soc/codecs/ssm2602-i2c.c b/sound/soc/codecs/ssm2602-i2c.c
+> >index abd63d5..0d9779d 100644
+> >--- a/sound/soc/codecs/ssm2602-i2c.c
+> >+++ b/sound/soc/codecs/ssm2602-i2c.c
+> >@@ -41,10 +41,19 @@ static const struct i2c_device_id ssm2602_i2c_id[] = {
+> >  };
+> >  MODULE_DEVICE_TABLE(i2c, ssm2602_i2c_id);
+> >
+> >+static const struct of_device_id ssm2602_of_match[] = {
+> >+	{ .compatible = "adi,ssm2602", },
+> >+	{ .compatible = "adi,ssm2603", },
+> >+	{ .compatible = "adi,ssm2604", },
+> 
+> Since the driver is supposed to behave different depending on the
+> device you should set the driver data similar to like it is done in
+> the ssm2602_i2c_id table and add code in the probe function to
+> extract the driver data.
+> 
 
+As far as I understand, that is already covered for, ssm2602_i2c_probe() get
+called with the i2c_device_id struct set according to the compatible string.
+I.e. if I set it to "adi,ssm2603" in the .dts, ssm2602_i2c_probe() is called
+with id->name = "ssm2603" and id->driver_data = 0 and if I set it to
+"adi,ssm2604" I get id->name = "ssm2603" and id->driver_data = 1.
+
+However, when looking into that, I noticed this in ssm2602_probe()
+
+	 ssm2602->type = SSM2602;
+
+so the value from id->driver_data is never used.
+(it should be ssm2602->type = type;)
+
+I can send a seperate patch that fixes this, but I only have a ssm2603,
+so I can't test if it works.
+
+> >+static const struct of_device_id ssm2602_of_match[] = {
+> >+	{ .compatible = "adi,ssm2602", },
+> >+	{ .compatible = "adi,ssm2603", },
+> >+	{ .compatible = "adi,ssm2604", },
+> 
+> The ssm2603 and ssm2604 do not have a SPI interface.
+>
+
+Right, I'll remove those from that list.
+
+Stefan
