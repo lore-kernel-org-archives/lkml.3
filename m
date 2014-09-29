@@ -1,572 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaI2JDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:03:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22057 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970AbaI2JDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:03:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,619,1406617200"; 
-   d="scan'208";a="606886638"
-Message-ID: <1411981378.11022.1.camel@linux.intel.com>
-Subject: Re: [PATCH 2/2 v2] SPI: spi-pxa2xx: SPI support for Intel Quark
- X1000
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Weike Chen <alvin.chen@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Boon Leong Ong <boon.leong.ong@intel.com>,
-        Raymond Tan <raymond.tan@intel.com>
-Date: Mon, 29 Sep 2014 12:02:58 +0300
-In-Reply-To: <1412000548-9908-3-git-send-email-alvin.chen@intel.com>
-References: <1412000548-9908-1-git-send-email-alvin.chen@intel.com>
-	 <1412000548-9908-3-git-send-email-alvin.chen@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752796AbaI2JDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:03:48 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:51123 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaI2JDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 05:03:46 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/6] ALSA: ctxfi: changed void * to struct hw *
+Date: Mon, 29 Sep 2014 14:33:21 +0530
+Message-Id: <1411981406-10611-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-29 at 07:22 -0700, Weike Chen wrote:
-> There are two SPI controllers exported by PCI subsystem for Intel Quark X1000.
-> The SPI memory mapped I/O registers supported by Quark are different from
-> the current implementation, and Quark only supports the registers of 'SSCR0',
-> 'SSCR1', 'SSSR', 'SSDR', and 'DDS_RATE'. This patch is to enable the SPI for
-> Intel Quark X1000.
-> 
-> This piece of work is derived from Dan O'Donovan's initial work for Intel Quark
-> X1000 SPI enabling.
+in the code we have void *hw and while using we are always typecasting
+it to (struct hw *). it is better to use void type of pointer when we
+store different types of pointer , but in this code we are only having
+struct hw.
+So changed all the relevant reference of void *hw to struct hw *hw,
+without any modification of the existing code logic.
+the next patch of the series will remove the typecasting which is
+not required now.
 
-Minor comments are below.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/ctxfi/ctamixer.c   | 4 ++--
+ sound/pci/ctxfi/ctamixer.h   | 4 ++--
+ sound/pci/ctxfi/ctatc.c      | 4 ++--
+ sound/pci/ctxfi/ctatc.h      | 2 +-
+ sound/pci/ctxfi/ctdaio.c     | 4 ++--
+ sound/pci/ctxfi/ctdaio.h     | 6 +++---
+ sound/pci/ctxfi/ctresource.c | 5 +++--
+ sound/pci/ctxfi/ctresource.h | 9 +++++----
+ sound/pci/ctxfi/ctsrc.c      | 4 ++--
+ sound/pci/ctxfi/ctsrc.h      | 4 ++--
+ 10 files changed, 24 insertions(+), 22 deletions(-)
 
-After addressing them
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-
-> 
-> Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> ---
->  drivers/spi/spi-pxa2xx-pci.c |    8 ++
->  drivers/spi/spi-pxa2xx.c     |  204 +++++++++++++++++++++++++++++++++++++-----
->  drivers/spi/spi-pxa2xx.h     |   16 ++--
->  include/linux/pxa2xx_ssp.h   |   21 +++++
->  4 files changed, 224 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
-> index b285294..b888aeb 100644
-> --- a/drivers/spi/spi-pxa2xx-pci.c
-> +++ b/drivers/spi/spi-pxa2xx-pci.c
-> @@ -19,6 +19,7 @@ enum {
->  	PORT_BSW0,
->  	PORT_BSW1,
->  	PORT_BSW2,
-> +	PORT_QUARK_X1000,
->  };
->  
->  struct pxa_spi_info {
-> @@ -92,6 +93,12 @@ static struct pxa_spi_info spi_info_configs[] = {
->  		.tx_param = &bsw2_tx_param,
->  		.rx_param = &bsw2_rx_param,
->  	},
-> +	[PORT_QUARK_X1000] = {
-> +		.type = QUARK_X1000_SSP,
-> +		.port_id = -1,
-> +		.num_chipselect = 4,
-> +		.max_clk_rate = 50000000,
-> +	},
->  };
->  
->  static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
-> @@ -192,6 +199,7 @@ static void pxa2xx_spi_pci_remove(struct pci_dev *dev)
->  
->  static const struct pci_device_id pxa2xx_spi_pci_devices[] = {
->  	{ PCI_VDEVICE(INTEL, 0x2e6a), PORT_CE4100 },
-> +	{ PCI_VDEVICE(INTEL, 0x0935), PORT_QUARK_X1000 },
->  	{ PCI_VDEVICE(INTEL, 0x0f0e), PORT_BYT },
->  	{ PCI_VDEVICE(INTEL, 0x228e), PORT_BSW0 },
->  	{ PCI_VDEVICE(INTEL, 0x2290), PORT_BSW1 },
-> diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-> index e7ff9c5..7efa55e 100644
-> --- a/drivers/spi/spi-pxa2xx.c
-> +++ b/drivers/spi/spi-pxa2xx.c
-> @@ -63,10 +63,64 @@ MODULE_ALIAS("platform:pxa2xx-spi");
->  				| SSCR1_RFT | SSCR1_TFT | SSCR1_MWDS \
->  				| SSCR1_SPH | SSCR1_SPO | SSCR1_LBM)
->  
-> +#define QUARK_X1000_SSCR1_CHANGE_MASK (QUARK_X1000_SSCR1_STRF	\
-> +				| QUARK_X1000_SSCR1_EFWR	\
-> +				| QUARK_X1000_SSCR1_RFT		\
-> +				| QUARK_X1000_SSCR1_TFT		\
-> +				| SSCR1_SPH | SSCR1_SPO | SSCR1_LBM)
-> +
->  #define LPSS_RX_THRESH_DFLT	64
->  #define LPSS_TX_LOTHRESH_DFLT	160
->  #define LPSS_TX_HITHRESH_DFLT	224
->  
-> +struct quark_spi_rate {
-> +	u32 bitrate;
-> +	u32 dds_clk_rate;
-> +	u32 clk_div;
-> +};
-> +
-> +/*
-> + * 'rate', 'dds', 'clk_div' lookup table, which is defined in
-> + * the Quark SPI datasheet.
-> + */
-> +static const struct quark_spi_rate quark_spi_rate_table[] = {
-> +/*	bitrate,	dds_clk_rate,	clk_div */
-> +	{50000000,	0x800000,	0},
-> +	{40000000,	0x666666,	0},
-> +	{25000000,	0x400000,	0},
-> +	{20000000,	0x666666,	1},
-> +	{16667000,	0x800000,	2},
-> +	{13333000,	0x666666,	2},
-> +	{12500000,	0x200000,	0},
-> +	{10000000,	0x800000,	4},
-> +	{8000000,	0x666666,	4},
-> +	{6250000,	0x400000,	3},
-> +	{5000000,	0x400000,	4},
-> +	{4000000,	0x666666,	9},
-> +	{3125000,	0x80000,	0},
-> +	{2500000,	0x400000,	9},
-> +	{2000000,	0x666666,	19},
-> +	{1563000,	0x40000,	0},
-> +	{1250000,	0x200000,	9},
-> +	{1000000,	0x400000,	24},
-> +	{800000,	0x666666,	49},
-> +	{781250,	0x20000,	0},
-> +	{625000,	0x200000,	19},
-> +	{500000,	0x400000,	49},
-> +	{400000,	0x666666,	99},
-> +	{390625,	0x10000,	0},
-> +	{250000,	0x400000,	99},
-> +	{200000,	0x666666,	199},
-> +	{195313,	0x8000,		0},
-> +	{125000,	0x100000,	49},
-> +	{100000,	0x200000,	124},
-> +	{50000,		0x100000,	124},
-> +	{25000,		0x80000,	124},
-> +	{10016,		0x20000,	77},
-> +	{5040,		0x20000,	154},
-> +	{1002,		0x8000,		194},
-> +};
-> +
-
-Regarding to table vs. formula I will agree with whatever Mark suggested.
-
->  /* Offset from drv_data->lpss_base */
->  #define GENERAL_REG		0x08
->  #define GENERAL_REG_RXTO_HOLDOFF_DISABLE BIT(24)
-> @@ -80,9 +134,16 @@ static bool is_lpss_ssp(const struct driver_data *drv_data)
->  	return drv_data->ssp_type == LPSS_SSP;
->  }
->  
-> +static bool is_quark_x1000_ssp(const struct driver_data *drv_data)
-> +{
-> +	return drv_data->ssp_type == QUARK_X1000_SSP;
-> +}
-> +
->  static u32 pxa2xx_spi_get_ssrc1_change_mask(const struct driver_data *drv_data)
->  {
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		return QUARK_X1000_SSCR1_CHANGE_MASK;
->  	default:
->  		return SSCR1_CHANGE_MASK;
->  	}
-> @@ -92,9 +153,12 @@ static u32
->  pxa2xx_spi_get_rx_default_thre(const struct driver_data *drv_data)
->  {
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		return RX_THRESH_QUARK_X1000_DFLT;
->  	default:
->  		return RX_THRESH_DFLT;
->  	}
-> +
-
-Redundant empty line.
-
->  }
->  
->  static bool pxa2xx_spi_txfifo_full(const struct driver_data *drv_data)
-> @@ -103,6 +167,9 @@ static bool pxa2xx_spi_txfifo_full(const struct driver_data *drv_data)
->  	u32 mask;
->  
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		mask = QUARK_X1000_SSSR_TFL_MASK;
-> +		break;
->  	default:
->  		mask = SSSR_TFL_MASK;
->  		break;
-> @@ -112,11 +179,14 @@ static bool pxa2xx_spi_txfifo_full(const struct driver_data *drv_data)
->  }
->  
->  static void pxa2xx_spi_clear_rx_thre(const struct driver_data *drv_data,
-> -				     u32 *sccr1_reg)
-> +					  u32 *sccr1_reg)
-
-Unnecessary change.
-
->  {
->  	u32 mask;
->  
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		mask = QUARK_X1000_SSCR1_RFT;
-> +		break;
->  	default:
->  		mask = SSCR1_RFT;
->  		break;
-> @@ -125,9 +195,12 @@ static void pxa2xx_spi_clear_rx_thre(const struct driver_data *drv_data,
->  }
->  
->  static void pxa2xx_spi_set_rx_thre(const struct driver_data *drv_data,
-> -				   u32 *sccr1_reg, u32 threshold)
-> +					u32 *sccr1_reg, u32 threshold)
-
-Ditto.
-
-Or you may do that in the first patch.
-
->  {
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		*sccr1_reg |= QUARK_X1000_SSCR1_RxTresh(threshold);
-> +		break;
->  	default:
->  		*sccr1_reg |= SSCR1_RxTresh(threshold);
->  		break;
-> @@ -138,6 +211,11 @@ static u32 pxa2xx_configure_sscr0(const struct driver_data *drv_data,
->  				  u32 clk_div, u8 bits)
->  {
->  	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		return clk_div
-> +			| QUARK_X1000_SSCR0_Motorola
-> +			| QUARK_X1000_SSCR0_DataSize(bits > 32 ? 8 : bits)
-> +			| SSCR0_SSE;
->  	default:
->  		return clk_div
->  			| SSCR0_Motorola
-> @@ -592,7 +670,7 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
->  				rx_thre = bytes_left;
->  
->  			pxa2xx_spi_set_rx_thre(drv_data, &sccr1_reg,
-> -					       rx_thre);
-> +						    rx_thre);
-
-Ditto.
-
-
->  		}
->  		write_SSCR1(sccr1_reg, reg);
->  	}
-> @@ -655,6 +733,28 @@ static irqreturn_t ssp_int(int irq, void *dev_id)
->  	return drv_data->transfer_handler(drv_data);
->  }
->  
-> +/*
-> + * The Quark SPI data sheet gives a table, and for the given 'rate',
-> + * the 'dds' and 'clk_div' can be found in the table.
-> + */
-> +static u32 quark_x1000_set_clk_regvals(u32 rate, u32 *dds, u32 *clk_div)
-> +{
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(quark_spi_rate_table); i++) {
-> +		if (rate >= quark_spi_rate_table[i].bitrate) {
-> +			*dds = quark_spi_rate_table[i].dds_clk_rate;
-> +			*clk_div = quark_spi_rate_table[i].clk_div;
-> +			return quark_spi_rate_table[i].bitrate;
-> +		}
-> +	}
-> +
-> +	*dds = quark_spi_rate_table[i-1].dds_clk_rate;
-> +	*clk_div = quark_spi_rate_table[i-1].clk_div;
-> +
-> +	return quark_spi_rate_table[i-1].bitrate;
-> +}
-> +
->  static unsigned int ssp_get_clk_div(struct driver_data *drv_data, int rate)
->  {
->  	unsigned long ssp_clk = drv_data->max_clk_rate;
-> @@ -668,6 +768,20 @@ static unsigned int ssp_get_clk_div(struct driver_data *drv_data, int rate)
->  		return ((ssp_clk / rate - 1) & 0xfff) << 8;
->  }
->  
-> +static unsigned int pxa2xx_ssp_get_clk_div(struct driver_data *drv_data,
-> +					   struct chip_data *chip, int rate)
-> +{
-> +	u32 clk_div;
-> +
-> +	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		quark_x1000_set_clk_regvals(rate, &chip->dds_rate, &clk_div);
-> +		return clk_div << 8;
-> +	default:
-> +		return ssp_get_clk_div(drv_data, rate);
-> +	}
-> +}
-> +
->  static void pump_transfers(unsigned long data)
->  {
->  	struct driver_data *drv_data = (struct driver_data *)data;
-> @@ -770,7 +884,7 @@ static void pump_transfers(unsigned long data)
->  		if (transfer->bits_per_word)
->  			bits = transfer->bits_per_word;
->  
-> -		clk_div = ssp_get_clk_div(drv_data, speed);
-> +		clk_div = pxa2xx_ssp_get_clk_div(drv_data, chip, speed);
->  
->  		if (bits <= 8) {
->  			drv_data->n_bytes = 1;
-> @@ -838,6 +952,10 @@ static void pump_transfers(unsigned long data)
->  			write_SSITF(chip->lpss_tx_threshold, reg);
->  	}
->  
-> +	if (is_quark_x1000_ssp(drv_data) &&
-> +	    (read_DDS_RATE(reg) != chip->dds_rate))
-
-Could it be one line?
-
-> +		write_DDS_RATE(chip->dds_rate, reg);
-> +
->  	/* see if we need to reload the config registers */
->  	if ((read_SSCR0(reg) != cr0) ||
->  	    (read_SSCR1(reg) & change_mask) != (cr1 & change_mask)) {
-> @@ -941,14 +1059,22 @@ static int setup(struct spi_device *spi)
->  	unsigned int clk_div;
->  	uint tx_thres, tx_hi_thres, rx_thres;
->  
-> -	if (is_lpss_ssp(drv_data)) {
-> +	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		tx_thres = TX_THRESH_QUARK_X1000_DFLT;
-> +		tx_hi_thres = 0;
-> +		rx_thres = RX_THRESH_QUARK_X1000_DFLT;
-> +		break;
-> +	case LPSS_SSP:
->  		tx_thres = LPSS_TX_LOTHRESH_DFLT;
->  		tx_hi_thres = LPSS_TX_HITHRESH_DFLT;
->  		rx_thres = LPSS_RX_THRESH_DFLT;
-> -	} else {
-> +		break;
-> +	default:
->  		tx_thres = TX_THRESH_DFLT;
->  		tx_hi_thres = 0;
->  		rx_thres = RX_THRESH_DFLT;
-> +		break;
->  	}
->  
->  	/* Only alloc on first setup */
-> @@ -1001,9 +1127,6 @@ static int setup(struct spi_device *spi)
->  		chip->enable_dma = drv_data->master_info->enable_dma;
->  	}
->  
-> -	chip->threshold = (SSCR1_RxTresh(rx_thres) & SSCR1_RFT) |
-> -			(SSCR1_TxTresh(tx_thres) & SSCR1_TFT);
-> -
->  	chip->lpss_rx_threshold = SSIRF_RxThresh(rx_thres);
->  	chip->lpss_tx_threshold = SSITF_TxLoThresh(tx_thres)
->  				| SSITF_TxHiThresh(tx_hi_thres);
-> @@ -1022,11 +1145,24 @@ static int setup(struct spi_device *spi)
->  		}
->  	}
->  
-> -	clk_div = ssp_get_clk_div(drv_data, spi->max_speed_hz);
-> +	clk_div = pxa2xx_ssp_get_clk_div(drv_data, chip, spi->max_speed_hz);
->  	chip->speed_hz = spi->max_speed_hz;
->  
->  	chip->cr0 = pxa2xx_configure_sscr0(drv_data, clk_div,
->  					   spi->bits_per_word);
-> +	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		chip->threshold = (QUARK_X1000_SSCR1_RxTresh(rx_thres)
-> +				   & QUARK_X1000_SSCR1_RFT)
-> +				   | (QUARK_X1000_SSCR1_TxTresh(tx_thres)
-> +				   & QUARK_X1000_SSCR1_TFT);
-> +		break;
-> +	default:
-> +		chip->threshold = (SSCR1_RxTresh(rx_thres) & SSCR1_RFT) |
-> +			(SSCR1_TxTresh(tx_thres) & SSCR1_TFT);
-> +		break;
-> +	}
-> +
->  	chip->cr1 &= ~(SSCR1_SPO | SSCR1_SPH);
->  	chip->cr1 |= (((spi->mode & SPI_CPHA) != 0) ? SSCR1_SPH : 0)
->  			| (((spi->mode & SPI_CPOL) != 0) ? SSCR1_SPO : 0);
-> @@ -1055,7 +1191,8 @@ static int setup(struct spi_device *spi)
->  		chip->read = u16_reader;
->  		chip->write = u16_writer;
->  	} else if (spi->bits_per_word <= 32) {
-> -		chip->cr0 |= SSCR0_EDSS;
-> +		if (!is_quark_x1000_ssp(drv_data))
-> +			chip->cr0 |= SSCR0_EDSS;
->  		chip->n_bytes = 4;
->  		chip->read = u32_reader;
->  		chip->write = u32_writer;
-> @@ -1205,7 +1342,15 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
->  	drv_data->ioaddr = ssp->mmio_base;
->  	drv_data->ssdr_physical = ssp->phys_base + SSDR;
->  	if (pxa25x_ssp_comp(drv_data)) {
-> -		master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 16);
-> +		switch (drv_data->ssp_type) {
-> +		case QUARK_X1000_SSP:
-> +			master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 32);
-> +			break;
-> +		default:
-> +			master->bits_per_word_mask = SPI_BPW_RANGE_MASK(4, 16);
-> +			break;
-> +		}
-> +
->  		drv_data->int_cr1 = SSCR1_TIE | SSCR1_RIE;
->  		drv_data->dma_cr1 = 0;
->  		drv_data->clear_sr = SSSR_ROR;
-> @@ -1243,16 +1388,35 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
->  
->  	/* Load default SSP configuration */
->  	write_SSCR0(0, drv_data->ioaddr);
-> -	write_SSCR1(SSCR1_RxTresh(RX_THRESH_DFLT) |
-> -				SSCR1_TxTresh(TX_THRESH_DFLT),
-> -				drv_data->ioaddr);
-> -	write_SSCR0(SSCR0_SCR(2)
-> -			| SSCR0_Motorola
-> -			| SSCR0_DataSize(8),
-> -			drv_data->ioaddr);
-> +	switch (drv_data->ssp_type) {
-> +	case QUARK_X1000_SSP:
-> +		write_SSCR1(QUARK_X1000_SSCR1_RxTresh(
-> +					RX_THRESH_QUARK_X1000_DFLT) |
-> +			    QUARK_X1000_SSCR1_TxTresh(
-> +					TX_THRESH_QUARK_X1000_DFLT),
-> +			    drv_data->ioaddr);
-> +
-> +		/* using the Motorola SPI protocol and use 8 bit frame */
-> +		write_SSCR0(QUARK_X1000_SSCR0_Motorola
-> +			    | QUARK_X1000_SSCR0_DataSize(8),
-> +			    drv_data->ioaddr);
-> +		break;
-> +	default:
-> +		write_SSCR1(SSCR1_RxTresh(RX_THRESH_DFLT) |
-> +			    SSCR1_TxTresh(TX_THRESH_DFLT),
-> +			    drv_data->ioaddr);
-> +		write_SSCR0(SSCR0_SCR(2)
-> +			    | SSCR0_Motorola
-> +			    | SSCR0_DataSize(8),
-> +			    drv_data->ioaddr);
-> +		break;
-> +	}
-> +
->  	if (!pxa25x_ssp_comp(drv_data))
->  		write_SSTO(0, drv_data->ioaddr);
-> -	write_SSPSP(0, drv_data->ioaddr);
-> +
-> +	if (!is_quark_x1000_ssp(drv_data))
-> +		write_SSPSP(0, drv_data->ioaddr);
->  
->  	lpss_ssp_setup(drv_data);
->  
-> diff --git a/drivers/spi/spi-pxa2xx.h b/drivers/spi/spi-pxa2xx.h
-> index 5adc2a1..6bec59c 100644
-> --- a/drivers/spi/spi-pxa2xx.h
-> +++ b/drivers/spi/spi-pxa2xx.h
-> @@ -93,6 +93,7 @@ struct driver_data {
->  struct chip_data {
->  	u32 cr0;
->  	u32 cr1;
-> +	u32 dds_rate;
->  	u32 psp;
->  	u32 timeout;
->  	u8 n_bytes;
-> @@ -126,6 +127,7 @@ DEFINE_SSP_REG(SSCR1, 0x04)
->  DEFINE_SSP_REG(SSSR, 0x08)
->  DEFINE_SSP_REG(SSITR, 0x0c)
->  DEFINE_SSP_REG(SSDR, 0x10)
-> +DEFINE_SSP_REG(DDS_RATE, 0x28)  /* DDS Clock Rate */
->  DEFINE_SSP_REG(SSTO, 0x28)
->  DEFINE_SSP_REG(SSPSP, 0x2c)
->  DEFINE_SSP_REG(SSITF, SSITF)
-> @@ -141,18 +143,22 @@ DEFINE_SSP_REG(SSIRF, SSIRF)
->  
->  static inline int pxa25x_ssp_comp(struct driver_data *drv_data)
->  {
-> -	if (drv_data->ssp_type == PXA25x_SSP)
-> +	switch (drv_data->ssp_type) {
-> +	case PXA25x_SSP:
-> +	case CE4100_SSP:
-> +	case QUARK_X1000_SSP:
->  		return 1;
-> -	if (drv_data->ssp_type == CE4100_SSP)
-> -		return 1;
-> -	return 0;
-> +	default:
-> +		return 0;
-> +	}
->  }
->  
->  static inline void write_SSSR_CS(struct driver_data *drv_data, u32 val)
->  {
->  	void __iomem *reg = drv_data->ioaddr;
->  
-> -	if (drv_data->ssp_type == CE4100_SSP)
-> +	if (drv_data->ssp_type == CE4100_SSP ||
-> +	    drv_data->ssp_type == QUARK_X1000_SSP)
->  		val |= read_SSSR(reg) & SSSR_ALT_FRM_MASK;
->  
->  	write_SSSR(val, reg);
-> diff --git a/include/linux/pxa2xx_ssp.h b/include/linux/pxa2xx_ssp.h
-> index f2b4051..a4668e6 100644
-> --- a/include/linux/pxa2xx_ssp.h
-> +++ b/include/linux/pxa2xx_ssp.h
-> @@ -106,6 +106,26 @@
->  #define SSCR1_TxTresh(x) (((x) - 1) << 6) /* level [1..4] */
->  #define SSCR1_RFT	(0x00000c00)	/* Receive FIFO Threshold (mask) */
->  #define SSCR1_RxTresh(x) (((x) - 1) << 10) /* level [1..4] */
-> +
-> +/* QUARK_X1000 SSCR0 bit definition */
-> +#define QUARK_X1000_SSCR0_DSS	(0x1F)		/* Data Size Select (mask) */
-> +#define QUARK_X1000_SSCR0_DataSize(x)  ((x) - 1)	/* Data Size Select [4..32] */
-> +#define QUARK_X1000_SSCR0_FRF	(0x3 << 5)	/* FRame Format (mask) */
-> +#define QUARK_X1000_SSCR0_Motorola	(0x0 << 5)	/* Motorola's Serial Peripheral Interface (SPI) */
-> +
-> +#define RX_THRESH_QUARK_X1000_DFLT	1
-> +#define TX_THRESH_QUARK_X1000_DFLT	16
-> +
-> +#define QUARK_X1000_SSSR_TFL_MASK	(0x1F << 8)	/* Transmit FIFO Level mask */
-> +#define QUARK_X1000_SSSR_RFL_MASK	(0x1F << 13)	/* Receive FIFO Level mask */
-> +
-> +#define QUARK_X1000_SSCR1_TFT	(0x1F << 6)	/* Transmit FIFO Threshold (mask) */
-> +#define QUARK_X1000_SSCR1_TxTresh(x) (((x) - 1) << 6)	/* level [1..32] */
-> +#define QUARK_X1000_SSCR1_RFT	(0x1F << 11)	/* Receive FIFO Threshold (mask) */
-> +#define QUARK_X1000_SSCR1_RxTresh(x) (((x) - 1) << 11)	/* level [1..32] */
-> +#define QUARK_X1000_SSCR1_STRF       (1 << 17)		/* Select FIFO or EFWR */
-> +#define QUARK_X1000_SSCR1_EFWR	(1 << 16)		/* Enable FIFO Write/Read */
-> +
->  #endif
->  
->  /* extra bits in PXA255, PXA26x and PXA27x SSP ports */
-> @@ -175,6 +195,7 @@ enum pxa_ssp_type {
->  	PXA910_SSP,
->  	CE4100_SSP,
->  	LPSS_SSP,
-> +	QUARK_X1000_SSP,
->  };
->  
->  struct ssp_device {
-
-
+diff --git a/sound/pci/ctxfi/ctamixer.c b/sound/pci/ctxfi/ctamixer.c
+index fed6e6a..4671cbe7 100644
+--- a/sound/pci/ctxfi/ctamixer.c
++++ b/sound/pci/ctxfi/ctamixer.c
+@@ -296,7 +296,7 @@ static int put_amixer_rsc(struct amixer_mgr *mgr, struct amixer *amixer)
+ 	return 0;
+ }
+ 
+-int amixer_mgr_create(void *hw, struct amixer_mgr **ramixer_mgr)
++int amixer_mgr_create(struct hw *hw, struct amixer_mgr **ramixer_mgr)
+ {
+ 	int err;
+ 	struct amixer_mgr *amixer_mgr;
+@@ -449,7 +449,7 @@ static int put_sum_rsc(struct sum_mgr *mgr, struct sum *sum)
+ 	return 0;
+ }
+ 
+-int sum_mgr_create(void *hw, struct sum_mgr **rsum_mgr)
++int sum_mgr_create(struct hw *hw, struct sum_mgr **rsum_mgr)
+ {
+ 	int err;
+ 	struct sum_mgr *sum_mgr;
+diff --git a/sound/pci/ctxfi/ctamixer.h b/sound/pci/ctxfi/ctamixer.h
+index cc49e5a..6fa5eff 100644
+--- a/sound/pci/ctxfi/ctamixer.h
++++ b/sound/pci/ctxfi/ctamixer.h
+@@ -45,7 +45,7 @@ struct sum_mgr {
+ };
+ 
+ /* Constructor and destructor of daio resource manager */
+-int sum_mgr_create(void *hw, struct sum_mgr **rsum_mgr);
++int sum_mgr_create(struct hw *hw, struct sum_mgr **rsum_mgr);
+ int sum_mgr_destroy(struct sum_mgr *sum_mgr);
+ 
+ /* Define the descriptor of a amixer resource */
+@@ -90,7 +90,7 @@ struct amixer_mgr {
+ };
+ 
+ /* Constructor and destructor of amixer resource manager */
+-int amixer_mgr_create(void *hw, struct amixer_mgr **ramixer_mgr);
++int amixer_mgr_create(struct hw *hw, struct amixer_mgr **ramixer_mgr);
+ int amixer_mgr_destroy(struct amixer_mgr *amixer_mgr);
+ 
+ #endif /* CTAMIXER_H */
+diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
+index d92a08c..04e54cc 100644
+--- a/sound/pci/ctxfi/ctatc.c
++++ b/sound/pci/ctxfi/ctatc.c
+@@ -106,11 +106,11 @@ static struct {
+ 			    .public_name = "Mixer"}
+ };
+ 
+-typedef int (*create_t)(void *, void **);
++typedef int (*create_t)(struct hw *, void **);
+ typedef int (*destroy_t)(void *);
+ 
+ static struct {
+-	int (*create)(void *hw, void **rmgr);
++	int (*create)(struct hw *hw, void **rmgr);
+ 	int (*destroy)(void *mgr);
+ } rsc_mgr_funcs[NUM_RSCTYP] = {
+ 	[SRC] 		= { .create 	= (create_t)src_mgr_create,
+diff --git a/sound/pci/ctxfi/ctatc.h b/sound/pci/ctxfi/ctatc.h
+index 5f11ca2..5641334 100644
+--- a/sound/pci/ctxfi/ctatc.h
++++ b/sound/pci/ctxfi/ctatc.h
+@@ -131,7 +131,7 @@ struct ct_atc {
+ 	/* Don't touch! Used for internal object. */
+ 	void *rsc_mgrs[NUM_RSCTYP]; /* chip resource managers */
+ 	void *mixer;		/* internal mixer object */
+-	void *hw;		/* chip specific hardware access object */
++	struct hw *hw;		/* chip specific hardware access object */
+ 	void **daios;		/* digital audio io resources */
+ 	void **pcm;		/* SUMs for collecting all pcm stream */
+ 	void **srcs;		/* Sample Rate Converters for input signal */
+diff --git a/sound/pci/ctxfi/ctdaio.c b/sound/pci/ctxfi/ctdaio.c
+index 6f0654e..7541641 100644
+--- a/sound/pci/ctxfi/ctdaio.c
++++ b/sound/pci/ctxfi/ctdaio.c
+@@ -331,7 +331,7 @@ static struct dai_rsc_ops dai_ops = {
+ 
+ static int daio_rsc_init(struct daio *daio,
+ 			 const struct daio_desc *desc,
+-			 void *hw)
++			 struct hw *hw)
+ {
+ 	int err;
+ 	unsigned int idx_l, idx_r;
+@@ -692,7 +692,7 @@ static int daio_mgr_commit_write(struct daio_mgr *mgr)
+ 	return 0;
+ }
+ 
+-int daio_mgr_create(void *hw, struct daio_mgr **rdaio_mgr)
++int daio_mgr_create(struct hw *hw, struct daio_mgr **rdaio_mgr)
+ {
+ 	int err, i;
+ 	struct daio_mgr *daio_mgr;
+diff --git a/sound/pci/ctxfi/ctdaio.h b/sound/pci/ctxfi/ctdaio.h
+index 85ccb6e..e4817de 100644
+--- a/sound/pci/ctxfi/ctdaio.h
++++ b/sound/pci/ctxfi/ctdaio.h
+@@ -53,14 +53,14 @@ struct dao {
+ 	struct dao_rsc_ops *ops;	/* DAO specific operations */
+ 	struct imapper **imappers;
+ 	struct daio_mgr *mgr;
+-	void *hw;
++	struct hw *hw;
+ 	void *ctrl_blk;
+ };
+ 
+ struct dai {
+ 	struct daio daio;
+ 	struct dai_rsc_ops *ops;	/* DAI specific operations */
+-	void *hw;
++	struct hw *hw;
+ 	void *ctrl_blk;
+ };
+ 
+@@ -117,7 +117,7 @@ struct daio_mgr {
+ };
+ 
+ /* Constructor and destructor of daio resource manager */
+-int daio_mgr_create(void *hw, struct daio_mgr **rdaio_mgr);
++int daio_mgr_create(struct hw *hw, struct daio_mgr **rdaio_mgr);
+ int daio_mgr_destroy(struct daio_mgr *daio_mgr);
+ 
+ #endif /* CTDAIO_H */
+diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
+index e49d2be..f14cbea 100644
+--- a/sound/pci/ctxfi/ctresource.c
++++ b/sound/pci/ctxfi/ctresource.c
+@@ -134,7 +134,8 @@ static struct rsc_ops rsc_generic_ops = {
+ 	.next_conj	= rsc_next_conj,
+ };
+ 
+-int rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, void *hw)
++int
++rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, struct hw *hw)
+ {
+ 	int err = 0;
+ 
+@@ -206,7 +207,7 @@ int rsc_uninit(struct rsc *rsc)
+ }
+ 
+ int rsc_mgr_init(struct rsc_mgr *mgr, enum RSCTYP type,
+-		 unsigned int amount, void *hw_obj)
++		 unsigned int amount, struct hw *hw_obj)
+ {
+ 	int err = 0;
+ 	struct hw *hw = hw_obj;
+diff --git a/sound/pci/ctxfi/ctresource.h b/sound/pci/ctxfi/ctresource.h
+index 0838c2e..9b746c3 100644
+--- a/sound/pci/ctxfi/ctresource.h
++++ b/sound/pci/ctxfi/ctresource.h
+@@ -38,7 +38,7 @@ struct rsc {
+ 	u32 conj:12;	/* Current conjugate index */
+ 	u32 msr:4;	/* The Master Sample Rate a resource working on */
+ 	void *ctrl_blk;	/* Chip specific control info block for a resource */
+-	void *hw;	/* Chip specific object for hardware access means */
++	struct hw *hw;	/* Chip specific object for hardware access means */
+ 	struct rsc_ops *ops;	/* Generic resource operations */
+ };
+ 
+@@ -50,7 +50,8 @@ struct rsc_ops {
+ 	int (*output_slot)(const struct rsc *rsc);
+ };
+ 
+-int rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, void *hw);
++int
++rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, struct hw *hw);
+ int rsc_uninit(struct rsc *rsc);
+ 
+ struct rsc_mgr {
+@@ -59,12 +60,12 @@ struct rsc_mgr {
+ 	unsigned int avail; /* The amount of currently available resources */
+ 	unsigned char *rscs; /* The bit-map for resource allocation */
+ 	void *ctrl_blk; /* Chip specific control info block */
+-	void *hw; /* Chip specific object for hardware access */
++	struct hw *hw; /* Chip specific object for hardware access */
+ };
+ 
+ /* Resource management is based on bit-map mechanism */
+ int rsc_mgr_init(struct rsc_mgr *mgr, enum RSCTYP type,
+-		 unsigned int amount, void *hw);
++		 unsigned int amount, struct hw *hw);
+ int rsc_mgr_uninit(struct rsc_mgr *mgr);
+ int mgr_get_resource(struct rsc_mgr *mgr, unsigned int n, unsigned int *ridx);
+ int mgr_put_resource(struct rsc_mgr *mgr, unsigned int n, unsigned int idx);
+diff --git a/sound/pci/ctxfi/ctsrc.c b/sound/pci/ctxfi/ctsrc.c
+index 19df9b4..342008f 100644
+--- a/sound/pci/ctxfi/ctsrc.c
++++ b/sound/pci/ctxfi/ctsrc.c
+@@ -543,7 +543,7 @@ static int src_mgr_commit_write(struct src_mgr *mgr)
+ 	return 0;
+ }
+ 
+-int src_mgr_create(void *hw, struct src_mgr **rsrc_mgr)
++int src_mgr_create(struct hw *hw, struct src_mgr **rsrc_mgr)
+ {
+ 	int err, i;
+ 	struct src_mgr *src_mgr;
+@@ -825,7 +825,7 @@ static int srcimp_imap_delete(struct srcimp_mgr *mgr, struct imapper *entry)
+ 	return err;
+ }
+ 
+-int srcimp_mgr_create(void *hw, struct srcimp_mgr **rsrcimp_mgr)
++int srcimp_mgr_create(struct hw *hw, struct srcimp_mgr **rsrcimp_mgr)
+ {
+ 	int err;
+ 	struct srcimp_mgr *srcimp_mgr;
+diff --git a/sound/pci/ctxfi/ctsrc.h b/sound/pci/ctxfi/ctsrc.h
+index 259366a..6d95afb 100644
+--- a/sound/pci/ctxfi/ctsrc.h
++++ b/sound/pci/ctxfi/ctsrc.h
+@@ -140,10 +140,10 @@ struct srcimp_mgr {
+ };
+ 
+ /* Constructor and destructor of SRC resource manager */
+-int src_mgr_create(void *hw, struct src_mgr **rsrc_mgr);
++int src_mgr_create(struct hw *hw, struct src_mgr **rsrc_mgr);
+ int src_mgr_destroy(struct src_mgr *src_mgr);
+ /* Constructor and destructor of SRCIMP resource manager */
+-int srcimp_mgr_create(void *hw, struct srcimp_mgr **rsrc_mgr);
++int srcimp_mgr_create(struct hw *hw, struct srcimp_mgr **rsrc_mgr);
+ int srcimp_mgr_destroy(struct srcimp_mgr *srcimp_mgr);
+ 
+ #endif /* CTSRC_H */
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
-
+1.8.1.2
 
