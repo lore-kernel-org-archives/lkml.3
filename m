@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaI2Q7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:59:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38881 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaI2Q7j (ORCPT
+	id S1754147AbaI2RA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 13:00:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46379 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaI2RA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:59:39 -0400
-Date: Mon, 29 Sep 2014 12:58:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hannes Reinecke <hare@suse.de>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        Robert Elliott <elliott@hp.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 29/38] Introduce dev_printk_string() and
- dev_printk_header()
-Message-ID: <20140929165843.GA13163@kroah.com>
-References: <1411991947-130166-1-git-send-email-hare@suse.de>
- <1411991947-130166-30-git-send-email-hare@suse.de>
+	Mon, 29 Sep 2014 13:00:28 -0400
+Date: Mon, 29 Sep 2014 19:00:22 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched: Use RCU read lock on all calls to dl_bw_of()
+Message-ID: <20140929170022.GA18926@worktop.programming.kicks-ass.net>
+References: <1412003970-25277-1-git-send-email-sasha.levin@oracle.com>
+ <1412009027.20287.17.camel@tkhai>
+ <20140929165418.GQ5430@worktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411991947-130166-30-git-send-email-hare@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140929165418.GQ5430@worktop>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 01:58:58PM +0200, Hannes Reinecke wrote:
-> Introducing dev_printk_string() and dev_printk_header() to allow
-> using an external buffer for printing via dev_printk().
+On Mon, Sep 29, 2014 at 06:54:18PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 29, 2014 at 08:43:47PM +0400, Kirill Tkhai wrote:
+> > Thanks for your report. It looks like your fix is not enough, because
+> > we check for rcu_read_lock_sched_held() in dl_bw_of(). It still warns
+> > even if rcu_read_lock() is held.
+> > 
+> > I used rcu_read_lock_sched_held() because we free root_domain using
+> > call_rcu_sched(). So, it's necessary to held rcu_read_lock_sched(),
+> > and my initial commit has this problem too.
+> > 
+> > It looks like we should fix it in a way like this:
+> > 
+> > [PATCH]sched: Use dl_bw_of() under rcu_read_lock_sched()
+> > 
+> > rq->rd is freed using call_rcu_sched(), and it's accessed with preemption
+> > disabled in the most cases.
+> > 
+> > So in other places we should use rcu_read_lock_sched() to access it to fit
+> > the scheme:
+> > 
+> > rcu_read_lock_sched() or preempt_disable() <==> call_rcu_sched().
 > 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: LKML <linux-kernel@vger.kernel.org>
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
-> ---
->  drivers/base/core.c    | 24 ++++++++++++++++++++++++
->  include/linux/device.h | 12 ++++++++++++
->  2 files changed, 36 insertions(+)
+> Hmm, sad that. I cannot remember why that is rcu_sched, I suspect
+> because we rely on it someplace but I cannot remember where.
+> 
+> We could of course do a double take on that and use call_rcu after
+> call_rcu_sched(), such that either or both are sufficient.
+> 
+> I would very much prefer not to add extra preempt_disable()s if
+> possible.
 
-I don't understand, what are you trying to do with this?  I don't see
-any follow-on patches that use this, nor can I find a 00/38 patch for
-this series...
-
-thanks,
-
-greg k-h
+Ah wait, if we simply move that preempt_disable() inside the
+for_each_cpu() loop there's no harm done. Having them outside is painful
+though.
