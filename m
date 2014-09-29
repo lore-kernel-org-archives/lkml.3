@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658AbaI2Tvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:51:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53847 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753950AbaI2Tva (ORCPT
+	id S1755032AbaI2TwH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:52:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33222 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247AbaI2TwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:51:30 -0400
-Date: Mon, 29 Sep 2014 21:51:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Lackner <sebastian@fds-team.de>
-cc: Andy Lutomirski <luto@amacapital.net>, Anish Bhatt <anish@chelsio.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, mingo@redhat.com,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
-In-Reply-To: <5429B5E4.6080302@fds-team.de>
-Message-ID: <alpine.DEB.2.02.1409292144340.22082@ionos.tec.linutronix.de>
-References: <1411674171-24442-1-git-send-email-anish@chelsio.com> <54299979.6080705@amacapital.net> <5429A556.50507@fds-team.de> <alpine.DEB.2.02.1409292059530.22082@ionos.tec.linutronix.de> <5429B5E4.6080302@fds-team.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 29 Sep 2014 15:52:04 -0400
+Date: Mon, 29 Sep 2014 15:52:00 -0400 (EDT)
+Message-Id: <20140929.155200.2231132602322345812.davem@davemloft.net>
+To: santosh.shilimkar@ti.com
+Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com,
+        joe@perches.com
+Subject: Re: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>
+References: <1411667317-1163-1-git-send-email-santosh.shilimkar@ti.com>
+	<1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 29 Sep 2014 12:52:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014, Sebastian Lackner wrote:
-> I see several issues here:
-> 
-> * At first the behaviour is not consistent between several system
-> call and return instructions. For example calling syscalls by using
-> 'int' doesn't have this issue, as it clears the NT flag before
-> entering kernel code. Return instructions also don't show this issue
-> all the time, just when it hits one of the problematic pieces of
-> code.
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Thu, 25 Sep 2014 13:48:36 -0400
 
-And why should we care? The use of NT is not supported. Period. So it
-does not matter whether A explodes and B does not.
+> +static inline int gbe_phy_link_status(struct gbe_slave *slave)
+> +{
+> +	if (!slave->phy)
+> +		return 1;
+> +
+> +	if (slave->phy->link)
+> +		return 1;
+> +
+> +	return 0;
+> +}
 
-> * The kernel might execute all kind of other code (for example
-> inside of drivers) and start additional threads. I didn't find any
-> good example yet, but its not that unlikely, that the exception can
-> also happen in a completely unrelated thread, where the kernel can
-> not just kill the corresponding usermode app...
+Please use 'bool' as the return type and return 'true' or 'false'.
 
-The thread can execute whatever it wants in kernel context. The
-exception is going to hit on return to user space and not in some
-random kernel context. The threads it creates are going to die as
-well.
+Do not use 'inline' in foo.c files, let the compiler decide.  Please
+audit this entire submission for this problem.
 
-> I'm fine with all kind of solutions, either it should be allowed to
-> set NT, or the kernel should at least throw a proper exception, so
-> that usermode has a chance to catch and handle it. At the moment the
-> segfault is deadly, as the segfault handler immediately segfaults
-> again - no chance to recover from such an error.
+> +static int gbe_port_reset(struct gbe_slave *slave)
+> +{
+> +	u32 i, v;
+> +
+> +	/* Set the soft reset bit */
+> +	writel_relaxed(SOFT_RESET, GBE_REG_ADDR(slave, emac_regs, soft_reset));
 
-# gdb ./crap core
+This driver seems to use relaxed readl and writel for almost everything.
 
-(gdb) info registers
+That absolutely cannot be right.  For example, here, you depend upon the
+ordering of this writel_relaxed() to reset the chip relative to the
+real_relaxed() you subsequently do to check ths bits.
 
-eflags         0x4296	[ PF AF SF IF NT ]
+I seriously think that *_relaxed() should only be done in very special
+circumstances where 1) the performance matters and 2) the validity of
+the usage has been put under a microscope and fully documented with huge
+comments above the *_relaxed() calls.
 
-Tells you very much that there is state which is not supported.
+If you cannot reduce and properly document the really necessary *_relaxed()
+uses, just convert them all to non-_relaxed() for now.
 
-Thanks,
+I'm also warning you ahead of time that since nobody else seems to feel
+like reviewing this enormous submission, you are going to have to get used
+to me pushing back on these changes over and over for small things like
+coding style and structural/API issues until some reviews it on a higher
+level.
 
-	tglx
+I really don't want to apply this series until someone thinks seriously
+about the driver's design and the long term ramifications of having a
+driver like this in the tree with so many random TX etc. hooks.
