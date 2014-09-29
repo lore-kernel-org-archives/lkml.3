@@ -1,54 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaI2Lum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:50:42 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42097 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbaI2Lui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:50:38 -0400
-From: zhang.lyra@gmail.com
-To: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
-        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
-        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com, orsonzhai@gmail.com,
-        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
-Subject: [PATCH 6/6] Documentation: Add entry for Spreadtrum's Shark64 SoC
-Date: Mon, 29 Sep 2014 19:48:34 +0800
-Message-Id: <1411991314-6636-7-git-send-email-zhang.lyra@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1411991314-6636-1-git-send-email-zhang.lyra@gmail.com>
-References: <1411991314-6636-1-git-send-email-zhang.lyra@gmail.com>
+	id S1754193AbaI2LvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:51:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59013 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753951AbaI2Lu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:50:27 -0400
+Date: Mon, 29 Sep 2014 13:50:23 +0200
+From: Jan Kara <jack@suse.cz>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, stable@vger.kernel.org,
+        linux-api@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Subject: Re: [PATCHv8.1] fanotify: enable close-on-exec on events' fd when
+ requested in fanotify_init()
+Message-ID: <20140929115023.GB6328@quack.suse.cz>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
+ <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+ <542481B3.8070300@gmx.de>
+ <1411721898.7778.18.camel@localhost.localdomain>
+ <542666B2.9080700@gmx.de>
+ <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+On Mon 29-09-14 10:49:15, Yann Droneaud wrote:
+> According to commit 80af258867648 ('fanotify: groups can specify
+> their f_flags for new fd'), file descriptors created as part of
+> file access notification events inherit flags from the
+> event_f_flags argument passed to syscall fanotify_init(2).
+> 
+> So while it is legal for userspace to call fanotify_init() with
+> O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
+> silently ignored.
+> 
+> Indeed event_f_flags are only given to dentry_open(), which only
+> seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
+> O_DIRECT in open_check_o_direct() and O_LARGEFILE in
+> generic_file_open().
+> 
+> But it seems logical to set close-on-exec flag on the file
+> descriptor if userspace is allowed to request it with O_CLOEXEC.
+> 
+> In fact, according to some lookup on http://codesearch.debian.net/
+> and various search engine, there's already some userspace code
+> requesting it:
+> 
+> - in systemd's readahead[2]:
+> 
+>     fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+> 
+> - in clsync[3]:
+> 
+>     #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
+> 
+>     int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
+> 
+> - in examples [4] from "Filesystem monitoring in the Linux
+>   kernel" article[5] by Aleksander Morgado:
+> 
+>     if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+>                                       O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
+> 
+> Lookup also returned some wrong usage of the syscall:
+> 
+> - in Gonk HAL from Mozilla Firefox OS sources[6]:
+> 
+>     mFd = fanotify_init(FAN_CLASS_NOTIF, FAN_CLOEXEC);
+> 
+> Adding support for O_CLOEXEC in fanotify_init() won't magically
+> enable it for Gonk since FAN_CLOEXEC is defined as 0x1, which
+> is likely equal to O_WRONLY when used in open flag context. In
+> the other hand, it won't hurt it either.
+> 
+> So this patch replaces call to macro get_unused_fd() by a call
+> to function get_unused_fd_flags() with event_f_flags value as
+> argument. This way O_CLOEXEC flag in the second argument of
+> fanotify_init(2) syscall is interpreted so that close-on-exec
+> get enabled when requested.
+> 
+> [1] http://blog.ffwll.ch/2013/11/botching-up-ioctls.html
+> [2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
+> [3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
+>     https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
+> [4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+> [5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
+> [6] http://hg.mozilla.org/mozilla-central/file/325c74addeba/hal/gonk/GonkDiskSpaceWatcher.cpp#l167
+> 
+> Link: http://lkml.kernel.org/r/cover.1394532336.git.ydroneaud@opteya.com
+> Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+> Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+> Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> Cc: Richard Guy Briggs <rgb@redhat.com>
+> Cc: Eric Paris <eparis@redhat.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: stable@vger.kernel.org
+> Cc: linux-api@vger.kernel.org
+> Reviewed by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Adds a devicetree binding documentation for Spreadtrum's Shark64 SoC.
+								Honza
 
-Signed-off-by: chunyan.zhang <chunyan.zhang@spreadtrum.com>
----
- Documentation/devicetree/bindings/arm/sprd.txt |    6 ++++++
- 1 file changed, 6 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
-
-diff --git a/Documentation/devicetree/bindings/arm/sprd.txt b/Documentation/devicetree/bindings/arm/sprd.txt
-new file mode 100644
-index 0000000..b6dc143
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/sprd.txt
-@@ -0,0 +1,6 @@
-+Spreadtrum Platforms Device Tree Bindings
-+----------------------------------------------------
-+
-+Shark64 Board
-+Required root node properties:
-+        - compatible = "sprd,shark64";
+> ---
+> Hi Andrew and Henrich,
+> 
+> Please find an updated patch with a commit message fixed regarding
+> the obsolote comments on code which is now updated, thanks to
+> Heinrich's patch.
+> 
+> Changes from v8:
+> - fixed commit message
+> - added Reviewed-by:
+> 
+> Regards.
+> 
+> Yann Droneaud,
+> OPTEYA
+> 
+>  fs/notify/fanotify/fanotify_user.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> index b13992a41bd9..c991616acca9 100644
+> --- a/fs/notify/fanotify/fanotify_user.c
+> +++ b/fs/notify/fanotify/fanotify_user.c
+> @@ -78,7 +78,7 @@ static int create_fd(struct fsnotify_group *group,
+>  
+>  	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+>  
+> -	client_fd = get_unused_fd();
+> +	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
+>  	if (client_fd < 0)
+>  		return client_fd;
+>  
+> -- 
+> 1.9.3
+> 
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
