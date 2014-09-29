@@ -1,283 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673AbaI2J4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:56:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51397 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682AbaI2J4A (ORCPT
+	id S1752209AbaI2KFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 06:05:14 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:42283 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaI2KFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:56:00 -0400
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: [PATCH v2 4/5] ARCNET: add support for multi interfaces on com20020
-Date: Mon, 29 Sep 2014 11:55:37 +0200
-Message-Id: <1411984538-953-5-git-send-email-m.grzeschik@pengutronix.de>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1411984538-953-1-git-send-email-m.grzeschik@pengutronix.de>
-References: <1411984538-953-1-git-send-email-m.grzeschik@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Sep 2014 06:05:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140929095344.GE4388@lukather>
+References: <1411570141-29960-1-git-send-email-wens@csie.org>
+ <1411570141-29960-5-git-send-email-wens@csie.org> <20140925133427.GI15315@lukather>
+ <CAGb2v65Yu=3rgQ+G6USJubKOPzcMJ5bqhe7d9wrYjpT9aFaZuw@mail.gmail.com> <20140929095344.GE4388@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Mon, 29 Sep 2014 18:04:50 +0800
+X-Google-Sender-Auth: PEFAm8WOrv-P3amGtibHhj90SC0
+Message-ID: <CAGb2v64-zshYgcPo-WR0TVebUDY3=LKBA9DfTVDKk2PA6VSiUA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/7] ARM: dts: sun9i: Add A80 Optimus Board support
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        ctl <ctl@merrii.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The com20020-pci driver is currently designed to instance
-one netdev with one pci device. This patch adds support to
-instance many cards with one pci device, depending on the device
-data in the private data.
+On Mon, Sep 29, 2014 at 5:53 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> On Sat, Sep 27, 2014 at 09:10:48PM +0800, Chen-Yu Tsai wrote:
+>> On Thu, Sep 25, 2014 at 9:34 PM, Maxime Ripard
+>> <maxime.ripard@free-electrons.com> wrote:
+>> > On Wed, Sep 24, 2014 at 10:48:58PM +0800, Chen-Yu Tsai wrote:
+>> >> The A80 Optimus Board is was launched with the Allwinner A80 SoC.
+>> >> It was jointly developed by Allwinner and Merrii.
+>> >>
+>> >> This board has a UART port, a JTAG connector, USB host ports, a USB
+>> >> 3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
+>> >> 4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
+>> >> jack, IR receiver, and additional GPIO headers.
+>> >>
+>> >> This patch adds only basic support.
+>> >>
+>> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> >> ---
+>> >>  arch/arm/boot/dts/Makefile              |  2 +
+>> >>  arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
+>> >>  2 files changed, 68 insertions(+)
+>> >>  create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
+>> >>
+>> >> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> >> index 2f42b18..098f319 100644
+>> >> --- a/arch/arm/boot/dts/Makefile
+>> >> +++ b/arch/arm/boot/dts/Makefile
+>> >> @@ -424,6 +424,8 @@ dtb-$(CONFIG_MACH_SUN7I) += \
+>> >>       sun7i-a20-pcduino3.dtb
+>> >>  dtb-$(CONFIG_MACH_SUN8I) += \
+>> >>       sun8i-a23-ippo-q8h-v5.dtb
+>> >> +dtb-$(CONFIG_MACH_SUN9I) += \
+>> >> +     sun9i-a80-optimus.dtb
+>> >>  dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+>> >>       tegra20-iris-512.dtb \
+>> >>       tegra20-medcom-wide.dtb \
+>> >> diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+>> >> new file mode 100644
+>> >> index 0000000..f83abab
+>> >> --- /dev/null
+>> >> +++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+>> >> @@ -0,0 +1,66 @@
+>> >> +/*
+>> >> + * Copyright 2014 Chen-Yu Tsai
+>> >> + *
+>> >> + * Chen-Yu Tsai <wens@csie.org>
+>> >> + *
+>> >> + * This file is dual-licensed: you can use it either under the terms
+>> >> + * of the GPL or the X11 license, at your option. Note that this dual
+>> >> + * licensing only applies to this file, and not this project as a
+>> >> + * whole.
+>> >> + *
+>> >> + *  a) This library is free software; you can redistribute it and/or
+>> >> + *     modify it under the terms of the GNU General Public License as
+>> >> + *     published by the Free Software Foundation; either version 2 of the
+>> >> + *     License, or (at your option) any later version.
+>> >> + *
+>> >> + *     This library is distributed in the hope that it will be useful,
+>> >> + *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> >> + *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> >> + *     GNU General Public License for more details.
+>> >> + *
+>> >> + *     You should have received a copy of the GNU General Public
+>> >> + *     License along with this library; if not, write to the Free
+>> >> + *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+>> >> + *     MA 02110-1301 USA
+>> >> + *
+>> >> + * Or, alternatively,
+>> >> + *
+>> >> + *  b) Permission is hereby granted, free of charge, to any person
+>> >> + *     obtaining a copy of this software and associated documentation
+>> >> + *     files (the "Software"), to deal in the Software without
+>> >> + *     restriction, including without limitation the rights to use,
+>> >> + *     copy, modify, merge, publish, distribute, sublicense, and/or
+>> >> + *     sell copies of the Software, and to permit persons to whom the
+>> >> + *     Software is furnished to do so, subject to the following
+>> >> + *     conditions:
+>> >> + *
+>> >> + *     The above copyright notice and this permission notice shall be
+>> >> + *     included in all copies or substantial portions of the Software.
+>> >> + *
+>> >> + *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+>> >> + *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+>> >> + *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+>> >> + *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+>> >> + *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+>> >> + *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+>> >> + *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+>> >> + *     OTHER DEALINGS IN THE SOFTWARE.
+>> >> + */
+>> >> +
+>> >> +/dts-v1/;
+>> >> +/include/ "sun9i-a80.dtsi"
+>> >> +
+>> >> +/ {
+>> >> +     model = "Merrii A80 Optimus Board";
+>> >> +     compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
+>> >> +
+>> >> +     chosen {
+>> >> +             bootargs = "earlyprintk console=ttyS0,115200";
+>> >> +     };
+>> >
+>> > Since you changed the memory node in the DTSI, you should probably add
+>> > one here too, don't you?
+>>
+>> I thought we left fixing that to the bootloader?
+>> I don't see any memory nodes in our other DTS.
+>
+> Yes, but does the A80 bootloader supports DT and actually fixes it? If
+> not, then you'll still have to have a memory node, just like on the
+> A31 (and presumably on the A23).
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
----
-v1 -> v2: fixed build of com20020_cs by using common struct com20020_dev
+Not at the moment no. But last I checked none of our board dts files
+have separate memory nodes. We only have them in the dtsi, with the
+largest supported ram size as its value. Also the bootloader
+(u-boot that is) can pass the memory size via atags I think.
 
- drivers/net/arcnet/com20020-pci.c | 149 ++++++++++++++++++++++++--------------
- drivers/net/arcnet/com20020_cs.c  |   4 -
- include/linux/com20020.h          |  15 +++-
- 3 files changed, 109 insertions(+), 59 deletions(-)
+At least I'm only getting 512MB RAM on my Optimus, due to u-boot
+incorrectly assuming I only have as much. But that's another problem. :(
 
-diff --git a/drivers/net/arcnet/com20020-pci.c b/drivers/net/arcnet/com20020-pci.c
-index f9e5552..fe87576 100644
---- a/drivers/net/arcnet/com20020-pci.c
-+++ b/drivers/net/arcnet/com20020-pci.c
-@@ -38,6 +38,7 @@
- #include <linux/pci.h>
- #include <linux/arcdevice.h>
- #include <linux/com20020.h>
-+#include <linux/list.h>
- 
- #include <asm/io.h>
- 
-@@ -61,85 +62,125 @@ module_param(clockp, int, 0);
- module_param(clockm, int, 0);
- MODULE_LICENSE("GPL");
- 
-+static void com20020pci_remove(struct pci_dev *pdev);
-+
- static int com20020pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
--	struct com20020_pci_channel_map *cm;
- 	struct com20020_pci_card_info *ci;
- 	struct net_device *dev;
- 	struct arcnet_local *lp;
--	int ioaddr, err;
-+	struct com20020_priv *priv;
-+	int i, ioaddr, ret;
-+	struct resource *r;
- 
- 	if (pci_enable_device(pdev))
- 		return -EIO;
--	dev = alloc_arcdev(device);
--	if (!dev)
--		return -ENOMEM;
--
--	dev->netdev_ops = &com20020_netdev_ops;
- 
-+	priv = devm_kzalloc(&pdev->dev, sizeof(struct com20020_priv),
-+			    GFP_KERNEL);
- 	ci = (struct com20020_pci_card_info *)id->driver_data;
-+	priv->ci = ci;
- 
--	lp = netdev_priv(dev);
-+	INIT_LIST_HEAD(&priv->list_dev);
- 
--	pci_set_drvdata(pdev, dev);
- 
--	cm = &ci->chan_map_tbl[0];
--	BUGMSG(D_NORMAL, "%s Controls\n", ci->name);
--	ioaddr = pci_resource_start(pdev, cm->bar);
-+	for (i = 0; i < ci->devcount; i++) {
-+		struct com20020_pci_channel_map *cm = &ci->chan_map_tbl[i];
-+		struct com20020_dev *card;
- 
--	if (!request_region(ioaddr, ARCNET_TOTAL_SIZE, "com20020-pci")) {
--		BUGMSG(D_INIT, "IO region %xh-%xh already allocated.\n",
--		       ioaddr, ioaddr + ARCNET_TOTAL_SIZE - 1);
--		err = -EBUSY;
--		goto out_dev;
--	}
-+		dev = alloc_arcdev(device);
-+		if (!dev) {
-+			ret = -ENOMEM;
-+			goto out_port;
-+		}
- 
--	// Dummy access after Reset
--	// ARCNET controller needs this access to detect bustype
--	outb(0x00,ioaddr+1);
--	inb(ioaddr+1);
--
--	dev->base_addr = ioaddr;
--	dev->irq = pdev->irq;
--	dev->dev_addr[0] = node;
--	lp->card_name = "PCI COM20020";
--	lp->card_flags = ci->flags;
--	lp->backplane = backplane;
--	lp->clockp = clockp & 7;
--	lp->clockm = clockm & 3;
--	lp->timeout = timeout;
--	lp->hw.owner = THIS_MODULE;
--
--	if (ASTATUS() == 0xFF) {
--		BUGMSG(D_NORMAL, "IO address %Xh was reported by PCI BIOS, "
--		       "but seems empty!\n", ioaddr);
--		err = -EIO;
--		goto out_port;
--	}
--	if (com20020_check(dev)) {
--		err = -EIO;
--		goto out_port;
-+		dev->netdev_ops = &com20020_netdev_ops;
-+
-+		lp = netdev_priv(dev);
-+
-+		BUGMSG(D_NORMAL, "%s Controls\n", ci->name);
-+		ioaddr = pci_resource_start(pdev, cm->bar) + cm->offset;
-+
-+		r = devm_request_region(&pdev->dev, ioaddr, cm->size,
-+					"com20020-pci");
-+		if (!r) {
-+			pr_err("IO region %xh-%xh already allocated.\n",
-+			       ioaddr, ioaddr + cm->size - 1);
-+			ret = -EBUSY;
-+			goto out_port;
-+		}
-+
-+		/* Dummy access after Reset
-+		 * ARCNET controller needs
-+		 * this access to detect bustype
-+		 */
-+		outb(0x00, ioaddr + 1);
-+		inb(ioaddr + 1);
-+
-+		dev->base_addr = ioaddr;
-+		dev->dev_addr[0] = node;
-+		dev->irq = pdev->irq;
-+		lp->card_name = "PCI COM20020";
-+		lp->card_flags = ci->flags;
-+		lp->backplane = backplane;
-+		lp->clockp = clockp & 7;
-+		lp->clockm = clockm & 3;
-+		lp->timeout = timeout;
-+		lp->hw.owner = THIS_MODULE;
-+
-+		if (ASTATUS() == 0xFF) {
-+			pr_err("IO address %Xh is empty!\n", ioaddr);
-+			ret = -EIO;
-+			goto out_port;
-+		}
-+		if (com20020_check(dev)) {
-+			ret = -EIO;
-+			goto out_port;
-+		}
-+
-+		card = devm_kzalloc(&pdev->dev, sizeof(struct com20020_dev),
-+				    GFP_KERNEL);
-+		if (!card) {
-+			pr_err("%s out of memory!\n", __func__);
-+			return -ENOMEM;
-+		}
-+
-+		card->index = i;
-+		card->pci_priv = priv;
-+		card->dev = dev;
-+
-+		dev_set_drvdata(&dev->dev, card);
-+
-+		ret = com20020_found(dev, IRQF_SHARED);
-+		if (ret)
-+			goto out_port;
-+
-+		list_add(&card->list, &priv->list_dev);
- 	}
- 
--	if ((err = com20020_found(dev, IRQF_SHARED)) != 0)
--	        goto out_port;
-+	pci_set_drvdata(pdev, priv);
- 
- 	return 0;
- 
- out_port:
--	release_region(ioaddr, ARCNET_TOTAL_SIZE);
--out_dev:
--	free_netdev(dev);
--	return err;
-+	com20020pci_remove(pdev);
-+	return ret;
- }
- 
- static void com20020pci_remove(struct pci_dev *pdev)
- {
--	struct net_device *dev = pci_get_drvdata(pdev);
--	unregister_netdev(dev);
--	free_irq(dev->irq, dev);
--	release_region(dev->base_addr, ARCNET_TOTAL_SIZE);
--	free_netdev(dev);
-+	struct com20020_dev *card, *tmpcard;
-+	struct com20020_priv *priv;
-+
-+	priv = pci_get_drvdata(pdev);
-+
-+	list_for_each_entry_safe(card, tmpcard, &priv->list_dev, list) {
-+		struct net_device *dev = card->dev;
-+
-+		unregister_netdev(dev);
-+		free_irq(dev->irq, dev);
-+		free_netdev(dev);
-+	}
- }
- 
- static struct com20020_pci_card_info card_info_10mbit = {
-diff --git a/drivers/net/arcnet/com20020_cs.c b/drivers/net/arcnet/com20020_cs.c
-index 1a790a2..057d958 100644
---- a/drivers/net/arcnet/com20020_cs.c
-+++ b/drivers/net/arcnet/com20020_cs.c
-@@ -112,10 +112,6 @@ static void com20020_detach(struct pcmcia_device *p_dev);
- 
- /*====================================================================*/
- 
--struct com20020_dev {
--    struct net_device       *dev;
--};
--
- static int com20020_probe(struct pcmcia_device *p_dev)
- {
-     struct com20020_dev *info;
-diff --git a/include/linux/com20020.h b/include/linux/com20020.h
-index 6a1ceca..8589899 100644
---- a/include/linux/com20020.h
-+++ b/include/linux/com20020.h
-@@ -41,7 +41,7 @@ extern const struct net_device_ops com20020_netdev_ops;
- #define BUS_ALIGN  1
- #endif
- 
--#define PLX_PCI_MAX_CARDS 1
-+#define PLX_PCI_MAX_CARDS 2
- 
- struct com20020_pci_channel_map {
- 	u32 bar;
-@@ -58,6 +58,19 @@ struct com20020_pci_card_info {
- 	unsigned int flags;
- };
- 
-+struct com20020_priv {
-+	struct com20020_pci_card_info *ci;
-+	struct list_head list_dev;
-+};
-+
-+struct com20020_dev {
-+	struct list_head list;
-+	struct net_device *dev;
-+
-+	struct com20020_priv *pci_priv;
-+	int index;
-+};
-+
- #define _INTMASK  (ioaddr+BUS_ALIGN*0)	/* writable */
- #define _STATUS   (ioaddr+BUS_ALIGN*0)	/* readable */
- #define _COMMAND  (ioaddr+BUS_ALIGN*1)	/* standard arcnet commands */
--- 
-2.1.0
+Would this be a problem when using Android fastboot from the stock
+u-boot?
 
+
+Cheers
+ChenYu
