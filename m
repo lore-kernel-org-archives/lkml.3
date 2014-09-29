@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbaI2SEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:04:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45767 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353AbaI2SEU (ORCPT
+	id S1754630AbaI2SFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:05:42 -0400
+Received: from mercury.cora.nwra.com ([4.28.99.165]:36349 "EHLO
+	mail.cora.nwra.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883AbaI2SFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:04:20 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v5 6/6] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_parse_of
-Date: Mon, 29 Sep 2014 20:03:39 +0200
-Message-Id: <1412013819-29181-7-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
-References: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Sep 2014 14:05:35 -0400
+X-Greylist: delayed 2187 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 14:05:34 EDT
+Message-ID: <542996DB.8000502@cora.nwra.com>
+Date: Mon, 29 Sep 2014 11:28:59 -0600
+From: Orion Poplawski <orion@cora.nwra.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH 001/001] mm: Use KERN_INFO log level for memory configuration
+ boot messages
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the for_each_... macro should make the code bit shorter and
-easier to read. Since we can break out of the loop, we keep the
-call to of_node_put after the loop.
+From: Orion Poplawski <orion@cora.nwra.com>
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+While trying look at just "warning" or stronger messages with "journalctl --priority 0..4" I keep
+seeing:
+
+Sep 29 07:10:29 barry kernel: Zone ranges:
+Sep 29 07:10:29 barry kernel:   DMA      [mem 0x00001000-0x00ffffff]
+Sep 29 07:10:29 barry kernel:   DMA32    [mem 0x01000000-0xffffffff]
+Sep 29 07:10:29 barry kernel:   Normal   [mem 0x100000000-0x61fffffff]
+Sep 29 07:10:29 barry kernel: Movable zone start for each node
+Sep 29 07:10:29 barry kernel: Early memory node ranges
+Sep 29 07:10:29 barry kernel:   node   0: [mem 0x00001000-0x0009dfff]
+Sep 29 07:10:29 barry kernel:   node   0: [mem 0x00100000-0xdfdf8fff]
+Sep 29 07:10:29 barry kernel:   node   0: [mem 0x100000000-0x61fffffff]
+Sep 29 07:10:29 barry kernel: Built 1 zonelists in Zone order, mobility grouping on.  Total pages
+Sep 29 07:10:29 barry kernel: Policy zone: Normal
+Sep 29 07:10:29 barry kernel: Memory: 24673284K/25163352K available (7245K kernel code, 1127K rwd
+
+which strike me as purely informational.  This patch sets the level of these messages accordingly.
+This is to current git master.
+
+Signed-off-by: Orion Poplawski <orion@cora.nwra.com>
+
 ---
- drivers/staging/imx-drm/imx-drm-core.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ mm/page_alloc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 9b5222c..8f2a802 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -438,17 +438,13 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
- 	struct drm_encoder *encoder, struct device_node *np)
- {
- 	struct imx_drm_device *imxdrm = drm->dev_private;
--	struct device_node *ep = NULL;
-+	struct device_node *ep;
- 	uint32_t crtc_mask = 0;
--	int i;
-+	int i = 0;
- 
--	for (i = 0; ; i++) {
-+	for_each_endpoint_of_node(np, ep) {
- 		u32 mask;
- 
--		ep = of_graph_get_next_endpoint(np, ep);
--		if (!ep)
--			break;
--
- 		mask = imx_drm_find_crtc_mask(imxdrm, ep);
- 
- 		/*
-@@ -461,6 +457,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
- 			return -EPROBE_DEFER;
- 
- 		crtc_mask |= mask;
-+		i++;
- 	}
- 
- 	if (ep)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 18cee0d..b8205e8 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3899,14 +3899,14 @@ void __ref build_all_zonelists(pg_data_t *pgdat, struct zone *zone)
+        else
+                page_group_by_mobility_disabled = 0;
+
+-       printk("Built %i zonelists in %s order, mobility grouping %s.  "
++       printk(KERN_INFO "Built %i zonelists in %s order, mobility grouping %s.  "
+                "Total pages: %ld\n",
+                        nr_online_nodes,
+                        zonelist_order_name[current_zonelist_order],
+                        page_group_by_mobility_disabled ? "off" : "on",
+                        vm_total_pages);
+ #ifdef CONFIG_NUMA
+-       printk("Policy zone: %s\n", zone_names[policy_zone]);
++       printk(KERN_INFO "Policy zone: %s\n", zone_names[policy_zone]);
+ #endif
+ }
+
+@@ -5338,7 +5338,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+        find_zone_movable_pfns_for_nodes();
+
+        /* Print out the zone ranges */
+-       printk("Zone ranges:\n");
++       printk(KERN_INFO "Zone ranges:\n");
+        for (i = 0; i < MAX_NR_ZONES; i++) {
+                if (i == ZONE_MOVABLE)
+                        continue;
+@@ -5354,17 +5354,17 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+        }
+
+        /* Print out the PFNs ZONE_MOVABLE begins at in each node */
+-       printk("Movable zone start for each node\n");
++       printk(KERN_INFO "Movable zone start for each node\n");
+        for (i = 0; i < MAX_NUMNODES; i++) {
+                if (zone_movable_pfn[i])
+-                       printk("  Node %d: %#010lx\n", i,
++                       printk(KERN_INFO "  Node %d: %#010lx\n", i,
+                               zone_movable_pfn[i] << PAGE_SHIFT);
+        }
+
+        /* Print out the early node map */
+-       printk("Early memory node ranges\n");
++       printk(KERN_INFO "Early memory node ranges\n");
+        for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
+-               printk("  node %3d: [mem %#010lx-%#010lx]\n", nid,
++               printk(KERN_INFO "  node %3d: [mem %#010lx-%#010lx]\n", nid,
+                       start_pfn << PAGE_SHIFT, (end_pfn << PAGE_SHIFT) - 1);
+
+        /* Initialise every node */
+@@ -5500,7 +5500,7 @@ void __init mem_init_print_info(const char *str)
+
+ #undef adj_init_size
+
+-       printk("Memory: %luK/%luK available "
++       printk(KERN_INFO "Memory: %luK/%luK available "
+               "(%luK kernel code, %luK rwdata, %luK rodata, "
+               "%luK init, %luK bss, %luK reserved"
+ #ifdef CONFIG_HIGHMEM
+--
+1.9.3
+
+
 -- 
-2.1.0
-
+Orion Poplawski
+Technical Manager                     303-415-9701 x222
+NWRA, Boulder/CoRA Office             FAX: 303-415-9702
+3380 Mitchell Lane                       orion@nwra.com
+Boulder, CO 80301                   http://www.nwra.com
