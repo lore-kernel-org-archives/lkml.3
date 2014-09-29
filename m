@@ -1,141 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaI2JKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:10:12 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:45767 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaI2JKK (ORCPT
+	id S1753300AbaI2JKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:10:49 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:38772 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaI2JKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:10:10 -0400
-Message-ID: <542921EA.4050709@gmail.com>
-Date: Mon, 29 Sep 2014 11:10:02 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 29 Sep 2014 05:10:48 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH 10/15] powerpc/mm: Add hooks for cxl
+In-Reply-To: <1411028820-29933-11-git-send-email-mikey@neuling.org>
+References: <1411028820-29933-1-git-send-email-mikey@neuling.org> <1411028820-29933-11-git-send-email-mikey@neuling.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 29 Sep 2014 14:40:33 +0530
+Message-ID: <87tx3qpzau.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>, Doug Ledford <dledford@redhat.com>
-CC: mtk.manpages@gmail.com,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Madars Vitolins <m@silodev.com>
-Subject: Document POSIX MQ /proc/sys/fs/mqueue files
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14092909-2000-0000-0000-0000022BD91D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Doug, David,
+Michael Neuling <mikey@neuling.org> writes:
 
-I think you two were the last ones to make significant 
-changes to the semantics of the files in /proc/sys/fs/mqueue,
-so I wonder if you (or anyone else who is willing) might
-take a look at the man page text below that I've written
-(for the mq_overview(7) page) to describe past and current
-reality, and let me know of improvements of corrections.
+> From: Ian Munsie <imunsie@au1.ibm.com>
+>
+> This add a hook into tlbie() so that we use global invalidations when there are
+> cxl contexts active.
+>
+> Normally cxl snoops broadcast tlbie.  cxl can have TLB entries invalidated via
+> MMIO, but we aren't doing that yet.  So for now we are just disabling local
+> tlbies when cxl contexts are active.  In future we can make tlbie() local mode
+> smarter so that it invalidates cxl contexts explicitly when it needs to.
+>
+> This also adds a hooks for when SLBs are invalidated to ensure any
+> corresponding SLBs in cxl are also invalidated at the same time.
 
-By the way, Doug, your commit ce2d52cc1364 appears to have
-changed/broken the semantics of the files in the /dev/mqueue 
-filesystem. Formerly, the QSIZE field in these files showed
-the number of bytes of real user data in all of the queued
-messages. After that commit, QSIZE now includes kernel 
-overhead bytes, which does not seem very useful for user 
-space. Was that change intentional? I see no mention of the
-change in the commit message, so it sounds like it was not 
-intended.
+We are not really invalidating cx1 SLB's when we are doing
+slb_flush_and_rebolt(). May be add some code documentation around to
+explain when we are invalidating cx1 slb here. ?
 
-Cheers,
+>
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  arch/powerpc/mm/hash_native_64.c | 6 +++++-
+>  arch/powerpc/mm/hash_utils_64.c  | 3 +++
+>  arch/powerpc/mm/slice.c          | 3 +++
+>  3 files changed, 11 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
+> index afc0a82..ae4962a 100644
+> --- a/arch/powerpc/mm/hash_native_64.c
+> +++ b/arch/powerpc/mm/hash_native_64.c
+> @@ -29,6 +29,8 @@
+>  #include <asm/kexec.h>
+>  #include <asm/ppc-opcode.h>
+>  
+> +#include <misc/cxl.h>
+> +
+>  #ifdef DEBUG_LOW
+>  #define DBG_LOW(fmt...) udbg_printf(fmt)
+>  #else
+> @@ -149,9 +151,11 @@ static inline void __tlbiel(unsigned long vpn, int psize, int apsize, int ssize)
+>  static inline void tlbie(unsigned long vpn, int psize, int apsize,
+>  			 int ssize, int local)
+>  {
+> -	unsigned int use_local = local && mmu_has_feature(MMU_FTR_TLBIEL);
+> +	unsigned int use_local;
+>  	int lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
+>  
+> +	use_local = local && mmu_has_feature(MMU_FTR_TLBIEL) && !cxl_ctx_in_use();
+> +
+>  	if (use_local)
+>  		use_local = mmu_psize_defs[psize].tlbiel;
+>  	if (lock_tlbie && !use_local)
+> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+> index 66071af..be40ff7 100644
+> --- a/arch/powerpc/mm/hash_utils_64.c
+> +++ b/arch/powerpc/mm/hash_utils_64.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/signal.h>
+>  #include <linux/memblock.h>
+>  #include <linux/context_tracking.h>
+> +#include <misc/cxl.h>
+>  
+>  #include <asm/processor.h>
+>  #include <asm/pgtable.h>
+> @@ -906,6 +907,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
+>  #ifdef CONFIG_SPU_BASE
+>  	spu_flush_all_slbs(mm);
+>  #endif
+> +	cxl_slbia(mm);
+>  	if (get_paca_psize(addr) != MMU_PAGE_4K) {
+>  		get_paca()->context = mm->context;
+>  		slb_flush_and_rebolt();
+> @@ -1145,6 +1147,7 @@ int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, u
+>  #ifdef CONFIG_SPU_BASE
+>  			spu_flush_all_slbs(mm);
+>  #endif
+> +			cxl_slbia(mm);
+>  		}
+>  	}
+>  
+> diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
+> index b0c75cc..4d3a34b 100644
+> --- a/arch/powerpc/mm/slice.c
+> +++ b/arch/powerpc/mm/slice.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/err.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/export.h>
+> +#include <misc/cxl.h>
+>  #include <asm/mman.h>
+>  #include <asm/mmu.h>
+>  #include <asm/spu.h>
+> @@ -235,6 +236,7 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
+>  #ifdef CONFIG_SPU_BASE
+>  	spu_flush_all_slbs(mm);
+>  #endif
+> +	cxl_slbia(mm);
+>  }
+>  
+>  /*
+> @@ -674,6 +676,7 @@ void slice_set_psize(struct mm_struct *mm, unsigned long address,
+>  #ifdef CONFIG_SPU_BASE
+>  	spu_flush_all_slbs(mm);
+>  #endif
+> +	cxl_slbia(mm);
+>  }
+>  
+>  void slice_set_range_psize(struct mm_struct *mm, unsigned long start,
+> -- 
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Michael
-
->From mq_overview(7) draft:
-
-   /proc interfaces
-       The following interfaces can be used to limit the amount of  ker‐
-       nel  memory  consumed  by  POSIX  message  queues  and to set the
-       default attributes for new message queues:
-
-       /proc/sys/fs/mqueue/msg_default (since Linux 3.5)
-              This file  defines  the  value  used  for  a  new  queue's
-              mq_maxmsg setting when the queue is created with a call to
-              mq_open(3) where attr is specified as NULL.   The  default
-              value for this file is 10.  The minimum and maximum are as
-              for /proc/sys/fs/mqueue/msg_max.  If  msg_default  exceeds
-              msg_max,  a  new queue's default mq_maxmsg value is capped
-              to the msg_max limit.  Up until Linux 2.6.28, the  default
-              mq_maxmsg  was  10;  from  Linux  2.6.28 to Linux 3.4, the
-              default was the value defined for the msg_max limit.
-
-       /proc/sys/fs/mqueue/msg_max
-              This file can be used to view and change the ceiling value
-              for the maximum number of messages in a queue.  This value
-              acts as a ceiling on the attr->mq_maxmsg argument given to
-              mq_open(3).   The  default  value  for msg_max is 10.  The
-              minimum value is 1 (10 in  kernels  before  2.6.28).   The
-              upper  limit is HARD_MSGMAX.  The msg_max limit is ignored
-              for  privileged  processes  (CAP_SYS_RESOURCE),  but   the
-              HARD_MSGMAX ceiling is nevertheless imposed.
-
-              The  definition  of  HARD_MSGMAX has changed across kernel
-              versions:
-
-              *  Up to Linux 2.6.32: 131072 / sizeof(void *)
-
-              *  Linux 2.6.33 to 3.4: (32768 * sizeof(void *) / 4)
-
-              *  Since Linux 3.5: 65,536
-
-       /proc/sys/fs/mqueue/msgsize_default (since Linux 3.5)
-              This file defines the value used for a new queue's mq_msg‐
-              size  setting  when  the  queue  is created with a call to
-              mq_open(3) where attr is specified as NULL.   The  default
-              value  for this file is 8192.  The minimum and maximum are
-              as   for   /proc/sys/fs/mqueue/msgsize_max.     If    msg‐
-              size_default  exceeds  msgsize_max,  a new queue's default
-              mq_msgsize value is capped to the msgsize_max  limit.   Up
-              until  Linux 2.6.28, the default mq_msgsize was 8192; from
-              Linux 2.6.28 to Linux  3.4,  the  default  was  the  value
-              defined for the msgsize_max limit.
-
-       /proc/sys/fs/mqueue/msgsize_max
-              This  file  can  be used to view and change the ceiling on
-              the maximum message size.  This value acts as a ceiling on
-              the  attr->mq_msgsize  argument  given to mq_open(3).  The
-              default value for msgsize_max is 8192 bytes.  The  minimum
-              value  is  128 (8192 in kernels before 2.6.28).  The upper
-              limit for msgsize_max has varied across kernel versions:
-
-              *  Before Linux 2.6.28, the upper limit is INT_MAX.
-
-              *  From Linux 2.6.28 to 3.4, the limit is 1,048,576.
-
-              *  Since Linux 3.5, the limit is 16,777,216 (HARD_MSGSIZE‐
-                 MAX).
-
-              The  msgsize_max  limit  is ignored for privileged process
-              (CAP_SYS_RESOURCE), but, since Linux  3.5,  the  HARD_MSG‐
-              SIZEMAX ceiling is enforced for privileged processes.
-
-       /proc/sys/fs/mqueue/queues_max
-              This  file  can be used to view and change the system-wide
-              limit on the number of message queues that can be created.
-              The default value for queues_max is 256.  The semantics of
-              this limit have changed across kernel versions as follows:
-
-              *  Before Linux 3.5, this limit could be  changed  to  any
-                 value  in  the  range 0 to INT_MAX, but privileged pro‐
-                 cesses (CAP_SYS_RESOURCE) can exceed the limit.
-
-              *  Since Linux 3.5, there is a ceiling for this  limit  of
-                 1024     (HARD_QUEUESMAX).      Privileged    processes
-                 (CAP_SYS_RESOURCE) can exceed the queues_max limit, but
-                 the  HARD_QUEUESMAX  limit  is enforced even for privi‐
-                 leged processes.
-
-              *  Starting with Linux 3.14, the HARD_QUEUESMAX ceiling is
-                 removed: no ceiling is imposed on the queues_max limit,
-                 and privileged processes (CAP_SYS_RESOURCE) can  exceed
-                 the limit.
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
