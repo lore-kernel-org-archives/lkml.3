@@ -1,125 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658AbaI2US2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 16:18:28 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:59219 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751996AbaI2US0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 16:18:26 -0400
-Message-ID: <1412021904.6334.97.camel@x220>
-Subject: Re: [PATCH] lib: rename TEST_MODULE to TEST_LKM
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Valentin Rothberg <valentinrothberg@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, Randy Dunlap <rdunlap@infradead.org>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Sep 2014 22:18:24 +0200
-In-Reply-To: <1411496822.31476.1.camel@nebuchadnezzar>
-References: <1411455508-11958-1-git-send-email-valentinrothberg@gmail.com>
-	 <5421A4B4.1040604@infradead.org> <1411492210.30136.15.camel@nebuchadnezzar>
-	 <5421A9D5.8020503@infradead.org> <1411496822.31476.1.camel@nebuchadnezzar>
+	id S1753891AbaI2UXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 16:23:41 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:43315 "EHLO
+	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750968AbaI2UXk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 16:23:40 -0400
+Message-ID: <1412022198.23497.23.camel@linux-t7sj.site>
+Subject: Re: Document POSIX MQ /proc/sys/fs/mqueue files
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Doug Ledford <dledford@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Madars Vitolins <m@silodev.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Date: Mon, 29 Sep 2014 13:23:18 -0700
+In-Reply-To: <542921EA.4050709@gmail.com>
+References: <542921EA.4050709@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 29 Sep 2014 20:18:24.0521 (UTC) FILETIME=[8595A790:01CFDC22]
-X-RcptDomain: vger.kernel.org
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Perhaps Kees hasn't seen this yet.]
+Hi Michael,
 
-On Tue, 2014-09-23 at 20:27 +0200, Valentin Rothberg wrote:
-> On mar., 2014-09-23 at 10:11 -0700, Randy Dunlap wrote:
-> > On 09/23/14 10:10, Valentin Rothberg wrote:
-> > > On mar., 2014-09-23 at 09:49 -0700, Randy Dunlap wrote:
-> > >> On 09/22/14 23:58, Valentin Rothberg wrote:
-> > >>> The "_MODULE" suffix is reserved for tristates compiled as
-> > >>> loadable kernel modules (LKM). The "TEST_MODULE" feature thereby
-> > >>
-> > >> Is that documented anywhere?
-> > > 
-> > > Sadly this is not made explicit, but the Kconfig code documents it. The
-> > > following code (./scripts/kconfig/confdata.c) is used to generate the
-> > > autoconf.h header file during the build process. When a feature is
-> > > selected as a kernel module ('m'), it is suffixed with "_MODULE" to
-> > > indicate it. 
-> > > 
-> > > »   »   switch (*value) {
-> > > »   »   case 'n':
-> > > »   »   »   break;
-> > > »   »   case 'm':
-> > > »   »   »   suffix = "_MODULE";
-> > > »   »   »   /* fall through */
-> > > 
-> > >> Was this causing some kind of problem or error?  Please tell us what that was if so.
-> > > 
-> > > It causes problems for static code analysis, which assumes a consistent
-> > > use of the "_MODULE" suffix. 
-> > > 
-> > > Another possible change would be to rename the reference in the Makefile
-> > > to "TEST_MODULE_MODULE". Personally, I prefer my proposed patch.
-> > 
-> > Sure, your patch is fine, but we need to know *why* the patch is needed.
+Cc'ing Manfred.
+
+On Mon, 2014-09-29 at 11:10 +0200, Michael Kerrisk (man-pages) wrote:
+> Hello Doug, David,
 > 
-> Thank you for pointing that out. I will take care to give more
-> information in future patches.
+> I think you two were the last ones to make significant 
+> changes to the semantics of the files in /proc/sys/fs/mqueue,
+> so I wonder if you (or anyone else who is willing) might
+> take a look at the man page text below that I've written
+> (for the mq_overview(7) page) to describe past and current
+> reality, and let me know of improvements of corrections.
+
+Over the years posix mqueues have increasingly become a mess *sigh* :-/
+Thanks for doing this and untangling some of the historic changes.
+
+> From mq_overview(7) draft:
 > 
-> Thanks,
->  Valentin
+>    /proc interfaces
+>        The following interfaces can be used to limit the amount of  ker‐
+>        nel  memory  consumed  by  POSIX  message  queues  and to set the
+>        default attributes for new message queues:
 > 
-> > Thanks.
-> > 
-> > >>
-> > >>
-> > >>> violates this convention. The feature is used to compile the
-> > >>> lib/test_module.c kernel module.
-> > >>>
-> > >>> This patch renames the feature and its reference in a Makefile
-> > >>> to "TEST_LKM", which still expresses the test of a LKM.
+>        /proc/sys/fs/mqueue/msg_default (since Linux 3.5)
+>               This file  defines  the  value  used  for  a  new  queue's
+>               mq_maxmsg setting when the queue is created with a call to
+>               mq_open(3) where attr is specified as NULL.   The  default
+>               value for this file is 10.  The minimum and maximum are as
+>               for /proc/sys/fs/mqueue/msg_max.  If  msg_default  exceeds
+>               msg_max,  a  new queue's default mq_maxmsg value is capped
+>               to the msg_max limit. 
 
-Maybe something like "TEST_MODULE_LOAD"?
+I think rephrasing this would read easier. Basically the behavior is
+this:
 
-> > >>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
-> > >>> ---
-> > >>>  lib/Kconfig.debug | 2 +-
-> > >>>  lib/Makefile      | 2 +-
-> > >>>  2 files changed, 2 insertions(+), 2 deletions(-)
-> > >>>
-> > >>> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> > >>> index 07c2832..db91c97 100644
-> > >>> --- a/lib/Kconfig.debug
-> > >>> +++ b/lib/Kconfig.debug
-> > >>> @@ -1627,7 +1627,7 @@ config DMA_API_DEBUG
-> > >>>  
-> > >>>  	  If unsure, say N.
-> > >>>  
-> > >>> -config TEST_MODULE
-> > >>> +config TEST_LKM
-> > >>>  	tristate "Test module loading with 'hello world' module"
-> > >>>  	default n
-> > >>>  	depends on m
-> > >>> diff --git a/lib/Makefile b/lib/Makefile
-> > >>> index d6b4bc4..382437a 100644
-> > >>> --- a/lib/Makefile
-> > >>> +++ b/lib/Makefile
-> > >>> @@ -31,7 +31,7 @@ obj-y += string_helpers.o
-> > >>>  obj-$(CONFIG_TEST_STRING_HELPERS) += test-string_helpers.o
-> > >>>  obj-y += kstrtox.o
-> > >>>  obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
-> > >>> -obj-$(CONFIG_TEST_MODULE) += test_module.o
-> > >>> +obj-$(CONFIG_TEST_LKM) += test_module.o
+		info->attr.mq_maxmsg = min(ipc_ns->mq_msg_max,
+					   ipc_ns->mq_msg_default);
 
-Perhaps we should rename that file likewise?
+Something like:
+"a new queue's default mq_maxmsg value will be the smallest of msg_default and msg_max"
 
-> > >>>  obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
-> > >>>  obj-$(CONFIG_TEST_BPF) += test_bpf.o
-> > >>>  obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
+>  Up until Linux 2.6.28, the  default
+>               mq_maxmsg  was  10;  from  Linux  2.6.28 to Linux 3.4, the
+>               default was the value defined for the msg_max limit.
+> 
+>        /proc/sys/fs/mqueue/msg_max
+>               This file can be used to view and change the ceiling value
+>               for the maximum number of messages in a queue.  This value
+>               acts as a ceiling on the attr->mq_maxmsg argument given to
+>               mq_open(3).   The  default  value  for msg_max is 10.  The
+>               minimum value is 1 (10 in  kernels  before  2.6.28).   The
+>               upper  limit is HARD_MSGMAX.  The msg_max limit is ignored
+>               for  privileged  processes  (CAP_SYS_RESOURCE),  but   the
+>               HARD_MSGMAX ceiling is nevertheless imposed.
 
-If something like this gets applied a follow up patch to make the kbuild
-system reject Kconfig symbols ending in _MODULE might be nice.
+Note that the HARD_MSGMAX check is done *only* for privileged processes,
+regular processes only check against namespace values. This is a pretty
+fundamental difference. The same goes of course for msgsize:
+
+	if (capable(CAP_SYS_RESOURCE)) {
+		if (attr->mq_maxmsg > HARD_MSGMAX ||
+		    attr->mq_msgsize > HARD_MSGSIZEMAX)
+			return -EINVAL;
+	} else {
+		if (attr->mq_maxmsg > ipc_ns->mq_msg_max ||
+		    attr->mq_msgsize > ipc_ns->mq_msgsize_max)
+			return -EINVAL;
+	}
 
 
-Paul Bolle
+>               The  definition  of  HARD_MSGMAX has changed across kernel
+>               versions:
+> 
+>               *  Up to Linux 2.6.32: 131072 / sizeof(void *)
+> 
+>               *  Linux 2.6.33 to 3.4: (32768 * sizeof(void *) / 4)
+> 
+>               *  Since Linux 3.5: 65,536
+> 
+>        /proc/sys/fs/mqueue/msgsize_default (since Linux 3.5)
+
+You might want to mention the units (bytes) when refering to limits.
+
+>               This file defines the value used for a new queue's mq_msg‐
+>               size  setting  when  the  queue  is created with a call to
+>               mq_open(3) where attr is specified as NULL.   The  default
+>               value  for this file is 8192.  The minimum and maximum are
+>               as   for   /proc/sys/fs/mqueue/msgsize_max.     If    msg‐
+>               size_default  exceeds  msgsize_max,  a new queue's default
+>               mq_msgsize value is capped to the msgsize_max  limit.   Up
+>               until  Linux 2.6.28, the default mq_msgsize was 8192; from
+>               Linux 2.6.28 to Linux  3.4,  the  default  was  the  value
+>               defined for the msgsize_max limit.
+> 
+>        /proc/sys/fs/mqueue/msgsize_max
+
+Ditto here.
+
+>               This  file  can  be used to view and change the ceiling on
+>               the maximum message size.  This value acts as a ceiling on
+>               the  attr->mq_msgsize  argument  given to mq_open(3).  The
+>               default value for msgsize_max is 8192 bytes.  The  minimum
+>               value  is  128 (8192 in kernels before 2.6.28).  The upper
+>               limit for msgsize_max has varied across kernel versions:
+> 
+>               *  Before Linux 2.6.28, the upper limit is INT_MAX.
+> 
+>               *  From Linux 2.6.28 to 3.4, the limit is 1,048,576.
+> 
+>               *  Since Linux 3.5, the limit is 16,777,216 (HARD_MSGSIZE‐
+>                  MAX).
+>               The  msgsize_max  limit  is ignored for privileged process
+>               (CAP_SYS_RESOURCE), but, since Linux  3.5,  the  HARD_MSG‐
+>               SIZEMAX ceiling is enforced for privileged processes.
+> 
+>        /proc/sys/fs/mqueue/queues_max
+>               This  file  can be used to view and change the system-wide
+>               limit on the number of message queues that can be created.
+>               The default value for queues_max is 256.  The semantics of
+>               this limit have changed across kernel versions as follows:
+> 
+>               *  Before Linux 3.5, this limit could be  changed  to  any
+>                  value  in  the  range 0 to INT_MAX, but privileged pro‐
+>                  cesses (CAP_SYS_RESOURCE) can exceed the limit.
+> 
+>               *  Since Linux 3.5, there is a ceiling for this  limit  of
+>                  1024     (HARD_QUEUESMAX).      Privileged    processes
+>                  (CAP_SYS_RESOURCE) can exceed the queues_max limit, but
+>                  the  HARD_QUEUESMAX  limit  is enforced even for privi‐
+>                  leged processes.
+> 
+>               *  Starting with Linux 3.14, the HARD_QUEUESMAX ceiling is
+>                  removed: no ceiling is imposed on the queues_max limit,
+>                  and privileged processes (CAP_SYS_RESOURCE) can  exceed
+>                  the limit.
+
+Given that this was treated as a bug that breaks user-space, I don't
+think we really want to document the behavior between 3.5 and 3.14 (all
+three bullets). Stable kernels back to 3.5 now have the default
+behavior, so its as nothing ever changed(?). Now, if you explicitly want
+to document such bug, I would agree, but just not mentioning it as
+intentional differences in behavior. Does that make sense?
+
+Thanks,
+Davidlohr
+
 
