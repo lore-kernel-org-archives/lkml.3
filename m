@@ -1,194 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaI2JaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 05:30:05 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:56835 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaI2JaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 05:30:01 -0400
-Date: Mon, 29 Sep 2014 11:29:58 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Luc Verhaegen <libv@skynet.be>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-sunxi] Re: [PATCH 4/4] simplefb: add clock handling code
-Message-ID: <20140929092956.GA26008@ulmo>
-References: <53FF1D6C.6090205@redhat.com>
- <20140829070116.GC13106@ulmo>
- <20140829141244.GH15297@lukather>
- <20140829143812.GC31264@ulmo>
- <20140902092508.GR15297@lukather>
- <20140927235601.19023.31593@quantum>
- <20140929080637.GB12506@ulmo>
- <CAMuHMdV8job81-sf88Dx6w=0GZsWD02h94picAtYw2BtSz=Kgw@mail.gmail.com>
- <20140929085421.GH12506@ulmo>
- <CAMuHMdU0_GjbOjVE9Vnp703TnsdmkN-nxCxrigCWO7RPMzPRyw@mail.gmail.com>
+	id S1752814AbaI2Ja2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:30:28 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:50513 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209AbaI2JaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 05:30:25 -0400
+Date: Mon, 29 Sep 2014 10:26:00 +0100
+From: Liviu Dudau <liviu@dudau.co.uk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 00/22] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+Message-ID: <20140929092600.GA15854@bart.dudau.co.uk>
+References: <1411614872-4009-1-git-send-email-wangyijing@huawei.com>
+ <20140925074235.GN12423@ulmo>
+ <20140925144855.GB31157@bart.dudau.co.uk>
+ <20140925164937.GB30382@ulmo>
+ <5424E09F.50701@huawei.com>
+ <20140926085030.GE31157@bart.dudau.co.uk>
+ <54276F6C.5010705@huawei.com>
+ <20140928112144.GA4671@bart.dudau.co.uk>
+ <5428B971.50101@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdU0_GjbOjVE9Vnp703TnsdmkN-nxCxrigCWO7RPMzPRyw@mail.gmail.com>
+In-Reply-To: <5428B971.50101@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Sep 29 10:30:23 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 13,542926ac48392053617530
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---9amGYk9869ThD9tj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Sep 29, 2014 at 11:10:53AM +0200, Geert Uytterhoeven wrote:
-> Hi Thierry,
->=20
-> On Mon, Sep 29, 2014 at 10:54 AM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > On Mon, Sep 29, 2014 at 10:27:41AM +0200, Geert Uytterhoeven wrote:
-> >> (CC linux-pm, as PM is the real reason behind disabling unused clocks)
-> >> (CC gregkh and lkml, for driver core)
+On Mon, Sep 29, 2014 at 09:44:17AM +0800, Yijing Wang wrote:
+> On 2014/9/28 19:21, Liviu Dudau wrote:
+> > On Sun, Sep 28, 2014 at 10:16:12AM +0800, Yijing Wang wrote:
+> >>>>>> What I would like to see is a way of creating the pci_host_bridge structure outside
+> >>>>>> the pci_create_root_bus(). That would then allow us to pass this sort of platform
+> >>>>>> details like associated msi_chip into the host bridge and the child busses will
+> >>>>>> have an easy way of finding the information needed by finding the root bus and then
+> >>>>>> the host bridge structure. Then the generic pci_scan_root_bus() can be used by (mostly)
+> >>>>>> everyone and the drivers can remove their kludges that try to work around the
+> >>>>>> current limitations.
+> >>>>
+> >>>> So I think maybe save msi chip in PCI arch sysdata is a good candidate.
+> >>>
+> >>> Except that arch sysdata at the moment is an opaque pointer. I am all in favour in
+> >>> changing the type of sysdata from void* into pci_host_bridge* and arches can wrap their old
+> >>> sysdata around the pci_host_bridge*.
 > >>
-> >> On Mon, Sep 29, 2014 at 10:06 AM, Thierry Reding
-> >> <thierry.reding@gmail.com> wrote:
-> >> > If we start extending the binding with board-level details we end up
-> >> > duplicating the device tree node for the proper video device. Also n=
-ote
-> >> > that it won't stop at clocks. Other setups will require regulators t=
-o be
-> >> > listed in this device tree node as well so that they don't get disab=
-led
-> >> > at late_initcall. And the regulator bindings don't provide a method =
-to
-> >> > list an arbitrary number of clocks in a single property in the way t=
-hat
-> >> > the clocks property works.
+> >> I inspected every arch and found there are almost no common stuff,
+> > 
+> > I will disagree here. Most (all?) of the structures that are passed as sysdata argument to
+> 
+> Most.
+> 
+> > pci_create_root_bus() or pci_scan_root_bus() have a set of resources for storing the MEM and
+> > IO ranges, which struct pci_host_bridge already has. So that can be factored out of the
+> > arch code. Same for pci_domain_nr. Then there are some variables that are used for communication
+> > with the platform code due to convoluted way(s) in which PCI code gets instantiated.
+> 
+> Yes, currently some archs store MEM and IO resource in pci sysdata, and others not, move the MEM and IO
+> resource to pci_host_bride could make code become simple, we can clean up the resource list argument in
+> pci scan functions.
+> 
+> > 
+> > What I am arguing here is not that the arch equivalent of pci_host_bridge structure is already
+> > common, but that by moving the members that are common out of arch sysdata into pci_host_bridge
+> > we will have more commonality and it will be easier to re-factor the code.
+> 
+> Now, I got it, thanks!
+> 
+> > 
+> >> and generic data struct should
+> >> be created in generic PCI code.
+> > 
+> > Not necessarily. What I have in mind is something like this:
+> 
+> This is a good idea, what I'm worried is this series is already large, so I think we need to post
+> another series to do it.
+
+I wasn't asking to do it here, I was just offering a suggestion (and sharing some experience) when
+it comes to handling msi chip in an arch independent way.
+
+> 
+> 
+> > 
+> >  - drivers/pci/ exports pci_init_host_bridge() that does the initialisation of bridge->windows
+> >    and anything else that is needed (like find_pci_host_bridge() function).
+> >  - arch code does:
+> > 
+> > 	struct pci_controller {
+> > 		struct pci_host_bridge bridge;
+> > 		.....
+> > 	};
+> > 
+> > 	#define to_pci_controller(bridge)	container_of(bridge, struct pci_controller, bridge)
+> > 
+> > 	static inline struct pci_controller *get_host_controller(const struct pci_bus *bus)
+> > 	{
+> > 		struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
+> > 		if (bridge)
+> > 			return to_pci_controller(bridge);
+> > 
+> > 		return NULL;
+> > 	}
+> > 
+> > 	int arch_pci_init(....)
+> > 	{
+> > 		struct pci_controller *hose;
+> > 		....
+> > 		hose = kzalloc(sizeof(*hose), GFP_KERNEL);
+> > 		pci_init_host_bridge(&hose->bridge);
+> > 		....
+> > 		pci_scan_root_bus(...., &hose->bridge, &resources);
+> > 		....
+> > 		return 0;
+> > 	}
+> > 
+> > Then finding the right structure will be easy.
+> > 
+> >> Another, I don't like associate msi chip and every PCI device, further more,
+> >> almost all platforms except arm have only one MSI controller, and currently, PCI enumerating code doesn't need
+> >> to know the MSI chip details, like for legacy IRQ, PCI device doesn't need to know which IRQ controller they
+> >> should deliver IRQ to. I would think more about it, and hope other PCI guys can give some comments, especially from Bjorn.
 > >>
-> >> Then (optional) regulator support needs to be added.
-> >
-> > Can you elaborate?
->=20
-> I'm not so familiar with regulators, but I guess it's similar to clocks?
+> > 
+> > I wasn't suggesing to associate an msi chip with every PCI device, but with the pci_host_bridge.
+> > I don't expect a host bridge to have more than one msi chip, so that should be OK. Also, I'm
+> > thinking that getting the associated msi chip should be some sort of pci_host_bridge ops function,
+> > and for arches that don't care about MSI it doesn't get implemented.
+> 
+> Currently, a property "msi-parent" was introduced in arm, and all msi chip integrated in irq chip controller will
+> be added to of_pci_msi_chip_list. PCI host driver find the match msi chip by its of_node.
 
-The bindings are different. Essentially what you use is a *-supply
-property per regulator. There is no way to specify more than one
-regulator in a single property.
+OK. But as you might have seen that still implies open coding a separate version of pci_scan_root_bus().
 
-So if you want to keep that generic you have to do crazy things like:
+Best regards,
+Liviu
 
-	simplefb {
-		enable-0-supply =3D <&reg1>;
-		enable-1-supply =3D <&reg2>;
-		...
-	};
-
-I suppose a more generic supplies property could be created to support
-this use-case, but I think this kind of proves my point. The only way
-that the original proposal is going to work for other resources is if
-they follow the same kind of binding. I don't think it makes sense to
-introduce such a prerequisite merely because it would make life easy
-for some exotic driver with a very specific application.
-
-> > And then all of a sudden something that was supposed to be simple and
-> > generic needs to know the specifics of some hardware device.
->=20
-> And suddenly we wish we could write a real driver and put the stuff in
-> the DTS, not DTB...
-
-Oh, there's no doubt a real driver would be preferrable. Note that
-simplefb is only meant to be a shim to pass a framebuffer from firmware
-to kernel. In some cases it can be used with longer lifetime, like for
-example if you really want to have graphical output but the real driver
-isn't there yet.
-
-Being a shim driver is precisely the reason why I think the binding
-shouldn't be extended to cover all possible types of resources. That
-should all go into the binding for the real device.
-
-> >> > The only reasonable thing for simplefb to do is not deal with any ki=
-nd
-> >> > of resource at all (except perhaps area that contains the framebuffer
-> >> > memory).
-> >> >
-> >> > So how about instead of requiring resources to be explicitly claimed=
- we
-> >> > introduce something like the below patch? The intention being to give
-> >> > "firmware device" drivers a way of signalling to the clock framework
-> >> > that they need rely on clocks set up by firmware and when they no lo=
-nger
-> >> > need them. This implements essentially what Mark (CC'ing again on th=
-is
-> >> > subthread) suggested earlier in this thread. Basically, it will allow
-> >> > drivers to determine the time when unused clocks are really unused. =
-It
-> >> > will of course only work when used correctly by drivers. For the cas=
-e of
-> >> > simplefb I'd expect its .probe() implementation to call the new
-> >> > clk_ignore_unused() function and once it has handed over control of =
-the
-> >> > display hardware to the real driver it can call clk_unignore_unused(=
-) to
-> >> > signal that all unused clocks that it cares about have now been clai=
-med.
-> >> > This is "reference counted" and can therefore be used by more than a
-> >> > single driver if necessary. Similar functionality could be added for
-> >> > other resource subsystems as needed.
+> 
+> Thanks!
+> Yijing.
+> 
+> > 
+> > Best regards,
+> > Liviu
+> > 
+> >  
+> >> Thanks!
+> >> Yijing.
 > >>
-> >> This still won't work for modules, right? Or am I missing something?
-> >> With modules you will never know in advance what will be used and what
-> >> won't be used, so you need to keep all clocks, regulators, PM domains,=
- ...
-> >> up and running?
-> >
-> > No. The way this works is that your firmware shim driver, simplefb in
-> > this case, will call clk_ignore_unused() to tell the clock framework
-> > that it uses clocks set up by the firmware, and therefore requests that
-> > no clocks should be considered unused (for now). Later on when the
-> > proper driver has successfully taken over from the shim driver, the shim
-> > driver can unregister itself and call clk_unignore_unused(), which will
-> > drop its "reference" on the unused clocks. When all references have been
-> > dropped the clock framework will then disable all remaining unused
-> > clocks.
->=20
-> So the shim must be built-in, not modular.
+> >>>
+> >>> Best regards,
+> >>> Liviu
+> >>>
+> >>>>
+> >>>>>
+> >>>>> I think both issues are orthogonal. Last time I checked a lot of work
+> >>>>> was still necessary to unify host bridges enough so that it could be
+> >>>>> shared across architectures. But perhaps some of that work has
+> >>>>> happened in the meantime.
+> >>>>>
+> >>>>> But like I said, when you create the root bus, you can easily attach the
+> >>>>> MSI chip to it.
+> >>>>>
+> >>>>> Thierry
+> >>>>>
+> >>>>
+> >>>>
+> >>>> -- 
+> >>>> Thanks!
+> >>>> Yijing
+> >>>>
+> >>>>
+> >>>
+> >>
+> >>
+> >> -- 
+> >> Thanks!
+> >> Yijing
+> >>
+> >>
+> > 
+> 
+> 
+> -- 
+> Thanks!
+> Yijing
+> 
+> 
 
-Correct. Making it a module isn't very useful in my opinion. You'd loose
-all the advantages.
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
-Thierry
+ One small step
+   for me ...
 
---9amGYk9869ThD9tj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUKSaUAAoJEN0jrNd/PrOhCyMP/jqv5QPAVj/upKL0ptIZuJEa
-4OSqgUc1ZQvbaeFWxQtJdQdibqt13+StOQ3mdtJdvrwFFh7YWhTG1K3IZEGF3FC7
-76PCUXowotjJ+RqxVn1FdAQs/B68FZBlLXn44iI/XyFrtLV+Z4ZcCVxsw7YUzbSK
-ipVbJFGTI2O4n11Karejq/EwNr3FohqUu6kXTYyUiVUOjMV1l2w4FKjsWmEbrfWz
-C9r+Rm2GrypaSg5pdOeBPuvFyMzctQHweMGO8nhtsV2Z7w1ZifRO5LaiXTgyQ+je
-UMckuznVGDYLqJgs3BOZpJ/gBZjSlTgCmtZZ8vO1b/RXG99qxi+F11rvxIoaDjAe
-PPuWoBTrrPsKYHzF/5ZlrJpUKWoPHpJtVQbidtNZHvoIusU+AqlU+BieDwBROo0O
-CClVJiqBHf1vqo7FZthjiqG3oUQZb8DeOu4ba9Lok6P3UBwabz5YhacMeB+mzlKU
-gs16EsulrwaNTx8KBCKDQud9p52m6FwQlSHBYC9eHwjbOImJHizCYutx/9dN4q48
-eHpn6NyuRGpa+ayIVGUBK8x7mUdcbUXFbp7qdbWlBqCSHOczhTu0GeGU0k7X2QpG
-bBj/Gk9nycWxuNy1qkrOhnwKMovJbsUPMPW/tIY7SowuUsneZ4WdEFhKdBM5woSR
-XENnnnSExlEr1ZZ1Hl5z
-=Vpgk
------END PGP SIGNATURE-----
-
---9amGYk9869ThD9tj--
