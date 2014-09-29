@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaI2I7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 04:59:16 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:45308 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaI2I7N (ORCPT
+	id S1753081AbaI2JAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 05:00:12 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:50191 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751221AbaI2JAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 04:59:13 -0400
-Date: Mon, 29 Sep 2014 10:59:09 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, sparclinux <sparclinux@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 6/8] asm-generic/io.h: Implement generic
- {read,write}s*()
-Message-ID: <20140929085908.GI12506@ulmo>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
- <1407925738-26170-7-git-send-email-thierry.reding@gmail.com>
- <CAMuHMdW4emoma3nRUGna985tE17yPh5pNjMb-jxe5yc5UVr=cw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j+MD90OnwjQyWNYt"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdW4emoma3nRUGna985tE17yPh5pNjMb-jxe5yc5UVr=cw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 29 Sep 2014 05:00:10 -0400
+Message-ID: <1411981207.6334.6.camel@x220>
+Subject: Re: [PATCH] unicore32: Remove unneeded Kconfig entry NO_IOPORT_MAP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Xuetao Guan <gxt@pku.edu.cn>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Date: Mon, 29 Sep 2014 11:00:07 +0200
+In-Reply-To: <1373895763.5110.1411868969556.JavaMail.root@bj-mail03.pku.edu.cn>
+References: <1373895763.5110.1411868969556.JavaMail.root@bj-mail03.pku.edu.cn>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2014 09:00:07.0955 (UTC) FILETIME=[C48A7E30:01CFDBC3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2014-09-28 at 09:49 +0800, Xuetao Guan wrote:
+> Sorry for late reply.
 
---j+MD90OnwjQyWNYt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+You replied within four days. That's rather quick, actually.
 
-On Mon, Sep 29, 2014 at 10:54:34AM +0200, Geert Uytterhoeven wrote:
-> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
-> <thierry.reding@gmail.com> wrote:
-> > #ifndef memset_io
-> > -#define memset_io(a, b, c)     memset(__io_virt(a), (b), (c))
-> > +#define memset_io memset_io
-> > +static inline void memset_io(void __iomem *addr, int value, size_t siz=
-e)
-> > +{
-> > +       memset(__io_virt(addr), value, size);
-> > +}
-> >  #endif
->=20
-> xtensa/allmodconfig:
->=20
-> include/asm-generic/io.h:820:2: error: implicit declaration of
-> function 'memset' [-Werror=3Dimplicit-function-declaration]
-> include/asm-generic/io.h:829:2: error: implicit declaration of
-> function 'memcpy' [-Werror=3Dimplicit-function-declaration]
-> arch/xtensa/include/asm/string.h:110:14: error: conflicting types for 'me=
-mset'
-> arch/xtensa/include/asm/string.h:113:14: error: conflicting types for 'me=
-mcpy'
->=20
-> http://kisskb.ellerman.id.au/kisskb/buildresult/12028900/
+> I checked this config, and it's only used for HAS_IOPORT_MAP in lib/Kconfig
+> Sure, removing it means no different for .config file.
+> I think a better way is reserving it
 
-I think this can be fixed by including linux/string.h for memset() and
-memcpy() in include/asm-generic/io.h.
+I'm not sure I get what you're saying here: what do mean with "reserving
+it"?
 
-Thanks,
-Thierry
+> or moving it into arch/Kconfig
 
---j+MD90OnwjQyWNYt
-Content-Type: application/pgp-signature
+Without a (treewide) patch I find it hard to say whether that's worth
+the trouble. But even if that move would be done, wouldn't it include
+dropping this entry from arch/unicore32 anyway?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUKR9cAAoJEN0jrNd/PrOhASUP/RvBIHM071cnw1PJ7yxsJ3L9
-Ye2u9bLq3ieMzN64dyKlZ0WDnlL0Zqian8oSeGFdff3yRUHaL54OA/U7AuOFX6D5
-PWltAOtP0gdrxIllmD+5mAORzTq+/4nE90FsKYKaF00CLdHe03PrrNCSoQL8AjKM
-LOLlyM7FK0zSpu8fX888PxFSbmWRrtvN5pRgW6FuDg7CFB6ngMguZ8Ez8vGlQBJp
-a/9c4FKxzJSxnmyKsV9jXSfLMTGNach+gtU99i86nTiDCoJvmx8C8nLOr9eCYmet
-YgpAiyZY0lDR5TZu9PmDum5UwQWD/0GUU5nSa98GrevvLk+TRVIbKCXVpxeos7Pb
-d872N+plfgUX4Pyy3RotpRvvwdNckKiPS+T6uYL/7oAlu/zuuOQ+XFNs7UGw9a0Z
-rVOkIUdud+hVuS//oqzu3z2SRPItcT00d7TZDcGcQdFNx8uIYi1df0elBVYYrgGN
-EWe+AWDuBvwBRFWz6w8TQpsRjzs44OP3FfEKtOAqzhyjVNuVZaH7yBNiVILdpzop
-/iLGFJ4mQk0wV3w/Sszf+LFV7RRq7cjbwbp4fqKRCKQmcSpJ5xnA71ONHiACQ61h
-H0jJjja1A2/0lTM2N27vWT70y2lUay60FG2Y6k5uD9LfsQB0GamL90u4wgpiH8zm
-nDA3G2WCAde4Al0seiYx
-=bajY
------END PGP SIGNATURE-----
+Paul Bolle
 
---j+MD90OnwjQyWNYt--
