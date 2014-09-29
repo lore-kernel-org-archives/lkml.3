@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaI2SCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:02:40 -0400
-Received: from smtprelay0213.hostedemail.com ([216.40.44.213]:55025 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754054AbaI2SCj (ORCPT
+	id S1754719AbaI2SDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:03:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45713 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288AbaI2SDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:02:39 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:4321:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: snake52_6e0e68051c019
-X-Filterd-Recvd-Size: 2260
-Message-ID: <1412013755.4302.45.camel@joe-AO725>
-Subject: Re: checkpatch: CHECK: No space is necessary after a cast
-From: Joe Perches <joe@perches.com>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: ath10k@lists.infradead.org, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dan Carpenter <error27@gmail.com>
-Date: Mon, 29 Sep 2014 11:02:35 -0700
-In-Reply-To: <874mvq1w9v.fsf@kamboji.qca.qualcomm.com>
-References: <874mvq1w9v.fsf@kamboji.qca.qualcomm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Sep 2014 14:03:49 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devel@driverdev.osuosl.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v5 0/6] Add of-graph helpers to loop over endpoints and find ports by id
+Date: Mon, 29 Sep 2014 20:03:33 +0200
+Message-Id: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.1
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-29 at 14:49 +0300, Kalle Valo wrote:
-> Hi Joe,
-> 
-> I have a problem with checkpatch. On ath10k we have this function:
-> 
-> static inline struct ath10k_skb_cb *ATH10K_SKB_CB(struct sk_buff *skb)
-> {
-> 	BUILD_BUG_ON(sizeof(struct ath10k_skb_cb) >
-> 		     IEEE80211_TX_INFO_DRIVER_DATA_SIZE);
-> 	return (struct ath10k_skb_cb *)&IEEE80211_SKB_CB(skb)->driver_data;
-> }
-> 
-> And the BUILD_BUG_ON triggers this warning:
-> 
-> drivers/net/wireless/ath/ath10k/core.h:85: CHECK: No space is necessary after a cast
-> 
-> Any advice how to handle that?
+Hi,
 
-It's a checkpatch false positive that could be fixed.
+now the first three patches of the previous series are combined into one. This
+patch touches of, media, and staging. Since it is rebased onto Grant's tree, it
+now trivially conflicts with 30e94a564d07 (staging: imx-drm: Lines over 80
+characters fixed.)
 
-It needs something like another test to look for
-sizeof(type) as not a cast and more arithmetic/comparison
-uses.
+This series converts all existing users of of_graph_get_next_endpoint that pass
+a non-NULL prev argument to the function and decrement its refcount themselves
+to stop doing that. The of_node_put is moved into of_graph_get_next_endpoint
+instead.
+This allows to add a for_each_endpoint_of_node helper macro to loop over all
+endpoints in a device tree node.
+The third of patch adds a of_graph_get_port_by_id function to retrieve a port
+by its known port id from the device tree.
 
-Maybe you can test this?
----
- scripts/checkpatch.pl | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Finally, the last three patches convert functions in drm_of.c and imx-drm-core.c
+to use the for_each_endpoint_of_node macro instead of of_graph_get_next_endpoint.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 52a223e..6132329 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2515,7 +2515,8 @@ sub process {
- 			}
- 		}
- 
--		if ($line =~ /^\+.*\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic|{)/) {
-+		if ($line =~ /^\+.*(\w+\s*)?\(\s*$Type\s*\)[ \t]+(?!$Assignment|$Arithmetic|[,;\({\[\<\>])/ &&
-+		    (!defined($1) || $1 !~ /sizeof\s*/)) {
- 			if (CHK("SPACING",
- 				"No space is necessary after a cast\n" . $herecurr) &&
- 			    $fix) {
+Changes since v4:
+ - Combined patches 1-3 into one
 
+The previous version can be found here: https://lkml.org/lkml/2014/9/29/78
+
+regards
+Philipp
+
+Philipp Zabel (6):
+  of: Decrement refcount of previous endpoint in
+    of_graph_get_next_endpoint
+  of: Add for_each_endpoint_of_node helper macro
+  of: Add of_graph_get_port_by_id function
+  drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
+  imx-drm: use for_each_endpoint_of_node macro in
+    imx_drm_encoder_get_mux_id
+  imx-drm: use for_each_endpoint_of_node macro in
+    imx_drm_encoder_parse_of
+
+ drivers/gpu/drm/drm_of.c                       |  8 ++----
+ drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
+ drivers/of/base.c                              | 35 ++++++++++++++++++++------
+ drivers/staging/imx-drm/imx-drm-core.c         | 28 ++++++---------------
+ include/linux/of_graph.h                       | 18 +++++++++++++
+ 5 files changed, 56 insertions(+), 36 deletions(-)
+
+-- 
+2.1.0
 
