@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaI2OWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:22:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51937 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaI2OWn (ORCPT
+	id S1753991AbaI2OXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:23:10 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46480 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaI2OXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:22:43 -0400
-Date: Mon, 29 Sep 2014 16:23:08 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-cc: marc.zyngier@arm.com, mark.rutland@arm.com, jason@lakedaemon.net,
-        will.deacon@arm.com, catalin.marinas@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [RFC 4/4] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
-In-Reply-To: <54287F17.8000503@amd.com>
-Message-ID: <alpine.DEB.2.02.1409291611030.22082@ionos.tec.linutronix.de>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1411937610-22125-5-git-send-email-suravee.suthikulpanit@amd.com> <54287F17.8000503@amd.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 29 Sep 2014 10:23:08 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CAJOtW+7UJQ2=66vELbyfXumQ=c9LknRAzXmd6Z6ea7i4oy6FwA@mail.gmail.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+ <54259BD4.8090508@oracle.com> <CACT4Y+Y0fzbs4DPt3n30R33cYqXEZ8E86tzCfzL6RUE9f+-r=w@mail.gmail.com>
+ <CAPAsAGyDpnhpMquXi-K4wdDEbj-5W44uJLircsok7ziOO_m66g@mail.gmail.com>
+ <CACT4Y+bptO341KQAQMSzUVV22KsjuomdTeDip=HaHJ3+1kvraQ@mail.gmail.com> <CAJOtW+7UJQ2=66vELbyfXumQ=c9LknRAzXmd6Z6ea7i4oy6FwA@mail.gmail.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Mon, 29 Sep 2014 18:22:46 +0400
+Message-ID: <CACT4Y+ZGXV_+J7sR-6_HX5eAOWQAXw5gSvjh1rw_mCxt90iNtQ@mail.gmail.com>
+Subject: Re: [PATCH v3 00/13] Kernel address sanitizer - runtime memory debugger.
+To: Yuri Gribov <tetra2005@gmail.com>
+Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Sep 2014, Suravee Suthikulpanit wrote:
+On Fri, Sep 26, 2014 at 10:48 PM, Yuri Gribov <tetra2005@gmail.com> wrote:
+> On Fri, Sep 26, 2014 at 9:29 PM, Dmitry Vyukov <dvyukov@google.com> wrote:
+>> So in kernel we will need to support all API versions, and the
+>> following looks like a much simpler way to identify current API
+>> version:
+>>> #if __GNUC__ == 5
+>>> #define ASAN_V4
+>
+> What about having compiler(s) predefine some __SANITIZE_ADDRESS_ABI__
+> macro for this? Hacking on __GNUC__ may not work given the zoo of GCC
+> versions out there (FSF, Linaro, vendor toolchains, etc.)?
 
-> Jason/Thomas,
-> 
-> This patch comes from:
->     [V8 2/2] irqchip: gicv2m: Add supports for ARM GICv2m MSI(-X)
->     (https://lkml.org/lkml/2014/9/20/113)
-> 
-> It has been slightly modified to remove the multi-MSI supports for now
-> (I am waiting to discuss with Marc after he returned from vacation.), and will
-> be submitted separately.
-> 
-> Since this patch is independent from the multi-MSI stuff.  Please let me know
-> if you would consider taking this separately.
+I don't have strong preference here... well, actually just not competent :)
 
-Not without an explicit reviewed/acked from Marc for the GIC part and
-a reviewed/acked from the DT folks.
-
-Aside of that the conditional madness is just horrible:
- 
-> > +static inline
-> > +struct gic_chip_data *irq_data_get_gic_chip_data(struct irq_data *d)
-> > +{
-> > +	struct gic_chip_data *gic_data;
-> > +	struct msi_chip *mchip;
-> > +	struct v2m_data *v2mdat;
-> > +
-> > +	/*
-> > +	 * For MSI, irq_data.chip_data points to struct msi_chip.
-> > +	 * For non-MSI, irq_data.chip_data points to struct gic_chip_data.
-> > +	 */
-> > +	if (d->msi_desc) {
-> > +		mchip = irq_data_get_irq_chip_data(d);
-> > +		v2mdat = container_of(mchip, struct v2m_data, msi_chip);
-> > +		gic_data = v2mdat->gic;
-> > +	} else {
-> > +		gic_data = irq_data_get_irq_chip_data(d);
-> > +	}
-> > +	return gic_data;
-> > +}
-
-For heavens sake, why are you insisting on duct-taping that into the
-GIC proper instead of coming up with a proper layering?
-
-    https://lkml.org/lkml/2014/8/27/228
-    https://lkml.org/lkml/2014/8/26/707
-
-Thanks,
-
-	tglx
-    
-
+But on the second though... what do we want to do with pre-build
+modules? Can you envision that somebody distributes binary modules
+built with asan?
