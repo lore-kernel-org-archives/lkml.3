@@ -1,78 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaI2Oer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:34:47 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:46790 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaI2Oeo (ORCPT
+	id S1754227AbaI2ObI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:31:08 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50437 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752540AbaI2ObF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:34:44 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-6a-54296e019180
-Message-id: <54296C62.2080604@samsung.com>
-Date: Mon, 29 Sep 2014 18:27:46 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.0
-MIME-version: 1.0
-To: Dmitry Vyukov <dvyukov@google.com>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [RFC PATCH v3 13/13] kasan: introduce inline instrumentation
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-14-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+bTXPzYH+TMjM9-NyVajZms8zKdEMMLDPvOKvRSoD8tog@mail.gmail.com>
- <CAPAsAGzDWQ6LKN1RN6u0cv6eTVfxgRT6NCpGA08dC6dnDiUKmA@mail.gmail.com>
- <CACT4Y+ZVPV51vBDKTQ-snQ360kTc6axNS1g_02EA0h75Gqd3Bw@mail.gmail.com>
-In-reply-to: <CACT4Y+ZVPV51vBDKTQ-snQ360kTc6axNS1g_02EA0h75Gqd3Bw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t/xy7qMeZohBh8emlj83juT1WLO+jVs
-	FkeufWe3uP7tDaPFp5cPGC22XG9isnj+8CG7xYSHbewW0zaKW6zsbmaz2P7sLZPFys4HrBaX
-	d81hs7i35j+rRcu+C0wWx7duYbZYfOQ2s8W7Z5OZLa6uOshu8WPDY1YHEY/5Oz8yeuycdZfd
-	Y8GmUo/Fe14yeWxa1cnmsenTJHaPrrdXmDxOzPjN4vHkynQmj49Pb7F4vN93lc3jzIIj7B6f
-	N8l5nGj5whrAF8Vlk5Kak1mWWqRvl8CVcbLxJWPBb5aK7kebWBsYm1i6GDk5JARMJFbOWccK
-	YYtJXLi3nq2LkYtDSGApo8S7T13sEE4zk8SRG6vBqngFtCTmP7vKDGKzCKhKXDnaBmazCehJ
-	/Ju1nQ3EFhWIkJiyfylUvaDEj8n3wLaJCARIvDn7gxVkKLPAYlaJu4cus4MkhAU8JW713GSG
-	2DaVWeLqkV1MIAlOgWCJ+yu3gU1iFlCXmDRvETOELS+xec1b5gmMArOQLJmFpGwWkrIFjMyr
-	GEVTS5MLipPSc430ihNzi0vz0vWS83M3MUJi+OsOxqXHrA4xCnAwKvHwcqzQCBFiTSwrrsw9
-	xCjBwawkwmuXohkixJuSWFmVWpQfX1Sak1p8iJGJg1OqgfHCqcb+c+2lnMe8l97s1M4pFbFa
-	ertb8s4Jp5k7ll1e6FzRftoikf/SXbvTYl9EHLV/5BcWt53eM9Pp9h9bL9ei32aNct4vPe7X
-	3ttumNZ25saSLc7KHeqfWUIEUtatNrBd8s4gtSvHtWWx+KrfW2Wd+pZO8LyQP2WOYFS+/gZP
-	r7u8cftKTJVYijMSDbWYi4oTAU3bMby/AgAA
+	Mon, 29 Sep 2014 10:31:05 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: [PATCH v13 07/12] PCI: Add generic domain handling
+Date: Mon, 29 Sep 2014 15:29:26 +0100
+Message-Id: <1412000971-9242-8-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 06:28 PM, Dmitry Vyukov wrote:
-> On Fri, Sep 26, 2014 at 9:33 PM, Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
->> 2014-09-26 21:18 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
->>>
->>> Yikes!
->>> So this works during bootstrap, for user memory accesses, valloc
->>> memory, etc, right?
->>>
->>
->> Yes, this works. Userspace memory access in instrumented code will
->> produce general protection fault,
->> so it won't be unnoticed.
-> 
-> 
-> Great!
-> What happens during early bootstrap when shadow is not mapped yet?
-> 
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-Shadow mapped very early. Any instrumented code executes only after shadow mapped.
+The handling of PCI domains (or PCI segments in ACPI speak) is usually a
+straightforward affair but its implementation is currently left to the
+architectural code, with pci_domain_nr(b) querying the value of the domain
+associated with bus b.
+
+This patch introduces CONFIG_PCI_DOMAINS_GENERIC as an option that can be
+selected if an architecture wants a simple implementation where the value
+of the domain associated with a bus is stored in struct pci_bus.
+
+The architectures that select CONFIG_PCI_DOMAINS_GENERIC will then have to
+implement pci_bus_assign_domain_nr() as a way of setting the domain number
+associated with a root bus.  All child buses except the root bus will
+inherit the domain_nr value from their parent.
+
+Signed-off-by: Catalin Marinas <Catalin.Marinas@arm.com>
+[Renamed pci_set_domain_nr() to pci_bus_assign_domain_nr()]
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/pci/probe.c | 11 ++++++++---
+ include/linux/pci.h | 21 +++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index e3cf8a2..636d1c9 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -485,7 +485,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
+ 	}
+ }
+ 
+-static struct pci_bus *pci_alloc_bus(void)
++static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
+ {
+ 	struct pci_bus *b;
+ 
+@@ -500,6 +500,10 @@ static struct pci_bus *pci_alloc_bus(void)
+ 	INIT_LIST_HEAD(&b->resources);
+ 	b->max_bus_speed = PCI_SPEED_UNKNOWN;
+ 	b->cur_bus_speed = PCI_SPEED_UNKNOWN;
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	if (parent)
++		b->domain_nr = parent->domain_nr;
++#endif
+ 	return b;
+ }
+ 
+@@ -671,7 +675,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	/*
+ 	 * Allocate a new bus, and inherit stuff from the parent..
+ 	 */
+-	child = pci_alloc_bus();
++	child = pci_alloc_bus(parent);
+ 	if (!child)
+ 		return NULL;
+ 
+@@ -1761,13 +1765,14 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
+-	b = pci_alloc_bus();
++	b = pci_alloc_bus(NULL);
+ 	if (!b)
+ 		return NULL;
+ 
+ 	b->sysdata = sysdata;
+ 	b->ops = ops;
+ 	b->number = b->busn_res.start = bus;
++	pci_bus_assign_domain_nr(b, parent);
+ 	b2 = pci_find_bus(pci_domain_nr(b), bus);
+ 	if (b2) {
+ 		/* If we already got to this bus through a different bridge, ignore it */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 61978a4..a494e5d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -456,6 +456,9 @@ struct pci_bus {
+ 	unsigned char	primary;	/* number of primary bridge */
+ 	unsigned char	max_bus_speed;	/* enum pci_bus_speed */
+ 	unsigned char	cur_bus_speed;	/* enum pci_bus_speed */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++	int		domain_nr;
++#endif
+ 
+ 	char		name[48];
+ 
+@@ -1288,6 +1291,24 @@ static inline int pci_domain_nr(struct pci_bus *bus) { return 0; }
+ static inline int pci_proc_domain(struct pci_bus *bus) { return 0; }
+ #endif /* CONFIG_PCI_DOMAINS */
+ 
++/*
++ * Generic implementation for PCI domain support. If your
++ * architecture does not need custom management of PCI
++ * domains then this implementation will be used
++ */
++#ifdef CONFIG_PCI_DOMAINS_GENERIC
++static inline int pci_domain_nr(struct pci_bus *bus)
++{
++	return bus->domain_nr;
++}
++void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent);
++#else
++static inline void pci_bus_assign_domain_nr(struct pci_bus *bus,
++					struct device *parent)
++{
++}
++#endif
++
+ /* some architectures require additional setup to direct VGA traffic */
+ typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
+ 		      unsigned int command_bits, u32 flags);
+-- 
+2.1.1
+
