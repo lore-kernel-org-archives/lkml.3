@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaI2Nav (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:30:51 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64786 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaI2Nat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:30:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: zhang.lyra@gmail.com, catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
-        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
-        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com, orsonzhai@gmail.com,
-        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] Documentation: Add entry for Spreadtrum's Shark64 SoC
-Date: Mon, 29 Sep 2014 15:30:34 +0200
-Message-ID: <7195852.7nSHtIu8oc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1411992293-7729-7-git-send-email-zhang.lyra@gmail.com>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com> <1411992293-7729-7-git-send-email-zhang.lyra@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:NyOmd6/4ORVxnSips9rRPLNuy+kTSlIGlCAn4en2JuF
- Z1mjlP+Wi23BLpLfC78lwXHJFOZIJ+oyA/yNgPseBEf4nblVaU
- AbNTuktu/T4F2wCfNR7CHToJ8QQomXyjhTyYmnALSOrojN5ZcK
- +nqu78sug50EFB9FNUKOaUPNt30n1xbCvtgvvKCKtg/o0HBU25
- E0KBQdR0nt5irFaCBvCYYOF9G31N5NhlFWnwsJXmi8o9xpnsn1
- 8/LojrZ70ZrdTuiSodfXLTm5o51YOfj0H5VQ7YiGnTLiFlbEio
- 2wuZlOmdv5bkqvARyDj77TWsnUDo1EVWE5usEYmVIiuILHn4Jw
- 4C2me5cB1e/pxgHGs7rc=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754102AbaI2Ncp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:32:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2354 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752243AbaI2Nco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:32:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="393029904"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 00/18] mei: resend of rebased patches
+Date: Mon, 29 Sep 2014 16:31:32 +0300
+Message-Id: <1411997510-29094-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 September 2014 20:04:53 zhang.lyra@gmail.com wrote:
-> diff --git a/Documentation/devicetree/bindings/arm/sprd.txt b/Documentation/devicetree/bindings/arm/sprd.txt
-> new file mode 100644
-> index 0000000..b6dc143
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/sprd.txt
-> @@ -0,0 +1,6 @@
-> +Spreadtrum Platforms Device Tree Bindings
-> +----------------------------------------------------
-> +
-> +Shark64 Board
-> +Required root node properties:
-> +        - compatible = "sprd,shark64";
-> 
+Resend of two series that haven't applied 
+1. Remove pci dependencies from mei module to support testing hw module 
+2. Overall documentation formating fix and other collateral fixes.
 
-Is Shark a board or an SOC? The subject line of the patch and the contents
-seem to disagree here.
+Added two more cleanups:
+mei: drop me_client_presentation_num
+mei: trivial: fix errors in prints in comments
+ 
 
-It's generally better to have the exact SoC product numbers in here, e.g.
-"sprd,sc1234", in case we have to apply fixups based on the SoC. You should
-also have a board specific string in addition to the SoC-specific one.
+Alexander Usyskin (6):
+  mei: add hbm and pg state in devstate debugfs print
+  mei: debugfs: adjust print buffer
+  mei: trivial: fix errors in prints in comments
+  mei: drop me_client_presentation_num
+  mei: fix KDoc documentation formatting
+  mei: fix kernel-doc warnings
 
-	Arnd
+Tomas Winkler (12):
+  mei: debugfs: add single buffer indicator
+  mei: pg: fix cat and paste error in comments
+  mei: fix style warning: Missing a blank line after declarations
+  mei: nfc: fix style warning
+  mei: kill error message for allocation failure
+  mei: move mei_hbm_hdr function from hbm.h the hbm.c
+  mei: push all standard settings into mei_device_init
+  mei: get rid of most of the pci dependencies in mei
+  mei: move fw_status back to hw ops handlers
+  mei: remove the reference to pdev from mei_device
+  mei: push pci cfg structure me hw
+  mei: remove include to pci header from mei module files
+
+ drivers/misc/mei/amthif.c    | 110 +++++++++---------
+ drivers/misc/mei/bus.c       |  11 +-
+ drivers/misc/mei/client.c    | 127 ++++++++++++---------
+ drivers/misc/mei/client.h    |   4 +-
+ drivers/misc/mei/debugfs.c   |  53 ++++++---
+ drivers/misc/mei/hbm.c       | 155 +++++++++++++++----------
+ drivers/misc/mei/hbm.h       |  11 +-
+ drivers/misc/mei/hw-me.c     | 175 +++++++++++++++++++---------
+ drivers/misc/mei/hw-me.h     |  32 +++++-
+ drivers/misc/mei/hw-txe.c    | 252 +++++++++++++++++++++++++---------------
+ drivers/misc/mei/hw-txe.h    |   6 +-
+ drivers/misc/mei/hw.h        |  48 ++++----
+ drivers/misc/mei/init.c      | 104 ++++++++---------
+ drivers/misc/mei/interrupt.c |  75 ++++++------
+ drivers/misc/mei/main.c      |  64 +++++------
+ drivers/misc/mei/mei_dev.h   | 265 ++++++++++++++++++++++++++++---------------
+ drivers/misc/mei/nfc.c       |  56 ++++-----
+ drivers/misc/mei/pci-me.c    |  14 +--
+ drivers/misc/mei/pci-txe.c   |  13 ++-
+ drivers/misc/mei/wd.c        |  50 ++++----
+ include/linux/mei_cl_bus.h   |   1 +
+ 21 files changed, 966 insertions(+), 660 deletions(-)
+
+-- 
+1.9.3
+
