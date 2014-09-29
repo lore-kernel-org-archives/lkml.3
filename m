@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaI2TpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 15:45:05 -0400
-Received: from smtp-out-075.synserver.de ([212.40.185.75]:1077 "EHLO
-	smtp-out-071.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751895AbaI2TpC (ORCPT
+	id S1755182AbaI2TpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 15:45:20 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:34066 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaI2TpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 15:45:02 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23864
-Message-ID: <5429B6C9.7080502@metafoo.de>
-Date: Mon, 29 Sep 2014 21:45:13 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
+	Mon, 29 Sep 2014 15:45:15 -0400
+Date: Mon, 29 Sep 2014 12:45:12 -0700
+From: Omar Sandoval <osandov@osandov.com>
+To: David Sterba <dsterba@suse.cz>
+Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] btrfs: fix sparse address space warnings
+Message-ID: <20140929194512.GA7038@mew.dhcp4.washington.edu>
+References: <1411894092-28784-1-git-send-email-osandov@osandov.com>
+ <1411894092-28784-2-git-send-email-osandov@osandov.com>
+ <20140929160738.GC11436@twin.jikos.cz>
 MIME-Version: 1.0
-To: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        linux-kernel@vger.kernel.org
-CC: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        lgirdwood@gmail.com, broonie@kernel.org
-Subject: Re: [PATCH v2 2/3] ASoC: ssm2602: add device tree bindings
-References: <1412019670-19429-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-In-Reply-To: <1412019670-19429-1-git-send-email-stefan.kristiansson@saunalahti.fi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929160738.GC11436@twin.jikos.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2014 09:41 PM, Stefan Kristiansson wrote:
-> Allow the ssm2602/ssm2603/ssm2604 codec driver to be
-> instantiated from the device tree.
->
-> Also, add Kconfig prompts to allow manual selection of both the
-> I2C and SPI configuration versions of the driver.
->
-> Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+On Mon, Sep 29, 2014 at 06:07:38PM +0200, David Sterba wrote:
+> On Sun, Sep 28, 2014 at 01:48:11AM -0700, Omar Sandoval wrote:
+> > The buffer passed to vfs_write in send and several casts of ioctl fields are
+> > missing the __user annotation. Also fixes a couple of related trivial style
+> > issues.
+> > 
+> > Signed-off-by: Omar Sandoval <osandov@osandov.com>
+> 
+> Reviewed-by: David Sterba <dsterba@suse.cz>
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Thank you.
 
+> > @@ -639,8 +640,7 @@ static int send_header(struct send_ctx *sctx)
+> > -	return write_buf(sctx->send_filp, &hdr, sizeof(hdr),
+> > -					&sctx->send_off);
+> > +	return write_buf(sctx->send_filp, &hdr, sizeof(hdr), &sctx->send_off);
+> 
+> >  	ret = write_buf(sctx->send_filp, sctx->send_buf, sctx->send_size,
+> > -					&sctx->send_off);
+> > +			&sctx->send_off);
+> 
+> Please do not fold unrelated changes.
+
+My metric for "related" here was that these were call sites of a function I
+directly modified. Is the preferred form to just split style fixes that we
+encounter into a separate patch in the series?
+
+-- 
+Omar
