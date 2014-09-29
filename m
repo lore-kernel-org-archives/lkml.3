@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097AbaI2O23 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 10:28:29 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:52219 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaI2O22 (ORCPT
+	id S1754178AbaI2O3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 10:29:03 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53532 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967AbaI2O3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 10:28:28 -0400
+	Mon, 29 Sep 2014 10:29:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org, Akihiro Tsukada <tskd08@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] [media] pt3: remove bogus module_is_live() check
+Date: Mon, 29 Sep 2014 16:28:55 +0200
+Message-ID: <6460819.BmnhuA22YH@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <CAPAsAGzDWQ6LKN1RN6u0cv6eTVfxgRT6NCpGA08dC6dnDiUKmA@mail.gmail.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-14-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+bTXPzYH+TMjM9-NyVajZms8zKdEMMLDPvOKvRSoD8tog@mail.gmail.com> <CAPAsAGzDWQ6LKN1RN6u0cv6eTVfxgRT6NCpGA08dC6dnDiUKmA@mail.gmail.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Mon, 29 Sep 2014 18:28:06 +0400
-Message-ID: <CACT4Y+ZVPV51vBDKTQ-snQ360kTc6axNS1g_02EA0h75Gqd3Bw@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 13/13] kasan: introduce inline instrumentation
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:6xUkiURbxUHIhkWe8N+DauVGaHNuajb35l98JFNqPfG
+ 6MjIYqeNzMJJujEKwtZv6mZPNO2KzizB3e9STKbYblgPTwXaUm
+ wIj1Lc3rJqBBqPdDfbzoXuSqH0FjEXt+E4zQo+GR5ZGKxSpZSv
+ 7ae2YCjV9nYES8/zSQovrYl8kGiJ09bkrBnMCvXxU+7M5uxk4C
+ PSVFrMg+OrZ0rdEmUXatRE+5NBaBqBnnUSenYvaQoUDKL5RkPp
+ di8Fo6xkJESWBClDxqbo90Z5GHxQGZ30CqvVROeCWf07UKcSxd
+ H4RNWpK8x7DZIZIzmDG2sei6Kr+M2JX/T0/YATctoJRruinxHs
+ 76utm2BLk9KnfyzRJxrw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 9:33 PM, Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
-> 2014-09-26 21:18 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
->>
->> Yikes!
->> So this works during bootstrap, for user memory accesses, valloc
->> memory, etc, right?
->>
->
-> Yes, this works. Userspace memory access in instrumented code will
-> produce general protection fault,
-> so it won't be unnoticed.
+The new pt3 driver checks the module reference for presence
+before dropping it, which fails to compile when modules
+are disabled:
 
+media/pci/pt3/pt3.c: In function 'pt3_attach_fe':
+media/pci/pt3/pt3.c:433:6: error: implicit declaration of function 'module_is_live' [-Werror=implicit-function-declaration]
+      module_is_live(pt3->adaps[i]->i2c_tuner->dev.driver->owner))
 
-Great!
-What happens during early bootstrap when shadow is not mapped yet?
+As far as I can tell however, this check is not needed at all, because
+the module will not go away as long as pt3 is holding a reference on
+it. Also the previous check for NULL pointer is not needed at all,
+because module_put has the same check.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/media/pci/pt3/pt3.c b/drivers/media/pci/pt3/pt3.c
+index 90f86ce7a001..39305f07dc2e 100644
+--- a/drivers/media/pci/pt3/pt3.c
++++ b/drivers/media/pci/pt3/pt3.c
+@@ -429,14 +429,10 @@ static int pt3_attach_fe(struct pt3_board *pt3, int i)
+ 
+ err_tuner:
+ 	i2c_unregister_device(pt3->adaps[i]->i2c_tuner);
+-	if (pt3->adaps[i]->i2c_tuner->dev.driver->owner &&
+-	    module_is_live(pt3->adaps[i]->i2c_tuner->dev.driver->owner))
+-		module_put(pt3->adaps[i]->i2c_tuner->dev.driver->owner);
++	module_put(pt3->adaps[i]->i2c_tuner->dev.driver->owner);
+ err_demod:
+ 	i2c_unregister_device(pt3->adaps[i]->i2c_demod);
+-	if (pt3->adaps[i]->i2c_demod->dev.driver->owner &&
+-	    module_is_live(pt3->adaps[i]->i2c_demod->dev.driver->owner))
+-		module_put(pt3->adaps[i]->i2c_demod->dev.driver->owner);
++	module_put(pt3->adaps[i]->i2c_demod->dev.driver->owner);
+ 	return ret;
+ }
+ 
+
