@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaI2Qsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:48:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41886 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182AbaI2Qsk (ORCPT
+	id S1754677AbaI2Qso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:48:44 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64136 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568AbaI2Qsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:48:40 -0400
-Date: Mon, 29 Sep 2014 18:48:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Tightening up rdpmc permissions?
-Message-ID: <20140929164836.GP5430@worktop>
-References: <CALCETrU3nNvG6+-7iScYT8LDRFnq8kYnpK0cdW1bgW5O4EGrUg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrU3nNvG6+-7iScYT8LDRFnq8kYnpK0cdW1bgW5O4EGrUg@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Mon, 29 Sep 2014 12:48:41 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Scott Wood <scottwood@freescale.com>, Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Jojy G Varghese <jojyv@juniper.net>,
+        Guenter Roeck <groeck@juniper.net>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] powerpc/fsl: Add support for pci(e) machine check exception on E500MC / E5500
+Date: Mon, 29 Sep 2014 09:48:32 -0700
+Message-Id: <1412009312-7400-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 09:39:16AM -0700, Andy Lutomirski wrote:
-> I was surprised to notice that, by default, every task has permission
-> to use rdpmc. 
+From: Jojy G Varghese <jojyv@juniper.net>
 
-Right, we figured the paranoid would poke at
-/sys/bus/event_source/devices/cpu/rdpmc.
+For E500MC and E5500, a machine check exception in pci(e) memory space
+crashes the kernel.
 
-> seccomp cannot work around this. 
+Testing shows that the MCAR(U) register is zero on a MC exception for the
+E5500 core. At the same time, DEAR register has been found to have the
+address of the faulty load address during an MC exception for this core.
 
-I know nothing much about seccomp.
+This fix changes the current behavior to fixup the result register
+and instruction pointers in the case of a load operation on a faulty
+PCI address.
 
-> This leaks information, although the information leaked is of dubious
-> and variable value to an attacker.  It also renders the PR_TSC_SEGV
-> mechanism mostly useless.
+The changes are:
+- Added the hook to pci machine check handing to the e500mc machine check
+  exception handler.
+- For the E5500 core, load faulting address from SPRN_DEAR register.
+  As mentioned above, this is necessary because the E5500 core does not
+  report the fault address in the MCAR register.
 
-I'm not seeing how, there's no saying what will run on those counters,
-let alone if its correlated to the TSC. But yes I appreciate the
-argument.
+Cc: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
+[Guenter Roeck: updated description]
+Signed-off-by: Guenter Roeck <groeck@juniper.net>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/powerpc/kernel/traps.c   | 3 ++-
+ arch/powerpc/sysdev/fsl_pci.c | 5 +++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-> Would it make sense to restrict rdpmc to tasks that are in mms that
-> have a perf_event mapping? 
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index 0dc43f9..ecb709b 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
+ 	int recoverable = 1;
+ 
+ 	if (reason & MCSR_LD) {
+-		recoverable = fsl_rio_mcheck_exception(regs);
++		recoverable = fsl_rio_mcheck_exception(regs) ||
++			fsl_pci_mcheck_exception(regs);
+ 		if (recoverable == 1)
+ 			goto silent_out;
+ 	}
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index c507767..bdb956b 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs *regs)
+ #endif
+ 	addr += mfspr(SPRN_MCAR);
+ 
++#ifdef CONFIG_E5500_CPU
++	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
++		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
++#endif
++
+ 	if (is_in_pci_mem_space(addr)) {
+ 		if (user_mode(regs)) {
+ 			pagefault_disable();
+-- 
+1.9.1
 
-We could,
-
-> After all, unless I misunderstand
-> something, user code can't reliably use rdpmc unless they've mapped a
-> perf_event object to check the rdpmc bit and figure out what ecx value
-> to use.
-
-correct,
-
-> I think that this could be implemented with very little overhead,
-> especially if combined with the existing CR4_TSD code and if that code
-> were taught to avoid reading cr4.
-
-but there's a definite cost to having to write cr4 on every context
-switch. It would be better if we could put it under TIF_NOTSC or
-something similar and only be effective when something like seccomp or
-other thingy is present and enabled. We should definitely avoid a double
-cr4 write in case of both rdpmc and tsc switch.
