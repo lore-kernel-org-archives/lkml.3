@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaI2SEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 14:04:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45739 "EHLO
+	id S1753605AbaI2SEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 14:04:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45750 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231AbaI2SEF (ORCPT
+	with ESMTP id S1754015AbaI2SEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 14:04:05 -0400
+	Mon, 29 Sep 2014 14:04:13 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v5 5/6] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_get_mux_id
-Date: Mon, 29 Sep 2014 20:03:38 +0200
-Message-Id: <1412013819-29181-6-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v5 2/6] of: Add for_each_endpoint_of_node helper macro
+Date: Mon, 29 Sep 2014 20:03:35 +0200
+Message-Id: <1412013819-29181-3-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
 References: <1412013819-29181-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,41 +31,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the for_each_... macro should make the code bit shorter and
-easier to read. This patch also properly decrements the endpoint node
-reference count before returning out of the loop.
+Note that while of_graph_get_next_endpoint decrements the reference count
+of the child node passed to it, of_node_put(child) still has to be called
+manually when breaking out of the loop.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/staging/imx-drm/imx-drm-core.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ include/linux/of_graph.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 12303b3..9b5222c 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -493,18 +493,15 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
- 	if (!node || !imx_crtc)
- 		return -EINVAL;
+diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+index befef42..e43442e 100644
+--- a/include/linux/of_graph.h
++++ b/include/linux/of_graph.h
+@@ -26,6 +26,17 @@ struct of_endpoint {
+ 	const struct device_node *local_node;
+ };
  
--	do {
--		ep = of_graph_get_next_endpoint(node, ep);
--		if (!ep)
--			break;
--
-+	for_each_endpoint_of_node(node, ep) {
- 		port = of_graph_get_remote_port(ep);
- 		of_node_put(port);
- 		if (port == imx_crtc->port) {
- 			ret = of_graph_parse_endpoint(ep, &endpoint);
-+			of_node_put(ep);
- 			return ret ? ret : endpoint.port;
- 		}
--	} while (ep);
-+	}
- 
- 	return -EINVAL;
- }
++/**
++ * for_each_endpoint_of_node - iterate over every endpoint in a device node
++ * @parent: parent device node containing ports and endpoints
++ * @child: loop variable pointing to the current endpoint node
++ *
++ * When breaking out of the loop, of_node_put(child) has to be called manually.
++ */
++#define for_each_endpoint_of_node(parent, child) \
++	for (child = of_graph_get_next_endpoint(parent, NULL); child != NULL; \
++	     child = of_graph_get_next_endpoint(parent, child))
++
+ #ifdef CONFIG_OF
+ int of_graph_parse_endpoint(const struct device_node *node,
+ 				struct of_endpoint *endpoint);
 -- 
 2.1.0
 
