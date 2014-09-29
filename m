@@ -1,124 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786AbaI2Lxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:53:46 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:63166 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaI2Lxo (ORCPT
+	id S1752956AbaI2L4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:56:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37389 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaI2L4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:53:44 -0400
-Message-ID: <54294832.8000702@i2se.com>
-Date: Mon, 29 Sep 2014 13:53:22 +0200
-From: Stefan Wahren <stefan.wahren@i2se.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 29 Sep 2014 07:56:22 -0400
+Date: Mon, 29 Sep 2014 13:56:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: dave@sr71.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        eranian@google.com, x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+        torvalds@linux-foundation.org,
+        Vitaly Mayatskikh <v.mayatskih@gmail.com>
+Subject: Re: [PATCH 2/2] x86: Only do a single page fault for
+ copy_from_user_nmi
+Message-ID: <20140929115620.GH5430@worktop>
+References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
+ <1411774277-4198-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "festevam@gmail.com" <festevam@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com> <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com> <20140929110919.GB2432@leverpostej>
-In-Reply-To: <20140929110919.GB2432@leverpostej>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:K/wZJejKX1I0U03IfKYdL4xhRKitQT0byx5nU1qYUOg
- 7CrJHnsM22tKc/5sxnGxhTDW8/Uuk7UuIzS2oKcXNAf6QLm+2G
- wQ27oD/JAj6e8JNAMOu6plYUeedzDebs/DrnRVuELTfvDKofxE
- o7A9H5N1lBxbmprgqn2prmvajs3Ip7zhffyb5B8hJ+vPCAWrVR
- oouvwVYcqUWYlVCeF0C/UbQIm4LR6t8oSGXU1ohpNf2raSbR6Q
- syGdJK7FYuc9ilWTUEpbfq8KXLluj53wDopUz/2LqNK7BjL0TI
- siJgkJf26nB53MFNhiHVg3lnjh17xBKTQV6d14rr6rAbK8lRRQ
- MQXCtxOpIr+0QuSF+l6w=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411774277-4198-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Fri, Sep 26, 2014 at 04:31:17PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> When copy_from_user_nmi faults the copy_user_tail code ends
+> up "replaying" the page faults to compute the exact tail bytes,
+> (added with 112958).
 
-Am 29.09.2014 um 13:09 schrieb Mark Rutland:
-> On Sat, Sep 27, 2014 at 01:59:47AM +0100, Stefan Wahren wrote:
->> This patch adds the Device tree bindings for the Freescale MXS
->> on-chip regulators.
->>
->> Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
->> ---
->>  .../bindings/regulator/mxs-regulator.txt           |   36 ++++++++++++++++++++
->>  1 file changed, 36 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->>
->> diff --git a/Documentation/devicetree/bindings/regulator/mxs-regulator.txt b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->> new file mode 100644
->> index 0000000..e3133a4
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/regulator/mxs-regulator.txt
->> @@ -0,0 +1,36 @@
->> +MXS regulators
->> +
->> +Required node properties:
->> +- compatible: Should be "simple-bus"
-> This does not look like an appropriate use of simple-bus.
->
-> Why do you want the parent node to be a simple-bus?
+That is a wrong way to quote commits in two ways;
 
-the current parent node in imx28.dtsi looks like a placeholder for the
-power sub system:
+  1) Linus 'requires' you use 12 character abreviated hashes (because
+     we've already seen collisions with the default 8), yet you use 6.
 
-power: power@80044000 {
-	reg = <0x80044000 0x2000>;
-	status = "disabled";
-};
+  2) the recommended quoting style is:
 
-I want to trigger the probing of the child nodes (regulators) without
-writing a driver for the complete power sub system. The simple-bus
-avoids that.
+    1129585a08ba ("x86: introduce copy_user_handle_tail() routine")
 
-Do we need a extra driver?
+You _should_ know this.
 
->
->> +- #address-cells: Number of cells required to define regulator register,
->> +  must be 1
->> +- #size-cells: Number of cells required to define register size, must be 1
-> Why must this be the case, given that the child node expects an absolute
-> physical address?
+> So we do an expensive page fault. And then we do it *again*.
+> 
+> This ends up being very expensive in the PMI handler for any
+> page fault on a stack access, and is one the more common
+> causes for the NMI handler exceeding its runtime limit.
+> 
+>   1)   0.109 us    |        copy_from_user_nmi();
+>   1)               |        copy_from_user_nmi() {
+>   1)               |          __do_page_fault() {
+>   1)               |            bad_area_nosemaphore() {
+>   1)               |              __bad_area_nosemaphore() {
+>   1)               |                no_context() {
+>   1)               |                  fixup_exception() {
+>   1)               |                    search_exception_tables() {
+>   1)   0.079 us    |                      search_extable();
+>   1)   0.409 us    |                    }
+>   1)   0.757 us    |                  }
+>   1)   1.106 us    |                }
+>   1)   1.466 us    |              }
+>   1)   1.793 us    |            }
+>   1)   2.233 us    |          }
+>   1)               |          copy_user_handle_tail() {
+>   1)               |            __do_page_fault() {
+>   1)               |              bad_area_nosemaphore() {
+>   1)               |                __bad_area_nosemaphore() {
+>   1)               |                  no_context() {
+>   1)               |                    fixup_exception() {
+>   1)               |                      search_exception_tables() {
+>   1)   0.060 us    |                        search_extable();
+>   1)   0.412 us    |                      }
+>   1)   0.764 us    |                    }
+>   1)   1.074 us    |                  }
+>   1)   1.389 us    |                }
+>   1)   1.665 us    |              }
+>   1)   2.002 us    |            }
+>   1)   2.784 us    |          }
+>   1)   6.230 us    |        }
+> 
+> The NMI code actually doesn't care about the exact tail value. It only
+> needs to know if a fault happened (!= 0)
 
-I need a property to define the control register for the regulators
-without defining vendor specific properties like "fsl,mxs-control-reg"
-or something.
+For now, changing the semantics of the function seems like a sure way to
+fail in the future though.
 
-> What's wrong with #address-cells = <2>, for example?
+> So check for in_nmi() in copy_user_tail and don't bother with the exact
+> tail check. This way we save the extra ~2.7us.
+> 
+> In theory we could also duplicate the whole copy_*_ path for cases
+> where the caller doesn't care about the exact bytes. But that
+> seems overkill for just this issue, and I'm not sure anyone
+> else cares about how fast this is. The simpler check works
+> as well for now.
 
-Nothing
-
->
->> +- reg: Absolute physical address and size of the register set for the device
-> Why is this here _and_ in the child node(s)?
-
-The parent of the power node is also a simple bus. I use this to
-calculate the power status register per offset.
-
-> What is the difference between this node and its children?
-
-The parent node represent the power sub system and the regulators are
-part of this sub system.
-
-> Can there be more than one sub-node?
-
-In the i.MX28 are at least 4 voltage regulators, 1 current regulator and
-many more. At first, the driver should implement only 3 voltage
-regulators (vddd, vdda, vddio).
-
-> Mark.
->
-
-Best regards
-
-Stefan
+So I don't get that code, but why not fix it in general? Taking two
+faults seems silly.
