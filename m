@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaI2Nxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 09:53:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48448 "EHLO bear.ext.ti.com"
+	id S1753967AbaI2NyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 09:54:25 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:55043 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891AbaI2Nxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 09:53:47 -0400
-Message-ID: <5429644A.80108@ti.com>
-Date: Mon, 29 Sep 2014 16:53:14 +0300
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>
-CC: <linux-pm@vger.kernel.org>, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH 08/10] power/reset: keystone: Register with kernel restart
- handler
-References: <1411779438-23127-1-git-send-email-linux@roeck-us.net> <1411779438-23127-9-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1411779438-23127-9-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753536AbaI2NyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 09:54:23 -0400
+Message-ID: <1411998865.5395.5.camel@iivanov-dev>
+Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Date: Mon, 29 Sep 2014 16:54:25 +0300
+In-Reply-To: <54254C4E.3070807@smartplayin.com>
+References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
+	 <54254C4E.3070807@smartplayin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2014 03:57 AM, Guenter Roeck wrote:
-> Register with kernel restart handler instead of setting arm_pm_restart directly.
->
-> Move notifier registration to the end of the probe function to avoid having to
-> implement error handling.
->
-> Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->   drivers/power/reset/keystone-reset.c | 18 ++++++++++++++----
->   1 file changed, 14 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
-> index 408a18f..9d46586 100644
-> --- a/drivers/power/reset/keystone-reset.c
-> +++ b/drivers/power/reset/keystone-reset.c
-> @@ -12,9 +12,9 @@
->   
->   #include <linux/io.h>
->   #include <linux/module.h>
-> +#include <linux/notifier.h>
->   #include <linux/reboot.h>
->   #include <linux/regmap.h>
-> -#include <asm/system_misc.h>
->   #include <linux/mfd/syscon.h>
->   #include <linux/of_platform.h>
->   
-> @@ -52,7 +52,8 @@ static inline int rsctrl_enable_rspll_write(void)
->   				  RSCTRL_KEY_MASK, RSCTRL_KEY);
->   }
->   
-> -static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
-> +static int rsctrl_restart_handler(struct notifier_block *this,
-> +				  unsigned long mode, void *cmd)
->   {
->   	/* enable write access to RSTCTRL */
->   	rsctrl_enable_rspll_write();
-> @@ -60,8 +61,15 @@ static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
->   	/* reset the SOC */
->   	regmap_update_bits(pllctrl_regs, rspll_offset + RSCTRL_RG,
->   			   RSCTRL_RESET_MASK, 0);
-> +
-> +	return NOTIFY_DONE;
->   }
->   
-> +static struct notifier_block rsctrl_restart_nb = {
-> +	.notifier_call = rsctrl_restart_handler,
-> +	.priority = 128,
-> +};
-> +
->   static struct of_device_id rsctrl_of_match[] = {
->   	{.compatible = "ti,keystone-reset", },
->   	{},
-> @@ -114,8 +122,6 @@ static int rsctrl_probe(struct platform_device *pdev)
->   	if (ret)
->   		return ret;
->   
-> -	arm_pm_restart = rsctrl_restart;
-> -
->   	/* disable a reset isolation for all module clocks */
->   	ret = regmap_write(pllctrl_regs, rspll_offset + RSISO_RG, 0);
->   	if (ret)
-> @@ -147,6 +153,10 @@ static int rsctrl_probe(struct platform_device *pdev)
->   			return ret;
->   	}
->   
-> +	ret = register_restart_handler(&rsctrl_restart_nb);
-> +	if (ret)
-> +		dev_err(dev, "cannot register restart handler (err=%d)\n", ret);
+On Fri, 2014-09-26 at 16:51 +0530, Kiran Padwal wrote:
+> On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
+> > Add support for the temperature alarm peripheral found inside
+> > Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
+> > peripheral outputs a pulse on an interrupt line whenever the
+> > thermal over temperature stage value changes.  Implement an ISR
+> > to manage this interrupt.
+> > 
+> 
+> <snip>
+> 
+> > + * This function updates the internal temp value based on the
+> > + * current thermal stage and threshold as well as the previous stage
+> > + */
+> > +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
+> > +{
+> > +	unsigned int stage;
+> > +	int rc;
+> > +	u8 reg;
+> > +
+> > +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> > +	if (rc < 0)
+> > +		return rc;
+> > +
+> > +	stage = reg & STATUS_STAGE_MASK;
+> 
+> During compilation, getting a waring as below,
+> 
+> drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
+> drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>   stage = reg & STATUS_STAGE_MASK;
 
-What about return ret? Even the register_restart_handler() always 
-returns 0 currently.
+Could you share compiler version and options which you are using.
+I am unable to trigger this warning. Looking code I can not 
+see how this could happen.
 
-> +
->   	return 0;
->   }
->   
+> 
+> > +
+> > +	if (stage > chip->stage) {
+> > +		/* increasing stage, use lower bound */
+> > +		chip->temp = (stage - 1) * TEMP_STAGE_STEP +
+> > +			     chip->thresh * TEMP_THRESH_STEP +
+> > +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> > +	} else if (stage < chip->stage) {
+> > +		/* decreasing stage, use upper bound */
+> > +		chip->temp = stage * TEMP_STAGE_STEP +
+> > +			     chip->thresh * TEMP_THRESH_STEP -
+> > +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> > +	}
+> > +
+> > +	chip->stage = stage;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> 
+> <snip>
+> 
+> > +
+> > +#define QPNP_TM_PM_OPS	(&qpnp_tm_pm_ops)
+> > +#else
+> > +#define QPNP_TM_PM_OPS	NULL
+> > +#endif
+> > +
+> > +static struct of_device_id qpnp_tm_match_table[] = {
+> 
+> It must be static const struct of_device_id, because all OF functions handle it as const.
 
-Santosh,
-I've tested it. That's fine.
+Sure, will fix it.
 
-
--- 
-Regards,
-Ivan Khoronzhuk
+Thank you,
+Ivan
 
