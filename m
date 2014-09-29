@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaI2LsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 07:48:22 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41499 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaI2LsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 07:48:20 -0400
-Date: Mon, 29 Sep 2014 13:48:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, MCE, AMD: use macros to compute bank MSRs
-Message-ID: <20140929114817.GA6495@pd.tnic>
-References: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753880AbaI2Lt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 07:49:26 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60189 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaI2LtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 07:49:24 -0400
+From: zhang.lyra@gmail.com
+To: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
+        ijc+devicetree@hellion.org.uk, jslaby@suse.cz, galak@codeaurora.org,
+        broonie@linaro.org, mark.rutland@arm.com, m-karicheri2@ti.com,
+        pawel.moll@arm.com, artagnon@gmail.com, rrichter@cavium.com,
+        robh+dt@kernel.org, will.deacon@arm.com, orsonzhai@gmail.com,
+        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+Subject: [PATCH 0/6] Add Spreadtrum Shark64 SoC support
+Date: Mon, 29 Sep 2014 19:48:28 +0800
+Message-Id: <1411991314-6636-1-git-send-email-zhang.lyra@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 10:16:01AM +0800, Chen Yucong wrote:
-> Avoid open coded calculations for bank MSRs by hiding the index
-> of higher bank MSRs in well-defined macros.
-> 
-> No semantic changes.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
 
-Applied, thanks.
+Spreadtrum is a rapid growing chip vendor providing smart phone total solutions. 
+Shark64 is nominated as a SoC infrastructure that supports 4G/3G/2G standards based on ARMv8 multiple core architecture.
+
+This patchset adds shark64 supports in arm64 device tree and implements the basic earlycon serial driver.
+
+chunyan.zhang (6):
+  Documentation: DT: Add bindings for Spreadtrum serial
+  arm64: Add DTS support for Spreadtrum's Shark64 SoC
+  arm64: dts/Makefile: Add support for Spreadtrum's Shark64 SoC.
+  arm64: Add support for Spreadtrum's Shark64 SoC in Kconfig and defconfig
+  tty/serial: add Spreadtrum's serial earlycon
+  Documentation: Add entry for Spreadtrum's Shark64 SoC
+
+ Documentation/devicetree/bindings/arm/sprd.txt     |    6 ++
+ .../devicetree/bindings/serial/of-serial.txt       |    1 +
+ arch/arm64/Kconfig                                 |    5 +
+ arch/arm64/boot/dts/Makefile                       |    1 +
+ arch/arm64/boot/dts/sprd_shark64.dts               |  110 ++++++++++++++++++++
+ arch/arm64/configs/defconfig                       |    1 +
+ drivers/tty/serial/Kconfig                         |   12 +++
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/serial_sprd_early.c             |   64 ++++++++++++
+ 9 files changed, 201 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ create mode 100644 arch/arm64/boot/dts/sprd_shark64.dts
+ create mode 100644 drivers/tty/serial/serial_sprd_early.c
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
