@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaI2QXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 12:23:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37331 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754302AbaI2QXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 12:23:36 -0400
-Date: Mon, 29 Sep 2014 18:23:34 +0200
-From: Petr Mladek <pmladek@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] seq_file: Fix seq_putc() to be consistent with seq_puts()
-Message-ID: <20140929162334.GB30562@pathway.suse.cz>
-References: <20140926143721.52206f95@gandalf.local.home>
- <20140929144121.GA30562@pathway.suse.cz>
- <20140929112538.3929a9a2@gandalf.local.home>
+	id S1754711AbaI2QYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 12:24:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38612 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754342AbaI2QYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 12:24:44 -0400
+Date: Mon, 29 Sep 2014 12:23:47 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-ima-devel@lists.sourceforge.net, dmitry.kasatkin@gmail.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>
+Subject: Re: [PATCH 1/4] evm: skip replacing EVM signature with HMAC on
+ read-only filesystem
+Message-ID: <20140929162347.GA12303@kroah.com>
+References: <cover.1411560295.git.d.kasatkin@samsung.com>
+ <aa21c2c52e3cd17825be21aa29ca88019296a712.1411560295.git.d.kasatkin@samsung.com>
+ <1412007271.3508.46.camel@dhcp-9-2-203-236.watson.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140929112538.3929a9a2@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412007271.3508.46.camel@dhcp-9-2-203-236.watson.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-09-29 11:25:38, Steven Rostedt wrote:
-> On Mon, 29 Sep 2014 16:41:22 +0200
-> Petr Mladek <pmladek@suse.cz> wrote:
+On Mon, Sep 29, 2014 at 12:14:31PM -0400, Mimi Zohar wrote:
+> On Wed, 2014-09-24 at 15:07 +0300, Dmitry Kasatkin wrote: 
+> > If filesystem is mounted read-only or file is immutable, updating
+> > xattr will fail. This is a usual case during early boot until
+> > filesystem is remount read-write. This patch verifies conditions
+> > to skip unnecessary attempt to calculate HMAC and set xattr.
+> > 
+> > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > ---
+> >  security/integrity/evm/evm_main.c | 11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+> > index 9685af3..a30be77 100644
+> > --- a/security/integrity/evm/evm_main.c
+> > +++ b/security/integrity/evm/evm_main.c
+> > @@ -162,9 +162,14 @@ static enum integrity_status evm_verify_hmac(struct dentry *dentry,
+> >  					(const char *)xattr_data, xattr_len,
+> >  					calc.digest, sizeof(calc.digest));
+> >  		if (!rc) {
+> > -			/* we probably want to replace rsa with hmac here */
+> > -			evm_update_evmxattr(dentry, xattr_name, xattr_value,
+> > -				   xattr_value_len);
+> > +			/* Replace RSA with HMAC if not mounted readonly and
+> > +			 * not immutable
+> > +			 */
+> > +			if (!IS_RDONLY(dentry->d_inode) &&
+> > +					!IS_IMMUTABLE(dentry->d_inode))
 > 
+> Previously patches conformed to Lindent, unless there was a valid reason
+> not to use it, like conflicting with checkpatch.pl.  Joe Perches
+> submitted a patch to remove it from the Documentation/CodingStyle a
+> while ago -  https://lkml.org/lkml/2013/2/11/390 and recommends using
+> "checkpatch.pl --fix" instead.
 > 
-> > This patch moves set_putc() from b) to c) because it leaves mess in the
-> > last byte.
-> 
-> Which removes the "b" section, and makes seq_putc() and seq_puts()
-> function the same.
-> 
-> > 
-> > 
-> > The semantic looks weird in all categories:
-> > 
-> > add a) They report error even when there was not a real overflow.
-> >     Well, they do not know if there was overflow because
-> >     bitmap_scnprintf() does not report if it shrunk
-> >     the data or not.
-> > 
-> > add b) It does not report error even when seq_overflow() might later
-> >     report overflow.
-> > 
-> > add c) Any overflow invalidates the whole buffer because there might
-> >     be mess at the end. The overflow is not checked by read functions,
-> >     so they allow to read the mess.
-> > 
-> > 
-> > I think that reasonable semantic would be:
-> > 
-> >   + either signalize overflow another way (extra struct member and
-> >     leave count to point to the valid data) or always fill valid
-> >     data until the end of the buffer.
-> > 
-> >     The second variant might be problem if we add only half of
-> >     an escape sequence.
+> Andrew, Greg, what is the current best practice?
 
-Do you prefer:
+I don't understand, what is wrong with the formatting of this patch?  It
+looks ok to me.  If you want to indent the second line of the if to the
+left some more, that's fine, but just minor nits, nothing major at all.
 
-      + the extra struct member?
-      + or always filling some valid data?
-      + or invalidating the buffer when the overflow is set?
+thanks,
 
-> > 
-> >   + always return error when seq_overflow() would return overflow;
-> >     in fact, the full buffer means that the last write operation
-> >     was most likely incomplete
-> 
-> I think this is probably the best option.
-
-> 
-> > 
-> >     Also we might rename it from "overflow" to "full" or "filled"
-> >     or "sealed" or "complete" that might describe the state more
-> >     precisely because there is not a real overflow in some situations
-> 
-> We could make overflow be m->count > m->size, which would mean that
-> m->count == m->size (full) isn't a problem. Although, I would have to
-> audit the kernel to see if anything just assumes that m->count is
-> always less than m->size.
-
-I am not sure if it is a good idea. I think that having
-m->count > m->size is prone to buffer overflow errors in
-the buffer reading code. I vote for adding extra flag to
-the struct :-)
-
-> This would mean overflow is the correct term, and wouldn't have to
-> change it.
-> 
-> Anyway, that should be a second patch, and we should get my current
-> patch (the one to make putc and puts the same) in first, as that
-> actually fixes the inconsistency between the two.
-
-Feel free to add
-
-Acked-by: Petr Mladek <pmladek@suse.cz>
-
-for this patch. The question is if it is really really needed in the
-final patch set. It might get even partly reverted with the follow
-up changes.
-
-Best Regards,
-Petr
+greg k-h
