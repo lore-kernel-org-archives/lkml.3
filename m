@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325AbaI3UAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:00:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaI3UAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:00:34 -0400
-Date: Tue, 30 Sep 2014 21:57:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH] modules, split MODULE_STATE_UNFORMED into separate
-	states
-Message-ID: <20140930195733.GA26492@redhat.com>
-References: <1412104110-18441-1-git-send-email-prarit@redhat.com>
+	id S1753435AbaI3UAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:00:48 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9282 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753386AbaI3UAo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:00:44 -0400
+Date: Tue, 30 Sep 2014 13:00:53 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Suman Anna <s-anna@ti.com>
+Subject: Re: [RFC 1/7] soc: qcom: Add device tree binding for SMEM
+Message-ID: <20140930200052.GU28481@sonymobile.com>
+References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1412037291-16880-2-git-send-email-bjorn.andersson@sonymobile.com>
+ <542AFE79.6030304@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1412104110-18441-1-git-send-email-prarit@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <542AFE79.6030304@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30, Prarit Bhargava wrote:
->
-> MODULE_STATE_UNFORMED needs to be separated into two states; one for the
-> module load (MODULE_STATE_LOAD), and one for the module delete
-> (MODULE_STATE_DELETE).
+On Tue 30 Sep 12:03 PDT 2014, Stephen Boyd wrote:
 
-And personally I think this makes sense in any case, but I can't really
-comment the changes in this area.
+> On 09/29/14 17:34, Bjorn Andersson wrote:
+> > +
+> > +- reg:
+> > +	Usage: required
+> > +	Value type: <prop-encoded-array>
+> > +	Definition: base address and size pair for each area representing the
+> > +		    shared memory. The first pair will must represent the "main"
+> > +		    area, where the shared memory header and table-of-content
+> > +		    can be found.
+> >
+> > +
+> > += EXAMPLE
+> > +
+> > +        smem: smem@fa00000 {
+> > +                compatible = "qcom,smem";
+> > +                reg = <0x0fa00000 0x200000>,
+> > +                      <0xfc428000 0x4000>;
+> 
+> Isn't this second entry rpm message ram? That isn't the same as smem.
+> Plus smem is part of ram (and rpm message ram is not) so we need to do
+> memory reservations or something.
+> 
 
-> @@ -3647,18 +3646,29 @@ static int m_show(struct seq_file *m, void *p)
->  	struct module *mod = list_entry(p, struct module, list);
->  	char buf[8];
->  
-> -	/* We always ignore unformed modules. */
-> -	if (mod->state == MODULE_STATE_UNFORMED)
-> +	/*
-> +	 * If the state is MODULE_STATE_LOAD then the module is in
-> +	 * the early stages of loading.  No information should be printed
-> +	 * for this module as the data could be in an uninitialized state.
-> +	 */
-> +	if (mod->state == MODULE_STATE_LOAD)
->  		return 0;
+Correct they are different, but smem covers both of those and allocations are
+only supposed to be done in the first of these.
 
-So this assumes that _UNFORMED state is fine...
+And I forgot to mention that I have the following in my dt:
 
-Not sure, but I can be easily wrong. For example, print_unload_info() ->
-module_refcount() plays with mod->refptr, while free_module() does
-module_unload_free() -> free_percpu(mod->refptr). No?
+/ {
+        reserved-memory {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                ranges;
 
-Perhaps it makes sense to start with the simple patch for stable,
+                smem@fa00000 {
+                        #memory-region-cells = <0>;
+                        reg = <0x0fa00000 0x200000>;
+                        no-map;
+                };
+        };
+};
 
-	+	// sync with m_show()
-	+	mutex_lock(module_mutex);
-		mod->state = MODULE_STATE_UNFORMED;
-	+	mutex_unlock(module_mutex);
-
-then do a more sophisticated fix?
-
-Oleg.
-
+Regards,
+Bjorn
