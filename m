@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023AbaI3Wcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:32:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaI3Wcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:32:47 -0400
-Message-ID: <542B2F7E.8030801@redhat.com>
-Date: Tue, 30 Sep 2014 18:32:30 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1752763AbaI3Wdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:33:42 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:49913 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaI3Wdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 18:33:41 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [PATCH] modules, split MODULE_STATE_UNFORMED into separate states
-References: <1412104110-18441-1-git-send-email-prarit@redhat.com> <20140930195733.GA26492@redhat.com>
-In-Reply-To: <20140930195733.GA26492@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.11.1410010025050.4455@nanos>
+References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
+ <542B2305.9060805@fds-team.de> <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com>
+ <alpine.DEB.2.11.1410010025050.4455@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 30 Sep 2014 15:33:20 -0700
+Message-ID: <CALCETrWTVPjkgfU3sWyKgtfidccXkO=H7y+9XiX20AfeQsAf2w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sebastian Lackner <sebastian@fds-team.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 09/30/2014 03:57 PM, Oleg Nesterov wrote:
-> On 09/30, Prarit Bhargava wrote:
+On Tue, Sep 30, 2014 at 3:27 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 30 Sep 2014, Andy Lutomirski wrote:
+>> It would certainly be possible to clear NT and retry IRET if IRET
+>> fails with NT set.  This would have no overhead for anything relevant.
+>> That would be this alternative from my 0/2 email:
 >>
->> MODULE_STATE_UNFORMED needs to be separated into two states; one for the
->> module load (MODULE_STATE_LOAD), and one for the module delete
->> (MODULE_STATE_DELETE).
-> 
-> And personally I think this makes sense in any case, but I can't really
-> comment the changes in this area.
-> 
->> @@ -3647,18 +3646,29 @@ static int m_show(struct seq_file *m, void *p)
->>  	struct module *mod = list_entry(p, struct module, list);
->>  	char buf[8];
->>  
->> -	/* We always ignore unformed modules. */
->> -	if (mod->state == MODULE_STATE_UNFORMED)
->> +	/*
->> +	 * If the state is MODULE_STATE_LOAD then the module is in
->> +	 * the early stages of loading.  No information should be printed
->> +	 * for this module as the data could be in an uninitialized state.
->> +	 */
->> +	if (mod->state == MODULE_STATE_LOAD)
->>  		return 0;
-> 
-> So this assumes that _UNFORMED state is fine...
-> 
-> Not sure, but I can be easily wrong. For example, print_unload_info() ->
-> module_refcount() plays with mod->refptr, while free_module() does
-> module_unload_free() -> free_percpu(mod->refptr). No?
+>>  - Don't filter NT on sysenter.  Instead, filter it on EFI entry
+>>    and modify the IRET code to retry without NT set if NT was set.
+>>
+>> Thomas hpa, etc: any thoughts?
+>
+> Filter it right away. That's solid and obvious. Anything else is just
+> complex and prone for future brown paperbag failures.
 
-Oh geez -- I didn't see that in module_unload_free().  I had assumed that all
-the percpu data was free'd in free_module() call to percpu_modfree(mod) ...
+Yeah, agreed.  That's exactly what these patches do, although, if you
+put them in -tip and want to keep the stable CC, it's probably worth
+fixing the address (oops).
 
-You're right though, the _DELETE state is not okay in this path, and if that's
-the case then I'm not sure we have to distinguish the two cases.
+>
+> We get the context switch benefit from it, so there is some
+> compensation for the extra cycles.
 
-> 
-> Perhaps it makes sense to start with the simple patch for stable,
-> 
-> 	+	// sync with m_show()
-> 	+	mutex_lock(module_mutex);
-> 		mod->state = MODULE_STATE_UNFORMED;
-> 	+	mutex_unlock(module_mutex);
-> 
-> then do a more sophisticated fix?
+If we ever want those cycles back, I bet that the compat sysenter path
+could be trimmed down a lot.  For example, I think that all of the
+zero-extension stuff is unnecessary now that we have the magic syscall
+wrappers for all (?) syscalls.
 
-I actually toyed around with this but thought that was too "hacky" for a fix.
-But if Rusty is okay with it, I'd be okay with it too.
-
-P.
-
-
-> 
-> Oleg.
-> 
+--Andy
