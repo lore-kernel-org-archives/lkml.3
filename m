@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaI3Vif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:38:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32833 "EHLO
+	id S1754182AbaI3Vik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:38:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32841 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbaI3Vib (ORCPT
+	with ESMTP id S1754163AbaI3Vih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:31 -0400
+	Tue, 30 Sep 2014 17:38:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 037/103] ibmveth: Fix endian issues with rx_no_buffer statistic
-Date: Tue, 30 Sep 2014 14:30:42 -0700
-Message-Id: <1412112708-27356-38-git-send-email-kamal@canonical.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 042/103] xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
+Date: Tue, 30 Sep 2014 14:30:47 -0700
+Message-Id: <1412112708-27356-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,67 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
+commit 7128039fe2dd3d59da9e4ffa036f3aaa3ba87b9f upstream.
 
-Hidden away in the last 8 bytes of the buffer_list page is a solitary
-statistic. It needs to be byte swapped or else ethtool -S will
-produce numbers that terrify the user.
+Current definition of TLBTEMP_BASE_2 is always 32K above the
+TLBTEMP_BASE_1, whereas fast_second_level_miss handler for the TLBTEMP
+region analyzes virtual address bit (PAGE_SHIFT + DCACHE_ALIAS_ORDER)
+to determine TLBTEMP region where the fault happened. The size of the
+TLBTEMP region is also checked incorrectly: not 64K, but twice data
+cache way size (whicht may as well be less than the instruction cache
+way size).
 
-Since we do this in multiple places, create a helper function with a
-comment explaining what is going on.
+Fix TLBTEMP_BASE_2 to be TLBTEMP_BASE_1 + data cache way size.
+Provide TLBTEMP_SIZE that is a greater of doubled data cache way size or
+the instruction cache way size, and use it to determine if the second
+level TLB miss occured in the TLBTEMP region.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Practical occurence of page faults in the TLBTEMP area is extremely
+rare, this code can be tested by deletion of all w[di]tlb instructions
+in the tlbtemp_mapping region.
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/ibm/ibmveth.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ arch/xtensa/include/asm/pgtable.h | 7 ++++++-
+ arch/xtensa/kernel/entry.S        | 2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/ibm/ibmveth.c b/drivers/net/ethernet/ibm/ibmveth.c
-index 6c0fd8e..895b086 100644
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -293,6 +293,18 @@ failure:
- 	atomic_add(buffers_added, &(pool->available));
- }
+diff --git a/arch/xtensa/include/asm/pgtable.h b/arch/xtensa/include/asm/pgtable.h
+index 2164462..51230ba 100644
+--- a/arch/xtensa/include/asm/pgtable.h
++++ b/arch/xtensa/include/asm/pgtable.h
+@@ -67,7 +67,12 @@
+ #define VMALLOC_START		0xC0000000
+ #define VMALLOC_END		0xC7FEFFFF
+ #define TLBTEMP_BASE_1		0xC7FF0000
+-#define TLBTEMP_BASE_2		0xC7FF8000
++#define TLBTEMP_BASE_2		(TLBTEMP_BASE_1 + DCACHE_WAY_SIZE)
++#if 2 * DCACHE_WAY_SIZE > ICACHE_WAY_SIZE
++#define TLBTEMP_SIZE		(2 * DCACHE_WAY_SIZE)
++#else
++#define TLBTEMP_SIZE		ICACHE_WAY_SIZE
++#endif
  
-+/*
-+ * The final 8 bytes of the buffer list is a counter of frames dropped
-+ * because there was not a buffer in the buffer list capable of holding
-+ * the frame.
-+ */
-+static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
-+{
-+	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
-+
-+	adapter->rx_no_buffer = be64_to_cpup(p);
-+}
-+
- /* replenish routine */
- static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
- {
-@@ -308,8 +320,7 @@ static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
- 			ibmveth_replenish_buffer_pool(adapter, pool);
- 	}
+ /*
+  * For the Xtensa architecture, the PTE layout is as follows:
+diff --git a/arch/xtensa/kernel/entry.S b/arch/xtensa/kernel/entry.S
+index b1444f9..6ac5055 100644
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1600,7 +1600,7 @@ ENTRY(fast_second_level_miss)
+ 	rsr	a0, excvaddr
+ 	bltu	a0, a3, 2f
  
--	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- }
+-	addi	a1, a0, -(2 << (DCACHE_ALIAS_ORDER + PAGE_SHIFT))
++	addi	a1, a0, -TLBTEMP_SIZE
+ 	bgeu	a1, a3, 2f
  
- /* empty and free ana buffer pool - also used to do cleanup in error paths */
-@@ -699,8 +710,7 @@ static int ibmveth_close(struct net_device *netdev)
- 
- 	free_irq(netdev->irq, netdev);
- 
--	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- 
- 	ibmveth_cleanup(adapter);
- 
+ 	/* Check if we have to restore an ITLB mapping. */
 -- 
 1.9.1
 
