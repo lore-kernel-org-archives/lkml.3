@@ -1,71 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaI3Tks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:40:48 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:35306 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaI3Tkr (ORCPT
+	id S1753412AbaI3Tkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:40:53 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:65148 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaI3Tku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:40:47 -0400
+	Tue, 30 Sep 2014 15:40:50 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 0/2] x86_64,entry: Clear NT on entry and speed up switch_to
-Date: Tue, 30 Sep 2014 12:40:34 -0700
-Message-Id: <cover.1412105369.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>, stable@kernel.org
+Subject: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+Date: Tue, 30 Sep 2014 12:40:35 -0700
+Message-Id: <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1412105369.git.luto@amacapital.net>
+References: <cover.1412105369.git.luto@amacapital.net>
+In-Reply-To: <cover.1412105369.git.luto@amacapital.net>
+References: <cover.1412105369.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anish Bhatt noticed that user programs can set RFLAGS.NT before
-syscall or sysenter, and the kernel entry code doesn't filter out
-NT.  This causes kernel C code and, depending on thread flags, the
-exit slow path to run with NT set.
+The NT flag doesn't do anything in long mode other than causing IRET
+to #GP.  Oddly, CPL3 code can still net NT using popf.
 
-The former is a little bit scary (imagine calling into EFI with NT
-set), and the latter will fail with #GP and send a spurious SIGSEGV.
+Entry via hardware or software interrupt clears NT automatically, so
+the only relevant entries are fast syscalls.
 
-One answer would be "don't do that".  But the kernel can do better
-here.
+This patch programs the CPU to clear NT on entry via SYSCALL (both
+32-bit and 64-bit, by my reading of the AMD APM).  It also clears NT
+(and some other flags) in software on SYSENTER.
 
-These patches, which I'm not completely thrilled by, filter NT on
-all kernel entries.  For syscall (both bitnesses), this is free.
-For sysenter, it costs 15 cycles or so.  As a consolation prize, we
-can speed up context switches by avoiding saving and restoring flags.
+I haven't touched anything on 32-bit kernels.
 
-If we don't like the added sysenter overhead, there are few other
-options:
+If user code causes kernel code to run with NT set, then there's at
+least some (small) chance that it could cause trouble.  For example,
+user code could cause a call to EFI code with NT set, and who knows
+what would happen.  Apparently Wine sometimes does this (!), and, if
+an IRET return happens, Wine will segfault.
 
- - Try to optimize it by folding it with other flag manipulations
-   (my attempt to do that didn't end up being any faster).
+I think that Wine should be fixed to stop setting NT when a syscall
+happens, but handling NT more gracefully is still nice.
 
- - Only do the syscall part.  That's free, but it serves little
-   purpose other than being polite to buggy userspace code.
+The syscall mask change comes from a variant of this patch by Anish
+Bhatt.
 
- - Don't filter NT on sysenter.  Instead, filter it on EFI entry
-   and modify the IRET code to retry without NT set if NT was set.
+Cc: stable@kernel.org
+Reported-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ arch/x86/ia32/ia32entry.S    | 10 +++++++++-
+ arch/x86/kernel/cpu/common.c |  2 +-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
- - Don't filter NT on sysenter.  Instead, only filter it when
-   sysenter jumps to the slow path.  (This is trivial, but it does
-   nothing to reduce the chance that evil user code can cause
-   trouble by, say, reading from sysfs with NT set using sysenter.)
-
-See: https://bugs.winehq.org/show_bug.cgi?id=33275
-
-Andy Lutomirski (2):
-  x86_64,entry: Filter RFLAGS.NT on entry from userspace
-  x86_64: Don't save flags on context switch
-
- arch/x86/ia32/ia32entry.S        | 10 +++++++++-
- arch/x86/include/asm/switch_to.h | 10 +++++++---
- arch/x86/kernel/cpu/common.c     |  2 +-
- 3 files changed, 17 insertions(+), 5 deletions(-)
-
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 4299eb05023c..079f42a7ad58 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -143,7 +143,15 @@ ENTRY(ia32_sysenter_target)
+ 	pushq_cfi %r10
+ 	CFI_REL_OFFSET rip,0
+ 	pushq_cfi %rax
+-	cld
++
++	/*
++	 * Sysenter doesn't filter flags, so we should filter them
++	 * ourselves.
++	 */
++	pushfq_cfi
++	andl $~(X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_NT|X86_EFLAGS_IOPL),(%rsp)
++	popfq_cfi
++
+ 	SAVE_ARGS 0,1,0
+  	/* no need to do an access_ok check here because rbp has been
+  	   32bit zero extended */ 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e4ab2b42bd6f..31265580c38a 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1184,7 +1184,7 @@ void syscall_init(void)
+ 	/* Flags to clear on syscall */
+ 	wrmsrl(MSR_SYSCALL_MASK,
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+-	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
++	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ }
+ 
+ /*
 -- 
 1.9.3
 
