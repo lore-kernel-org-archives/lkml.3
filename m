@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036AbaI3ViJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:38:09 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:41775 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969AbaI3ViB (ORCPT
+	id S1754057AbaI3ViO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:38:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32791 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969AbaI3ViK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:01 -0400
-MIME-Version: 1.0
-Reply-To: rajatxjain@gmail.com
-In-Reply-To: <20140930211339.GA1264@katana>
-References: <542A3593.4020108@gmail.com>
-	<CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
-	<20140930211339.GA1264@katana>
-Date: Tue, 30 Sep 2014 14:37:59 -0700
-Message-ID: <CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over I2C
-From: Rajat Jain <rajatxjain@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
+	Tue, 30 Sep 2014 17:38:10 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Pranith Kumar <bobby.prani@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 044/103] staging: lustre: Remove circular dependency on header
+Date: Tue, 30 Sep 2014 14:30:49 -0700
+Message-Id: <1412112708-27356-45-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Sep 30, 2014 at 2:13 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> > Since this is a driver for a PCIe switch, I currently put it under /driver/pci/.
->> > I'm very open to suggestions for moving this around (Does introducing
->> > drivers/pci/switch/ seem any better?). Especially I can see that the
->> > drivers/pci/Kconfig appears under "Bus Options" in the main menu which does not
->> > look like the right place for this driver. I am looking for suggestions here.
->>
->> Definitely interesting work.  I have no idea where to put it.  It
->> doesn't have anything to do with PCI core services or structures, so
->> drivers/pci doesn't seem like the ideal place for it, but I don't have
->> any better ideas.  If it did end up under drivers/pci, I agree that a
->> drivers/pci/switch or something similar would probably be better than
->> having it directly in drivers/pci.
->>
->> Maybe Wolfram or other I2C folks will have an idea.
->
-> Hmm, is this a common interface for those switches? Then a directory
-> like drivers/pci/switch could make sense. Otherwise I'd suggest
-> drivers/misc?
->
+------------------
 
-Yes, this (I2C) is a common (secondary) interface for most of the
-modern PCIe switches from PLX and IDT. And it is often used in complex
-systems to handle use cases described in the documentation being added
-as part of this patch set. Excerpt (from
-https://lkml.org/lkml/2014/9/30/29):
+From: Pranith Kumar <bobby.prani@gmail.com>
 
-===========================================================
-...<snip>...
+commit e409842a03b0c2c41c0959fef8a7563208af36c1 upstream.
 
-+0. Why have an I2C interface to a PCIe switch?
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+Other than the regular PCI express interface, most modern PCIe switches (e.g.
-+from IDT and PLX) have an I2C based secondary interface. This interface allows
-+access to all the registers of the switch. Some of these registers may not even
-+be accessible over the regular PCI interface. Also, there are certain registers
-+that can be written to, using only the I2C interface and may only be read-only
-+using the PCI interface.
-+
-+This I2C interface is often used in designs involving these switches, and can
-+be used for a variety of use cases where the switch needs to be configured
-+independent of the PCI subsystem (and likely before PCI enumeration). Some
-+examples:
-+
-+* Dividing a PCIe switch into multiple "virtual" switches. Using this feature,
-+  a switch could be connected to 2 root ports for instance, each managing its
-+  own PCI hierarchy, and the traffic from one virtual switch does not leak into
-+  another.
-+
-+* Managing Transparent / Non-transparent bridging, and changing them
-on-the-fly.
-+  There are ports that can be converted into "Non-transparent" bridge ports.
-+  Essentially this is used to create different domains (not visible to
-+  software). In a dynamic distributed system, it may be desirable to change a
-+  transparent bridge to non-transparent or vice versa, for example, to handle a
-+  failover situation.
-+
-+* Buggy hardware / Bad EEPROM configuration. There may be cases where an errata
-+  involving register writes need to be applied before enumerating over PCI.
-+  Also these switches are typically attached to an EEPROM that is supposed to
-+  initialize the switch. If that EEPROM is not present, or contains bad
-+  initialization data, this I2C interface can be used to fix that.
-+
-+* Changing switch configuration on the fly. In a multi-homed or complex
-+  distributed systemsystem, there may be a need to change the switch
-+  configuration (eg. change the upstream port, or the port or lane
-+  configuration etc) to address run time scenarios (CPU plug out etc).
-+
+The following patch fixes a build error on sparc32. I think it should go to
+stable 3.16.
 
-...<snip>...
-===========================================================
+Remove a circular dependency on atomic.h header file which leads to compilation
+failure on sparc32 as reported here:
+http://kisskb.ellerman.id.au/kisskb/buildresult/11340509/
 
-I am myself leaning towards drivers/pci/switch/. And am wanting to
-hear what other think.
+The specific dependency is as follows:
 
-Thanks,
+In file included from arch/sparc/include/asm/smp_32.h:24:0,
+                 from arch/sparc/include/asm/smp.h:6,
+                 from arch/sparc/include/asm/switch_to_32.h:4,
+                 from arch/sparc/include/asm/switch_to.h:6,
+                 from arch/sparc/include/asm/ptrace.h:84,
+                 from arch/sparc/include/asm/processor_32.h:16,
+                 from arch/sparc/include/asm/processor.h:6,
+                 from arch/sparc/include/asm/barrier_32.h:4,
+                 from arch/sparc/include/asm/barrier.h:6,
+                 from arch/sparc/include/asm/atomic_32.h:17,
+                 from arch/sparc/include/asm/atomic.h:6,
+                 from drivers/staging/lustre/lustre/obdclass/class_obd.c:38
 
-Rajat
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/staging/lustre/lustre/obdclass/class_obd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+index 4afd962..6d705db 100644
+--- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
++++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
+@@ -35,7 +35,7 @@
+  */
+ 
+ #define DEBUG_SUBSYSTEM S_CLASS
+-# include <asm/atomic.h>
++# include <linux/atomic.h>
+ 
+ #include <obd_support.h>
+ #include <obd_class.h>
+-- 
+1.9.1
+
