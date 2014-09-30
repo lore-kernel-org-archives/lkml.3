@@ -1,128 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaI3Rtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:49:33 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:32935 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaI3RtI (ORCPT
+	id S1753661AbaI3RuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:50:00 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:36781 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865AbaI3Rt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:49:08 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Marc Carino <marc.ceeeee@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH v2 10/10] power/reset: brcmstb: Register with kernel restart handler
-Date: Tue, 30 Sep 2014 10:48:36 -0700
-Message-Id: <1412099316-23167-11-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
-References: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
+	Tue, 30 Sep 2014 13:49:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <542A79AF.8060602@gmail.com>
+References: <1412052900-1722-1-git-send-email-danielmicay@gmail.com>
+ <CALCETrX6D7X7zm3qCn8kaBtYHCQvdR06LAAwzBA=1GteHAaLKA@mail.gmail.com> <542A79AF.8060602@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 30 Sep 2014 10:49:36 -0700
+Message-ID: <CALCETrVHgvhAN3neoOpJEk94uM7QKm2izZpp+=1UA6qieaQiTQ@mail.gmail.com>
+Subject: Re: [PATCH v3] mm: add mremap flag for preserving the old mapping
+To: Daniel Micay <danielmicay@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Evans <jasone@canonware.com>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel restart handler instead of setting arm_pm_restart directly.
+On Sep 30, 2014 2:36 AM, "Daniel Micay" <danielmicay@gmail.com> wrote:
+>
+> On 30/09/14 01:53 AM, Andy Lutomirski wrote:
+> > On Mon, Sep 29, 2014 at 9:55 PM, Daniel Micay <danielmicay@gmail.com> wrote:
+> >> This introduces the MREMAP_RETAIN flag for preserving the source mapping
+> >> when MREMAP_MAYMOVE moves the pages to a new destination. Accesses to
+> >> the source location will fault and cause fresh pages to be mapped in.
+> >>
+> >> For consistency, the old_len >= new_len case could decommit the pages
+> >> instead of unmapping. However, userspace can accomplish the same thing
+> >> via madvise and a coherent definition of the flag is possible without
+> >> the extra complexity.
+> >
+> > IMO this needs very clear documentation of exactly what it does.
+>
+> Agreed, and thanks for the review. I'll post a slightly modified version
+> of the patch soon (mostly more commit message changes).
+>
+> > Does it preserve the contents of the source pages?  (If so, why?
+> > Aren't you wasting a bunch of time on page faults and possibly
+> > unnecessary COWs?)
+>
+> The source will act as if it was just created. For an anonymous memory
+> mapping, it will fault on any accesses and bring in new zeroed pages.
+>
+> In jemalloc, it replaces an enormous memset(dst, src, size) followed by
+> madvise(src, size, MADV_DONTNEED) with mremap. Using mremap also ends up
+> eliding page faults from writes at the destination.
+>
+> TCMalloc has nearly the same page allocation design, although it tries
+> to throttle the purging so it won't always gain as much.
+>
+> > Does it work on file mappings?  Can it extend file mappings while it moves them?
+>
+> It works on file mappings. If a move occurs, there will be the usual
+> extended destination mapping but with the source mapping left intact.
+>
+> It wouldn't be useful with existing allocators, but in theory a general
+> purpose allocator could expose an MMIO API in order to reuse the same
+> address space via MAP_FIXED/MREMAP_FIXED to reduce VM fragmentation.
+>
+> > If you MREMAP_RETAIN a partially COWed private mapping, what happens?
+>
+> The original mapping is zeroed in the following test, as it would be
+> without fork:
+>
+> #define _GNU_SOURCE
+>
+> #include <string.h>
+> #include <stdlib.h>
+> #include <sys/mman.h>
+> #include <unistd.h>
+> #include <sys/wait.h>
+>
+> int main(void) {
+>   size_t size = 1024 * 1024;
+>   char *orig = mmap(NULL, size, PROT_READ|PROT_WRITE,
+>                     MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+>   memset(orig, 5, size);
+>   int pid = fork();
+>   if (pid == -1)
+>     return 1;
+>   if (pid == 0) {
+>     memset(orig, 5, 1024);
+>     char *new = mremap(orig, size, size * 128, MREMAP_MAYMOVE|4);
+>     if (new == orig) return 1;
+>     for (size_t i = 0; i < size; i++)
+>       if (new[i] != 5)
+>         return 1;
+>     for (size_t i = 0; i < size; i++)
+>       if (orig[i] != 0)
+>         return 1;
+>     return 0;
+>   }
+>   int status;
+>   if (wait(&status) < -1) return 1;
+>   if (WIFEXITED(status))
+>     return WEXITSTATUS(status);
+>   return 1;
+> }
+>
+> Hopefully this is the case you're referring to. :)
 
-Cc: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/power/reset/brcmstb-reboot.c | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+What about private file mappings?
 
-diff --git a/drivers/power/reset/brcmstb-reboot.c b/drivers/power/reset/brcmstb-reboot.c
-index 3f23692..1ad5629 100644
---- a/drivers/power/reset/brcmstb-reboot.c
-+++ b/drivers/power/reset/brcmstb-reboot.c
-@@ -16,6 +16,7 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/jiffies.h>
-+#include <linux/notifier.h>
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
-@@ -26,8 +27,6 @@
- #include <linux/smp.h>
- #include <linux/mfd/syscon.h>
- 
--#include <asm/system_misc.h>
--
- #define RESET_SOURCE_ENABLE_REG 1
- #define SW_MASTER_RESET_REG 2
- 
-@@ -35,7 +34,8 @@ static struct regmap *regmap;
- static u32 rst_src_en;
- static u32 sw_mstr_rst;
- 
--static void brcmstb_reboot(enum reboot_mode mode, const char *cmd)
-+static int brcmstb_restart_handler(struct notifier_block *this,
-+				   unsigned long mode, void *cmd)
- {
- 	int rc;
- 	u32 tmp;
-@@ -43,31 +43,38 @@ static void brcmstb_reboot(enum reboot_mode mode, const char *cmd)
- 	rc = regmap_write(regmap, rst_src_en, 1);
- 	if (rc) {
- 		pr_err("failed to write rst_src_en (%d)\n", rc);
--		return;
-+		return NOTIFY_DONE;
- 	}
- 
- 	rc = regmap_read(regmap, rst_src_en, &tmp);
- 	if (rc) {
- 		pr_err("failed to read rst_src_en (%d)\n", rc);
--		return;
-+		return NOTIFY_DONE;
- 	}
- 
- 	rc = regmap_write(regmap, sw_mstr_rst, 1);
- 	if (rc) {
- 		pr_err("failed to write sw_mstr_rst (%d)\n", rc);
--		return;
-+		return NOTIFY_DONE;
- 	}
- 
- 	rc = regmap_read(regmap, sw_mstr_rst, &tmp);
- 	if (rc) {
- 		pr_err("failed to read sw_mstr_rst (%d)\n", rc);
--		return;
-+		return NOTIFY_DONE;
- 	}
- 
- 	while (1)
- 		;
-+
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block brcmstb_restart_nb = {
-+	.notifier_call = brcmstb_restart_handler,
-+	.priority = 128,
-+};
-+
- static int brcmstb_reboot_probe(struct platform_device *pdev)
- {
- 	int rc;
-@@ -93,9 +100,12 @@ static int brcmstb_reboot_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	arm_pm_restart = brcmstb_reboot;
-+	rc = register_restart_handler(&brcmstb_restart_nb);
-+	if (rc)
-+		dev_err(&pdev->dev,
-+			"cannot register restart handler (err=%d)\n", rc);
- 
--	return 0;
-+	return rc;
- }
- 
- static const struct of_device_id of_match[] = {
--- 
-1.9.1
+>
+> > Does it work on special mappings?  If so, please prevent it from doing
+> > so.  mremapping x86's vdso is a thing, and duplicating x86's vdso
+> > should not become a thing, because x86_32 in particular will become
+> > extremely confused.
+>
+> I'll add a check for arch_vma_name(vma) == NULL.
 
+Careful!  That function is deprecated in favor of vm_ops->name.
+
+I think it might pay to add an explicit vm_op to authorize
+duplication, especially for non-cow mappings.  IOW this kind of
+extension seems quite magical for anything that doesn't have the
+normal COW semantics, including for plain old read-only mappings.
+
+>
+> There's an existing check for VM_DONTEXPAND | VM_PFNMAP when expanding
+> allocations (the only case this flag impacts). Are there other kinds of
+> special mappings that you're referring to?
+
+I was referring to special mappings in the install_special_mapping
+sense.  Those may or may not have VM_PFNMAP set.
+
+If VM_DONTEXPAND blocks this new feature entirely, that's probably good.
+
+--Andy
