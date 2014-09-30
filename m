@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaI3VlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:41:00 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:63316 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475AbaI3VjU (ORCPT
+	id S1754643AbaI3VlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:41:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32976 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaI3VjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 17:39:20 -0400
-Message-ID: <542B2305.9060805@fds-team.de>
-Date: Tue, 30 Sep 2014 23:39:17 +0200
-From: Sebastian Lackner <sebastian@fds-team.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@kernel.org
-Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
-In-Reply-To: <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 103/103] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+Date: Tue, 30 Sep 2014 14:31:48 -0700
+Message-Id: <1412112708-27356-104-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.09.2014 21:40, Andy Lutomirski wrote:
-> what would happen.  Apparently Wine sometimes does this (!), and, if
-> an IRET return happens, Wine will segfault.
-> 
-> I think that Wine should be fixed to stop setting NT when a syscall
-> happens, but handling NT more gracefully is still nice.
-> 
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-Just to give some more background about this issue: Wine has no influence
-if the NT flag is set or not - as Wine doesn't trace each individual opcode,
-there is no chance to know, if a Windows program messes up the EFLAGS. This
-happens in closed source Windows applications, so its not really Wines fault.
+------------------
 
-I think the current approach should be fine, but if other people prefer one of
-the solutions without additional overhead on syscall entry:
+From: Jiri Kosina <jkosina@suse.cz>
 
-At least for Wine it would also be absolutely fine, when the application would
-just get a proper signal (if adding the retry IRET is too complicated). I've
-attached the url to an additional example program, which shows that currently
-the signal handler is unable to process such a fault, and a proof-of-concept
-patch to clear the NT flags at least for the signal handler. Such a patch
-doesn't fix the potential issues with EFI though.
+commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
 
-Example program:
-http://ix.io/ezl
+There is a following AB-BA dependency between cpu_hotplug.lock and
+cpuidle_lock:
 
-Proof-of-concept patch:
-http://ix.io/ezm
+1) cpu_hotplug.lock -> cpuidle_lock
+enable_nonboot_cpus()
+ _cpu_up()
+  cpu_hotplug_begin()
+   LOCK(cpu_hotplug.lock)
+ cpu_notify()
+  ...
+  acpi_processor_hotplug()
+   cpuidle_pause_and_lock()
+    LOCK(cpuidle_lock)
 
-Regards,
-Sebastian
+2) cpuidle_lock -> cpu_hotplug.lock
+acpi_os_execute_deferred() workqueue
+ ...
+ acpi_processor_cst_has_changed()
+  cpuidle_pause_and_lock()
+   LOCK(cpuidle_lock)
+  get_online_cpus()
+   LOCK(cpu_hotplug.lock)
+
+Fix this by reversing the order acpi_processor_cst_has_changed() does
+thigs -- let it first execute the protection against CPU hotplug by
+calling get_online_cpus() and obtain the cpuidle lock only after that (and
+perform the symmentric change when allowing CPUs hotplug again and
+dropping cpuidle lock).
+
+Spotted by lockdep.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/processor_idle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 644516d..ba60290 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1089,9 +1089,9 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+ 
+ 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+ 
+-		cpuidle_pause_and_lock();
+ 		/* Protect against cpu-hotplug */
+ 		get_online_cpus();
++		cpuidle_pause_and_lock();
+ 
+ 		/* Disable all cpuidle devices */
+ 		for_each_online_cpu(cpu) {
+@@ -1118,8 +1118,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
+ 				cpuidle_enable_device(dev);
+ 			}
+ 		}
+-		put_online_cpus();
+ 		cpuidle_resume_and_unlock();
++		put_online_cpus();
+ 	}
+ 
+ 	return 0;
+-- 
+1.9.1
 
