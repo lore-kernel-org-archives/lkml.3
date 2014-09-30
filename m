@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaI3AfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:35:09 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10922 "EHLO
+	id S1755269AbaI3AfR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:35:17 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10974 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755095AbaI3AfC (ORCPT
+	by vger.kernel.org with ESMTP id S1755095AbaI3AfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:35:02 -0400
+	Mon, 29 Sep 2014 20:35:12 -0400
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 To: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Grant Likely <grant.likely@linaro.org>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Suman Anna <s-anna@ti.com>
-Subject: [RFC 4/7] soc: qcom: Add Shared Memory Manager driver
-Date: Mon, 29 Sep 2014 17:34:48 -0700
-Message-ID: <1412037291-16880-5-git-send-email-bjorn.andersson@sonymobile.com>
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [RFC 6/7] mfd: qcom-smd-rpm: Driver for the Qualcomm RPM over SMD
+Date: Mon, 29 Sep 2014 17:34:50 -0700
+Message-ID: <1412037291-16880-7-git-send-email-bjorn.andersson@sonymobile.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
 References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
@@ -30,70 +29,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Shared Memory Manager driver implements an interface for allocating
-and accessing items in the memory area shared among all of the
-processors in a Qualcomm platform.
+Driver for the Resource Power Manager (RPM) found in Qualcomm 8974 based
+devices.
+The driver exposes resources that child drivers can operate on; to
+implementing regulator, clock and bus frequency drivers.
 
 Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
 
-In later platforms this is extended to support "secure smem", I do
-unfortunately not have any devices that I could test this with so I have only
-implemented the "insecure" version for now.
+Note that the qcom_rpm_smd_write is equivalent of qcom_rpm_write and there is a
+possibility of re-using at least the clock implementation on top of this. This
+would however require some logic for calling the right implementation so I have
+not done it at this time to keep things as clean as possible.
 
-I was thinking about implementing an of_xlate as this would make sense for many
-things. It is however not feasible for SMD, that would require us to list 257
-items.
+An idea for improvement is that in qcom_rpm_smd_write we put the ack_status and
+completion on the stack and register this with idr using the message id, upon
+receiving the interrupt we would find the right client and complete this.
+Allowing for multiple requests to be in flight at any given time.
 
-It would make sense to enhance this with a method of keeping track of currently
-consumed items, both to take care of "mutual exclusion" between consumers as
-well as knowing when it's safe to remove the device and/or unload the driver.
+I did not implement this because I haven't done any measurements on what kind
+of improvements this could give and it would be a clean iteration ontop of
+this.
 
-I did consider exposing the items as regmaps, but for many of the items the
-regmap context is consuming far more space then the actual data. And we would
-end up creating 3-400 regmap contexts in a normal system.
+ drivers/mfd/Kconfig              |   14 ++
+ drivers/mfd/Makefile             |    1 +
+ drivers/mfd/qcom-smd-rpm.c       |  299 ++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/qcom-smd-rpm.h |    9 ++
+ 4 files changed, 323 insertions(+)
+ create mode 100644 drivers/mfd/qcom-smd-rpm.c
+ create mode 100644 include/linux/mfd/qcom-smd-rpm.h
 
-
-Also note that the hwspinlock framework does not yet support devicetree based
-retrieval of spinlock handles, so that part needs to be changed.
-
- drivers/soc/qcom/Kconfig           |    8 +
- drivers/soc/qcom/Makefile          |    1 +
- drivers/soc/qcom/qcom_smem.c       |  328 ++++++++++++++++++++++++++++++++++++
- include/linux/soc/qcom/qcom_smem.h |   14 ++
- 4 files changed, 351 insertions(+)
- create mode 100644 drivers/soc/qcom/qcom_smem.c
- create mode 100644 include/linux/soc/qcom/qcom_smem.h
-
-diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
-index 7bd2c94..9e6bc56 100644
---- a/drivers/soc/qcom/Kconfig
-+++ b/drivers/soc/qcom/Kconfig
-@@ -9,3 +9,11 @@ config QCOM_GSBI
-           functions for connecting the underlying serial UART, SPI, and I2C
-           devices to the output pins.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 6743e88..c62c7f5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -553,6 +553,20 @@ config MFD_QCOM_RPM
+ 	  Say M here if you want to include support for the Qualcomm RPM as a
+ 	  module. This will build a module called "qcom_rpm".
  
-+config QCOM_SMEM
-+	tristate "Qualcomm Shared Memory Interface"
-+	depends on ARCH_QCOM
++config MFD_QCOM_SMD_RPM
++	tristate "Qualcomm Resource Power Manager (RPM) over SMD"
++	depends on QCOM_SMD && OF
 +	help
-+	  Say y here to enable support for the Qualcomm Shared Memory Manager.
-+	  The driver provides an interface to items in a heap shared among all
-+	  processors in a Qualcomm platform and is used for exchanging
-+	  information as well as a fifo based communication mechanism (SMD).
-diff --git a/drivers/soc/qcom/Makefile b/drivers/soc/qcom/Makefile
-index 4389012..b1f7b18 100644
---- a/drivers/soc/qcom/Makefile
-+++ b/drivers/soc/qcom/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_QCOM_GSBI)	+=	qcom_gsbi.o
-+obj-$(CONFIG_QCOM_SMEM) +=	qcom_smem.o
-diff --git a/drivers/soc/qcom/qcom_smem.c b/drivers/soc/qcom/qcom_smem.c
++	  If you say yes to this option, support will be included for the
++	  Resource Power Manager system found in the Qualcomm 8974 based
++	  devices.
++
++	  This is required to access many regulators, clocks and bus
++	  frequencies controlled by the RPM on these devices.
++
++	  Say M here if you want to include support for the Qualcomm RPM as a
++	  module. This will build a module called "qcom-smd-rpm".
++
+ config MFD_RDC321X
+ 	tristate "RDC R-321x southbridge"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 3f2fc89..e19ab12 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -154,6 +154,7 @@ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+ obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
+ obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
+ obj-$(CONFIG_MFD_QCOM_RPM)	+= qcom_rpm.o
++obj-$(CONFIG_MFD_QCOM_SMD_RPM)	+= qcom-smd-rpm.o
+ obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
+ obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
+ obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
+diff --git a/drivers/mfd/qcom-smd-rpm.c b/drivers/mfd/qcom-smd-rpm.c
 new file mode 100644
-index 0000000..9766c86
+index 0000000..3f77f87
 --- /dev/null
-+++ b/drivers/soc/qcom/qcom_smem.c
-@@ -0,0 +1,328 @@
++++ b/drivers/mfd/qcom-smd-rpm.c
+@@ -0,0 +1,299 @@
 +/*
 + * Copyright (c) 2014, Sony Mobile Communications AB.
 + * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
@@ -110,336 +118,302 @@ index 0000000..9766c86
 +
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
++#include <linux/of_platform.h>
 +#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/hwspinlock.h>
-+#include <linux/soc/qcom/qcom_smem.h>
++#include <linux/interrupt.h>
 +
-+#define AUX_BASE_MASK		0xfffffffc
-+#define HWSPINLOCK_TIMEOUT	1000
-+#define SMEM_MAX_ITEMS		512
++#include <linux/soc/qcom/qcom_smd.h>
++#include <linux/mfd/qcom-smd-rpm.h>
 +
-+/**
-+  * struct smem_proc_comm - proc_comm communication struct (legacy)
-+  * @command:	current command to be executed
-+  * @status:	status of the currently requested command
-+  * @params:	parameters to the command
-+  */
-+struct smem_proc_comm {
-+	u32 command;
-+	u32 status;
-+	u32 params[2];
++#include <dt-bindings/mfd/qcom-rpm.h>
++
++#define RPM_REQUEST_TIMEOUT     (5 * HZ)
++
++struct qcom_rpm_resource {
++	u32 resource_type;
++	u32 resource_id;
 +};
 +
-+/**
-+ * struct smem_entry - entry to reference smem items on the heap
-+ * @allocated:	boolean to indicate if this entry is used
-+ * @offset:	offset to the allocated space
-+ * @size:	size of the allocated space, 8 byte aligned
-+ * @aux_base:	base address for the memory region used by this unit, or 0 for
-+ *		the default region. bits 0,1 are reserved
-+ */
-+struct smem_entry {
-+	u32 allocated;
-+	u32 offset;
-+	u32 size;
-+	u32 aux_base; /* bits 1:0 reserved */
++struct qcom_rpm_data {
++	const struct qcom_rpm_resource *resource_table;
++	unsigned nresources;
 +};
 +
-+/**
-+ * struct smem_header - header found in beginning of primary smem region
-+ * @proc_comm:		proc_comm communication interface (legacy)
-+ * @version:		array of versions for the various subsystems
-+ * @smem_initialized:	boolean to indicate that smem is initialized
-+ * @free_offset:	index of the first unallocated byte in smem
-+ * @available:		number of bytes available for allocation
-+ * @unused:		reserved field
-+ * toc:			array of references to smem entries
-+ */
-+struct smem_header {
-+	struct smem_proc_comm proc_comm[4];
-+	u32 version[32];
-+	u32 smem_initialized;
-+	u32 free_offset;
-+	u32 available;
-+	u32 unused;
-+	struct smem_entry toc[SMEM_MAX_ITEMS];
-+};
-+
-+/**
-+  * struct smem_area - memory region used for smem heap
-+  * @aux_base:	physical base address of the region, used for entry lookup
-+  * @virt_base:	virtual address of the mapping
-+  */
-+struct smem_region {
-+	u32 aux_base;
-+	void __iomem *virt_base;
-+};
-+
-+/**
-+  * struct qcom_smem - control struct for the smem driver
-+  * @dev:		device pointer
-+  * @hwlock:		hwspinlock to be held during heap operations
-+  * @num_regions:	number of entires in the regions array
-+  * @regions:		array of memory regions, region 0 contains smem_header
-+  */
-+struct qcom_smem {
++struct qcom_smd_rpm {
 +	struct device *dev;
++	struct qcom_smd_channel *rpm_channel;
 +
-+	struct hwspinlock *hwlock;
++	struct completion ack;
++	struct mutex lock;
++	int ack_status;
 +
-+	unsigned num_regions;
-+	struct smem_region regions[0];
++	const struct qcom_rpm_data *data;
 +};
 +
-+/* Pointer to the one and only smem handle */
-+static struct qcom_smem *smem_handle;
++struct qcom_rpm_header {
++	u32 service_type;
++	u32 length;
++};
++
++struct qcom_rpm_request {
++	u32 msg_id;
++	u32 flags;
++	u32 resource_type;
++	u32 resource_id;
++	u32 data_len;
++};
++
++struct qcom_rpm_message {
++	u32 msg_type;
++	u32 length;
++	union {
++		u32 msg_id;
++		u8 message[0];
++	};
++};
++
++#define RPM_SERVICE_TYPE_REQUEST	0x00716572 /* "req\0" */
++
++#define RPM_MSG_TYPE_ERR		0x00727265 /* "err\0" */
++#define RPM_MSG_TYPE_MSG_ID		0x2367736d /* "msg#" */
++
++#define RESOURCE_TYPE_SMPA		0x61706d73 /* "smpa" */
++#define RESOURCE_TYPE_SMPB		0x62706d73 /* "smpb" */
++#define RESOURCE_TYPE_LDOA		0x616f646c /* "ldoa" */
++#define RESOURCE_TYPE_VSA		0x00617376 /* "vsa\0" */
++
++#define RPM_MSG_FLAGS_SET_ACTIVE_MODE	BIT(0)
++#define RPM_MSG_FLAGS_SET_SLEEP_MODE	BIT(1)
++
++static const struct qcom_rpm_resource msm8x74_resource_table[] = {
++	[QCOM_RPM_PM8841_SMPS1] = { RESOURCE_TYPE_SMPB, 1 },
++	[QCOM_RPM_PM8841_SMPS2] = { RESOURCE_TYPE_SMPB, 2 },
++	[QCOM_RPM_PM8841_SMPS3] = { RESOURCE_TYPE_SMPB, 3 },
++	[QCOM_RPM_PM8841_SMPS4] = { RESOURCE_TYPE_SMPB, 4 },
++
++	[QCOM_RPM_PM8941_SMPS1] = { RESOURCE_TYPE_SMPA, 1 },
++	[QCOM_RPM_PM8941_SMPS2] = { RESOURCE_TYPE_SMPA, 2 },
++	[QCOM_RPM_PM8941_SMPS3] = { RESOURCE_TYPE_SMPA, 3 },
++
++	[QCOM_RPM_PM8941_LDO1] =  { RESOURCE_TYPE_LDOA, 1 },
++	[QCOM_RPM_PM8941_LDO2] =  { RESOURCE_TYPE_LDOA, 2 },
++	[QCOM_RPM_PM8941_LDO3] =  { RESOURCE_TYPE_LDOA, 3 },
++	[QCOM_RPM_PM8941_LDO4] =  { RESOURCE_TYPE_LDOA, 4 },
++	[QCOM_RPM_PM8941_LDO5] =  { RESOURCE_TYPE_LDOA, 5 },
++	[QCOM_RPM_PM8941_LDO6] =  { RESOURCE_TYPE_LDOA, 6 },
++	[QCOM_RPM_PM8941_LDO7] =  { RESOURCE_TYPE_LDOA, 7 },
++	[QCOM_RPM_PM8941_LDO8] =  { RESOURCE_TYPE_LDOA, 8 },
++	[QCOM_RPM_PM8941_LDO9] =  { RESOURCE_TYPE_LDOA, 9 },
++	[QCOM_RPM_PM8941_LDO10] = { RESOURCE_TYPE_LDOA, 10 },
++	[QCOM_RPM_PM8941_LDO11] = { RESOURCE_TYPE_LDOA, 11 },
++	[QCOM_RPM_PM8941_LDO12] = { RESOURCE_TYPE_LDOA, 12 },
++	[QCOM_RPM_PM8941_LDO13] = { RESOURCE_TYPE_LDOA, 13 },
++	[QCOM_RPM_PM8941_LDO14] = { RESOURCE_TYPE_LDOA, 14 },
++	[QCOM_RPM_PM8941_LDO15] = { RESOURCE_TYPE_LDOA, 15 },
++	[QCOM_RPM_PM8941_LDO16] = { RESOURCE_TYPE_LDOA, 16 },
++	[QCOM_RPM_PM8941_LDO17] = { RESOURCE_TYPE_LDOA, 17 },
++	[QCOM_RPM_PM8941_LDO18] = { RESOURCE_TYPE_LDOA, 18 },
++	[QCOM_RPM_PM8941_LDO19] = { RESOURCE_TYPE_LDOA, 19 },
++	[QCOM_RPM_PM8941_LDO20] = { RESOURCE_TYPE_LDOA, 20 },
++	[QCOM_RPM_PM8941_LDO21] = { RESOURCE_TYPE_LDOA, 21 },
++	[QCOM_RPM_PM8941_LDO22] = { RESOURCE_TYPE_LDOA, 22 },
++	[QCOM_RPM_PM8941_LDO23] = { RESOURCE_TYPE_LDOA, 23 },
++	[QCOM_RPM_PM8941_LDO24] = { RESOURCE_TYPE_LDOA, 24 },
++
++	[QCOM_RPM_PM8941_LVS1] =  { RESOURCE_TYPE_VSA, 1 },
++	[QCOM_RPM_PM8941_LVS2] =  { RESOURCE_TYPE_VSA, 2 },
++	[QCOM_RPM_PM8941_LVS3] =  { RESOURCE_TYPE_VSA, 3 },
++
++	[QCOM_RPM_PM8941_MVS1] =  { RESOURCE_TYPE_VSA, 4 },
++	[QCOM_RPM_PM8941_MVS2] =  { RESOURCE_TYPE_VSA, 5 },
++};
++
++static const struct qcom_rpm_data msm8x74_template = {
++	.resource_table = msm8x74_resource_table,
++	.nresources = ARRAY_SIZE(msm8x74_resource_table),
++};
++
++static const struct of_device_id qcom_smd_rpm_of_match[] = {
++	{ .compatible = "qcom,rpm-msm8974", .data = &msm8x74_template },
++	{}
++};
++MODULE_DEVICE_TABLE(of, qcom_smd_rpm_of_match);
 +
 +/**
-+ * of_get_qcom_smem - retrieve a smem handle from a phandle
-+ * @client_node: of_node of the client
-+ *
-+ * Resolve the phandle in the property "qcom,smem" of @client_node and use this
-+ * to retrieve an smem handle.
++ * qcom_rpm_smd_write - write @buf to @resource
++ * @rpm:	rpm handle
++ * @resource:	resource identifier
++ * @buf:	the data to be written
++ * @count:	number of bytes in @buf
 + */
-+struct qcom_smem *of_get_qcom_smem(struct device_node *client_node)
++int qcom_rpm_smd_write(struct qcom_smd_rpm *rpm,
++		       int resource,
++		       void *buf,
++		       size_t count)
 +{
-+	struct device_node *node;
-+
-+	node = of_parse_phandle(client_node, "qcom,smem", 0);
-+	if (!node)
-+		return ERR_PTR(-EINVAL);
-+
-+	of_node_put(node);
-+
-+	if (!smem_handle)
-+		return ERR_PTR(-EPROBE_DEFER);
-+	else if (smem_handle->dev->of_node != node)
-+		return ERR_PTR(-EINVAL);
-+
-+	return smem_handle;
-+}
-+EXPORT_SYMBOL(of_get_qcom_smem);
-+
-+/**
-+ * qcom_smem_alloc - allocate space for a smem item
-+ * @smem:	smem handle
-+ * @smem_id:	item to be allocated
-+ * @size:	number of bytes to be allocated
-+ *
-+ * Allocate space for a given smem item of size @size, given that the item is
-+ * not yet allocated.
-+ */
-+int qcom_smem_alloc(struct qcom_smem *smem, unsigned smem_id, size_t size)
-+{
-+	struct smem_header *header = smem->regions[0].virt_base;
-+	struct smem_entry *entry;
-+	unsigned long flags;
++	const struct qcom_rpm_resource *res;
++	const struct qcom_rpm_data *data = rpm->data;
++	static unsigned msg_id = 1;
++	int left;
 +	int ret;
 +
-+	size = ALIGN(size, 8);
++	struct {
++		struct qcom_rpm_header hdr;
++		struct qcom_rpm_request req;
++		u8 payload[count];
++	} pkt;
 +
-+	if (WARN_ON(smem_id >= SMEM_MAX_ITEMS))
++	/* SMD packets to the RPM may not exceed 256 bytes */
++	if (WARN_ON(sizeof(pkt) >= 256))
 +		return -EINVAL;
 +
-+	ret = hwspin_lock_timeout_irqsave(smem->hwlock,
-+					  HWSPINLOCK_TIMEOUT,
-+					  &flags);
++	if (WARN_ON(resource < 0 || resource >= data->nresources))
++		return -EINVAL;
++
++	res = &data->resource_table[resource];
++	if (WARN_ON(!res->resource_id || !res->resource_type))
++		return -EINVAL;
++
++	mutex_lock(&rpm->lock);
++
++	pkt.hdr.service_type = RPM_SERVICE_TYPE_REQUEST;
++	pkt.hdr.length = sizeof(struct qcom_rpm_request) + count;
++
++	pkt.req.msg_id = msg_id++;
++	pkt.req.flags = RPM_MSG_FLAGS_SET_ACTIVE_MODE;
++	pkt.req.resource_type = res->resource_type;
++	pkt.req.resource_id = res->resource_id;
++	pkt.req.data_len = count;
++	memcpy(pkt.payload, buf, count);
++
++	ret = qcom_smd_send(rpm->rpm_channel, &pkt, sizeof(pkt));
 +	if (ret)
-+		return ret;
-+
-+	entry = &header->toc[smem_id];
-+	if (entry->allocated) {
-+		ret = -EEXIST;
 +		goto out;
-+	}
 +
-+	if (WARN_ON(size > header->available)) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
++	left = wait_for_completion_timeout(&rpm->ack, RPM_REQUEST_TIMEOUT);
++	if (!left)
++		ret = -ETIMEDOUT;
++	else
++		ret = rpm->ack_status;
 +
-+	entry->offset = header->free_offset;
-+	entry->size = size;
-+	entry->allocated = 1;
-+
-+	header->free_offset += size;
-+	header->available -= size;
-+
-+	/* Commit the changes before we release the spin lock */
-+	wmb();
 +out:
-+	hwspin_unlock_irqrestore(smem->hwlock, &flags);
++	mutex_unlock(&rpm->lock);
 +	return ret;
 +}
-+EXPORT_SYMBOL(qcom_smem_alloc);
++EXPORT_SYMBOL(qcom_rpm_smd_write);
 +
-+unsigned qcom_smem_get_free_space(struct qcom_smem *smem)
++#define RPM_ERR_INVALID_RESOURCE "resource does not exist"
++
++static bool qcom_rpm_msg_is_invalid_resource(struct qcom_rpm_message *msg)
 +{
-+	struct smem_header *header = smem->regions[0].virt_base;
++	size_t msg_len = sizeof(RPM_ERR_INVALID_RESOURCE) - 1;
 +
-+	return header->available;
++	if (msg->length != msg_len)
++		return false;
++
++	if (memcmp(msg->message, RPM_ERR_INVALID_RESOURCE, msg_len))
++		return false;
++
++	return true;
 +}
-+EXPORT_SYMBOL(qcom_smem_get_free_space);
 +
-+/**
-+ * qcom_smem_get - resolve ptr of size of a smem item
-+ * @smem:	smem handle
-+ * @smem_id:	item id to be resolved
-+ * @ptr:	pointer to be filled out with address of the item
-+ * @size:	pointer to be filled out with size of the item
-+ *
-+ * Looks up pointer and size of a smem item.
-+ */
-+int qcom_smem_get(struct qcom_smem *smem,
-+		  unsigned smem_id,
-+		  void **ptr,
-+		  size_t *size)
++static int qcom_smd_rpm_callback(struct qcom_smd_device *qsdev,
++				 void *data,
++				 size_t count)
 +{
-+	struct smem_header *header = smem->regions[0].virt_base;
-+	struct smem_region *area;
-+	struct smem_entry *entry;
-+	unsigned long flags;
-+	u32 aux_base;
-+	unsigned i;
-+	int ret;
++	struct qcom_rpm_header *hdr = data;
++	struct qcom_rpm_message *msg;
++	struct qcom_smd_rpm *rpm = dev_get_drvdata(&qsdev->dev);
++	u8 *buf = data + sizeof(struct qcom_rpm_header);
++	u8 *end = buf + hdr->length;
++	int status = 0;
 +
-+	if (WARN_ON(smem_id >= SMEM_MAX_ITEMS))
-+		return -EINVAL;
-+
-+	ret = hwspin_lock_timeout_irqsave(smem->hwlock,
-+					  HWSPINLOCK_TIMEOUT,
-+					  &flags);
-+	if (ret)
-+		return ret;
-+
-+	entry = &header->toc[smem_id];
-+	if (!entry->allocated) {
-+		ret = -ENXIO;
-+		goto out;
++	if (hdr->service_type != RPM_SERVICE_TYPE_REQUEST ||
++	    hdr->length < sizeof(struct qcom_rpm_message)) {
++		dev_err(rpm->dev, "invalid request\n");
++		return 0;
 +	}
 +
-+	if (ptr != NULL) {
-+		aux_base = entry->aux_base & AUX_BASE_MASK;
-+
-+		for (i = 0; i < smem->num_regions; i++) {
-+			area = &smem->regions[i];
-+
-+			if (area->aux_base == aux_base || !aux_base) {
-+				*ptr = area->virt_base + entry->offset;
-+				break;
-+			}
++	while (buf < end) {
++		msg = (struct qcom_rpm_message *)buf;
++		switch (msg->msg_type) {
++		case RPM_MSG_TYPE_MSG_ID:
++			break;
++		case RPM_MSG_TYPE_ERR:
++			if (qcom_rpm_msg_is_invalid_resource(msg))
++				status = -ENXIO;
++			else
++				status = -EIO;
++			break;
 +		}
-+	}
-+	if (size != NULL)
-+		*size = entry->size;
 +
-+out:
-+	hwspin_unlock_irqrestore(smem->hwlock, &flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL(qcom_smem_get);
-+
-+static int qcom_smem_probe(struct platform_device *pdev)
-+{
-+	struct qcom_smem *smem;
-+	struct resource *res;
-+	size_t array_size;
-+	int num_regions = 0;
-+	int i;
-+
-+	for (i = 0; i < pdev->num_resources; i++) {
-+		res = &pdev->resource[i];
-+
-+		if (resource_type(res) == IORESOURCE_MEM)
-+			num_regions++;
++		buf = PTR_ALIGN(buf + 2 * sizeof(u32) + msg->length, 4);
 +	}
 +
-+	if (num_regions == 0) {
-+		dev_err(&pdev->dev, "no smem regions specified\n");
-+		return -EINVAL;
-+	}
-+
-+	array_size = num_regions * sizeof(struct smem_region);
-+	smem = devm_kzalloc(&pdev->dev, sizeof(*smem) + array_size, GFP_KERNEL);
-+	if (!smem)
-+		return -ENOMEM;
-+
-+	smem->dev = &pdev->dev;
-+	smem->hwlock = of_hwspin_lock_request(pdev->dev.of_node, NULL);
-+	if (IS_ERR(smem->hwlock))
-+		return PTR_ERR(smem->hwlock);
-+
-+	smem->num_regions = num_regions;
-+
-+	for (i = 0; i < num_regions; i++) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+
-+		smem->regions[i].aux_base = (u32)res->start;
-+		smem->regions[i].virt_base = devm_ioremap(&pdev->dev,
-+							  res->start,
-+							  resource_size(res));
-+		if (!smem->regions[i].virt_base)
-+			return -ENOMEM;
-+	}
-+
-+	dev_set_drvdata(&pdev->dev, smem);
-+	smem_handle = smem;
-+
-+	dev_info(&pdev->dev, "Qualcomm Shared Memory Interface probed\n");
-+
++	rpm->ack_status = status;
++	complete(&rpm->ack);
 +	return 0;
 +}
 +
-+static const struct of_device_id qcom_smem_of_match[] = {
-+	{ .compatible = "qcom,smem" },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, qcom_smem_of_match);
++static int qcom_smd_rpm_probe(struct qcom_smd_device *sdev)
++{
++	const struct of_device_id *match;
++	struct qcom_smd_rpm *rpm;
 +
-+static struct platform_driver qcom_smem_driver = {
-+	.probe          = qcom_smem_probe,
++	rpm = devm_kzalloc(&sdev->dev, sizeof(*rpm), GFP_KERNEL);
++	if (!rpm)
++		return -ENOMEM;
++
++	rpm->dev = &sdev->dev;
++	mutex_init(&rpm->lock);
++	init_completion(&rpm->ack);
++
++	match = of_match_device(qcom_smd_rpm_of_match, &sdev->dev);
++	rpm->data = match->data;
++	rpm->rpm_channel = sdev->channel;
++
++	dev_set_drvdata(&sdev->dev, rpm);
++
++	dev_info(&sdev->dev, "Qualcomm SMD RPM driver probed\n");
++
++	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
++}
++
++static void qcom_smd_rpm_remove(struct qcom_smd_device *sdev)
++{
++	dev_set_drvdata(&sdev->dev, NULL);
++	of_platform_depopulate(&sdev->dev);
++}
++
++static struct qcom_smd_driver qcom_smd_rpm_driver = {
++	.probe = qcom_smd_rpm_probe,
++	.remove = qcom_smd_rpm_remove,
++	.callback = qcom_smd_rpm_callback,
 +	.driver  = {
-+		.name  = "qcom_smem",
++		.name  = "qcom_smd_rpm",
 +		.owner = THIS_MODULE,
-+		.of_match_table = qcom_smem_of_match,
++		.of_match_table = qcom_smd_rpm_of_match,
 +	},
 +};
 +
-+static int __init qcom_smem_init(void)
-+{
-+	return platform_driver_register(&qcom_smem_driver);
-+}
-+arch_initcall(qcom_smem_init);
-+
-+static void __exit qcom_smem_exit(void)
-+{
-+	platform_driver_unregister(&qcom_smem_driver);
-+}
-+module_exit(qcom_smem_exit)
++module_qcom_smd_driver(qcom_smd_rpm_driver);
 +
 +MODULE_AUTHOR("Bjorn Andersson <bjorn.andersson@sonymobile.com>");
-+MODULE_DESCRIPTION("Qualcomm Shared Memory Interface");
++MODULE_DESCRIPTION("Qualcomm SMD backed RPM driver");
 +MODULE_LICENSE("GPLv2");
-diff --git a/include/linux/soc/qcom/qcom_smem.h b/include/linux/soc/qcom/qcom_smem.h
+diff --git a/include/linux/mfd/qcom-smd-rpm.h b/include/linux/mfd/qcom-smd-rpm.h
 new file mode 100644
-index 0000000..7c0d3fd
+index 0000000..59b9425
 --- /dev/null
-+++ b/include/linux/soc/qcom/qcom_smem.h
-@@ -0,0 +1,14 @@
-+#ifndef __QCOM_SMEM_H__
-+#define __QCOM_SMEM_H__
++++ b/include/linux/mfd/qcom-smd-rpm.h
+@@ -0,0 +1,9 @@
++#ifndef __QCOM_SMD_RPM_H__
++#define __QCOM_SMD_RPM_H__
 +
-+struct device_node;
-+struct qcom_smem;
++struct qcom_smd_rpm;
 +
-+struct qcom_smem *of_get_qcom_smem(struct device_node *node);
-+
-+int qcom_smem_alloc(struct qcom_smem *smem, unsigned smem_id, size_t size);
-+int qcom_smem_get(struct qcom_smem *smem, unsigned item, void **ptr, size_t *size);
-+
-+unsigned qcom_smem_get_free_space(struct qcom_smem *smem);
++int qcom_rpm_smd_write(struct qcom_smd_rpm *rpm, int resource,
++		       void *buf, size_t count);
 +
 +#endif
 -- 
