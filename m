@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaI3UXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:23:05 -0400
-Received: from smtp.pobox.com ([208.72.237.35]:51938 "EHLO smtp.pobox.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750945AbaI3UXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:23:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=IHIGIHcQ676wcksz1qEnojZm+nd2zokjsfsefyEBnIXI1x0HDnOFjBRT
-	eCJbv7EAbVqQ2UfFa+UKKol1QLNWyERz6V4raFP3KsPHjvYc37UG6y80xK3+GiYI
-	DVhwcnU4MuGhPEIL60VM9U00kSV2Hydo2Nr79VwIHH6oP9U+/uc=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.1.2
-Date: Tue, 30 Sep 2014 13:22:59 -0700
-Message-ID: <xmqq4mvosvrw.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Pobox-Relay-ID: 939B3F1A-48DF-11E4-B6FB-9E3FC4D60FE0-77302942!pb-smtp0.pobox.com
+	id S1751806AbaI3UYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:24:12 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:10268 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbaI3UYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:24:10 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkEPAG8QK1RXQAs+/2dsb2JhbABggw6BKrYcBQEBAQEBAQUBcgGaWYEQFwF7hGAjgRo3iEIBrlaQGoYSigwdhDUFnS+MSYkng2U7L4JKAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 1/1 linux-next] irda: add __init to irlan_open
+Date: Tue, 30 Sep 2014 22:24:04 +0200
+Message-Id: <1412108644-6547-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v2.1.2 is now available at the
-usual places.  With this, v2.1.x has all the important fixes that
-have been already applied to the 'master' front for the next feature
-release.  It also contains some updates to German translation.
+irlan_open is only called by __init irlan_init in same module.
 
-The tarballs are found at:
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/irda/irlan/irlan_common.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-    https://www.kernel.org/pub/software/scm/git/
-
-The following public repositories all have a copy of the 'v2.1.2'
-tag and the 'maint' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.1.2 Release Notes
-========================
-
- * "git push" over HTTP transport had an artificial limit on number of
-   refs that can be pushed imposed by the command line length.
-
- * When receiving an invalid pack stream that records the same object
-   twice, multiple threads got confused due to a race.
-
- * An attempt to remove the entire tree in the "git fast-import" input
-   stream caused it to misbehave.
-
- * Reachability check (used in "git prune" and friends) did not add a
-   detached HEAD as a starting point to traverse objects still in use.
-
- * "git config --add section.var val" used to lose existing
-   section.var whose value was an empty string.
-
- * "git fsck" failed to report that it found corrupt objects via its
-   exit status in some cases.
-
-----------------------------------------------------------------
-
-Changes since v2.1.1 are as follows:
-
-Jeff King (5):
-      send-pack: take refspecs over stdin
-      index-pack: fix race condition with duplicate bases
-      fsck: exit with non-zero status upon error from fsck_obj()
-      config: avoid a funny sentinel value "a^"
-      fsck: return non-zero status on missing ref tips
-
-Junio C Hamano (1):
-      Git 2.1.2
-
-Max Kirillov (1):
-      reachable.c: add HEAD to reachability starting commits
-
-Maxim Bublis (2):
-      t9300: test filedelete command
-      fast-import: fix segfault in store_tree()
-
-Phillip Sz (2):
-      l10n: de.po: change Email to E-Mail
-      l10n: de.po: use comma before "um"
-
-Ralf Thielow (1):
-      po/TEAMS: add new member to German translation team
-
-Sergey Organov (2):
-      Documentation/git-rebase.txt: -f forces a rebase that would otherwise be a no-op
-      Documentation/git-rebase.txt: <upstream> must be given to specify <branch>
-
-Tanay Abhra (1):
-      make config --add behave correctly for empty and NULL values
+diff --git a/net/irda/irlan/irlan_common.c b/net/irda/irlan/irlan_common.c
+index 1bc49ed..5a2d0a6 100644
+--- a/net/irda/irlan/irlan_common.c
++++ b/net/irda/irlan/irlan_common.c
+@@ -98,7 +98,7 @@ static const struct file_operations irlan_fops = {
+ extern struct proc_dir_entry *proc_irda;
+ #endif /* CONFIG_PROC_FS */
+ 
+-static struct irlan_cb *irlan_open(__u32 saddr, __u32 daddr);
++static struct irlan_cb __init *irlan_open(__u32 saddr, __u32 daddr);
+ static void __irlan_close(struct irlan_cb *self);
+ static int __irlan_insert_param(struct sk_buff *skb, char *param, int type,
+ 				__u8 value_byte, __u16 value_short,
+@@ -196,7 +196,7 @@ static void __exit irlan_cleanup(void)
+  *    Open new instance of a client/provider, we should only register the
+  *    network device if this instance is ment for a particular client/provider
+  */
+-static struct irlan_cb *irlan_open(__u32 saddr, __u32 daddr)
++static struct irlan_cb __init *irlan_open(__u32 saddr, __u32 daddr)
+ {
+ 	struct net_device *dev;
+ 	struct irlan_cb *self;
+-- 
+1.9.3
 
