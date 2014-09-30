@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaI3O4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:56:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20065 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaI3O4v convert rfc822-to-8bit (ORCPT
+	id S1752164AbaI3PAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:00:47 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:54607 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaI3PAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:56:51 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: 3.17-rc1 oops during network interface configuration
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1412017217.30721.38.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Tue, 30 Sep 2014 10:56:35 -0400
-Cc: Or Gerlitz <ogerlitz@mellanox.com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        LKML Kernel <linux-kernel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Saeed Mahameed <saeedm@mellanox.com>, Tal Alon <talal@mellanox.com>,
-        Yevgeny Petrilin <yevgenyp@mellanox.com>,
-        Roland Dreier <roland@kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D9F26997-DF54-467F-8CB4-22D840157660@oracle.com>
-References: <53F1EF18.7010909@acm.org> <53F47917.8080003@mellanox.com> <F580F466-28A5-4BDD-A338-D5C065A760C1@oracle.com> <541000F1.5000805@mellanox.com> <6C43129E-4365-4BEF-ADAD-963B8F386789@oracle.com> <1412017217.30721.38.camel@edumazet-glaptop2.roam.corp.google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-X-Mailer: Apple Mail (2.1878.6)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 30 Sep 2014 11:00:45 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8UF0ghX017884, This message is accepted by code: ctloc85258
+From: Chun-Hao Lin <hau@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Chun-Hao Lin <hau@realtek.com>
+Subject: [PATCH net-next 04/10] r8168:add support more chips to get mac address from backup mac address register
+Date: Tue, 30 Sep 2014 23:00:24 +0800
+Message-ID: <1412089230-10208-4-git-send-email-hau@realtek.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1412089230-10208-1-git-send-email-hau@realtek.com>
+References: <1412089230-10208-1-git-send-email-hau@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+RTL8168FB RTL8168G RTL8168GU RTL8411 RTL8411B RTL8106EUS RTL8402 can
+get mac address from backup mac address register.
 
-On Sep 29, 2014, at 3:00 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Signed-off-by: Chun-Hao Lin <hau@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-> On Mon, 2014-09-29 at 14:52 -0400, Chuck Lever wrote:
-> 
->> Is there a bugzilla report filed for this issue? Has there been any progress
->> towards a fix?
-> 
-> This is fixed in Linus tree.
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=257117862634d89de33fec74858b1a0ba5ab444b
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=b49fe36208b45f76dfbcfcd3afd952a33fa9f5ce
-
-Tested 3.17-rc7, fix confirmed. Many thanks, Eric!
-
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index f7b0c7d8..b4cbc6c 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -7705,7 +7705,16 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	u64_stats_init(&tp->tx_stats.syncp);
+ 
+ 	/* Get MAC address */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_45 ||
++	if (tp->mac_version == RTL_GIGA_MAC_VER_35 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_36 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_37 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_38 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_40 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_41 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_42 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_43 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_44 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_45 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_46 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_47 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_48) {
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+1.8.3.2
 
