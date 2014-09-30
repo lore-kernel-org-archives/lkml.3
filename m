@@ -1,147 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaI3IsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:48:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48937 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaI3IsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:48:06 -0400
-Message-ID: <542A6E71.10703@ti.com>
-Date: Tue, 30 Sep 2014 11:48:49 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755489AbaI3IsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:48:22 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36452 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaI3IsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 04:48:15 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8U8mBFb009326, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net] r8152: fix setting RTL8152_UNPLUG
+Date: Tue, 30 Sep 2014 16:48:01 +0800
+Message-ID: <1394712342-15778-50-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <tony@atomide.com>, <nm@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate
- change
-References: <1408628866-32351-1-git-send-email-t-kristo@ti.com> <20140922191816.GF10233@codeaurora.org> <542177E5.9060606@ti.com> <5424C2FA.4000508@codeaurora.org> <5425135F.2070809@ti.com> <20140926232453.19023.25483@quantum> <542913B4.2020808@ti.com> <20140930070732.19023.37829@quantum>
-In-Reply-To: <20140930070732.19023.37829@quantum>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 10:07 AM, Mike Turquette wrote:
-> Quoting Tero Kristo (2014-09-29 01:09:24)
->> On 09/27/2014 02:24 AM, Mike Turquette wrote:
->>> Quoting Tero Kristo (2014-09-26 00:18:55)
->>>> On 09/26/2014 04:35 AM, Stephen Boyd wrote:
->>>>> On 09/23/14 06:38, Tero Kristo wrote:
->>>>>> On 09/22/2014 10:18 PM, Stephen Boyd wrote:
->>>>>>> On 08/21, Tero Kristo wrote:
->>>>>>>>              /* Skip children who will be reparented to another clock */
->>>>>>>>              if (child->new_parent && child->new_parent != clk)
->>>>>>>>                  continue;
->>>>>>>
->>>>>>> Are we not hitting the new_parent check here? I don't understand
->>>>>>> how we can be changing parents here unless the check is being
->>>>>>> avoided, in which case I wonder why determine_rate isn't being
->>>>>>> used.
->>>>>>>
->>>>>>
->>>>>> It depends how the clock underneath handles the situation. The error I
->>>>>> am seeing actually happens with a SoC specific compound clock (DPLL)
->>>>>> which integrates set_rate + mux functionality into a single clock
->>>>>> node. A call to the clk_set_rate changes the parent of this clock
->>>>>> (from bypass clock to reference clock), in addition to changing the
->>>>>> rate (tune the mul+div.) I looked at using the determine rate call
->>>>>> with this type but it breaks everything up... the parent gets changed
->>>>>> but not the clock rate, in addition to some other issues.
->>>>>
->>>>> Ok. Is this omap3_noncore_dpll_set_rate()?
->>>>
->>>> Yes.
->>>>
->>>>    > Can we use determine_rate +
->>>>> clk_set_parent_and_rate()? At least clk_set_parent_and_rate() would
->>>>> allow us to do the mult+div and the parent in the same op call, although
->>>>> I don't understand why setting the parent and then setting the rate is
->>>>> not going to work.
->>>>
->>>> Well, setting parent first, then rate later causes problems with the
->>>> DPLL ending up running with illegal (non-specified) rate, the M+N values
->>>> are most likely wrong if you just switch from bypass clock to reference
->>>> clock first without programming the M+N first.
->>>
->>> I took a quick look and it still seems to me that the OMAP DPLLs are
->>> still not modeled properly as mux clocks. Is this correct?
->>
->> Yeah, they are not mux clocks, but rather a compound of mux + DPLL
->> multiplier/divider logic. Changing the DPLL to be a separate mux + DPLL
->> div/mult clock will still have overlapping usage of the DPLL_EN field,
->
-> I'm not talking about splitting up the clock into two separate clocks.
-> If memory serves the DPLL clock implementation "cheats" and hides the
-> bypass_clk info from the clock framework. To be explicit, from the
-> perspective of Linux clock framework DPLL clocks only have one parent.
->
-> In reality a typical DPLL should have at least 2 parents (and in some
-> cases starting with OMAP4, some of the DPLL output clocks should have a
-> second HSD parent). But the implementation does not reflect this.
+The flag of RTL8152_UNPLUG should only be set when the device is
+unplugged, not each time the rtl8152_disconnect() is called.
+Otherwise, the device wouldn't be stopped normally.
 
-No, this is not the DPLLs are modelled. Each DPLL has currently two 
-parents, ref-clk and bypass-clk, which are both modelled as separate 
-clock nodes, and the DPLL switches parents based on bypass/lock mode. 
-The bypass clock is also usually a mux clock, which further selects 
-separate bypass parent, resulting in 3 or more parents for a certain DPLL.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
->
->> as the DPLL must be in bypass mode during M+N change. Or, should the
->> DPLL rate change only be allowed if the mux is in bypass setting?
->> Several drivers still depend on direct dpll clk_set_rate working
->> 'properly' (there are some other issues currently present also which
->> have nothing to do with the mux behavior.)
->>
->>> This issue has been lingering for a long time and we can't use
->>> determine_rate unless that clock has multiple parents. Simply hacking
->>> knowledge of the parent bypass clock into the .set_rate callback is not
->>> enough.
->>
->> If you believe this _must_ be changed, I can take a look at this for
->> next merge window, but this will cause a DT data compatibility break if
->> nothing else (personally I don't care about this as I always rebuild DT
->> blob with kernel, but lots of other people seem to do.)
->
-> Well I guess the question is how long will we put up with the many small
-> headaches caused by incorrectly modeling the clock?
-
-Well, its not kind of incorrectly modelled, it is just modelled in such 
-way that clk_set_rate doesn't cope too well with it.
-
-> determine_rate and clk_set_parent_and_rate should be sufficient for the
-> OMAP DPLLs but only if they are correctly modeled in the framework.
-
-Do we have implementation for clk_set_parent_and_rate someplace? I 
-looked at rc7 and didn't find this. I think this would fix the issues I 
-am seeing combined with determine_rate, if clk_set_rate would internally 
-handle changing both rate + parent.
-
--Tero
-
->
-> Regards,
-> Mike
->
->>
->> -Tero
->>
->>>
->>> Regards,
->>> Mike
->>>
->>>>
->>>>     I'm interested in the other issues that you mentioned
->>>>> too.
->>>>
->>>> Mostly these were side-effects from the illegal DPLL setup I guess, like
->>>> boot hang, failed drivers etc. I didn't really investigate this that
->>>> much as it is much more simpler just to use safe list iteration here.
->>>>
->>>> -Tero
->>
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index e039442..f68a4e6 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -3576,7 +3576,11 @@ static void rtl8152_disconnect(struct usb_interface *intf)
+ 
+ 	usb_set_intfdata(intf, NULL);
+ 	if (tp) {
+-		set_bit(RTL8152_UNPLUG, &tp->flags);
++		struct usb_device *udev = tp->udev;
++
++		if (udev->state == USB_STATE_NOTATTACHED)
++			set_bit(RTL8152_UNPLUG, &tp->flags);
++
+ 		tasklet_kill(&tp->tl);
+ 		unregister_netdev(tp->netdev);
+ 		tp->rtl_ops.unload(tp);
+-- 
+1.9.3
 
