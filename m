@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232AbaI3DWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:22:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:50558 "EHLO ozlabs.org"
+	id S1754838AbaI3Ddv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48532 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742AbaI3DWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:22:21 -0400
-Date: Tue, 30 Sep 2014 13:22:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-Message-ID: <20140930132213.0dfa99e3@canb.auug.org.au>
-In-Reply-To: <20140930131354.792033e7@canb.auug.org.au>
-References: <20140930131354.792033e7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1751165AbaI3Ddu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:33:50 -0400
+Date: Mon, 29 Sep 2014 23:33:27 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: pipe/page fault oddness.
+Message-ID: <20140930033327.GA14558@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/e/JX/fF_gMe5SAgkHNp7sGg"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/e/JX/fF_gMe5SAgkHNp7sGg
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+My fuzz tester ground to a halt, with many child processes blocked
+on pipe_lock.  sysrq-t output: http://codemonkey.org.uk/junk/pipe-lock-wtf.txt
 
-Hi all,
+Looking at the dump, there's only one running trinity child,
+with all the others blocking on it.
 
-On Tue, 30 Sep 2014 13:13:54 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Hi all,
->=20
-> After merging the net-next tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> net/bridge/br_nf_core.c:77:1: error: expected identifier or '(' before '{=
-' token
->  {
->  ^
-> net/bridge/br_nf_core.c:88:12: error: redefinition of 'br_nf_core_init'
->  int __init br_nf_core_init(void)
->             ^
-> In file included from net/bridge/br_nf_core.c:23:0:
-> net/bridge/br_private.h:762:19: note: previous definition of 'br_nf_core_=
-init' was here
->  static inline int br_nf_core_init(void) { return 0; }
->                    ^
-> net/bridge/br_nf_core.c:93:6: error: redefinition of 'br_nf_core_fini'
->  void br_nf_core_fini(void)
->       ^
-> In file included from net/bridge/br_nf_core.c:23:0:
-> net/bridge/br_private.h:763:20: note: previous definition of 'br_nf_core_=
-fini' was here
->  static inline void br_nf_core_fini(void) {}
->                     ^
->=20
-> Caused by commit 34666d467cbf ("netfilter: bridge: move br_netfilter
-> out of the core").  This build has CONFIG_BRIDGE_NETFILTER not set ...
->=20
-> I have applied the following patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 30 Sep 2014 13:09:09 +1000
-> Subject: [PATCH] netfilter: bridge: don't build br_nf_core unless necessa=
-ry
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  net/bridge/Makefile | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
->=20
-> diff --git a/net/bridge/Makefile b/net/bridge/Makefile
-> index 5e3eac5dc8b9..eb653a225397 100644
-> --- a/net/bridge/Makefile
-> +++ b/net/bridge/Makefile
-> @@ -6,12 +6,11 @@ obj-$(CONFIG_BRIDGE) +=3D bridge.o
-> =20
->  bridge-y	:=3D br.o br_device.o br_fdb.o br_forward.o br_if.o br_input.o \
->  			br_ioctl.o br_stp.o br_stp_bpdu.o \
-> -			br_stp_if.o br_stp_timer.o br_netlink.o \
-> -			br_nf_core.o
-> +			br_stp_if.o br_stp_timer.o br_netlink.o
-> =20
->  bridge-$(CONFIG_SYSFS) +=3D br_sysfs_if.o br_sysfs_br.o
-> =20
-> -obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o
-> +obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o br_nf_core.o
-> =20
->  bridge-$(CONFIG_BRIDGE_IGMP_SNOOPING) +=3D br_multicast.o br_mdb.o
-> =20
-> --=20
-> 2.1.1
+trinity-c49     R  running task    12856 19464   7633 0x00000004
+ffff8800a09bf960 0000000000000002 ffff8800a09bf9f8 ffff880219650000
+00000000001d4080 0000000000000000 ffff8800a09bffd8 00000000001d4080
+ffff88023f755bc0 ffff880219650000 ffff8800a09bffd8 ffff88010b017e00
+Call Trace:
+[<ffffffff9181df46>] preempt_schedule+0x36/0x60
+[<ffffffff9100e3d6>] ___preempt_schedule+0x56/0xb0
+[<ffffffff911c3c67>] ? handle_mm_fault+0x3a7/0xcd0
+[<ffffffff918239f1>] ? _raw_spin_unlock+0x31/0x50
+[<ffffffff91823a05>] ? _raw_spin_unlock+0x45/0x50
+[<ffffffff911c3c67>] handle_mm_fault+0x3a7/0xcd0
+[<ffffffff910cb687>] ? __lock_is_held+0x57/0x80
+[<ffffffff91042c84>] __do_page_fault+0x1a4/0x600
+[<ffffffff910ce485>] ? mark_held_locks+0x75/0xa0
+[<ffffffff910ce5bd>] ? trace_hardirqs_on_caller+0x10d/0x1d0
+[<ffffffff910ce68d>] ? trace_hardirqs_on+0xd/0x10
+[<ffffffff9118eda7>] ? context_tracking_user_exit+0x67/0x1b0
+[<ffffffff910430fe>] do_page_fault+0x1e/0x70
+[<ffffffff918264b2>] page_fault+0x22/0x30
+[<ffffffff911bd7e3>] ? copy_page_to_iter+0x3b3/0x500
+[<ffffffff9120eddf>] pipe_read+0xdf/0x330
+[<ffffffff9120ed00>] ? pipe_write+0x490/0x490
+[<ffffffff912051a0>] ? do_sync_readv_writev+0xa0/0xa0
+[<ffffffff912053b8>] do_iter_readv_writev+0x78/0xc0
+[<ffffffff91206bbe>] do_readv_writev+0xce/0x280
+[<ffffffff9120ed00>] ? pipe_write+0x490/0x490
+[<ffffffff910cbbf6>] ? lock_release_holdtime.part.29+0xe6/0x160
+[<ffffffff910ac74d>] ? get_parent_ip+0xd/0x50
+[<ffffffff910ac74d>] ? get_parent_ip+0xd/0x50
+[<ffffffff910ac8ab>] ? preempt_count_sub+0x6b/0xf0
+[<ffffffff91206da9>] vfs_readv+0x39/0x50
+[<ffffffff91206e6c>] SyS_readv+0x5c/0x100
+[<ffffffff918249e4>] tracesys+0xdd/0xe2
 
-After whish I get this from an x86_64 allmodconfig build:
+Running the function tracer on that pid shows it spinning forever..
+http://codemonkey.org.uk/junk/pipe-trace.txt
 
-ERROR: "br_nf_core_fini" [net/bridge/bridge.ko] undefined!
-ERROR: "br_netfilter_rtable_init" [net/bridge/bridge.ko] undefined!
-ERROR: "br_nf_core_init" [net/bridge/bridge.ko] undefined!
+Kernel bug (missing EFAULT check somewhere perhaps?), or is this a
+case where the fuzzer asked the kernel to do something stupid, and it obliged ?
 
-So I gave up :-(
+Trinity's watchdog process has been repeatedly sending SIGKILL's to this
+running pid, but we never seem to get out of this state long enough for
+it to take effect.
 
-I have used the net-next tree from next-20140926 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+This is 3.17-rc7 fwiw.
 
---Sig_/e/JX/fF_gMe5SAgkHNp7sGg
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+	Dave
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKiHqAAoJEMDTa8Ir7ZwVqJEP/2CWa8brbLZxrt9S+q4o6CE6
-dxy7kXf7vnxQ7ToNAz7zTgtKYrMRryCQc7Vr86z8gRHsWIYeldI8jwV1RpuUp5K7
-+fQIYP8AMRA1MG2qIowdGIDh0aS42U8xXeQh2dtJWXeHGKsKK3hG/BIYF4yOwMK6
-Roa+m6Z+HVzfVAxgu4MFMdcReAF9esXcHh6q414X00NDWL///FCs36zI3pmMgOAM
-Npe00ytCypk/gcIBT3zRqN2ATwxqlHsUI4soxjIByf4pwcGWFjtvUHJIRzziW5Kq
-mg6L1swhdU9r//j6psDPJlwm2JiPnE/rDZ4w07UBbBiaoZF2Zy1Kf+8uRwDsRbOi
-/7VixGAxlBQ7aFooeCizlSqubTCLMEWfaUzf63oBOXS5OEznQxE6zqCoFlmdRXLz
-D7ClT/LUcBUkREmFZwZKfsHNLBQUj8An5senf+3IuvFyGC35r3bsqghzDPWDN9Rg
-lY6TwkaC+30xj7+zTM8XZBdPfHLWRmyAWKHMhAyU9OyOkBLhEqkAFFcu3QBUC86N
-GU41UQow0wD+By6x3/o5wD7+t9gBuFfE9dG69jmmgrhUnv9v+u4TARuY1RvZCKJE
-GE+mkSaJHlF7IG0Vl9aebi/UMKOsxWazQiJ7KENSaBmAIDmIVrZa+OdXmc9QF/uS
-MINsl6plGQ1SNqmC9qfW
-=bbjg
------END PGP SIGNATURE-----
-
---Sig_/e/JX/fF_gMe5SAgkHNp7sGg--
