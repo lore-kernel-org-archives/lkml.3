@@ -1,53 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276AbaI3IpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:45:15 -0400
-Received: from outbound-smtp04.blacknight.com ([81.17.249.35]:60248 "EHLO
-	outbound-smtp04.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751712AbaI3IpM (ORCPT
+	id S1755395AbaI3Ipm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:45:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58396 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaI3IpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:45:12 -0400
-Message-ID: <542A6D96.7090207@nexus-software.ie>
-Date: Tue, 30 Sep 2014 09:45:10 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, mingo@redhat.com, hpa@zytor.com,
-        tglx@linutronix.de, hmh@hmh.eng.br, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: Bugfix bit-rot in the calling of legacy_cache_size
-References: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie> <1412046710-2686-2-git-send-email-pure.logic@nexus-software.ie> <20140930034129.GB14558@redhat.com>
-In-Reply-To: <20140930034129.GB14558@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Sep 2014 04:45:13 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        Barry Song <baohua@kernel.org>
+Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] RESEND RFT: pinctrl: sirf: move sgpio lock into state container
+Date: Tue, 30 Sep 2014 10:45:04 +0200
+Message-Id: <1412066704-28633-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/14 04:41, Dave Jones wrote:
-> Shouldn't this patch be more like..
->
-> -#ifdef CONFIG_X86_64
->    	cpu_detect_cache_sizes(c);
-> -#else
-> +
-> +#ifdef CONFIG_X86_32
->
->   ?
+Instead of referring to a global static variable for the sgpio
+locking, use the state container to contain the lock.
 
-Hmm, maybe but you have code in cpu_detect_cache_sizes that's X86_64 only..
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Barry, did you get around to testing this patch?
+---
+ drivers/pinctrl/sirf/pinctrl-sirf.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-void cpu_detect_cache_sizes(struct cpuinfo_x86 *c)
-{
-         unsigned int n, dummy, ebx, ecx, edx, l2size;
-
-         n = c->extended_cpuid_level;
-
-         if (n >= 0x80000005) {
-                 cpuid(0x80000005, &dummy, &ebx, &ecx, &edx);
-                 c->x86_cache_size = (ecx>>24) + (edx>>24);
-#ifdef CONFIG_X86_64
-                 /* On K8 L1 TLB is inclusive, so don't count it */
-                 c->x86_tlbsize = 0;
-#endif
+diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
+index 4c1d7c68666d..3ac7848a8551 100644
+--- a/drivers/pinctrl/sirf/pinctrl-sirf.c
++++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
+@@ -40,10 +40,9 @@ struct sirfsoc_gpio_chip {
+ 	struct of_mm_gpio_chip chip;
+ 	bool is_marco; /* for marco, some registers are different with prima2 */
+ 	struct sirfsoc_gpio_bank sgpio_bank[SIRFSOC_GPIO_NO_OF_BANKS];
++	spinlock_t lock;
+ };
+ 
+-static DEFINE_SPINLOCK(sgpio_lock);
+-
+ static struct sirfsoc_pin_group *sirfsoc_pin_groups;
+ static int sirfsoc_pingrp_cnt;
+ 
+@@ -440,13 +439,13 @@ static void sirfsoc_gpio_irq_ack(struct irq_data *d)
+ 
+ 	offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
+ 
+-	spin_lock_irqsave(&sgpio_lock, flags);
++	spin_lock_irqsave(&sgpio->lock, flags);
+ 
+ 	val = readl(sgpio->chip.regs + offset);
+ 
+ 	writel(val, sgpio->chip.regs + offset);
+ 
+-	spin_unlock_irqrestore(&sgpio_lock, flags);
++	spin_unlock_irqrestore(&sgpio->lock, flags);
+ }
+ 
+ static void __sirfsoc_gpio_irq_mask(struct sirfsoc_gpio_chip *sgpio,
+@@ -458,14 +457,14 @@ static void __sirfsoc_gpio_irq_mask(struct sirfsoc_gpio_chip *sgpio,
+ 
+ 	offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
+ 
+-	spin_lock_irqsave(&sgpio_lock, flags);
++	spin_lock_irqsave(&sgpio->lock, flags);
+ 
+ 	val = readl(sgpio->chip.regs + offset);
+ 	val &= ~SIRFSOC_GPIO_CTL_INTR_EN_MASK;
+ 	val &= ~SIRFSOC_GPIO_CTL_INTR_STS_MASK;
+ 	writel(val, sgpio->chip.regs + offset);
+ 
+-	spin_unlock_irqrestore(&sgpio_lock, flags);
++	spin_unlock_irqrestore(&sgpio->lock, flags);
+ }
+ 
+ static void sirfsoc_gpio_irq_mask(struct irq_data *d)
+@@ -488,14 +487,14 @@ static void sirfsoc_gpio_irq_unmask(struct irq_data *d)
+ 
+ 	offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
+ 
+-	spin_lock_irqsave(&sgpio_lock, flags);
++	spin_lock_irqsave(&sgpio->lock, flags);
+ 
+ 	val = readl(sgpio->chip.regs + offset);
+ 	val &= ~SIRFSOC_GPIO_CTL_INTR_STS_MASK;
+ 	val |= SIRFSOC_GPIO_CTL_INTR_EN_MASK;
+ 	writel(val, sgpio->chip.regs + offset);
+ 
+-	spin_unlock_irqrestore(&sgpio_lock, flags);
++	spin_unlock_irqrestore(&sgpio->lock, flags);
+ }
+ 
+ static int sirfsoc_gpio_irq_type(struct irq_data *d, unsigned type)
+@@ -509,7 +508,7 @@ static int sirfsoc_gpio_irq_type(struct irq_data *d, unsigned type)
+ 
+ 	offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
+ 
+-	spin_lock_irqsave(&sgpio_lock, flags);
++	spin_lock_irqsave(&sgpio->lock, flags);
+ 
+ 	val = readl(sgpio->chip.regs + offset);
+ 	val &= ~(SIRFSOC_GPIO_CTL_INTR_STS_MASK | SIRFSOC_GPIO_CTL_OUT_EN_MASK);
+@@ -541,7 +540,7 @@ static int sirfsoc_gpio_irq_type(struct irq_data *d, unsigned type)
+ 
+ 	writel(val, sgpio->chip.regs + offset);
+ 
+-	spin_unlock_irqrestore(&sgpio_lock, flags);
++	spin_unlock_irqrestore(&sgpio->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -704,11 +703,11 @@ static int sirfsoc_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
+ 
+ 	offset = SIRFSOC_GPIO_CTRL(bank->id, idx);
+ 
+-	spin_lock_irqsave(&sgpio_lock, flags);
++	spin_lock_irqsave(&sgpio->lock, flags);
+ 
+ 	sirfsoc_gpio_set_output(sgpio, bank, offset, value);
+ 
+-	spin_unlock_irqrestore(&sgpio_lock, flags);
++	spin_unlock_irqrestore(&sgpio->lock, flags);
+ 
+ 	return 0;
+ }
+@@ -801,6 +800,7 @@ static int sirfsoc_gpio_probe(struct device_node *np)
+ 	sgpio = devm_kzalloc(&pdev->dev, sizeof(*sgpio), GFP_KERNEL);
+ 	if (!sgpio)
+ 		return -ENOMEM;
++	spin_lock_init(&sgpio->lock);
+ 
+ 	regs = of_iomap(np, 0);
+ 	if (!regs)
+-- 
+1.9.3
 
