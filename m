@@ -1,119 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaI3RSQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:18:16 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:58394 "EHLO smtp.dudau.co.uk"
+	id S1752979AbaI3RSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:18:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53080 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719AbaI3RSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:18:15 -0400
-Date: Tue, 30 Sep 2014 18:10:03 +0100
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        devicetree@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
-Message-ID: <20140930171002.GB15854@bart.dudau.co.uk>
-References: <706416181.hbVGLDA3o6@wuerfel>
- <20140930160139.GA5625@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140930160139.GA5625@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Sep 30 18:18:13 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,542ae5d448391169974385
+	id S1752741AbaI3RSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:18:50 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <andrew-vger@gizmolabs.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH 08/13] HID: logitech: allow the DJ device to request the unifying name
+Date: Tue, 30 Sep 2014 13:18:30 -0400
+Message-Id: <1412097515-17241-9-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:01:39AM -0600, Bjorn Helgaas wrote:
-> On Tue, Sep 30, 2014 at 03:19:05PM +0200, Arnd Bergmann wrote:
-> > The pci_register_io_range() and pci_pio_to_address() were recently
-> > introduced to generalize the handling of memory mapped PCI I/O space,
-> > but they are only valid when CONFIG_OF is set, leading to a possible
-> > build error:
-> > 
-> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
-> > drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
-> >    res_start = pci_pio_to_address(res->start);
-> >    ^
-> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
-> > drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
-> >    err = of_pci_range_to_resource(&range, pdev->dev.of_node,
-> >    ^
-> > cc1: some warnings being treated as errors
-> > 
-> > This provides inline dummy implementations for the case that
-> > CONFIG_OF is disabled, to allow better build testing.
-> > 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
-> 
-> I'm rebuilding the pci/host-generic branch to pick up the other v13 fixes,
-> so I folded this fix directly into the "of/pci: Add pci_register_io_range()
-> and pci_pio_to_address()" patch.  Thanks for finding this; the config
-> dependencies are a bit of a mess.
+The names of the DJ devices are stored in the receiver. These names
+can be retrieved through a HID++ command. However, the protocol says
+that you have to ask the receiver for that, not the device iteself.
 
-Bjorn,
+Introduce a special case in the DJ handling where a device can request
+its unifying name, and when such a name is given, forward it also to
+the corresponding device.
 
-I suggest splitting this patch into 2 parts, move the one that adds pci_pio_to_address() in patch 2
-and the other in patch 5.
+On the HID++ side, the receiver talks only HID++ 1.0, so we need to
+implement this part of the protocol in the module.
 
-Best regards,
-Liviu
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-logitech-dj.c    | 24 ++++++++++--
+ drivers/hid/hid-logitech-hidpp.c | 80 ++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 97 insertions(+), 7 deletions(-)
 
-> 
-> > diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-> > index 7ebb877b07c2..851097aab115 100644
-> > --- a/include/linux/of_address.h
-> > +++ b/include/linux/of_address.h
-> > @@ -71,6 +71,11 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
-> >  	return NULL;
-> >  }
-> >  
-> > +static inline phys_addr_t pci_pio_to_address(unsigned long pio)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> >  static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
-> >  			struct device_node *node)
-> >  {
-> > @@ -144,6 +149,12 @@ static inline const __be32 *of_get_pci_address(struct device_node *dev,
-> >  {
-> >  	return NULL;
-> >  }
-> > +static inline int of_pci_range_to_resource(struct of_pci_range *range,
-> > +					   struct device_node *np,
-> > +					   struct resource *res)
-> > +{
-> > +	return -ENOSYS;
-> > +}
-> >  #endif /* CONFIG_OF_ADDRESS && CONFIG_PCI */
-> >  
-> >  #endif /* __OF_ADDRESS_H */
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index feddacd..9bc3942 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -667,6 +667,9 @@ static void logi_dj_ll_close(struct hid_device *hid)
+ 	dbg_hid("%s:%s\n", __func__, hid->phys);
+ }
+ 
++static u8 unifying_name_query[]  = {0x10, 0xff, 0x83, 0xb5, 0x40, 0x00, 0x00};
++static u8 unifying_name_answer[] = {0x11, 0xff, 0x83, 0xb5};
++
+ static int logi_dj_ll_raw_request(struct hid_device *hid,
+ 				  unsigned char reportnum, __u8 *buf,
+ 				  size_t count, unsigned char report_type,
+@@ -682,7 +685,13 @@ static int logi_dj_ll_raw_request(struct hid_device *hid,
+ 		if (count < 2)
+ 			return -EINVAL;
+ 
+-		buf[1] = djdev->device_index;
++		/* special case where we should not overwrite
++		 * the device_index */
++		if (count == 7 && !memcmp(buf, unifying_name_query,
++					  sizeof(unifying_name_query)))
++			buf[4] |= djdev->device_index - 1;
++		else
++			buf[1] = djdev->device_index;
+ 		return hid_hw_raw_request(djrcv_dev->hdev, reportnum, buf,
+ 				count, report_type, reqtype);
+ 	}
+@@ -873,8 +882,17 @@ static int logi_dj_hidpp_event(struct hid_device *hdev,
+ 	unsigned long flags;
+ 	u8 device_index = dj_report->device_index;
+ 
+-	if (device_index == HIDPP_RECEIVER_INDEX)
+-		return false;
++	if (device_index == HIDPP_RECEIVER_INDEX) {
++		/* special case were the device wants to know its unifying
++		 * name */
++		if (size == HIDPP_REPORT_LONG_LENGTH &&
++		    !memcmp(data, unifying_name_answer,
++			    sizeof(unifying_name_answer)) &&
++		    ((data[4] & 0xF0) == 0x40))
++			device_index = (data[4] & 0x0F) + 1;
++		else
++			return false;
++	}
+ 
+ 	/*
+ 	 * Data is from the HID++ collection, in this case, we forward the
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index 48dec39..e748e45 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -205,6 +205,31 @@ static int hidpp_send_fap_command_sync(struct hidpp_device *hidpp,
+ 	return ret;
+ }
+ 
++static int hidpp_send_rap_command_sync(struct hidpp_device *hidpp_dev,
++	u8 report_id, u8 sub_id, u8 reg_address, u8 *params, int param_count,
++	struct hidpp_report *response)
++{
++	struct hidpp_report *message = kzalloc(sizeof(struct hidpp_report),
++			GFP_KERNEL);
++	int ret;
++
++	if ((report_id != REPORT_ID_HIDPP_SHORT) &&
++	    (report_id != REPORT_ID_HIDPP_LONG))
++		return -EINVAL;
++
++	if (param_count > sizeof(message->rap.params))
++		return -EINVAL;
++
++	message->report_id = report_id;
++	message->rap.sub_id = sub_id;
++	message->rap.reg_address = reg_address;
++	memcpy(&message->rap.params, params, param_count);
++
++	ret = hidpp_send_message_sync(hidpp_dev, message, response);
++	kfree(message);
++	return ret;
++}
++
+ static inline bool hidpp_match_answer(struct hidpp_report *question,
+ 		struct hidpp_report *answer)
+ {
+@@ -221,6 +246,45 @@ static inline bool hidpp_match_error(struct hidpp_report *question,
+ }
+ 
+ /* -------------------------------------------------------------------------- */
++/* HIDP++ 1.0 commands                                                        */
++/* -------------------------------------------------------------------------- */
++
++#define HIDPP_SET_REGISTER				0x80
++#define HIDPP_GET_REGISTER				0x81
++#define HIDPP_SET_LONG_REGISTER				0x82
++#define HIDPP_GET_LONG_REGISTER				0x83
++
++#define HIDPP_REG_PAIRING_INFORMATION			0xB5
++#define DEVICE_NAME					0x40
++
++static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
++{
++	struct hidpp_report response;
++	int ret;
++	/* hid-logitech-dj is in charge of setting the right device index */
++	u8 params[1] = { DEVICE_NAME };
++	char *name;
++	int len;
++
++	ret = hidpp_send_rap_command_sync(hidpp_dev,
++					REPORT_ID_HIDPP_SHORT,
++					HIDPP_GET_LONG_REGISTER,
++					HIDPP_REG_PAIRING_INFORMATION,
++					params, 1, &response);
++	if (ret)
++		return NULL;
++
++	len = response.rap.params[1];
++
++	name = kzalloc(len + 1, GFP_KERNEL);
++	if (!name)
++		return NULL;
++
++	memcpy(name, &response.rap.params[2], len);
++	return name;
++}
++
++/* -------------------------------------------------------------------------- */
+ /* 0x0000: Root                                                               */
+ /* -------------------------------------------------------------------------- */
+ 
+@@ -726,13 +790,21 @@ static int hidpp_raw_event(struct hid_device *hdev, struct hid_report *report,
+ 	return 0;
+ }
+ 
+-static void hidpp_overwrite_name(struct hid_device *hdev)
++static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+ {
+ 	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
+ 	char *name;
+ 	u8 name_length;
+ 
+-	name = hidpp_get_device_name(hidpp, &name_length);
++	if (use_unifying)
++		/*
++		 * the device is connected through an Unifying receiver, and
++		 * might not be already connected.
++		 * Ask the receiver for its name.
++		 */
++		name = hidpp_get_unifying_name(hidpp);
++	else
++		name = hidpp_get_device_name(hidpp, &name_length);
+ 
+ 	if (!name)
+ 		hid_err(hdev, "unable to retrieve the name of the device");
+@@ -783,12 +855,12 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 			goto hid_parse_fail;
+ 		}
+ 
+-		/* the device is connected, we can ask for its name */
+ 		hid_info(hdev, "HID++ %u.%u device connected.\n",
+ 			 hidpp->protocol_major, hidpp->protocol_minor);
+-		hidpp_overwrite_name(hdev);
+ 	}
+ 
++	hidpp_overwrite_name(hdev, id->group == HID_GROUP_LOGITECH_DJ_DEVICE);
++
+ 	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
+ 		ret = wtp_get_config(hidpp);
+ 		if (ret)
 -- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
+2.1.0
 
