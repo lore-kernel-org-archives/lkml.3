@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381AbaI3AMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:12:42 -0400
-Received: from ozlabs.org ([103.22.144.67]:39348 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300AbaI3AMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755362AbaI3AMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:12:41 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:55632 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301AbaI3AMI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Sep 2014 20:12:08 -0400
-Date: Tue, 30 Sep 2014 10:12:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Jiancheng Xue <xuejiancheng@huawei.com>, Wei Xu <xuwei5@hisilicon.com>
-Subject: Re: linux-next: build failure after merge of the arm-soc tree
-Message-ID: <20140930101200.1239cd52@canb.auug.org.au>
-In-Reply-To: <20140926115539.6873630b@canb.auug.org.au>
-References: <20140926115539.6873630b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/7m.r1L3LhVQOJ81s1RtjBvI"; protocol="application/pgp-signature"
+In-Reply-To: <alpine.DEB.2.02.1409292331420.22082@ionos.tec.linutronix.de>
+References: <1411674171-24442-1-git-send-email-anish@chelsio.com>
+ <54299979.6080705@amacapital.net> <alpine.DEB.2.02.1409292038590.22082@ionos.tec.linutronix.de>
+ <CALCETrX7yce2PfYi-Gqkf116a1rXUzjKkO3JAf==zd3WuZuDsQ@mail.gmail.com>
+ <alpine.DEB.2.02.1409292135090.22082@ionos.tec.linutronix.de>
+ <CALCETrW=PMe6y4E+i7KoDQg0nqukWy-X0XsVr0eMFjJ9NTyA-g@mail.gmail.com> <alpine.DEB.2.02.1409292331420.22082@ionos.tec.linutronix.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 29 Sep 2014 17:11:47 -0700
+Message-ID: <CALCETrUzRfkRYGLKxPcjuwVcg9WCyhEy1DQJjgM=JkWNUws-6w@mail.gmail.com>
+Subject: Re: [PATCH] x86 : Ensure X86_FLAGS_NT is cleared on syscall entry
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7m.r1L3LhVQOJ81s1RtjBvI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Fri, 26 Sep 2014 11:55:39 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, Sep 29, 2014 at 2:37 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 29 Sep 2014, Andy Lutomirski wrote:
+>> On Mon, Sep 29, 2014 at 12:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Mon, 29 Sep 2014, Andy Lutomirski wrote:
+>> >> On Mon, Sep 29, 2014 at 11:59 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> > On Mon, 29 Sep 2014, Andy Lutomirski wrote:
+>> >> >> Presumably interrupt delivery clears NT.  I haven't spotted where that's
+>> >> >> documented yet.
+>> >> >
+>> >> > Nope, that's unrelated.
+>> >>
+>> >> If it weren't the case, then we'd be totally screwed.  Fortunately, it
+>> >> is.  I found it: SDM Volume 3 6.12.1.2 says:
+>> >>
+>> >> (On calls to exception and interrupt
+>> >> handlers, the processor also clears the VM, RF, and NT flags in the
+>> >> EFLAGS register,
+>> >> after they are saved on the stack.)
+>> >
+>> > Sorry, I misunderstood your question.
+>> >
+>> > And yes on exception and interrupt entry it is cleared. Otherwise the
+>> > whole feature would not work at all ...
+>> >
+>> > But that's why I'm really not worried about it. While we can mask out
+>> > the stupid bit easily, it does not provide any value except protecting
+>> > silly userspace from rightfully raised exceptions.
+>> >
+>> > When I first saw that patch, I was worried about the security impact,
+>> > but after staring long enough at the SDM and the code, the only way it
+>> > can explode is when returning to user space. It cannot explode in the
+>> > kernel.
+>>
+>> This is only true as long as the only use of lret from a system call
+>> (or kernel thread started from a system call) is to return to
+>> userspace.
+>>
+>> For example, __efi64_thunk uses lretq, so mixed-mode EFI doesn't
+>> violate this assumption, but __efi64_thunk could just as easily have
+>> used iret.
 >
-> After merging the arm-soc tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
->=20
-> Error: arch/arm/boot/dts/hisi-x5hd2.dtsi:374.22-23 syntax error
-> FATAL ERROR: Unable to parse input tree
+> And if __efi64_thunk would use iret, it would be wrong to begin with,
+> really. I'd rather see it die right there.
+>
+>> IOW, I don't think there's any vulnerability here, but this makes me
+>> nervous.
+>
+> I was pretty relaxed until you mentioned EFI ....
 
-OK, now I get:
+:)
 
-Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:417.21-22 syntax=
- error
-FATAL ERROR: Unable to parse input tree
+I have a patch that seems to work.  It won't have any effect at all on
+syscall performance (32- or 64-bit), but it slows down sysenter by 15
+cycles or so.  On the other hand, if we did this, then we could
+possible stop saving and restoring RFLAGS in switch_to, which might be
+worthwhile, since 64-bit code ought to be more common than 32-bit
+these days.
 
-Are you guys really testing this stuff? :-(
+See also:
+https://lkml.org/lkml/2006/9/18/161
 
-> There are a series of new commits to this file today and I have no idea
-> which one caused the problem.
->=20
-> I reverted:
->=20
-> 610bd8722ef4	"ARM: dts: hix5hd2: add wdg node"
+--Andy
 
-Reverted in the arm-soc tree.
-
-> 6868feb6dd97	"ARM: dts: hix5hd2: add gpio node"
-
-Error is now:
-
-Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
- error
-
-> 420a2d55f046	"ARM: dts: hix5hd2: add sata node"
-
-Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
- error
+>
+> Thanks,
+>
+>         tglx
 
 
-> f16c7fb2f3ff	"ARM: dts: hix5hd2: add usb node"
 
-Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
- error
-
-> b196e1ca400d	"ARM: dts: hix5hd2: add mmc node"
-
-Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:174.21-22 syntax=
- error
-
-> de8b6054780e	"ARM: dts: hix5hd2: add gmac node"
-
-no more errors.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/7m.r1L3LhVQOJ81s1RtjBvI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKfVVAAoJEMDTa8Ir7ZwV7kQP/2sqQsh/WWo8VsVHmVjXx4cn
-aNstsRKX/i6pfL0ojWlEiO/Nc7hFFj720aqa19424tbkN540QthXaMMlyyEvcUMK
-K3F9Ug7Eez/6dEwauPD2whex5XqnNbP1eJ0xrjrcJP6GsQ/gwptoFBAeUQMGecc6
-wIHfEcdnr9I0W0WbR+yN828VM6Ef1DalKmkrCvPcyAceZVBhYzx50GRWKsrTveX8
-22FWgG5PqeAYPYHf+vzqxpARFsj17F380Mb0JOMG4GEaf5BWw86ZtvWYhsw0RVKM
-J68EC7WV4wRl1GnJXsjJWM5iJlb8TPmJLwQCNpMiEPyi+AQ8UwVvOB15o1dWuNmJ
-FfjMEhbeuAQJZjCtFjAh+WxTWWqz2n4uSP/kxaf27d7n0e4tI/HrOsL5SzYVVz1K
-seEaeeFHuvcYhvZ3qNep1lhNbH8kJkoi3/udIPHe72Zx63SyfQZ7dl9rboQ+mB3u
-uY/wbur+6gKHIAH/m4QX0NY+zuY5ZWmKiCm6AOhygiNpvNgJ5qEMF/GtMS9E+d/1
-VcbfB3k6DNGsQ6+oN8UHGtmtCIpTCUPr4a8pqig4OaSKag2UwFLk4Q8VK+d2UaGX
-Vn2oPuH3TLGdjAXp0epFJgpkrhCS7VdXpYKp226DckKXGQPp2BqGddK0YNQQobuh
-C8GyIapn/MnaCnzpIoii
-=FyZg
------END PGP SIGNATURE-----
-
---Sig_/7m.r1L3LhVQOJ81s1RtjBvI--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
