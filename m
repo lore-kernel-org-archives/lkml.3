@@ -1,89 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaI3IS3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:18:29 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:35332 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413AbaI3IS1 (ORCPT
+	id S1755484AbaI3ITS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:19:18 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:55057 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaI3ITQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:18:27 -0400
-Message-ID: <542A674E.8040901@linaro.org>
-Date: Tue, 30 Sep 2014 09:18:22 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 30 Sep 2014 04:19:16 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <44449a6527ce2da6c36d42193e08cbeb>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <542A6777.5070105@rock-chips.com>
+Date: Tue, 30 Sep 2014 16:19:03 +0800
+From: Mark yao <mark.yao@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org
-CC: broonie@kernel.org, lee.jones@linaro.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-msm@vger.kernel.org,
-        bjorn.andersson@sonymobile.com
-Subject: Re: [PATCH 4/4] ARM: DT: apq8064: Add SATA controller support.
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982134-8090-1-git-send-email-srinivas.kandagatla@linaro.org> <5429DB3D.5080701@codeaurora.org>
-In-Reply-To: <5429DB3D.5080701@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
+Subject: Re: [PATCH v8 2/3] dt-bindings: video: Add for rockchip display subsytem
+References: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com> <1412057659-19483-1-git-send-email-mark.yao@rock-chips.com> <20140930081020.GE24667@phenom.ffwll.local>
+In-Reply-To: <20140930081020.GE24667@phenom.ffwll.local>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 29/09/14 23:20, Stephen Boyd wrote:
-> On 09/29/14 02:15, Srinivas Kandagatla wrote:
->> @@ -396,6 +407,35 @@
->>   			usb-phy		= <&usb4_phy>;
->>   		};
+On 2014年09月30日 16:10, Daniel Vetter wrote:
+> On Tue, Sep 30, 2014 at 02:14:19PM +0800, Mark Yao wrote:
+>> From: Mark yao <mark.yao@rock-chips.com>
 >>
->> +		sata_phy0:sata-phy@1b400000{
+>> This add a display subsystem comprise the all display interface nodes.
+>>
+>> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> Acked-by: Daniel Vetter <daniel@ffwll.ch>
+>> Reviewed-by: Rob Clark <robdclark@gmail.com>
+> Just a quick clarification: My ack was only about the drm driver itself, I
+> try really hard to stay away from DT insanity ;-) So please drop my ack
+> from these two patches.
 >
-> add some spaces here?
-Will fix this in next version.
+> Aside: DT patches need to go through a special process and you must cc dt
+> maintainers and mailing lists. Your patch seems to lack this, which afaiui
+> is a blocker for merging the driver.
 >
->> +			compatible	= "qcom,apq8064-sata-phy";
->> +			reg		= <0x1b400000 0x200>;
->> +			reg-names	= "phy_mem";
->> +			clocks		= <&gcc SATA_PHY_CFG_CLK>;
->> +			clock-names = "cfg";
->> +			#phy-cells = <0>;
->
-> These two lost the pretty tabs.
->
-Will fix this in next version.
->> +		};
+> Thanks, Daniel
+Oh, I'm sorry, I will drop it soon.
+>> ---
+>> Changes in v2:
+>> - add DRM master device node to list all display nodes that comprise
+>>    the graphics subsystem.
+>>
+>> Changes in v3: None
+>>
+>> Changes in v4: None
+>>
+>> Changes in v5: None
+>>
+>> Changes in v6: None
+>>
+>> Changes in v7: None
+>>
+>> Changes in v8: None
+>>
+>>   .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
+>>   1 file changed, 19 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+>> new file mode 100644
+>> index 0000000..7fff582
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+>> @@ -0,0 +1,19 @@
+>> +Rockchip DRM master device
+>> +================================
 >> +
->> +		sata0: sata@29000000 {
->> +			compatible	= "generic-ahci";
->> +			reg		= <0x29000000 0x180>;
->> +			interrupts	= <0 209 0>;
->
-> Sorry I'm nitpicking but it annoys me. Either align it all or don't
-> align it.
-I Will fix this in next version.
+>> +The Rockchip DRM master device is a virtual device needed to list all
+>> +vop devices or other display interface nodes that comprise the
+>> +graphics subsystem.
+>> +
+>> +Required properties:
+>> +- compatible: Should be "rockchip,display-subsystem"
+>> +- ports: Should contain a list of phandles pointing to display interface port
+>> +  of vop devices. vop definitions as defined in
+>> +  Documentation/devicetree/bindings/video/rockchip-vop.txt
+>> +
+>> +example:
+>> +
+>> +display-subsystem {
+>> +	compatible = "rockchip,display-subsystem";
+>> +	ports = <&vopl_out>, <&vopb_out>;
+>> +};
+>> -- 
+>> 1.7.9.5
+>>
+>>
 
-thanks,
-srini
->
->> +			clocks = <&gcc SFAB_SATA_S_H_CLK>, <&gcc SATA_H_CLK>,
->> +				 <&gcc SATA_A_CLK>, <&gcc SATA_RXOOB_CLK>,
->> +				 <&gcc SATA_PMALIVE_CLK>;
->> +
->> +			clock-names = "slave_iface", "iface",
->> +				      "bus", "rxoob",
->> +				      "core_pmalive";
->> +			assigned-clocks = <&gcc SATA_RXOOB_CLK>,
->> +						<&gcc SATA_PMALIVE_CLK>;
->> +			assigned-clock-rates = <100000000>, <100000000>;
->> +
->> +			phys  = <&sata_phy0>;
->> +			phy-names = "sata-phy";
->> +			target-supply = <&pm8921_s4>;
->> +		};
->> +
->>   		/* Temporary fixed regulator */
->>   		vsdcc_fixed: vsdcc-regulator {
->>   			compatible = "regulator-fixed";
->
->
+
