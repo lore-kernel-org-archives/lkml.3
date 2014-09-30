@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaI3Oll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:41:41 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:33096 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaI3Olk (ORCPT
+	id S1751868AbaI3OpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:45:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54538 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaI3OpJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:41:40 -0400
-Message-ID: <542AC120.1080104@lwfinger.net>
-Date: Tue, 30 Sep 2014 09:41:36 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 30 Sep 2014 10:45:09 -0400
+Date: Tue, 30 Sep 2014 15:45:06 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Rob Herring <robh@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
+Message-ID: <20140930144506.GQ841@e106497-lin.cambridge.arm.com>
+References: <706416181.hbVGLDA3o6@wuerfel>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: build warning after merge of the wireless-next tree
-References: <20140930184607.081d38de@canb.auug.org.au>
-In-Reply-To: <20140930184607.081d38de@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <706416181.hbVGLDA3o6@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 30 Sep 2014 14:45:06.0925 (UTC) FILETIME=[208069D0:01CFDCBD]
+X-MC-Unique: 114093015450703101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 03:46 AM, Stephen Rothwell wrote:
-> Hi John,
->
-> After merging the wireless-next tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
->
-> WARNING: drivers/staging/rtl8192ee/r8192ee: 'rtl_evm_dbm_jaguar' exported twice. Previous export was in drivers/net/wireless/rtlwifi/rtlwifi.ko
->
-> Introduced by commit f3a97e93814a ("rtlwifi: Finish modifying core
-> routines for new drivers").
->
-> I suspect that there is a staging driver that needs removing/updating?
+On Tue, Sep 30, 2014 at 02:19:05PM +0100, Arnd Bergmann wrote:
+> The pci_register_io_range() and pci_pio_to_address() were recently
+> introduced to generalize the handling of memory mapped PCI I/O space,
+> but they are only valid when CONFIG_OF is set, leading to a possible
+> build error:
+> 
+> drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
+> drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
+>    res_start = pci_pio_to_address(res->start);
+>    ^
+> drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
+> drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
+>    err = of_pci_range_to_resource(&range, pdev->dev.of_node,
+>    ^
+> cc1: some warnings being treated as errors
+> 
+> This provides inline dummy implementations for the case that
+> CONFIG_OF is disabled, to allow better build testing.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
 
-A new version of the driver for the RTL8192EE has been submitted to the regular 
-wireless tree; however, there is a bit of overlap before the staging version can 
-be removed as the latter request must go through GregKH. Now that the new driver 
-has reached linux-next, I will send the appropriate request to Greg.
+Acked-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Thanks,
+Is that triggered by shmobile_defconfig?
 
-Larry
+Best regards,
+Liviu
 
+> 
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index 7ebb877b07c2..851097aab115 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -71,6 +71,11 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+>  	return NULL;
+>  }
+>  
+> +static inline phys_addr_t pci_pio_to_address(unsigned long pio)
+> +{
+> +	return 0;
+> +}
+> +
+>  static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+>  			struct device_node *node)
+>  {
+> @@ -144,6 +149,12 @@ static inline const __be32 *of_get_pci_address(struct device_node *dev,
+>  {
+>  	return NULL;
+>  }
+> +static inline int of_pci_range_to_resource(struct of_pci_range *range,
+> +					   struct device_node *np,
+> +					   struct resource *res)
+> +{
+> +	return -ENOSYS;
+> +}
+>  #endif /* CONFIG_OF_ADDRESS && CONFIG_PCI */
+>  
+>  #endif /* __OF_ADDRESS_H */
+> 
+> 
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
