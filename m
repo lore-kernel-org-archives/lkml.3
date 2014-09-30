@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaI3BqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:46:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48673 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906AbaI3BqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:46:04 -0400
-Date: Tue, 30 Sep 2014 03:45:57 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Puthikorn Voravootivat <puthik@chromium.org>
-Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Gwendal Grignou <gwendal@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>, Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH v2] bq27x00_battery: Add support to bq27742
-Message-ID: <20140930014557.GA16998@earth.universe>
-References: <1412025911-26809-1-git-send-email-puthik@chromium.org>
+	id S1755228AbaI3Bq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:46:29 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:31410 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977AbaI3BqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 21:46:08 -0400
+Message-ID: <542A0B4D.5060209@hisilicon.com>
+Date: Tue, 30 Sep 2014 09:45:49 +0800
+From: Wei Xu <xuwei5@hisilicon.com>
+Organization: hisilicon
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-In-Reply-To: <1412025911-26809-1-git-send-email-puthik@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Jiancheng Xue <xuejiancheng@huawei.com>
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+References: <20140926115539.6873630b@canb.auug.org.au> <20140930101200.1239cd52@canb.auug.org.au>
+In-Reply-To: <20140930101200.1239cd52@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.75.104]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On 2014/9/30 8:12, Stephen Rothwell wrote:
+> Hi all,
+> 
+> On Fri, 26 Sep 2014 11:55:39 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> After merging the arm-soc tree, today's linux-next build (arm
+>> multi_v7_defconfig) failed like this:
+>>
+>> Error: arch/arm/boot/dts/hisi-x5hd2.dtsi:374.22-23 syntax error
+>> FATAL ERROR: Unable to parse input tree 
+> OK, now I get:
+> 
+> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:417.21-22 syntax error
+> FATAL ERROR: Unable to parse input tree
+> Are you guys really testing this stuff? :-(
 
-On Mon, Sep 29, 2014 at 02:25:11PM -0700, Puthikorn Voravootivat wrote:
-> Add support to bq27742 in bq27x00 driver. bq27742 register
-> addresses are mostly mostly the same as bq27500 addresses
-> with minor differences.
->=20
-> Signed-off-by: Puthikorn Voravootivat <puthik@chromium.org>
-> Reviewed-by: Gwendal Grignou <gwendal@chromium.org>
-> Reviewed-by: Rhyland Klein <rklein@nvidia.com>
-> Reviewed-by: Benson Leung <bleung@chromium.org>
-> ---
-> Change log
-> v2: Fix flags/full capacity register read
+Hi Stephen, Olof, Arnd,
 
-Please convert this into an incremental patch, since I already
-applied v1:
+Sorry for my fault and bring so much trouble to all of you.
+I sent this pull request before the clock patch set being accepted.
+And I did forget to compile the dtb. 
+But I will make sure it will *not* happen next time.
+Arnd has already helped to revert the series of this patch set in arm-soc.git:next/dt.
 
-http://git.infradead.org/battery-2.6.git/commit/628ef02c56e515430dd8d843912=
-6dd0ecb8ce8bb
+Hi Arnd, Olof,
 
--- Sebastian
+Could you please help to revert this series of patch set in arm-soc.git:for-next?
+Thanks!
 
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best Regards,
+Wei
+ 
+>> There are a series of new commits to this file today and I have no idea
+>> which one caused the problem.
+>>
+>> I reverted:
+>>
+>> 610bd8722ef4	"ARM: dts: hix5hd2: add wdg node"
+> 
+> Reverted in the arm-soc tree.
+> 
+>> 6868feb6dd97	"ARM: dts: hix5hd2: add gpio node"
+> 
+> Error is now:
+> 
+> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax error
+> 
+>> 420a2d55f046	"ARM: dts: hix5hd2: add sata node"
+> 
+> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax error
+> 
+> 
+>> f16c7fb2f3ff	"ARM: dts: hix5hd2: add usb node"
+> 
+> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax error
+> 
+>> b196e1ca400d	"ARM: dts: hix5hd2: add mmc node"
+> 
+> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:174.21-22 syntax error
+> 
+>> de8b6054780e	"ARM: dts: hix5hd2: add gmac node"
+> 
+> no more errors.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUKgtVAAoJENju1/PIO/qaD8EP/Aqw5TyaUWCYtj3foQbSPVfs
-Y8kcfO9a5SFuGLhG/VeyxRIUu0AkphgJeHzWQdTgBfI6IJ1AAKsEghAUxc1uyF2H
-nYqNXPoGrWla/GCyQwbm5/bNCcQfJqQVwvKLeV9Uj7/ng149sy0i4IV+S/5+73wI
-8BLWLQ2XeWft+kxUonVhLQkYabk8v4whroEPu9w5zbxXHy7vjQAg2FyHC0lzhNfd
-YA9PSwfwTHKjhq3OJxmg1xek2xhUu+kq4LBPyxFonSXrWoqiW/dgHY/5IQ0RQ+4Z
-YFMBVwPCaaVb6L+GG/EKt0jKobzucwOxKEYVNd6xsWlW/vMUZNFLmmIDGwZM5E26
-yZ7rUuSvIDnG6YR2Sxgy/3RWRgWgFzMtKBW17c2bmOdpET35P7Zlz2Grbvs/xFZR
-YT7VFUTyiTE4cy9E1noNvuQupItgy3VugfNIcwgKps0NRPNPHoK+vQaJX9sVefUy
-MXFChTnoQdx4tZH/F7g8ePvKe0lvEd9JutpkU6YJn5Cku8i4yJlpSPsuutG7eTGz
-d2xxBbxGBSQD6BFSzV2CvrnvALKjHTgujtPeo6O3Mfp+vxFwsaueVy3JHLTcWnOt
-0pP7LsBd3u4VtDFyffK148u0AZC0ODjtTC7Q2aVKijCxMx1Ey96InVmvTiFQuuYx
-SHZb/1S+U9rXmSE7k6mo
-=whSP
------END PGP SIGNATURE-----
-
---XsQoSWH+UP9D9v3l--
