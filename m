@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786AbaI3NXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:23:48 -0400
-Received: from mail01-md.ns.itscom.net ([175.177.155.111]:33602 "EHLO
-	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaI3NXq (ORCPT
+	id S1751869AbaI3NYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:24:20 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:49242 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaI3NYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:23:46 -0400
-From: "J. R. Okajima" <hooanon05g@gmail.com>
-Subject: Re: [PULL for 3.18] overlay filesystem v24
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
-In-Reply-To: <CAJfpeguWkWOeWYS1o2gW4P1DJhXn=enBGukPcfscd-guas7h8w@mail.gmail.com>
-References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu> <26822.1412028003@warthog.procyon.org.uk> <27645.1412052879@jrobl> <CAJfpeguWkWOeWYS1o2gW4P1DJhXn=enBGukPcfscd-guas7h8w@mail.gmail.com>
-Date: Tue, 30 Sep 2014 22:23:42 +0900
-Message-ID: <6637.1412083422@jrobl>
+	Tue, 30 Sep 2014 09:24:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linus.walleij@linaro.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-gpio@vger.kernel.org,
+        linux-rpi-kernel@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpiolib: fix callers of gpiochip_remove
+Date: Tue, 30 Sep 2014 15:24:08 +0200
+Message-ID: <2923496.zl6JUbOQrZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Yzz6peKCGBQ7sGdBCmT+wJsYgKHYvUmUxUgwLqjMMkL
+ 10MBtYB6Gw4Td4ai5ZpevLhlrmKT5J34h+wf/+TsN9lPMpyJkA
+ yLvTCTBqS9VJXGgOqLVrpbk6LlqoeQjbvyQncrk+hvOld7sEaX
+ Df/UjZgnmaFCuBvpOlm/8wjxfjVg9w2S8wVh7frKX0gpboEBiK
+ kgpwuIBh7YUrxegmZXiohPSVsK+z55OudmS5426rE0x2A34IYH
+ LOkDqiug8QnQ+VwsYUHiABEJc8zBonqPumO2mfWJxYmlUwAxQV
+ gxYBFi79He6ELHB1plJYNDuCogirhxD2rJeDiZ8fOA7wa9ZrUi
+ h42zMj0EYuOER239SSJQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A recent API change made gpiochip_remove return void instead of an
+error value, which broke drivers that use this return value:
 
-Miklos Szeredi:
-> It would be good to have an inode based union as well.  I suggest (as
-> I suggested many times) to try slimming aufs to a bare minimum and
-> submit that.  It may be easier to just start from scratch instead
-> trying to drop features from the existing codebase.   I'd be happy to
-> review and generally help with such an effort.
+gpio/gpio-sch311x.c: In function 'sch311x_gpio_probe':
+gpio/gpio-sch311x.c:286:7: error: void value not ignored as it ought to be
+   if (gpiochip_remove(&priv->blocks[i].chip))
+       ^
 
-??
-In 2009, I have posted the "feature-reduced" version of aufs2 as
-following your advice. Also a git-branch called "aufs2-tmp-ro" was
-created whose size was a half of aufs2's. Have you ever posted your
-review comments about them?
+This changes the callers that I have found during randconfig testing
+so they no longer depend on the error code.
 
-It was 2005 when I got an idea of aufs. Its history is almost a decade.
-In my current local aufs3 develpment branch, I got about 350
-commits. And 680 and 1120 commits for aufs2 and aufs1 individually.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: e1db1706c86e ("gpio: gpiolib: set gpiochip_remove retval to void")
 
-aufs3-linux.git#aufs3.x-rcN/25lktr$ git log1 --no-merges fs/aufs/*.c | wc -l
-348
-aufs2-2.6.git#aufs2.2-stdalone-38-lktr$ git log1 --no-merges fs/aufs/*.c | wc -l
-685
-aufs1.git#master$ git log1 --no-merges aufs/fs/aufs/*.c | wc -l
-1126
+diff --git a/drivers/gpio/gpio-sch311x.c b/drivers/gpio/gpio-sch311x.c
+index 223830cb95ca..1c8e45b92471 100644
+--- a/drivers/gpio/gpio-sch311x.c
++++ b/drivers/gpio/gpio-sch311x.c
+@@ -283,9 +283,7 @@ exit_err:
+ 	release_region(pdata->runtime_reg + GP1, 6);
+ 	/* release already registered chips */
+ 	for (--i; i >= 0; i--)
+-		if (gpiochip_remove(&priv->blocks[i].chip))
+-			dev_err(&pdev->dev,
+-				"Could not unregister gpiochip, %d\n", err);
++		gpiochip_remove(&priv->blocks[i].chip);
+ 
+ 	return err;
+ }
+diff --git a/drivers/pinctrl/pinctrl-bcm2835.c b/drivers/pinctrl/pinctrl-bcm2835.c
+index 9771bdb7ff38..a12c78206e36 100644
+--- a/drivers/pinctrl/pinctrl-bcm2835.c
++++ b/drivers/pinctrl/pinctrl-bcm2835.c
+@@ -1029,7 +1029,8 @@ static int bcm2835_pinctrl_probe(struct platform_device *pdev)
+ 
+ 	pc->pctl_dev = pinctrl_register(&bcm2835_pinctrl_desc, dev, pc);
+ 	if (!pc->pctl_dev) {
+-		return gpiochip_remove(&pc->gpio_chip) ? : -EINVAL;
++		gpiochip_remove(&pc->gpio_chip);
++		return -EINVAL;
+ 	}
+ 
+ 	pc->gpio_range = bcm2835_pinctrl_gpio_range;
+@@ -1045,7 +1046,8 @@ static int bcm2835_pinctrl_remove(struct platform_device *pdev)
+ 	struct bcm2835_pinctrl *pc = platform_get_drvdata(pdev);
+ 
+ 	pinctrl_unregister(pc->pctl_dev);
+-	return gpiochip_remove(&pc->gpio_chip);
++	gpiochip_remove(&pc->gpio_chip);
++	return 0;
+ }
+ 
+ static struct of_device_id bcm2835_pinctrl_match[] = {
 
-Of cource it won't be 2000 commits to create the patch series you
-wrote. I don't know how large the number will be but I am sure this is
-incredibly tough work both in commiting and reviewing. Is it still
-helpful and really meaningful for you to review? Don't you think it will
-be easier to review the resulted code?
-For example, this branch was created for linux-3.9 when Al Viro wrote
-about the dir mutex lock in copy-up. It has only 20 commits.
-
-aufs3-linux.git#mainline-v3.9-rc8-20130428$ git log1 --no-merges fs/aufs/*.c | wc -l
-20
-
-
-J. R. Okajima
