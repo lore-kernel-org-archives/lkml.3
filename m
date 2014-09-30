@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaI3VEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:04:40 -0400
-Received: from forward4l.mail.yandex.net ([84.201.143.137]:47319 "EHLO
-	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaI3VEi (ORCPT
+	id S1751889AbaI3VEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:04:50 -0400
+Received: from forward8l.mail.yandex.net ([84.201.143.141]:47039 "EHLO
+	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaI3VEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:04:38 -0400
-X-Yandex-Uniq: a33afdf6-fed3-44bd-be1c-0a04100c6b5a
-Authentication-Results: smtp14.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
+	Tue, 30 Sep 2014 17:04:47 -0400
+X-Yandex-Uniq: f7825946-1e68-42c6-9dc3-9034351cbef9
+Authentication-Results: smtp1h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v2 3/3] sched/fair: Delete resched_cpu() from idle_balance()
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
         Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Wed, 01 Oct 2014 01:04:35 +0400
-Message-ID: <20140930210428.5258.32223.stgit@localhost>
+Date: Wed, 01 Oct 2014 01:04:44 +0400
+Message-ID: <20140930210441.5258.55054.stgit@localhost>
 In-Reply-To: <20140930210412.5258.35299.stgit@localhost>
 References: <20140930210412.5258.35299.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -28,81 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-rq->curr task can't be in "dequeued" state in prio_changed_dl().
-(The only place we can have that is __schedule()). So, we delete
-rq->curr check.
+We already reschedule env.dst_cpu in attach_tasks()->check_preempt_curr()
+if this is necessary.
 
-Also delete "else" branch which is dead code (switched_to_dl()
-is not interested in dequeued tasks and we are not interested
-in balancing in this case).
+Furthermore, a higher priority class task may be current on dest rq,
+we shouldn't disturb it.
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/deadline.c |   50 +++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 26 deletions(-)
+ kernel/sched/fair.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 63f8b4a..38b4f19 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 			    int oldprio)
- {
--	if (task_on_rq_queued(p) || rq->curr == p) {
-+	if (!task_on_rq_queued(p))
-+		return;
- #ifdef CONFIG_SMP
--		/*
--		 * This might be too much, but unfortunately
--		 * we don't have the old deadline value, and
--		 * we can't argue if the task is increasing
--		 * or lowering its prio, so...
--		 */
--		if (!rq->dl.overloaded)
--			pull_dl_task(rq);
--
--		/*
--		 * If we now have a earlier deadline task than p,
--		 * then reschedule, provided p is still on this
--		 * runqueue.
--		 */
--		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
--		    rq->curr == p)
--			resched_curr(rq);
--#else
--		/*
--		 * Again, we don't know if p has a earlier
--		 * or later deadline, so let's blindly set a
--		 * (maybe not needed) rescheduling point.
--		 */
-+	/*
-+	 * This might be too much, but unfortunately
-+	 * we don't have the old deadline value, and
-+	 * we can't argue if the task is increasing
-+	 * or lowering its prio, so...
-+	 */
-+	if (!rq->dl.overloaded)
-+		pull_dl_task(rq);
-+	/*
-+	 * If we now have a earlier deadline task than p,
-+	 * then reschedule, provided p is still on this
-+	 * runqueue.
-+	 */
-+	if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
-+	    rq->curr == p)
- 		resched_curr(rq);
-+#else
-+	/*
-+	 * Again, we don't know if p has a earlier
-+	 * or later deadline, so let's blindly set a
-+	 * (maybe not needed) rescheduling point.
-+	 */
-+	resched_curr(rq);
- #endif /* CONFIG_SMP */
--	} else
--		switched_to_dl(rq, p);
- }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 10a5a28..8265601 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6700,12 +6700,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
  
- const struct sched_class dl_sched_class = {
+ 		local_irq_restore(flags);
+ 
+-		/*
+-		 * some other cpu did the load balance for us.
+-		 */
+-		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
+-			resched_cpu(env.dst_cpu);
+-
+ 		if (env.flags & LBF_NEED_BREAK) {
+ 			env.flags &= ~LBF_NEED_BREAK;
+ 			goto more_balance;
 
