@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244AbaI3BkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:40:25 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59184 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaI3BkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:40:24 -0400
-Message-ID: <542A0A07.8040205@codeaurora.org>
-Date: Mon, 29 Sep 2014 18:40:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755028AbaI3BqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:46:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48673 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906AbaI3BqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 21:46:04 -0400
+Date: Tue, 30 Sep 2014 03:45:57 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Puthikorn Voravootivat <puthik@chromium.org>
+Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Gwendal Grignou <gwendal@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH v2] bq27x00_battery: Add support to bq27742
+Message-ID: <20140930014557.GA16998@earth.universe>
+References: <1412025911-26809-1-git-send-email-puthik@chromium.org>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [RFC] clk: Make clk API return per-user struct clk instances
-References: <20140926232009.19023.15825@quantum> <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <1412025911-26809-1-git-send-email-puthik@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/14 11:17, Tomeu Vizoso wrote:
-> Also moves clock state to struct clk_core, but takes care to change as little
-> API as possible.
->
-> struct clk_hw still has a pointer to a struct clk, which is the
-> implementation's per-user clk instance, for backwards compatibility.
->
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->
+
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Mon, Sep 29, 2014 at 02:25:11PM -0700, Puthikorn Voravootivat wrote:
+> Add support to bq27742 in bq27x00 driver. bq27742 register
+> addresses are mostly mostly the same as bq27500 addresses
+> with minor differences.
+>=20
+> Signed-off-by: Puthikorn Voravootivat <puthik@chromium.org>
+> Reviewed-by: Gwendal Grignou <gwendal@chromium.org>
+> Reviewed-by: Rhyland Klein <rklein@nvidia.com>
+> Reviewed-by: Benson Leung <bleung@chromium.org>
 > ---
->
-> Hello,
->
-> I'm sending this alternate implementation of the switch to per-user clocks,
-> with the added goal of not requiring any substantial changes to existing users
-> of the API.
->
-> This is pretty much RFC-quality right now, having only tested that it builds on
-> tegra_defconfig.
->
-> My main question right now is what do we want to do with those drivers that
-> statically declare clocks. State is now in struct clk_core, so updating the
-> drivers accordingly will amount to a substantial amount of lines changed, which
-> we are now trying to avoid.
+> Change log
+> v2: Fix flags/full capacity register read
 
-Who's actually using the static clocks? Isn't it just omap2? It looks
-like all of those are behind the DEFINE_CLK define so changing it in
-clk-private.h should "just work". I'm lost as to why static clocks are
-being used there though. If it was a problem with allocating memory too
-early it doesn't seem to be the case given that sometimes the .parents
-field isn't set for a mux and __clk_init() will go and allocate an array
-of pointers. Maybe I missed something though.
+Please convert this into an incremental patch, since I already
+applied v1:
 
->
-> Thanks,
->
-> Tomeu
-> ---
->  drivers/clk/clk-composite.c  |  12 +-
->  drivers/clk/clk.c            | 573 +++++++++++++++++++++++++++----------------
->  drivers/clk/clk.h            |   5 +
->  drivers/clk/clkdev.c         |  20 +-
->  drivers/clk/tegra/clk.c      |   2 +-
->  include/linux/clk-private.h  |  20 +-
->  include/linux/clk-provider.h |  22 +-
->  include/linux/clkdev.h       |   2 +-
->  8 files changed, 410 insertions(+), 246 deletions(-)
->
-> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
-> index b9355da..cb4a09d 100644
-> --- a/drivers/clk/clk-composite.c
-> +++ b/drivers/clk/clk-composite.c
-> @@ -57,14 +57,14 @@ static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
->  
->  static long clk_composite_determine_rate(struct clk_hw *hw, unsigned long rate,
->  					unsigned long *best_parent_rate,
-> -					struct clk **best_parent_p)
-> +					struct clk_core **best_parent_p)
+http://git.infradead.org/battery-2.6.git/commit/628ef02c56e515430dd8d843912=
+6dd0ecb8ce8bb
 
+-- Sebastian
 
-We should avoid exposing clk_core to anything besides clk.c or users of
-clk-private.h (the latter which should go away once we remove all static
-clocks).
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBCgAGBQJUKgtVAAoJENju1/PIO/qaD8EP/Aqw5TyaUWCYtj3foQbSPVfs
+Y8kcfO9a5SFuGLhG/VeyxRIUu0AkphgJeHzWQdTgBfI6IJ1AAKsEghAUxc1uyF2H
+nYqNXPoGrWla/GCyQwbm5/bNCcQfJqQVwvKLeV9Uj7/ng149sy0i4IV+S/5+73wI
+8BLWLQ2XeWft+kxUonVhLQkYabk8v4whroEPu9w5zbxXHy7vjQAg2FyHC0lzhNfd
+YA9PSwfwTHKjhq3OJxmg1xek2xhUu+kq4LBPyxFonSXrWoqiW/dgHY/5IQ0RQ+4Z
+YFMBVwPCaaVb6L+GG/EKt0jKobzucwOxKEYVNd6xsWlW/vMUZNFLmmIDGwZM5E26
+yZ7rUuSvIDnG6YR2Sxgy/3RWRgWgFzMtKBW17c2bmOdpET35P7Zlz2Grbvs/xFZR
+YT7VFUTyiTE4cy9E1noNvuQupItgy3VugfNIcwgKps0NRPNPHoK+vQaJX9sVefUy
+MXFChTnoQdx4tZH/F7g8ePvKe0lvEd9JutpkU6YJn5Cku8i4yJlpSPsuutG7eTGz
+d2xxBbxGBSQD6BFSzV2CvrnvALKjHTgujtPeo6O3Mfp+vxFwsaueVy3JHLTcWnOt
+0pP7LsBd3u4VtDFyffK148u0AZC0ODjtTC7Q2aVKijCxMx1Ey96InVmvTiFQuuYx
+SHZb/1S+U9rXmSE7k6mo
+=whSP
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
