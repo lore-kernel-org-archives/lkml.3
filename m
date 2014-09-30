@@ -1,75 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaI3T4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:56:46 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8648 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751031AbaI3T4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:56:44 -0400
-Date: Tue, 30 Sep 2014 12:56:53 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
-Message-ID: <20140930195652.GT28481@sonymobile.com>
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
- <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org>
- <5429DA95.80505@codeaurora.org>
- <20140930050203.GG28481@sonymobile.com>
- <542AF5FE.1000006@codeaurora.org>
- <20140930190023.GS28481@sonymobile.com>
- <542B00C1.3010702@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <542B00C1.3010702@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1752735AbaI3T5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:57:37 -0400
+Received: from ou.quest-ce.net ([195.154.187.82]:60183 "EHLO ou.quest-ce.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbaI3T5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 15:57:36 -0400
+Message-ID: <1412097349.4380.16.camel@localhost.localdomain>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        John Stultz <john.stultz@linaro.org>, Daniel Vetter <daniel@ffwll.ch>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Yann Droneaud <ydroneaud@opteya.com>
+In-Reply-To: <trinity-ff6d6a3f-e1a7-4d9b-a199-3fd66138f758-1412025565926@3capp-gmx-bs36>
+References: <1411807958-1522-1-git-send-email-xypron.glpk@gmx.de>
+	 , <1412013833.9750.12.camel@localhost.localdomain>
+	 <trinity-ff6d6a3f-e1a7-4d9b-a199-3fd66138f758-1412025565926@3capp-gmx-bs36>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 30 Sep 2014 19:15:49 +0200
+Mime-Version: 1.0
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2a01:e35:2e9f:6ac0:1d34:d55:2d28:af2e
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: Aw: Re: [PATCH 1/1] staging : android : sync : get_unused_fd
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 12:13 PDT 2014, Stephen Boyd wrote:
+Hi,
 
-> On 09/30/14 12:00, Bjorn Andersson wrote:
+Le lundi 29 septembre 2014 à 23:19 +0200, Heinrich Schuchardt a écrit :
+> > Gesendet: Montag, 29. September 2014 um 20:03 Uhr
+> > Von: "Yann Droneaud" <ydroneaud@opteya.com>
+> > An: "Heinrich Schuchardt" <xypron.glpk@gmx.de>
+> > Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, "Colin Cross" <ccross@android.com>, "John Stultz" <john.stultz@linaro.org>, "Daniel Vetter" <daniel@ffwll.ch>, "Sumit Semwal" <sumit.semwal@linaro.org>, "Masanari Iida" <standby24x7@gmail.com>, "Daeseok Youn" <daeseok.youn@gmail.com>, "Maarten Lankhorst" <maarten.lankhorst@canonical.com>, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, "Yann Droneaud" <ydroneaud@opteya.com>
+> > Betreff: Re: [PATCH 1/1] staging : android : sync : get_unused_fd
 > >
-> > Hmm, seems I got that wrong, sorry about that.
-> >
-> > But do you mean "all wrong" as in that I use the wrong bit or to some greater
-> > extent? Currently all following requests should timeout, but maybe we should
-> > have a faster fail-path when we've hit this point?
+> > Hi,
+> > 
+> > Le samedi 27 septembre 2014 à 10:52 +0200, Heinrich Schuchardt a écrit :
+> > > sync.h recommends to use get_unused_fd which does not set
+> > > O_CLOEXEC while the rest of the android tree uses
+> > > get_unused_fd_flags and sets O_CLOEXEC.
+> > > 
+> > > The patch adjust the comment.
+> > > 
+> > 
+> > I'd like to add this patch to my patchset which try to remove
+> > get_unused_fd() in favor of get_unused_fd_flags():
+> > 
+> > http://lkml.kernel.org/r/cover.1411562410.git.ydroneaud@opteya.com
+> > 
+> > But having O_CLOEXEC is welcome but not strictly needed,
+> > so I think the patch should be reworked to not require O_CLOEXEC.
 > 
-> Yes. We just ack the interrupt and go on happy to keep allowing clients
-> to request things. I'd rather see us blow up or start failing requests,
-> or maybe both.
+> All calls to get_unused_fd_flags() in directory drivers/staging/android
+> use O_CLOEXEC. That is why I guess it is correct to put it into the
+> sync.h comment too.
 > 
 
-Okay, I naively figured that the RPM would be dead after this happened and from
-this point we would start getting timeouts. Let's ack the right bit and fail
-early after the RPM have rejected things.
+They use O_CLOEXEC because I've suggested it should be a good thing to
+do it if possible, and Erik Gilling suggested it would be possible.
 
-> >
-> > From a practical pov I guess that once the rpm starts returning errors on
-> > updates to regulators, root clocks and bus scaling then most of the system is
-> > becoming useless.
+So please add a mention to commit 9c6cd3b39048 ('android/sync: use 
+get_unused_fd_flags(O_CLOEXEC) instead o get_unused_fd()') and commit 
+45acea57335e ('android/sw_sync: use get_unused_fd_flags(O_CLOEXEC) 
+instead of get_unused_fd()').
+
+> Your patch set inspired me to look for further usages of get_unused_fd().
+
+I haven't grep through the source nor the documentation, so I failed to
+notice this comment. I'm glad you've found it and going to fix it.
+
+> But I think the patch below is valid even if get_unused_fd() should not
+> be removed from the kernel.
 > 
-> Right. Rebooting will be required fairly soon.
+
+Getting a file descriptor with get_unused_fd_flags(O_CLOEXEC) is not
+required to use sync_fence_install(): O_CLOEXEC is only one of the two
+values having a meaning for get_unused_fd_flags(), and
+sync_fence_install() doesn't care about it.
+
+So I still prefer you use an alternate wording for the comment, so that
+it match the behavor of sync_fence_install() and provide advice
+regarding O_CLOEXEC usage.
+
+Regards.
+
+
+> Best regards
 > 
+> Heinrich 
+> 
+> > 
+> > > Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> > > ---
+> > >  drivers/staging/android/sync.h | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/staging/android/sync.h b/drivers/staging/android/sync.h
+> > > index 66b0f43..a21b79f 100644
+> > > --- a/drivers/staging/android/sync.h
+> > > +++ b/drivers/staging/android/sync.h
+> > > @@ -293,7 +293,8 @@ void sync_fence_put(struct sync_fence *fence);
+> > >   * @fence:	fence to install
+> > >   * @fd:		file descriptor in which to install the fence
+> > >   *
+> > > - * Installs @fence into @fd.  @fd's should be acquired through get_unused_fd().
+> > > + * Installs @fence into @fd.  @fd's should be acquired through
+> > > + * get_unused_fd_flags(O_CLOEXEC).
+> > 
+> > I think it will be better to have something like:
+> > 
+> >     get_unused_fd_flags(flags), with flags either provided by userspace
+> >     or set to O_CLOEXEC.
+> > 
+> > 
+> > >   */
+> > >  void sync_fence_install(struct sync_fence *fence, int fd);
+> > >  
 
-Yes, but we want something else to trigger that right?
+-- 
+Yann Droneaud
+OPTEYA
 
-Regards,
-Bjorn
+
