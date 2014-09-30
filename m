@@ -1,73 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaI3NuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:50:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51540 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaI3Nt6 convert rfc822-to-8bit (ORCPT
+	id S1752968AbaI3Nu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:50:56 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51779 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752428AbaI3NtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:49:58 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [RFC 0/7] Qualcomm SMEM, SMD, RPM and regulators
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Tue, 30 Sep 2014 08:49:52 -0500
-Cc: Andy Gross <agross@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E6EEBBAE-C710-4280-824D-CC5D54CB2551@codeaurora.org>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
-To: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 30 Sep 2014 09:49:08 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v5 11/11] ARM: kernel: add outer cache support for cacheinfo implementation
+Date: Tue, 30 Sep 2014 14:48:32 +0100
+Message-Id: <1412084912-2767-12-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In order to support outer cache in the cacheinfo infrastructure, a new
+function 'get_info' is added to outer_cache_fns. This function is used
+to get the outer cache information namely: line size, number of ways of
+associativity and number of sets.
 
-On Sep 29, 2014, at 7:34 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
+This patch adds 'get_info' supports to all L2 cache implementations on
+ARM except Marvell's Feroceon L2 cache.
 
-> All Qualcomm platforms implements a shared heap among the processors in the
-> SoC, used for sharing data with other parts of the system.
-> 
-> One consumer of items from this heap is the "Shared Memory Driver", a ring
-> buffer based point-to-point communication mechanism used to send either stream
-> or packet based data to remote processors.
-> 
-> Starting with 8x74 this system is used to talk to the Resource Power Manager
-> (RPM), a power efficient "coprocessor" with responsibility of aggregate votes
-> from the various systems in the SoC related to regulators, clocks and bus
-> frequencies.
-> 
-> The PMIC regulators and root clocks in these platforms are only accessible via
-> the RPM, so to get access to these we need the full chain of smem, smd, rpm and
-> a regulator driver implemented. And that is exactly what this series provides.
-> 
-> 
-> A key outstanding question is where in the tree we should put the
-> implementation, for now I dropped them in drivers/soc/qcom but that's only
-> because I don't know where to put it otherwise. I have not found any equivalent
-> of the SMEM driver, SMD resembles mailbox and rpmsg - but comments in that
-> patch on why it's neither.
-> 
-> RPM is a mfd and regulator is a regulator :)
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ arch/arm/include/asm/outercache.h |  9 +++++++++
+ arch/arm/kernel/cacheinfo.c       | 14 +++++++++++++-
+ arch/arm/mm/cache-l2x0.c          | 35 ++++++++++++++++++++++++++++++++++-
+ arch/arm/mm/cache-tauros2.c       | 36 ++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/cache-xsc3l2.c        | 17 +++++++++++++++++
+ 5 files changed, 109 insertions(+), 2 deletions(-)
 
-I still don’t see why RPM support for either A-family or B-family should exist in MFD vis drivers/soc/qcom.  What benefit is there in putting this in MFD?
-
-I think both A and B-family support should be in drivers/soc/qcom for the current time being until we determine there is some framework that makes more sense in the future.  I almost see RPM more like a bus controller than anything else.  Something like an I2C bus controller that than has some set of devices off of that bus.
-
-- k
-
+diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
+index 891a56b35bcf..e063d8c87077 100644
+--- a/arch/arm/include/asm/outercache.h
++++ b/arch/arm/include/asm/outercache.h
+@@ -23,7 +23,10 @@
+ 
+ #include <linux/types.h>
+ 
++struct cacheinfo;
++
+ struct outer_cache_fns {
++	void (*get_info)(struct cacheinfo *);
+ 	void (*inv_range)(unsigned long, unsigned long);
+ 	void (*clean_range)(unsigned long, unsigned long);
+ 	void (*flush_range)(unsigned long, unsigned long);
+@@ -112,6 +115,11 @@ static inline void outer_resume(void)
+ 		outer_cache.resume();
+ }
+ 
++static inline void outer_get_info(struct cacheinfo *this_leaf)
++{
++	if (outer_cache.get_info)
++		outer_cache.get_info(this_leaf);
++}
+ #else
+ 
+ static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
+@@ -123,6 +131,7 @@ static inline void outer_flush_range(phys_addr_t start, phys_addr_t end)
+ static inline void outer_flush_all(void) { }
+ static inline void outer_disable(void) { }
+ static inline void outer_resume(void) { }
++static inline void outer_get_info(struct cacheinfo *this_leaf) { }
+ 
+ #endif
+ 
+diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
+index 8e4f677741d8..2107e1d67914 100644
+--- a/arch/arm/kernel/cacheinfo.c
++++ b/arch/arm/kernel/cacheinfo.c
+@@ -24,6 +24,7 @@
+ #include <linux/of.h>
+ 
+ #include <asm/cputype.h>
++#include <asm/outercache.h>
+ #include <asm/processor.h>
+ #include <asm/system_info.h>
+ 
+@@ -227,11 +228,19 @@ static inline enum cache_type get_cache_type(int level)
+ 	return __get_cache_type(level);
+ }
+ 
++static inline void __outer_ci_leaf_init(struct cacheinfo *this_leaf)
++{
++	outer_get_info(this_leaf);
++	BUG_ON(this_leaf->type == CACHE_TYPE_SEPARATE);
++}
++
+ static void ci_leaf_init(struct cacheinfo *this_leaf,
+ 			 enum cache_type type, unsigned int level)
+ {
+ 	this_leaf->level = level;
+-	if (cache_is_armv7())
++	if (type == CACHE_TYPE_NOCACHE)	/* must be outer cache */
++		__outer_ci_leaf_init(this_leaf);
++	else if (cache_is_armv7())
+ 		__armv7_ci_leaf_init(type, this_leaf);
+ 	else
+ 		__ci_leaf_init(type, this_leaf);
+@@ -255,6 +264,9 @@ static int __init_cache_level(unsigned int cpu)
+ 	this_cpu_ci->num_levels = level;
+ 	this_cpu_ci->num_leaves = leaves;
+ 
++	if (IS_ENABLED(CONFIG_OUTER_CACHE) && outer_cache.get_info)
++		this_cpu_ci->num_leaves++, this_cpu_ci->num_levels++;
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index 5f2c988a06ac..4114b1944807 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -17,6 +17,7 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  */
+ #include <linux/cpu.h>
++#include <linux/cacheinfo.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/smp.h>
+@@ -105,6 +106,22 @@ static inline void l2c_unlock(void __iomem *base, unsigned num)
+ 	}
+ }
+ 
++static void __l2x0_getinfo(struct cacheinfo *this_leaf)
++{
++	unsigned int assoc = get_count_order(l2x0_way_mask);
++
++	this_leaf->size = l2x0_size;
++	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
++	this_leaf->ways_of_associativity = assoc;
++	this_leaf->number_of_sets = l2x0_size / (assoc * CACHE_LINE_SIZE);
++}
++
++static void l2x0_getinfo(struct cacheinfo *this_leaf)
++{
++	this_leaf->type = CACHE_TYPE_UNIFIED;
++	__l2x0_getinfo(this_leaf);
++}
++
+ /*
+  * Enable the L2 cache controller.  This function must only be
+  * called when the cache controller is known to be disabled.
+@@ -309,6 +326,7 @@ static const struct l2c_init_data l2c210_data __initconst = {
+ 		.disable = l2c_disable,
+ 		.sync = l2c210_sync,
+ 		.resume = l2c210_resume,
++		.get_info = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -466,6 +484,7 @@ static const struct l2c_init_data l2c220_data = {
+ 		.disable = l2c_disable,
+ 		.sync = l2c220_sync,
+ 		.resume = l2c210_resume,
++		.get_info = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -814,6 +833,7 @@ static const struct l2c_init_data l2c310_init_fns __initconst = {
+ 		.disable = l2c310_disable,
+ 		.sync = l2c210_sync,
+ 		.resume = l2c310_resume,
++		.get_info = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -894,7 +914,6 @@ static void __init __l2c_init(const struct l2c_init_data *data,
+ 		data->enable(l2x0_base, aux, data->num_lock);
+ 
+ 	outer_cache = fns;
+-
+ 	/*
+ 	 * It is strange to save the register state before initialisation,
+ 	 * but hey, this is what the DT implementations decided to do.
+@@ -994,6 +1013,7 @@ static const struct l2c_init_data of_l2c210_data __initconst = {
+ 		.disable     = l2c_disable,
+ 		.sync        = l2c210_sync,
+ 		.resume      = l2c210_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1012,6 +1032,7 @@ static const struct l2c_init_data of_l2c220_data __initconst = {
+ 		.disable     = l2c_disable,
+ 		.sync        = l2c220_sync,
+ 		.resume      = l2c210_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1065,6 +1086,7 @@ static const struct l2c_init_data of_l2c310_data __initconst = {
+ 		.disable     = l2c310_disable,
+ 		.sync        = l2c210_sync,
+ 		.resume      = l2c310_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1092,6 +1114,7 @@ static const struct l2c_init_data of_l2c310_coherent_data __initconst = {
+ 		.flush_all   = l2c210_flush_all,
+ 		.disable     = l2c310_disable,
+ 		.resume      = l2c310_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1255,6 +1278,12 @@ static void __init aurora_of_parse(const struct device_node *np,
+ 	*aux_mask &= ~mask;
+ }
+ 
++static void aurora_no_outer_data_getinfo(struct cacheinfo *this_leaf)
++{
++	this_leaf->type = CACHE_TYPE_INST;
++	__l2x0_getinfo(this_leaf);
++}
++
+ static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
+ 	.type = "Aurora",
+ 	.way_size_0 = SZ_4K,
+@@ -1271,6 +1300,7 @@ static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
+ 		.disable     = l2x0_disable,
+ 		.sync        = l2x0_cache_sync,
+ 		.resume      = aurora_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1284,6 +1314,7 @@ static const struct l2c_init_data of_aurora_no_outer_data __initconst = {
+ 	.save  = aurora_save,
+ 	.outer_cache = {
+ 		.resume      = aurora_resume,
++		.get_info    = aurora_no_outer_data_getinfo,
+ 	},
+ };
+ 
+@@ -1439,6 +1470,7 @@ static const struct l2c_init_data of_bcm_l2x0_data __initconst = {
+ 		.disable     = l2c310_disable,
+ 		.sync        = l2c210_sync,
+ 		.resume      = l2c310_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+@@ -1475,6 +1507,7 @@ static const struct l2c_init_data of_tauros3_data __initconst = {
+ 	/* Tauros3 broadcasts L1 cache operations to L2 */
+ 	.outer_cache = {
+ 		.resume      = tauros3_resume,
++		.get_info    = l2x0_getinfo,
+ 	},
+ };
+ 
+diff --git a/arch/arm/mm/cache-tauros2.c b/arch/arm/mm/cache-tauros2.c
+index b273739e6359..0d4dd8ff6a56 100644
+--- a/arch/arm/mm/cache-tauros2.c
++++ b/arch/arm/mm/cache-tauros2.c
+@@ -14,6 +14,7 @@
+  *   Document ID MV-S105190-00, Rev 0.7, March 14 2008.
+  */
+ 
++#include <linux/cacheinfo.h>
+ #include <linux/init.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -60,6 +61,7 @@ static inline void tauros2_inv_pa(unsigned long addr)
+  * noninclusive.
+  */
+ #define CACHE_LINE_SIZE		32
++#define CACHE_LINE_SHIFT	5
+ 
+ static void tauros2_inv_range(unsigned long start, unsigned long end)
+ {
+@@ -131,6 +133,39 @@ static void tauros2_resume(void)
+ 	"mcr	p15, 0, %0, c1, c0, 0 @Enable L2 Cache\n\t"
+ 	: : "r" (0x0));
+ }
++
++/*
++ *  +----------------------------------------+
++ *  | 11 10 9  8 | 7  6  5  4  3 | 2 |  1  0 |
++ *  +----------------------------------------+
++ *  |  way size  | associativity | - |line_sz|
++ *  +----------------------------------------+
++ */
++#define L2CTR_ASSOCIAT_SHIFT	3
++#define L2CTR_ASSOCIAT_MASK	0x1F
++#define L2CTR_WAYSIZE_SHIFT	8
++#define L2CTR_WAYSIZE_MASK	0xF
++#define CACHE_WAY_PER_SET(l2ctr)	\
++	(((l2_ctr) >> L2CTR_ASSOCIAT_SHIFT) & L2CTR_ASSOCIAT_MASK)
++#define CACHE_WAY_SIZE(l2ctr)		\
++	(8192 << (((l2ctr) >> L2CTR_WAYSIZE_SHIFT) & L2CTR_WAYSIZE_MASK))
++#define CACHE_SET_SIZE(l2ctr)	(CACHE_WAY_SIZE(l2ctr) >> CACHE_LINE_SHIFT)
++
++static void tauros2_getinfo(struct cacheinfo *this_leaf)
++{
++	unsigned int l2_ctr;
++
++	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2_ctr));
++
++	this_leaf->type = CACHE_TYPE_UNIFIED;
++	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
++	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET(l2_ctr);
++	this_leaf->number_of_sets = CACHE_SET_SIZE(l2_ctr);
++	this_leaf->size = this_leaf->coherency_line_size *
++			  this_leaf->number_of_sets *
++			  this_leaf->ways_of_associativity;
++}
++
+ #endif
+ 
+ static inline u32 __init read_extra_features(void)
+@@ -226,6 +261,7 @@ static void __init tauros2_internal_init(unsigned int features)
+ 		outer_cache.flush_range = tauros2_flush_range;
+ 		outer_cache.disable = tauros2_disable;
+ 		outer_cache.resume = tauros2_resume;
++		outer_cache.get_info = tauros2_getinfo;
+ 	}
+ #endif
+ 
+diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
+index 6c3edeb66e74..175bf44eb039 100644
+--- a/arch/arm/mm/cache-xsc3l2.c
++++ b/arch/arm/mm/cache-xsc3l2.c
+@@ -16,6 +16,7 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  */
++#include <linux/cacheinfo.h>
+ #include <linux/init.h>
+ #include <linux/highmem.h>
+ #include <asm/cp15.h>
+@@ -201,6 +202,21 @@ static void xsc3_l2_flush_range(unsigned long start, unsigned long end)
+ 	dsb();
+ }
+ 
++static void xsc3_l2_getinfo(struct cacheinfo *this_leaf)
++{
++	unsigned long l2ctype;
++
++	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2ctype));
++
++	this_leaf->type = CACHE_TYPE_UNIFIED;
++	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
++	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET;
++	this_leaf->number_of_sets = CACHE_SET_SIZE(l2ctype);
++	this_leaf->size = this_leaf->coherency_line_size *
++			  this_leaf->number_of_sets *
++			  this_leaf->ways_of_associativity;
++}
++
+ static int __init xsc3_l2_init(void)
+ {
+ 	if (!cpu_is_xsc3() || !xsc3_l2_present())
+@@ -213,6 +229,7 @@ static int __init xsc3_l2_init(void)
+ 		outer_cache.inv_range = xsc3_l2_inv_range;
+ 		outer_cache.clean_range = xsc3_l2_clean_range;
+ 		outer_cache.flush_range = xsc3_l2_flush_range;
++		outer_cache.get_info    = xsc3_l2_getinfo;
+ 	}
+ 
+ 	return 0;
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.1
 
