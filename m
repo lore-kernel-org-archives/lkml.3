@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaI3JmI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:42:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50961 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaI3JmG (ORCPT
+	id S1755415AbaI3Joa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:44:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53728 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750791AbaI3Jo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:42:06 -0400
-Message-ID: <542A7ADA.4010500@ti.com>
-Date: Tue, 30 Sep 2014 12:41:46 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 30 Sep 2014 05:44:28 -0400
+Date: Tue, 30 Sep 2014 11:44:23 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] video: move mediabus format definition to a more
+ standard place
+Message-ID: <20140930114423.3a171aa9@bbrezillon>
+In-Reply-To: <20140930083952.GA4059@ulmo>
+References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
+	<3849580.CgKEmcV7as@avalon>
+	<20140930093757.003741ac@bbrezillon>
+	<20140930083952.GA4059@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Maarten ter Huurne <maarten@treewalker.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Apelete Seketeli <apelete@seketeli.net>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fonts: Add 6x10 font
-References: <1410263188-10532-1-git-send-email-maarten@treewalker.org>
-In-Reply-To: <1410263188-10532-1-git-send-email-maarten@treewalker.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="UDlSolON19TWuRRWfmEWPpkjnquSHgruB"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---UDlSolON19TWuRRWfmEWPpkjnquSHgruB
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Tue, 30 Sep 2014 10:39:53 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-Hi,
+> On Tue, Sep 30, 2014 at 09:37:57AM +0200, Boris Brezillon wrote:
+> > On Mon, 29 Sep 2014 23:41:09 +0300
+> > Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> [...]
+> > > Incidentally, patch 2/5 in this series is missing a documentation update ;-)
+> > 
+> > Yep, regarding this patch, I wonder if it's really necessary to add
+> > new formats to the v4l2_mbus_pixelcode enum.
+> > If we want to move to this new common definition (across the video
+> > related subsytems), we should deprecate the old enum
+> > v4l2_mbus_pixelcode, and this start by not adding new formats, don't
+> > you think ?
+> 
+> I agree in general, but I think it could prove problematic in practice.
+> If somebody wants to use one of the new codes but is using the V4L2 enum
+> they have a problem.
+> 
+> That said, given that there is now a unified enum people will hopefully
+> start converting drivers to it instead.
 
-On 09/09/14 14:46, Maarten ter Huurne wrote:
-> This font is suitable for framebuffer consoles on devices with a
-> 320x240 screen, to get a reasonable number of characters (53x24) that
-> are still at a readable size.
->=20
-> The font is derived from the existing 6x11 font, but gets 3 extra
-> lines without sacrificing readability. Also I redesigned a some glyhps
-> so they are more distinct and better fill the available space.
->=20
-> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-> ---
->  include/linux/font.h  |    4 +-
->  lib/fonts/Kconfig     |    9 +
->  lib/fonts/Makefile    |    1 +
->  lib/fonts/font_6x10.c | 3086 +++++++++++++++++++++++++++++++++++++++++=
-++++++++
->  lib/fonts/fonts.c     |    4 +
->  5 files changed, 3103 insertions(+), 1 deletion(-)
->  create mode 100644 lib/fonts/font_6x10.c
+I'm more worried about user-space lib/programs as this header is part
+of the uapi...
 
-I think the patch is fine, but there hasn't been any comments or acks
-for this. I'm a bit reluctant to add this much data to the kernel if
-there are no users (except you) for this.
+But let's be optimistic here and keep porting new formats to
+v4l2_mbus_pixelcode enum ;-).
 
-So I'd like to hear at least one "yeah, I could maybe use that font"
-from someone =3D).
+Anyway, I still don't know where to put the documentation. Dropping a
+new video format doc without any context (I mean subdev-formats.xml is
+included in media documentation, but there's no generic video doc yet)
+is a bit weird...
 
- Tomi
-
-
-
---UDlSolON19TWuRRWfmEWPpkjnquSHgruB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUKnraAAoJEPo9qoy8lh71fk8P/jKgB82TJc1+03Us6dAi3TI5
-Z3rVogoMsrqTp2xH3VvjfCC+KwM0RonZ4AaPUTY4p1545sZ+W9sRK2C+5XMRJ40q
-cL8NcdppWe6Mm/5ADaDKB/a5zQOXNwCTd+/yEtENV9YWuLZkVvi910diDR2uJiJ4
-3Kfl/FjST3No+6VqLKKrrqX4VJ25jUl3KK0SXRMhKUd6SIYrEUbsvIQQAhAdZcpl
-BqZyoKS3/X3m0HrQQC5dRsyOkpTZxIHA/Ia0uXqAYCFv4utif2hjSILWdAOvqTMH
-Ty9zbaIMn5vE2ZzMJ0huCmCpwk7ofeHFtqEKdITGhXyrmxXsw5vsz0ht5WQ6TJPy
-ZZLYqmXHqKZiMEZR4GyCUzD2oK/DHcRT9sgqNqOX3XPnIDrCOhGuLjeDiQfMwQsG
-vP9u+Lrvey8vi8E0EKp5h/grN85bT4ciAT8GLT4CWJOPILj5Kw5YgPNV38glnxxb
-ctvu9dxqYBd4TlQEKP4kFDGUTqyi8PSCBVsUGKu4GG8quUFtZm1j6Q69PGYVl0IV
-7/sdleCMS1iSe+bi4OpAyKuqMXSYu0W7XA+3CFh74MwTnO+40vLxj5YheIjffaaw
-WBZFBbT4QK82SX4+IyImh8fgx3hgo9h5xjgY85CNBeHESWuRL8q1CoFdujsjDuxT
-iHC6IFbOhMzw5CgeCgSu
-=G5oz
------END PGP SIGNATURE-----
-
---UDlSolON19TWuRRWfmEWPpkjnquSHgruB--
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
