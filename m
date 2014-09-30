@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210AbaI3V72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:59:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60919 "EHLO
+	id S1755237AbaI3WAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:00:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60903 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684AbaI3VhT (ORCPT
+	with ESMTP id S1751479AbaI3VhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:19 -0400
+	Tue, 30 Sep 2014 17:37:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 074/103] jbd2: fix infinite loop when recovering corrupt journal blocks
-Date: Tue, 30 Sep 2014 14:31:19 -0700
-Message-Id: <1412112708-27356-75-git-send-email-kamal@canonical.com>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 073/103] ext4: update i_disksize coherently with block allocation on error path
+Date: Tue, 30 Sep 2014 14:31:18 -0700
+Message-Id: <1412112708-27356-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,54 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-commit 022eaa7517017efe4f6538750c2b59a804dc7df7 upstream.
+commit 6603120e96eae9a5d6228681ae55c7fdc998d1bb upstream.
 
-When recovering the journal, don't fall into an infinite loop if we
-encounter a corrupt journal block.  Instead, just skip the block and
-return an error, which fails the mount and thus forces the user to run
-a full filesystem fsck.
+In case of delalloc block i_disksize may be less than i_size. So we
+have to update i_disksize each time we allocated and submitted some
+blocks beyond i_disksize.  We weren't doing this on the error paths,
+so fix this.
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
+testcase: xfstest generic/019
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/jbd2/recovery.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index 3b6bb19..00e9703 100644
---- a/fs/jbd2/recovery.c
-+++ b/fs/jbd2/recovery.c
-@@ -426,6 +426,7 @@ static int do_one_pass(journal_t *journal,
- 	int			tag_bytes = journal_tag_bytes(journal);
- 	__u32			crc32_sum = ~0; /* Transactional Checksums */
- 	int			descr_csum_size = 0;
-+	int			block_error = 0;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 23e8c80..2d782aa 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2201,6 +2201,7 @@ static int mpage_map_and_submit_extent(handle_t *handle,
+ 	struct ext4_map_blocks *map = &mpd->map;
+ 	int err;
+ 	loff_t disksize;
++	int progress = 0;
  
- 	/*
- 	 * First thing is to establish what we expect to find in the log
-@@ -598,7 +599,8 @@ static int do_one_pass(journal_t *journal,
- 						       "checksum recovering "
- 						       "block %llu in log\n",
- 						       blocknr);
--						continue;
-+						block_error = 1;
-+						goto skip_write;
- 					}
- 
- 					/* Find a buffer for the new
-@@ -797,7 +799,8 @@ static int do_one_pass(journal_t *journal,
- 				success = -EIO;
+ 	mpd->io_submit.io_end->offset =
+ 				((loff_t)map->m_lblk) << inode->i_blkbits;
+@@ -2217,8 +2218,11 @@ static int mpage_map_and_submit_extent(handle_t *handle,
+ 			 * is non-zero, a commit should free up blocks.
+ 			 */
+ 			if ((err == -ENOMEM) ||
+-			    (err == -ENOSPC && ext4_count_free_clusters(sb)))
++			    (err == -ENOSPC && ext4_count_free_clusters(sb))) {
++				if (progress)
++					goto update_disksize;
+ 				return err;
++			}
+ 			ext4_msg(sb, KERN_CRIT,
+ 				 "Delayed block allocation failed for "
+ 				 "inode %lu at logical offset %llu with"
+@@ -2235,15 +2239,17 @@ static int mpage_map_and_submit_extent(handle_t *handle,
+ 			*give_up_on_write = true;
+ 			return err;
  		}
- 	}
--
-+	if (block_error && success == 0)
-+		success = -EIO;
- 	return success;
++		progress = 1;
+ 		/*
+ 		 * Update buffer state, submit mapped pages, and get us new
+ 		 * extent to map
+ 		 */
+ 		err = mpage_map_and_submit_buffers(mpd);
+ 		if (err < 0)
+-			return err;
++			goto update_disksize;
+ 	} while (map->m_len);
  
-  failed:
++update_disksize:
+ 	/*
+ 	 * Update on-disk size after IO is submitted.  Races with
+ 	 * truncate are avoided by checking i_size under i_data_sem.
 -- 
 1.9.1
 
