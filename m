@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbaI3WCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:02:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60876 "EHLO
+	id S1755339AbaI3WDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:03:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509AbaI3Vgv (ORCPT
+	with ESMTP id S1753470AbaI3Vgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:36:51 -0400
+	Tue, 30 Sep 2014 17:36:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 069/103] ARM: 8128/1: abort: don't clear the exclusive monitors
-Date: Tue, 30 Sep 2014 14:31:14 -0700
-Message-Id: <1412112708-27356-70-git-send-email-kamal@canonical.com>
+Cc: Joerg Roedel <jroedel@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 022/103] iommu/amd: Fix cleanup_domain for mass device removal
+Date: Tue, 30 Sep 2014 14:30:27 -0700
+Message-Id: <1412112708-27356-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -28,76 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Joerg Roedel <jroedel@suse.de>
 
-commit 85868313177700d20644263a782351262d2aff84 upstream.
+commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
 
-The ARMv6 and ARMv7 early abort handlers clear the exclusive monitors
-upon entry to the kernel, but this is redundant:
+When multiple devices are detached in __detach_device, they
+are also removed from the domains dev_list. This makes it
+unsafe to use list_for_each_entry_safe, as the next pointer
+might also not be in the list anymore after __detach_device
+returns. So just repeatedly remove the first element of the
+list until it is empty.
 
-  - We clear the monitors on every exception return since commit
-    200b812d0084 ("Clear the exclusive monitor when returning from an
-    exception"), so this is not necessary to ensure the monitors are
-    cleared before returning from a fault handler.
-
-  - Any dummy STREX will target a temporary scratch area in memory, and
-    may succeed or fail without corrupting useful data. Its status value
-    will not be used.
-
-  - Any other STREX in the kernel must be preceded by an LDREX, which
-    will initialise the monitors consistently and will not depend on the
-    earlier state of the monitors.
-
-Therefore we have no reason to care about the initial state of the
-exclusive monitors when a data abort is taken, and clearing the monitors
-prior to exception return (as we already do) is sufficient.
-
-This patch removes the redundant clearing of the exclusive monitors from
-the early abort handlers.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Tested-by: Marti Raudsepp <marti@juffo.org>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mm/abort-ev6.S | 6 ------
- arch/arm/mm/abort-ev7.S | 6 ------
- 2 files changed, 12 deletions(-)
+ drivers/iommu/amd_iommu.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mm/abort-ev6.S b/arch/arm/mm/abort-ev6.S
-index 3815a82..8c48c5c 100644
---- a/arch/arm/mm/abort-ev6.S
-+++ b/arch/arm/mm/abort-ev6.S
-@@ -17,12 +17,6 @@
-  */
- 	.align	5
- ENTRY(v6_early_abort)
--#ifdef CONFIG_CPU_V6
--	sub	r1, sp, #4			@ Get unused stack location
--	strex	r0, r1, [r1]			@ Clear the exclusive monitor
--#elif defined(CONFIG_CPU_32v6K)
--	clrex
--#endif
- 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
- 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
- /*
-diff --git a/arch/arm/mm/abort-ev7.S b/arch/arm/mm/abort-ev7.S
-index 7033752..4812ad0 100644
---- a/arch/arm/mm/abort-ev7.S
-+++ b/arch/arm/mm/abort-ev7.S
-@@ -13,12 +13,6 @@
-  */
- 	.align	5
- ENTRY(v7_early_abort)
--	/*
--	 * The effect of data aborts on on the exclusive access monitor are
--	 * UNPREDICTABLE. Do a CLREX to clear the state
--	 */
--	clrex
--
- 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
- 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 76e579a..1d3e371 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3227,14 +3227,16 @@ free_domains:
  
+ static void cleanup_domain(struct protection_domain *domain)
+ {
+-	struct iommu_dev_data *dev_data, *next;
++	struct iommu_dev_data *entry;
+ 	unsigned long flags;
+ 
+ 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
+ 
+-	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
+-		__detach_device(dev_data);
+-		atomic_set(&dev_data->bind, 0);
++	while (!list_empty(&domain->dev_list)) {
++		entry = list_first_entry(&domain->dev_list,
++					 struct iommu_dev_data, list);
++		__detach_device(entry);
++		atomic_set(&entry->bind, 0);
+ 	}
+ 
+ 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
 -- 
 1.9.1
 
