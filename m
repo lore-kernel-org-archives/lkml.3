@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaI3VeU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:34:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60792 "EHLO
+	id S1753344AbaI3Vg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:36:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60833 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaI3VcB (ORCPT
+	with ESMTP id S1752163AbaI3VgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:32:01 -0400
+	Tue, 30 Sep 2014 17:36:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Forshaw <forshaw@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Aaro Koskinen <aaro.koskinen@nsn.com>,
+        James Hogan <james.hogan@imgtec.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 006/103] USB: whiteheat: Added bounds checking for bulk command response
-Date: Tue, 30 Sep 2014 14:30:11 -0700
-Message-Id: <1412112708-27356-7-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 029/103] MIPS: OCTEON: make get_system_type() thread-safe
+Date: Tue, 30 Sep 2014 14:30:34 -0700
+Message-Id: <1412112708-27356-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -28,48 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Forshaw <forshaw@google.com>
+From: Aaro Koskinen <aaro.koskinen@nsn.com>
 
-commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
+commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
 
-This patch fixes a potential security issue in the whiteheat USB driver
-which might allow a local attacker to cause kernel memory corrpution. This
-is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
-EHCI and XHCI busses it's possible to craft responses greater than 64
-bytes leading a buffer overflow.
+get_system_type() is not thread-safe on OCTEON. It uses static data,
+also more dangerous issue is that it's calling cvmx_fuse_read_byte()
+every time without any synchronization. Currently it's possible to get
+processes stuck looping forever in kernel simply by launching multiple
+readers of /proc/cpuinfo:
 
-Signed-off-by: James Forshaw <forshaw@google.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	...
+
+Fix by initializing the system type string only once during the early
+boot.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
+Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: http://patchwork.linux-mips.org/patch/7437/
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/whiteheat.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/mips/cavium-octeon/setup.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
-index 36a7740..cc5a430 100644
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -521,6 +521,10 @@ static void command_port_read_callback(struct urb *urb)
- 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
- 		return;
- 	}
-+	if (!urb->actual_length) {
-+		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
-+		return;
-+	}
- 	if (status) {
- 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
- 		if (status != -ENOENT)
-@@ -541,7 +545,8 @@ static void command_port_read_callback(struct urb *urb)
- 		/* These are unsolicited reports from the firmware, hence no
- 		   waiting command to wakeup */
- 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
--	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
-+	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
-+		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
- 		memcpy(command_info->result_buffer, &data[1],
- 						urb->actual_length - 1);
- 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index 331b837..270cb3c 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -458,6 +458,18 @@ static void octeon_halt(void)
+ 	octeon_kill_core(NULL);
+ }
+ 
++static char __read_mostly octeon_system_type[80];
++
++static int __init init_octeon_system_type(void)
++{
++	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
++		cvmx_board_type_to_string(octeon_bootinfo->board_type),
++		octeon_model_get_string(read_c0_prid()));
++
++	return 0;
++}
++early_initcall(init_octeon_system_type);
++
+ /**
+  * Return a string representing the system type
+  *
+@@ -465,11 +477,7 @@ static void octeon_halt(void)
+  */
+ const char *octeon_board_type_string(void)
+ {
+-	static char name[80];
+-	sprintf(name, "%s (%s)",
+-		cvmx_board_type_to_string(octeon_bootinfo->board_type),
+-		octeon_model_get_string(read_c0_prid()));
+-	return name;
++	return octeon_system_type;
+ }
+ 
+ const char *get_system_type(void)
 -- 
 1.9.1
 
