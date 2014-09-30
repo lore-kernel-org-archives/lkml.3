@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaI3TfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:35:18 -0400
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:46036 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaI3TfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:35:16 -0400
-Message-ID: <542b05f3.a2db440a.5533.fffffba9@mx.google.com>
-From: celina59827@googlemail.com
-X-Google-Original-From: CELINA59827@gmail.com
-To: linux-kernel@vger.kernel.org
-Reply-To: limpid75154@gmail.com
-Subject: Re: Guaranteed Top 10 Google Placements for mail-archive.com In 100
- Days
-Date: Wed, 1 Oct 2014 01:05:15 +0530
+	id S1751662AbaI3Tgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:36:55 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:13418 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760AbaI3Tgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 15:36:54 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Jyri Sarha <jsarha@ti.com>, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH linux-next] clk-gpio-gate: include gpio/consumer to fix build
+Date: Tue, 30 Sep 2014 21:36:43 +0200
+Message-Id: <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140930162635.GA7135@roeck-us.net>
+References: <20140930162635.GA7135@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sir / Mam
+This fixes the following build error:
 
-We would like to have a chance to work on your website and get it positioned top 10 on major search engines around the world ( Google & Bing ). We are presently working with 500+ clients world wide and we have made sure all our clients rank top 10 for their best keywords. None of our clients have been caught in any of the recent google updates. We only use ethical white hat methods to deliver rankings. Our search engine packages include both onsite & off optimization, we provide complete SEO solution to our clients and not just link building packages.
+  drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_enable’:
+  drivers/clk/clk-gpio-gate.c:36:2: error: implicit declaration of function ‘gpiod_set_value’ [-Werror=implicit-function-declaration]
+  drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_is_enabled’:
+  drivers/clk/clk-gpio-gate.c:52:2: error: implicit declaration of function ‘gpiod_get_value’ [-Werror=implicit-function-declaration]
+  drivers/clk/clk-gpio-gate.c: In function ‘clk_register_gpio_gate’:
+  drivers/clk/clk-gpio-gate.c:79:2: error: implicit declaration of function ‘gpiod_is_active_low’ [-Werror=implicit-function-declaration]
+  drivers/clk/clk-gpio-gate.c:85:3: error: implicit declaration of function ‘desc_to_gpio’ [-Werror=implicit-function-declaration]
+  drivers/clk/clk-gpio-gate.c:125:2: error: implicit declaration of function ‘gpiod_put’ [-Werror=implicit-function-declaration]
+  drivers/clk/clk-gpio-gate.c: In function ‘of_clk_gpio_gate_delayed_register_get’:
+  drivers/clk/clk-gpio-gate.c:169:2: error: implicit declaration of function ‘gpio_to_desc’ [-Werror=implicit-function-declaration]
 
-We understand there are many SEO Scam companies mailing you each day over and over again and I am also sure you have been robbed off a few times in past with no results at all. To make sure you we show you our WORTH, we have launched 15 DAY FREE SEO TRIAL service. We want to build your faith in our service and make sure you see results before paying for our service.
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Jyri Sarha <jsarha@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+---
 
-Is 15 days Enough time to deliver results ?
+Hi,
 
-15 days is good enough a time to show you huge movements in rankings for all your keywords. We start with A) choosing the best keywords for your website, B)  Approve a final list of keywords, C) Make onsite changes D) Build links for your website. If in these 15 days you are not happy with our performance, you can cancel or decide to opt-out. You will not be billed a single dime for these 15 days.
+This can be seen with e.g. linux next-20140930 and arm alldefconfig.
 
-Post Trial Pricing & Package
+Best regards,
 
-In the 15 days trial, we only work for 10 keywords so that we can show best possible results in the time span. Once the trial is over you pick one of the packages listed below :
+V.
 
-Package A ) $99 / month (10 keywords optimized ) Package B ) $149 / month ( 20 keywords optimized ) Package C ) $199 / month ( 30 keywords optimized )
+ drivers/clk/clk-gpio-gate.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-To Sign up for our free trial email us back with the information below so we can send you our sign up link.
+diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
+index 9dde885..08e4322 100644
+--- a/drivers/clk/clk-gpio-gate.c
++++ b/drivers/clk/clk-gpio-gate.c
+@@ -13,6 +13,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
+ #include <linux/of_gpio.h>
+ #include <linux/err.h>
+ #include <linux/device.h>
+-- 
+2.1.0
 
-1) " Website You Want To Optimize "
-2) Keywords ( Optional )
-3) SEO Done Before ( Yes / No )
-
-Looking forward working with you, let us know if you would like to have more information about our company and procedures.
-Regards
-
-Mishika Sahai
-SEO Manager : T.O.B
-7 B Green Avenue, Amritsar Punjab
-
-----------------------------------------------------------------------------------------------------------------
-
-Our email above is not intended to waste your time or fill your inbox with spam. If you would not like to hear from us, email us back with NOT INTERESTED. We will never email you again.
