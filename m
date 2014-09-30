@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaI3Vj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:39:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32991 "EHLO
+	id S1754566AbaI3VkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:40:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33001 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313AbaI3VjX (ORCPT
+	with ESMTP id S1752421AbaI3VjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:23 -0400
+	Tue, 30 Sep 2014 17:39:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chen-Yu Tsai <wens@csie.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 098/103] i2c: mv64xxx: continue probe when clock-frequency is missing
-Date: Tue, 30 Sep 2014 14:31:43 -0700
-Message-Id: <1412112708-27356-99-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 092/103] ALSA: hda - Fix digital mic on Acer Aspire 3830TG
+Date: Tue, 30 Sep 2014 14:31:37 -0700
+Message-Id: <1412112708-27356-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,48 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen-Yu Tsai <wens@csie.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0ce4bc1dbdd911ae1763e2d4ff36bd1b214a59f7 upstream.
+commit ff50479ad61069f3ee14863225aebe36d598e93e upstream.
 
-The "clock-frequency" DT property is listed as optional, However,
-the current code stores the return value of of_property_read_u32 in
-the return code of mv64xxx_of_config, but then forgets to clear it
-after setting the default value of "clock-frequency". It is then
-passed out to the main probe function, resulting in a probe failure
-when "clock-frequency" is missing.
+Acer Aspire 3830TG with CX20588 codec has a digital built-in mic that
+has the same problem like many others, the inverted signal in stereo.
+Apply the same fixup to this machine, too.
 
-This patch checks and then throws away the return value of
-of_property_read_u32, instead of storing it and having to clear it
-afterwards.
-
-This issue was discovered after the property was removed from all
-sunxi DTs.
-
-Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-mv64xxx.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-mv64xxx.c b/drivers/i2c/busses/i2c-mv64xxx.c
-index d52d849..cf89175 100644
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -748,8 +748,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_data *drv_data,
- 	}
- 	tclk = clk_get_rate(drv_data->clk);
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 3fbf288..e190f3c 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3237,6 +3237,7 @@ enum {
+ 	CXT_FIXUP_HEADPHONE_MIC_PIN,
+ 	CXT_FIXUP_HEADPHONE_MIC,
+ 	CXT_FIXUP_GPIO1,
++	CXT_FIXUP_ASPIRE_DMIC,
+ 	CXT_FIXUP_THINKPAD_ACPI,
+ };
  
--	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
--	if (rc)
-+	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
- 		bus_freq = 100000; /* 100kHz by default */
+@@ -3490,6 +3491,12 @@ static const struct hda_fixup cxt_fixups[] = {
+ 			{ }
+ 		},
+ 	},
++	[CXT_FIXUP_ASPIRE_DMIC] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = cxt_fixup_stereo_dmic,
++		.chained = true,
++		.chain_id = CXT_FIXUP_GPIO1,
++	},
+ 	[CXT_FIXUP_THINKPAD_ACPI] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = cxt_fixup_thinkpad_acpi,
+@@ -3503,7 +3510,7 @@ static const struct snd_pci_quirk cxt5051_fixups[] = {
  
- 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
+ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
+-	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_GPIO1),
++	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_ASPIRE_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x138d, "Asus", CXT_FIXUP_HEADPHONE_MIC_PIN),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
 -- 
 1.9.1
 
