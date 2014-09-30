@@ -1,743 +1,523 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaI3Ke0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:34:26 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56687 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaI3KeY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:34:24 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 30 Sep 2014 12:31:37 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Muthu Mani <muth@cypress.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rajaram Regupathy <rera@cypress.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: Re: [PATCH v2 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C
- adapter
-Message-ID: <20140930103137.GA24736@localhost>
-References: <1411624275-5557-1-git-send-email-muth@cypress.com>
+	id S1751452AbaI3Kem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:34:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55694 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751221AbaI3Kek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:34:40 -0400
+Date: Tue, 30 Sep 2014 12:34:35 +0200
+From: Petr Mladek <pmladek@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] dlm: Use seq_is_full - remove seq_printf returns
+Message-ID: <20140930103435.GC2707@dhcp128.suse.cz>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+ <cover.1412031505.git.joe@perches.com>
+ <43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411624275-5557-1-git-send-email-muth@cypress.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 11:21:15AM +0530, Muthu Mani wrote:
-> Adds support for USB-I2C interface of Cypress Semiconductor
-> CYUSBS234 USB-Serial Bridge controller.
+On Mon 29-09-14 16:08:23, Joe Perches wrote:
+> The seq_printf return should be ignored and the
+> seq_is_full function should be tested instead.
 > 
-> The read/write operation is setup using vendor command through control endpoint
-> and actual data transfer happens through bulk in/out endpoints.
+> Convert functions returning int to void where
+> seq_printf is used.
 > 
-> Details about the device can be found at:
-> http://www.cypress.com/?rID=84126
-> 
-> Signed-off-by: Muthu Mani <muth@cypress.com>
-> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/i2c/busses/Kconfig         |  12 +
->  drivers/i2c/busses/Makefile        |   1 +
->  drivers/i2c/busses/i2c-cyusbs23x.c | 514 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 527 insertions(+)
->  create mode 100644 drivers/i2c/busses/i2c-cyusbs23x.c
+>  fs/dlm/debug_fs.c | 248 +++++++++++++++++++++++++-----------------------------
+>  1 file changed, 116 insertions(+), 132 deletions(-)
 > 
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index 2ac87fa..1fdc6ec 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -848,6 +848,18 @@ config I2C_RCAR
+> diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
+> index 1323c56..27c8335 100644
+> --- a/fs/dlm/debug_fs.c
+> +++ b/fs/dlm/debug_fs.c
+> @@ -48,8 +48,8 @@ static char *print_lockmode(int mode)
+>  	}
+>  }
 >  
->  comment "External I2C/SMBus adapter drivers"
+> -static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> -			      struct dlm_rsb *res)
+> +static void print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +			       struct dlm_rsb *res)
+>  {
+>  	seq_printf(s, "%08x %s", lkb->lkb_id, print_lockmode(lkb->lkb_grmode));
 >  
-> +config I2C_CYUSBS23X
-> +        tristate "CYUSBS23x I2C adapter"
-> +        depends on MFD_CYUSBS23X && USB
-> +        help
-> +	  Say yes if you would like to access Cypress CYUSBS23x I2C device.
-> +
-> +	  This driver enables the I2C interface of CYUSBS23x USB Serial Bridge
-> +	  controller.
-> +
-> +	  This driver can also be built as a module. If so, the module will be
-> +	  called i2c-cyusbs23x.
-> +
->  config I2C_DIOLAN_U2C
->  	tristate "Diolan U2C-12 USB adapter"
->  	depends on USB
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 49bf07e..cbf28cb 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -84,6 +84,7 @@ obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
->  obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
+> @@ -68,21 +68,17 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  	if (lkb->lkb_wait_type)
+>  		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
 >  
->  # External I2C/SMBus adapter drivers
-> +obj-$(CONFIG_I2C_CYUSBS23X)	+= i2c-cyusbs23x.o
->  obj-$(CONFIG_I2C_DIOLAN_U2C)	+= i2c-diolan-u2c.o
->  obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
->  obj-$(CONFIG_I2C_PARPORT_LIGHT)	+= i2c-parport-light.o
-> diff --git a/drivers/i2c/busses/i2c-cyusbs23x.c b/drivers/i2c/busses/i2c-cyusbs23x.c
-> new file mode 100644
-> index 0000000..5cf60f0
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-cyusbs23x.c
-> @@ -0,0 +1,514 @@
+> -	return seq_puts(s, "\n");
+> +	seq_puts(s, "\n");
+>  }
+>  
+> -static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+> +static void print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  {
+>  	struct dlm_lkb *lkb;
+>  	int i, lvblen = res->res_ls->ls_lvblen, recover_list, root_list;
+> -	int rv;
+>  
+>  	lock_rsb(res);
+>  
+> -	rv = seq_printf(s, "\nResource %p Name (len=%d) \"",
+> -			res, res->res_length);
+> -	if (rv)
+> -		goto out;
+> +	seq_printf(s, "\nResource %p Name (len=%d) \"", res, res->res_length);
+
+To keep the functionality, we should add
+
+	if(seq_overflow(s))
+		goto out;
+
+  
+>  	for (i = 0; i < res->res_length; i++) {
+>  		if (isprint(res->res_name[i]))
+> @@ -92,17 +88,16 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  	}
+>  
+>  	if (res->res_nodeid > 0)
+> -		rv = seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+> -				res->res_nodeid);
+> +		seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
+> +			   res->res_nodeid);
+>  	else if (res->res_nodeid == 0)
+> -		rv = seq_puts(s, "\"\nMaster Copy\n");
+> +		seq_puts(s, "\"\nMaster Copy\n");
+>  	else if (res->res_nodeid == -1)
+> -		rv = seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+> -			   	res->res_first_lkid);
+> +		seq_printf(s, "\"\nLooking up master (lkid %x)\n",
+> +			   res->res_first_lkid);
+>  	else
+> -		rv = seq_printf(s, "\"\nInvalid master %d\n",
+> -				res->res_nodeid);
+> -	if (rv)
+> +		seq_printf(s, "\"\nInvalid master %d\n", res->res_nodeid);
+> +	if (seq_is_full(s))
+>  		goto out;
+
+I would check for seq_overflow()
+
+Etc. There are needed many more changes if we agree on introducing
+seq_is_full() and seq_overflow().
+
+Well, we will need to touch most of these locations once again when
+Steven removes return value from all the seq_* functions.
+
+Best Regards,
+Petr
+
+>  	/* Print the LVB: */
+> @@ -116,8 +111,8 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  		}
+>  		if (rsb_flag(res, RSB_VALNOTVALID))
+>  			seq_puts(s, " (INVALID)");
+> -		rv = seq_puts(s, "\n");
+> -		if (rv)
+> +		seq_puts(s, "\n");
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+> @@ -125,32 +120,30 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  	recover_list = !list_empty(&res->res_recover_list);
+>  
+>  	if (root_list || recover_list) {
+> -		rv = seq_printf(s, "Recovery: root %d recover %d flags %lx "
+> -				"count %d\n", root_list, recover_list,
+> -			   	res->res_flags, res->res_recover_locks_count);
+> -		if (rv)
+> -			goto out;
+> +		seq_printf(s, "Recovery: root %d recover %d flags %lx count %d\n",
+> +			   root_list, recover_list,
+> +			   res->res_flags, res->res_recover_locks_count);
+>  	}
+>  
+>  	/* Print the locks attached to this resource */
+>  	seq_puts(s, "Granted Queue\n");
+>  	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	seq_puts(s, "Conversion Queue\n");
+>  	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	seq_puts(s, "Waiting Queue\n");
+>  	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format1_lock(s, lkb, res);
+> -		if (rv)
+> +		print_format1_lock(s, lkb, res);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+> @@ -159,23 +152,23 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
+>  
+>  	seq_puts(s, "Lookup Queue\n");
+>  	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
+> -		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
+> -				print_lockmode(lkb->lkb_rqmode));
+> +		seq_printf(s, "%08x %s",
+> +			   lkb->lkb_id, print_lockmode(lkb->lkb_rqmode));
+>  		if (lkb->lkb_wait_type)
+>  			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
+> -		rv = seq_puts(s, "\n");
+> +		seq_puts(s, "\n");
+> +		if (seq_is_full(s))
+> +			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(res);
+> -	return rv;
+>  }
+>  
+> -static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> -			      struct dlm_rsb *r)
+> +static void print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +			       struct dlm_rsb *r)
+>  {
+>  	u64 xid = 0;
+>  	u64 us;
+> -	int rv;
+>  
+>  	if (lkb->lkb_flags & DLM_IFL_USER) {
+>  		if (lkb->lkb_ua)
+> @@ -188,103 +181,97 @@ static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  	/* id nodeid remid pid xid exflags flags sts grmode rqmode time_us
+>  	   r_nodeid r_len r_name */
+>  
+> -	rv = seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+> -			lkb->lkb_id,
+> -			lkb->lkb_nodeid,
+> -			lkb->lkb_remid,
+> -			lkb->lkb_ownpid,
+> -			(unsigned long long)xid,
+> -			lkb->lkb_exflags,
+> -			lkb->lkb_flags,
+> -			lkb->lkb_status,
+> -			lkb->lkb_grmode,
+> -			lkb->lkb_rqmode,
+> -			(unsigned long long)us,
+> -			r->res_nodeid,
+> -			r->res_length,
+> -			r->res_name);
+> -	return rv;
+> +	seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
+> +		   lkb->lkb_id,
+> +		   lkb->lkb_nodeid,
+> +		   lkb->lkb_remid,
+> +		   lkb->lkb_ownpid,
+> +		   (unsigned long long)xid,
+> +		   lkb->lkb_exflags,
+> +		   lkb->lkb_flags,
+> +		   lkb->lkb_status,
+> +		   lkb->lkb_grmode,
+> +		   lkb->lkb_rqmode,
+> +		   (unsigned long long)us,
+> +		   r->res_nodeid,
+> +		   r->res_length,
+> +		   r->res_name);
+>  }
+>  
+> -static int print_format2(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format2(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	struct dlm_lkb *lkb;
+> -	int rv = 0;
+>  
+>  	lock_rsb(r);
+>  
+>  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format2_lock(s, lkb, r);
+> -		if (rv)
+> +		print_format2_lock(s, lkb, r);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+> -static int print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+> +static void print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
+>  			      int rsb_lookup)
+>  {
+>  	u64 xid = 0;
+> -	int rv;
+>  
+>  	if (lkb->lkb_flags & DLM_IFL_USER) {
+>  		if (lkb->lkb_ua)
+>  			xid = lkb->lkb_ua->xid;
+>  	}
+>  
+> -	rv = seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+> -			lkb->lkb_id,
+> -			lkb->lkb_nodeid,
+> -			lkb->lkb_remid,
+> -			lkb->lkb_ownpid,
+> -			(unsigned long long)xid,
+> -			lkb->lkb_exflags,
+> -			lkb->lkb_flags,
+> -			lkb->lkb_status,
+> -			lkb->lkb_grmode,
+> -			lkb->lkb_rqmode,
+> -			lkb->lkb_last_bast.mode,
+> -			rsb_lookup,
+> -			lkb->lkb_wait_type,
+> -			lkb->lkb_lvbseq,
+> -			(unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+> -			(unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+> -	return rv;
+> +	seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
+> +		   lkb->lkb_id,
+> +		   lkb->lkb_nodeid,
+> +		   lkb->lkb_remid,
+> +		   lkb->lkb_ownpid,
+> +		   (unsigned long long)xid,
+> +		   lkb->lkb_exflags,
+> +		   lkb->lkb_flags,
+> +		   lkb->lkb_status,
+> +		   lkb->lkb_grmode,
+> +		   lkb->lkb_rqmode,
+> +		   lkb->lkb_last_bast.mode,
+> +		   rsb_lookup,
+> +		   lkb->lkb_wait_type,
+> +		   lkb->lkb_lvbseq,
+> +		   (unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
+> +		   (unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
+>  }
+>  
+> -static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	struct dlm_lkb *lkb;
+>  	int i, lvblen = r->res_ls->ls_lvblen;
+>  	int print_name = 1;
+> -	int rv;
+>  
+>  	lock_rsb(r);
+>  
+> -	rv = seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+> -			r,
+> -			r->res_nodeid,
+> -			r->res_first_lkid,
+> -			r->res_flags,
+> -			!list_empty(&r->res_root_list),
+> -			!list_empty(&r->res_recover_list),
+> -			r->res_recover_locks_count,
+> -			r->res_length);
+> -	if (rv)
+> +	seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
+> +		   r,
+> +		   r->res_nodeid,
+> +		   r->res_first_lkid,
+> +		   r->res_flags,
+> +		   !list_empty(&r->res_root_list),
+> +		   !list_empty(&r->res_recover_list),
+> +		   r->res_recover_locks_count,
+> +		   r->res_length);
+> +	if (seq_is_full(s))
+>  		goto out;
+>  
+>  	for (i = 0; i < r->res_length; i++) {
+> @@ -300,8 +287,8 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  		else
+>  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+>  	}
+> -	rv = seq_puts(s, "\n");
+> -	if (rv)
+> +	seq_puts(s, "\n");
+> +	if (seq_is_full(s))
+>  		goto out;
+>  
+>  	if (!r->res_lvbptr)
+> @@ -311,58 +298,55 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
+>  
+>  	for (i = 0; i < lvblen; i++)
+>  		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
+> -	rv = seq_puts(s, "\n");
+> -	if (rv)
+> +	seq_puts(s, "\n");
+> +	if (seq_is_full(s))
+>  		goto out;
+>  
+>   do_locks:
+>  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
+> -		rv = print_format3_lock(s, lkb, 0);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 0);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>  
+>  	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup) {
+> -		rv = print_format3_lock(s, lkb, 1);
+> -		if (rv)
+> +		print_format3_lock(s, lkb, 1);
+> +		if (seq_is_full(s))
+>  			goto out;
+>  	}
+>   out:
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+> -static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+> +static void print_format4(struct dlm_rsb *r, struct seq_file *s)
+>  {
+>  	int our_nodeid = dlm_our_nodeid();
+>  	int print_name = 1;
+> -	int i, rv;
+> +	int i;
+>  
+>  	lock_rsb(r);
+>  
+> -	rv = seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+> -			r,
+> -			r->res_nodeid,
+> -			r->res_master_nodeid,
+> -			r->res_dir_nodeid,
+> -			our_nodeid,
+> -			r->res_toss_time,
+> -			r->res_flags,
+> -			r->res_length);
+> -	if (rv)
+> -		goto out;
+> +	seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
+> +		   r,
+> +		   r->res_nodeid,
+> +		   r->res_master_nodeid,
+> +		   r->res_dir_nodeid,
+> +		   our_nodeid,
+> +		   r->res_toss_time,
+> +		   r->res_flags,
+> +		   r->res_length);
+>  
+>  	for (i = 0; i < r->res_length; i++) {
+>  		if (!isascii(r->res_name[i]) || !isprint(r->res_name[i]))
+> @@ -377,10 +361,9 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
+>  		else
+>  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
+>  	}
+> -	rv = seq_puts(s, "\n");
+> - out:
+> +	seq_puts(s, "\n");
+> +
+>  	unlock_rsb(r);
+> -	return rv;
+>  }
+>  
+>  struct rsbtbl_iter {
+> @@ -390,11 +373,12 @@ struct rsbtbl_iter {
+>  	int header;
+>  };
+>  
+> -/* seq_printf returns -1 if the buffer is full, and 0 otherwise.
+> -   If the buffer is full, seq_printf can be called again, but it
+> -   does nothing and just returns -1.  So, the these printing routines
+> -   periodically check the return value to avoid wasting too much time
+> -   trying to print to a full buffer. */
 > +/*
-> + * I2C subdriver for Cypress CYUSBS234 USB-Serial Bridge controller.
-> + * Details about the device can be found at:
-> + *    http://www.cypress.com/?rID=84126
-> + *
-> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
-> + *
-> + * Author:
-> + *   Rajaram Regupathy <rera@cypress.com>
-> + *
-> + * Additional contributors include:
-> + *   Muthu Mani <muth@cypress.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
+> + * If the buffer is full, seq_printf can be called again, but it
+> + * does nothing.  So, the these printing routines periodically check
+> + * seq_is_full to avoid wasting too much time trying to print to
+> + * a full buffer.
 > + */
-> +
-> +/*
-> + * It exposes sysfs entries under the i2c adapter for getting the i2c transfer
-> + * status, reset i2c read/write module, get/set nak and stop bits.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/errno.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/mutex.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include <linux/usb.h>
-> +#include <linux/i2c.h>
-> +
-> +#include <linux/mfd/cyusbs23x.h>
-> +
-> +#define CY_I2C_MODE_WRITE          1
-> +#define CY_I2C_MODE_READ           0
-
-Make this an enum that you pass to get_status and reset.
-
-> +
-> +#define CY_I2C_XFER_STATUS_LEN     3
-> +
-> +struct cyusbs_i2c_config {
-> +	u32 frequency;        /* Frequency of operation. Only valid values are
-> +				 100KHz and 400KHz */
-
-Multi-line comments should be on the form
-
-	/*
-	 * ...
-	 */
-
-> +	u8 slave_addr;        /* Slave address to be used when in slave mode */
-> +	u8 is_msb_first;      /* Whether to transmit MSB first */
-> +	u8 is_master;         /* Whether block is to be configured as a master:
-> +				 1 - The block functions as I2C master;
-> +				 0 - The block functions as I2C slave */
-> +	u8 s_ignore;          /* Ignore general call in slave mode */
-> +	u8 clock_stretch;     /* Whether to stretch clock in case of no FIFO
-> +				 availability */
-> +	u8 is_loopback;       /* Whether to loop back TX data to RX. Valid
-> +				 only for debug purposes */
-> +	u8 reserved[6];       /* Reserved for future use */
-> +} __packed;
-> +
-> +struct cyusbs_i2c {
-> +	struct i2c_adapter i2c_adapter;
-> +	struct cyusbs_i2c_config *i2c_config;
-> +
-> +	bool is_stop_bit;
-> +	bool is_nak_bit;
-
-What are these for? Document along with attributes (see below).
-
-Seems like use_ rather than is_ would be more appropriate.
-
-> +};
-> +
-> +#define to_cyusbs_i2c(a) container_of(a, struct cyusbs_i2c, i2c_adapter)
-> +
-> +static int cy_i2c_get_status(struct device *d, char *buf, u16 mode);
-> +static int cy_i2c_reset(struct device *d, u16 mode);
-> +
-> +static ssize_t i2c_read_status_show(struct device *d,
-> +				    struct device_attribute *attr, char *buf)
-> +{
-> +	dev_dbg(d, "%s\n", __func__);
-
-Drop this.
-
-> +	return cy_i2c_get_status(d, buf, CY_I2C_MODE_READ);
-
-As already mentioned, you must do some sort of sanity check on the data
-returned from the device before passing it to user space. At a minimum
-you need to make sure it is null-terminated. Again, it is ascii data you
-are reading, right? Please provide some detail.
-
-Note that all sysfs attributes must be documented under
-Documentation/ABI so you can provide the description there (including in
-what format the status is returned).
-
-> +}
-> +
-> +static ssize_t i2c_write_status_show(struct device *d,
-> +				     struct device_attribute *attr, char *buf)
-> +{
-> +	dev_dbg(d, "%s\n", __func__);
-
-Drop this.
-
-> +	return cy_i2c_get_status(d, buf, CY_I2C_MODE_WRITE);
-> +}
-> +
-> +static ssize_t i2c_read_reset_store(struct device *d,
-> +				 struct device_attribute *attr,
-> +				 const char *buf, size_t count)
-> +{
-> +	int ret;
-> +
-> +	if (((count != 1) && (count != 2 || buf[1] != '\n')) || (buf[0] != '1'))
-> +		return -EINVAL;
-
-Use kstrtol (throughout).
-
-> +
-> +	dev_dbg(d, "%s\n", __func__);
-
-Drop.
-
-> +	ret = cy_i2c_reset(d, CY_I2C_MODE_READ);
-> +
-
-No empty line.
-
-> +	if (!ret)
-> +		ret = count;
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t i2c_write_reset_store(struct device *d,
-> +				  struct device_attribute *attr,
-> +				  const char *buf, size_t count)
-> +{
-> +	int ret;
-> +
-> +	if (((count != 1) && (count != 2 || buf[1] != '\n')) || (buf[0] != '1'))
-> +		return -EINVAL;
-> +
-> +	dev_dbg(d, "%s\n", __func__);
-> +	ret = cy_i2c_reset(d, CY_I2C_MODE_WRITE);
-> +
-> +	if (!ret)
-> +		ret = count;
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t is_stop_bit_show(struct device *d,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-> +
-> +	return sprintf(buf, "%d\n", cy_i2c->is_stop_bit);
-
-Always use scnprintf (and PAGE_SIZE).
-
-> +}
-> +
-> +static ssize_t is_stop_bit_store(struct device *d,
-> +				 struct device_attribute *attr,
-> +				 const char *buf, size_t count)
-> +{
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-> +
-> +	if ((count != 1) && (count != 2 || buf[1] != '\n'))
-> +		return -EINVAL;
-> +
-> +	if (buf[0] == '0')
-> +		cy_i2c->is_stop_bit = 0;
-> +	else if (buf[0] == '1')
-> +		cy_i2c->is_stop_bit = 1;
-> +	else
-> +		return -EINVAL;
-> +
-> +	dev_dbg(d, "is_stop_bit=%d buf=%s\n", cy_i2c->is_stop_bit, buf);
-
-Drop.
-
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t is_nak_bit_show(struct device *d,
-> +			       struct device_attribute *attr, char *buf)
-> +{
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-> +
-> +	return sprintf(buf, "%d\n", cy_i2c->is_nak_bit);
-> +}
-> +
-> +static ssize_t is_nak_bit_store(struct device *d,
-> +				struct device_attribute *attr,
-> +				const char *buf, size_t count)
-> +{
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs_i2c *cy_i2c = to_cyusbs_i2c(adapter);
-> +
-> +	if ((count != 1) && (count != 2 || buf[1] != '\n'))
-> +		return -EINVAL;
-> +
-> +	if (buf[0] == '0')
-> +		cy_i2c->is_nak_bit = 0;
-> +	else if (buf[0] == '1')
-> +		cy_i2c->is_nak_bit = 1;
-> +	else
-> +		return -EINVAL;
-> +
-> +	dev_dbg(d, "is_nak_bit=%d buf=%s\n", cy_i2c->is_nak_bit, buf);
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR_RO(i2c_read_status);
-> +static DEVICE_ATTR_RO(i2c_write_status);
-> +static DEVICE_ATTR_WO(i2c_read_reset);
-> +static DEVICE_ATTR_WO(i2c_write_reset);
-> +static DEVICE_ATTR_RW(is_stop_bit);
-> +static DEVICE_ATTR_RW(is_nak_bit);
-> +
-> +static struct attribute *cyusbs_i2c_device_attrs[] = {
-> +	&dev_attr_i2c_read_status.attr,
-> +	&dev_attr_i2c_write_status.attr,
-> +	&dev_attr_i2c_read_reset.attr,
-> +	&dev_attr_i2c_write_reset.attr,
-> +	&dev_attr_is_stop_bit.attr,
-> +	&dev_attr_is_nak_bit.attr,
-> +	NULL
-> +};
-> +
-> +ATTRIBUTE_GROUPS(cyusbs_i2c_device);
-> +
-> +static int cy_i2c_get_status(struct device *d, char *buf, u16 mode)
-
-Cast the struct device * to struct cyusbs23x * in the accessor functions
-and pass that instead (even if it adds a couple of lines).
-
-> +{
-> +	int ret;
-> +	u16 wIndex, wValue, scb_index;
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-> +	char *data;
-> +
-> +	scb_index = cyusbs->intf_num & 0x01;
-
-Why is the least significant bit important here (see my question about
-interface layout in my comments to PATCH 1/3)?
-
-> +	wValue = ((scb_index << CY_SCB_INDEX_POS) | mode);
-> +	wIndex = 0;
-> +	data = kmalloc(CY_I2C_XFER_STATUS_LEN, GFP_KERNEL);
-
-Error handling missing.
-
-> +
-> +	mutex_lock(&cyusbs->lock);
-
-Locking not needed.
-
-> +	/* read the i2c transfer status */
-> +	ret = usb_control_msg(cyusbs->usb_dev,
-> +			usb_rcvctrlpipe(cyusbs->usb_dev, 0),
-> +			CY_I2C_GET_STATUS_CMD,
-> +			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-> +			wValue, wIndex, data, CY_I2C_XFER_STATUS_LEN, 2000);
-
-Use a define for the timeout (throughout).
-
-Error handling missing.
-
-> +	mutex_unlock(&cyusbs->lock);
-> +
-> +	memcpy(buf, data, CY_I2C_XFER_STATUS_LEN);
-> +	kfree(data);
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s: %02x %02x %02x\n", __func__,
-> +		buf[0], buf[1], buf[2]);
-
-Use the i2c rather than interface device here (and below).
-
-> +	return ret;
-> +}
-> +
-> +static int cy_i2c_reset(struct device *d, u16 mode)
-> +{
-> +	int ret;
-> +	u16 wIndex, wValue, scb_index;
-> +	struct i2c_adapter *adapter = to_i2c_adapter(d);
-> +	struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-> +
-> +	scb_index = cyusbs->intf_num & 0x01;
-> +	wValue = ((scb_index << CY_SCB_INDEX_POS) | mode);
-> +	wIndex = 0;
-> +
-> +	mutex_lock(&cyusbs->lock);
-
-Locking not needed.
-
-> +	ret = usb_control_msg(cyusbs->usb_dev,
-> +			usb_sndctrlpipe(cyusbs->usb_dev, 0),
-> +			CY_I2C_RESET_CMD,
-> +			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
-> +			wValue, wIndex, NULL, 0, 2000);
-> +	mutex_unlock(&cyusbs->lock);
-> +	dev_dbg(d, "%s: %d\n", __func__, ret);
-
-Drop.
-
-> +	return ret;
-
-Error handling missing (dev_err).
-
-You shouldn't leak usb specific error codes to user space here. Use
-usb_translate_errors().
-
-> +}
-> +
-> +static int cy_get_i2c_config(struct cyusbs23x *cyusbs,
-> +				struct cyusbs_i2c *cy_i2c)
-> +{
-> +	int ret;
-> +	u16 scb_index;
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s\n", __func__);
-> +
-> +	scb_index = (cyusbs->intf_num & 0x01) << CY_SCB_INDEX_POS;
-> +
-> +	mutex_lock(&cyusbs->lock);
-
-Not needed.
-
-> +	ret = usb_control_msg(cyusbs->usb_dev,
-> +			usb_rcvctrlpipe(cyusbs->usb_dev, 0),
-> +			CY_I2C_GET_CONFIG_CMD,
-> +			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-> +			scb_index, 0, cy_i2c->i2c_config,
-> +			sizeof(*cy_i2c->i2c_config), 2000);
-> +	mutex_unlock(&cyusbs->lock);
-
-Error handling + usb_translate_errors().
-
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s: %d, 0x%02x, %d, %d, %d, %d, %d\n",
-> +		__func__, cy_i2c->i2c_config->frequency,
-> +		cy_i2c->i2c_config->slave_addr,
-> +		cy_i2c->i2c_config->is_msb_first,
-> +		cy_i2c->i2c_config->is_master,
-> +		cy_i2c->i2c_config->s_ignore,
-> +		cy_i2c->i2c_config->clock_stretch,
-> +		cy_i2c->i2c_config->is_loopback);
-
-Please add some description of the values (e.g. "master = %d")-
-
-> +	return ret;
-> +}
-> +
-> +static int cy_i2c_set_data_config(struct cyusbs23x *cyusbs,
-> +				  struct cyusbs_i2c *cy_i2c, u16 slave_addr,
-> +				  u16 length, u8 command)
-> +{
-> +	int ret;
-> +	u16 wIndex, wValue;
-> +	u16 scb_index;
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s\n", __func__);
-
-i2c dev
-
-> +
-> +	scb_index = (cyusbs->intf_num & 0x01) << 7;
-
-Different shift here (i.e. not CY_SCB_INDEX_POS)?
-
-> +	slave_addr = (slave_addr & 0x7F) | scb_index;
-> +	wValue = cy_i2c->is_stop_bit | cy_i2c->is_nak_bit << 1;
-> +	wValue |= (slave_addr << 8);
-> +	wIndex = length;
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev,
-> +		"%s, cmd=0x%x,val=0x%x,idx=0x%x\n",
-
-Add some whitespace to the message.
-
-> +		__func__, command, wValue, wIndex);
-> +
-> +	ret = usb_control_msg(cyusbs->usb_dev,
-> +		usb_sndctrlpipe(cyusbs->usb_dev, 0),
-> +		command, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
-> +		wValue, wIndex, NULL, 0, 2000);
-> +
-> +	return ret;
-> +}
-> +
-> +static int cy_i2c_read(struct cyusbs23x *cyusbs, struct i2c_msg *msgs)
-> +{
-> +	int ret, actual_read_len = 0;
-
-One declaration per line (especially when initialising).
-
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s\n", __func__);
-
-i2c dev
-
-> +
-> +	ret = usb_bulk_msg(cyusbs->usb_dev,
-> +		usb_rcvbulkpipe(cyusbs->usb_dev, cyusbs->bulk_in_ep_num),
-> +		msgs[0].buf,
-> +		msgs[0].len,
-> +		&actual_read_len, 5000);
-> +
-> +	if (ret)
-> +		dev_dbg(&cyusbs->usb_intf->dev,
-> +			"read %d/%d returned %d\n",
-> +			actual_read_len, msgs[0].len, ret);
-
-dev err, add braces
-
-> +
-> +	return ret;
-> +}
-> +
-> +static int cy_i2c_write(struct cyusbs23x *cyusbs, struct i2c_msg *msgs)
-> +{
-> +	int ret, actual_write_len = 0;
-> +
-> +	dev_dbg(&cyusbs->usb_intf->dev, "%s\n", __func__);
-> +
-> +	ret = usb_bulk_msg(cyusbs->usb_dev,
-> +		usb_sndbulkpipe(cyusbs->usb_dev, cyusbs->bulk_out_ep_num),
-> +		msgs[0].buf,
-> +		msgs[0].len,
-> +		&actual_write_len, 5000);
-> +
-> +	if (ret)
-> +		dev_dbg(&cyusbs->usb_intf->dev,
-> +			"write %d/%d returned %d\n",
-> +			actual_write_len, msgs[0].len, ret);
-> +
-> +	return ret;
-> +}
-> +
-> +static int cy_i2c_xfer(struct i2c_adapter *adapter,
-> +		       struct i2c_msg *msgs, int num)
-> +{
-> +	int ret = 0;
-> +	struct cyusbs_i2c *cy_i2c;
-> +	struct cyusbs23x *cyusbs = (struct cyusbs23x *)adapter->algo_data;
-> +
-> +	dev_dbg(&adapter->dev, "%s\n", __func__);
-> +
-> +	if (num > 1) {
-> +		dev_err(&adapter->dev, "i2c_msg number is > 1\n");
-> +		return -EIO;
-> +	}
-
-Please lift this limitation, as I mentioned before. 
-
-> +
-> +	cy_i2c = to_cyusbs_i2c(adapter);
-> +
-> +	mutex_lock(&cyusbs->lock);
-
-Locking really needed? Are you trying to prevent a reset through sysfs
-while transferring? Why not simply let the transfer fail in that case?
-
-> +	if (msgs[0].flags & I2C_M_RD) {
-> +		dev_dbg(&adapter->dev,
-> +			"I2C read requested for addr 0x%02x, data length %d\n",
-> +			msgs[0].addr, msgs[0].len);
-> +
-> +		ret = cy_i2c_set_data_config(cyusbs, cy_i2c, msgs[0].addr,
-> +				msgs[0].len, CY_I2C_READ_CMD);
-> +
-
-No empty lines (before checking return values throughout).
-
-> +		if (ret < 0) {
-> +			dev_err(&adapter->dev,
-> +				"Set Config (read) failed with %d\n", ret);
-> +			goto io_error;
-> +		}
-> +
-> +		ret = cy_i2c_read(cyusbs, msgs);
-> +		if (ret) {
-> +			dev_err(&adapter->dev,
-> +				"Read failed with error code %d\n", ret);
-> +			goto io_error;
-> +		}
-> +	} else {
-> +		dev_dbg(&adapter->dev,
-> +			"I2C write requested for addr 0x%02x, data length %d\n",
-> +			msgs[0].addr, msgs[0].len);
-> +
-> +		ret = cy_i2c_set_data_config(cyusbs, cy_i2c, msgs[0].addr,
-> +				msgs[0].len, CY_I2C_WRITE_CMD);
-> +
-> +		if (ret < 0) {
-> +			dev_err(&adapter->dev,
-> +			"Set Config (write) failed with %d\n", ret);
-> +			goto io_error;
-> +		}
-> +
-> +		ret = cy_i2c_write(cyusbs, msgs);
-> +		if (ret) {
-> +			dev_err(&adapter->dev,
-> +				"Write failed with error code %d\n", ret);
-> +			goto io_error;
-> +		}
-> +	}
-> +	mutex_unlock(&cyusbs->lock);
-> +	return ret;
-> +
-> +io_error:
-> +	mutex_unlock(&cyusbs->lock);
-> +	return ret;
-> +}
-> +
-> +static u32 cy_i2c_func(struct i2c_adapter *adapter)
-> +{
-> +	dev_dbg(&adapter->dev, "%s\n", __func__);
-
-Drop the debug.
-
-> +	return I2C_FUNC_I2C;
-
-Isn't this too limited?
-
-> +}
-> +
-> +static const struct i2c_algorithm i2c_cyusbs23x_algorithm = {
-> +	.master_xfer	= cy_i2c_xfer,
-> +	.functionality	= cy_i2c_func,
-> +};
-> +
-> +static int cyusbs23x_i2c_probe(struct platform_device *pdev)
-> +{
-> +	struct cyusbs23x *cyusbs;
-> +	struct cyusbs_i2c *cy_i2c;
-> +	int ret = 0;
-> +
-> +	dev_dbg(&pdev->dev, "%s\n", __func__);
-> +
-> +	cyusbs = dev_get_drvdata(pdev->dev.parent);
-> +
-> +	cy_i2c = devm_kzalloc(&pdev->dev, sizeof(*cy_i2c), GFP_KERNEL);
-> +	if (cy_i2c == NULL)
-> +		return -ENOMEM;
-> +
-> +	cy_i2c->i2c_config = kmalloc(sizeof(struct cyusbs_i2c_config),
-> +					GFP_KERNEL);
-
-Don't mix devres allocation and kmalloc here. Stick to either (e.g.
-devres and simplify the error paths).
-
-> +	if (cy_i2c->i2c_config == NULL)
-> +		return -ENOMEM;
-> +
-> +	cy_i2c->is_stop_bit = 1;
-> +	cy_i2c->is_nak_bit = 1;
-> +
-> +	cy_i2c->i2c_adapter.owner = THIS_MODULE;
-> +	cy_i2c->i2c_adapter.class = I2C_CLASS_HWMON;
-> +	cy_i2c->i2c_adapter.algo = &i2c_cyusbs23x_algorithm;
-> +	cy_i2c->i2c_adapter.algo_data = cyusbs;
-> +	snprintf(cy_i2c->i2c_adapter.name, sizeof(cy_i2c->i2c_adapter.name),
-> +			"cyusbs23x_i2c at bus %03d dev %03d intf %03d",
-> +			cyusbs->usb_dev->bus->busnum, cyusbs->usb_dev->devnum,
-> +			cyusbs->intf_num);'
-> +	cy_i2c->i2c_adapter.dev.parent = &pdev->dev;
-> +	cy_i2c->i2c_adapter.dev.groups = cyusbs_i2c_device_groups;
-> +
-> +	ret = cy_get_i2c_config(cyusbs, cy_i2c);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "error to get i2c config\n");
-> +		goto error;
-> +	}
-> +
-> +	if (!cy_i2c->i2c_config->is_master) {
-> +		ret = -EIO;
-
--ENODEV
-
-> +		dev_err(&pdev->dev, "not an I2C master\n");
-> +		goto error;
-> +	}
-> +
-> +	ret = i2c_add_adapter(&cy_i2c->i2c_adapter);
-> +	if (ret != 0) {
-> +		dev_err(&pdev->dev, "failed to add i2c adapter\n");
-> +		goto error;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, cy_i2c);
-> +
-> +	dev_dbg(&pdev->dev, "added I2C adapter\n");
-> +	return 0;
-> +
-> +error:
-> +	dev_dbg(&pdev->dev, "error occured %d\n", ret);
-> +	kfree(cy_i2c->i2c_config);
-> +	return ret;
-> +}
-> +
-> +static int cyusbs23x_i2c_remove(struct platform_device *pdev)
-> +{
-> +	struct cyusbs_i2c *cy_i2c = platform_get_drvdata(pdev);
-> +
-> +	dev_dbg(&pdev->dev, "%s\n", __func__);
-> +	kfree(cy_i2c->i2c_config);
-
-Even if this is not an issue in this case, do not release any adapter
-data until after you've removed it.
-
-> +	i2c_del_adapter(&cy_i2c->i2c_adapter);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver cyusbs23x_i2c_driver = {
-> +	.driver.name	= "cyusbs23x-i2c",
-> +	.driver.owner	= THIS_MODULE,
-> +	.probe		= cyusbs23x_i2c_probe,
-> +	.remove		= cyusbs23x_i2c_remove,
-> +};
-> +
-> +module_platform_driver(cyusbs23x_i2c_driver);
-> +
-> +MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
-> +MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
-> +MODULE_DESCRIPTION("I2C adapter driver for CYUSBS23x");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:cyusbs23x-i2c");
-
-Johan
+>  
+>  static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+>  {
+> @@ -403,7 +387,7 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+>  
+>  	switch (ri->format) {
+>  	case 1:
+> -		rv = print_format1(ri->rsb, seq);
+> +		print_format1(ri->rsb, seq);
+>  		break;
+>  	case 2:
+>  		if (ri->header) {
+> @@ -412,21 +396,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
+>  					"r_nodeid r_len r_name\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format2(ri->rsb, seq);
+> +		print_format2(ri->rsb, seq);
+>  		break;
+>  	case 3:
+>  		if (ri->header) {
+>  			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format3(ri->rsb, seq);
+> +		print_format3(ri->rsb, seq);
+>  		break;
+>  	case 4:
+>  		if (ri->header) {
+>  			seq_printf(seq, "version 4 rsb 2\n");
+>  			ri->header = 0;
+>  		}
+> -		rv = print_format4(ri->rsb, seq);
+> +		print_format4(ri->rsb, seq);
+>  		break;
+>  	}
+>  
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
