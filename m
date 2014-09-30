@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaI3IOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:14:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9877 "EHLO mga01.intel.com"
+	id S1755331AbaI3IQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:16:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52695 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaI3IOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:14:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,625,1406617200"; 
-   d="scan'208";a="607427747"
-Date: Tue, 30 Sep 2014 16:14:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Noonan <steven@uplinklabs.net>
-Cc: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [compiler/gcc4] a9f180345f5: -100.0% last_state.is_incomplete_run
-Message-ID: <20140930081412.GF9561@wfg-t540p.sh.intel.com>
+	id S1751208AbaI3IQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 04:16:39 -0400
+Date: Tue, 30 Sep 2014 10:16:37 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: Please backport commit 3812c8c8f39 to stable
+Message-ID: <20140930081637.GA4456@dhcp22.suse.cz>
+References: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Heirloom mailx 12.5 6/20/10
+In-Reply-To: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Mon 29-09-14 20:43:46, Cong Wang wrote:
+> Hi, Johannes and Greg
+> 
+> 
+> Please consider to backport the following commit to stable kernels < 3.12.
+> 
+> commit 3812c8c8f3953921ef18544110dafc3505c1ac62
+> Author: Johannes Weiner <hannes@cmpxchg.org>
+> Date:   Thu Sep 12 15:13:44 2013 -0700
+> 
+>     mm: memcg: do not trap chargers with full callstack on OOM
+>
+> It should solve some soft lockup I observed on different machines
+> recently. For me myself, I only care about 3.10. :-p
 
-FYI, we noticed that your commit a9f180345f5378ac87d80ed0bea55ba421d83859
-("compiler/gcc4: Make quirk for asm_volatile_goto() unconditional") fixed
-a number of machine boot failures in our LKP test farm. This is really helpful!
-Our gcc version is 4.9.1 (Debian 4.9.1-11).
-
-569d6557ab957d6  a9f180345f5378ac87d80ed0b
----------------  -------------------------
-     %stddev        %change               %stddev
-            \          |                 /
-         1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
-         1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.kernel_BUG_at_fs/nfs/pagelist.c
-
-569d6557ab957d6  a9f180345f5378ac87d80ed0b
----------------  -------------------------
-         1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
-         1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.Kernel_panic-not_syncing:Fatal_exception
-
-569d6557ab957d6  a9f180345f5378ac87d80ed0b
----------------  -------------------------
-         1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
-         1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.invalid_opcode
-
-569d6557ab957d6  a9f180345f5378ac87d80ed0b
----------------  -------------------------
-         1 ± 0%    -100.0%          0 ± 0%  ivb42/will-it-scale/futex4
-         1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-1t-1HDD-xfs-4M-60G-NoSync
-         1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-64t-1BRD_48G-btrfs-4M-40G-fsyncBeforeClose
-         1 ± 0%    -100.0%          0 ± 0%  lkp-bdw01/blogbench/1SSD-btrfs
-         1 ± 0%    -100.0%          0 ± 0%  lkp-hsw01/vm-scalability/300s-anon-rx-rand-mt
-         1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/futex3
-         1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/page_fault3
-         1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
-         8 ± 0%    -100.0%          0 ± 0%  TOTAL last_state.is_incomplete_run
-
-569d6557ab957d6  a9f180345f5378ac87d80ed0b
----------------  -------------------------
-         1 ± 0%    -100.0%          0 ± 0%  ivb42/will-it-scale/futex4
-         1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-1t-1HDD-xfs-4M-60G-NoSync
-         1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-64t-1BRD_48G-btrfs-4M-40G-fsyncBeforeClose
-         1 ± 0%    -100.0%          0 ± 0%  lkp-bdw01/blogbench/1SSD-btrfs
-         1 ± 0%    -100.0%          0 ± 0%  lkp-hsw01/vm-scalability/300s-anon-rx-rand-mt
-         1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/futex3
-         1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/page_fault3
-         1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
-         8 ± 0%    -100.0%          0 ± 0%  TOTAL last_state.booting
-
-Thanks,
-Fengguang
+Could you be more specific about the soft lockup you are seeing?
+-- 
+Michal Hocko
+SUSE Labs
