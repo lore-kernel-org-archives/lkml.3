@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818AbaI3HPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:15:35 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:48239 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaI3HPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:15:32 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: alter device tree bindings for functions
-Date: Tue, 30 Sep 2014 09:15:28 +0200
-Message-Id: <1412061328-20966-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1755227AbaI3HQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:16:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51493 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791AbaI3HQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:16:02 -0400
+Date: Tue, 30 Sep 2014 09:15:55 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com, teg@jklm.no,
+        rmilasan@suse.com, werner@suse.com, oleg@redhat.com, hare@suse.com,
+        bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
+	support
+Message-ID: <20140930071555.GB14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <20140928192247.GA28033@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140928192247.GA28033@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For function and group configuration nodes, use "function"
-"groups" string pairs, not "pins" where there should be
-"groups".
+On Sun, Sep 28, 2014 at 12:22:47PM -0700, Dmitry Torokhov wrote:
+> Hi Luis,
+> 
+> On Fri, Sep 26, 2014 at 02:57:17PM -0700, Luis R. Rodriguez wrote:
+> > +static bool drv_enable_async_probe(struct device_driver *drv,
+> > +				   struct bus_type *bus)
+> > +{
+> > +	struct module *mod;
+> > +
+> > +	if (!drv->owner || drv->sync_probe)
+> > +		return false;
+> 
+> This bit is one of the biggest issues I have with the patch set. Why async
+> probing is limited to modules only?
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- .../bindings/pinctrl/pinctrl-bindings.txt          | 39 ++++++++++++++++------
- 1 file changed, 29 insertions(+), 10 deletions(-)
+Because Tejun wanted to address this separately, so its not that we will restrict
+this but we should have non-module solution added as an evolution on top of this,
+as a secondary step.
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-index fa40a177164c..4f5a0c3af8b9 100644
---- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-@@ -127,6 +127,24 @@ whether there is any interaction between the child and intermediate parent
- nodes, is again defined entirely by the binding for the individual pin
- controller device.
- 
-+== Generic pin multiplexing node content ==
-+
-+pin multiplexing nodes:
-+
-+function		- the mux function to select
-+groups			- the list of groups to select with this function
-+
-+Example:
-+
-+state_0_node_a {
-+	function = "uart0";
-+	groups = "u0rxtx", "u0rtscts";
-+};
-+state_1_node_a {
-+	function = "spi0";
-+	groups = "spi0pins";
-+};
-+
- == Generic pin configuration node content ==
- 
- Many data items that are represented in a pin configuration node are common
-@@ -140,7 +158,6 @@ Supported generic properties are:
- 
- pins			- the list of pins that properties in the node
- 			  apply to
--function		- the mux function to select
- bias-disable		- disable any pin bias
- bias-high-impedance	- high impedance mode ("third-state", "floating")
- bias-bus-hold		- latch weakly
-@@ -163,6 +180,17 @@ output-low		- set the pin to output mode with low level
- output-high		- set the pin to output mode with high level
- slew-rate		- set the slew rate
- 
-+For example:
-+
-+state_0_node_a {
-+	pins = "GPIO0_AJ5", "GPIO2_AH4"; /* CTS+RXD */
-+	bias-pull-up;
-+};
-+state_1_node_a {
-+	pins = "GPIO1_AJ3", "GPIO3_AH3"; /* RTS+TXD */
-+	output-high;
-+};
-+
- Some of the generic properties take arguments. For those that do, the
- arguments are described below.
- 
-@@ -170,15 +198,6 @@ arguments are described below.
-   binding for the hardware defines:
-   - Whether the entries are integers or strings, and their meaning.
- 
--- function takes a list of function names/IDs as a required argument. The
--  specific binding for the hardware defines:
--  - Whether the entries are integers or strings, and their meaning.
--  - Whether only a single entry is allowed (which is applied to all entries
--    in the pins property), or whether there may alternatively be one entry per
--    entry in the pins property, in which case the list lengths must match, and
--    for each list index i, the function at list index i is applied to the pin
--    at list index i.
--
- - bias-pull-up, -down and -pin-default take as optional argument on hardware
-   supporting it the pull strength in Ohm. bias-disable will disable the pull.
- 
--- 
-1.9.3
+> I mentioned several times that we need
+> async probing for built-in drivers and the way you are structuring the flags
+> (async by default for modules, possibly opt-out of async for modules, forcibly
+> sync for built-in) it is hard to extend the infrastructure for built-in case.
 
+I confess I haven't tried enabling built-in as a secondary step but its just
+due to lack of time right now but I don't think impossible and think actually
+think it should be fairly trivial. Are there real blockers to do this that
+you see as an evolutionary step?
+
+> Also, as far as I can see, you are only considering the case where driver is
+> being bound to already registered devices. If you have a module that creates a
+> device for a driver that is already loaded and takes long time to probe you
+> would still be probing synchronously even if driver/module requested async
+> behavior.
+
+Can you provide an example code path hit here? I'll certainly like to address
+that as well.
+
+  Luis
