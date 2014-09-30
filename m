@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaI3Rsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:48:45 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39018 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718AbaI3Rsm (ORCPT
+	id S1752737AbaI3Rx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:53:26 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:57094 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaI3RxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:48:42 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 00/10] power/reset: Register drivers with restart handler
-Date: Tue, 30 Sep 2014 10:48:26 -0700
-Message-Id: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	Tue, 30 Sep 2014 13:53:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOMZO5DOph+nX6UChuWcBnZ_To6=H96ObH0RdYND4g6ooptaeQ@mail.gmail.com>
+References: <1412097587-2779-1-git-send-email-karthik.188@gmail.com> <CAOMZO5DOph+nX6UChuWcBnZ_To6=H96ObH0RdYND4g6ooptaeQ@mail.gmail.com>
+From: karthik nayak <karthik.188@gmail.com>
+Date: Tue, 30 Sep 2014 23:23:03 +0530
+Message-ID: <CAOLa=ZRf1j57vyqzkFVw1GVjyh==CY9iYtssHSnejgYf_+qt3Q@mail.gmail.com>
+Subject: Re: [PATCH] staging: et131x: remove unneccessary 'out of memory' message
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        gamerh2o@gmail.com, Mark Einon <mark.einon@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert drivers to use the kernel restart handler instead of setting
-arm_pm_restart directly.
+Oops, i sent the old commit again, sorry!
+Regards,
+Karthik Nayak
 
-This patch set depends on the kernel restart handler patchset submitted
-earlier.
 
-Patch 01/10 was tested with qemu. All other patches were compile tested only.
-
-Some of the restart handlers loop forever after the reset instruction was
-executed. It might makes sense to use mdelay() instead and return if resetting
-the system failed. I did not implement that since I do not know what reasonable
-delays would be.
-
-The series does not include drivers to be introduced in the next commit window
-(at91, versatile, st-poweroff). Those can be converted later. I also did not
-convert the sun6i driver, in the assumption that it will be removed since the
-sunxi watchdog driver will register a restart handler for the architecture.
-
-v2: Added Tested-by: and Acked-by: tags where received.
-    Return error if restart handler registration fails.
+On Tue, Sep 30, 2014 at 11:10 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> On Tue, Sep 30, 2014 at 2:19 PM, Karthik Nayak <karthik.188@gmail.com> wrote:
+>> Removes the 'out of memory' warning issues by checkpatch
+>>
+>> Signed-off-by: Karthik Nayak <karthik.188@gmail.com>
+>> ---
+>>  drivers/staging/et131x/et131x.c | 1 -
+>>  1 file changed, 1 deletion(-)
+>>
+>> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+>> index 41fcaa0..f1a9296 100644
+>> --- a/drivers/staging/et131x/et131x.c
+>> +++ b/drivers/staging/et131x/et131x.c
+>> @@ -2423,7 +2423,6 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
+>>
+>>         skb = dev_alloc_skb(rfd->len + 2);
+>>         if (!skb) {
+>> -               dev_err(&adapter->pdev->dev, "Couldn't alloc an SKB for Rx\n");
+>>                 return NULL;
+>>         }
+>
+> Then you could also remove the braces:
+>
+> if (!skb)
+>       return NULL;
