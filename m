@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaI3HQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:16:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51493 "EHLO mx2.suse.de"
+	id S1755293AbaI3HQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37468 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791AbaI3HQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:16:02 -0400
-Date: Tue, 30 Sep 2014 09:15:55 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        tiwai@suse.de, tj@kernel.org, arjan@linux.intel.com, teg@jklm.no,
-        rmilasan@suse.com, werner@suse.com, oleg@redhat.com, hare@suse.com,
-        bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
-	support
-Message-ID: <20140930071555.GB14081@wotan.suse.de>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <20140928192247.GA28033@core.coreip.homeip.net>
+	id S1751492AbaI3HQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:16:46 -0400
+Date: Tue, 30 Sep 2014 09:16:27 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH v2 1/2] perf callchain: Create an address space per thread
+Message-ID: <20140930071627.GA27883@krava.brq.redhat.com>
+References: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
+ <20140929083452.GA1223@krava.brq.redhat.com>
+ <87vbo5hc3a.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140928192247.GA28033@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <87vbo5hc3a.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 12:22:47PM -0700, Dmitry Torokhov wrote:
-> Hi Luis,
+On Tue, Sep 30, 2014 at 03:11:21PM +0900, Namhyung Kim wrote:
+> Hi Jiri,
 > 
-> On Fri, Sep 26, 2014 at 02:57:17PM -0700, Luis R. Rodriguez wrote:
-> > +static bool drv_enable_async_probe(struct device_driver *drv,
-> > +				   struct bus_type *bus)
-> > +{
-> > +	struct module *mod;
-> > +
-> > +	if (!drv->owner || drv->sync_probe)
-> > +		return false;
+> On Mon, 29 Sep 2014 10:34:52 +0200, Jiri Olsa wrote:
+> > On Mon, Sep 29, 2014 at 01:58:11PM +0900, Namhyung Kim wrote:
+> >> @@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+> >>  		thread->cpu = -1;
+> >>  		INIT_LIST_HEAD(&thread->comm_list);
+> >>  
+> >> +		if (unwind__prepare_access(thread) < 0)
+> >> +			goto err_thread;
+> >
+> > So this is something we need to do only for DWARF unwind via libunwind.
+> > Do we want some condition to bypass this in for the rest of the cases?
 > 
-> This bit is one of the biggest issues I have with the patch set. Why async
-> probing is limited to modules only?
+> Ah, you're right, we need to check that before doing this.
+> 
+> 
+> >
+> > I think we could check for symbol_conf.use_callchain and for the
+> > PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER sample types in evlist,
+> > something like:
+> >
+> >   bool has_dwarf_data_for_callchains = symbol_conf.use_callchain && evlist_sample_type_has(evlist, PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER)
+> 
+> Hmm.. it seems that it's hard to get the evlist at this point.  Maybe we
+> need to add a field in the symbol_conf or a global variable.. :/
 
-Because Tejun wanted to address this separately, so its not that we will restrict
-this but we should have non-module solution added as an evolution on top of this,
-as a secondary step.
+yea, symbol_conf seems ok
 
-> I mentioned several times that we need
-> async probing for built-in drivers and the way you are structuring the flags
-> (async by default for modules, possibly opt-out of async for modules, forcibly
-> sync for built-in) it is hard to extend the infrastructure for built-in case.
-
-I confess I haven't tried enabling built-in as a secondary step but its just
-due to lack of time right now but I don't think impossible and think actually
-think it should be fairly trivial. Are there real blockers to do this that
-you see as an evolutionary step?
-
-> Also, as far as I can see, you are only considering the case where driver is
-> being bound to already registered devices. If you have a module that creates a
-> device for a driver that is already loaded and takes long time to probe you
-> would still be probing synchronously even if driver/module requested async
-> behavior.
-
-Can you provide an example code path hit here? I'll certainly like to address
-that as well.
-
-  Luis
+jirka
