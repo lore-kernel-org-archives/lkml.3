@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965AbaI3GYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:24:05 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55407 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaI3GYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:24:03 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Shuah Khan <shuahkh@osg.samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC][PATCH] ftracetest: Add a couple of ftrace test cases
-References: <20140923173846.603cb49c@gandalf.local.home>
-	<5422336A.6030304@hitachi.com>
-	<20140924114235.4287f4a1@gandalf.local.home>
-	<20140924115811.6eeeab8c@gandalf.local.home>
-	<5422EAE2.6080005@osg.samsung.com>
-	<20140924120853.0a717b7e@gandalf.local.home>
-	<877g0qkj9g.fsf@sejong.aot.lge.com> <54255411.4090508@hitachi.com>
-	<1411742793.1669.14.camel@leonhard> <54294543.2030003@hitachi.com>
-Date: Tue, 30 Sep 2014 15:24:01 +0900
-In-Reply-To: <54294543.2030003@hitachi.com> (Masami Hiramatsu's message of
-	"Mon, 29 Sep 2014 20:40:51 +0900")
-Message-ID: <87r3ythbi6.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754199AbaI3G0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:26:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34695 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751873AbaI3G0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 02:26:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,625,1406617200"; 
+   d="scan'208";a="598620066"
+Message-ID: <1412058366.23429.77.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/4] UBI: Ensure that all fastmap work is done upon WL
+ shutdown
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 30 Sep 2014 09:26:06 +0300
+In-Reply-To: <1412029248-22454-2-git-send-email-richard@nod.at>
+References: <1412029248-22454-1-git-send-email-richard@nod.at>
+	 <1412029248-22454-2-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
+> ...otherwise the deferred work might run after datastructures
+> got freed and corrupt memory.
 
-On Mon, 29 Sep 2014 20:40:51 +0900, Masami Hiramatsu wrote:
-> (2014/09/26 23:46), Namhyung Kim wrote:
->> The perf should be built with no extra dependencies (other than libc).
->> It won't provide rich features but basic functionality (record, report,
->> stat) should be supported.  And I'm also thinking about implementing a
->> very simple elf parser for symbol loading in such a minimal build.
->
-> Maybe you can install some static libraries (e.g. elfutils-libelf-devel-static
-> on fedora) for enabling it. :)
-> Some libraries may not work, but I could enable libelf by installing that.
+How can this happend? The background thread is stopped by this time
+already, so what are the other possibilities? And why is this
+fastmap-only?
 
-Yep, installing static libs should also work.  But I'd like to have
-minimal depencency especially for embedded systems.  And AFAIK cross
-building elfutils/libelf always has been a PITA.
+-- 
+Best Regards,
+Artem Bityutskiy
 
-Thanks,
-Namhyung
