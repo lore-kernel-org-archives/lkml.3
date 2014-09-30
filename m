@@ -1,114 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaI3Wab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:30:31 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:36651 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaI3Wa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:30:28 -0400
+	id S1753023AbaI3Wcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:32:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998AbaI3Wcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 18:32:47 -0400
+Message-ID: <542B2F7E.8030801@redhat.com>
+Date: Tue, 30 Sep 2014 18:32:30 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <201409301938.s8UJcfY4018093@lab-40.internal.tilera.com>
-References: <201409301938.s8UJcfY4018093@lab-40.internal.tilera.com>
-Date: Tue, 30 Sep 2014 15:30:28 -0700
-Message-ID: <CALAqxLWHhmyDp-CeGzs6Jqzcrk-KDX_T4UQpTU79VDTL3oHdJw@mail.gmail.com>
-Subject: Re: [PATCH] tile: add clock_gettime support to vDSO
-From: John Stultz <john.stultz@linaro.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Henrik Austad <henrik@austad.us>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [PATCH] modules, split MODULE_STATE_UNFORMED into separate states
+References: <1412104110-18441-1-git-send-email-prarit@redhat.com> <20140930195733.GA26492@redhat.com>
+In-Reply-To: <20140930195733.GA26492@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 12:29 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> This change adds support for clock_gettime with CLOCK_REALTIME
-> and CLOCK_MONOTONIC using vDSO.  In addition, with this change
-> we switch to use seqlocks instead of integer counters.
->
-> We also support the *_COARSE clockid_t, for apps that want speed
-> but aren't concerned about fine-grained timestamps; this saves
-> about 20 cycles per call (see http://lwn.net/Articles/342018/).
->
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/include/asm/vdso.h          |   9 +-
->  arch/tile/kernel/time.c               |  31 ++++---
->  arch/tile/kernel/vdso/vdso.lds.S      |   2 +
->  arch/tile/kernel/vdso/vgettimeofday.c | 166 +++++++++++++++++++++++++---------
->  4 files changed, 153 insertions(+), 55 deletions(-)
->
-> diff --git a/arch/tile/include/asm/vdso.h b/arch/tile/include/asm/vdso.h
-> index 9f6a78d665fa..4527701fcead 100644
-> --- a/arch/tile/include/asm/vdso.h
-> +++ b/arch/tile/include/asm/vdso.h
-> @@ -15,6 +15,7 @@
->  #ifndef __TILE_VDSO_H__
->  #define __TILE_VDSO_H__
->
-> +#include <linux/seqlock.h>
->  #include <linux/types.h>
->
->  /*
-> @@ -26,8 +27,8 @@
->   */
->
->  struct vdso_data {
-> -       __u64 tz_update_count;  /* Timezone atomicity ctr             */
-> -       __u64 tb_update_count;  /* Timebase atomicity ctr             */
-> +       seqcount_t tz_seq;      /* Timezone seqlock                   */
-> +       seqcount_t tb_seq;      /* Timebase seqlock                   */
->         __u64 xtime_tod_stamp;  /* TOD clock for xtime                */
->         __u64 xtime_clock_sec;  /* Kernel time second                 */
->         __u64 xtime_clock_nsec; /* Kernel time nanosecond             */
-> @@ -37,6 +38,10 @@ struct vdso_data {
->         __u32 shift;            /* Cycle to nanosecond divisor (power of two) */
->         __u32 tz_minuteswest;   /* Minutes west of Greenwich          */
->         __u32 tz_dsttime;       /* Type of dst correction             */
-> +       __u64 xtime_clock_coarse_sec;   /* Coarse kernel time         */
-> +       __u64 xtime_clock_coarse_nsec;
-> +       __u64 wtom_clock_coarse_sec;    /* Coarse wall to monotonic time */
-> +       __u64 wtom_clock_coarse_nsec;
->  };
->
->  extern struct vdso_data *vdso_data;
-> diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
-> index 462dcd0c1700..77624b38bdb9 100644
-> --- a/arch/tile/kernel/time.c
-> +++ b/arch/tile/kernel/time.c
-> @@ -249,13 +249,10 @@ cycles_t ns2cycles(unsigned long nsecs)
->
->  void update_vsyscall_tz(void)
->  {
-> -       /* Userspace gettimeofday will spin while this value is odd. */
-> -       ++vdso_data->tz_update_count;
-> -       smp_wmb();
-> +       write_seqcount_begin(&vdso_data->tz_seq);
->         vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
->         vdso_data->tz_dsttime = sys_tz.tz_dsttime;
-> -       smp_wmb();
-> -       ++vdso_data->tz_update_count;
-> +       write_seqcount_end(&vdso_data->tz_seq);
->  }
->
->  void update_vsyscall(struct timekeeper *tk)
-> @@ -263,20 +260,30 @@ void update_vsyscall(struct timekeeper *tk)
->         struct timespec wall_time = tk_xtime(tk);
-
-So this looks like a pre-existing issue, but here the sub-ns stored
-value in the timekeeper is being truncated to nanoseconds. You
-probably want to preserve that all the way into the do_realtime()/etc
-calculation, otherwise the time could seem to jump backwards by 1ns
-after the update.
-
-I'd take a look at what the core timekeeping logic does or the x86
-implementation to get a sense of what you ought to do there to
-preserve the logic. It basically comes down to changing it from:
-     nsec + (mult *cycle_delta) >> shift
-to:
-     (snsec + (mult *cycle_delta)) >> shift
 
 
-thanks
--john
+On 09/30/2014 03:57 PM, Oleg Nesterov wrote:
+> On 09/30, Prarit Bhargava wrote:
+>>
+>> MODULE_STATE_UNFORMED needs to be separated into two states; one for the
+>> module load (MODULE_STATE_LOAD), and one for the module delete
+>> (MODULE_STATE_DELETE).
+> 
+> And personally I think this makes sense in any case, but I can't really
+> comment the changes in this area.
+> 
+>> @@ -3647,18 +3646,29 @@ static int m_show(struct seq_file *m, void *p)
+>>  	struct module *mod = list_entry(p, struct module, list);
+>>  	char buf[8];
+>>  
+>> -	/* We always ignore unformed modules. */
+>> -	if (mod->state == MODULE_STATE_UNFORMED)
+>> +	/*
+>> +	 * If the state is MODULE_STATE_LOAD then the module is in
+>> +	 * the early stages of loading.  No information should be printed
+>> +	 * for this module as the data could be in an uninitialized state.
+>> +	 */
+>> +	if (mod->state == MODULE_STATE_LOAD)
+>>  		return 0;
+> 
+> So this assumes that _UNFORMED state is fine...
+> 
+> Not sure, but I can be easily wrong. For example, print_unload_info() ->
+> module_refcount() plays with mod->refptr, while free_module() does
+> module_unload_free() -> free_percpu(mod->refptr). No?
+
+Oh geez -- I didn't see that in module_unload_free().  I had assumed that all
+the percpu data was free'd in free_module() call to percpu_modfree(mod) ...
+
+You're right though, the _DELETE state is not okay in this path, and if that's
+the case then I'm not sure we have to distinguish the two cases.
+
+> 
+> Perhaps it makes sense to start with the simple patch for stable,
+> 
+> 	+	// sync with m_show()
+> 	+	mutex_lock(module_mutex);
+> 		mod->state = MODULE_STATE_UNFORMED;
+> 	+	mutex_unlock(module_mutex);
+> 
+> then do a more sophisticated fix?
+
+I actually toyed around with this but thought that was too "hacky" for a fix.
+But if Rusty is okay with it, I'd be okay with it too.
+
+P.
+
+
+> 
+> Oleg.
+> 
