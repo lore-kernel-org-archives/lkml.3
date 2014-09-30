@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaI3TqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:46:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58780 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaI3TqV (ORCPT
+	id S1751577AbaI3Txb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:53:31 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:50587 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaI3Tx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:46:21 -0400
-Message-ID: <542B088A.1050601@codeaurora.org>
-Date: Tue, 30 Sep 2014 12:46:18 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 30 Sep 2014 15:53:29 -0400
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
-References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>	  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>	 <542A31DF.7020402@smartplayin.com> <1412062606.5395.10.camel@iivanov-dev>
-In-Reply-To: <1412062606.5395.10.camel@iivanov-dev>
+In-Reply-To: <20140930171002.GB15854@bart.dudau.co.uk>
+References: <706416181.hbVGLDA3o6@wuerfel> <20140930160139.GA5625@google.com> <20140930171002.GB15854@bart.dudau.co.uk>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 30 Sep 2014 13:53:06 -0600
+Message-ID: <CAErSpo61favodLTSwCYzFZq-sB60+ZH6_WvwSGHgRx6cPKtXpA@mail.gmail.com>
+Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
+To: Liviu Dudau <liviu@dudau.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robh@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/14 00:36, Ivan T. Ivanov wrote:
-> On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
+On Tue, Sep 30, 2014 at 11:10 AM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> On Tue, Sep 30, 2014 at 10:01:39AM -0600, Bjorn Helgaas wrote:
+>> On Tue, Sep 30, 2014 at 03:19:05PM +0200, Arnd Bergmann wrote:
+>> > The pci_register_io_range() and pci_pio_to_address() were recently
+>> > introduced to generalize the handling of memory mapped PCI I/O space,
+>> > but they are only valid when CONFIG_OF is set, leading to a possible
+>> > build error:
+>> >
+>> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
+>> > drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
+>> >    res_start = pci_pio_to_address(res->start);
+>> >    ^
+>> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
+>> > drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
+>> >    err = of_pci_range_to_resource(&range, pdev->dev.of_node,
+>> >    ^
+>> > cc1: some warnings being treated as errors
+>> >
+>> > This provides inline dummy implementations for the case that
+>> > CONFIG_OF is disabled, to allow better build testing.
+>> >
+>> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>> > Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
 >>
->> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
-> Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
-> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
-> indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
+>> I'm rebuilding the pci/host-generic branch to pick up the other v13 fixes,
+>> so I folded this fix directly into the "of/pci: Add pci_register_io_range()
+>> and pci_pio_to_address()" patch.  Thanks for finding this; the config
+>> dependencies are a bit of a mess.
 >
-> I will say that this is false positive :-). Please update your tool-chain.
+> Bjorn,
+>
+> I suggest splitting this patch into 2 parts, move the one that adds pci_pio_to_address() in patch 2
+> and the other in patch 5.
 
-Hopefully you're joking. Once this merges someone will find the warning
-and complain. Telling them to upgrade their compiler isn't going to work.
+Yeah, I screwed that up.  I had just applied Arnd's patch completely
+to 279c5dd046, which doesn't quite make sense.
 
-I wonder if checking for rc != 0 instead of rc < 0 would silence the
-warning? Or get rid of the entire wrapper function and just use regmap
-functions directly.
+I tried again like this:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+  - In "of/pci: Add pci_register_io_range() and pci_pio_to_address()",
+I added the dummy pci_pio_to_address(), so there's an extern and a
+definition in address.c when CONFIG_OF_ADDRESS=y, and an inline dummy
+otherwise.
 
+  - I dropped "of/pci: Define of_pci_range_to_resource() only when
+CONFIG_PCI=y".
+
+  - In "of/pci: Move of_pci_range_to_resource() to of/address.c", I
+added the dummy of_pci_range_to_resource(), so there's an extern an a
+definition in address.c when CONFIG_OF_ADDRESS=y and CONFIG_PCI=y, and
+an inline dummy otherwise.
+
+I'm not really set up to build test this, and my head is swimming a
+bit, so I hope this is it.  I pushed the pci/host-generic branch
+again, so you can look at it yourself.
+
+Bjorn
