@@ -1,130 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaI3NAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:00:44 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:35954 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933AbaI3NAm (ORCPT
+	id S1751607AbaI3NBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:01:14 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:54529 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaI3NBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:00:42 -0400
-Message-ID: <542AA96A.4070303@st.com>
-Date: Tue, 30 Sep 2014 15:00:26 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: <hliang1025@gmail.com>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <adi-linux-docs@lists.sourceforge.net>
-Subject: Re: [PATCH] net: ethernet : stmicro: fixed power suspend and resume
- failure in stmmac driver
-References: <1412056534-7995-1-git-send-email-hliang1025@gmail.com>
-In-Reply-To: <1412056534-7995-1-git-send-email-hliang1025@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.72]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-30_05:2014-09-30,2014-09-30,1970-01-01 signatures=0
+	Tue, 30 Sep 2014 09:01:11 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <5cb180bdd8b80ef78b7a69d7079c5b73>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: [PATCH v9 0/3] Add drm driver for Rockchip Socs
+Date: Tue, 30 Sep 2014 20:57:50 +0800
+Message-Id: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hao Liang
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-On 9/30/2014 7:55 AM, hliang1025@gmail.com wrote:
-> From: Hao Liang <hliang1025@gmail.com>
->
-> This is the fix for a power management issue caused by suspend and resume function in stmmac_main.c.
-> After enable CONFIG_DEBUG_ATOMIC_SLEEP which enable sleep-inside atomic section checking, power
-> managemet can not work normally. Board couldn't wakeup successfully after suspend. Command
-> "echo mem > /sys/power/state" suspend the board.
->
-> In suspend and resume function of stmmac driver, there are some sleep-inside function in atomic section
-> created by spin lock. These functions will causes system warnings and wakeup issue when enable
-> CONFIG_DEBUG_ATOMIC_SLEEP.
->
-> This bug was fixed by:
-> * replace some sleep function with non-sleep function
->    clk_disable_unprepare -> clk_disable ...
-> * decrease the atomic area created by spin lock function. The original atomic area in resume function is
-> too large.
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-I had done something in this patch:
-    [PATCH (net.git)] stmmac: fix and review whole driver locking
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
 
-Indeed I was not able to review it after some advice but I will do it!
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
 
-So we can review your patch and then I will re-base my work on top of
-yours.
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
 
-I just wonder if the spinlock can be safely removed instead of
-surrounding just the code to clear the descriptors that should
-not be claimed by others. Maybe the only part shared is the
-stmmac_hw_setup that can be invoked by open method.
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
 
-peppe
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
 
-> Signed-off-by: Hao Liang <hliang1025@gmail.com>
-> ---
->   drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   13 +++++++------
->   1 file changed, 7 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> index 6e6ee22..2effbfe 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-> @@ -2924,9 +2924,8 @@ int stmmac_suspend(struct net_device *ndev)
->   	if (priv->phydev)
->   		phy_stop(priv->phydev);
->
-> -	spin_lock_irqsave(&priv->lock, flags);
-> -
->   	netif_device_detach(ndev);
-> +
->   	netif_stop_queue(ndev);
->
->   	napi_disable(&priv->napi);
-> @@ -2935,6 +2934,8 @@ int stmmac_suspend(struct net_device *ndev)
->   	priv->hw->dma->stop_tx(priv->ioaddr);
->   	priv->hw->dma->stop_rx(priv->ioaddr);
->
-> +	spin_lock_irqsave(&priv->lock, flags);
-> +
->   	stmmac_clear_descriptors(priv);
->
->   	/* Enable Power down mode by programming the PMT regs */
-> @@ -2945,7 +2946,7 @@ int stmmac_suspend(struct net_device *ndev)
->   		stmmac_set_mac(priv->ioaddr, false);
->   		pinctrl_pm_select_sleep_state(priv->device);
->   		/* Disable clock in case of PWM is off */
-> -		clk_disable_unprepare(priv->stmmac_clk);
-> +		clk_disable(priv->stmmac_clk);
->   	}
->   	spin_unlock_irqrestore(&priv->lock, flags);
->
-> @@ -2977,12 +2978,14 @@ int stmmac_resume(struct net_device *ndev)
->   	} else {
->   		pinctrl_pm_select_default_state(priv->device);
->   		/* enable the clk prevously disabled */
-> -		clk_prepare_enable(priv->stmmac_clk);
-> +		clk_enable(priv->stmmac_clk);
->   		/* reset the phy so that it's ready */
->   		if (priv->mii)
->   			stmmac_mdio_reset(priv->mii);
->   	}
->
-> +	spin_unlock_irqrestore(&priv->lock, flags);
-> +
->   	netif_device_attach(ndev);
->
->   	stmmac_hw_setup(ndev);
-> @@ -2991,8 +2994,6 @@ int stmmac_resume(struct net_device *ndev)
->
->   	netif_start_queue(ndev);
->
-> -	spin_unlock_irqrestore(&priv->lock, flags);
-> -
->   	if (priv->phydev)
->   		phy_start(priv->phydev);
->
->
+Changes in v7:
+- fix memory leakage problem.
+
+Changes in v8:
+- fix iommu crash when use dual crtc.
+- use frame start interrupt for vsync instead of line flag interrupt,
+because the win config take affect at frame start time, if we use ling flag
+interrupt, the address check often failed.
+Adviced by Daniel Kurtz
+- fix some bugs, mistake, remove unused function
+- keep clock and vop disabled when probe end
+- use drm_plane_helper_check_update to check update_plane if vaild
+
+Changes in v9:
+- fix suspend and resume bug, make iommu attach and detach safely.
+- fix mail info style.
+
+Mark yao (3):
+  drm: rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  509 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   65 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  209 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1423 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3103 insertions(+)
+
+-- 
+1.7.9.5
+
 
