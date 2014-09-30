@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaI3J75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:59:57 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47866 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750998AbaI3J74 (ORCPT
+	id S1751683AbaI3KA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:00:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:51757 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181AbaI3KA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:59:56 -0400
-Date: Tue, 30 Sep 2014 10:59:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Valdis.Kletnieks@vt.edu
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
-        "'Uwe =?iso-8859-1?Q?Kleine-K=F6nig'?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        DL-WW-ContributionOfficers-Linux 
-	<DL-WW-ContributionOfficers-Linux@sonymobile.com>
-Subject: Re: [PATCH resend] arm:extend the reserved memory for initrd to be
-	page aligned
-Message-ID: <20140930095946.GL5182@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103D6DB49161F@CNBJMBX05.corpusers.net> <20140919095959.GA2295@e104818-lin.cambridge.arm.com> <20140925143142.GF5182@n2100.arm.linux.org.uk> <20140925154403.GL10390@e104818-lin.cambridge.arm.com> <35FD53F367049845BC99AC72306C23D103D6DB49163B@CNBJMBX05.corpusers.net> <15815.1412018518@turing-police.cc.vt.edu>
+	Tue, 30 Sep 2014 06:00:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the asm-generic tree
+Date: Tue, 30 Sep 2014 12:00:10 +0200
+Message-ID: <4061479.RDp9BKRgRN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140930083116.753ae631@canb.auug.org.au>
+References: <20140926200251.78f0d713@canb.auug.org.au> <6184197.FUKmdXcAaQ@wuerfel> <20140930083116.753ae631@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15815.1412018518@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:mIDAqe5G9WhhM+vDBpwHsWJWbl9Qi1jY0uFJIRb3C31
+ 6RlVaLEJ1ctDWeimaOblVyjiI+ZsRv95A2N8rUvDng6LOingNK
+ T0PBRCRYknZjvXWGhrqE/bACNd/wcLZ0c54jPy7u65Fvjz506n
+ ZpItNZZhVCWxoB3UXyc9fPsQ/VFPBPszTI77zQXriecInuUKFW
+ if9bdqFIhBg7qOWaPLFEluqWx7rpBO5JjGPFnXDbMvXIquSoVS
+ 9G2Lo1cW45TRiVkaiadmg7796APlZYhCG0QI4ekPOvCZWJPCyq
+ +xmZRcI1cFVuR3q2OLM/mf1XmT5+peMOF6E5Zsa+aTgi1VQtm/
+ IVY6LIqyZqN0tFoeI940=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 03:21:58PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 26 Sep 2014 10:40:54 +0800, "Wang, Yalin" said:
+On Tuesday 30 September 2014 08:31:16 Stephen Rothwell wrote:
+> Hi Arnd,
 > 
-> > I am really confused,
-> > I read this web:
-> > http://www.arm.linux.org.uk/developer/patches/info.php
-> > it said use diff -urN to generate patch like this:
+> On Fri, 26 Sep 2014 13:14:45 +0200 Arnd Bergmann <arnd@arndb.de> wrote:
 > >
-> > diff -Nru linux.orig/lib/string.c linux/lib/string.c
-> >
-> > but I see other developers use git format-patch to generate patch and
-> > submit to the patch system.
-> > Git format-patch format can also be accepted by the patch system correctly ?
-> > If yes, I think this web should update,
-> > Use git format-patch to generate patch is more convenient than use diff -urN
+> > Thanks, applied on top with Stephen's full report in the commit
+> > message and your Ack.
 > 
-> 'diff -urN' has the advantage that it will work against a tree extracted
-> from a release tarball, and doesn't have a requirement that you have git
-> installed.  Having said that, somebody who has access to the website probably
-> should update it to mention that both methods are acceptable....
+> I look at your tree today, and its empty ... just checking that you
+> didn't forget to push or something.
+> 
 
-As the website includes *examples* of git formatted patches, no change
-is necessary.
+Thanks for the notification. I got overloaded with regressions and
+ended up backing it all out for now. I still hope to get the subset
+that Will did merged, but first need to split out some or all of
+Thierry's patches that caused the regressions.
 
-I've learned through writing those instructions that it is a bad idea to
-_add_ additional words, because it gives people _more_ things to argue
-about.  One form of words or examples is fine for one group of people,
-but completely confuses another group of people.  You can't win.
-
-That is one of the biggest reasons I hate writing user documentation.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	Arnd
