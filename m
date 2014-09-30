@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaI3MD4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 08:03:56 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48493 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaI3MDx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 08:03:53 -0400
-Date: Tue, 30 Sep 2014 13:03:44 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1751869AbaI3MER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 08:04:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246AbaI3MEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 08:04:15 -0400
+Message-ID: <1412078639.7155.30.camel@localhost>
+Subject: Re: [PATCH] tun: make sure interface usage can not overflow
+From: Hannes Frederic Sowa <hannes@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Kees Cook <keescook@chromium.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Message-ID: <20140930120344.GA14215@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
- <8631927.qWHZsjCs8e@wuerfel>
-MIME-Version: 1.0
-In-Reply-To: <8631927.qWHZsjCs8e@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 30 Sep 2014 12:03:48.0034 (UTC) FILETIME=[976EDA20:01CFDCA6]
-X-MC-Unique: 114093013034902801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 30 Sep 2014 14:03:59 +0200
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174A0ECF@AcuExch.aculab.com>
+References: <20140928232753.GA31180@www.outflux.net>
+	 <063D6719AE5E284EB5DD2968C1650D6D1749FC70@AcuExch.aculab.com>
+	 <CAGXu5jKL13qdCBet3yqpc3vLYh_LifBACzL+NP8n-A+E8RMZXw@mail.gmail.com>
+	 <1412021098.14757.6.camel@localhost>
+	 <063D6719AE5E284EB5DD2968C1650D6D174A0C5C@AcuExch.aculab.com>
+	 <1412075023.7155.21.camel@localhost>
+	 <063D6719AE5E284EB5DD2968C1650D6D174A0ECF@AcuExch.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 03:36:30PM +0100, Arnd Bergmann wrote:
-> On Sunday 28 September 2014 15:53:28 suravee.suthikulpanit@amd.com wrote:
-> > +
-> > +#ifdef CONFIG_ARM64
-> > +struct pci_bus *gen_scan_root_bus(struct device *parent, int bus,
-> > +                                      struct pci_ops *ops, void *sysdata,
-> > +                                      struct list_head *resources)
-> > +{
-> 
-> I don't see anything ARM64 specific in this, the function only uses
-> the newly added generic helpers.
-
-I do not see it either, it is just a copy'n'paste of common PCI code,
-plus msi management.
-
-> >  static int gen_pci_probe(struct platform_device *pdev)
-> >  {
-> > @@ -326,6 +385,7 @@ static int gen_pci_probe(struct platform_device *pdev)
-> >         struct device *dev = &pdev->dev;
-> >         struct device_node *np = dev->of_node;
-> >         struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
-> > +#ifndef CONFIG_ARM64
-> >         struct hw_pci hw = {
-> >                 .nr_controllers = 1,
-> >                 .private_data   = (void **)&pci,
-> > @@ -333,6 +393,7 @@ static int gen_pci_probe(struct platform_device *pdev)
-> >                 .map_irq        = of_irq_parse_and_map_pci,
-> >                 .ops            = &gen_pci_ops,
-> >         };
-> > +#endif
-> >  
-> 
-> Same here, I'd suggest marking this "#ifdef CONFIG_ARM" instead, as hw_pci
-> is an arm32 specific data structure.
-
-I do not think we need hw struct at all, see below, we can write code so
-that we do not rely on ARM32 PCI bios, I will have a stab at that and
-post the resulting code.
-
-> >         if (!pci)
-> >                 return -ENOMEM;
-> > @@ -368,8 +429,24 @@ static int gen_pci_probe(struct platform_device *pdev)
-> >                 gen_pci_release_of_pci_ranges(pci);
-> >                 return err;
-> >         }
-> > +#ifdef CONFIG_ARM64
-> >  
-> > +#ifdef CONFIG_PCI_MSI
-> > +       pci->msi_parent = of_parse_phandle(np, "msi-parent", 0);
-> > +       if (!pci->msi_parent) {
-> > +               dev_err(&pdev->dev, "Failed to allocate msi-parent.\n");
-> > +               return -EINVAL;
-> > +       }
-> > +#endif
-> 
-> We probably want to enable MSI unconditionally on ARM64, so the #ifdef is
-> not necessary here. However, I don't think that a missing msi-parent should
-> be a fatal error here: we can still continue without MSI support if this
-> case.
-> 
-> > +       if (!gen_scan_root_bus(&pdev->dev, pci->cfg.bus_range.start,
-> > +                              &gen_pci_ops, pci, &pci->resources)) {
-> > +               dev_err(&pdev->dev, "failed to enable PCIe ports\n");
-> > +               return -ENODEV;
-> > +       }
-> > +#else
-> >         pci_common_init_dev(dev, &hw);
-> > +#endif /* CONFIG_ARM64 */
+On Di, 2014-09-30 at 11:18 +0000, David Laight wrote:
+> From: Hannes Frederic 
+> > On Di, 2014-09-30 at 08:20 +0000, David Laight wrote:
+> > > From: Hannes Frederic
+> > > > On Mo, 2014-09-29 at 12:41 -0700, Kees Cook wrote:
+> > > > > On Mon, Sep 29, 2014 at 4:04 AM, David Laight <David.Laight@aculab.com> wrote:
+> > > > > > From: Kees Cook
+> > > > > >> This makes the size argument a const, since it is always populated by
+> > > > > >> the caller.
+> > > > > >
+> > > > > > There is almost no point making parameters 'const.
+> > > > > > ('const foo *' makes sense).
+> > > > > >
+> > > > > >> Additionally double-checks to make sure the copy_from_user
+> > > > > >> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
+> > > > > >>
+> > > > > >>    In function 'copy_from_user',
+> > > > > >>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+> > > > > >>        ... copy_from_user() buffer size is not provably correct
+> > > > > >
+> > > > > > If 'ifreq_len' could be too big then you want to error the ioctl, not panic.
+> > > > > > If it can't be too big you don't need the check.
+> > > > >
+> > > > > The ifreq_len comes from the callers, and is the output of "sizeof"
+> > > > > which is const. Changing the function parameter to "const" means any
+> > > > > changes made in the future where the incoming value isn't const, the
+> > > > > compiler will throw a warning.
+> > > >
+> > > > Hmmm, I think you want something like BUILD_BUG_ON(!
+> > > > __builtin_constant_p(var)). const in function argument only ensures that
+> > > > the value cannot be modified in the function.
+> > >
+> > > You'd have to do something in the header file - nothing in the function
+> > > body can do that check.
 > > 
+> > Sure, it should work. You only need to make sure that gcc inlines the
+> > function, so the value is constant (it is not enough that gcc knows the
+> > value range, one specific constant is needed). So the simplest fix for
+> > this is to specify __tun_chr_ioctl as __always_inline. ;)
 > 
-> Again, just make the pci_common_init_dev() call #ifdef CONFIG_ARM, and move
-> the generic case after it, outside of the #ifdef.
+> You are joking aren't you???
 
-I went through the code quickly but I think we can (and should) remove
-this quite ugly ifdeffery altogether. Most of the functionality in
-pci_common_init_dev() can be implemented through the common PCI API (and this
-would make this driver arch agnostic as it should be), I will go through ARM32
-PCI bios code to check what is executed in detail in pci_common_init_dev() and
-make sure that we follow those initialization steps in the resulting probe code
-for this PCI generic host controller driver.
+It would propagate the value from the compat and non-compat helper
+functions to __tun_chr_ioctl and the __builtin_constant_p checks would
+be true in the inlined copy_from/to_user, so no, I was not joking, but
+because of my smiley I didn't considered this fix seriously.
 
-Lorenzo
+> Look at the code.
+
+I did.
+
+> I'd suggest fixing whatever implements CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+> to be less picky.
+
+This might involve gcc changes. E.g. on my gcc I don't get any errors.
+But by looking at the code it might be plausible wrong estimations are
+being made.
+
+But somehow I really cannot follow the original bug report. Looks like
+Kees' __builtin_object_size is broken?
+
+I also checked my tun.i file, I really use gcc __builtin_object_size.
+
+Strange...
+
+Bye,
+Hannes
+
 
