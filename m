@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaI3Aen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:34:43 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10839 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753411AbaI3Aem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:34:42 -0400
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-arm-msm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC 0/7] Qualcomm SMEM, SMD, RPM and regulators
-Date: Mon, 29 Sep 2014 17:34:44 -0700
-Message-ID: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755081AbaI3Aex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:34:53 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:39187 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754942AbaI3Aeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 20:34:50 -0400
+From: Richard Yao <ryao@gentoo.org>
+To: viro@zeniv.linux.org.uk
+Cc: kernel@gentoo.org, mthode@mthode.org, michael@fds-team.de,
+        drobbins@funtoo.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Yao <ryao@gentoo.org>
+Subject: [PATCH] vfs: Respect MS_RDONLY at bind mount creation
+Date: Mon, 29 Sep 2014 20:34:41 -0400
+Message-Id: <1412037281-25960-2-git-send-email-ryao@gentoo.org>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1412037281-25960-1-git-send-email-ryao@gentoo.org>
+References: <1412037281-25960-1-git-send-email-ryao@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All Qualcomm platforms implements a shared heap among the processors in the
-SoC, used for sharing data with other parts of the system.
+`mount -o bind,ro ...` suffers from a silent failure where the readonly
+flag is ignored. The bind mount will be created rw whenever the target
+is rw. Users typically workaround this by remounting readonly, but that
+does not work when you want to define readonly bind mounts in fstab.
+This is a major annoyance when dealing with recursive bind mounts
+because the userland mount command does not expose the option to
+recursively remount a subtree as readonly.
 
-One consumer of items from this heap is the "Shared Memory Driver", a ring
-buffer based point-to-point communication mechanism used to send either stream
-or packet based data to remote processors.
+Signed-off-by: Richard Yao <ryao@gentoo.org>
+---
+ fs/namespace.c | 20 ++++++++++++++++----
+ fs/pnode.h     | 17 +++++++++--------
+ 2 files changed, 25 insertions(+), 12 deletions(-)
 
-Starting with 8x74 this system is used to talk to the Resource Power Manager
-(RPM), a power efficient "coprocessor" with responsibility of aggregate votes
-from the various systems in the SoC related to regulators, clocks and bus
-frequencies.
-
-The PMIC regulators and root clocks in these platforms are only accessible via
-the RPM, so to get access to these we need the full chain of smem, smd, rpm and
-a regulator driver implemented. And that is exactly what this series provides.
-
-
-A key outstanding question is where in the tree we should put the
-implementation, for now I dropped them in drivers/soc/qcom but that's only
-because I don't know where to put it otherwise. I have not found any equivalent
-of the SMEM driver, SMD resembles mailbox and rpmsg - but comments in that
-patch on why it's neither.
-
-RPM is a mfd and regulator is a regulator :)
-
-
-Part from the rpm regulators I've tested this by hacking up a firmware loader
-and making some adoptions to the wcn36xx WiFi driver and I can indeed
-communicate with this system as well. Missing for that part is the coupling
-with remoteproc to reset smd channels when a remote system goes down.  But that
-is indeed a separate set of patches.
-
-Bjorn Andersson (7):
-  soc: qcom: Add device tree binding for SMEM
-  soc: qcom: Add device tree binding for SMD
-  mfd: devicetree: bindings: Add Qualcomm SMD based RPM DT binding
-  soc: qcom: Add Shared Memory Manager driver
-  soc: qcom: Add Shared Memory Driver
-  mfd: qcom-smd-rpm: Driver for the Qualcomm RPM over SMD
-  regulator: qcom-smd-rpm: Regulator driver for the Qualcomm RPM
-
- .../devicetree/bindings/mfd/qcom-rpm-smd.txt       |  122 +++
- .../devicetree/bindings/soc/qcom/qcom,smd.txt      |   82 ++
- .../devicetree/bindings/soc/qcom/qcom,smem.txt     |   34 +
- drivers/mfd/Kconfig                                |   14 +
- drivers/mfd/Makefile                               |    1 +
- drivers/mfd/qcom-smd-rpm.c                         |  299 ++++++
- drivers/regulator/Kconfig                          |   12 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/qcom_smd-regulator.c             |  229 +++++
- drivers/soc/qcom/Kconfig                           |   16 +
- drivers/soc/qcom/Makefile                          |    2 +
- drivers/soc/qcom/qcom_smd.c                        | 1043 ++++++++++++++++++++
- drivers/soc/qcom/qcom_smem.c                       |  328 ++++++
- include/dt-bindings/mfd/qcom-rpm.h                 |   36 +
- include/linux/mfd/qcom-smd-rpm.h                   |    9 +
- include/linux/soc/qcom/qcom_smd.h                  |   47 +
- include/linux/soc/qcom/qcom_smem.h                 |   14 +
- 17 files changed, 2289 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
- create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,smd.txt
- create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,smem.txt
- create mode 100644 drivers/mfd/qcom-smd-rpm.c
- create mode 100644 drivers/regulator/qcom_smd-regulator.c
- create mode 100644 drivers/soc/qcom/qcom_smd.c
- create mode 100644 drivers/soc/qcom/qcom_smem.c
- create mode 100644 include/linux/mfd/qcom-smd-rpm.h
- create mode 100644 include/linux/soc/qcom/qcom_smd.h
- create mode 100644 include/linux/soc/qcom/qcom_smem.h
-
+diff --git a/fs/namespace.c b/fs/namespace.c
+index ef42d9b..5299742 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -942,6 +942,14 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 	if (flag & CL_MAKE_SHARED)
+ 		set_mnt_shared(mnt);
+ 
++	/*
++	 * We set the flag directly because the mount point is not yet visible.
++	 * This means there are no writers that require the checks in
++	 * mnt_make_readonly().
++	 */
++	if (flag & CL_MAKE_RDONLY)
++		mnt->mnt.mnt_flags |= MNT_READONLY;
++
+ 	/* stick the duplicate mount on the same expiry list
+ 	 * as the original if that was on one */
+ 	if (flag & CL_EXPIRE) {
+@@ -1847,11 +1855,13 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
+  * do loopback mount.
+  */
+ static int do_loopback(struct path *path, const char *old_name,
+-				int recurse)
++				unsigned long flags)
+ {
+ 	struct path old_path;
+ 	struct mount *mnt = NULL, *old, *parent;
+ 	struct mountpoint *mp;
++	int recurse = flags & MS_REC;
++	int clflags = (flags & MS_RDONLY) ? CL_MAKE_RDONLY : 0;
+ 	int err;
+ 	if (!old_name || !*old_name)
+ 		return -EINVAL;
+@@ -1882,9 +1892,10 @@ static int do_loopback(struct path *path, const char *old_name,
+ 		goto out2;
+ 
+ 	if (recurse)
+-		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE);
++		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE |
++			clflags);
+ 	else
+-		mnt = clone_mnt(old, old_path.dentry, 0);
++		mnt = clone_mnt(old, old_path.dentry, clflags);
+ 
+ 	if (IS_ERR(mnt)) {
+ 		err = PTR_ERR(mnt);
+@@ -2496,7 +2507,8 @@ long do_mount(const char *dev_name, const char *dir_name,
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+ 				    data_page);
+ 	else if (flags & MS_BIND)
+-		retval = do_loopback(&path, dev_name, flags & MS_REC);
++		retval = do_loopback(&path, dev_name, flags & (MS_REC |
++							       MS_RDONLY));
+ 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
+ 		retval = do_change_type(&path, flags);
+ 	else if (flags & MS_MOVE)
+diff --git a/fs/pnode.h b/fs/pnode.h
+index 4a24635..326f5be 100644
+--- a/fs/pnode.h
++++ b/fs/pnode.h
+@@ -20,14 +20,15 @@
+ #define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
+ #define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
+ 
+-#define CL_EXPIRE    		0x01
+-#define CL_SLAVE     		0x02
+-#define CL_COPY_UNBINDABLE	0x04
+-#define CL_MAKE_SHARED 		0x08
+-#define CL_PRIVATE 		0x10
+-#define CL_SHARED_TO_SLAVE	0x20
+-#define CL_UNPRIVILEGED		0x40
+-#define CL_COPY_MNT_NS_FILE	0x80
++#define CL_EXPIRE		0x001
++#define CL_SLAVE		0x002
++#define CL_COPY_UNBINDABLE	0x004
++#define CL_MAKE_SHARED		0x008
++#define CL_PRIVATE		0x010
++#define CL_SHARED_TO_SLAVE	0x020
++#define CL_UNPRIVILEGED		0x040
++#define CL_COPY_MNT_NS_FILE	0x080
++#define CL_MAKE_RDONLY		0x100
+ 
+ #define CL_COPY_ALL		(CL_COPY_UNBINDABLE | CL_COPY_MNT_NS_FILE)
+ 
 -- 
-1.7.9.5
+1.8.5.5
 
