@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaI3Vwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:52:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32786 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018AbaI3ViH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:07 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 049/103] USB: zte_ev: remove duplicate Qualcom PID
-Date: Tue, 30 Sep 2014 14:30:54 -0700
-Message-Id: <1412112708-27356-50-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1754976AbaI3Vw5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:52:57 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:37082 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754710AbaI3Vwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:52:54 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
+In-Reply-To: Your message of "Tue, 30 Sep 2014 15:25:17 -0600."
+             <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
+From: Valdis.Kletnieks@vt.edu
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx> <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx> <15704.1412109476@turing-police.cc.vt.edu>
+            <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1412113956_2351P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Sep 2014 17:52:36 -0400
+Message-ID: <62749.1412113956@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
+--==_Exmh_1412113956_2351P
+Content-Type: text/plain; charset=us-ascii
 
-------------------
+On Tue, 30 Sep 2014 15:25:17 -0600, Andreas Dilger said:
 
-From: Johan Hovold <johan@kernel.org>
+> I think you would be much better off having more aggressive "use once"
+> semantics in the page cache, so that page cache pages for streaming
+> writes are evicted more aggressively from cache rather than going down
+> the "automatic O_DIRECT" hole.
 
-commit 754eb21c0bbbbc4b8830a9a864b286323b84225f upstream.
+Well, I'm open to convincing.. an inode bit that says "I/O for this file is
+always first out of the page cache" would probably fix  most of the thrashing
+page cache problem (and avoid the "unexpected O_DIRECT kills the program"
+issue), at the cost of a little more CPU when we turn around and evict it
+from the page cache.
 
-Remove dublicate Qualcom PID 0x3197 which is already handled by the
-moto-modem driver since commit 6986a978eec7 ("USB: add new moto_modem
-driver for some Morotola phones").
+As long as we're at it, if we go that route we probably *also* want a
+way for a program to specify it at open() time (for instance, for the
+use of backup programs) - that should minimize the infamous "everything
+runs like a pig after the backup finishes running because  the *useful*
+pages are all cache-cold".
 
-Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/zte_ev.c | 1 -
- 1 file changed, 1 deletion(-)
+(And yes, you really *do* want the ability in both places - one for a
+program to be able to say "do this for any file I touch", and another for
+the file to say "do this for any program that touches me").
 
-diff --git a/drivers/usb/serial/zte_ev.c b/drivers/usb/serial/zte_ev.c
-index 78ff536..88dd32c 100644
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -275,7 +275,6 @@ static void zte_ev_usb_serial_close(struct usb_serial_port *port)
- static const struct usb_device_id id_table[] = {
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
--	{ USB_DEVICE(0x05C6, 0x3197) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
--- 
-1.9.1
+Matthew - would that sort of approach make more sense to you?  I admit
+I originally posted only because I'd just finished fighting with a
+similar issue, and code floated by that got filesystem pages into
+core without trashing the page cache.  I'm not at all tied to the specific
+solution.. :)
 
+
+
+--==_Exmh_1412113956_2351P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVCsmJAdmEQWDXROgAQLF4w//bC27sR3tYMAXUDIz7gtBvyZfAgV6MZE8
+ISyDvTbznH26Whpz2lnZovOYcOQ492pq7/aWVwmpvoRdERD+pXygtKx2UcCH3Pra
+c9H/VVUHmEH0gRM99olZtyvIIdGG4nGW4fs9orw6DfnEnrurhybWlQGNgeCe8HgV
+ul+FQ+zOW+fP7rrQBCGn/y1mA5yYWbWy8ox+/kYnX6X0noMDpSYndV05nLp95MC2
+ThalxXom8Nxzi5J/aDKFpT7ihHEiCr6xiGV+EsyNGhIjtjR/Y/VhzsJ32f8aBBdh
+PqopyQvhNlfqY3jOKSIjaWbhatubQzyL5xcLQXRptok6xW90XXT9tDRr4mDshzhO
+UCOg7DQ8ylI6AVE6fVHD6cqSXu+VONSJRu1fBRTnSKbebKEz1pApXONkrFNRphsl
+yvm0dsT7cEF8qV6XRtl498nnNjeZv010x6L0aiP6gH7Uhb0DqlTfE0t+e5zaBe1T
+cubwHzDmxj4DLb0Iq6/KftAHq6J1zQ0EflHJH1al7VrUSoA0Ad8q1mBD0dN1KiQg
+DP6GU3n4PUhXBAO3K0z0DJdxvh8P54O3XOK808onOIvWEDLxiqrxjmTPSsehAtM6
+O1P4ip2Ko93dEr7iFEtAM4RKD7ZBQlz7DQj5r9Dl2XvfdwRYvKtEwf/VLWb2vCv0
++90jeX7+1eM=
+=sOpo
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1412113956_2351P--
