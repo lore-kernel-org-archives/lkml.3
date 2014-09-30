@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaI3VDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:03:14 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:52109 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaI3VDN (ORCPT
+	id S1751675AbaI3VDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:03:47 -0400
+Received: from smtp-out-177.synserver.de ([212.40.185.177]:1049 "EHLO
+	smtp-out-175.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751606AbaI3VDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:03:13 -0400
+	Tue, 30 Sep 2014 17:03:46 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 29075
+Message-ID: <542B1ABE.5000900@metafoo.de>
+Date: Tue, 30 Sep 2014 23:03:58 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
 MIME-Version: 1.0
-X-Originating-IP: [72.74.84.52]
-In-Reply-To: <1411586844-21381-11-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1411586844-21381-1-git-send-email-sukadev@linux.vnet.ibm.com>
-	<1411586844-21381-11-git-send-email-sukadev@linux.vnet.ibm.com>
-Date: Tue, 30 Sep 2014 17:03:10 -0400
-Message-ID: <CAPoQQ-2YM-2n0ATrzCZqaF2e2a4rh9tus=JayRoVed2DyX=-EQ@mail.gmail.com>
-Subject: Re: [PATCH v4 10/10] powerpc/perf/hv-24x7: Document sysfs event
- description entries
-From: Cody P Schafer <dev@codyps.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PPC <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dan Murphy <dmurphy@ti.com>, broonie@kernel.org,
+        gregkh@linuxfoundation.org
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] regmap: Allow read_reg_mask to be 0
+References: <1412093220-24690-1-git-send-email-dmurphy@ti.com>
+In-Reply-To: <1412093220-24690-1-git-send-email-dmurphy@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +What:          /sys/bus/event_source/devices/hv_24x7/event_descs/<event-name>
-> +Date:          February 2014
-> +Contact:       Cody P Schafer <cody@linux.vnet.ibm.com>
+On 09/30/2014 06:07 PM, Dan Murphy wrote:
+> There may be spi devices that do not require a
+> register read mask to read the registers.
+>
+> Currently the code sets the read mask based on
+> a non-zero value passed in from the driver or if that
+> value is 0 sets the read mask to 0x80.
 
-May want to change this contact email to an address that still works
-(perhaps the ppc devel list?)
+It only sets it to the bus default if both read_flag_mask and 
+write_flag_mask are 0. The assumption is that both of them being zero is a 
+invalid configuration and either of them (or both) have to be non-zero for 
+proper operation, since otherwise the device can't tell the difference 
+between a read and a write.
+
+Do you have a device where both the read and the write mask is 0?
+
+- Lars
