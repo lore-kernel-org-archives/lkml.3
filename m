@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220AbaI3WCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:02:03 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:52053 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaI3WB7 (ORCPT
+	id S1755326AbaI3WCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:02:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60876 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753509AbaI3Vgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:01:59 -0400
-Message-ID: <542B2851.2050705@gmail.com>
-Date: Wed, 01 Oct 2014 00:01:53 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-To: David Miller <davem@davemloft.net>, antoine.tenart@free-electrons.com
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 00/10] ARM: Berlin: Ethernet support
-References: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com> <20140930.163735.2099691931550261883.davem@davemloft.net>
-In-Reply-To: <20140930.163735.2099691931550261883.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Sep 2014 17:36:51 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 069/103] ARM: 8128/1: abort: don't clear the exclusive monitors
+Date: Tue, 30 Sep 2014 14:31:14 -0700
+Message-Id: <1412112708-27356-70-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.09.2014 22:37, David Miller wrote:
-> From: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Date: Tue, 30 Sep 2014 16:28:06 +0200
->
->> This series introduce support for the Ethernet controller on Berlin SoCs,
->> using the existing pxa168 Ethernet driver. In order to do this, DT
->> support is added to the driver alongside some other modifications and
->> fixes.
->>
->> This has been tested on a Berlin BG2Q DMP board.
->
-> Applied to net-next, thanks.
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-David,
+------------------
 
-usually I'd prefer to take the dts patches through berlin and arm-soc
-tree, _but_ as they are touching berlin stuff only I am fine with you
-taking them, too.
+From: Mark Rutland <mark.rutland@arm.com>
 
-Just to make sure how long I have to take care of potential merge
-issues, is your current net-next meant for v3.18 or v3.19?
+commit 85868313177700d20644263a782351262d2aff84 upstream.
 
-Sebastian
+The ARMv6 and ARMv7 early abort handlers clear the exclusive monitors
+upon entry to the kernel, but this is redundant:
+
+  - We clear the monitors on every exception return since commit
+    200b812d0084 ("Clear the exclusive monitor when returning from an
+    exception"), so this is not necessary to ensure the monitors are
+    cleared before returning from a fault handler.
+
+  - Any dummy STREX will target a temporary scratch area in memory, and
+    may succeed or fail without corrupting useful data. Its status value
+    will not be used.
+
+  - Any other STREX in the kernel must be preceded by an LDREX, which
+    will initialise the monitors consistently and will not depend on the
+    earlier state of the monitors.
+
+Therefore we have no reason to care about the initial state of the
+exclusive monitors when a data abort is taken, and clearing the monitors
+prior to exception return (as we already do) is sufficient.
+
+This patch removes the redundant clearing of the exclusive monitors from
+the early abort handlers.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/mm/abort-ev6.S | 6 ------
+ arch/arm/mm/abort-ev7.S | 6 ------
+ 2 files changed, 12 deletions(-)
+
+diff --git a/arch/arm/mm/abort-ev6.S b/arch/arm/mm/abort-ev6.S
+index 3815a82..8c48c5c 100644
+--- a/arch/arm/mm/abort-ev6.S
++++ b/arch/arm/mm/abort-ev6.S
+@@ -17,12 +17,6 @@
+  */
+ 	.align	5
+ ENTRY(v6_early_abort)
+-#ifdef CONFIG_CPU_V6
+-	sub	r1, sp, #4			@ Get unused stack location
+-	strex	r0, r1, [r1]			@ Clear the exclusive monitor
+-#elif defined(CONFIG_CPU_32v6K)
+-	clrex
+-#endif
+ 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
+ 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+ /*
+diff --git a/arch/arm/mm/abort-ev7.S b/arch/arm/mm/abort-ev7.S
+index 7033752..4812ad0 100644
+--- a/arch/arm/mm/abort-ev7.S
++++ b/arch/arm/mm/abort-ev7.S
+@@ -13,12 +13,6 @@
+  */
+ 	.align	5
+ ENTRY(v7_early_abort)
+-	/*
+-	 * The effect of data aborts on on the exclusive access monitor are
+-	 * UNPREDICTABLE. Do a CLREX to clear the state
+-	 */
+-	clrex
+-
+ 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
+ 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
+ 
+-- 
+1.9.1
+
