@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaI3QUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:20:01 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56828 "EHLO
+	id S1752969AbaI3QUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:20:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56806 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752472AbaI3QT4 (ORCPT
+	with ESMTP id S1752431AbaI3QTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:19:56 -0400
+	Tue, 30 Sep 2014 12:19:54 -0400
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 5/6] ARM: at91/dt: add trng node
-Date: Tue, 30 Sep 2014 18:19:46 +0200
-Message-Id: <1412093987-30241-6-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 3/6] hwrng: atmel: add DT support
+Date: Tue, 30 Sep 2014 18:19:44 +0200
+Message-Id: <1412093987-30241-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,34 +30,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a DT node for the TRNG (True Random Number Generator) block.
+Add DT support.
 
-Keep this block enabled as it does not depend on any external connection,
-and thus should be available on all boards.
+Make the driver depend on CONFIG_OF as at91sam9g45 was the only SoC making
+use of the TRNG block and this SoC is now fully migrated to DT.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/at91sam9g45.dtsi | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/char/hw_random/Kconfig     | 2 +-
+ drivers/char/hw_random/atmel-rng.c | 7 +++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 932a669..790c890 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -934,6 +934,13 @@
- 				status = "disabled";
- 			};
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 836b061..a0f5500 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -64,7 +64,7 @@ config HW_RANDOM_AMD
  
-+			trng@fffcc000 {
-+				compatible = "atmel,at91sam9g45-trng";
-+				reg = <0xfffcc000 0x4000>;
-+				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 0>;
-+				clocks = <&trng_clk>;
-+			};
+ config HW_RANDOM_ATMEL
+ 	tristate "Atmel Random Number Generator support"
+-	depends on ARCH_AT91 && HAVE_CLK
++	depends on ARCH_AT91 && HAVE_CLK && OF
+ 	default HW_RANDOM
+ 	---help---
+ 	  This driver provides kernel-side support for the Random Number
+diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+index 644ec48..0bb0b21 100644
+--- a/drivers/char/hw_random/atmel-rng.c
++++ b/drivers/char/hw_random/atmel-rng.c
+@@ -123,6 +123,12 @@ static const struct dev_pm_ops atmel_trng_pm_ops = {
+ };
+ #endif /* CONFIG_PM */
+ 
++static const struct of_device_id atmel_trng_dt_ids[] = {
++	{ .compatible = "atmel,at91sam9g45-trng" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, atmel_trng_dt_ids);
 +
- 			i2c0: i2c@fff84000 {
- 				compatible = "atmel,at91sam9g10-i2c";
- 				reg = <0xfff84000 0x100>;
+ static struct platform_driver atmel_trng_driver = {
+ 	.probe		= atmel_trng_probe,
+ 	.remove		= atmel_trng_remove,
+@@ -132,6 +138,7 @@ static struct platform_driver atmel_trng_driver = {
+ #ifdef CONFIG_PM
+ 		.pm	= &atmel_trng_pm_ops,
+ #endif /* CONFIG_PM */
++		.of_match_table = atmel_trng_dt_ids,
+ 	},
+ };
+ 
 -- 
 1.9.1
 
