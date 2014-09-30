@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaI3VrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:47:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32863 "EHLO
+	id S1754822AbaI3Vrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:47:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32862 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaI3Viq (ORCPT
+	with ESMTP id S1754207AbaI3Vip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:46 -0400
+	Tue, 30 Sep 2014 17:38:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 047/103] Revert "USB: option,zte_ev: move most ZTE CDMA devices to zte_ev"
-Date: Tue, 30 Sep 2014 14:30:52 -0700
-Message-Id: <1412112708-27356-48-git-send-email-kamal@canonical.com>
+Cc: Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 082/103] ASoC: rt5640: Do not allow regmap to use bulk read-write operations
+Date: Tue, 30 Sep 2014 14:31:27 -0700
+Message-Id: <1412112708-27356-83-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -26,144 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit 63a901c06e3c2c45bd601916fe04e870e9ccae1e upstream.
+commit f4821e8e8e957fe4c601a49b9a97b7399d5f7ab1 upstream.
 
-This reverts commit 73228a0538a7 ("USB: option,zte_ev: move most ZTE
-CDMA devices to zte_ev").
+Debugging showed Realtek RT5642 doesn't support autoincrementing writes so
+driver should set the use_single_rw flag for regmap.
 
-Move the IDs of the devices that were previously driven by the option
-driver back to that driver.
-
-As several users have reported, the zte_ev driver is causing random
-disconnects as well as reconnect failures.
-
-A closer analysis of the zte_ev setup code reveals that it consists of
-standard CDC requests (SET/GET_LINE_CODING and SET_CONTROL_LINE_STATE)
-but unfortunately fails to get some of those right. In particular, as
-reported by Liu Lei, it fails to lower DTR/RTS on close. It also appears
-that the control requests lack the interface argument.
-
-Note that the zte_ev driver is based on code (once) distributed by ZTE
-that still appears to originally have been reverse-engineered and bolted
-onto the generic driver.
-
-Since line control is already handled properly by the option driver, and
-the SET/GET_LINE_CODING requests appears to be redundant (amounts to a
-SET 9600 8N1), this is a first step in ultimately removing the redundant
-zte_ev driver.
-
-Note that AC2726 had already been moved back to option, and that some
-IDs were in the device table of both drivers prior to the commit being
-reverted.
-
-Reported-by: Lei Liu <liu.lei78@zte.com.cn>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 24 +++++++++++++++++++++---
- drivers/usb/serial/zte_ev.c | 18 ------------------
- 2 files changed, 21 insertions(+), 21 deletions(-)
+ sound/soc/codecs/rt5640.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index cbc6fef..454c6d1 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -275,8 +275,12 @@ static void option_instat_callback(struct urb *urb);
- #define ZTE_PRODUCT_MF622			0x0001
- #define ZTE_PRODUCT_MF628			0x0015
- #define ZTE_PRODUCT_MF626			0x0031
--#define ZTE_PRODUCT_MC2718			0xffe8
- #define ZTE_PRODUCT_AC2726			0xfff1
-+#define ZTE_PRODUCT_CDMA_TECH			0xfffe
-+#define ZTE_PRODUCT_AC8710T			0xffff
-+#define ZTE_PRODUCT_MC2718			0xffe8
-+#define ZTE_PRODUCT_AD3812			0xffeb
-+#define ZTE_PRODUCT_MC2716			0xffed
+diff --git a/sound/soc/codecs/rt5640.c b/sound/soc/codecs/rt5640.c
+index 8869249..5cb515b 100644
+--- a/sound/soc/codecs/rt5640.c
++++ b/sound/soc/codecs/rt5640.c
+@@ -2071,6 +2071,7 @@ static struct snd_soc_codec_driver soc_codec_dev_rt5640 = {
+ static const struct regmap_config rt5640_regmap = {
+ 	.reg_bits = 8,
+ 	.val_bits = 16,
++	.use_single_rw = true,
  
- #define BENQ_VENDOR_ID				0x04a5
- #define BENQ_PRODUCT_H10			0x4068
-@@ -531,10 +535,18 @@ static const struct option_blacklist_info zte_k3765_z_blacklist = {
- 	.reserved = BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_ad3812_z_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1) | BIT(2),
-+};
-+
- static const struct option_blacklist_info zte_mc2718_z_blacklist = {
- 	.sendsetup = BIT(1) | BIT(2) | BIT(3) | BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_mc2716_z_blacklist = {
-+	.sendsetup = BIT(1) | BIT(2) | BIT(3),
-+};
-+
- static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
-@@ -1074,6 +1086,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_INTERFACE_CLASS(BANDRICH_VENDOR_ID, BANDRICH_PRODUCT_1012, 0xff) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC650) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
-@@ -1548,13 +1561,18 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
- 
--	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
- 	 .driver_info = (kernel_ulong_t)&zte_mc2718_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AD3812, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
-diff --git a/drivers/usb/serial/zte_ev.c b/drivers/usb/serial/zte_ev.c
-index eae2c87..5dbc859 100644
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -273,27 +273,9 @@ static void zte_ev_usb_serial_close(struct usb_serial_port *port)
- }
- 
- static const struct usb_device_id id_table[] = {
--	/* AC8710, AC8710T */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffff, 0xff, 0xff, 0xff) },
--	 /* AC8700 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfffe, 0xff, 0xff, 0xff) },
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
--	{ USB_DEVICE(0x19d2, 0xfffc) },
--	{ USB_DEVICE(0x19d2, 0xfffb) },
--	/* AC8710_V3 */
--	{ USB_DEVICE(0x19d2, 0xfff6) },
--	{ USB_DEVICE(0x19d2, 0xfff7) },
--	{ USB_DEVICE(0x19d2, 0xfff8) },
--	{ USB_DEVICE(0x19d2, 0xfff9) },
--	{ USB_DEVICE(0x19d2, 0xffee) },
--	/* AC2716, MC2716 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffed, 0xff, 0xff, 0xff) },
--	/* AD3812 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffeb, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE(0x19d2, 0xffec) },
- 	{ USB_DEVICE(0x05C6, 0x3197) },
--	{ USB_DEVICE(0x05C6, 0x6000) },
- 	{ USB_DEVICE(0x05C6, 0x9008) },
- 	{ },
- };
+ 	.max_register = RT5640_VENDOR_ID2 + 1 + (ARRAY_SIZE(rt5640_ranges) *
+ 					       RT5640_PR_SPACING),
 -- 
 1.9.1
 
