@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaI3T1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:27:45 -0400
-Received: from tetsuo.zabbo.net ([50.193.208.193]:49576 "EHLO tetsuo.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaI3T1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:27:44 -0400
-Date: Tue, 30 Sep 2014 12:27:43 -0700
-From: Zach Brown <zab@zabbo.net>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        orenl@cellrox.com
-Subject: Re: [PATCH 1/2] btrfs: fix sparse address space warnings
-Message-ID: <20140930192743.GE12900@lenny.home.zabbo.net>
-References: <1411894092-28784-1-git-send-email-osandov@osandov.com>
- <1411894092-28784-2-git-send-email-osandov@osandov.com>
- <20140928222604.GA6328@molino.home.network>
+	id S1753321AbaI3TcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:32:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52022 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaI3TcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 15:32:03 -0400
+Date: Tue, 30 Sep 2014 12:32:01 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Einon <mark.einon@gmail.com>
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] et131x: Promote staging et131x driver to drivers/net
+Message-ID: <20140930193201.GA2349@kroah.com>
+References: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140928222604.GA6328@molino.home.network>
+In-Reply-To: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 03:26:04PM -0700, Omar Sandoval wrote:
-> On Sun, Sep 28, 2014 at 01:48:11AM -0700, Omar Sandoval wrote:
-> > diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
-> > index 6528aa6..e0be577 100644
-> > --- a/fs/btrfs/send.c
-> > +++ b/fs/btrfs/send.c
-> > @@ -515,7 +515,8 @@ static int write_buf(struct file *filp, const void *buf, u32 len, loff_t *off)
-> >  	set_fs(KERNEL_DS);
-> >  
-> >  	while (pos < len) {
-> > -		ret = vfs_write(filp, (char *)buf + pos, len - pos, off);
-> > +		ret = vfs_write(filp, (__force const char __user *)buf + pos,
-> > +				len - pos, off);
-> >  		/* TODO handle that correctly */
-> >  		/*if (ret == -ERESTARTSYS) {
-> >  			continue;
+On Tue, Sep 30, 2014 at 08:16:12PM +0100, Mark Einon wrote:
+> This patch moves the et131x gigabit ethernet driver from drivers/staging
+> to drivers/net/ethernet/agere.
 > 
-> Actually, looking at this now, it looks like this is just an open-coded
-> kernel_write. I think this could be made a bit cleaner by using that instead;
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> ---
+> 
+> This patch appiles to both staging-next and the linux-next tag next-20140930,
+> and takes into account all feedback recieved from the recent RFC for this
+> patch.
+> 
+>  MAINTAINERS                                        | 10 +++----
+>  drivers/net/ethernet/Kconfig                       |  1 +
+>  drivers/net/ethernet/Makefile                      |  1 +
+>  drivers/net/ethernet/agere/Kconfig                 | 31 ++++++++++++++++++++++
+>  .../et131x => net/ethernet/agere}/Makefile         |  0
+>  .../et131x => net/ethernet/agere}/et131x.c         |  0
+>  .../et131x => net/ethernet/agere}/et131x.h         |  0
+>  drivers/staging/Kconfig                            |  2 --
+>  drivers/staging/Makefile                           |  1 -
+>  drivers/staging/et131x/Kconfig                     | 10 -------
+>  drivers/staging/et131x/README                      | 15 -----------
+>  11 files changed, 38 insertions(+), 33 deletions(-)
+>  create mode 100644 drivers/net/ethernet/agere/Kconfig
+>  rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (100%)
+>  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
+>  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
+>  delete mode 100644 drivers/staging/et131x/Kconfig
+>  delete mode 100644 drivers/staging/et131x/README
 
-Agreed, but notice that you'll want to be careful to update
-write_buf()'s *off because passing a dereferenced copy to kernel_write()
-will lose the pos update that vfs_write() is currently taking care of.
+This is a fine way to make a patch, but it's no way that any of the
+netdev developers could ever review it to know what the code happens to
+look like in my staging-next branch :(
 
-A carefully placed "*off += ret" in write_buf() will be fine.  (As fine
-as having a magical private file position in the send context ever was.)
+How about just sending a patch that adds the driver to drivers/net/...
+Don't worry about the staging driver at the moment.  If it gets added to
+drivers/net we can then delete the staging driver.
 
-> the tradeoff is that each call to kernel_write will do the address
-> space flip-flop, so if the write gets split up into many calls,
-> there'd be some slight overhead.  That's probably a microoptimization,
-> but 
+Sound easier?  Should make the patches half as big.
 
-Yeah, I don't think that overhead is going to be significant given all
-of the work that's going on.
+thanks,
 
-> I think it's worth looking
-> into making kernel_read and kernel_write handle the retry logic.
-
-I disagree.  I wouldn't broaden the scope to add retrying on behalf of
-all kernel_write() callers and write methods (it's exported to modules,
-too).  I'd leave the looping in btrfs and just call kernel_write() to
-get rid of the segment juggling.
-
-- z
+greg k-h
