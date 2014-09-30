@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857AbaI3UMQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:12:16 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:49383 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaI3UMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:12:15 -0400
-Date: Tue, 30 Sep 2014 14:12:09 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v1 12/12] tpm: TPM2 sysfs attributes
-Message-ID: <20140930201209.GD30200@obsidianresearch.com>
-References: <1411549562-24242-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20140924190234.GB6801@intel.com>
- <20140924201938.GC10887@obsidianresearch.com>
- <201409242235.42286.PeterHuewe@gmx.de>
- <20140924204627.GA12407@obsidianresearch.com>
- <20140926171947.GA5611@intel.com>
- <20140930200721.GA8069@intel.com>
+	id S1751596AbaI3UON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:14:13 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64836 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750935AbaI3UOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:14:11 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH v2] i2c: move acpi code back into the core
+Date: Tue, 30 Sep 2014 22:34:07 +0200
+Message-ID: <1773097.ooYUbTzKBv@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140930204607.2ab3baed@endymion.delvare>
+References: <1411594591-5048-1-git-send-email-wsa@the-dreams.de> <20140930160352.GV1786@lahna.fi.intel.com> <20140930204607.2ab3baed@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930200721.GA8069@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 11:07:21PM +0300, Jarkko Sakkinen wrote:
-> On Fri, Sep 26, 2014 at 08:19:47PM +0300, Jarkko Sakkinen wrote:
-> > On Wed, Sep 24, 2014 at 02:46:27PM -0600, Jason Gunthorpe wrote:
-> > > > That would be 24*2 files only for pcrs...
-> > > 
-> > > Some subsystems do just that..
-> > > 
-> > > $ ls /sys/class/infiniband/qib0/ports/1/sl2vl/
-> > > 0  1  10  11  12  13  14  15  2  3  4  5  6  7  8  9
+On Tuesday, September 30, 2014 08:46:07 PM Jean Delvare wrote:
+> On Tue, 30 Sep 2014 19:03:52 +0300, Mika Westerberg wrote:
+> > On Tue, Sep 30, 2014 at 12:55:20PM +0200, Jean Delvare wrote:
+> > > The only thing which I find curious is that ACPI_I2C_OPREGION depends
+> > > on I2C=y. Is this limitation a leftover from when the code was split to
+> > > a separate file? It builds just fine with I2C=m, and I can't see why it
+> > > wouldn't work. I have a patch to enable that, I can send it if it is
+> > > the right thing to do. But maybe I'm missing something?
 > > 
-> > They use static structures in
-> > drivers/infiniband/hw/qib/qib_sysfs.c and it does not looks a
-> > mess. I would prefer to create struct attribute entries
-> > dynamically if there's clean and easy way to do that.
+> > I think reason for the limitation is that if there happens to be some
+> > AML code that is currently using the I2C operation region and the user
+> > decides to unload the i2c-core.ko module or along those lines.
 > 
-> I gave this a shot:
-> 
-> https://github.com/jsakkine/linux-tpm2/commit/dffce68ce34da265a62908dec71b2d85fc16824f
-> 
-> I want to initialize dynamically so that it is easy to support
-> TPM_PT_PCR_COUNT later.
+> If that's the reason then shouldn't it be addressed by proper reference
+> counting instead? We could simply increase the module reference count
+> when entering the critical section, and decrease it when we're done.
 
-You can't use a static pcr_dev_attrs, this has to be allocated in the
-chip structure (because of the NULL). Otherwise looks about right
-(although there are more problematic core details here, like racing of the
-tpm dev create with the creation of the sysfs files)
+That is not so simple in practice, because the code containing the
+critical sections in question is AML and not part of the kernel.
 
-Do you have a reason to have the pcrs in sysfs? I'd be just as happy
-to see them dropped or moved to debugfs for TPM2 as well.
-
-Jason
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
