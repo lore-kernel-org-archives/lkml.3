@@ -1,162 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaI3XqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 19:46:07 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:36367 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaI3XqE convert rfc822-to-8bit (ORCPT
+	id S1751577AbaI3Xtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 19:49:52 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42387 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751004AbaI3Xtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 19:46:04 -0400
+	Tue, 30 Sep 2014 19:49:49 -0400
+Message-ID: <542B4194.8070604@hurleysoftware.com>
+Date: Tue, 30 Sep 2014 19:49:40 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20140930172718.GA30615@mail.corp.redhat.com>
-References: <1411488489-10625-1-git-send-email-benjamin.tissoires@redhat.com>
-	<alpine.LNX.2.00.1409261302520.22196@pobox.suse.cz>
-	<CANRwn3Sng5nxc7YZEUYQVgFhidSMQCBdDsiWebs_zFZ7s=gsiQ@mail.gmail.com>
-	<20140930172718.GA30615@mail.corp.redhat.com>
-Date: Tue, 30 Sep 2014 16:46:01 -0700
-Message-ID: <CANRwn3Sf=288SNTTbJT11gJFUTZYGetHypaECKxy8gBzyVpaVg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] HID: wacom: introduce generic HID handling
-From: Jason Gerecke <killertofu@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Ping Cheng <pinglinux@gmail.com>,
-        Linux Input <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Akinobu Mita <akinobu.mita@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com> <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410010131380.4455@nanos>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:27 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> On Sep 26 2014 or thereabouts, Jason Gerecke wrote:
->> On Fri, Sep 26, 2014 at 4:03 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> > On Tue, 23 Sep 2014, Benjamin Tissoires wrote:
->> >
->> >> Hi guys,
->> >>
->> >> So, this patch series aims at supporting natively any future HID compliant wacom
->> >> tablet. Those found on the various laptops (ISDv4/5) already are HID compliant
->> >> and they should work in the future without any modification of the kernel.
->> >>
->> >> Few things to note here:
->> >> - I used the PID 0x00E6 found on the Lenovo X230 for the tests
->> >> - I did not removed its entry in the list because there is a slightly different
->> >>   behavior while using this patch set: when more than two fingers are on the
->> >>   screen, the tablet stops sending finger events, while with the wacom
->> >>   proprietary bits, it continues to send them. Besides that, the events emitted
->> >>   before and after the patch series are the same (at least on the E6)
->> >> - I can not rely on hid-input directly because wacom wants to be in control of
->> >>   the input devices it creates. This might be solved in the future, but for now
->> >>   it is just easier to rewrite the few mapping/events handling than trying to
->> >>   fit in the hid-input model.
->> >> - there will still be more specific use cases to handle later (see the joke of
->> >>   the MS surface 3 pen[1] for instance), but this should give a roughly working
->> >>   pen/touch support for those future devices.
->> >>
->> >> Jason, I would be very glad if you could conduct a few tests for this on the
->> >> ISDv4/5 sensors you have.
->> >
->> > I am waiting with this one for testing results from Jason, but if you guys
->> > want this to go in the next merge window, I'd like to ask you not to
->> > postpone the testing too much.
->> >
->> > Thanks.
->> >
+On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+> On Tue, 30 Sep 2014, Peter Hurley wrote:
+>> I read the UFS Unified Memory Extension v1.0 (JESD220-1) specification and
+>> it is not clear to me that using DMA mapping is the right approach to
+>> supporting UM, at least on x86.
 >>
->> I'm in the process of capturing traces from hid-record for multiple
->> tablet PCs both pre- and post-patch to locate any obvious issues. My
->> initial results are promising on the pen side (the only things I've
->> noticed so far is the 2nd barrel switch not being supported -- as
->> might be suspected) but less so on the touch side (single-finger
->> devices seem to work fine, but the new code doesn't seem to handle any
->> of the multitouch devices I've tried).
->
-> Do you consider not having the second barrel switch a blocker or can we
-> ship it this and send a fix later?
->
-> As for the touch, I tested/developed it on the Lenovo X230. It presents
-> a hid-multitouch compatible touch interface, when the feature input_mode
-> is sent with the value '2'. By re-reading it, it seems to me that you
-> are trying to replay the touch traces you got before the patch, but this
-> will not work because the touch protocol is not the same. ISDv4 used to
-> rely on the proprietary touch protocol which is hard to describe in HID.
->
-> I would say that as long as there is no regression (actually there can
-> not be for old devices :-P), we should still carry this series for 3.18.
-> We might need to adjust the bits here and there, but if we can have a
-> *basic* support of the tablet out of the box, this is still much better
-> than silently ignoring it.
->
-I'm in agreement. The lack of second-switch support was expected and
-somewhat trivial at this moment. We can work on finessing it as we go.
-
-Regarding the touch input, I haven't had enough time to dive in to
-figuring out what is wrong, but traces aren't the issue (I've not been
-able to use traces for multitouch testing because the driver can't
-query features->touch_max ;)). Working with actual hardware, I don't
-get _any_ events out of the driver when using the touchscreen. I
-checked that the device is sending the non-vendor-defined reports,
-which does seem to be the case. The descriptor for the reports also
-seem to be reasonable, appearing to follow Microsoft's
-recommendations...
-
+>> And without a mainline user, the merits of this approach are not evident.
+>> I cannot even find a production x86 UFS controller, much less one that
+>> supports UME.
 >>
->> Expect more news next week :)
->
-> So?????
->
-I'm not sure if you want to fix touch first or just get these upstream
-and fix during RC (as you said, it won't cause any regressions...) but
-I'll give the following:
+>> The only PCI UFS controller I could find (and that mainline supports) is
+>> Samsung's x86 FPGA-based test unit for developing UFS devices in a x86 test
+>> environment, and not a production x86 design.
+> 
+> And how is that relevant? That device exists and you have no reason to
+> deny it to be supported just because you are not interested in it.
+>  
+>> Unless there's something else I've missed, I don't think these patches
+>> belong in mainline.
+> 
+> You missed that there is no reason WHY such a device should not be
+> supported in mainline.
 
-Acked-by: Jason Gerecke <killertofu@gmail.com>
+Mainline already supports this card right now without these patches.
 
-Jason
----
-Now instead of four in the eights place /
-you’ve got three, ‘Cause you added one  /
-(That is to say, eight) to the two,     /
-But you can’t take seven from three,    /
-So you look at the sixty-fours....
+>> Samsung's own roadmap
+>> (http://www.slideshare.net/linaroorg/next-gen-mobilestorageufs)
+>> mentions nothing about bringing UFS to x86 designs.
+> 
+> And that's telling you what? 
+> 
+>    - That we should deny Samsung proper support for their obviously
+>      x86 based test card
+> 
+>    - That we should ignore a JEDEC Standard which is obviously never
+>      going to hit x86 land just because you decide it?
+> 
+> Your argumentation is just ass backwards. Linux wants to support the
+> full zoo of hardware including this particular PCI card. Period.
+> 
+> Whether the proposed patchset is the correct solution to support it is
+> a completely different question.
 
->>
->>
->> PS: I'm pretty sure ISDv5 shouldn't be relied on for HID data :| The
->> descriptor for the Cintiq Companion Hybrid, at least, is like our
->> branded sensors with useful data only in the touchscreen descriptor
->> (the pen descriptor is a bunch of opaque vendor-defined reports). Not
->> sure if the Cintiq Companion is the same though since it runs
->> Windows...
->
-> Ouch. For those, we will need to either fix the report descriptors or
-> handle them in the same way you always used to do: manually.
->
-> Cheers,
-> Benjamin
->
->> >>
->> >> [1] http://who-t.blogspot.com/2014/09/stylus-behaviour-on-microsoft-surface-3.html
->> >>
->> >> Benjamin Tissoires (5):
->> >>   HID: wacom: rename failN with some meaningful information
->> >>   HID: wacom: split out input allocation and registration
->> >>   HID: wacom: move allocation of inputs earlier
->> >>   HID: wacom: implement generic HID handling for pen generic devices
->> >>   HID: wacom: implement the finger part of the HID generic handling
->> >>
->> >>  drivers/hid/hid-core.c  |   3 +
->> >>  drivers/hid/wacom.h     |   6 +
->> >>  drivers/hid/wacom_sys.c | 184 +++++++++++++++++++++--------
->> >>  drivers/hid/wacom_wac.c | 299 ++++++++++++++++++++++++++++++++++++++++++++++++
->> >>  drivers/hid/wacom_wac.h |  17 +++
->> >>  include/linux/hid.h     |   2 +
->> >>  6 files changed, 462 insertions(+), 49 deletions(-)
->> >>
->> >> --
->> >> 2.1.0
->> >>
->> >
->> > --
->> > Jiri Kosina
->> > SUSE Labs
+And there is currently no way to determine that because there is no
+user in mainline that requires this support.
+
+Which you would understand if you had read more carefully.
+
+Regards,
+Peter Hurley
+
