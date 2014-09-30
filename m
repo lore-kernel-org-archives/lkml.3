@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaI3Wt5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:49:57 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:16630 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750717AbaI3Wtz (ORCPT
+	id S1751190AbaI3WxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:53:24 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55510 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaI3WxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:49:55 -0400
-Message-ID: <542B338D.2040909@sonymobile.com>
-Date: Tue, 30 Sep 2014 15:49:49 -0700
-From: Tim Bird <tim.bird@sonymobile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 30 Sep 2014 18:53:23 -0400
+Date: Tue, 30 Sep 2014 23:52:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] ARM: dts: Add initial DTS file for Sony Xperia Z1 phone
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Message-ID: <20140930225241.GO4273@sirena.org.uk>
+References: <1412070294-5535-1-git-send-email-zyw@rock-chips.com>
+ <CAD=FV=XViSBFyMEY9kQBMggnn+uA0wYarbseFOuZeakzBxZeqA@mail.gmail.com>
+ <1716911.pj5CzLpxUR@phil>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pk/CTwBz1VvfPIDp"
+Content-Disposition: inline
+In-Reply-To: <1716911.pj5CzLpxUR@phil>
+X-Cookie: So you're back... about time...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: rk808: Fix min_uV for DCDC1 & DCDC2
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This DTS has support for the Sony Xperia Z1 phone (codenamed Honami).
-This first version of the DTS supports just a serial console.
 
-changes from V2
- - fixed dtb name in Makefile
+--Pk/CTwBz1VvfPIDp
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-changes from v1
- - removed qcom,msm-id attribute
- - removed mis-capitalized Qualcomm word
- - changed dts file name
- - added board-specific compatible-string
+On Tue, Sep 30, 2014 at 06:57:51PM +0200, Heiko St=FCbner wrote:
+> Am Dienstag, 30. September 2014, 09:43:47 schrieb Doug Anderson:
+> > On Tue, Sep 30, 2014 at 2:44 AM, Chris Zhong <zyw@rock-chips.com> wrote:
 
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
-Tested-by: Kevin Hilman <khilman@linaro.org>
----
+> > > -       REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
+> > > +       REGULATOR_LINEAR_RANGE(712500, 0, 63, 12500),
 
-This version fixes the dtb name.  I asked previously about adding to qcom_dt_match,
-but apparently board compatibles are being removed from that list in
-mach_qcom/board.c
-See https://lkml.org/lkml/2014/9/24/952
+> > I have no problem with this (and the current "dts" file I see don't go
+> > this low anyway), but it doesn't match the datasheet I have right now
+> > which says "0.700 V" is the min.
 
-Kevin tested this (modulu re-adding back the qcom,msm-id).  I have a new
-mkqcdtbootimg which works without requiring the qcom,msm-id attribute,
-that I'll send to Kevin shortly (and publish on github).
+> Then it would be problem.
 
- Documentation/devicetree/bindings/vendor-prefixes.txt |  1 +
- arch/arm/boot/dts/Makefile                            |  3 ++-
- arch/arm/boot/dts/qcom-msm8974-sony-xperia-honami.dts | 17 +++++++++++++++++
- 3 files changed, 20 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/qcom-msm8974-sony-xperia-honami.dts
+> The original statement above says, that a register value of "0" equals 70=
+0mV,=20
+> so changing this in this way would mean everything runs 12.5mV above the=
+=20
+> target voltage.
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index ac7269f..d3a4579 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -128,6 +128,7 @@ sirf	SiRF Technology, Inc.
- smsc	Standard Microsystems Corporation
- snps 	Synopsys, Inc.
- solidrun	SolidRun
-+sony	Sony Corporation
- spansion	Spansion Inc.
- st	STMicroelectronics
- ste	ST-Ericsson
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b8c5cd3..cf58321 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -343,7 +343,8 @@ dtb-$(CONFIG_ARCH_QCOM) += \
- 	qcom-apq8074-dragonboard.dtb \
- 	qcom-apq8084-mtp.dtb \
- 	qcom-msm8660-surf.dtb \
--	qcom-msm8960-cdp.dtb
-+	qcom-msm8960-cdp.dtb \
-+	qcom-msm8974-sony-xperia-honami.dtb
- dtb-$(CONFIG_ARCH_ROCKCHIP) += \
- 	rk3066a-bqcurie2.dtb \
- 	rk3188-radxarock.dtb \
-diff --git a/arch/arm/boot/dts/qcom-msm8974-sony-xperia-honami.dts b/arch/arm/boot/dts/qcom-msm8974-sony-xperia-honami.dts
-new file mode 100644
-index 0000000..cccc21b
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-msm8974-sony-xperia-honami.dts
-@@ -0,0 +1,17 @@
-+#include "qcom-msm8974.dtsi"
-+
-+/ {
-+	model = "Sony Xperia Z1";
-+	compatible = "sony,xperia-honami", "qcom,msm8974";
-+
-+	memory@0 {
-+		reg = <0 0x40000000>, <0x40000000 0x40000000>;
-+		device_type = "memory";
-+	};
-+};
-+
-+&soc {
-+	serial@f991e000 {
-+		status = "ok";
-+	};
-+};
--- 
-1.8.2.2
+> And I can confirm, that the current datasheet lists 700mV as equallying=
+=20
+> register value 0.
 
+Has anyone got a voltmeter?
+
+--Pk/CTwBz1VvfPIDp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUKzQ4AAoJECTWi3JdVIfQPIoH/3W6vkSgrUuDxnptXcbQBYDE
+iH4GOg2S8Jx43EWZcMfk4qlSo1u58kFVYc3E52un5uMMsGZwp3p1tJRF7qMXee8h
+vAp79td1FC/lI4Vb0gzmsOVs+LT97fkdocEx+G8RbaVP/m5qzTWUuvIVvLaUI3Pz
+QTbQTzveR8oMwIUJ8dH5ObR9mV4L5iI/juqm8oC4JVZyCCnhn5elfnu0rA9d4BG3
+IT9uwKlYOE+yiRg7dEP1bNAZMTmtbPOWqmlzPwYZVzDXzt4O7uXgTw6QAQDDReIc
+2fQeCSDp60koqQNbHvHQe+CZnwEGDyjwdaXZypn/CdTL35i8PVa37dQdH1as0qc=
+=6H56
+-----END PGP SIGNATURE-----
+
+--Pk/CTwBz1VvfPIDp--
