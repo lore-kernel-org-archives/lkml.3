@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859AbaI3VuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:50:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33640 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaI3VuD (ORCPT
+	id S1754719AbaI3Vus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:50:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32810 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059AbaI3ViU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:50:03 -0400
-Date: Tue, 30 Sep 2014 23:49:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Abel <wuyun.wu@huawei.com>
-cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFT v2 01/24] irqdomain: Introduce new interfaces to support
- hierarchy irqdomains
-In-Reply-To: <542A8C5E.3040901@huawei.com>
-Message-ID: <alpine.DEB.2.11.1409302337130.4455@nanos>
-References: <1411740145-30626-1-git-send-email-jiang.liu@linux.intel.com> <1411740145-30626-2-git-send-email-jiang.liu@linux.intel.com> <54294F1C.30606@huawei.com> <alpine.DEB.2.02.1409291707410.22082@ionos.tec.linutronix.de> <542A8C5E.3040901@huawei.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 30 Sep 2014 17:38:20 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 036/103] drm/radeon: add additional SI pci ids
+Date: Tue, 30 Sep 2014 14:30:41 -0700
+Message-Id: <1412112708-27356-37-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Abel wrote:
-> On 2014/9/29 23:53, Thomas Gleixner wrote:
-> What I suggest is something like:
-> 
-> for (iter = domain; iter; iter = iter->parent) {
-> 	ret = iter->ops->alloc(iter, virq, nr_irqs, arg);
-> 	if (ret < 0) {
-> 		mutex_unlock(&irq_domain_mutex);
-> 		goto out_free_irq_data;
-> 	}
-> }
-> 
-> in this way, the core infrastructure guarantees allocating down the
-> irqdomain hierarchy, and the implementers of domain_ops->alloc()
-> need not to call irq_domain_alloc_irqs_parent() any longer, just do
-> the things they have to.
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-That makes sense. I misunderstood you then.
+------------------
 
-> > So we cannot define upfront how deep an ack/mask/unmask/... has to be
-> > propagated down the chain. This needs a careful consideration in terms
-> > of functionality and we want to be able to do performance shortcuts as
-> > well.
-> > 
-> 
-> Yes, I got it. And one more thing I concerned is that when hierarchy
-> irqdomains is enabled, shouldn't the ack_parent() be called by default
-> by the irqchip->irq_ack() of each domain to ensure all the domains in
-> the delivery path ack this interrupt?
+From: Alex Deucher <alexander.deucher@amd.com>
 
-In the pure theory of design, yes. But that will cause pointless
-overhead on particular systems.
+commit 37dbeab788a8f23fd946c0be083e5484d6f929a1 upstream.
 
-On a particular system the ack of the top level domain C, i.e. the one
-which is facing the device and is handled by the core irq flow
-handler, might be enough because B does not require an ack and A is
-implicitely acked by iret or some other magic instruction in the low
-level entry path. And because we know that C can only be on top of B
-and B is on top of A we want the flexibility to avoid going down the
-full chain for nothing in the interrupt hot path.
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ include/drm/drm_pciids.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-So yes, in theory it should go down all levels, but in practice we
-dont want to enforce it :)
-
-Thanks,
-
-	tglx
+diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
+index a8df29d..bcec4c4 100644
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -165,8 +165,11 @@
+ 	{0x1002, 0x6601, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6602, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6603, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6604, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6605, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6606, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6607, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x6608, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6610, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6611, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6613, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
+@@ -300,6 +303,7 @@
+ 	{0x1002, 0x6829, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x682C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x682F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6830, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+-- 
+1.9.1
 
