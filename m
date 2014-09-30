@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaI3OpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:45:12 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54538 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaI3OpJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:45:09 -0400
-Date: Tue, 30 Sep 2014 15:45:06 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Rob Herring <robh@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
-Message-ID: <20140930144506.GQ841@e106497-lin.cambridge.arm.com>
-References: <706416181.hbVGLDA3o6@wuerfel>
+	id S1751916AbaI3Ot5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:49:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44054 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaI3Oty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 10:49:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,626,1406617200"; 
+   d="scan'208";a="610929837"
+Date: Tue, 30 Sep 2014 10:48:54 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
+Message-ID: <20140930144854.GA5098@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <15705.1412070301@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-In-Reply-To: <706416181.hbVGLDA3o6@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 30 Sep 2014 14:45:06.0925 (UTC) FILETIME=[208069D0:01CFDCBD]
-X-MC-Unique: 114093015450703101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <15705.1412070301@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 02:19:05PM +0100, Arnd Bergmann wrote:
-> The pci_register_io_range() and pci_pio_to_address() were recently
-> introduced to generalize the handling of memory mapped PCI I/O space,
-> but they are only valid when CONFIG_OF is set, leading to a possible
-> build error:
+On Tue, Sep 30, 2014 at 05:45:01AM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 25 Sep 2014 16:33:17 -0400, Matthew Wilcox said:
 > 
-> drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
-> drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
->    res_start = pci_pio_to_address(res->start);
->    ^
-> drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
-> drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
->    err = of_pci_range_to_resource(&range, pdev->dev.of_node,
->    ^
-> cc1: some warnings being treated as errors
+> > Patch 19 adds some DAX infrastructure to support ext4.
+> >
+> > Patch 20 adds DAX support to ext4.  It is broadly similar to ext2's DAX
+> > support, but it is more efficient than ext4's due to its support for
+> > unwritten extents.
 > 
-> This provides inline dummy implementations for the case that
-> CONFIG_OF is disabled, to allow better build testing.
+> I don't currently have a use case for NV-DIMM support.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
+> However, it would be nice if this code could be leveraged to support
+> 'force O_DIRECT on all I/O to this file' - that I *do* have a use
+> case for.  Patch 20 looks to my untrained eye like it *almost* gets
+> there.
+> 
+> (And if in fact it *does* do the whole enchilada, the Changelog etc should
+> mention it :)
 
-Acked-by: Liviu Dudau <Liviu.Dudau@arm.com>
-
-Is that triggered by shmobile_defconfig?
-
-Best regards,
-Liviu
-
-> 
-> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-> index 7ebb877b07c2..851097aab115 100644
-> --- a/include/linux/of_address.h
-> +++ b/include/linux/of_address.h
-> @@ -71,6 +71,11 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
->  	return NULL;
->  }
->  
-> +static inline phys_addr_t pci_pio_to_address(unsigned long pio)
-> +{
-> +	return 0;
-> +}
-> +
->  static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
->  			struct device_node *node)
->  {
-> @@ -144,6 +149,12 @@ static inline const __be32 *of_get_pci_address(struct device_node *dev,
->  {
->  	return NULL;
->  }
-> +static inline int of_pci_range_to_resource(struct of_pci_range *range,
-> +					   struct device_node *np,
-> +					   struct resource *res)
-> +{
-> +	return -ENOSYS;
-> +}
->  #endif /* CONFIG_OF_ADDRESS && CONFIG_PCI */
->  
->  #endif /* __OF_ADDRESS_H */
-> 
-> 
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+No, it doesn't try to do that.  Wouldn't you be better served with an
+LD_PRELOAD that forces O_DIRECT on?
 
