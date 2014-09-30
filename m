@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaI3VeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:34:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60790 "EHLO
+	id S1752894AbaI3VeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:34:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60792 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaI3VcB (ORCPT
+	with ESMTP id S1751916AbaI3VcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 17:32:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Mack <zonque@gmail.com>, Mark Brown <broonie@linaro.org>,
+Cc: James Forshaw <forshaw@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 011/103] ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
-Date: Tue, 30 Sep 2014 14:30:16 -0700
-Message-Id: <1412112708-27356-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 006/103] USB: whiteheat: Added bounds checking for bulk command response
+Date: Tue, 30 Sep 2014 14:30:11 -0700
+Message-Id: <1412112708-27356-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,36 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: James Forshaw <forshaw@google.com>
 
-commit 9301503af016eb537ccce76adec0c1bb5c84871e upstream.
+commit 6817ae225cd650fb1c3295d769298c38b1eba818 upstream.
 
-This mode is unsupported, as the DMA controller can't do zero-padding
-of samples.
+This patch fixes a potential security issue in the whiteheat USB driver
+which might allow a local attacker to cause kernel memory corrpution. This
+is due to an unchecked memcpy into a fixed size buffer (of 64 bytes). On
+EHCI and XHCI busses it's possible to craft responses greater than 64
+bytes leading a buffer overflow.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: James Forshaw <forshaw@google.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/pxa/pxa-ssp.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/usb/serial/whiteheat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/pxa/pxa-ssp.c b/sound/soc/pxa/pxa-ssp.c
-index a3119a0..7f15e45 100644
---- a/sound/soc/pxa/pxa-ssp.c
-+++ b/sound/soc/pxa/pxa-ssp.c
-@@ -766,9 +766,7 @@ static int pxa_ssp_remove(struct snd_soc_dai *dai)
- 			  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_64000 |	\
- 			  SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000)
- 
--#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
--			    SNDRV_PCM_FMTBIT_S24_LE |	\
--			    SNDRV_PCM_FMTBIT_S32_LE)
-+#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
- 
- static const struct snd_soc_dai_ops pxa_ssp_dai_ops = {
- 	.startup	= pxa_ssp_startup,
+diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
+index 36a7740..cc5a430 100644
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -521,6 +521,10 @@ static void command_port_read_callback(struct urb *urb)
+ 		dev_dbg(&urb->dev->dev, "%s - command_info is NULL, exiting.\n", __func__);
+ 		return;
+ 	}
++	if (!urb->actual_length) {
++		dev_dbg(&urb->dev->dev, "%s - empty response, exiting.\n", __func__);
++		return;
++	}
+ 	if (status) {
+ 		dev_dbg(&urb->dev->dev, "%s - nonzero urb status: %d\n", __func__, status);
+ 		if (status != -ENOENT)
+@@ -541,7 +545,8 @@ static void command_port_read_callback(struct urb *urb)
+ 		/* These are unsolicited reports from the firmware, hence no
+ 		   waiting command to wakeup */
+ 		dev_dbg(&urb->dev->dev, "%s - event received\n", __func__);
+-	} else if (data[0] == WHITEHEAT_GET_DTR_RTS) {
++	} else if ((data[0] == WHITEHEAT_GET_DTR_RTS) &&
++		(urb->actual_length - 1 <= sizeof(command_info->result_buffer))) {
+ 		memcpy(command_info->result_buffer, &data[1],
+ 						urb->actual_length - 1);
+ 		command_info->command_finished = WHITEHEAT_CMD_COMPLETE;
 -- 
 1.9.1
 
