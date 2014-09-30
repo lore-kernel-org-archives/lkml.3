@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaI3Tkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:40:53 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:65148 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaI3Tku (ORCPT
+	id S1753504AbaI3Tk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:40:57 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:53202 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316AbaI3Tkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:40:50 -0400
+	Tue, 30 Sep 2014 15:40:53 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, stable@kernel.org
-Subject: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-Date: Tue, 30 Sep 2014 12:40:35 -0700
-Message-Id: <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 2/2] x86_64: Don't save flags on context switch
+Date: Tue, 30 Sep 2014 12:40:36 -0700
+Message-Id: <6fcba8b78a44292687e6317fcc89a72d0dd07976.1412105369.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1412105369.git.luto@amacapital.net>
 References: <cover.1412105369.git.luto@amacapital.net>
@@ -26,72 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NT flag doesn't do anything in long mode other than causing IRET
-to #GP.  Oddly, CPL3 code can still net NT using popf.
+Now that the kernel always runs with clean flags (in particular, NT
+is clear), there is no need to save and restore flags on every
+context switch.
 
-Entry via hardware or software interrupt clears NT automatically, so
-the only relevant entries are fast syscalls.
-
-This patch programs the CPU to clear NT on entry via SYSCALL (both
-32-bit and 64-bit, by my reading of the AMD APM).  It also clears NT
-(and some other flags) in software on SYSENTER.
-
-I haven't touched anything on 32-bit kernels.
-
-If user code causes kernel code to run with NT set, then there's at
-least some (small) chance that it could cause trouble.  For example,
-user code could cause a call to EFI code with NT set, and who knows
-what would happen.  Apparently Wine sometimes does this (!), and, if
-an IRET return happens, Wine will segfault.
-
-I think that Wine should be fixed to stop setting NT when a syscall
-happens, but handling NT more gracefully is still nice.
-
-The syscall mask change comes from a variant of this patch by Anish
-Bhatt.
-
-Cc: stable@kernel.org
-Reported-by: Anish Bhatt <anish@chelsio.com>
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/ia32/ia32entry.S    | 10 +++++++++-
- arch/x86/kernel/cpu/common.c |  2 +-
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/switch_to.h | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb05023c..079f42a7ad58 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -143,7 +143,15 @@ ENTRY(ia32_sysenter_target)
- 	pushq_cfi %r10
- 	CFI_REL_OFFSET rip,0
- 	pushq_cfi %rax
--	cld
-+
-+	/*
-+	 * Sysenter doesn't filter flags, so we should filter them
-+	 * ourselves.
-+	 */
-+	pushfq_cfi
-+	andl $~(X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_NT|X86_EFLAGS_IOPL),(%rsp)
-+	popfq_cfi
-+
- 	SAVE_ARGS 0,1,0
-  	/* no need to do an access_ok check here because rbp has been
-  	   32bit zero extended */ 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e4ab2b42bd6f..31265580c38a 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1184,7 +1184,7 @@ void syscall_init(void)
- 	/* Flags to clear on syscall */
- 	wrmsrl(MSR_SYSCALL_MASK,
- 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
--	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-+	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
- }
+diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
+index d7f3b3b78ac3..0464181b0cbe 100644
+--- a/arch/x86/include/asm/switch_to.h
++++ b/arch/x86/include/asm/switch_to.h
+@@ -79,8 +79,8 @@ do {									\
+ #else /* CONFIG_X86_32 */
  
- /*
+ /* frame pointer must be last for get_wchan */
+-#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
+-#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
++#define SAVE_CONTEXT    "pushq %%rbp ; movq %%rsi,%%rbp\n\t"
++#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp\t"
+ 
+ #define __EXTRA_CLOBBER  \
+ 	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
+@@ -100,7 +100,11 @@ do {									\
+ #define __switch_canary_iparam
+ #endif	/* CC_STACKPROTECTOR */
+ 
+-/* Save restore flags to clear handle leaking NT */
++/*
++ * There is no need to save or restore flags, because flags are always
++ * clean in kernel mode, with the possible exception of IOPL.  Kernel IOPL
++ * has no effect.
++ */
+ #define switch_to(prev, next, last) \
+ 	asm volatile(SAVE_CONTEXT					  \
+ 	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
 -- 
 1.9.3
 
