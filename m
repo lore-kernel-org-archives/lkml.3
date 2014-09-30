@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaI3G6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:58:21 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaI3G6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:58:20 -0400
-Message-ID: <542A548A.7040308@nod.at>
-Date: Tue, 30 Sep 2014 08:58:18 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751653AbaI3G6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:58:55 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:43177 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaI3G6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 02:58:53 -0400
+Date: Tue, 30 Sep 2014 01:56:39 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] staging: skein: checkpatch.pl warnings
+Message-ID: <cover.1412060010.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] UBI: Ensure that all fastmap work is done upon WL
- shutdown
-References: <1412029248-22454-1-git-send-email-richard@nod.at>	 <1412029248-22454-2-git-send-email-richard@nod.at> <1412058366.23429.77.camel@sauron.fi.intel.com>
-In-Reply-To: <1412058366.23429.77.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 30.09.2014 08:26, schrieb Artem Bityutskiy:
-> On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
->> ...otherwise the deferred work might run after datastructures
->> got freed and corrupt memory.
-> 
-> How can this happend? The background thread is stopped by this time
-> already, so what are the other possibilities? And why is this
-> fastmap-only?
+Fixes the follwoing checkpatch.pl warnings:
+WARNING: suspect code indent for conditional statements (16, 16)
++               for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
+[...]
++               {
 
-This has nothing do to with the background thread.
-Fastmap has a work queue. If one fastmap work has been
-scheuled we have to wait for it.
+WARNING: suspect code indent for conditional statements (16, 16)
++               for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
+[...]
++               {
 
-Thanks,
-//richard
+
+Eric Rost (3):
+  staging: skein: Whitespace cleanup
+  drivers: staging: skein: In progress
+  drivers: staging: skein: File Reorg
+
+ drivers/staging/skein/skein_block.c |  933 +++++++++++++++++++----------------
+ 1 file changed, 500 insertions(+), 433 deletions(-)
+
+-- 
+1.7.10.4
+
