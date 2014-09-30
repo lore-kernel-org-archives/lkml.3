@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095AbaI3BZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:25:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57751 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942AbaI3BZk (ORCPT
+	id S1755178AbaI3B2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:28:23 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:39271 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411AbaI3B2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:25:40 -0400
-Date: Mon, 29 Sep 2014 20:25:35 -0500
-From: rkuo <rkuo@codeaurora.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Hexagon: Remove useless select of NO_IOPORT_MAP
-Message-ID: <20140930012535.GA28236@codeaurora.org>
-References: <1411586511.19525.38.camel@x220>
+	Mon, 29 Sep 2014 21:28:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411586511.19525.38.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87lhp12a2i.fsf@x220.int.ebiederm.org>
+References: <87lhp12a2i.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 29 Sep 2014 18:28:00 -0700
+Message-ID: <CALCETrXGojRGtT1B2Aib7m54j8T+LsnCOin_GL93-BWf-eSPkA@mail.gmail.com>
+Subject: Re: [PATCH] umount.2: Correct the description of MNT_DETACH
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Andrey Wagin <avagin@gmail.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 09:21:51PM +0200, Paul Bolle wrote:
-> Hexagon's primary Kconfig entry has a select for NO_IOPORT_MAP. But
-> because hexagon never defines a Kconfig symbol NO_IOPORT_MAP this select
-> is a nop. It can be removed.
-> 
-> Perhaps hexagon should add its own Kconfig entry for NO_IOPORT_MAP and
-> have it default to 'y'. But since no one apparently had any problems
-> with HAS_IOPORT_MAP defaulting to 'y' on hexagon, as it currently does,
-> that is unlikely.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On Mon, Sep 29, 2014 at 6:04 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+>
+> I recently realized that I had been reasoning improperly about what
+> umount(MNT_DETACH) did based on an insufficient description in
+> the umount.2 man page, that matched my intuition but not the
+> implementation.
+>
+> When there are no submounts MNT_DETACH is essentially harmless to
+> applications.  Where there are submounts MNT_DETACH changes what
+> is visible to applications using the detach directories.
+>
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 > ---
-> Tested by playing with arch/hexagon/configs/comet_defconfig. After "make
-> oldconfig" the .config contains CONFIG_HAS_IOPORT_MAP=y both before and
-> after this patch, as is expected.
-> 
-> Actually, the only difference I found in the .config file was that after
-> this patch the .config file contained
->     CONFIG_HEXAGON=y
-> 
-> I have no idea why. Did I botch my test?
-> 
->  arch/hexagon/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-> index 4dc89d1f9c48..f1817eae107a 100644
-> --- a/arch/hexagon/Kconfig
-> +++ b/arch/hexagon/Kconfig
-> @@ -19,7 +19,6 @@ config HEXAGON
->  	select GENERIC_IRQ_SHOW
->  	select HAVE_ARCH_KGDB
->  	select HAVE_ARCH_TRACEHOOK
-> -	select NO_IOPORT_MAP
->  	select GENERIC_IOMAP
->  	select GENERIC_SMP_IDLE_THREAD
->  	select STACKTRACE_SUPPORT
-> -- 
-> 1.9.3
-> 
+>  man2/umount.2 | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+>
+> diff --git a/man2/umount.2 b/man2/umount.2
+> index 5ff88152c738..aea39d8306fe 100644
+> --- a/man2/umount.2
+> +++ b/man2/umount.2
+> @@ -66,9 +66,10 @@ This can cause data loss.
+>  (Only for NFS mounts.)
+>  .TP
+>  .BR MNT_DETACH " (since Linux 2.4.11)"
+> -Perform a lazy unmount: make the mount point unavailable for
+> -new accesses, and actually perform the unmount when the mount point
+> -ceases to be busy.
+> +Perform a lazy unmount: make the mount point unavailable for new
+> +accesses, immediately disconnect the filesystem and all filesystems
+> +mounted below it from each other and from the mount table, and
+> +actually perform the unmount when the mount point ceases to be busy.
 
-There seemed to be a convoluted history behind the ioport options, but yes this
-is no longer needed/doesn't actually do anything.  Thanks!
+Want to add something like:
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+MNT_DETACH on a shared mount will propagate unmount events to its peer
+group.  That means that recursively bind mounting a shared mount and
+then unmounting that recursive bind mount will unmount all submounts
+of the original mount.  This behavior can be avoided by remounting a
+directory with MS_REC | MS_PRIVATE before unmounting it.
+
+--Andy
+
+>  .TP
+>  .BR MNT_EXPIRE " (since Linux 2.6.8)"
+>  Mark the mount point as expired.
+> --
+> 1.9.1
+>
+
 
 
 -- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Andy Lutomirski
+AMA Capital Management, LLC
