@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaI3HJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:09:56 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1697 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaI3HJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:09:54 -0400
-Message-ID: <542A5739.6040207@huawei.com>
-Date: Tue, 30 Sep 2014 15:09:45 +0800
-From: Wang Weidong <wangweidong1@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <viresh.kumar@linaro.org>, <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] acpi-cpufreq: get the cur_freq from acpi_processor_performance
- states
-References: <53F589C3.4050504@huawei.com> <2075276.PKjjuvNeys@vostro.rjw.lan> <54264C0B.1000607@huawei.com> <2361937.mQR3H5xj3F@vostro.rjw.lan>
-In-Reply-To: <2361937.mQR3H5xj3F@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.75]
-X-CFilter-Loop: Reflected
+	id S1752176AbaI3HKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:10:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365AbaI3HKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:10:33 -0400
+From: Baoquan He <bhe@redhat.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, vgoyal@redhat.com, keescook@chromium.org,
+        ak@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
+        whissi@whissi.de, kumagai-atsushi@mxc.nes.nec.co.jp,
+        Baoquan He <bhe@redhat.com>, stable@vger.kernel.org
+Subject: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Date: Tue, 30 Sep 2014 15:08:15 +0800
+Message-Id: <1412060896-1902-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/28 4:01, Rafael J. Wysocki wrote:
-> On Saturday, September 27, 2014 01:32:59 PM Wang Weidong wrote:
->> On 2014/9/27 7:21, Rafael J. Wysocki wrote:
->>> On Thursday, August 21, 2014 01:55:15 PM Wang Weidong wrote:
->>>> As the initialized freq_tables maybe different from the p-states
->>>> values, so the array index is different as well.
->>>>
->>>> p-states value: [2400 2400 2000 ...], while the freq_tables:
->>>> [2400 2000 ... CPUFREQ_TABLE_END]. After setted the freqs 2000,
->>>> the perf->state is 3 while the freqs_table's index should be 2.
->>>> So when call the get_cur_freq_on_cpu, the freqs value we get
->>>> is 2400.
->>>>
->>>> So, fix the problem with the correct tables.
->>>
->>> What you're saying is basically that freq_table and perf->states
->>> diverge at one point.  Shouldn't we re-generate freq_table in that
->>> case instead of fixing up get_cur_freq_on_cpu() only in a quite
->>> indirect way? 
->>>
->> Hi Rafael,
->>
->> Thanks for your reply.
->>
->> You mean that we should re-generate the freq_table in that case?
->> Could we fix the table init like this:
->>
->> --- a/drivers/cpufreq/acpi-cpufreq.c
->> +++ b/drivers/cpufreq/acpi-cpufreq.c
->> @@ -779,7 +779,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
->>
->>         /* table init */
->>         for (i = 0; i < perf->state_count; i++) {
->> -               if (i > 0 && perf->states[i].core_frequency >=
->> +               if (i > 0 && perf->states[i].core_frequency >
->>                     data->freq_table[valid_states-1].frequency / 1000)
->>                         continue;
->>
->> when the value is same, we just keep the value into the freq_table.
-> 
-> That would only be OK if it is guaranteed that the set of available
-> states hasn't changed, which I'm not sure is the case.
-> 
-> Rafael
-> 
+Function handle_relocations() is used to do the relocations handling
+for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+mandotary to perform. For x86_64 only when kaslr is enabled and a
+random kernel location is chosen successfully the relocation handling
+shound be done. However previous implementation only compared the
+kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+compiled to run at. This would casue system to be exceptional in
+few conditions like when delta between load address and compiled
+address is bigger than what 32bit signed relocations can handle.
+Also there will be limitations that delta can't be too big otherwise
+kernel text virtual addresses will overflow in module address space.
 
-Yep, ACPI maybe will dynamic to report the states to the OS . So I should consider it again.
+So in this patch check if kernel location is changed after
+choose_kernel_location() when x86_64. If and only if in x86_64
+and kernel location is changed, we say a kaslr random kernel
+location is chosen, then the relocation handling is needed.
 
-Regards,
-Wang
-> 
-> .
-> 
+Signed-off-by: Baoquan He <bhe@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Tested-by: Thomas D. <whissi@whissi.de>
+Cc: stable@vger.kernel.org
+---
+ arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74d..3bb2a17 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -230,8 +230,9 @@ static void error(char *x)
+ 		asm("hlt");
+ }
+ 
+-#if CONFIG_X86_NEED_RELOCS
+-static void handle_relocations(void *output, unsigned long output_len)
++#ifdef CONFIG_X86_NEED_RELOCS
++static void handle_relocations(void *output_orig, void *output,
++			       unsigned long output_len)
+ {
+ 	int *reloc;
+ 	unsigned long delta, map, ptr;
+@@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+ 	unsigned long max_addr = min_addr + output_len;
+ 
+ 	/*
++	* 32bit always requires relocations to be performed. For x86_64,
++	* relocations need to be performed only if kaslr has chosen a
++	* different load address then kernel was originally loaded at.
++	*
++	* If we are here, either kaslr is not configured in or kaslr is disabled
++	* or kaslr has chosen not to change the load location of kernel. Don't
++	* perform any relocations.
++	*/
++#if CONFIG_X86_64
++	if (output_orig == output)
++		return;
++#endif
++
++	/*
+ 	 * Calculate the delta between where vmlinux was linked to load
+ 	 * and where it was actually loaded.
+ 	 */
+@@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+ #endif
+ }
+ #else
+-static inline void handle_relocations(void *output, unsigned long output_len)
++static inline void handle_relocations(void *output_orig, void *output,
++				      unsigned long output_len)
+ { }
+ #endif
+ 
+@@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *output,
+ 				  unsigned long output_len)
+ {
++	unsigned char *output_orig = output;
++
+ 	real_mode = rmode;
+ 
+ 	sanitize_boot_params(real_mode);
+@@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	debug_putstr("\nDecompressing Linux... ");
+ 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+ 	parse_elf(output);
+-	handle_relocations(output, output_len);
++	handle_relocations(output_orig, output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+ 	return output;
+ }
+-- 
+1.8.5.3
 
