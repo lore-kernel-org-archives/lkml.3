@@ -1,46 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaI3VDr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:03:47 -0400
-Received: from smtp-out-177.synserver.de ([212.40.185.177]:1049 "EHLO
-	smtp-out-175.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751606AbaI3VDq (ORCPT
+	id S1751801AbaI3VE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:04:28 -0400
+Received: from forward8l.mail.yandex.net ([84.201.143.141]:47026 "EHLO
+	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaI3VE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:03:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29075
-Message-ID: <542B1ABE.5000900@metafoo.de>
-Date: Tue, 30 Sep 2014 23:03:58 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
+	Tue, 30 Sep 2014 17:04:26 -0400
+X-Yandex-Uniq: 0419ea50-2e6e-4ee1-8a01-da91abc61dd1
+Authentication-Results: smtp12.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
+ switched_from_dl()
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Date: Wed, 01 Oct 2014 01:04:22 +0400
+Message-ID: <20140930210412.5258.35299.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: Dan Murphy <dmurphy@ti.com>, broonie@kernel.org,
-        gregkh@linuxfoundation.org
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] regmap: Allow read_reg_mask to be 0
-References: <1412093220-24690-1-git-send-email-dmurphy@ti.com>
-In-Reply-To: <1412093220-24690-1-git-send-email-dmurphy@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 06:07 PM, Dan Murphy wrote:
-> There may be spi devices that do not require a
-> register read mask to read the registers.
->
-> Currently the code sets the read mask based on
-> a non-zero value passed in from the driver or if that
-> value is 0 sets the read mask to 0x80.
+From: Kirill Tkhai <ktkhai@parallels.com>
 
-It only sets it to the bus default if both read_flag_mask and 
-write_flag_mask are 0. The assumption is that both of them being zero is a 
-invalid configuration and either of them (or both) have to be non-zero for 
-proper operation, since otherwise the device can't tell the difference 
-between a read and a write.
+hrtimer_try_to_cancel() may bring a suprise, its call may fail.
 
-Do you have a device where both the read and the write mask is 0?
+raw_spin_lock(&rq->lock)
+...                            dl_task_timer                 raw_spin_lock(&rq->lock)
+...                               raw_spin_lock(&rq->lock)   ...
+   switched_from_dl()             ...                        ...
+      hrtimer_try_to_cancel()     ...                        ...
+   switched_to_fair()             ...                        ...
+...                               ...                        ...
+...                               ...                        ...
+raw_spin_unlock(&rq->lock)        ...                        (asquired)
+...                               ...                        ...
+...                               ...                        ...
+do_exit()                         ...                        ...
+   schedule()                     ...                        ...
+      raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
+      ...                         ...                        ...
+      raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
+      ...                         ...                        (asquired)
+      put_task_struct()           ...                        ...
+          free_task_struct()      ...                        ...
+      ...                         ...                        raw_spin_unlock(&rq->lock)
+...                               (asquired)                 ...
+...                               ...                        ...
+...                               Surprise!!!                ...
 
-- Lars
+So, let's implement 100% guaranteed way to cancel the timer and let's
+be sure we are safe even in very unlikely situations.
+
+We do not create any problem with rq unlocking, because it already
+may happed below in pull_dl_task(). No problem with deadline tasks
+balancing too.
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/deadline.c |   33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index abfaf3d..63f8b4a 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
+ {
+ 	struct hrtimer *timer = &dl_se->dl_timer;
+ 
+-	if (hrtimer_active(timer)) {
+-		hrtimer_try_to_cancel(timer);
+-		return;
+-	}
+-
+ 	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	timer->function = dl_task_timer;
+ }
+@@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
+ 
+ #endif /* CONFIG_SMP */
+ 
++/*
++ *  Surely cancel task's dl_timer. May drop rq->lock.
++ */
++static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
++{
++	struct hrtimer *dl_timer = &p->dl.dl_timer;
++
++	/* Nobody will change task's class if pi_lock is held */
++	lockdep_assert_held(&p->pi_lock);
++
++	if (hrtimer_active(dl_timer)) {
++		int ret = hrtimer_try_to_cancel(dl_timer);
++
++		if (unlikely(ret == -1)) {
++			/*
++			 * Note, p may migrate OR new deadline tasks
++			 * may appear in rq when we are unlocking it.
++			 */
++			raw_spin_unlock(&rq->lock);
++			hrtimer_cancel(dl_timer);
++			raw_spin_lock(&rq->lock);
++		}
++	}
++}
++
+ static void switched_from_dl(struct rq *rq, struct task_struct *p)
+ {
+-	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
+-		hrtimer_try_to_cancel(&p->dl.dl_timer);
++	cancel_dl_timer(rq, p);
+ 
+ 	__dl_clear_params(p);
+ 
+
