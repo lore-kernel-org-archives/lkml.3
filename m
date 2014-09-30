@@ -1,229 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaI3AMY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:12:24 -0400
-Received: from mail-bn1bon0145.outbound.protection.outlook.com ([157.56.111.145]:27119
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755271AbaI3AMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:12:21 -0400
-Date: Tue, 30 Sep 2014 08:12:07 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
-        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140930001206.GA11657@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
+	id S1755381AbaI3AMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:12:42 -0400
+Received: from ozlabs.org ([103.22.144.67]:39348 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755300AbaI3AMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 20:12:08 -0400
+Date: Tue, 30 Sep 2014 10:12:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Jiancheng Xue <xuejiancheng@huawei.com>, Wei Xu <xuwei5@hisilicon.com>
+Subject: Re: linux-next: build failure after merge of the arm-soc tree
+Message-ID: <20140930101200.1239cd52@canb.auug.org.au>
+In-Reply-To: <20140926115539.6873630b@canb.auug.org.au>
+References: <20140926115539.6873630b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(199003)(51704005)(20776003)(84676001)(85306004)(107046002)(104016003)(120916001)(57986006)(86362001)(92566001)(92726001)(10300001)(97756001)(47776003)(64706001)(87936001)(99396003)(85852003)(110136001)(33716001)(83506001)(76482002)(102836001)(33656002)(6806004)(23726002)(50986999)(105606002)(80022003)(95666004)(68736004)(31966008)(4396001)(21056001)(81156004)(19580395003)(26826002)(46102003)(50466002)(46406003)(97736003)(44976005)(76176999)(19580405001)(106466001)(54356999)(69596002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0636;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0636;
-X-Forefront-PRVS: 0350D7A55D
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/7m.r1L3LhVQOJ81s1RtjBvI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 12:28:03PM +0200, Antoine Tenart wrote:
-> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> and DMA mask, to support USB2 ChipIdea controllers that don't need
-> specific functions.
-> 
-> Tested on the Marvell Berlin SoCs USB controllers.
-> 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/Makefile       |   1 +
->  drivers/usb/chipidea/ci_hdrc_usb2.c | 138 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 139 insertions(+)
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> 
-> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> index 2f099c7df7b5..1fc86a2ca22d 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
->  
->  # Glue/Bridge layers go here
->  
-> +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
->  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
->  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_zevio.o
->  
-> diff --git a/drivers/usb/chipidea/ci_hdrc_usb2.c b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> new file mode 100644
-> index 000000000000..6eae1de587f2
-> --- /dev/null
-> +++ b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> @@ -0,0 +1,138 @@
-> +/*
-> + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> + *
-> + * Antoine Tenart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/chipidea.h>
-> +#include <linux/usb/hcd.h>
-> +#include <linux/usb/ulpi.h>
-> +
-> +#include "ci.h"
-> +
-> +struct ci_hdrc_usb2_priv {
-> +	struct platform_device	*ci_pdev;
-> +	struct clk		*clk;
-> +};
-> +
-> +static int ci_hdrc_usb2_dt_probe(struct device *dev,
-> +				 struct ci_hdrc_platform_data *ci_pdata)
-> +{
-> +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
-> +	if (IS_ERR(ci_pdata->phy)) {
-> +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
-> +			return -EPROBE_DEFER;
-> +
-> +		/* PHY is optional */
-> +		ci_pdata->phy = NULL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct ci_hdrc_platform_data ci_default_pdata = {
-> +	.capoffset	= DEF_CAPOFFSET,
-> +	.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
-> +			  CI_HDRC_DISABLE_STREAMING,
-> +};
-> +
-> +static int ci_hdrc_usb2_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct ci_hdrc_usb2_priv *priv;
-> +	struct ci_hdrc_platform_data *ci_pdata = dev_get_platdata(&pdev->dev);
-> +	int ret;
-> +
-> +	if (!ci_pdata)
-> +		ci_pdata = &ci_default_pdata;
-> +
-> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv)
-> +		return -ENOMEM;
-> +
-> +	priv->clk = devm_clk_get(dev, NULL);
-> +	if (!IS_ERR(priv->clk)) {
-> +		ret = clk_prepare_enable(priv->clk);
-> +		if (ret) {
-> +			dev_err(dev, "failed to enable the clock: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	if (dev->of_node) {
-> +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
-> +		if (ret)
-> +			goto clk_err;
-> +	} else {
-> +		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> +		if (ret)
-> +			goto clk_err;
-> +	}
+--Sig_/7m.r1L3LhVQOJ81s1RtjBvI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-My suggestion:
+Hi all,
 
-- call dma_coerce_mask_and_coherent(&dev->dev, DMA_BIT_MASK(32)) for both 
-dt and non-dt
-- Do not need function ci_hdrc_usb2_dt_probe, the phy handle should be moved
-to core driver, since your generic phy driver are still not accepted, I
-can't do it by myself. Either you or I can do it after your generic phy support
-series has been accepted.
-- Others are ok.
+On Fri, 26 Sep 2014 11:55:39 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the arm-soc tree, today's linux-next build (arm
+> multi_v7_defconfig) failed like this:
+>=20
+> Error: arch/arm/boot/dts/hisi-x5hd2.dtsi:374.22-23 syntax error
+> FATAL ERROR: Unable to parse input tree
 
-Peter
+OK, now I get:
 
-> +
-> +	ci_pdata->name = dev_name(&pdev->dev);
-> +
-> +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> +					   pdev->num_resources, ci_pdata);
-> +	if (IS_ERR(priv->ci_pdev)) {
-> +		ret = PTR_ERR(priv->ci_pdev);
-> +		if (ret != -EPROBE_DEFER)
-> +			dev_err(dev,
-> +				"failed to register ci_hdrc platform device: %d\n",
-> +				ret);
-> +		goto clk_err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, priv);
-> +
-> +	pm_runtime_no_callbacks(dev);
-> +	pm_runtime_enable(dev);
-> +
-> +	return 0;
-> +
-> +clk_err:
-> +	if (!IS_ERR(priv->clk))
-> +		clk_disable_unprepare(priv->clk);
-> +	return ret;
-> +}
-> +
-> +static int ci_hdrc_usb2_remove(struct platform_device *pdev)
-> +{
-> +	struct ci_hdrc_usb2_priv *priv = platform_get_drvdata(pdev);
-> +
-> +	pm_runtime_disable(&pdev->dev);
-> +	ci_hdrc_remove_device(priv->ci_pdev);
-> +	clk_disable_unprepare(priv->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id ci_hdrc_usb2_of_match[] = {
-> +	{ .compatible = "chipidea,usb2" },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, ci_hdrc_usb2_of_match);
-> +
-> +static struct platform_driver ci_hdrc_usb2_driver = {
-> +	.probe	= ci_hdrc_usb2_probe,
-> +	.remove	= ci_hdrc_usb2_remove,
-> +	.driver	= {
-> +		.name		= "chipidea-usb2",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table	= of_match_ptr(ci_hdrc_usb2_of_match),
-> +	},
-> +};
-> +module_platform_driver(ci_hdrc_usb2_driver);
-> +
-> +MODULE_DESCRIPTION("ChipIdea HDRC USB2 binding for ci13xxx");
-> +MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
-> +MODULE_LICENSE("GPL");
-> -- 
-> 1.9.1
-> 
+Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:417.21-22 syntax=
+ error
+FATAL ERROR: Unable to parse input tree
 
--- 
-Best Regards,
-Peter Chen
+Are you guys really testing this stuff? :-(
+
+> There are a series of new commits to this file today and I have no idea
+> which one caused the problem.
+>=20
+> I reverted:
+>=20
+> 610bd8722ef4	"ARM: dts: hix5hd2: add wdg node"
+
+Reverted in the arm-soc tree.
+
+> 6868feb6dd97	"ARM: dts: hix5hd2: add gpio node"
+
+Error is now:
+
+Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
+ error
+
+> 420a2d55f046	"ARM: dts: hix5hd2: add sata node"
+
+Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
+ error
+
+
+> f16c7fb2f3ff	"ARM: dts: hix5hd2: add usb node"
+
+Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:183.21-22 syntax=
+ error
+
+> b196e1ca400d	"ARM: dts: hix5hd2: add mmc node"
+
+Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:174.21-22 syntax=
+ error
+
+> de8b6054780e	"ARM: dts: hix5hd2: add gmac node"
+
+no more errors.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/7m.r1L3LhVQOJ81s1RtjBvI
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUKfVVAAoJEMDTa8Ir7ZwV7kQP/2sqQsh/WWo8VsVHmVjXx4cn
+aNstsRKX/i6pfL0ojWlEiO/Nc7hFFj720aqa19424tbkN540QthXaMMlyyEvcUMK
+K3F9Ug7Eez/6dEwauPD2whex5XqnNbP1eJ0xrjrcJP6GsQ/gwptoFBAeUQMGecc6
+wIHfEcdnr9I0W0WbR+yN828VM6Ef1DalKmkrCvPcyAceZVBhYzx50GRWKsrTveX8
+22FWgG5PqeAYPYHf+vzqxpARFsj17F380Mb0JOMG4GEaf5BWw86ZtvWYhsw0RVKM
+J68EC7WV4wRl1GnJXsjJWM5iJlb8TPmJLwQCNpMiEPyi+AQ8UwVvOB15o1dWuNmJ
+FfjMEhbeuAQJZjCtFjAh+WxTWWqz2n4uSP/kxaf27d7n0e4tI/HrOsL5SzYVVz1K
+seEaeeFHuvcYhvZ3qNep1lhNbH8kJkoi3/udIPHe72Zx63SyfQZ7dl9rboQ+mB3u
+uY/wbur+6gKHIAH/m4QX0NY+zuY5ZWmKiCm6AOhygiNpvNgJ5qEMF/GtMS9E+d/1
+VcbfB3k6DNGsQ6+oN8UHGtmtCIpTCUPr4a8pqig4OaSKag2UwFLk4Q8VK+d2UaGX
+Vn2oPuH3TLGdjAXp0epFJgpkrhCS7VdXpYKp226DckKXGQPp2BqGddK0YNQQobuh
+C8GyIapn/MnaCnzpIoii
+=FyZg
+-----END PGP SIGNATURE-----
+
+--Sig_/7m.r1L3LhVQOJ81s1RtjBvI--
