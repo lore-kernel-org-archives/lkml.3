@@ -1,127 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaI3Hkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:40:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34310 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaI3Hka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:40:30 -0400
-Message-ID: <542A5E9F.2010006@ti.com>
-Date: Tue, 30 Sep 2014 10:41:19 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755394AbaI3HmQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:42:16 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:56230 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaI3HmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:42:15 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+CC: Johannes Berg <johannes@sipsolutions.net>,
+        "dsd@gentoo.org" <dsd@gentoo.org>,
+        "kune@deine-taler.de" <kune@deine-taler.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH v2] zd1211rw: replace ZD_ASSERT with
+ lockdep_assert_held()
+Thread-Topic: [PATCH v2] zd1211rw: replace ZD_ASSERT with
+ lockdep_assert_held()
+Thread-Index: AQHPzaji67ru1uysWEKojhy3lQjAn5v7vMNQgAXsTACAF73wAA==
+Date: Tue, 30 Sep 2014 07:42:11 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE950E5F3DF@EU-MBX-04.mgc.mentorg.com>
+References: <1410418407.1825.0.camel@jlt4.sipsolutions.net>
+ <1410430179-19944-1-git-send-email-sanjeev_sharma@mentor.com>
+ <1410430345.22863.0.camel@jlt4.sipsolutions.net>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF5256D@EU-MBX-02.mgc.mentorg.com>
+ <CAGRGNgWOkzbu7sUxOqpgK_rzw1Xzny4aVFYOO6Rqd09-CpfvJA@mail.gmail.com>
+In-Reply-To: <CAGRGNgWOkzbu7sUxOqpgK_rzw1Xzny4aVFYOO6Rqd09-CpfvJA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        <tony@atomide.com>
-Subject: Re: [RFC] clk: Make clk API return per-user struct clk instances
-References: <20140926232009.19023.15825@quantum> <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com> <542A0A07.8040205@codeaurora.org> <20140930065432.19023.19492@quantum>
-In-Reply-To: <20140930065432.19023.19492@quantum>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8U7gM9s020036
 
-On 09/30/2014 09:54 AM, Mike Turquette wrote:
-> Quoting Stephen Boyd (2014-09-29 18:40:23)
->> On 09/29/14 11:17, Tomeu Vizoso wrote:
->>> Also moves clock state to struct clk_core, but takes care to change as little
->>> API as possible.
->>>
->>> struct clk_hw still has a pointer to a struct clk, which is the
->>> implementation's per-user clk instance, for backwards compatibility.
->>>
->>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>>
->>> ---
->>>
->>> Hello,
->>>
->>> I'm sending this alternate implementation of the switch to per-user clocks,
->>> with the added goal of not requiring any substantial changes to existing users
->>> of the API.
->>>
->>> This is pretty much RFC-quality right now, having only tested that it builds on
->>> tegra_defconfig.
->>>
->>> My main question right now is what do we want to do with those drivers that
->>> statically declare clocks. State is now in struct clk_core, so updating the
->>> drivers accordingly will amount to a substantial amount of lines changed, which
->>> we are now trying to avoid.
->>
->> Who's actually using the static clocks? Isn't it just omap2? It looks
->> like all of those are behind the DEFINE_CLK define so changing it in
->> clk-private.h should "just work". I'm lost as to why static clocks are
->> being used there though. If it was a problem with allocating memory too
->> early it doesn't seem to be the case given that sometimes the .parents
->> field isn't set for a mux and __clk_init() will go and allocate an array
->> of pointers. Maybe I missed something though.
+-----Original Message-----
+From: Julian Calaby [mailto:julian.calaby@gmail.com] 
+Sent: Monday, September 15, 2014 11:32 AM
+To: Sharma, Sanjeev
+Cc: Johannes Berg; dsd@gentoo.org; kune@deine-taler.de; linux-wireless@vger.kernel.org; linux-kernel@vger.kernel.org; netdev@vger.kernel.org
+Subject: Re: [PATCH v2] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+
+Hi Sanjeev,
+
+On Thu, Sep 11, 2014 at 8:36 PM, Sharma, Sanjeev <Sanjeev_Sharma@mentor.com> wrote:
+> -----Original Message-----
+> From: Johannes Berg [mailto:johannes@sipsolutions.net]
+> Sent: Thursday, September 11, 2014 3:42 PM
+> To: Sharma, Sanjeev
+> Cc: dsd@gentoo.org; kune@deine-taler.de; 
+> linux-wireless@vger.kernel.org; linux-kernel@vger.kernel.org; 
+> netdev@vger.kernel.org
+> Subject: Re: [PATCH v2] zd1211rw: replace ZD_ASSERT with 
+> lockdep_assert_held()
 >
-> Yeah, the old omap2+ static clocks were due to very very early init of
-> things which required clocks
+> On Thu, 2014-09-11 at 15:39 +0530, Sanjeev Sharma wrote:
+>> on some architecture spin_is_locked() always return false in 
+>> uniprocessor configuration and therefore it would be advise to 
+>> replace with lockdep_assert_held().
+>>
+>> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+>> ---
+>> Changes in v2:
+>>   - corrected the typo
 >
-> If memory serves, that isn't a problem any more. I've talked to Tony and
-> Tero about my desire to remove clk-private.h and the need to get rid of
-> its use in the omap clock code.
+>> Now it compiles, but you got the logic wrong.
 >
-> Tero, what is the status of DT conversion for OMAP2/OMAP3? Can we get
-> get away with only defining clock data in DT for those platforms? Can we
-> finally kill off clk-private.h?
-
-Clock data has been converted for all SoCs. The problem is currently 
-that we are missing some OMAP3 based DT board definitions and still 
-require legacy boot => thus requiring legacy clock data also => omap3 
-legacy clock data can't be removed yet.
-
-Tony, whats the latest status with these missing omap3 boards? How many 
-board->dt conversions are still needed? Is there anything someone can do 
-on this front?
-
--Tero
-
+>> +++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+>> @@ -235,7 +235,7 @@ void zd_mac_clear(struct zd_mac *mac)  {
+>>       flush_workqueue(zd_workqueue);
+>>       zd_chip_clear(&mac->chip);
+>> -     ZD_ASSERT(!spin_is_locked(&mac->lock));
+>> +     lockdep_assert_held(&mac->lock);
+>>       ZD_MEMCLEAR(mac, sizeof(struct zd_mac));  }
 >
-> Regards,
-> Mike
+>>Look closely at this again.
 >
->>
->>>
->>> Thanks,
->>>
->>> Tomeu
->>> ---
->>>   drivers/clk/clk-composite.c  |  12 +-
->>>   drivers/clk/clk.c            | 573 +++++++++++++++++++++++++++----------------
->>>   drivers/clk/clk.h            |   5 +
->>>   drivers/clk/clkdev.c         |  20 +-
->>>   drivers/clk/tegra/clk.c      |   2 +-
->>>   include/linux/clk-private.h  |  20 +-
->>>   include/linux/clk-provider.h |  22 +-
->>>   include/linux/clkdev.h       |   2 +-
->>>   8 files changed, 410 insertions(+), 246 deletions(-)
->>>
->>> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
->>> index b9355da..cb4a09d 100644
->>> --- a/drivers/clk/clk-composite.c
->>> +++ b/drivers/clk/clk-composite.c
->>> @@ -57,14 +57,14 @@ static unsigned long clk_composite_recalc_rate(struct clk_hw *hw,
->>>
->>>   static long clk_composite_determine_rate(struct clk_hw *hw, unsigned long rate,
->>>                                        unsigned long *best_parent_rate,
->>> -                                     struct clk **best_parent_p)
->>> +                                     struct clk_core **best_parent_p)
->>
->>
->> We should avoid exposing clk_core to anything besides clk.c or users of
->> clk-private.h (the latter which should go away once we remove all static
->> clocks).
->>
->> --
->> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
->> hosted by The Linux Foundation
->>
+> I didn't understand where I  put wrong logic  ?
 
+I find it helps to spell out what code is doing in words.
+
+E.g. the line you're removing is:
+ZD_ASSERT(!spin_is_locked(&mac->lock));
+
+So, we'll assert when spin_is_locked(&mac->lock) is false, i.e. when
+mac->lock is not spin locked.
+
+This isn't the same as what you're replacing it with.
+
+ I  feel logic is absolutely correct and if you expand it will looks like ..
+
++#define lockdep_assert_held(l)	do {	\ 
++	WARN_ON(debug_locks && !lockdep_is_held(l));	\ 
++	} while (0)
+
+Please refer http://lkml.iu.edu/hypermail/linux/kernel/1203.2/00369.html and also see include/linux/lockdep.h for more detail.
+
+Thanks
+Sanjeev Sharma
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
