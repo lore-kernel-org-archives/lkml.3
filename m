@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaI3Hgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:36:46 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:48753 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413AbaI3Hgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:36:44 -0400
-Message-ID: <1412062606.5395.10.camel@iivanov-dev>
-Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Date: Tue, 30 Sep 2014 10:36:46 +0300
-In-Reply-To: <542A31DF.7020402@smartplayin.com>
-References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
-	  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>
-	 <542A31DF.7020402@smartplayin.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754926AbaI3HiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:38:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52845 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751195AbaI3HiB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:38:01 -0400
+Date: Tue, 30 Sep 2014 09:37:57 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] video: move mediabus format definition to a more
+ standard place
+Message-ID: <20140930093757.003741ac@bbrezillon>
+In-Reply-To: <3849580.CgKEmcV7as@avalon>
+References: <1411999363-28770-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1411999363-28770-2-git-send-email-boris.brezillon@free-electrons.com>
+	<3849580.CgKEmcV7as@avalon>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
-> On Monday 29 September 2014 07:24 PM, Ivan T. Ivanov wrote:
-> > On Fri, 2014-09-26 at 16:51 +0530, Kiran Padwal wrote:
-> >> On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
-> >>> Add support for the temperature alarm peripheral found inside
-> >>> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
-> >>> peripheral outputs a pulse on an interrupt line whenever the
-> >>> thermal over temperature stage value changes.  Implement an ISR
-> >>> to manage this interrupt.
-> >>>
-> >>
-> >> <snip>
-> >>
-> >>> + * This function updates the internal temp value based on the
-> >>> + * current thermal stage and threshold as well as the previous stage
-> >>> + */
-> >>> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
-> >>> +{
-> >>> +	unsigned int stage;
-> >>> +	int rc;
-> >>> +	u8 reg;
-> >>> +
-> >>> +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
-> >>> +	if (rc < 0)
-> >>> +		return rc;
-> >>> +
-> >>> +	stage = reg & STATUS_STAGE_MASK;
-> >>
-> >> During compilation, getting a waring as below,
-> >>
-> >> drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
-> >> drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-> >>   stage = reg & STATUS_STAGE_MASK;
-> > 
-> > Could you share compiler version and options which you are using.
-> > I am unable to trigger this warning. Looking code I can not 
-> > see how this could happen.
+On Mon, 29 Sep 2014 23:41:09 +0300
+Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+
+> Hi Boris,
 > 
-> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
+> Thank you for the patch.
+> 
+> On Monday 29 September 2014 16:02:39 Boris Brezillon wrote:
+> > Rename mediabus formats and move the enum into a separate header file so
+> > that it can be used by DRM/KMS subsystem without any reference to the V4L2
+> > subsystem.
+> > 
+> > Old V4L2_MBUS_FMT_ definitions are now macros that points to VIDEO_BUS_FMT_
+> > definitions.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> > ---
+> >  include/uapi/linux/Kbuild             |   1 +
+> >  include/uapi/linux/v4l2-mediabus.h    | 183 +++++++++++++------------------
+> >  include/uapi/linux/video-bus-format.h | 127 +++++++++++++++++++++++
+> >  3 files changed, 207 insertions(+), 104 deletions(-)
+> >  create mode 100644 include/uapi/linux/video-bus-format.h
+> 
+> One of the self-inflicted rules in V4L2 is to properly document every new 
+> media bus format when adding it to the kernel. The documentation is located in 
+> Documentation/DocBook/media/v4l/subdev-formats.xml. If we move the formats to 
+> a centralized header (which I believe is a good idea), we should also update 
+> the documentation, and possibly its location. I really want to avoid getting 
+> undocumented formats merged, and this will happen if we don't make the rule 
+> clear and/or don't make the documentation easily accessible.
 
-Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
-arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
-indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
+Any idea where this new documentation should go
+(Documentation/DocBook/video/video-bus-formats.xml) ?
 
-I will say that this is false positive :-). Please update your tool-chain.
+> 
+> Incidentally, patch 2/5 in this series is missing a documentation update ;-)
 
-Regards,
-Ivan
+Yep, regarding this patch, I wonder if it's really necessary to add
+new formats to the v4l2_mbus_pixelcode enum.
+If we want to move to this new common definition (across the video
+related subsytems), we should deprecate the old enum
+v4l2_mbus_pixelcode, and this start by not adding new formats, don't
+you think ?
 
+Best Regards,
 
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
