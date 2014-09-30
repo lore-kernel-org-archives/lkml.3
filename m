@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaI3VhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:37:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60924 "EHLO
+	id S1753803AbaI3Vhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:37:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60929 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbaI3VhW (ORCPT
+	with ESMTP id S1753718AbaI3VhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:22 -0400
+	Tue, 30 Sep 2014 17:37:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Quadros <rogerq@ti.com>,
+Cc: Peter Chen <peter.chen@freescale.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 068/103] usb: hub: Prevent hub autosuspend if usbcore.autosuspend is -1
-Date: Tue, 30 Sep 2014 14:31:13 -0700
-Message-Id: <1412112708-27356-69-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 059/103] usb: ehci: using wIndex + 1 for hub port
+Date: Tue, 30 Sep 2014 14:31:04 -0700
+Message-Id: <1412112708-27356-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -28,46 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit bdd405d2a5287bdb9b04670ea255e1f122138e66 upstream.
+commit 5cbcc35e5bf0eae3c7494ce3efefffc9977827ae upstream.
 
-If user specifies that USB autosuspend must be disabled by module
-parameter "usbcore.autosuspend=-1" then we must prevent
-autosuspend of USB hub devices as well.
+The roothub's index per controller is from 0, but the hub port index per hub
+is from 1, this patch fixes "can't find device at roohub" problem for connecting
+test fixture at roohub when do USB-IF Embedded Host High-Speed Electrical Test.
 
-commit 596d789a211d introduced in v3.8 changed the original behaivour
-and stopped respecting the usbcore.autosuspend parameter for hubs.
+This patch is for v3.12+.
 
-Fixes: 596d789a211d "USB: set hub's default autosuspend delay as 0"
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Tested-by: Michael Welling <mwelling@emacinc.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/hub.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-hub.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 9d30359..79c24e6 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1701,8 +1701,12 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	 * - Change autosuspend delay of hub can avoid unnecessary auto
- 	 *   suspend timer for hub, also may decrease power consumption
- 	 *   of USB bus.
-+	 *
-+	 * - If user has indicated to prevent autosuspend by passing
-+	 *   usbcore.autosuspend = -1 then keep autosuspend disabled.
- 	 */
--	pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
-+	if (hdev->dev.power.autosuspend_delay >= 0)
-+		pm_runtime_set_autosuspend_delay(&hdev->dev, 0);
- 
- 	/*
- 	 * Hubs have proper suspend/resume support, except for root hubs
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 1bb85be..7ba8615 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -1241,7 +1241,7 @@ static int ehci_hub_control (
+ 			if (selector == EHSET_TEST_SINGLE_STEP_SET_FEATURE) {
+ 				spin_unlock_irqrestore(&ehci->lock, flags);
+ 				retval = ehset_single_step_set_feature(hcd,
+-									wIndex);
++								wIndex + 1);
+ 				spin_lock_irqsave(&ehci->lock, flags);
+ 				break;
+ 			}
 -- 
 1.9.1
 
