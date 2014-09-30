@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaI3VmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:42:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32967 "EHLO
+	id S1754449AbaI3VjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:39:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32950 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaI3VjR (ORCPT
+	with ESMTP id S1754415AbaI3VjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:17 -0400
+	Tue, 30 Sep 2014 17:39:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Krause <minipli@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Dave Chinner <dchinner@redhat.com>, Dave Chinner <david@fromorbit.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 083/103] drm/i915: Remove bogus __init annotation from DMI callbacks
-Date: Tue, 30 Sep 2014 14:31:28 -0700
-Message-Id: <1412112708-27356-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 095/103] xfs: don't zero partial page cache pages during O_DIRECT writes
+Date: Tue, 30 Sep 2014 14:31:40 -0700
+Message-Id: <1412112708-27356-96-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -31,84 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
+commit 834ffca6f7e345a79f6f2e2d131b0dfba8a4b67a upstream.
 
-The __init annotations for the DMI callback functions are wrong as this
-code can be called even after the module has been initialized, e.g. like
-this:
+Similar to direct IO reads, direct IO writes are using
+truncate_pagecache_range to invalidate the page cache. This is
+incorrect due to the sub-block zeroing in the page cache that
+truncate_pagecache_range() triggers.
 
-  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
-  # modprobe i915
-  # echo 1 > /sys/bus/pci/rescan
+This patch fixes things by using invalidate_inode_pages2_range
+instead.  It preserves the page cache invalidation, but won't zero
+any pages.
 
-The first command will remove the PCI device from the kernel's device
-list so the second command won't see it right away. But as it registers
-a PCI driver it'll see it on the third command. If the system happens to
-match one of the DMI table entries we'll try to call a function in long
-released memory and generate an Oops, at best.
-
-Fix this by removing the bogus annotation.
-
-Modpost should have caught that one but it ignores section reference
-mismatches from the .rodata section. :/
-
-Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
-Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
-Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Jarod Wilson <jarod@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_bios.c | 2 +-
- drivers/gpu/drm/i915/intel_crt.c  | 2 +-
- drivers/gpu/drm/i915/intel_lvds.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ fs/xfs/xfs_file.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index e4fba39..3947c77 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -811,7 +811,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 5825705..d86a7eb 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -689,7 +689,15 @@ xfs_file_dio_aio_write(
+ 						    pos, -1);
+ 		if (ret)
+ 			goto out;
+-		truncate_pagecache_range(VFS_I(ip), pos, -1);
++		/*
++		 * Invalidate whole pages. This can return an error if
++		 * we fail to invalidate a page, but this should never
++		 * happen on XFS. Warn if it does fail.
++		 */
++		ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
++						pos >> PAGE_CACHE_SHIFT, -1);
++		WARN_ON_ONCE(ret);
++		ret = 0;
  	}
- }
  
--static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-+static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
- {
- 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
- 		      "VBIOS ROM for %s\n",
-diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-index c48e62d..3a0d2ae 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -749,7 +749,7 @@ static const struct drm_encoder_funcs intel_crt_enc_funcs = {
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_INFO("Skipping CRT initialization for %s\n", id->ident);
- 	return 1;
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index c3b4da7..b76a0be 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -533,7 +533,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_INFO("Skipping LVDS initialization for %s\n", id->ident);
- 	return 1;
+ 	/*
 -- 
 1.9.1
 
