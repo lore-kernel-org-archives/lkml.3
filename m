@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaI3B2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:28:23 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39271 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411AbaI3B2V (ORCPT
+	id S1755208AbaI3Bau (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:30:50 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:60656 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830AbaI3Bat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:28:21 -0400
+	Mon, 29 Sep 2014 21:30:49 -0400
+From: Yunlei He <heyunlei@huawei.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <tony@atomide.com>, <grant.likely@linaro.org>, <robh+dt@kernel.org>
+CC: <liguozhu@hisilicon.com>, <kong.kongxinwei@hisilicon.com>,
+        <bintian.wang@huawei.com>, heyunlei <heyunlei@huawei.com>
+Subject: [PATCH] pinctrl: pinctrl-single.c: init pinctrl single at arch_initcall time
+Date: Tue, 30 Sep 2014 09:29:50 +0800
+Message-ID: <1412040590-10764-1-git-send-email-heyunlei@huawei.com>
+X-Mailer: git-send-email 1.9.4.msysgit.1
 MIME-Version: 1.0
-In-Reply-To: <87lhp12a2i.fsf@x220.int.ebiederm.org>
-References: <87lhp12a2i.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 29 Sep 2014 18:28:00 -0700
-Message-ID: <CALCETrXGojRGtT1B2Aib7m54j8T+LsnCOin_GL93-BWf-eSPkA@mail.gmail.com>
-Subject: Re: [PATCH] umount.2: Correct the description of MNT_DETACH
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Andrey Wagin <avagin@gmail.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.111.64.99]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020208.542A07BA.0025,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 6ee4c1d2f6ddb5c57ab74e291b81405f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 6:04 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> I recently realized that I had been reasoning improperly about what
-> umount(MNT_DETACH) did based on an insufficient description in
-> the umount.2 man page, that matched my intuition but not the
-> implementation.
->
-> When there are no submounts MNT_DETACH is essentially harmless to
-> applications.  Where there are submounts MNT_DETACH changes what
-> is visible to applications using the detach directories.
->
-> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> ---
->  man2/umount.2 | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/man2/umount.2 b/man2/umount.2
-> index 5ff88152c738..aea39d8306fe 100644
-> --- a/man2/umount.2
-> +++ b/man2/umount.2
-> @@ -66,9 +66,10 @@ This can cause data loss.
->  (Only for NFS mounts.)
->  .TP
->  .BR MNT_DETACH " (since Linux 2.4.11)"
-> -Perform a lazy unmount: make the mount point unavailable for
-> -new accesses, and actually perform the unmount when the mount point
-> -ceases to be busy.
-> +Perform a lazy unmount: make the mount point unavailable for new
-> +accesses, immediately disconnect the filesystem and all filesystems
-> +mounted below it from each other and from the mount table, and
-> +actually perform the unmount when the mount point ceases to be busy.
+From: heyunlei <heyunlei@huawei.com>
 
-Want to add something like:
+On our arm platform, some modules (e.g. I2C bus driver) use the
+pinctrl-single driver to configure the SoC pin, but pinctrl-single
+driver uses module_init time, that makes some modules initialize ahead
+the pinctrl-single and fail to register.
 
-MNT_DETACH on a shared mount will propagate unmount events to its peer
-group.  That means that recursively bind mounting a shared mount and
-then unmounting that recursive bind mount will unmount all submounts
-of the original mount.  This behavior can be avoided by remounting a
-directory with MS_REC | MS_PRIVATE before unmounting it.
+This patch changes the initialization priority of pinctrl-single from
+module_init time to arch_initcall time.
 
---Andy
+Signed-off-by: Yunlei He <heyunlei@huawei.com>
+Signed-off-by: Xinwei Kong <kong.kongxinwei@hisilicon.com>
+---
+ drivers/pinctrl/pinctrl-single.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
->  .TP
->  .BR MNT_EXPIRE " (since Linux 2.6.8)"
->  Mark the mount point as expired.
-> --
-> 1.9.1
->
-
-
-
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 95dd9cf..4b9e5b9 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -2012,7 +2012,18 @@ static struct platform_driver pcs_driver = {
+ #endif
+ };
+ 
+-module_platform_driver(pcs_driver);
++static int __init pinctrl_single_init(void)
++{
++		return platform_driver_register(&pcs_driver);
++}
++
++static void __exit pinctrl_single_exit(void)
++{
++		platform_driver_unregister(&pcs_driver);
++}
++
++arch_initcall(pinctrl_single_init);
++module_exit(pinctrl_single_exit);
+ 
+ MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
+ MODULE_DESCRIPTION("One-register-per-pin type device tree based pinctrl driver");
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.9.5
+
+
