@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaI3VvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:51:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665AbaI3Vu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:50:58 -0400
-Date: Tue, 30 Sep 2014 23:47:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] sched: Debug nested sleeps
-Message-ID: <20140930214732.GA31384@redhat.com>
-References: <20140924081845.572814794@infradead.org> <20140924082242.591637616@infradead.org> <20140929221344.GB12112@redhat.com> <20140930134928.GF4241@worktop.programming.kicks-ass.net>
+	id S1754903AbaI3VvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:51:15 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49747 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaI3VvM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:51:12 -0400
+Message-ID: <542B25CC.80509@gmail.com>
+Date: Tue, 30 Sep 2014 22:51:08 +0100
+From: Paul McQuade <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930134928.GF4241@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Paul McQuade <paulmcquad@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm: filemap Remove trailing whitespace
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30, Peter Zijlstra wrote:
->
-> On Tue, Sep 30, 2014 at 12:13:44AM +0200, Oleg Nesterov wrote:
-> > On 09/24, Peter Zijlstra wrote:
-> > >
-> > > +#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-> > > +
-> > > +#define __set_task_state(tsk, state_value)			\
-> > > +	do {							\
-> > > +		(tsk)->task_state_change = _THIS_IP_;		\
-> > > +		(tsk)->state = (state_value);			\
-> > > +	} while (0)
-> >
-> > ...
-> >
-> > > @@ -7143,6 +7143,19 @@ void __might_sleep(const char *file, int
-> > >  {
-> > >  	static unsigned long prev_jiffy;	/* ratelimiting */
-> > >
-> > > +	/*
-> > > +	 * Blocking primitives will set (and therefore destroy) current->state,
-> > > +	 * since we will exit with TASK_RUNNING make sure we enter with it,
-> > > +	 * otherwise we will destroy state.
-> > > +	 */
-> > > +	if (WARN(current->state != TASK_RUNNING,
-> > > +			"do not call blocking ops when !TASK_RUNNING; "
-> > > +			"state=%lx set at [<%p>] %pS\n",
-> > > +			current->state,
-> > > +			(void *)current->task_state_change,
-> > > +			(void *)current->task_state_change))
-> > > +		__set_current_state(TASK_RUNNING);
-> >
-> > Question: now that we have ->task_state_change, perhaps it makes sense
-> > to redefine fixup_sleep()
-> >
-> > 	#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-> > 	#define fixup_sleep()	(current->task_state_change = 0)
-> > 	#else
-> > 	#define fixup_sleep()	do { } while (0)
-> > 	#endif
-> >
-> > and make the WARN() above depend on task_state_change != 0 ?
-> >
-> > This is minor, but this way CONFIG_DEBUG_ATOMIC_SLEEP will not imply
-> > a subtle behavioural change.
->
-> You mean the __set_current_state() that's extra?
+>From 9c3926a50ec96a69e36266a9191fa680249b4e06 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Tue, 30 Sep 2014 22:43:08 +0100
+Subject: [PATCH] mm: filemap Remove trailing whitespace
 
-Yes, and note that it only does __set_current_state(RUNNING) if
-CONFIG_DEBUG_ATOMIC_SLEEP. This means that disabling/enabling this
-option can, silently hide/uncover a bug.
+Remove 2 trailing whitespace errors
 
-> I would actually argue
-> to keep that since it makes the 'problem' much worse.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ mm/filemap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-OK, I won't insist, but could you explain why the suggested change can
-make the problem (and which problem ;) worse?
-
-Oleg.
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 90effcd..30ffd32 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1744,7 +1744,7 @@ EXPORT_SYMBOL(generic_file_read_iter);
+ static int page_cache_read(struct file *file, pgoff_t offset)
+ {
+     struct address_space *mapping = file->f_mapping;
+-    struct page *page;
++    struct page *page;
+     int ret;
+ 
+     do {
+@@ -1761,7 +1761,7 @@ static int page_cache_read(struct file *file, pgoff_t offset)
+         page_cache_release(page);
+ 
+     } while (ret == AOP_TRUNCATED_PAGE);
+-        
++
+     return ret;
+ }
+ 
+-- 
+1.9.1
 
