@@ -1,201 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaI3Nqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:46:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50961 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaI3Nqg convert rfc822-to-8bit (ORCPT
+	id S1752082AbaI3Nsd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:48:33 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51009 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751119AbaI3Ns3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:46:36 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [RFC 3/7] mfd: devicetree: bindings: Add Qualcomm SMD based RPM DT binding
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1412037291-16880-4-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Tue, 30 Sep 2014 08:46:29 -0500
-Cc: Andy Gross <agross@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <85C5C172-D309-41B4-B511-7820BAFDA017@codeaurora.org>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com> <1412037291-16880-4-git-send-email-bjorn.andersson@sonymobile.com>
-To: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 30 Sep 2014 09:48:29 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: [PATCH v5 03/11] drivers: base: add cpu_device_create to support per-cpu devices
+Date: Tue, 30 Sep 2014 14:48:24 +0100
+Message-Id: <1412084912-2767-4-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a new function to create per-cpu devices.
+This helps in:
+1. reusing the device infrastructure to create any cpu related
+   attributes and corresponding sysfs instead of creating and
+   dealing with raw kobjects directly
+2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+   existing sysfs ABI
+3. avoiding to create links in the bus directory pointing to the
+   device as there would be per-cpu instance of these devices with
+   the same name since dev->bus is not populated to cpu_sysbus on
+   purpose
 
-On Sep 29, 2014, at 7:34 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Cc: Kay Sievers <kay@vrfy.org>
+---
+ drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cpu.h |  4 ++++
+ 2 files changed, 58 insertions(+)
 
-> Add binding documentation for the Qualcomm Resource Power Manager (RPM)
-> using shared memory (Qualcomm SMD) as transport mechanism. This is found
-> in 8974 and newer based devices.
-> 
-> The binding currently describes the rpm itself and the regulator
-> subnodes.
-> 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-> 
-> Note that this patch extends the rpm dt-bindings header from [1].
-> 
-> [1] https://lkml.org/lkml/2014/9/22/733
-> 
-> .../devicetree/bindings/mfd/qcom-rpm-smd.txt       |  122 ++++++++++++++++++++
-> include/dt-bindings/mfd/qcom-rpm.h                 |   36 ++++++
-> 2 files changed, 158 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
-> new file mode 100644
-> index 0000000..a846101
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
-> @@ -0,0 +1,122 @@
-> +Qualcomm Resource Power Manager (RPM) over SMD
-> +
-> +This driver is used to interface with the Resource Power Manager (RPM) found in
-> +various Qualcomm platforms. The RPM allows each component in the system to vote
-> +for state of the system resources, such as clocks, regulators and bus
-> +frequencies.
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,rpm-msm8974”
-
-Why not “qcom,rpm-smd”.  I’d like to get Jeff H’s input on how what we do here for compat and distinguish the A-family RPM support vs B-family/RPM-SMD support.
-
-> +
-> +- qcom,smd-channels:
-> +	Usage: required
-> +	Value type: <stringlist>
-> +	Definition: Shared Memory Channel used for communication with the RPM
-> +
-
-This needs more details.
-
-> +- #address-cells:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: must be 1
-> +
-> +- #size-cells:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: must be 0
-> +
-> += SUBDEVICES
-
-As I mentioned for the the RPM binding on a-family, we should split out the devices into their own binding specs.
-
-> +
-> +The RPM exposes resources to its subnodes. The below bindings specify the set
-> +of valid subnodes that can operate on these resources.
-> +
-> +== Switch-mode Power Supply regulator
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,rpm-pm8841-smps"
-> +		    "qcom,rpm-pm8941-smps"
-> +
-> +
-> +- reg:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: resource as defined in <dt-bindings/mfd/qcom-rpm.h>
-> +		    must be one of:
-> +		    QCOM_RPM_PM8841_SMPS1 - QCOM_RPM_PM8841_SMPS4,
-> +		    QCOM_RPM_PM8941_SMPS1 - QCOM_RPM_PM8941_SMPS3
-> +
-> +Standard regulator bindings are used inside switch mode power supply subnodes.
-> +Check Documentation/devicetree/bindings/regulator/regulator.txt for more
-> +details.
-> +
-> +== Low-dropout regulator
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,rpm-pm8941-ldo"
-> +
-> +- reg:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: resource as defined in <dt-bindings/mfd/qcom-rpm.h>
-> +		    must be one of:
-> +		    QCOM_RPM_PM8941_LDO1 - QCOM_RPM_PM8941_LDO24
-> +
-> +Standard regulator bindings are used inside switch low-dropout regulator
-> +subnodes.  Check Documentation/devicetree/bindings/regulator/regulator.txt for
-> +more details.
-> +
-> +== Switch
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,rpm-pm8941-switch"
-> +
-> +- reg:
-> +	Usage: required
-> +	Value type: <u32>
-> +	Definition: resource as defined in <dt-bindings/mfd/qcom/qcom-rpm.h>
-> +		    must be one of:
-> +		    QCOM_RPM_PM8941_LVS1 - QCOM_RPM_PM8941_LVS3,
-> +		    QCOM_RPM_PM8941_MVS1 - QCOM_RPM_PM8941_MVS2
-> +
-> +Standard regulator bindings are used inside switch regulator subnodes.  Check
-> +Documentation/devicetree/bindings/regulator/regulator.txt for more details.
-> +
-> += EXAMPLE
-> +
-> +	#include <dt-bindings/mfd/qcom-rpm.h>
-> +
-> +	rpm@108000 {
-> +		compatible = "qcom,rpm-msm8960";
-> +		qcom,smd-channels = "rpm_requests";
-> +
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		pm8941_s1: regulator-s1 {
-> +			compatible = "qcom,rpm-pm8941-smps";
-> +			reg = <QCOM_RPM_PM8941_SMPS1>;
-> +
-> +			regulator-min-microvolt = <1300000>;
-> +			regulator-max-microvolt = <1300000>;
-> +		};
-> +
-> +		pm8941_l3: pm8941-l3 {
-> +			compatible = "qcom,rpm-pm8941-ldo";
-> +			reg = <QCOM_RPM_PM8941_LDO3>;
-> +
-> +			regulator-min-microvolt = <1200000>;
-> +			regulator-max-microvolt = <1200000>;
-> +		};
-> +
-> +	};
-> +
-
-- k
-
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 4d8a56406fbb..f829a4c71749 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_device);
+ 
++static void device_create_release(struct device *dev)
++{
++	kfree(dev);
++}
++
++static struct device *
++__cpu_device_create(struct device *parent, void *drvdata,
++		    const struct attribute_group **groups,
++		    const char *fmt, va_list args)
++{
++	struct device *dev = NULL;
++	int retval = -ENODEV;
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev) {
++		retval = -ENOMEM;
++		goto error;
++	}
++
++	device_initialize(dev);
++	dev->parent = parent;
++	dev->groups = groups;
++	dev->release = device_create_release;
++	dev_set_drvdata(dev, drvdata);
++
++	retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
++	if (retval)
++		goto error;
++
++	retval = device_add(dev);
++	if (retval)
++		goto error;
++
++	return dev;
++
++error:
++	put_device(dev);
++	return ERR_PTR(retval);
++}
++
++struct device *cpu_device_create(struct device *parent, void *drvdata,
++				 const struct attribute_group **groups,
++				 const char *fmt, ...)
++{
++	va_list vargs;
++	struct device *dev;
++
++	va_start(vargs, fmt);
++	dev = __cpu_device_create(parent, drvdata, groups, fmt, vargs);
++	va_end(vargs);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(cpu_device_create);
++
+ #ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+ #endif
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 95978ad7fcdd..bb790a5621c0 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -19,6 +19,7 @@
+ 
+ struct device;
+ struct device_node;
++struct attribute_group;
+ 
+ struct cpu {
+ 	int node_id;		/* The node which contains the CPU */
+@@ -39,6 +40,9 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
+ extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
+ extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
++extern struct device *cpu_device_create(struct device *parent, void *drvdata,
++					const struct attribute_group **groups,
++					const char *fmt, ...);
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern void unregister_cpu(struct cpu *cpu);
+ extern ssize_t arch_cpu_probe(const char *, size_t);
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.1
 
