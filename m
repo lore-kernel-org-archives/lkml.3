@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaI3UU0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:20:26 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51494 "EHLO comal.ext.ti.com"
+	id S1751705AbaI3UXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:23:05 -0400
+Received: from smtp.pobox.com ([208.72.237.35]:51938 "EHLO smtp.pobox.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675AbaI3UUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:20:08 -0400
-Message-ID: <542B1074.5000802@ti.com>
-Date: Tue, 30 Sep 2014 15:20:04 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1750945AbaI3UXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:23:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=IHIGIHcQ676wcksz1qEnojZm+nd2zokjsfsefyEBnIXI1x0HDnOFjBRT
+	eCJbv7EAbVqQ2UfFa+UKKol1QLNWyERz6V4raFP3KsPHjvYc37UG6y80xK3+GiYI
+	DVhwcnU4MuGhPEIL60VM9U00kSV2Hydo2Nr79VwIHH6oP9U+/uc=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v2.1.2
+Date: Tue, 30 Sep 2014 13:22:59 -0700
+Message-ID: <xmqq4mvosvrw.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] regmap: Allow read_reg_mask to be 0
-References: <1412093220-24690-1-git-send-email-dmurphy@ti.com> <20140930172543.GG4273@sirena.org.uk>
-In-Reply-To: <20140930172543.GG4273@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Pobox-Relay-ID: 939B3F1A-48DF-11E4-B6FB-9E3FC4D60FE0-77302942!pb-smtp0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 12:25 PM, Mark Brown wrote:
-> On Tue, Sep 30, 2014 at 11:07:00AM -0500, Dan Murphy wrote:
->
->> -	if (config->read_flag_mask || config->write_flag_mask) {
->> +	if (config->read_flag_mask == REGMAP_NO_READ_MASK)
->> +		map->read_flag_mask = 0x00;
->> +	else if (config->read_flag_mask)
-> This breaks the symmetry in handling of read and write masks which isn't
-> great, please make the equivalent update for the write mask too.
+The latest maintenance release Git v2.1.2 is now available at the
+usual places.  With this, v2.1.x has all the important fixes that
+have been already applied to the 'master' front for the next feature
+release.  It also contains some updates to German translation.
 
-Hmmm.  If I make the similar change for the write mask I will be adding dead
-code as write_flag_mask is not defaulted by the bus like the read_flag_mask which is
-defaulted to 0x80 in the regmap-spi code.  The i2c code does not make this assumption.
+The tarballs are found at:
 
-The original code did not seem to have symmetry as the only instance
-that write_flag_mask is modified is if it is non-zero.
+    https://www.kernel.org/pub/software/scm/git/
 
-Let me know what you think.  I can add the code to make it more symmetrical but
-we may be adding code that is dead.  If I remove the defaulted read_flag_mask value out
-of the spi driver then I will need to find every spi device that needs that flag and set it.
-IMHO that would be really messy and probably mess us some drivers.
+The following public repositories all have a copy of the 'v2.1.2'
+tag and the 'maint' branch that the tag points at:
 
->> +#define REGMAP_NO_READ_MASK		0xff
-> An actual out of band value might be preferable here though that'd
-> involve changing the type and more checking so perhaps inessential.
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
-Thought about making this -1 with a variable change but that seemed
-really drastic where a value of 0xff seems to be a value that no one should use.
+Git v2.1.2 Release Notes
+========================
 
-Dan
+ * "git push" over HTTP transport had an artificial limit on number of
+   refs that can be pushed imposed by the command line length.
 
+ * When receiving an invalid pack stream that records the same object
+   twice, multiple threads got confused due to a race.
 
--- 
-------------------
-Dan Murphy
+ * An attempt to remove the entire tree in the "git fast-import" input
+   stream caused it to misbehave.
+
+ * Reachability check (used in "git prune" and friends) did not add a
+   detached HEAD as a starting point to traverse objects still in use.
+
+ * "git config --add section.var val" used to lose existing
+   section.var whose value was an empty string.
+
+ * "git fsck" failed to report that it found corrupt objects via its
+   exit status in some cases.
+
+----------------------------------------------------------------
+
+Changes since v2.1.1 are as follows:
+
+Jeff King (5):
+      send-pack: take refspecs over stdin
+      index-pack: fix race condition with duplicate bases
+      fsck: exit with non-zero status upon error from fsck_obj()
+      config: avoid a funny sentinel value "a^"
+      fsck: return non-zero status on missing ref tips
+
+Junio C Hamano (1):
+      Git 2.1.2
+
+Max Kirillov (1):
+      reachable.c: add HEAD to reachability starting commits
+
+Maxim Bublis (2):
+      t9300: test filedelete command
+      fast-import: fix segfault in store_tree()
+
+Phillip Sz (2):
+      l10n: de.po: change Email to E-Mail
+      l10n: de.po: use comma before "um"
+
+Ralf Thielow (1):
+      po/TEAMS: add new member to German translation team
+
+Sergey Organov (2):
+      Documentation/git-rebase.txt: -f forces a rebase that would otherwise be a no-op
+      Documentation/git-rebase.txt: <upstream> must be given to specify <branch>
+
+Tanay Abhra (1):
+      make config --add behave correctly for empty and NULL values
 
