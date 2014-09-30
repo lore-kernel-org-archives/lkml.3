@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577AbaI3L5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 07:57:20 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60906 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaI3L5T (ORCPT
+	id S1751653AbaI3MD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 08:03:56 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48493 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaI3MDx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 07:57:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com, oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] sched, time: cmpxchg does not work on 64-bit variable
-Date: Tue, 30 Sep 2014 13:56:37 +0200
-Message-ID: <2547036.UshV4pXvhf@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	Tue, 30 Sep 2014 08:03:53 -0400
+Date: Tue, 30 Sep 2014 13:03:44 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Will Deacon <Will.Deacon@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
+Message-ID: <20140930120344.GA14215@e102568-lin.cambridge.arm.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1411937610-22125-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <8631927.qWHZsjCs8e@wuerfel>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:NOLP1Zr+rMNb9u81+yHIZ52GOcSY0GS6/lo/KxKVxDk
- ezd2oQM6/i0rcISapR1u90L0FqjCYBIw+6Q9P1i3EYOGadbwGj
- T5IJL0vxk+Zhu3Xd5ezoKuvgvcH+K72cvv1eekihIaIoU3UDOp
- Ssqz4J1rtrkqygMuiTu+t9traHAMUHNvKZ2s7NuUpWDRcqihOq
- adKSh/bfHhZxlMlb918Qlksc7wgI8idCf/pLs/Fb4qYQMfQnu2
- 4wswR5stEusmNZnb78vzGc+TqfXx210T4O1Vb9WILzx3B7Bxm2
- jgOnKNQa2pH7kyTXL2U9FcT1Tq4S8Z9w9rVhQJZQqKow+ds0xd
- tXnKYR/kCYAPRlPSrEMM=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <8631927.qWHZsjCs8e@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 30 Sep 2014 12:03:48.0034 (UTC) FILETIME=[976EDA20:01CFDCA6]
+X-MC-Unique: 114093013034902801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recent change to update the stime/utime members of task_struct
-using atomic cmpxchg broke configurations on 32-bit machines with
-CONFIG_VIRT_CPU_ACCOUNTING_GEN set, because that uses 64-bit
-nanoseconds, leading to a link-time error:
+On Mon, Sep 29, 2014 at 03:36:30PM +0100, Arnd Bergmann wrote:
+> On Sunday 28 September 2014 15:53:28 suravee.suthikulpanit@amd.com wrote:
+> > +
+> > +#ifdef CONFIG_ARM64
+> > +struct pci_bus *gen_scan_root_bus(struct device *parent, int bus,
+> > +                                      struct pci_ops *ops, void *sysdata,
+> > +                                      struct list_head *resources)
+> > +{
+> 
+> I don't see anything ARM64 specific in this, the function only uses
+> the newly added generic helpers.
 
-kernel/built-in.o: In function `cputime_adjust':
-:(.text+0x25234): undefined reference to `__bad_cmpxchg'
+I do not see it either, it is just a copy'n'paste of common PCI code,
+plus msi management.
 
-This reverts the change that caused the problem, I suspect the real fix
-is to conditionally use cmpxchg64 instead, but I have not checked if
-that will work on all architectures.
+> >  static int gen_pci_probe(struct platform_device *pdev)
+> >  {
+> > @@ -326,6 +385,7 @@ static int gen_pci_probe(struct platform_device *pdev)
+> >         struct device *dev = &pdev->dev;
+> >         struct device_node *np = dev->of_node;
+> >         struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
+> > +#ifndef CONFIG_ARM64
+> >         struct hw_pci hw = {
+> >                 .nr_controllers = 1,
+> >                 .private_data   = (void **)&pci,
+> > @@ -333,6 +393,7 @@ static int gen_pci_probe(struct platform_device *pdev)
+> >                 .map_irq        = of_irq_parse_and_map_pci,
+> >                 .ops            = &gen_pci_ops,
+> >         };
+> > +#endif
+> >  
+> 
+> Same here, I'd suggest marking this "#ifdef CONFIG_ARM" instead, as hw_pci
+> is an arm32 specific data structure.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: eb1b4af0a64a ("sched, time: Atomically increment stime & utime")
----
-found in ARM randconfig builds on linux-next
+I do not think we need hw struct at all, see below, we can write code so
+that we do not rely on ARM32 PCI bios, I will have a stab at that and
+post the resulting code.
 
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 64492dff8a81..e99e7e54131c 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -603,12 +603,9 @@ static void cputime_adjust(struct task_cputime *curr,
- 	 * If the tick based count grows faster than the scheduler one,
- 	 * the result of the scaling may go backward.
- 	 * Let's enforce monotonicity.
--	 * Atomic exchange protects against concurrent cputime_adjust().
- 	 */
--	while (stime > (rtime = ACCESS_ONCE(prev->stime)))
--		cmpxchg(&prev->stime, rtime, stime);
--	while (utime > (rtime = ACCESS_ONCE(prev->utime)))
--		cmpxchg(&prev->utime, rtime, utime);
-+	prev->stime = max(prev->stime, stime);
-+	prev->utime = max(prev->utime, utime);
- 
- out:
- 	*ut = prev->utime;
+> >         if (!pci)
+> >                 return -ENOMEM;
+> > @@ -368,8 +429,24 @@ static int gen_pci_probe(struct platform_device *pdev)
+> >                 gen_pci_release_of_pci_ranges(pci);
+> >                 return err;
+> >         }
+> > +#ifdef CONFIG_ARM64
+> >  
+> > +#ifdef CONFIG_PCI_MSI
+> > +       pci->msi_parent = of_parse_phandle(np, "msi-parent", 0);
+> > +       if (!pci->msi_parent) {
+> > +               dev_err(&pdev->dev, "Failed to allocate msi-parent.\n");
+> > +               return -EINVAL;
+> > +       }
+> > +#endif
+> 
+> We probably want to enable MSI unconditionally on ARM64, so the #ifdef is
+> not necessary here. However, I don't think that a missing msi-parent should
+> be a fatal error here: we can still continue without MSI support if this
+> case.
+> 
+> > +       if (!gen_scan_root_bus(&pdev->dev, pci->cfg.bus_range.start,
+> > +                              &gen_pci_ops, pci, &pci->resources)) {
+> > +               dev_err(&pdev->dev, "failed to enable PCIe ports\n");
+> > +               return -ENODEV;
+> > +       }
+> > +#else
+> >         pci_common_init_dev(dev, &hw);
+> > +#endif /* CONFIG_ARM64 */
+> > 
+> 
+> Again, just make the pci_common_init_dev() call #ifdef CONFIG_ARM, and move
+> the generic case after it, outside of the #ifdef.
+
+I went through the code quickly but I think we can (and should) remove
+this quite ugly ifdeffery altogether. Most of the functionality in
+pci_common_init_dev() can be implemented through the common PCI API (and this
+would make this driver arch agnostic as it should be), I will go through ARM32
+PCI bios code to check what is executed in detail in pci_common_init_dev() and
+make sure that we follow those initialization steps in the resulting probe code
+for this PCI generic host controller driver.
+
+Lorenzo
 
