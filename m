@@ -1,122 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286AbaI3VZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:25:22 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:57945 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaI3VZU (ORCPT
+	id S1751196AbaI3V16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:27:58 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56872 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaI3V14 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:25:20 -0400
-Content-Type: multipart/signed; boundary="Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF"; protocol="application/pgp-signature"; micalg=pgp-sha1
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <15704.1412109476@turing-police.cc.vt.edu>
-Date: Tue, 30 Sep 2014 15:25:17 -0600
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-Id: <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx> <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx> <15704.1412109476@turing-police.cc.vt.edu>
-To: Valdis.Kletnieks@vt.edu
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 30 Sep 2014 17:27:56 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: =?utf-8?q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        linux-next@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
+Cc: linux-kernel@vger.kernel.org,
+        =?utf-8?q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        "Jyri Sarha" <jsarha@ti.com>
+References: <20140930162635.GA7135@roeck-us.net>
+ <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
+Message-ID: <20140930212730.19023.54223@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH linux-next] clk-gpio-gate: include gpio/consumer to fix build
+Date: Tue, 30 Sep 2014 14:27:30 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Vincent Stehlé (2014-09-30 12:36:43)
+> This fixes the following build error:
+> 
+>   drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_enable’:
+>   drivers/clk/clk-gpio-gate.c:36:2: error: implicit declaration of function ‘gpiod_set_value’ [-Werror=implicit-function-declaration]
+>   drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_is_enabled’:
+>   drivers/clk/clk-gpio-gate.c:52:2: error: implicit declaration of function ‘gpiod_get_value’ [-Werror=implicit-function-declaration]
+>   drivers/clk/clk-gpio-gate.c: In function ‘clk_register_gpio_gate’:
+>   drivers/clk/clk-gpio-gate.c:79:2: error: implicit declaration of function ‘gpiod_is_active_low’ [-Werror=implicit-function-declaration]
+>   drivers/clk/clk-gpio-gate.c:85:3: error: implicit declaration of function ‘desc_to_gpio’ [-Werror=implicit-function-declaration]
+>   drivers/clk/clk-gpio-gate.c:125:2: error: implicit declaration of function ‘gpiod_put’ [-Werror=implicit-function-declaration]
+>   drivers/clk/clk-gpio-gate.c: In function ‘of_clk_gpio_gate_delayed_register_get’:
+>   drivers/clk/clk-gpio-gate.c:169:2: error: implicit declaration of function ‘gpio_to_desc’ [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+> Cc: Jyri Sarha <jsarha@ti.com>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> ---
+> 
+> Hi,
+> 
+> This can be seen with e.g. linux next-20140930 and arm alldefconfig.
 
---Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=us-ascii
+Fixed with:
 
-On Sep 30, 2014, at 2:37 PM, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 30 Sep 2014 12:08:41 -0400, Matthew Wilcox said:
->=20
->> The more I think about this, the more I think this is a bad idea.
->> When you have a file open with O_DIRECT, your I/O has to be done in
->> 512-byte multiples, and it has to be aligned to 512-byte boundaries
->> in memory.  If an unsuspecting application has O_DIRECT forced on it,
->> it isn't going to know to do that, and so all its I/Os will fail.
->=20
-> I'm thinking of more than one place where that would be a feature, not =
-a bug. :)
+https://git.linaro.org/people/mike.turquette/linux.git/commit/44b4aa97bea84fa8ac179155f147e3483cc7a6e0
 
-We prototyped a feature like this for Lustre - so the admins could
-turn IO into O_DIRECT, because the HPC compute nodes have relatively
-small RAM per core and don't want to have file data cache consuming
-RAM that the compute jobs need.
+Regards,
+Mike
 
-Unfortunately, the O_DIRECT semantics are a killer for poorly written
-applications that end up doing small synchronous writes.  We didn't
-have any IO size problems, because Lustre client have to copy the data
-to the servers anyway, so arbitrary IO sizes are fine.
-
-While this _might_ be OK for NVRAM mapped directly into the filesystem,
-even for local disk based storage with 512-byte writes at 100 IOPS is
-only 50KB/s instead of ~100MB/s for a cached writes to a single disk.
-
-I think you would be much better off having more aggressive "use once"
-semantics in the page cache, so that page cache pages for streaming
-writes are evicted more aggressively from cache rather than going down
-the "automatic O_DIRECT" hole.
-
-Cheers, Andreas
-
->> What problem are you really trying to solve?  Some big files hogging
->> the page cache?
->=20
-> I'm officially a storage admin.  I mostly support HPC and research. As
-> such, I'm always looking to add tools to my toolkit. :)
->=20
-> (And yes, I fully recognize that *in general*, this is a Bad Idea.  =
-However,
-> when you've got That One Problem Data File that *should* always be =
-access
-> via O_DIRECT, and *usually* is accessed via O_DIRECT, and bad things =
-happen
-> if something accesses it without it (for instance, when the file is =
-1.5X the
-> actual RAM), you start looking for fixes.  If you've got another, more
-> sustainable way to say "do not let file /X/Y/Z hog the page cache" =
-(and
-> no, LD_PRELOAD isn't sustainable the way chattr is, in my book), feel =
-free to
-> recommend something. :)
-
-
-Cheers, Andreas
-
-
-
-
-
-
---Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename=signature.asc
-Content-Type: application/pgp-signature;
-	name=signature.asc
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
-
-iQIVAwUBVCsfvXKl2rkXzB/gAQLEVw/9HBf3RC6J9vwNg4umD9M94JJkdSWwSY/k
-pHRrpT+4v5SQlC3SKX/VV4P+/aXoBVRq/6IeUHQnFaEfYy8x39dkckLX2GzH70Tg
-0fO8sAfr+XDzLbxDJYJzu8R1XnbNhopwuV8BXAOmIaUe3dJqee74PG+egAVF7uWX
-lNGeh32VQ5/ypuxEG5CbHTH7P/DFwl1L+kANEvbnMBhG/x4pA6BRlRCFUctDewEU
-XSc+0drJeXRuxtLX30kycGrpJyvuwOF+j0VxKWCQWatkERon0JyObluie/cHnWvK
-SUgU92l5/UbhZo06XiKhrFdrVF7O0HkZ1C7nMGSlI+iCqaupAnsL2tCTE/zlzBbh
-oso2kZeCxdcvG6yzBgTGmF/YhFzS88YSiIDHhLytyEusf/KhipbE6SrQ8MjuvfaR
-WRdChpMC+RO/cSPjqETT/CxvPmjb/NcWso0pcFH0CV+hAt6EYLiI66n6/WlNGhJK
-3/0mZmjb9VefcEqc2mU1nZW6mPINQi+KVX6eqtLRajofQb9HXA9XAbXdO/JEkZn/
-JU7crpjhqOJmSgb6U+8c+g+nuPRxgafQJUDH3A9Vt91BQOADGwUM3EOuKEVoa3mh
-UgWYL2hUJGeiwad0tAF7Ghx20duNawrtUT5Kk1CmKFvjdLoseCmq8N/TSwuEb+oF
-cMCqJ5wUNWM=
-=+Ecu
------END PGP SIGNATURE-----
-
---Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF--
+> 
+> Best regards,
+> 
+> V.
+> 
+>  drivers/clk/clk-gpio-gate.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
+> index 9dde885..08e4322 100644
+> --- a/drivers/clk/clk-gpio-gate.c
+> +++ b/drivers/clk/clk-gpio-gate.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/gpio.h>
+> +#include <linux/gpio/consumer.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/err.h>
+>  #include <linux/device.h>
+> -- 
+> 2.1.0
+> 
