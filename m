@@ -1,98 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381AbaI3DMl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:12:41 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:60625 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755239AbaI3DL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:11:56 -0400
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-To: mingo@redhat.com, davej@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        hmh@hmh.eng.br, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCH 1/3] x86: Bugfix bit-rot in the calling of legacy_cache_size
-Date: Tue, 30 Sep 2014 04:11:48 +0100
-Message-Id: <1412046710-2686-2-git-send-email-pure.logic@nexus-software.ie>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie>
-References: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie>
+	id S1755426AbaI3DOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:14:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:34087 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976AbaI3DOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:14:04 -0400
+Date: Tue, 30 Sep 2014 13:13:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140930131354.792033e7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/M2W1CfRL_6gzZO6QZN1bLm9"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-legacy_cache_size is used by certain processors to report the
-size of cache. Currently only X86_VENDOR_UNKNOWN could call
-default_init() => cpu_detect_cache_sizes() => legacy_cache_size()
+--Sig_/M2W1CfRL_6gzZO6QZN1bLm9
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Make an update to identify_cpu to make an explicit call to default_init()
-We want to do this since some processors that report vendor strings via
-cpuid also want to run legacy_cache_size callbacks - which won't happen
-since init_intel() init_amd() and friends take the place of default_init()
-and don't themselves make explicit calls to legacy_cache_size.
+Hi all,
 
-Also current code has an
-#ifdef CONFIG_X86_64
-        cpu_detect_cache_sizes(c);
-#endif
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-where cpu_detect_cache_sizes calls legacy_cache_size(); is typically
-defined inside of a CONFIG_X86_32
-#ifdef CONFIG_X86_32
-        .legacy_cache_size = centaur_size_cache,
-#endif
-#ifdef CONFIG_X86_32
-	.legacy_cache_size = intel_size_cache,
-#endif
-#ifdef CONFIG_X86_32
-        .legacy_cache_size = amd_size_cache,
-#endif
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
----
- arch/x86/kernel/cpu/common.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e4ab2b4..53a33fa 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -67,9 +67,8 @@ void __init setup_cpu_local_masks(void)
- 
- static void default_init(struct cpuinfo_x86 *c)
+net/bridge/br_nf_core.c:77:1: error: expected identifier or '(' before '{' =
+token
  {
--#ifdef CONFIG_X86_64
- 	cpu_detect_cache_sizes(c);
--#else
-+
- 	/* Not much we can do here... */
- 	/* Check if at least it has cpuid */
- 	if (c->cpuid_level == -1) {
-@@ -79,7 +78,6 @@ static void default_init(struct cpuinfo_x86 *c)
- 		else if (c->x86 == 3)
- 			strcpy(c->x86_model_id, "386");
- 	}
--#endif
- }
- 
- static const struct cpu_dev default_cpu = {
-@@ -874,6 +872,15 @@ static void identify_cpu(struct cpuinfo_x86 *c)
- #endif
- 
- 	/*
-+	 * If c_x86_vendor != X86_VENDOR_UNKNOWN i.e. a known vendor then
-+	 * there's a vendor specific c_init()
-+	 *
-+	 * Even still Intel, AMD and VIA make use of legacy_cache_size which
-+	 * is reachable only through default_init right now
-+	 */
-+	if (this_cpu->c_x86_vendor != X86_VENDOR_UNKNOWN)
-+		default_init(c);
-+	/*
- 	 * Vendor-specific initialization.  In this section we
- 	 * canonicalize the feature flags, meaning if there are
- 	 * features a certain CPU supports which CPUID doesn't
--- 
-1.9.1
+ ^
+net/bridge/br_nf_core.c:88:12: error: redefinition of 'br_nf_core_init'
+ int __init br_nf_core_init(void)
+            ^
+In file included from net/bridge/br_nf_core.c:23:0:
+net/bridge/br_private.h:762:19: note: previous definition of 'br_nf_core_in=
+it' was here
+ static inline int br_nf_core_init(void) { return 0; }
+                   ^
+net/bridge/br_nf_core.c:93:6: error: redefinition of 'br_nf_core_fini'
+ void br_nf_core_fini(void)
+      ^
+In file included from net/bridge/br_nf_core.c:23:0:
+net/bridge/br_private.h:763:20: note: previous definition of 'br_nf_core_fi=
+ni' was here
+ static inline void br_nf_core_fini(void) {}
+                    ^
 
+Caused by commit 34666d467cbf ("netfilter: bridge: move br_netfilter
+out of the core").  This build has CONFIG_BRIDGE_NETFILTER not set ...
+
+I have applied the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 30 Sep 2014 13:09:09 +1000
+Subject: [PATCH] netfilter: bridge: don't build br_nf_core unless necessary
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/bridge/Makefile | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/net/bridge/Makefile b/net/bridge/Makefile
+index 5e3eac5dc8b9..eb653a225397 100644
+--- a/net/bridge/Makefile
++++ b/net/bridge/Makefile
+@@ -6,12 +6,11 @@ obj-$(CONFIG_BRIDGE) +=3D bridge.o
+=20
+ bridge-y	:=3D br.o br_device.o br_fdb.o br_forward.o br_if.o br_input.o \
+ 			br_ioctl.o br_stp.o br_stp_bpdu.o \
+-			br_stp_if.o br_stp_timer.o br_netlink.o \
+-			br_nf_core.o
++			br_stp_if.o br_stp_timer.o br_netlink.o
+=20
+ bridge-$(CONFIG_SYSFS) +=3D br_sysfs_if.o br_sysfs_br.o
+=20
+-obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o
++obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o br_nf_core.o
+=20
+ bridge-$(CONFIG_BRIDGE_IGMP_SNOOPING) +=3D br_multicast.o br_mdb.o
+=20
+--=20
+2.1.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/M2W1CfRL_6gzZO6QZN1bLm9
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUKh/4AAoJEMDTa8Ir7ZwV1HoP/Rgscw6t1wuvsZWXpYzNe3f7
+ZQPVcdmF8dmD4SNcaUcdCH9AUFPlSabDixDs7vnNrSYr7F06elKzKWC52Io7Lka+
+sa7gyf2kN18h/WwcB0//+2s+bXJ9M9ilYm0gsYesbs0kQHBoHCctLjUHNnJmuRtu
+QSJ5kKNgbzjQ78IoN7DA93r3079PuXapqbzasXJFJGpUdWIymhlhgjcgWlFYLroG
+3t8wEtzU0qmhacpm5w5C3d74tyPjuaYSgjVtNS0FSURqUgEscT0myX+BMJkqr2k4
+BB36oe7xEQjTewC6vT5dZ076Mt9zONuTPldqAYnBnaCcKfbFtYVgk89fijYcN41T
+P9GRxSC4EfBd7BSrNPTJ6EgP36rlc07juTgoB2ctHLzOZ+l9TEzpQwJQ1x6DC6Zp
+LcxEMxMAt9fSyKbMoc8963+V8du0GLRk//6a+TNT+Dia/3zmQz+H+YI9+u/57sQg
+XBeZ/7ac2+sw4xnNULkW2Iv3SXNXkqVDz/znwV17CK0EAI5hHD6RDDE+PHRyB5pg
+jeilixGpISUIBu2xNfeiAI/SefAuM6h/IhZnEd/1OrkbLuZd/XMwVbDfpecTBi5S
+SOPB2u9tjq03PEly+SXHFoxfJrD3ThLfvLHv/qRG2Zv9/mHfDoC1W7LLFkNyxVkX
+q+wzmDh/nAWJ51ItU/6a
+=rD2b
+-----END PGP SIGNATURE-----
+
+--Sig_/M2W1CfRL_6gzZO6QZN1bLm9--
