@@ -1,68 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488AbaI3IJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:09:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:39678 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaI3IJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:09:46 -0400
-Date: Tue, 30 Sep 2014 18:09:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20140930180938.283897d2@canb.auug.org.au>
-In-Reply-To: <20140930075239.GA28481@linutronix.de>
-References: <20140930173900.51839e76@canb.auug.org.au>
-	<20140930075239.GA28481@linutronix.de>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1755499AbaI3IKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:10:33 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:47325 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaI3IK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 04:10:26 -0400
+Date: Tue, 30 Sep 2014 10:10:20 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mark Yao <mark.yao@rock-chips.com>
+Cc: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, dianders@chromium.org,
+        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
+        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
+Subject: Re: [PATCH v8 2/3] dt-bindings: video: Add for rockchip display
+ subsytem
+Message-ID: <20140930081020.GE24667@phenom.ffwll.local>
+Mail-Followup-To: Mark Yao <mark.yao@rock-chips.com>, heiko@sntech.de,
+	Boris BREZILLON <boris.brezillon@free-electrons.com>,
+	David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+	Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Mark Rutland <mark.rutland@arm.com>,
+	Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Kumar Gala <galak@codeaurora.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Grant Likely <grant.likely@linaro.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
+	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
+	linux-rockchip@lists.infradead.org, dianders@chromium.org,
+	marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
+	djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
+	cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
+	xxm@rock-chips.com, huangtao@rock-chips.com,
+	kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+	xw@rock-chips.com
+References: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com>
+ <1412057659-19483-1-git-send-email-mark.yao@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/fpnbBckKspFqOpNBREBl=L6"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412057659-19483-1-git-send-email-mark.yao@rock-chips.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/fpnbBckKspFqOpNBREBl=L6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 30, 2014 at 02:14:19PM +0800, Mark Yao wrote:
+> From: Mark yao <mark.yao@rock-chips.com>
+> 
+> This add a display subsystem comprise the all display interface nodes.
+> 
+> Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> Acked-by: Daniel Vetter <daniel@ffwll.ch>
+> Reviewed-by: Rob Clark <robdclark@gmail.com>
 
-Hi Sebastian,
+Just a quick clarification: My ack was only about the drm driver itself, I
+try really hard to stay away from DT insanity ;-) So please drop my ack
+from these two patches.
 
-On Tue, 30 Sep 2014 09:52:39 +0200 Sebastian Andrzej Siewior <bigeasy@linut=
-ronix.de> wrote:
->
-> this should have been fixed by commit baeb7ef34952f ("tty: serial: 8250:
-> use 32bit variable for rpm_tx_active") in Greg's tty-next tree. Isn't
-> this the case or did you fetch the tty tree before Greg pushed it?
+Aside: DT patches need to go through a special process and you must cc dt
+maintainers and mailing lists. Your patch seems to lack this, which afaiui
+is a blocker for merging the driver.
 
-Presumably the latter, in which case I will see the fix tomorrow.
+Thanks, Daniel
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> ---
+> Changes in v2:
+> - add DRM master device node to list all display nodes that comprise
+>   the graphics subsystem.
+> 
+> Changes in v3: None
+> 
+> Changes in v4: None
+> 
+> Changes in v5: None
+> 
+> Changes in v6: None
+> 
+> Changes in v7: None
+> 
+> Changes in v8: None
+> 
+>  .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+> new file mode 100644
+> index 0000000..7fff582
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+> @@ -0,0 +1,19 @@
+> +Rockchip DRM master device
+> +================================
+> +
+> +The Rockchip DRM master device is a virtual device needed to list all
+> +vop devices or other display interface nodes that comprise the
+> +graphics subsystem.
+> +
+> +Required properties:
+> +- compatible: Should be "rockchip,display-subsystem"
+> +- ports: Should contain a list of phandles pointing to display interface port
+> +  of vop devices. vop definitions as defined in
+> +  Documentation/devicetree/bindings/video/rockchip-vop.txt
+> +
+> +example:
+> +
+> +display-subsystem {
+> +	compatible = "rockchip,display-subsystem";
+> +	ports = <&vopl_out>, <&vopb_out>;
+> +};
+> -- 
+> 1.7.9.5
+> 
+> 
 
---Sig_/fpnbBckKspFqOpNBREBl=L6
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKmVGAAoJEMDTa8Ir7ZwVT5sQAIFiyzP02bJFN0bDtuM0eB6z
-FONNdO+6zc8K1BQX+FxF89GKMzs/lQyK3cbvyIOYkXpKxtrSudwv6UoYMhqAOyBq
-Y2NfmsiZaxc//xkHf+aJ3u8RUoBg76LhTM3B0O2SZAbTjDOZ0mVdeOANIhQLU7xY
-tp4xMXmvUa1ErMh9lrvC/of1KUHQpq4839BKfF7kH31e9AFKkBlBcQb5fi8emJK4
-56HDDlmRbC1ztRgHD5etViBfzNvrhgit4Jox83gxHrf83a5xR+6rNkv9wpWsNBLk
-C6pxEWEtOtFgsB/tWw64RNT0JEQ9xt4Hoo/KvA92gteqDyPlQleh00jA952D2Ynv
-wUvBSuDR1UvTHAwm4CfdMY3+WCaYFHtx+ySpm3Hi1YnoQLACYq6AAlWfBCmNW5qq
-CJcN7u1BPeBD3JmNoI2+TKME5O/M7ma9RocE+56PWGtdU8KCzq1enBYCAI/prlG2
-9uq9GNAcEJhbtI6AGrsJmNbZlJSSsFcW9CCGp5hLHQf9YKdjLU3PdtQMEOW+dBgO
-KSzeSzzsRkXmbQ0v9mRTl1vfcOb2vDipczdHpIOs413Ys0cTBJa4h2yrulY9dDOc
-tkQ+QuHEVaq2HRC9ymluG3URdKFRFwC+IbSn/i2KQhrjyqxDN9xI8y/daTpcdcjZ
-ACv7rQ4b3iH6QklQ0Toc
-=RbGa
------END PGP SIGNATURE-----
-
---Sig_/fpnbBckKspFqOpNBREBl=L6--
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
