@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaI3Bqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:46:46 -0400
-Received: from mga14.intel.com ([192.55.52.115]:52412 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaI3Bqo convert rfc822-to-8bit (ORCPT
+	id S1755284AbaI3Brj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:47:39 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48677 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755036AbaI3Brh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:46:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393319377"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: "'pure.logic@nexus-software.ie'" <pure.logic@nexus-software.ie>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB
- bug
-Thread-Topic: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB
- bug
-Thread-Index: AQHP2bMQNyIt2xdKHE23Rec7de2uWZwTYCOAgAAICgCABYOH4A==
-Date: Tue, 30 Sep 2014 01:46:04 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B73259A4FF@pgsmsx105.gar.corp.intel.com>
-References: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie>
- <20140926205955.GA22407@khazad-dum.debian.net>
- <5425DA8A.1030500@nexus-software.ie>
-In-Reply-To: <5425DA8A.1030500@nexus-software.ie>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 29 Sep 2014 21:47:37 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        mgorman@suse.de, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 0/5] mm: poison critical mm/ structs
+Date: Mon, 29 Sep 2014 21:47:14 -0400
+Message-Id: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.9.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> My view is that the CR3 load should have flushed the TLB in it's entirety.
-> 
-> Ong Boong Leong said that a discussion he had which included HPA concluded
-> with a flush of the TLB being required after the CR3 reload.
+Currently we're seeing a few issues which are unexplainable by looking at the
+data we see and are most likely caused by a memory corruption caused
+elsewhere.
 
-The proposed patch was discussed in April and after much thought into this,
-I will suggest that as long as the commentary properly captured down why
-__flush_tlb() is **NOT** needed because load_cr3() will have the same effect.
+This is wasting time for folks who are trying to figure out an issue provided
+a stack trace that can't really point out the real issue.
 
-> 
-> The current code
-> 
-> My preference is
-> 
-> 1. Just comment the code as is to explain why it works for Quark.
-> 
-> If that's not good enough for people then
-> 
-> 2. if/else the flow so that Quark does __flush_tlb() and the rest of the world
-> does a __flush_tlb_all()
-Bryan, just drop this proposal from my submission even though __flush_tlb() is
-more obvious in what is supposed to do and does not consume any significant cpu-time.
+This patch introduces poisoning on struct page, vm_area_struct, and mm_struct,
+and places checks in busy paths to catch corruption early.
 
+This series was tested, and it detects corruption in vm_area_struct. Right now
+I'm working on figuring out the source of the corruption, (which is a long
+standing bug) using KASan, but the current code is useful as it is.
+
+Sasha Levin (5):
+  mm: add poisoning basics
+  mm: constify dump_page and friends
+  mm: poison mm_struct
+  mm: poison vm_area_struct
+  mm: poison page struct
+
+ fs/exec.c                   |  5 +++++
+ include/linux/memcontrol.h  |  8 ++++----
+ include/linux/mm.h          | 11 ++++++++++-
+ include/linux/mm_types.h    | 18 ++++++++++++++++++
+ include/linux/mmdebug.h     | 24 ++++++++++++++++++++++--
+ include/linux/page-flags.h  | 24 ++++++++++++++++--------
+ include/linux/page_cgroup.h |  4 ++--
+ include/linux/poison.h      |  6 ++++++
+ kernel/fork.c               | 13 +++++++++++++
+ lib/Kconfig.debug           |  9 +++++++++
+ mm/debug.c                  | 22 ++++++++++++++++++----
+ mm/memcontrol.c             |  6 +++---
+ mm/mmap.c                   | 21 ++++++++++++++++++++-
+ mm/nommu.c                  |  7 +++++++
+ mm/page_cgroup.c            |  4 ++--
+ mm/vmacache.c               |  5 +++++
+ 16 files changed, 160 insertions(+), 27 deletions(-)
+
+-- 
+1.9.1
 
