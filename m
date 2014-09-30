@@ -1,111 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbaI3TNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:13:38 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:44345 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaI3TNg (ORCPT
+	id S1752912AbaI3TQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:16:39 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:41569 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaI3TQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:13:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABPqkBR6hLZbP9ysWkkutb7cogFbiXCM09gbfNJ8JVgM5w4R-w@mail.gmail.com>
-References: <20140930134525.GA20166@wfg-t540p.sh.intel.com> <CABPqkBR6hLZbP9ysWkkutb7cogFbiXCM09gbfNJ8JVgM5w4R-w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 30 Sep 2014 13:13:14 -0600
-Message-ID: <CAErSpo6nd6jvtK6iGORKxx8vo=yin1SAHik6t=EwFnA2ummbvQ@mail.gmail.com>
-Subject: Re: [perf/x86/intel/uncore] WARNING: CPU: 3 PID: 1 at
- arch/x86/mm/ioremap.c:183 __ioremap_caller+0x24c/0x2d0()
-To: Stephane Eranian <eranian@google.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Hansen <dave.hansen@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LKP <lkp@01.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Sep 2014 15:16:37 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        netdev@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH] et131x: Promote staging et131x driver to drivers/net
+Date: Tue, 30 Sep 2014 20:16:12 +0100
+Message-Id: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 8:11 AM, Stephane Eranian <eranian@google.com> wrote:
-> Hi,
->
-> On Tue, Sep 30, 2014 at 3:45 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->>
->> Hi Stephane,
->>
->> FYI, we noticed the below WARNING on
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
->> commit 521e8bac67a71a6544274f39d5c61473e0e54ac0 ("perf/x86/intel/uncore: Update support for client uncore IMC PMU")
->>
->> +-------------------------+------------+------------+
->> |                         | b10fc1c3e3 | 521e8bac67 |
->> +-------------------------+------------+------------+
->> | boot_successes          | 10         | 1          |
->> | boot_failures           | 0          | 9          |
->> | BUG:kernel_test_crashed | 0          | 9          |
->> +-------------------------+------------+------------+
->>
->>
->> [    6.773342] software IO TLB [mem 0xa5015000-0xa9015000] (64MB) mapped at [ffff8800a5015000-ffff8800a9014fff]
->> [    6.784010] resource sanity check: requesting [mem 0xfed10000-0xfed15fff], which spans more than reserved [mem 0xfed10000-0xfed13fff]
->> [    6.784951] ------------[ cut here ]------------
->> [    6.785331] WARNING: CPU: 3 PID: 1 at arch/x86/mm/ioremap.c:183 __ioremap_caller+0x24c/0x2d0()
->> [    6.786149] Info: mapping multiple BARs. Your kernel is fine.
->
->
-> This is the typical problem noted in the past. There is a BIOS problem
-> with the way the size of the IMC BAR is reported.
-> I copied Bjorn here. He will be more able to explain the problem to you.
+This patch moves the et131x gigabit ethernet driver from drivers/staging
+to drivers/net/ethernet/agere.
 
-Here's one fix for this:
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=cb171f7abb9a
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
 
-It sounds like this is a similar but slightly different problem.  Do
-you have a complete dmesg log?  That would have more clues about why
-the cb171f7abb9a change didn't fix this one.
+This patch appiles to both staging-next and the linux-next tag next-20140930,
+and takes into account all feedback recieved from the recent RFC for this
+patch.
 
->> [    6.786601] Modules linked in:
->> [    6.787046] CPU: 3 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-wl-ath-00314-g3ec2e1e #1
->> [    6.787755] Hardware name: Intel Corporation 2012 Client Platform/LosLunas CRB, BIOS ACRVMBY1.86C.0054.B00.1107311147 07/31/2011
->> [    6.788670]  0000000000000009 ffff880437e0bb00 ffffffff818571f9 ffff880437e0bb48
->> [    6.789551]  ffff880437e0bb38 ffffffff8106ef1d ffffc900018d0000 0000000000006000
->> [    6.790349]  ffffc900018d0000 ffffc900018d0000 00000000fed10000 ffff880437e0bb98
->> [    6.791228] Call Trace:
->> [    6.791552]  [<ffffffff818571f9>] dump_stack+0x4d/0x66
->> [    6.791961]  [<ffffffff8106ef1d>] warn_slowpath_common+0x7d/0xa0
->> [    6.792413]  [<ffffffff8106ef8c>] warn_slowpath_fmt+0x4c/0x50
->> [    6.792939]  [<ffffffff8107544f>] ? iomem_map_sanity_check+0xcf/0xe0
->> [    6.793425]  [<ffffffff8105b82c>] __ioremap_caller+0x24c/0x2d0
->> [    6.793955]  [<ffffffff8105b8c7>] ioremap_nocache+0x17/0x20
->> [    6.794394]  [<ffffffff8103504d>] snb_uncore_imc_init_box+0x6d/0x90
->> [    6.794951]  [<ffffffff8103341c>] uncore_pci_probe+0xcc/0x1f0
->> [    6.795388]  [<ffffffff8142e8b5>] local_pci_probe+0x45/0xa0
->> [    6.795902]  [<ffffffff8142fba5>] ? pci_match_device+0xe5/0x110
->> [    6.796352]  [<ffffffff8142fce1>] pci_device_probe+0xd1/0x120
->> [    6.796864]  [<ffffffff815024c0>] driver_probe_device+0x90/0x3e0
->> [    6.797327]  [<ffffffff815028db>] __driver_attach+0x8b/0x90
->> [    6.797839]  [<ffffffff81502850>] ? __device_attach+0x40/0x40
->> [    6.798287]  [<ffffffff8150038b>] bus_for_each_dev+0x6b/0xb0
->> [    6.798796]  [<ffffffff81501f6e>] driver_attach+0x1e/0x20
->> [    6.799222]  [<ffffffff81501b60>] bus_add_driver+0x180/0x250
->> [    6.799730]  [<ffffffff81df6e52>] ? uncore_cpu_setup+0x13/0x13
->> [    6.800184]  [<ffffffff815030a4>] driver_register+0x64/0xf0
->> [    6.800698]  [<ffffffff8142e14c>] __pci_register_driver+0x4c/0x50
->> [    6.801161]  [<ffffffff81df6f19>] intel_uncore_init+0xc7/0x2ae
->> [    6.801691]  [<ffffffff81df6e52>] ? uncore_cpu_setup+0x13/0x13
->> [    6.802142]  [<ffffffff81002130>] do_one_initcall+0xc0/0x1f0
->> [    6.802650]  [<ffffffff8108d900>] ? parse_args+0x1c0/0x4e0
->> [    6.803075]  [<ffffffff81dea11b>] kernel_init_freeable+0x1b3/0x23b
->> [    6.803628]  [<ffffffff8184a930>] ? rest_init+0x90/0x90
->> [    6.804034]  [<ffffffff8184a93e>] kernel_init+0xe/0xf0
->> [    6.804433]  [<ffffffff8185fe3c>] ret_from_fork+0x7c/0xb0
->> [    6.804928]  [<ffffffff8184a930>] ? rest_init+0x90/0x90
->> [    6.805336] ---[ end trace 31a6fa76e4d9f116 ]---
->> [    6.808747] RAPL PMU detected, hw unit 2^-16 Joules, API unit is 2^-32 Joules, 3 fixed counters 163840 ms ovfl timer
->>
->> Thanks,
->> Fengguang
->>
->> _______________________________________________
->> LKP mailing list
->> LKP@linux.intel.com
->>
+ MAINTAINERS                                        | 10 +++----
+ drivers/net/ethernet/Kconfig                       |  1 +
+ drivers/net/ethernet/Makefile                      |  1 +
+ drivers/net/ethernet/agere/Kconfig                 | 31 ++++++++++++++++++++++
+ .../et131x => net/ethernet/agere}/Makefile         |  0
+ .../et131x => net/ethernet/agere}/et131x.c         |  0
+ .../et131x => net/ethernet/agere}/et131x.h         |  0
+ drivers/staging/Kconfig                            |  2 --
+ drivers/staging/Makefile                           |  1 -
+ drivers/staging/et131x/Kconfig                     | 10 -------
+ drivers/staging/et131x/README                      | 15 -----------
+ 11 files changed, 38 insertions(+), 33 deletions(-)
+ create mode 100644 drivers/net/ethernet/agere/Kconfig
+ rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (100%)
+ rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
+ rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
+ delete mode 100644 drivers/staging/et131x/Kconfig
+ delete mode 100644 drivers/staging/et131x/README
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 637112c..26b5238 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3572,6 +3572,11 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/kristoffer/linux-hpc.git
+ F:	drivers/video/fbdev/s1d13xxxfb.c
+ F:	include/video/s1d13xxxfb.h
+ 
++ET131X NETWORK DRIVER
++M:	Mark Einon <mark.einon@gmail.com>
++S:	Odd Fixes
++F:	drivers/net/ethernet/agere/
++
+ ETHERNET BRIDGE
+ M:	Stephen Hemminger <stephen@networkplumber.org>
+ L:	bridge@lists.linux-foundation.org
+@@ -8764,11 +8769,6 @@ M:	H Hartley Sweeten <hsweeten@visionengravers.com>
+ S:	Odd Fixes
+ F:	drivers/staging/comedi/
+ 
+-STAGING - ET131X NETWORK DRIVER
+-M:	Mark Einon <mark.einon@gmail.com>
+-S:	Odd Fixes
+-F:	drivers/staging/et131x/
+-
+ STAGING - FLARION FT1000 DRIVERS
+ M:	Marek Belisko <marek.belisko@gmail.com>
+ S:	Odd Fixes
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index dc7406c..d48fc9c 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -20,6 +20,7 @@ config SUNGEM_PHY
+ source "drivers/net/ethernet/3com/Kconfig"
+ source "drivers/net/ethernet/adaptec/Kconfig"
+ source "drivers/net/ethernet/aeroflex/Kconfig"
++source "drivers/net/ethernet/agere/Kconfig"
+ source "drivers/net/ethernet/allwinner/Kconfig"
+ source "drivers/net/ethernet/alteon/Kconfig"
+ source "drivers/net/ethernet/altera/Kconfig"
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 224a018..89207ac 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_NET_VENDOR_3COM) += 3com/
+ obj-$(CONFIG_NET_VENDOR_8390) += 8390/
+ obj-$(CONFIG_NET_VENDOR_ADAPTEC) += adaptec/
+ obj-$(CONFIG_GRETH) += aeroflex/
++obj-$(CONFIG_NET_VENDOR_AGERE) += agere/
+ obj-$(CONFIG_NET_VENDOR_ALLWINNER) += allwinner/
+ obj-$(CONFIG_NET_VENDOR_ALTEON) += alteon/
+ obj-$(CONFIG_ALTERA_TSE) += altera/
+diff --git a/drivers/net/ethernet/agere/Kconfig b/drivers/net/ethernet/agere/Kconfig
+new file mode 100644
+index 0000000..63e805d
+--- /dev/null
++++ b/drivers/net/ethernet/agere/Kconfig
+@@ -0,0 +1,31 @@
++#
++# Agere device configuration
++#
++
++config NET_VENDOR_AGERE
++	bool "Agere devices"
++	default y
++	depends on PCI
++	---help---
++	  If you have a network (Ethernet) card belonging to this class, say Y
++	  and read the Ethernet-HOWTO, available from
++	  <http://www.tldp.org/docs.html#howto>.
++
++	  Note that the answer to this question doesn't directly affect the
++	  kernel: saying N will just cause the configurator to skip all
++	  the questions about Agere devices. If you say Y, you will be asked
++	  for your specific card in the following questions.
++
++if NET_VENDOR_AGERE
++
++config ET131X
++	tristate "Agere ET-1310 Gigabit Ethernet support"
++	depends on PCI
++	select PHYLIB
++	---help---
++	  This driver supports Agere ET-1310 ethernet adapters.
++
++	  To compile this driver as a module, choose M here. The module
++	  will be called et131x.
++
++endif # NET_VENDOR_AGERE
+diff --git a/drivers/staging/et131x/Makefile b/drivers/net/ethernet/agere/Makefile
+similarity index 100%
+rename from drivers/staging/et131x/Makefile
+rename to drivers/net/ethernet/agere/Makefile
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/net/ethernet/agere/et131x.c
+similarity index 100%
+rename from drivers/staging/et131x/et131x.c
+rename to drivers/net/ethernet/agere/et131x.c
+diff --git a/drivers/staging/et131x/et131x.h b/drivers/net/ethernet/agere/et131x.h
+similarity index 100%
+rename from drivers/staging/et131x/et131x.h
+rename to drivers/net/ethernet/agere/et131x.h
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 6e2d6fd..9d18a1c 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -24,8 +24,6 @@ menuconfig STAGING
+ 
+ if STAGING
+ 
+-source "drivers/staging/et131x/Kconfig"
+-
+ source "drivers/staging/slicoss/Kconfig"
+ 
+ source "drivers/staging/wlan-ng/Kconfig"
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 74c679e..8c56326 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -4,7 +4,6 @@
+ obj-$(CONFIG_STAGING)		+= staging.o
+ 
+ obj-y				+= media/
+-obj-$(CONFIG_ET131X)		+= et131x/
+ obj-$(CONFIG_SLICOSS)		+= slicoss/
+ obj-$(CONFIG_PRISM2_USB)	+= wlan-ng/
+ obj-$(CONFIG_COMEDI)		+= comedi/
+diff --git a/drivers/staging/et131x/Kconfig b/drivers/staging/et131x/Kconfig
+deleted file mode 100644
+index 8190f2a..0000000
+--- a/drivers/staging/et131x/Kconfig
++++ /dev/null
+@@ -1,10 +0,0 @@
+-config ET131X
+-	tristate "Agere ET-1310 Gigabit Ethernet support"
+-	depends on PCI && NET && NETDEVICES
+-	select PHYLIB
+-	default n
+-	---help---
+-	  This driver supports Agere ET-1310 ethernet adapters.
+-
+-	  To compile this driver as a module, choose M here. The module
+-	  will be called et131x.
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+deleted file mode 100644
+index 13c8168..0000000
+--- a/drivers/staging/et131x/README
++++ /dev/null
+@@ -1,15 +0,0 @@
+-This is a driver for the ET1310 network device.
+-
+-Based on the driver found at https://sourceforge.net/projects/et131x/
+-
+-Cleaned up immensely by Olaf Hartman and Christoph Hellwig <hch@infradead.org>
+-
+-Note, the powermanagement options were removed from the vendor provided
+-driver as they did not build properly at the time.
+-
+-TODO:
+-
+-Please send patches to:
+-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-	Mark Einon <mark.einon@gmail.com>
+-
+-- 
+2.1.0
+
