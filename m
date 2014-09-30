@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaI3Vgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:36:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60863 "EHLO
+	id S1753525AbaI3Vgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:36:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60872 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaI3Vgq (ORCPT
+	with ESMTP id S1751832AbaI3Vgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:36:46 -0400
+	Tue, 30 Sep 2014 17:36:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arjun Sreedharan <arjun024@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 023/103] pata_scc: propagate return value of scc_wait_after_reset
-Date: Tue, 30 Sep 2014 14:30:28 -0700
-Message-Id: <1412112708-27356-24-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 027/103] md/raid10: Fix memory leak when raid10 reshape completes.
+Date: Tue, 30 Sep 2014 14:30:32 -0700
+Message-Id: <1412112708-27356-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,66 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arjun Sreedharan <arjun024@gmail.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 4dc7c76cd500fa78c64adfda4b070b870a2b993c upstream.
+commit b39685526f46976bcd13aa08c82480092befa46c upstream.
 
-scc_bus_softreset not necessarily should return zero.
-Propagate the error code.
+When a raid10 commences a resync/recovery/reshape it allocates
+some buffer space.
+When a resync/recovery completes the buffer space is freed.  But not
+when the reshape completes.
+This can result in a small memory leak.
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+There is a subtle side-effect of this bug.  When a RAID10 is reshaped
+to a larger array (more devices), the reshape is immediately followed
+by a "resync" of the new space.  This "resync" will use the buffer
+space which was allocated for "reshape".  This can cause problems
+including a "BUG" in the SCSI layer.  So this is suitable for -stable.
+
+Fixes: 3ea7daa5d7fde47cd41f4d56c2deb949114da9d6
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/pata_scc.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/md/raid10.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ata/pata_scc.c b/drivers/ata/pata_scc.c
-index f35f15f..f7badaa 100644
---- a/drivers/ata/pata_scc.c
-+++ b/drivers/ata/pata_scc.c
-@@ -586,7 +586,7 @@ static int scc_wait_after_reset(struct ata_link *link, unsigned int devmask,
-  *	Note: Original code is ata_bus_softreset().
-  */
- 
--static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-+static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-                                       unsigned long deadline)
- {
- 	struct ata_ioports *ioaddr = &ap->ioaddr;
-@@ -600,9 +600,7 @@ static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
- 	udelay(20);
- 	out_be32(ioaddr->ctl_addr, ap->ctl);
- 
--	scc_wait_after_reset(&ap->link, devmask, deadline);
--
--	return 0;
-+	return scc_wait_after_reset(&ap->link, devmask, deadline);
- }
- 
- /**
-@@ -619,7 +617,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
- {
- 	struct ata_port *ap = link->ap;
- 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
--	unsigned int devmask = 0, err_mask;
-+	unsigned int devmask = 0;
-+	int rc;
- 	u8 err;
- 
- 	DPRINTK("ENTER\n");
-@@ -635,9 +634,9 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
- 
- 	/* issue bus reset */
- 	DPRINTK("about to softreset, devmask=%x\n", devmask);
--	err_mask = scc_bus_softreset(ap, devmask, deadline);
--	if (err_mask) {
--		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
-+	rc = scc_bus_softreset(ap, devmask, deadline);
-+	if (rc) {
-+		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
- 		return -EIO;
- 	}
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 4800e56..1b707ad 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2967,6 +2967,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
+ 		 */
+ 		if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery)) {
+ 			end_reshape(conf);
++			close_sync(conf);
+ 			return 0;
+ 		}
  
 -- 
 1.9.1
