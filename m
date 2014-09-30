@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276AbaI3Jvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:51:40 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:53367 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaI3Jvi (ORCPT
+	id S1751516AbaI3Jzb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:55:31 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:52195 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaI3Jza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:51:38 -0400
+	Tue, 30 Sep 2014 05:55:30 -0400
+X-IronPort-AV: E=Sophos;i="5.04,625,1406592000"; 
+   d="scan'208";a="177480658"
+Message-ID: <542A7E0E.9050702@citrix.com>
+Date: Tue, 30 Sep 2014 10:55:26 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140929144752.GP16977@sirena.org.uk>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
-	<1411992293-7729-4-git-send-email-zhang.lyra@gmail.com>
-	<20140929144752.GP16977@sirena.org.uk>
-Date: Tue, 30 Sep 2014 17:51:37 +0800
-Message-ID: <CAAfSe-sdz=DkJteLCLwLg_2-KWRY8mp1O+ZZ=j2YJtskXNT6Mw@mail.gmail.com>
-Subject: Re: [PATCH 3/6] arm64: dts/Makefile: Add support for Spreadtrum's
- Shark64 SoC.
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz,
-        Kumar Gala <galak@codeaurora.org>, mark.rutland@arm.com,
-        m-karicheri2@ti.com, pawel.moll@arm.com,
-        Ramkumar Ramachandra <artagnon@gmail.com>, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com,
-        Orson Zhai <orsonzhai@gmail.com>, geng.ren@spreadtrum.com,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+To: Chen Gang <gang.chen.5i5j@gmail.com>, <konrad.wilk@oracle.com>,
+        <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <boris.ostrovsky@oracle.com>, <bhelgaas@google.com>, <jgross@suse.com>,
+        <yongjun_wei@trendmicro.com.cn>, <mukesh.rathor@oracle.com>
+CC: <xen-devel@lists.xenproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/xenbus: Use 'void' instead of 'int' for the return
+ of xenbus_switch_state()
+References: <5425961A.5000604@gmail.com>
+In-Reply-To: <5425961A.5000604@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark
+On 26/09/14 17:36, Chen Gang wrote:
+> When xenbus_switch_state() fails, it will call xenbus_switch_fatal()
+> internally, so need not return any status value, then use 'void' instead
+> of 'int' for xenbus_switch_state() and __xenbus_switch_state().
+> 
+> Also need be sure that all callers which check the return value must let
+> 'err' be 0.
+> 
+> And also need change the related comments for xenbus_switch_state().
 
-[use plain text pattern to send again]
+Since this patch does not fix a bug and there is no unanimous agreement
+on the API change I'm not going to apply it (nor the previous version).
 
-2014-09-29 22:47 GMT+08:00 Mark Brown <broonie@kernel.org>:
-> On Mon, Sep 29, 2014 at 08:04:50PM +0800, zhang.lyra@gmail.com wrote:
->
->>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->> +dtb-$(CONFIG_ARCH_SHARK64) += sprd_shark64.dtb
->
-> It's better to keep lists in Makefiles and Kconfig sorted
-> alphanumerically, that way there's less chance of conflicts when
-> applying patches or merging different branches.
+David
 
-Thank you very much for your review and explain why this way is
-better. I'll address this change in V2.
-
-Best regards,
-Chunyan
