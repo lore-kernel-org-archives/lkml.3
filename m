@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaI3KIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:08:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaI3KIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:08:39 -0400
-Message-ID: <542A80F4.7020704@redhat.com>
-Date: Tue, 30 Sep 2014 06:07:48 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752091AbaI3KIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:08:48 -0400
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:34781 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaI3KIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:08:45 -0400
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org
-CC: linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH] sched: fix spurious active migration
-References: <1412066468-4340-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1412066468-4340-1-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <3268049.TolhrmBCZA@wuerfel>
+References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
+	<1411992293-7729-7-git-send-email-zhang.lyra@gmail.com>
+	<3268049.TolhrmBCZA@wuerfel>
+Date: Tue, 30 Sep 2014 18:08:44 +0800
+Message-ID: <CAAfSe-sU0w6XTQ1yJd6v0q1eT5H3wvJXJYVBE8dv--QyZ3wHxw@mail.gmail.com>
+Subject: Re: [PATCH 6/6] Documentation: Add entry for Spreadtrum's Shark64 SoC
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
+        ijc+devicetree@hellion.org.uk, jslaby@suse.cz,
+        Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@linaro.org>,
+        mark.rutland@arm.com, m-karicheri2@ti.com, pawel.moll@arm.com,
+        Ramkumar Ramachandra <artagnon@gmail.com>, rrichter@cavium.com,
+        robh+dt@kernel.org, will.deacon@arm.com,
+        Orson Zhai <orsonzhai@gmail.com>, geng.ren@spreadtrum.com,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Hi, Arnd
 
-On 09/30/2014 04:41 AM, Vincent Guittot wrote:
-> Since commit caeb178c60f4 ("sched/fair: Make
-> update_sd_pick_busiest() ...") sd_pick_busiest returns a group that
-> can be neither imbalanced nor overloaded but is only more loaded
-> than others. This change has been introduced to ensure a better
-> load balance in system that are not overloaded but as a side
-> effect, it can also generate useless active migration between
-> groups.
-> 
-> Let take the example of 3 tasks on a quad cores system. We will
-> always have an idle core so the load balance will find a busiest
-> group (core) whenever an ILB is triggered and it will force an
-> active migration (once above nr_balance_failed threshold) so the
-> idle core becomes busy but another core will become idle. With the
-> next ILB, the freshly idle core will try to pull the task of a busy
-> CPU. The number of spurious active migration is not so huge in quad
-> core system because the ILB is not triggered so much. But it
-> becomes significant as soon as you have more than one sched_domain
-> level like on a dual cluster of quad cores where the ILB is
-> triggered every tick when you have more than 1 busy_cpu
-> 
-> We need to ensure that the migration generate a real improveùent
-> and will not only move the avg_load imbalance on another CPU.
+[use plain text pattern to send again]
 
-Good catch.
+Thank you very much for your review in detail so carefully. I'll
+address these changes which you mentioned in this patch set in V2, but
+the days from tomorrow to 10.7 are Chinese holidays, I'm going to send
+PATCHv2 a few days later.
 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+I'm also sorry that make you confused about my name, I'll solve this
+problem in the next submit.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Thanks,
+Chunyan
 
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUKoD0AAoJEM553pKExN6DD4UIAIDM2q15MMhgKOEhKzFJfBod
-XXeP5ouzeyRYwBomZhQazBqX42YOQ9YsYwydYJNacUcCP41DTNElvwOY6/l6znHK
-GqYQFPxEtoi1e42EHvqQUVeISjKk1RFWpf4kQI8qhq1lYClWakn6ATk5RzbImYTR
-MxjDL3WOXkywo9+lksF+N4TjpuBRDA5YKGvjSozeGMJFZyMzBsBNQDfDbv6ccHx3
-uTPVi+3UXbVuTVsa5imHayxFL1+aEBMhBd2Y3mdQdKwds3SCHxrU+3v3o4wAm8qI
-AD6l/QTmPnwUKCeZod9fXZLApFFIO5aQgQBCEj3M2Sz9HtsbQjJoxL3gybbUBug=
-=ja1y
------END PGP SIGNATURE-----
+2014-09-29 21:59 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
+> On Monday 29 September 2014 20:04:53 zhang.lyra@gmail.com wrote:
+>> From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+>>
+>> Adds a devicetree binding documentation for Spreadtrum's Shark64 SoC.
+>>
+>> Signed-off-by: chunyan.zhang <chunyan.zhang@spreadtrum.com>
+>
+> One more thing: The email addresses look wrong, please use the form in
+> which you normally write the names, such as
+>
+> Signed-off-by: Zhang Chunyan <chunyan.zhang@spreadtrum.com>
+>
+> You can set the user name that git will add using the
+> 'git config --global user.name ...'.
+>
+> Also, I notice that the email from which the patch is sent does not
+> match the last 'Signed-off-by' line. If Chunyan and Lyra are both
+> your names, better pick one that you use for both the email and the
+> signoff. If you are Lyra and are posting a patch from Chunyan, please
+> add your own line below hers, like
+>
+> Signed-off-by: Zhang Chunyan <chunyan.zhang@spreadtrum.com>
+> Signed-off-by: Zhang Lyra <zhang.lyra@gmail.com>
+>
+> so that you include everybody who was involved in sending the
+> patch, but have your own list last.
+>
+>         Arnd
