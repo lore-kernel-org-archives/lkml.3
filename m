@@ -1,150 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaI3NHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:07:31 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:47995 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994AbaI3NH1 (ORCPT
+	id S1751528AbaI3NLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:11:24 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:55427 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750954AbaI3NLW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:07:27 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <3e515885f74e73fe089d78abacbff06a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v9 3/3] dt-bindings: video: Add documentation for rockchip vop
-Date: Tue, 30 Sep 2014 21:06:11 +0800
-Message-Id: <1412082371-27800-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
-References: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+	Tue, 30 Sep 2014 09:11:22 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Miller'" <davem@davemloft.net>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "sandeep_n@ti.com" <sandeep_n@ti.com>,
+        "joe@perches.com" <joe@perches.com>
+Subject: RE: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
+Thread-Topic: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
+Thread-Index: AQHP3B6zmjPDCB9GJkW0dya+Jw2jkpwZpd2A
+Date: Tue, 30 Sep 2014 13:09:34 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174A1012@AcuExch.aculab.com>
+References: <1411667317-1163-1-git-send-email-santosh.shilimkar@ti.com>
+	<1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>
+ <20140929.155200.2231132602322345812.davem@davemloft.net>
+In-Reply-To: <20140929.155200.2231132602322345812.davem@davemloft.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark yao <mark.yao@rock-chips.com>
+From: David Miller
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Thu, 25 Sep 2014 13:48:36 -0400
+> 
+> > +static inline int gbe_phy_link_status(struct gbe_slave *slave)
+> > +{
+> > +	if (!slave->phy)
+> > +		return 1;
+> > +
+> > +	if (slave->phy->link)
+> > +		return 1;
+> > +
+> > +	return 0;
+> > +}
+> 
+> Please use 'bool' as the return type and return 'true' or 'false'.
 
-This adds binding documentation for Rockchip SoC VOP driver.
+That function body could also be just:
+	return !slave->phy && slave->phy->link;
+which might be more readable if directly coded.
 
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
----
-Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
-- add port for display-subsystem
+I also wonder if slave>phy can actually be NULL?
+If it can be under unusual circumstances it might be worth
+assigning the address of a dummy 'phy' structure so that the
+tests can all be removed.
 
-Changes in v3: None
+	David
 
-Changes in v4: None
-
-Changes in v5: None
-
-Changes in v6: None
-
-Changes in v7: None
-
-Changes in v8: None
-
-Changes in v9: None
-
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-new file mode 100644
-index 0000000..d15351f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
-+
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
-+
-+Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
-+
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
-+- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
-+
-+- iommus: required a iommu node
-+
-+- port: A port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
-+			};
-+		};
-+	};
--- 
-1.7.9.5
 
 
