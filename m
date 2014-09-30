@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaI3N0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:26:19 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:62213 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbaI3N0Q (ORCPT
+	id S1751807AbaI3N21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:28:27 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:44885 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaI3N2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:26:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rik van Riel <riel@redhat.com>, atheurer@redhat.com, srao@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>, fweisbec@gmail.com,
-        oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        umgwanakikbuti@gmail.com, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, lwoodman@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched, time: cmpxchg does not work on 64-bit variable
-Date: Tue, 30 Sep 2014 15:26:06 +0200
-Message-ID: <6045627.KStXj7ELPe@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <542AA33E.2050008@redhat.com>
-References: <2547036.UshV4pXvhf@wuerfel> <542AA33E.2050008@redhat.com>
+	Tue, 30 Sep 2014 09:28:25 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cuiPoogGde+YT1aYZo2hlQyU+PCn4eeudeCY8oBck9Y
- kYHRVlT9evI1aaUCWq/oJ1qWCLdJn58DBmTLY6xbodiZn7aVJO
- 42laS7zu5DT64dovdT8qm8U46soDWBBIJmMPiNxD4N6bnL32Fj
- SkDlgJltKuzIJM6gSIx1XMvzP5Hg7eSJAeEb0cUdWowAER8r/0
- bsUn47Gi8+08LBwf4gCdy4psoigrqcCkBX6xsLMmtIr/4SrXNQ
- KjkWzQ3nMoH4jC6t6L0poR1YF24IhzksS79DrenfgydX4xZuXA
- tvw2FGJP4Z9g2JShl3kMU61N+OISOAvxgFJ7zUTK+W6cUgai/K
- 0aBNoNbtoakGlNfCO5LE=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174A1012@AcuExch.aculab.com>
+References: <1411667317-1163-1-git-send-email-santosh.shilimkar@ti.com>
+	<1411667317-1163-3-git-send-email-santosh.shilimkar@ti.com>
+	<20140929.155200.2231132602322345812.davem@davemloft.net>
+	<063D6719AE5E284EB5DD2968C1650D6D174A1012@AcuExch.aculab.com>
+Date: Tue, 30 Sep 2014 15:28:23 +0200
+X-Google-Sender-Auth: sdNce71XPQ94vFoT2gqvKFk0evw
+Message-ID: <CAMuHMdXe2H4qfX4X4GDzJSgoWzu-BrvRL6KoZagepY1GYEA4Ag@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] net: Add Keystone NetCP ethernet driver
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Laight <David.Laight@aculab.com>
+Cc: David Miller <davem@davemloft.net>,
+        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "sandeep_n@ti.com" <sandeep_n@ti.com>,
+        "joe@perches.com" <joe@perches.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 September 2014 08:34:06 Rik van Riel wrote:
-> 
-> Arnd, on which architecture are you seeing a build failure?
-> Is it just 32 bit arm?
-> 
+On Tue, Sep 30, 2014 at 3:09 PM, David Laight <David.Laight@aculab.com> wrote:
+>> > +static inline int gbe_phy_link_status(struct gbe_slave *slave)
+>> > +{
+>> > +   if (!slave->phy)
+>> > +           return 1;
+>> > +
+>> > +   if (slave->phy->link)
+>> > +           return 1;
+>> > +
+>> > +   return 0;
+>> > +}
+>>
+>> Please use 'bool' as the return type and return 'true' or 'false'.
+>
+> That function body could also be just:
+>         return !slave->phy && slave->phy->link;
+> which might be more readable if directly coded.
 
-Yes, I only tested on arm32, but I assume that most other 32-bit
-architectures will behave in a similar way.
+return !slave->phy || slave->phy->link;
 
-	Arnd
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
