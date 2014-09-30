@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaI3BuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:50:14 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:52373 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170AbaI3BuL (ORCPT
+	id S1755455AbaI3BuT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:50:19 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:36071 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438AbaI3BuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:50:11 -0400
+	Mon, 29 Sep 2014 21:50:14 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,44 +21,164 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 0/2] bpf: add search pruning optimization and tests
-Date: Mon, 29 Sep 2014 18:50:00 -0700
-Message-Id: <1412041802-24858-1-git-send-email-ast@plumgrid.com>
+Subject: [PATCH net-next 2/2] bpf: add tests to verifier testsuite
+Date: Mon, 29 Sep 2014 18:50:02 -0700
+Message-Id: <1412041802-24858-3-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1412041802-24858-1-git-send-email-ast@plumgrid.com>
+References: <1412041802-24858-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+add 4 extra tests to cover jump verification better
 
-patch #1 commit log explains why eBPF verifier has to examine some
-instructions multiple times and describes the search pruning optimization
-that improves verification speed for branchy programs and allows more
-complex programs to be verified successfully.
-This patch completes the core verifier logic.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ samples/bpf/test_verifier.c |  130 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 130 insertions(+)
 
-patch #2 adds more verifier tests related to branches and search pruning
-
-I'm still working on Andy's 'bitmask for stack slots' suggestion. It will be
-done on top of this patch.
-
-The current verifier algorithm is brute force depth first search with
-state pruning. If anyone can come up with another algorithm that demonstrates
-better results, we'll replace the algorithm without affecting user space.
-
-Note verifier doesn't guarantee that all possible valid programs are accepted.
-Overly complex programs may still be rejected.
-Verifier improvements/optimizations will guarantee that if a program
-was passing verification in the past, it will still be passing.
-
-Alexei Starovoitov (2):
-  bpf: add search pruning optimization to verifier
-  bpf: add tests to verifier testsuite
-
- kernel/bpf/verifier.c       |  146 +++++++++++++++++++++++++++++++++++++++++++
- samples/bpf/test_verifier.c |  130 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 276 insertions(+)
-
+diff --git a/samples/bpf/test_verifier.c b/samples/bpf/test_verifier.c
+index d10992e2740e..f44ef11f65a7 100644
+--- a/samples/bpf/test_verifier.c
++++ b/samples/bpf/test_verifier.c
+@@ -461,6 +461,136 @@ static struct bpf_test tests[] = {
+ 		.errstr = "R0 invalid mem access",
+ 		.result = REJECT,
+ 	},
++	{
++		"jump test 1",
++		.insns = {
++			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_1, -8),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -8, 0),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 1, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -16, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 2, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -8, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 3, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -16, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 4, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -8, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 5, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -32, 5),
++			BPF_MOV64_IMM(BPF_REG_0, 0),
++			BPF_EXIT_INSN(),
++		},
++		.result = ACCEPT,
++	},
++	{
++		"jump test 2",
++		.insns = {
++			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, 2),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -8, 0),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 14),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 1, 2),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -16, 0),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 11),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 2, 2),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -32, 0),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 8),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 3, 2),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -40, 0),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 5),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 4, 2),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -48, 0),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 5, 1),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -56, 0),
++			BPF_MOV64_IMM(BPF_REG_0, 0),
++			BPF_EXIT_INSN(),
++		},
++		.result = ACCEPT,
++	},
++	{
++		"jump test 3",
++		.insns = {
++			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 0, 3),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -8, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 19),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 1, 3),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -16, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -16),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 15),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 2, 3),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -32, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -32),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 11),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 3, 3),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -40, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -40),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 7),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 4, 3),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -48, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -48),
++			BPF_JMP_IMM(BPF_JA, 0, 0, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, 5, 0),
++			BPF_ST_MEM(BPF_DW, BPF_REG_2, -56, 0),
++			BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -56),
++			BPF_LD_MAP_FD(BPF_REG_1, 0),
++			BPF_RAW_INSN(BPF_JMP | BPF_CALL, 0, 0, 0, BPF_FUNC_unspec),
++			BPF_EXIT_INSN(),
++		},
++		.fixup = {24},
++		.result = ACCEPT,
++	},
++	{
++		"jump test 4",
++		.insns = {
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 1),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 2),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 3),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 4),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 0),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 0),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 0),
++			BPF_JMP_IMM(BPF_JEQ, BPF_REG_1, BPF_REG_10, 0),
++			BPF_MOV64_IMM(BPF_REG_0, 0),
++			BPF_EXIT_INSN(),
++		},
++		.result = ACCEPT,
++	},
+ };
+ 
+ static int probe_filter_length(struct bpf_insn *fp)
 -- 
 1.7.9.5
 
