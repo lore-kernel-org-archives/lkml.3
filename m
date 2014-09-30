@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaI3Vnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:43:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32931 "EHLO
+	id S1754724AbaI3Vny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:43:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32917 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368AbaI3VjH (ORCPT
+	with ESMTP id S1754349AbaI3VjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:07 -0400
+	Tue, 30 Sep 2014 17:39:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 090/103] regmap: Don't attempt block writes when syncing cache on single_rw devices
-Date: Tue, 30 Sep 2014 14:31:35 -0700
-Message-Id: <1412112708-27356-91-git-send-email-kamal@canonical.com>
+Cc: Filipe Brandenburger <filbranden@google.com>,
+        Allan McRae <allan@archlinux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 077/103] xattr: fix check for simultaneous glibc header inclusion
+Date: Tue, 30 Sep 2014 14:31:22 -0700
+Message-Id: <1412112708-27356-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -26,35 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Filipe Brandenburger <filbranden@google.com>
 
-commit 5c1ebe7f73f9166893c3459915db8a09d6d1d715 upstream.
+commit bfcfd44cce2774f19daeb59fb4e43fc9aa80e7b8 upstream.
 
-If the device can't support block writes then don't attempt to use raw
-syncing which will automatically generate block writes for adjacent
-registers, use the existing _single() block syncing implementation.
+The guard was introduced in commit ea1a8217b06b ("xattr: guard against
+simultaneous glibc header inclusion") but it is using #ifdef to check
+for a define that is either set to 1 or 0.  Fix it to use #if instead.
 
-Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Tested-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+* Without this patch:
+
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  include/uapi/linux/xattr.h:19:0: warning: "XATTR_CREATE" redefined [enabled by default]
+   #define XATTR_CREATE 0x1 /* set value, fail if attr already exists */
+   ^
+  /usr/include/x86_64-linux-gnu/sys/xattr.h:32:0: note: this is the location of the previous definition
+   #define XATTR_CREATE XATTR_CREATE
+   ^
+
+* With this patch:
+
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  (no warnings)
+
+Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Cc: Allan McRae <allan@archlinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/regmap/regcache.c | 2 +-
+ include/uapi/linux/xattr.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index d4dd771..154e7a8 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -701,7 +701,7 @@ int regcache_sync_block(struct regmap *map, void *block,
- 			unsigned int block_base, unsigned int start,
- 			unsigned int end)
- {
--	if (regmap_can_raw_write(map))
-+	if (regmap_can_raw_write(map) && !map->use_single_rw)
- 		return regcache_sync_block_raw(map, block, cache_present,
- 					       block_base, start, end);
- 	else
+diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
+index a63c146..f2765c1 100644
+--- a/include/uapi/linux/xattr.h
++++ b/include/uapi/linux/xattr.h
+@@ -13,7 +13,7 @@
+ #ifndef _UAPI_LINUX_XATTR_H
+ #define _UAPI_LINUX_XATTR_H
+ 
+-#ifdef __UAPI_DEF_XATTR
++#if __UAPI_DEF_XATTR
+ #define __USE_KERNEL_XATTR_DEFS
+ 
+ #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
 -- 
 1.9.1
 
