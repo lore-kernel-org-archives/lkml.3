@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaI3FB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 01:01:56 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6805 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915AbaI3FBy (ORCPT
+	id S1752097AbaI3FDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 01:03:54 -0400
+Received: from mfb01-md.ns.itscom.net ([175.177.155.109]:40758 "EHLO
+	mfb01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaI3FDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 01:01:54 -0400
-Date: Mon, 29 Sep 2014 22:02:04 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
-Message-ID: <20140930050203.GG28481@sonymobile.com>
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
- <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org>
- <5429DA95.80505@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5429DA95.80505@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 30 Sep 2014 01:03:53 -0400
+X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Sep 2014 01:03:52 EDT
+From: "J. R. Okajima" <hooanon05g@gmail.com>
+Subject: Re: [PULL for 3.18] overlay filesystem v24
+To: David Howells <dhowells@redhat.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
+In-Reply-To: <26822.1412028003@warthog.procyon.org.uk>
+References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu> <26822.1412028003@warthog.procyon.org.uk>
+Date: Tue, 30 Sep 2014 13:54:39 +0900
+Message-ID: <27645.1412052879@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29 Sep 15:17 PDT 2014, Stephen Boyd wrote:
 
-> On 09/29/14 02:14, Srinivas Kandagatla wrote:
-> > @@ -246,6 +247,24 @@
-> >  			#reset-cells = <1>;
-> >  		};
-> >  
-> > +		apcs: syscon@2011000 {
-> > +			compatible = "syscon";
-> > +			reg = <0x2011000 0x1000>;
-> > +		};
-> 
-> This is actually a clock controller block that hw designers decided was
-> good place to shove the ipc bits (because there's room!). Can we call it
-> 
->                 l2cc: clock-controller@2011000 {
->                         compatible = "syscon";
->                         reg = <0x2011000 0x1000>;
->                 };
-> 
-> Eventually I'll add the specific krait compatible when we merge krait
-> clock support:
-> 
->                 l2cc: clock-controller@2011000 {
->                         compatible = "qcom,kpss-gcc", "syscon";
->                         reg = <0x2011000 0x1000>;
->                         clock-output-names = "acpu_l2_aux";
->                 };
-> 
+David Howells:
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> > I'd like to propose overlayfs for inclusion into 3.18.
+> > 
+> > Al, would you mind giving it a review?
+> > 
+> > Git tree is here:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.current
+>
+> Tested-by: David Howells <dhowells@redhat.com>
 
-As long as we can get hold of the regmap that would be fine. I pressume the
-idea is to have the kpss-gcc using syscon, just like the rpm. But hopefully the
-syscon patches that are floating around (merged?) will allow any driver to
-expose a "syscon regmap".
+Does it mean overlayfs passed all your unionmount-testsuite? And does
+the test suite contain tests for "inode-based" union? For example,
+- read(2) may get the obsoleted filedata (fstat(2) for metadata too).
+- fcntl(F_SETLK) may be broken by copy-up.
+- inotify may not work when it refers to the file before being
+  copied-up.
+- unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+  open(O_RDWR).
+- exporting via NFS and fhandle systemcalls will not work.
 
-> > +
-> > +		rpm@108000 {
-> > +			compatible	= "qcom,rpm-apq8064";
-> > +			reg		= <0x108000 0x1000>;
-> > +			qcom,ipc = <&apcs 0x8 2>;
-> 
-> There are actually 3 ipc bits. I guess if we ever have to use the other
-> two we'll extend this binding to have the other bits specified some
-> other way?
+A few releases ago, OFD file-lock was introduced to improve the
+behaviour of POSIX lock. POSIX lock has made users confused and I am
+afraid that the similar story will come up because of the "name-based"
+union behaviour. Of course the story is not limited to the file-lock.
 
-I haven't seen any indications of us using more than this bit. If we want to do
-that, we could simply make it <&apcs 8 2 &apcs 8 3 &apcs 8 4> (or whatever
-those indices are). That way this should be easy it keep compatible.
+If I remember correctly, are you the one who consitunes the development
+of UnionMount? Is the development totally stopped?
+Next paragraph is what I wrote several times.
+	AUFS is an "inode-based" stackable filesystem and solved them many years
+	ago. But I have to admit that AUFS is big. Yes it is grown up.
+	I don't stop including overlayfs into mainline, but if the development
+	of UnionMount is really stopped, then I'd ask people to consider merging
+	aufs as well as overlayfs.
 
-Regards,
-Bjorn
+http://aufs.sf.net
+
+J. R. Okajima
