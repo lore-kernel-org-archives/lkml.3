@@ -1,116 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaI3DOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:14:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:34087 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976AbaI3DOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:14:04 -0400
-Date: Tue, 30 Sep 2014 13:13:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: linux-next: build failure after merge of the net-next tree
-Message-ID: <20140930131354.792033e7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/M2W1CfRL_6gzZO6QZN1bLm9"; protocol="application/pgp-signature"
+	id S1755443AbaI3DOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:14:19 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:54714 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976AbaI3DOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:14:15 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: mturquette@linaro.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <5025b10300502d91822cc90b8fc7639a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Jianqun <jay.xu@rock-chips.com>
+To: mturquette@linaro.org, dianders@chromium.org, heiko@sntech.de,
+        jay.xu@rock-chips.com, kever.yang@rock-chips.com,
+        dbasehore@chromium.org, mark.yao@rock-chips.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: [PATCH] clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
+Date: Tue, 30 Sep 2014 11:12:04 +0800
+Message-Id: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/M2W1CfRL_6gzZO6QZN1bLm9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The relation of i2s nodes as follows:
+          i2s_src               0           0            594000000  0
+             i2s_frac           0           0            11289600   0
+                i2s_pre         0           0            11289600   0
+                   sclk_i2s0    0           0            11289600   0
+                   i2s0_clkout  0           0            11289600   0
+                      hclk_i2s0 1           1            99000000   0
 
-Hi all,
+sclk_i2s0 is the master clock, when to set rate of sclk_i2s0, should
+allow to set its parent's rate, by add flag CLK_SET_RATE_PARENT for
+"i2s_frac", "i2s_pre", "i2s0_clkout" and "sclk_i2s0".
 
-After merging the net-next tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Tested on rk3288 board using max98090, with command "aplay <music.wav>"
 
-net/bridge/br_nf_core.c:77:1: error: expected identifier or '(' before '{' =
-token
- {
- ^
-net/bridge/br_nf_core.c:88:12: error: redefinition of 'br_nf_core_init'
- int __init br_nf_core_init(void)
-            ^
-In file included from net/bridge/br_nf_core.c:23:0:
-net/bridge/br_private.h:762:19: note: previous definition of 'br_nf_core_in=
-it' was here
- static inline int br_nf_core_init(void) { return 0; }
-                   ^
-net/bridge/br_nf_core.c:93:6: error: redefinition of 'br_nf_core_fini'
- void br_nf_core_fini(void)
-      ^
-In file included from net/bridge/br_nf_core.c:23:0:
-net/bridge/br_private.h:763:20: note: previous definition of 'br_nf_core_fi=
-ni' was here
- static inline void br_nf_core_fini(void) {}
-                    ^
-
-Caused by commit 34666d467cbf ("netfilter: bridge: move br_netfilter
-out of the core").  This build has CONFIG_BRIDGE_NETFILTER not set ...
-
-I have applied the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 30 Sep 2014 13:09:09 +1000
-Subject: [PATCH] netfilter: bridge: don't build br_nf_core unless necessary
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Change-Id: I12faad082566532b65a7de8c0a6845e1c17870e6
+Signed-off-by: Jianqun <jay.xu@rock-chips.com>
 ---
- net/bridge/Makefile | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/bridge/Makefile b/net/bridge/Makefile
-index 5e3eac5dc8b9..eb653a225397 100644
---- a/net/bridge/Makefile
-+++ b/net/bridge/Makefile
-@@ -6,12 +6,11 @@ obj-$(CONFIG_BRIDGE) +=3D bridge.o
-=20
- bridge-y	:=3D br.o br_device.o br_fdb.o br_forward.o br_if.o br_input.o \
- 			br_ioctl.o br_stp.o br_stp_bpdu.o \
--			br_stp_if.o br_stp_timer.o br_netlink.o \
--			br_nf_core.o
-+			br_stp_if.o br_stp_timer.o br_netlink.o
-=20
- bridge-$(CONFIG_SYSFS) +=3D br_sysfs_if.o br_sysfs_br.o
-=20
--obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o
-+obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o br_nf_core.o
-=20
- bridge-$(CONFIG_BRIDGE_IGMP_SNOOPING) +=3D br_multicast.o br_mdb.o
-=20
---=20
-2.1.1
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index c770de0..baf19b4 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -301,15 +301,15 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 	COMPOSITE(0, "i2s_src", mux_pll_src_cpll_gpll_p, 0,
+ 			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
+ 			RK3288_CLKGATE_CON(4), 1, GFLAGS),
+-	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
++	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
+ 			RK3288_CLKSEL_CON(8), 0,
+ 			RK3288_CLKGATE_CON(4), 2, GFLAGS),
+-	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
++	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
+ 			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
+-	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
++	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
+ 			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
+ 			RK3288_CLKGATE_CON(4), 0, GFLAGS),
+-	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
++	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
+ 			RK3288_CLKGATE_CON(4), 3, GFLAGS),
+ 
+ 	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
+-- 
+1.9.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/M2W1CfRL_6gzZO6QZN1bLm9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKh/4AAoJEMDTa8Ir7ZwV1HoP/Rgscw6t1wuvsZWXpYzNe3f7
-ZQPVcdmF8dmD4SNcaUcdCH9AUFPlSabDixDs7vnNrSYr7F06elKzKWC52Io7Lka+
-sa7gyf2kN18h/WwcB0//+2s+bXJ9M9ilYm0gsYesbs0kQHBoHCctLjUHNnJmuRtu
-QSJ5kKNgbzjQ78IoN7DA93r3079PuXapqbzasXJFJGpUdWIymhlhgjcgWlFYLroG
-3t8wEtzU0qmhacpm5w5C3d74tyPjuaYSgjVtNS0FSURqUgEscT0myX+BMJkqr2k4
-BB36oe7xEQjTewC6vT5dZ076Mt9zONuTPldqAYnBnaCcKfbFtYVgk89fijYcN41T
-P9GRxSC4EfBd7BSrNPTJ6EgP36rlc07juTgoB2ctHLzOZ+l9TEzpQwJQ1x6DC6Zp
-LcxEMxMAt9fSyKbMoc8963+V8du0GLRk//6a+TNT+Dia/3zmQz+H+YI9+u/57sQg
-XBeZ/7ac2+sw4xnNULkW2Iv3SXNXkqVDz/znwV17CK0EAI5hHD6RDDE+PHRyB5pg
-jeilixGpISUIBu2xNfeiAI/SefAuM6h/IhZnEd/1OrkbLuZd/XMwVbDfpecTBi5S
-SOPB2u9tjq03PEly+SXHFoxfJrD3ThLfvLHv/qRG2Zv9/mHfDoC1W7LLFkNyxVkX
-q+wzmDh/nAWJ51ItU/6a
-=rD2b
------END PGP SIGNATURE-----
-
---Sig_/M2W1CfRL_6gzZO6QZN1bLm9--
