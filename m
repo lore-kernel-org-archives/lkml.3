@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaI3JXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:23:06 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:63584 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaI3JXD (ORCPT
+	id S1755356AbaI3J0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:26:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40179 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaI3J0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:23:03 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] pinctrl: abx500: refactor DT parser to take two paths
-Date: Tue, 30 Sep 2014 11:22:57 +0200
-Message-Id: <1412068977-24296-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Tue, 30 Sep 2014 05:26:44 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <542A771C.9040605@jp.fujitsu.com>
+Date: Tue, 30 Sep 2014 18:25:48 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH] driver/firmware/memmap: don't create memmap sysfs of same
+ firmware_map_entry
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We refactor the DT parser to look for either a config or a
-function and then look for further nodes and reserve maps,
-not the two things mixed up like prior to this patch.
+By the following commits, we prevented from allocating firmware_map_entry
+of same memory range:
+  f0093ede: drivers/firmware/memmap.c: don't allocate firmware_map_entry
+            of same memory range
+  49c8b24d: drivers/firmware/memmap.c: pass the correct argument to
+            firmware_map_find_entry_bootmem()
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+But it's not enough. When PNP0C80 device is added by acpi_scan_init(),
+memmap sysfses of same firmware_map_entry are created twice as follows:
+
+  # cat /sys/firmware/memmap/*/start
+  0x40000000000
+  0x60000000000
+  0x4a837000
+  0x4a83a000
+  0x4a8b5000
+  ...
+  0x40000000000
+  0x60000000000
+  ...
+
+The flows of the issues are as follows:
+
+  1. e820_reserve_resources() allocates firmware_map_entrys of all
+     memory ranges defined in e820. And, these firmware_map_entrys
+     are linked with map_entries list.
+
+     map_entries -> entry 1 -> ... -> entry N
+
+  2. When PNP0C80 device is limited by mem= boot option, acpi_scan_init()
+     added the memory device. In this case, firmware_map_add_hotplug()
+     allocates firmware_map_entry and creates memmap sysfs.
+
+     map_entries -> entry 1 -> ... -> entry N -> entry N+1
+                                                 |
+                                                 memmap 1
+
+  3. firmware_memmap_init() creates memmap sysfses of firmware_map_entrys
+     linked with map_entries.
+
+     map_entries -> entry 1 -> ... -> entry N -> entry N+1
+                     |                 |             |
+                     memmap 2          memmap N+1    memmap 1
+                                                     memmap N+2
+
+So while hot removing the PNP0C80 device, kernel panic occurs as follows:
+
+     BUG: unable to handle kernel paging request at 00000001003e000b
+      IP: sysfs_open_file+0x46/0x2b0
+      PGD 203a89fe067 PUD 0
+      Oops: 0000 [#1] SMP
+      ...
+      Call Trace:
+        do_dentry_open+0x1ef/0x2a0
+        finish_open+0x31/0x40
+        do_last+0x57c/0x1220
+        path_openat+0xc2/0x4c0
+        do_filp_open+0x4b/0xb0
+        do_sys_open+0xf3/0x1f0
+        SyS_open+0x1e/0x20
+        system_call_fastpath+0x16/0x1b
+
+The patch adds a check of confirming whether memmap sysfs of
+firmware_map_entry has been created, and does not create memmap
+sysfs of same firmware_map_entry.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- drivers/pinctrl/nomadik/pinctrl-abx500.c | 54 +++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 26 deletions(-)
+ drivers/firmware/memmap.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-index be95f5e68c01..af0d417fe3fb 100644
---- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
-+++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-@@ -893,19 +893,32 @@ static int abx500_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	unsigned long *configs;
- 	unsigned int nconfigs = 0;
- 	bool has_config = 0;
--	unsigned reserve = 0;
- 	struct property *prop;
- 	const char *group, *gpio_name;
- 	struct device_node *np_config;
- 
- 	ret = of_property_read_string(np, "ste,function", &function);
--	if (ret >= 0)
--		reserve = 1;
-+	if (ret >= 0) {
-+		ret = of_property_count_strings(np, "ste,pins");
-+		if (ret < 0)
-+			goto exit;
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index 79f18e6..cc016c6 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -184,6 +184,9 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+ 	static int map_entries_nr;
+ 	static struct kset *mmap_kset;
+
++	if (entry->kobj.state_in_sysfs)
++		return -EEXIST;
 +
-+		ret = pinctrl_utils_reserve_map(pctldev, map, reserved_maps,
-+						num_maps, ret);
-+		if (ret < 0)
-+			goto exit;
-+
-+		of_property_for_each_string(np, "ste,pins", prop, group) {
-+			ret = abx500_dt_add_map_mux(map, reserved_maps,
-+					num_maps, group, function);
-+			if (ret < 0)
-+				goto exit;
-+		}
-+	}
- 
- 	ret = pinconf_generic_parse_dt_config(np, &configs, &nconfigs);
- 	if (nconfigs)
- 		has_config = 1;
--
- 	np_config = of_parse_phandle(np, "ste,config", 0);
- 	if (np_config) {
- 		ret = pinconf_generic_parse_dt_config(np_config, &configs,
-@@ -914,29 +927,18 @@ static int abx500_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 			goto exit;
- 		has_config |= nconfigs;
- 	}
-+	if (has_config) {
-+		ret = of_property_count_strings(np, "ste,pins");
-+		if (ret < 0)
-+			goto exit;
- 
--	ret = of_property_count_strings(np, "ste,pins");
--	if (ret < 0)
--		goto exit;
--
--	if (has_config)
--		reserve++;
--
--	reserve *= ret;
--
--	ret = pinctrl_utils_reserve_map(pctldev, map, reserved_maps,
--					num_maps, reserve);
--	if (ret < 0)
--		goto exit;
-+		ret = pinctrl_utils_reserve_map(pctldev, map,
-+						reserved_maps,
-+						num_maps, ret);
-+		if (ret < 0)
-+			goto exit;
- 
--	of_property_for_each_string(np, "ste,pins", prop, group) {
--		if (function) {
--			ret = abx500_dt_add_map_mux(map, reserved_maps,
--					num_maps, group, function);
--			if (ret < 0)
--				goto exit;
--		}
--		if (has_config) {
-+		of_property_for_each_string(np, "ste,pins", prop, group) {
- 			gpio_name = abx500_find_pin_name(pctldev, group);
- 
- 			ret = abx500_dt_add_map_configs(map, reserved_maps,
-@@ -944,8 +946,8 @@ static int abx500_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 			if (ret < 0)
- 				goto exit;
- 		}
--
- 	}
-+
- exit:
- 	return ret;
- }
+ 	if (!mmap_kset) {
+ 		mmap_kset = kset_create_and_add("memmap", NULL, firmware_kobj);
+ 		if (!mmap_kset)
 -- 
-1.9.3
+1.8.3.1
 
