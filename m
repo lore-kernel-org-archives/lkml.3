@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaI3Jgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:36:53 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:38646 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaI3Jgu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:36:50 -0400
-Message-ID: <542A79AF.8060602@gmail.com>
-Date: Tue, 30 Sep 2014 05:36:47 -0400
-From: Daniel Micay <danielmicay@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1755331AbaI3JiC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:38:02 -0400
+Received: from ozlabs.org ([103.22.144.67]:46133 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017AbaI3JiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 05:38:00 -0400
+Date: Tue, 30 Sep 2014 19:37:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heiko =?UTF-8?B?U3TDvGJuZXI=?= <heiko@sntech.de>
+Subject: linux-next: manual merge of the akpm tree with the clk tree
+Message-ID: <20140930193752.3f0ae731@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, jasone@canonware.com
-Subject: Re: [PATCH v3] mm: add mremap flag for preserving the old mapping
-References: <1412052900-1722-1-git-send-email-danielmicay@gmail.com> <CALCETrX6D7X7zm3qCn8kaBtYHCQvdR06LAAwzBA=1GteHAaLKA@mail.gmail.com>
-In-Reply-To: <CALCETrX6D7X7zm3qCn8kaBtYHCQvdR06LAAwzBA=1GteHAaLKA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/iuXtqNkrcYsa+O=nvAp=lmY"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/14 01:53 AM, Andy Lutomirski wrote:
-> On Mon, Sep 29, 2014 at 9:55 PM, Daniel Micay <danielmicay@gmail.com> wrote:
->> This introduces the MREMAP_RETAIN flag for preserving the source mapping
->> when MREMAP_MAYMOVE moves the pages to a new destination. Accesses to
->> the source location will fault and cause fresh pages to be mapped in.
->>
->> For consistency, the old_len >= new_len case could decommit the pages
->> instead of unmapping. However, userspace can accomplish the same thing
->> via madvise and a coherent definition of the flag is possible without
->> the extra complexity.
-> 
-> IMO this needs very clear documentation of exactly what it does.
+--Sig_/iuXtqNkrcYsa+O=nvAp=lmY
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Agreed, and thanks for the review. I'll post a slightly modified version
-of the patch soon (mostly more commit message changes).
+Hi Andrew,
 
-> Does it preserve the contents of the source pages?  (If so, why?
-> Aren't you wasting a bunch of time on page faults and possibly
-> unnecessary COWs?)
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/clk/rockchip/clk.h between commit f6fba5f6967d ("clk: rockchip:
+add new clock-type for the cpuclk") from the clk tree and commit "clk:
+rockchip: add restart handler" from the akpm tree.
 
-The source will act as if it was just created. For an anonymous memory
-mapping, it will fault on any accesses and bring in new zeroed pages.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-In jemalloc, it replaces an enormous memset(dst, src, size) followed by
-madvise(src, size, MADV_DONTNEED) with mremap. Using mremap also ends up
-eliding page faults from writes at the destination.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-TCMalloc has nearly the same page allocation design, although it tries
-to throttle the purging so it won't always gain as much.
+diff --cc drivers/clk/rockchip/clk.h
+index f4791fbb3da9,2f0236a00664..000000000000
+--- a/drivers/clk/rockchip/clk.h
++++ b/drivers/clk/rockchip/clk.h
+@@@ -361,11 -329,7 +361,12 @@@ void rockchip_clk_register_branches(str
+  				    unsigned int nr_clk);
+  void rockchip_clk_register_plls(struct rockchip_pll_clock *pll_list,
+  				unsigned int nr_pll, int grf_lock_offset);
+ +void rockchip_clk_register_armclk(unsigned int lookup_id, const char *nam=
+e,
+ +			const char **parent_names, u8 num_parents,
+ +			const struct rockchip_cpuclk_reg_data *reg_data,
+ +			const struct rockchip_cpuclk_rate_table *rates,
+ +			int nrates);
++ void rockchip_register_restart_notifier(unsigned int reg);
+  void rockchip_clk_protect_critical(const char *clocks[], int nclocks);
+ =20
+  #define ROCKCHIP_SOFTRST_HIWORD_MASK	BIT(0)
 
-> Does it work on file mappings?  Can it extend file mappings while it moves them?
+--Sig_/iuXtqNkrcYsa+O=nvAp=lmY
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-It works on file mappings. If a move occurs, there will be the usual
-extended destination mapping but with the source mapping left intact.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-It wouldn't be useful with existing allocators, but in theory a general
-purpose allocator could expose an MMIO API in order to reuse the same
-address space via MAP_FIXED/MREMAP_FIXED to reduce VM fragmentation.
+iQIcBAEBCAAGBQJUKnn0AAoJEMDTa8Ir7ZwVbkEP/2RBap5w4ke29k0v8hTgxGNn
+WXUhbJEU7AzHFuvcUH40Aw+70RSgO5TDGiebF06BqFLYwBbMMwzidFBf3v/DpNDG
+Nml+RV7k+ZwyUR2ZxdLxI9bBKm7oiCRD5SDbkxEv/6Sf1dnmMQ9agJkyNiXfS+dY
+Q2dvXbrYfd6xTbvevBdTqxtV7PCQyVnekUIYczn21p+rFpTYzpCAzR47YtcV322s
+QmPk9wG7i4AYhuwHW5lc4Ok3I3YOszOfc/wd2w3vdyrqMOCUTLgJbtxtFV7iZA8F
+p3AcBnhKJOMaHKpMWLd/HBuKrlX8LzQ2qWpPNeSmYGmSO5wPHKOpf/GADBg2lnLs
+d//Bry5rLWgJ50BftGMwcKCwuxP9nsrq0/qTeJynEqbIdihpzbcrbbHclNsgPH5o
+59EOODl3N2s25FgBirIZTIOb6u8Wd1antRTjiTpAeiOsK4ygsB4rraVKm5n2P1AF
+IBe705/RMF+JpUY5YxfKMUpn9vsQaX+hZag7bGgT2oVc5W5E9uFNvjymlvVJSek1
+Tve7a1TprQM6gJojRpdrjtkLHqPIPlsBCSH0a2OoLGOZBKWWq3GE3EzEsdAL2dtL
+HId6j+ztoSTkm6bUXfvID1oaBzs+Y3lUVqgc2Nikd0xJWw1kZT1RK3BE4OCOof7/
+rCMUbX0z11AKjUmVJVPM
+=Cx5H
+-----END PGP SIGNATURE-----
 
-> If you MREMAP_RETAIN a partially COWed private mapping, what happens?
-
-The original mapping is zeroed in the following test, as it would be
-without fork:
-
-#define _GNU_SOURCE
-
-#include <string.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <sys/wait.h>
-
-int main(void) {
-  size_t size = 1024 * 1024;
-  char *orig = mmap(NULL, size, PROT_READ|PROT_WRITE,
-                    MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-  memset(orig, 5, size);
-  int pid = fork();
-  if (pid == -1)
-    return 1;
-  if (pid == 0) {
-    memset(orig, 5, 1024);
-    char *new = mremap(orig, size, size * 128, MREMAP_MAYMOVE|4);
-    if (new == orig) return 1;
-    for (size_t i = 0; i < size; i++)
-      if (new[i] != 5)
-        return 1;
-    for (size_t i = 0; i < size; i++)
-      if (orig[i] != 0)
-        return 1;
-    return 0;
-  }
-  int status;
-  if (wait(&status) < -1) return 1;
-  if (WIFEXITED(status))
-    return WEXITSTATUS(status);
-  return 1;
-}
-
-Hopefully this is the case you're referring to. :)
-
-> Does it work on special mappings?  If so, please prevent it from doing
-> so.  mremapping x86's vdso is a thing, and duplicating x86's vdso
-> should not become a thing, because x86_32 in particular will become
-> extremely confused.
-
-I'll add a check for arch_vma_name(vma) == NULL.
-
-There's an existing check for VM_DONTEXPAND | VM_PFNMAP when expanding
-allocations (the only case this flag impacts). Are there other kinds of
-special mappings that you're referring to?
+--Sig_/iuXtqNkrcYsa+O=nvAp=lmY--
