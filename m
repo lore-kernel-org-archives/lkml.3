@@ -1,96 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaI3VWb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:22:31 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:39098 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaI3VWJ (ORCPT
+	id S1751286AbaI3VZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:25:22 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57945 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaI3VZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:22:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412087707-8313-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1412087707-8313-1-git-send-email-pramod.gurav@smartplayin.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 30 Sep 2014 14:21:45 -0700
-Message-ID: <CAK5ve-KCYHySjs4f+rd+kAvKQmTkJqsq87Muq_j-D0nB7WSYjQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] led: remove use of gpiochip_remove() retval
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Sep 2014 17:25:20 -0400
+Content-Type: multipart/signed; boundary="Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <15704.1412109476@turing-police.cc.vt.edu>
+Date: Tue, 30 Sep 2014 15:25:17 -0600
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx> <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx> <15704.1412109476@turing-police.cc.vt.edu>
+To: Valdis.Kletnieks@vt.edu
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 7:35 AM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-> Get rid of using return value from gpiochip_remove() as it returns
-> void.
->
 
-Looks good to me. I will merge it.
+--Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-But what's in the first patch. I just got this second patch in my email inbox.
+On Sep 30, 2014, at 2:37 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 30 Sep 2014 12:08:41 -0400, Matthew Wilcox said:
+>=20
+>> The more I think about this, the more I think this is a bad idea.
+>> When you have a file open with O_DIRECT, your I/O has to be done in
+>> 512-byte multiples, and it has to be aligned to 512-byte boundaries
+>> in memory.  If an unsuspecting application has O_DIRECT forced on it,
+>> it isn't going to know to do that, and so all its I/Os will fail.
+>=20
+> I'm thinking of more than one place where that would be a feature, not =
+a bug. :)
 
--Bryan
+We prototyped a feature like this for Lustre - so the admins could
+turn IO into O_DIRECT, because the HPC compute nodes have relatively
+small RAM per core and don't want to have file data cache consuming
+RAM that the compute jobs need.
 
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Alexandre Courbot <gnurou@gmail.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: linux-leds@vger.kernel.org
->
-> Cc: linux-gpio@vger.kernel.org
->
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->  drivers/leds/leds-pca9532.c |   10 ++--------
->  drivers/leds/leds-tca6507.c |    7 ++-----
->  2 files changed, 4 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
-> index 4a0e786..5a6363d 100644
-> --- a/drivers/leds/leds-pca9532.c
-> +++ b/drivers/leds/leds-pca9532.c
-> @@ -319,14 +319,8 @@ static int pca9532_destroy_devices(struct pca9532_data *data, int n_devs)
->         }
->
->  #ifdef CONFIG_LEDS_PCA9532_GPIO
-> -       if (data->gpio.dev) {
-> -               int err = gpiochip_remove(&data->gpio);
-> -               if (err) {
-> -                       dev_err(&data->client->dev, "%s failed, %d\n",
-> -                                               "gpiochip_remove()", err);
-> -                       return err;
-> -               }
-> -       }
-> +       if (data->gpio.dev)
-> +               gpiochip_remove(&data->gpio);
->  #endif
->
->         return 0;
-> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-> index 3d9e267..20fa8e7 100644
-> --- a/drivers/leds/leds-tca6507.c
-> +++ b/drivers/leds/leds-tca6507.c
-> @@ -667,11 +667,8 @@ static int tca6507_probe_gpios(struct i2c_client *client,
->
->  static void tca6507_remove_gpio(struct tca6507_chip *tca)
->  {
-> -       if (tca->gpio.ngpio) {
-> -               int err = gpiochip_remove(&tca->gpio);
-> -               dev_err(&tca->client->dev, "%s failed, %d\n",
-> -                       "gpiochip_remove()", err);
-> -       }
-> +       if (tca->gpio.ngpio)
-> +               gpiochip_remove(&tca->gpio);
->  }
->  #else /* CONFIG_GPIOLIB */
->  static int tca6507_probe_gpios(struct i2c_client *client,
-> --
-> 1.7.9.5
->
+Unfortunately, the O_DIRECT semantics are a killer for poorly written
+applications that end up doing small synchronous writes.  We didn't
+have any IO size problems, because Lustre client have to copy the data
+to the servers anyway, so arbitrary IO sizes are fine.
+
+While this _might_ be OK for NVRAM mapped directly into the filesystem,
+even for local disk based storage with 512-byte writes at 100 IOPS is
+only 50KB/s instead of ~100MB/s for a cached writes to a single disk.
+
+I think you would be much better off having more aggressive "use once"
+semantics in the page cache, so that page cache pages for streaming
+writes are evicted more aggressively from cache rather than going down
+the "automatic O_DIRECT" hole.
+
+Cheers, Andreas
+
+>> What problem are you really trying to solve?  Some big files hogging
+>> the page cache?
+>=20
+> I'm officially a storage admin.  I mostly support HPC and research. As
+> such, I'm always looking to add tools to my toolkit. :)
+>=20
+> (And yes, I fully recognize that *in general*, this is a Bad Idea.  =
+However,
+> when you've got That One Problem Data File that *should* always be =
+access
+> via O_DIRECT, and *usually* is accessed via O_DIRECT, and bad things =
+happen
+> if something accesses it without it (for instance, when the file is =
+1.5X the
+> actual RAM), you start looking for fixes.  If you've got another, more
+> sustainable way to say "do not let file /X/Y/Z hog the page cache" =
+(and
+> no, LD_PRELOAD isn't sustainable the way chattr is, in my book), feel =
+free to
+> recommend something. :)
+
+
+Cheers, Andreas
+
+
+
+
+
+
+--Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIVAwUBVCsfvXKl2rkXzB/gAQLEVw/9HBf3RC6J9vwNg4umD9M94JJkdSWwSY/k
+pHRrpT+4v5SQlC3SKX/VV4P+/aXoBVRq/6IeUHQnFaEfYy8x39dkckLX2GzH70Tg
+0fO8sAfr+XDzLbxDJYJzu8R1XnbNhopwuV8BXAOmIaUe3dJqee74PG+egAVF7uWX
+lNGeh32VQ5/ypuxEG5CbHTH7P/DFwl1L+kANEvbnMBhG/x4pA6BRlRCFUctDewEU
+XSc+0drJeXRuxtLX30kycGrpJyvuwOF+j0VxKWCQWatkERon0JyObluie/cHnWvK
+SUgU92l5/UbhZo06XiKhrFdrVF7O0HkZ1C7nMGSlI+iCqaupAnsL2tCTE/zlzBbh
+oso2kZeCxdcvG6yzBgTGmF/YhFzS88YSiIDHhLytyEusf/KhipbE6SrQ8MjuvfaR
+WRdChpMC+RO/cSPjqETT/CxvPmjb/NcWso0pcFH0CV+hAt6EYLiI66n6/WlNGhJK
+3/0mZmjb9VefcEqc2mU1nZW6mPINQi+KVX6eqtLRajofQb9HXA9XAbXdO/JEkZn/
+JU7crpjhqOJmSgb6U+8c+g+nuPRxgafQJUDH3A9Vt91BQOADGwUM3EOuKEVoa3mh
+UgWYL2hUJGeiwad0tAF7Ghx20duNawrtUT5Kk1CmKFvjdLoseCmq8N/TSwuEb+oF
+cMCqJ5wUNWM=
+=+Ecu
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_71D336C4-DDA5-4E4B-B7BB-D6F0544313BF--
