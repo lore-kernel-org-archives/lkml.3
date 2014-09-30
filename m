@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587AbaI3Nh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:37:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58801 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaI3Nh5 (ORCPT
+	id S1751855AbaI3Nit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:38:49 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:52446 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190AbaI3Nis convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:37:57 -0400
-Date: Tue, 30 Sep 2014 15:37:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com, oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sched, time: cmpxchg does not work on 64-bit variable
-Message-ID: <20140930133749.GD4241@worktop.programming.kicks-ass.net>
-References: <2547036.UshV4pXvhf@wuerfel>
- <542AA33E.2050008@redhat.com>
+	Tue, 30 Sep 2014 09:38:48 -0400
+X-Auth-Info: Pobm1Qg4G7cIaUSuG78d0C+OUBYrF3EZP8sFJ28zV5A=
+From: Marek Vasut <marex@denx.de>
+To: "Bean Huo =?utf-8?q?=E9=9C=8D=E6=96=8C=E6=96=8C?= (beanhuo)" 
+	<beanhuo@micron.com>
+Subject: Re: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Date: Tue, 30 Sep 2014 15:38:40 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com> <201409261046.07132.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542AA33E.2050008@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201409301538.40466.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 08:34:06AM -0400, Rik van Riel wrote:
-> On 09/30/2014 07:56 AM, Arnd Bergmann wrote:
-> > A recent change to update the stime/utime members of task_struct 
-> > using atomic cmpxchg broke configurations on 32-bit machines with 
-> > CONFIG_VIRT_CPU_ACCOUNTING_GEN set, because that uses 64-bit 
-> > nanoseconds, leading to a link-time error:
-> > 
-> > kernel/built-in.o: In function `cputime_adjust': :(.text+0x25234):
-> > undefined reference to `__bad_cmpxchg'
-> > 
-> > This reverts the change that caused the problem, I suspect the real
-> > fix is to conditionally use cmpxchg64 instead, but I have not
-> > checked if that will work on all architectures.
-> 
-> I see that kernel/sched/clock.c uses cmpxchg64 in a non
-> architecture, non 64 bit specific piece of code, and
-> nobody complained about that file not building, so I have
-> to assume cmpxchg64 works :)
+On Tuesday, September 30, 2014 at 04:47:39 AM, Bean Huo 霍斌斌 (beanhuo) wrote:
+> For Micron spi norflash,enables or disables quad I/O
+> protocol ,which controled by EVCR(Enhanced
+> Volatile Configuration Register) Quad I/O
+> protocol bit 7.When EVCR bit 7 is reset to 0,
+> the spi norflash will operate in quad I/O following
+> the next WRITE ENHANCED VOLATILE CONFIGURATION
+> command.
 
-That code is only ever used on x86 and ia64, most other archs have
-managed to not mess up their clocks quite as bad.
+You only do one WRITE ENHANCED VOLATILE CONFIGURATION command in the patch, so
+this text doesn't add up.
+
+Try something like this:
+-->8--
+This patch adds code which enables Quad I/O mode on Micron SPI NOR
+flashes.
+
+For Micron SPI NOR flash, enabling or disabling quad I/O protocol
+is controled by EVCR (Enhanced Volatile Configuration Register),
+Quad I/O protocol bit 7. When EVCR bit 7 is reset to 0, the SPI
+NOR flash will operate in quad I/O mode.
+--8<--
+
+What do you think ?
+
+Brian, am I bitching too much about pointless things ? Please stop me if you 
+think I do.
+
+[...]
+
+Best regards,
+Marek Vasut
