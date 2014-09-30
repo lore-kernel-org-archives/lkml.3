@@ -1,85 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577AbaI3Xtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 19:49:52 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42387 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751004AbaI3Xtt (ORCPT
+	id S1751445AbaI3Xtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 19:49:51 -0400
+Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:45839 "EHLO
+	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750850AbaI3Xtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 19:49:49 -0400
-Message-ID: <542B4194.8070604@hurleysoftware.com>
-Date: Tue, 30 Sep 2014 19:49:40 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Akinobu Mita <akinobu.mita@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com> <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410010131380.4455@nanos>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, davej@redhat.com,
+        hmh@hmh.eng.br
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH] x86: Call identify_cpu() unconditionally once remove other callsites
+Date: Wed,  1 Oct 2014 00:49:46 +0100
+Message-Id: <1412120986-15138-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
-> On Tue, 30 Sep 2014, Peter Hurley wrote:
->> I read the UFS Unified Memory Extension v1.0 (JESD220-1) specification and
->> it is not clear to me that using DMA mapping is the right approach to
->> supporting UM, at least on x86.
->>
->> And without a mainline user, the merits of this approach are not evident.
->> I cannot even find a production x86 UFS controller, much less one that
->> supports UME.
->>
->> The only PCI UFS controller I could find (and that mainline supports) is
->> Samsung's x86 FPGA-based test unit for developing UFS devices in a x86 test
->> environment, and not a production x86 design.
-> 
-> And how is that relevant? That device exists and you have no reason to
-> deny it to be supported just because you are not interested in it.
->  
->> Unless there's something else I've missed, I don't think these patches
->> belong in mainline.
-> 
-> You missed that there is no reason WHY such a device should not be
-> supported in mainline.
+Removes some bit-rot around cpu_detect_cache_sizes() in common.c
+cpu_detect_cache_sizes() is valid for X86_32 and X86_64
 
-Mainline already supports this card right now without these patches.
+AMD/Centaur/Cyrix/Transmeta currently call cpu_detect_cache_sizes()
+as part of their respective initalisation routines.
 
->> Samsung's own roadmap
->> (http://www.slideshare.net/linaroorg/next-gen-mobilestorageufs)
->> mentions nothing about bringing UFS to x86 designs.
-> 
-> And that's telling you what? 
-> 
->    - That we should deny Samsung proper support for their obviously
->      x86 based test card
-> 
->    - That we should ignore a JEDEC Standard which is obviously never
->      going to hit x86 land just because you decide it?
-> 
-> Your argumentation is just ass backwards. Linux wants to support the
-> full zoo of hardware including this particular PCI card. Period.
-> 
-> Whether the proposed patchset is the correct solution to support it is
-> a completely different question.
+cpu_detect_cache_sizes() is responsible for determining Cache/TLB size
+and optionally calling into legacy_cache_size. Currently on Intel
+processors this is broken.
 
-And there is currently no way to determine that because there is no
-user in mainline that requires this support.
+This patch moves cpu_detect_cache_sizes() to one place in identify_cpu()
+via default_init(). default_init() will therefore be called for every x86
+processor unambiguously
 
-Which you would understand if you had read more carefully.
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+---
+ arch/x86/kernel/cpu/amd.c       |  2 --
+ arch/x86/kernel/cpu/centaur.c   |  2 --
+ arch/x86/kernel/cpu/common.c    | 11 +++++++----
+ arch/x86/kernel/cpu/cyrix.c     |  2 +-
+ arch/x86/kernel/cpu/transmeta.c |  2 --
+ 5 files changed, 8 insertions(+), 11 deletions(-)
 
-Regards,
-Peter Hurley
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 60e5497..7406f6d 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -672,8 +672,6 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 	if (c->x86 >= 6)
+ 		set_cpu_bug(c, X86_BUG_FXSAVE_LEAK);
+ 
+-	cpu_detect_cache_sizes(c);
+-
+ 	/* Multi core CPU? */
+ 	if (c->extended_cpuid_level >= 0x80000008) {
+ 		amd_detect_cmp(c);
+diff --git a/arch/x86/kernel/cpu/centaur.c b/arch/x86/kernel/cpu/centaur.c
+index d8fba5c..cbbf492 100644
+--- a/arch/x86/kernel/cpu/centaur.c
++++ b/arch/x86/kernel/cpu/centaur.c
+@@ -62,8 +62,6 @@ static void init_c3(struct cpuinfo_x86 *c)
+ 		c->x86_cache_alignment = c->x86_clflush_size * 2;
+ 		set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+ 	}
+-
+-	cpu_detect_cache_sizes(c);
+ }
+ 
+ enum {
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e4ab2b4..4770e7c 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -67,9 +67,8 @@ void __init setup_cpu_local_masks(void)
+ 
+ static void default_init(struct cpuinfo_x86 *c)
+ {
+-#ifdef CONFIG_X86_64
+ 	cpu_detect_cache_sizes(c);
+-#else
++
+ 	/* Not much we can do here... */
+ 	/* Check if at least it has cpuid */
+ 	if (c->cpuid_level == -1) {
+@@ -79,11 +78,9 @@ static void default_init(struct cpuinfo_x86 *c)
+ 		else if (c->x86 == 3)
+ 			strcpy(c->x86_model_id, "386");
+ 	}
+-#endif
+ }
+ 
+ static const struct cpu_dev default_cpu = {
+-	.c_init		= default_init,
+ 	.c_vendor	= "Unknown",
+ 	.c_x86_vendor	= X86_VENDOR_UNKNOWN,
+ };
+@@ -874,6 +871,12 @@ static void identify_cpu(struct cpuinfo_x86 *c)
+ #endif
+ 
+ 	/*
++	 * Unconditionally call default_init to detect legacy
++	 * Cache/TLB sizes
++	 */
++	default_init(c);
++
++	/*
+ 	 * Vendor-specific initialization.  In this section we
+ 	 * canonicalize the feature flags, meaning if there are
+ 	 * features a certain CPU supports which CPUID doesn't
+diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
+index aaf152e..5cd1bba 100644
+--- a/arch/x86/kernel/cpu/cyrix.c
++++ b/arch/x86/kernel/cpu/cyrix.c
+@@ -373,7 +373,7 @@ static void init_nsc(struct cpuinfo_x86 *c)
+ 	/* Handle the GX (Formally known as the GX2) */
+ 
+ 	if (c->x86 == 5 && c->x86_model == 5)
+-		cpu_detect_cache_sizes(c);
++		return;
+ 	else
+ 		init_cyrix(c);
+ }
+diff --git a/arch/x86/kernel/cpu/transmeta.c b/arch/x86/kernel/cpu/transmeta.c
+index 3fa0e5a..87f0835 100644
+--- a/arch/x86/kernel/cpu/transmeta.c
++++ b/arch/x86/kernel/cpu/transmeta.c
+@@ -25,8 +25,6 @@ static void init_transmeta(struct cpuinfo_x86 *c)
+ 
+ 	early_init_transmeta(c);
+ 
+-	cpu_detect_cache_sizes(c);
+-
+ 	/* Print CMS and CPU revision */
+ 	max = cpuid_eax(0x80860000);
+ 	cpu_rev = 0;
+-- 
+1.9.1
 
