@@ -1,113 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaI3KUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:20:13 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36259 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaI3KUM (ORCPT
+	id S1751196AbaI3KWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:22:22 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:65251 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaI3KWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:20:12 -0400
-Date: Tue, 30 Sep 2014 12:20:04 +0200
-From: Thibaut Robert <thibaut.robert@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michalis Pappas <mpappas@fastmail.fm>,
-        Davide Gianforte <davide@gengisdave.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: gdm72xx: fix coding style
-Message-ID: <20140930102004.GC6459@L80496>
-References: <1412014535-24239-1-git-send-email-thibaut.robert@gmail.com>
- <1412015484.4302.51.camel@joe-AO725>
+	Tue, 30 Sep 2014 06:22:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412015484.4302.51.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140929085908.GI12506@ulmo>
+References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
+	<1407925738-26170-7-git-send-email-thierry.reding@gmail.com>
+	<CAMuHMdW4emoma3nRUGna985tE17yPh5pNjMb-jxe5yc5UVr=cw@mail.gmail.com>
+	<20140929085908.GI12506@ulmo>
+Date: Tue, 30 Sep 2014 14:22:18 +0400
+Message-ID: <CAMo8BfJ9VJ24zsn_6VwNrAntmDqdJu11O79OyMd8eThv3UaaUw@mail.gmail.com>
+Subject: Re: [PATCH v4 6/8] asm-generic/io.h: Implement generic {read,write}s*()
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Arnd Bergmann <arnd@arndb.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, sparclinux <sparclinux@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Monday 29 Sep 2014 à 11:31:24 (-0700), Joe Perches a écrit :
-> On Mon, 2014-09-29 at 20:15 +0200, Thibaut Robert wrote:
-> > This patch remove a checkstyle warning in netlink_k.c.
-> > Note: This is my homework of the day.
-> 
-> The "Note: " line isn't useful for a commit message.
-> Neither is the checkpatch warning bit.
-> 
-> Maybe the commit message could be something like:
-> "Remove unnecessary else after return".
-> 
-> > diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
-> []
-> > @@ -147,12 +147,11 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
-> >  
-> >  	if (!ret) {
-> >  		return len;
-> > -	} else {
-> > -		if (ret != -ESRCH) {
-> > -			pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
-> > -			       group, type, len, ret);
-> > -		}
-> > -		ret = 0;
-> >  	}
-> > -	return ret;
-> > +
-> > +	if (ret != -ESRCH) {
-> > +		pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
-> > +		       group, type, len, ret);
-> > +	}
-> 
-> OK, but you don't need the braces around the pr_err.
-> 
-> My preference is to also fix the typo in the function
-> and would be something like:
-> ---
->  drivers/staging/gdm72xx/netlink_k.c | 23 ++++++++++-------------
->  1 file changed, 10 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
-> index 9bf00e6..43d2a49 100644
-> --- a/drivers/staging/gdm72xx/netlink_k.c
-> +++ b/drivers/staging/gdm72xx/netlink_k.c
-> @@ -120,9 +120,9 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
->  	struct nlmsghdr *nlh;
->  	int ret = 0;
->  
-> -	if (group > ND_MAX_GROUP) {
-> -		pr_err("Group %d is invalied.\n", group);
-> -		pr_err("Valid group is 0 ~ %d.\n", ND_MAX_GROUP);
-> +	if (group < 0 || group > ND_MAX_GROUP) {
-> +		pr_err("Invalid group %d (valid groups are 0 to %d)\n",
-> +		       group, ND_MAX_GROUP);
->  		return -EINVAL;
->  	}
->  
-> @@ -144,15 +144,12 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
->  	NETLINK_CB(skb).dst_group = 0;
->  
->  	ret = netlink_broadcast(sock, skb, 0, group+1, GFP_ATOMIC);
-> -
-> -	if (!ret) {
-> +	if (!ret)
->  		return len;
-> -	} else {
-> -		if (ret != -ESRCH) {
-> -			pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
-> -			       group, type, len, ret);
-> -		}
-> -		ret = 0;
-> -	}
-> -	return ret;
-> +
-> +	if (ret != -ESRCH)
-> +		pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
-> +		       group, type, len, ret);
-> +
-> +	return 0;
->  }
-> 
-> 
-> 
-Thanks for this newbie friendly attitude. That's much appreciated. An updated patch will follow.
+Hi Thierry,
+
+On Mon, Sep 29, 2014 at 12:59 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Mon, Sep 29, 2014 at 10:54:34AM +0200, Geert Uytterhoeven wrote:
+>> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
+>> <thierry.reding@gmail.com> wrote:
+>> > #ifndef memset_io
+>> > -#define memset_io(a, b, c)     memset(__io_virt(a), (b), (c))
+>> > +#define memset_io memset_io
+>> > +static inline void memset_io(void __iomem *addr, int value, size_t size)
+>> > +{
+>> > +       memset(__io_virt(addr), value, size);
+>> > +}
+>> >  #endif
+>>
+>> xtensa/allmodconfig:
+>>
+>> include/asm-generic/io.h:820:2: error: implicit declaration of
+>> function 'memset' [-Werror=implicit-function-declaration]
+>> include/asm-generic/io.h:829:2: error: implicit declaration of
+>> function 'memcpy' [-Werror=implicit-function-declaration]
+>> arch/xtensa/include/asm/string.h:110:14: error: conflicting types for 'memset'
+>> arch/xtensa/include/asm/string.h:113:14: error: conflicting types for 'memcpy'
+>>
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/12028900/
+>
+> I think this can be fixed by including linux/string.h for memset() and
+> memcpy() in include/asm-generic/io.h.
+
+Will you send that fix or do I need to do it?
+
+-- 
+Thanks.
+-- Max
