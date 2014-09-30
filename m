@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaI3HjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:39:15 -0400
-Received: from ozlabs.org ([103.22.144.67]:51785 "EHLO ozlabs.org"
+	id S1755368AbaI3Hjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:39:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23072 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaI3HjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:39:13 -0400
-Date: Tue, 30 Sep 2014 17:39:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: linux-next: build failure after merge of the tty tree
-Message-ID: <20140930173900.51839e76@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1751131AbaI3Hjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:39:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,625,1406617200"; 
+   d="scan'208";a="607415168"
+From: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
+To: "richard@nod.at" <richard@nod.at>
+CC: "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH 4/4] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+Thread-Topic: [PATCH 4/4] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+Thread-Index: AQHP3Hodei/9zHAohUmCXsE+0dP68ZwZLocAgAALDgA=
+Date: Tue, 30 Sep 2014 07:39:23 +0000
+Message-ID: <1412062762.2379.2.camel@sauron.fi.intel.com>
+References: <1412029248-22454-1-git-send-email-richard@nod.at>
+		 <1412029248-22454-5-git-send-email-richard@nod.at>
+	 <1412059523.3904.11.camel@sauron.fi.intel.com> <542A54E4.2060407@nod.at>
+In-Reply-To: <542A54E4.2060407@nod.at>
+Reply-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.54]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <F9DC0D1863988D498340914385FE4AD1@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/SgY1gAK9ldqL5_SSxtpdnE4"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8U7dl0X020028
 
---Sig_/SgY1gAK9ldqL5_SSxtpdnE4
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-09-30 at 08:59 +0200, Richard Weinberger wrote:
+> Am 30.09.2014 08:45, schrieb Bityutskiy, Artem:
+> > On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
+> >> +       spin_lock(&ubi->wl_lock);
+> >> +       ubi->fm_work_scheduled = 0;
+> >> +       spin_unlock(&ubi->wl_lock);
+> > 
+> > Andrew Morton once said me that if I am protecting an integer change
+> > like this with a spinlock, I have a problem in my locking design. He was
+> > right for my particular case.
+> > 
+> > Integer is changes atomic. The only other thing spinlock adds are the
+> > barriers.
+> 
+> I've added the spinlock to have a barrier in any case.
 
-Hi Greg,
+Examples of any?
 
-After merging the tty tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+-- 
+Best Regards,
+Artem Bityutskiy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
 
-
-drivers/built-in.o: In function `.serial8250_stop_tx':
-8250_core.c:(.text+0xda1f4): undefined reference to `.__xchg_called_with_ba=
-d_pointer'
-drivers/built-in.o: In function `.serial8250_tx_chars':
-(.text+0xda42c): undefined reference to `.__xchg_called_with_bad_pointer'
-drivers/built-in.o: In function `.serial8250_start_tx':
-8250_core.c:(.text+0xda630): undefined reference to `.__xchg_called_with_ba=
-d_pointer'
-
-Caused by commit d74d5d1b7288 ("tty: serial: 8250_core: add run time
-pm").  xchg is called with &p->rpm_tx_active and that is an unsigned
-char.  PowerPC (at least) only allows xchg with objects 4 (or 8 on 64
-bit) bytes long.
-
-I have used the version of the tty tree from next-20140926 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/SgY1gAK9ldqL5_SSxtpdnE4
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKl4eAAoJEMDTa8Ir7ZwVTUwP/R6EUqxJt4M0t9I1Ldjl0gAx
-FLoqJpXkoSqCVfTD/omKt/DylA+kSx7LWU1MqkpXfwt60ne2ZZgNrkik5yrrTS3Y
-wFGc/+UIXGD6LyMeJz9v7euwmuJQ15eLhySPOCYCjciS2IVVBaA3jREleykDQmTy
-kGXWo9LZPwaC+em4y5tPIy7VHWl+KJiIVLlrS5UhNC92YDMVFeCx3dgGkQ/MgQed
-agkz0YPYNAUJCR9aagV7US6Z6Y5Tje0q63vmy+5jtqxfMDIVIraEcHhCwh/Kgc7m
-Sc7KxrOE0DA/EkaCV12DZoY1NOoCDWr2uWkoT7zeQw/Cv0w29tkUX5WLqXHWo2S+
-c5RCUaPKecWQgXrYLkuv14sfk9KGRwDHlvgmbEtQFxLn5Z4GNZvDSIM227EJ29f/
-/hteSEQuQgNm9o78r9OA1IgBYcyKAxruJggFVdMkdrKVUvy+lw1gxBa+MR8/zvYZ
-LelKifAmFXWMqc0DEc0F2bXGgkHPV5gw93ZNv5tV2y54qePwxQBAuqZmn6YDySbC
-mGgP7TiMpU1QNTmzVHc2EgtMMC7tycWdXa7PA5VvIa55Um0fJHlaPM1a85tvz3vN
-4Vuuraof1T6tH/YADFAwZHJtzZu1U0mTC1cGdsEF5nx9Z+yyB47/eKBddCUEmATZ
-ikiVcMtGijQQ5M3kPxAz
-=fAjG
------END PGP SIGNATURE-----
-
---Sig_/SgY1gAK9ldqL5_SSxtpdnE4--
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
