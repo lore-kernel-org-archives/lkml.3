@@ -1,52 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaI3OLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:11:32 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:42390 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaI3OLa (ORCPT
+	id S1752777AbaI3OMO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:12:14 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:56136 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751916AbaI3OMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:11:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <2923496.zl6JUbOQrZ@wuerfel>
-References: <2923496.zl6JUbOQrZ@wuerfel>
-Date: Tue, 30 Sep 2014 16:11:28 +0200
-Message-ID: <CACRpkdYdwhujkP_66GCNktcvXFOzmGW=3t6BvCSXXMnHu03eEg@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib: fix callers of gpiochip_remove
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-rpi-kernel@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Sep 2014 10:12:13 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Subject: [PATCH 1/2] gpio: remove remaining users of gpiochip_remove() retval
+Date: Tue, 30 Sep 2014 19:45:41 +0530
+Message-Id: <1412086542-1662-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 3:24 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+Some driver in gpio still check for return value from gpiochip_remove
+Get rid of the check for return value.
 
-> A recent API change made gpiochip_remove return void instead of an
-> error value, which broke drivers that use this return value:
->
-> gpio/gpio-sch311x.c: In function 'sch311x_gpio_probe':
-> gpio/gpio-sch311x.c:286:7: error: void value not ignored as it ought to be
->    if (gpiochip_remove(&priv->blocks[i].chip))
->        ^
->
-> This changes the callers that I have found during randconfig testing
-> so they no longer depend on the error code.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Fixes: e1db1706c86e ("gpio: gpiolib: set gpiochip_remove retval to void")
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-gpio@vger.kernel.org
 
-Hm AFAICT these are already fixes in my GPIO tree
-and linux-next...
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/gpio/gpio-crystalcove.c |   12 ++++--------
+ drivers/gpio/gpio-omap.c        |    2 +-
+ drivers/gpio/gpio-zynq.c        |   10 ++--------
+ 3 files changed, 7 insertions(+), 17 deletions(-)
 
-Am I looking in the wrong place?
+diff --git a/drivers/gpio/gpio-crystalcove.c b/drivers/gpio/gpio-crystalcove.c
+index 934462f..0345b94 100644
+--- a/drivers/gpio/gpio-crystalcove.c
++++ b/drivers/gpio/gpio-crystalcove.c
+@@ -346,22 +346,18 @@ static int crystalcove_gpio_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ out_remove_gpio:
+-	WARN_ON(gpiochip_remove(&cg->chip));
++	gpiochip_remove(&cg->chip);
+ 	return retval;
+ }
+ 
+ static int crystalcove_gpio_remove(struct platform_device *pdev)
+ {
+ 	struct crystalcove_gpio *cg = platform_get_drvdata(pdev);
+-	int irq = platform_get_irq(pdev, 0);
+-	int err;
+-
+-	err = gpiochip_remove(&cg->chip);
++	platform_get_irq(pdev, 0);
+ 
+-	if (irq >= 0)
+-		free_irq(irq, cg);
++	gpiochip_remove(&cg->chip);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ static struct platform_driver crystalcove_gpio_driver = {
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 1749321..5cd3367 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -1143,7 +1143,7 @@ static int omap_gpio_chip_init(struct gpio_bank *bank)
+ 
+ 	if (ret) {
+ 		dev_err(bank->dev, "Couldn't add irqchip to gpiochip %d\n", ret);
+-		ret = gpiochip_remove(&bank->chip);
++		gpiochip_remove(&bank->chip);
+ 		return -ENODEV;
+ 	}
+ 
+diff --git a/drivers/gpio/gpio-zynq.c b/drivers/gpio/gpio-zynq.c
+index 31ad5df..13c677a 100644
+--- a/drivers/gpio/gpio-zynq.c
++++ b/drivers/gpio/gpio-zynq.c
+@@ -648,8 +648,7 @@ static int zynq_gpio_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_rm_gpiochip:
+-	if (gpiochip_remove(chip))
+-		dev_err(&pdev->dev, "Failed to remove gpio chip\n");
++	gpiochip_remove(chip);
+ err_disable_clk:
+ 	clk_disable_unprepare(gpio->clk);
+ 
+@@ -664,16 +663,11 @@ err_disable_clk:
+  */
+ static int zynq_gpio_remove(struct platform_device *pdev)
+ {
+-	int ret;
+ 	struct zynq_gpio *gpio = platform_get_drvdata(pdev);
+ 
+ 	pm_runtime_get_sync(&pdev->dev);
+ 
+-	ret = gpiochip_remove(&gpio->chip);
+-	if (ret) {
+-		dev_err(&pdev->dev, "Failed to remove gpio chip\n");
+-		return ret;
+-	}
++	gpiochip_remove(&gpio->chip);
+ 	clk_disable_unprepare(gpio->clk);
+ 	device_set_wakeup_capable(&pdev->dev, 0);
+ 	return 0;
+-- 
+1.7.9.5
 
-Yours,
-Linus Walleij
