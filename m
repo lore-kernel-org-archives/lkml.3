@@ -1,257 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaI3RXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:23:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450AbaI3RSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:18:47 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <andrew-vger@gizmolabs.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 04/13] HID: logitech-dj: merge header file into the source
-Date: Tue, 30 Sep 2014 13:18:26 -0400
-Message-Id: <1412097515-17241-5-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1753703AbaI3RXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:23:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38705 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677AbaI3RXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:23:21 -0400
+Date: Tue, 30 Sep 2014 19:23:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Cong Wang <cwang@twopensource.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+Message-ID: <20140930172308.GI4241@worktop.programming.kicks-ass.net>
+References: <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu>
+ <20140910083136.GP6758@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu>
+ <541059C9.1040200@oracle.com>
+ <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu>
+ <20140910143306.GD4783@worktop.ger.corp.intel.com>
+ <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
+ <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com>
+ <542789E5.7090805@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542789E5.7090805@oracle.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no point in keeping the header in a separate file, nobody
-but hid-logitech-dj should have access to its content.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+How about this then?
+
 ---
- drivers/hid/hid-logitech-dj.c |  88 +++++++++++++++++++++++++++++++-
- drivers/hid/hid-logitech-dj.h | 115 ------------------------------------------
- 2 files changed, 87 insertions(+), 116 deletions(-)
- delete mode 100644 drivers/hid/hid-logitech-dj.h
+Subject: perf: Fix unclone_ctx() vs locking
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 42d38d5..6aea16d 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -26,9 +26,95 @@
- #include <linux/hid.h>
- #include <linux/module.h>
- #include <linux/usb.h>
-+#include <linux/kfifo.h>
- #include <asm/unaligned.h>
- #include "hid-ids.h"
--#include "hid-logitech-dj.h"
-+
-+#define DJ_MAX_PAIRED_DEVICES			6
-+#define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_RECEIVER_INDEX			0
-+#define DJ_DEVICE_INDEX_MIN			1
-+#define DJ_DEVICE_INDEX_MAX			6
-+
-+#define DJREPORT_SHORT_LENGTH			15
-+#define DJREPORT_LONG_LENGTH			32
-+
-+#define REPORT_ID_DJ_SHORT			0x20
-+#define REPORT_ID_DJ_LONG			0x21
-+
-+#define REPORT_TYPE_RFREPORT_LAST		0x1F
-+
-+/* Command Switch to DJ mode */
-+#define REPORT_TYPE_CMD_SWITCH			0x80
-+#define CMD_SWITCH_PARAM_DEVBITFIELD		0x00
-+#define CMD_SWITCH_PARAM_TIMEOUT_SECONDS	0x01
-+#define TIMEOUT_NO_KEEPALIVE			0x00
-+
-+/* Command to Get the list of Paired devices */
-+#define REPORT_TYPE_CMD_GET_PAIRED_DEVICES	0x81
-+
-+/* Device Paired Notification */
-+#define REPORT_TYPE_NOTIF_DEVICE_PAIRED		0x41
-+#define SPFUNCTION_MORE_NOTIF_EXPECTED		0x01
-+#define SPFUNCTION_DEVICE_LIST_EMPTY		0x02
-+#define DEVICE_PAIRED_PARAM_SPFUNCTION		0x00
-+#define DEVICE_PAIRED_PARAM_EQUAD_ID_LSB	0x01
-+#define DEVICE_PAIRED_PARAM_EQUAD_ID_MSB	0x02
-+#define DEVICE_PAIRED_RF_REPORT_TYPE		0x03
-+
-+/* Device Un-Paired Notification */
-+#define REPORT_TYPE_NOTIF_DEVICE_UNPAIRED	0x40
-+
-+
-+/* Connection Status Notification */
-+#define REPORT_TYPE_NOTIF_CONNECTION_STATUS	0x42
-+#define CONNECTION_STATUS_PARAM_STATUS		0x00
-+#define STATUS_LINKLOSS				0x01
-+
-+/* Error Notification */
-+#define REPORT_TYPE_NOTIF_ERROR			0x7F
-+#define NOTIF_ERROR_PARAM_ETYPE			0x00
-+#define ETYPE_KEEPALIVE_TIMEOUT			0x01
-+
-+/* supported DJ HID && RF report types */
-+#define REPORT_TYPE_KEYBOARD			0x01
-+#define REPORT_TYPE_MOUSE			0x02
-+#define REPORT_TYPE_CONSUMER_CONTROL		0x03
-+#define REPORT_TYPE_SYSTEM_CONTROL		0x04
-+#define REPORT_TYPE_MEDIA_CENTER		0x08
-+#define REPORT_TYPE_LEDS			0x0E
-+
-+/* RF Report types bitfield */
-+#define STD_KEYBOARD				0x00000002
-+#define STD_MOUSE				0x00000004
-+#define MULTIMEDIA				0x00000008
-+#define POWER_KEYS				0x00000010
-+#define MEDIA_CENTER				0x00000100
-+#define KBD_LEDS				0x00004000
-+
-+struct dj_report {
-+	u8 report_id;
-+	u8 device_index;
-+	u8 report_type;
-+	u8 report_params[DJREPORT_SHORT_LENGTH - 3];
-+};
-+
-+struct dj_receiver_dev {
-+	struct hid_device *hdev;
-+	struct dj_device *paired_dj_devices[DJ_MAX_PAIRED_DEVICES +
-+					    DJ_DEVICE_INDEX_MIN];
-+	struct work_struct work;
-+	struct kfifo notif_fifo;
-+	spinlock_t lock;
-+	bool querying_devices;
-+};
-+
-+struct dj_device {
-+	struct hid_device *hdev;
-+	struct dj_receiver_dev *dj_receiver_dev;
-+	u32 reports_supported;
-+	u8 device_index;
-+};
+The idiot who did 4a1c0f262f88 forgot to pay attention and fix all
+similar cases. Do so now.
+
+In particular, unclone_ctx() must be called while holding ctx->lock,
+therefore all such sites are broken for the same reason. Pull the
+put_ctx() call out from under ctx->lock.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Fixes: 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ kernel/events/core.c | 54 ++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a232b4006026..769d8587cf31 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -911,13 +911,23 @@ static void put_ctx(struct perf_event_context *ctx)
+ 	}
+ }
  
- /* Keyboard descriptor (1) */
- static const char kbd_descriptor[] = {
-diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
-deleted file mode 100644
-index b1208c9..0000000
---- a/drivers/hid/hid-logitech-dj.h
-+++ /dev/null
-@@ -1,115 +0,0 @@
--#ifndef __HID_LOGITECH_DJ_H
--#define __HID_LOGITECH_DJ_H
+-static void unclone_ctx(struct perf_event_context *ctx)
++/*
++ * This must be done under the ctx->lock, such as to serialize against
++ * context_equiv(), therefore we cannot call put_ctx() since that might end up
++ * calling scheduler related locks and ctx->lock nests inside those.
++ */
++static __must_check struct perf_event_context *
++unclone_ctx(struct perf_event_context *ctx)
+ {
+-	if (ctx->parent_ctx) {
+-		put_ctx(ctx->parent_ctx);
++	struct perf_event_context *parent_ctx = ctx->parent_ctx;
++
++	lockdep_assert_held(&ctx->lock);
++
++	if (parent_ctx)
+ 		ctx->parent_ctx = NULL;
+-	}
+ 	ctx->generation++;
++
++	return parent_ctx;
+ }
+ 
+ static u32 perf_event_pid(struct perf_event *event, struct task_struct *p)
+@@ -2264,6 +2274,9 @@ static void ctx_sched_out(struct perf_event_context *ctx,
+ static int context_equiv(struct perf_event_context *ctx1,
+ 			 struct perf_event_context *ctx2)
+ {
++	lockdep_assert_held(&ctx1->lock);
++	lockdep_assert_held(&ctx2->lock);
++
+ 	/* Pinning disables the swap optimization */
+ 	if (ctx1->pin_count || ctx2->pin_count)
+ 		return 0;
+@@ -2997,6 +3010,7 @@ static int event_enable_on_exec(struct perf_event *event,
+  */
+ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ {
++	struct perf_event_context *clone_ctx = NULL;
+ 	struct perf_event *event;
+ 	unsigned long flags;
+ 	int enabled = 0;
+@@ -3028,7 +3042,7 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ 	 * Unclone this context if we enabled any event.
+ 	 */
+ 	if (enabled)
+-		unclone_ctx(ctx);
++		clone_ctx = unclone_ctx(ctx);
+ 
+ 	raw_spin_unlock(&ctx->lock);
+ 
+@@ -3038,6 +3052,9 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ 	perf_event_context_sched_in(ctx, ctx->task);
+ out:
+ 	local_irq_restore(flags);
++
++	if (clone_ctx)
++		put_ctx(clone_ctx);
+ }
+ 
+ void perf_event_exec(void)
+@@ -3190,7 +3207,7 @@ find_lively_task_by_vpid(pid_t vpid)
+ static struct perf_event_context *
+ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
+ {
+-	struct perf_event_context *ctx;
++	struct perf_event_context *ctx, *clone_ctx = NULL;
+ 	struct perf_cpu_context *cpuctx;
+ 	unsigned long flags;
+ 	int ctxn, err;
+@@ -3224,9 +3241,12 @@ find_get_context(struct pmu *pmu, struct task_struct *task, int cpu)
+ retry:
+ 	ctx = perf_lock_task_context(task, ctxn, &flags);
+ 	if (ctx) {
+-		unclone_ctx(ctx);
++		clone_ctx = unclone_ctx(ctx);
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
++
++		if (clone_ctx)
++			put_ctx(clone_ctx);
+ 	} else {
+ 		ctx = alloc_perf_context(pmu, task);
+ 		err = -ENOMEM;
+@@ -7651,7 +7671,7 @@ __perf_event_exit_task(struct perf_event *child_event,
+ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+ {
+ 	struct perf_event *child_event, *next;
+-	struct perf_event_context *child_ctx, *parent_ctx;
++	struct perf_event_context *child_ctx, *clone_ctx = NULL;
+ 	unsigned long flags;
+ 
+ 	if (likely(!child->perf_event_ctxp[ctxn])) {
+@@ -7678,28 +7698,16 @@ static void perf_event_exit_task_context(struct task_struct *child, int ctxn)
+ 	child->perf_event_ctxp[ctxn] = NULL;
+ 
+ 	/*
+-	 * In order to avoid freeing: child_ctx->parent_ctx->task
+-	 * under perf_event_context::lock, grab another reference.
+-	 */
+-	parent_ctx = child_ctx->parent_ctx;
+-	if (parent_ctx)
+-		get_ctx(parent_ctx);
 -
--/*
-- *  HID driver for Logitech Unifying receivers
-- *
-- *  Copyright (c) 2011 Logitech
-- */
--
--/*
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-- *
-- */
--
--#include <linux/kfifo.h>
--
--#define DJ_MAX_PAIRED_DEVICES			6
--#define DJ_MAX_NUMBER_NOTIFICATIONS		8
--#define DJ_RECEIVER_INDEX			0
--#define DJ_DEVICE_INDEX_MIN 			1
--#define DJ_DEVICE_INDEX_MAX 			6
--
--#define DJREPORT_SHORT_LENGTH			15
--#define DJREPORT_LONG_LENGTH			32
--
--#define REPORT_ID_DJ_SHORT			0x20
--#define REPORT_ID_DJ_LONG			0x21
--
--#define REPORT_TYPE_RFREPORT_FIRST		0x01
--#define REPORT_TYPE_RFREPORT_LAST		0x1F
--
--/* Command Switch to DJ mode */
--#define REPORT_TYPE_CMD_SWITCH			0x80
--#define CMD_SWITCH_PARAM_DEVBITFIELD		0x00
--#define CMD_SWITCH_PARAM_TIMEOUT_SECONDS	0x01
--#define TIMEOUT_NO_KEEPALIVE			0x00
--
--/* Command to Get the list of Paired devices */
--#define REPORT_TYPE_CMD_GET_PAIRED_DEVICES	0x81
--
--/* Device Paired Notification */
--#define REPORT_TYPE_NOTIF_DEVICE_PAIRED		0x41
--#define SPFUNCTION_MORE_NOTIF_EXPECTED		0x01
--#define SPFUNCTION_DEVICE_LIST_EMPTY		0x02
--#define DEVICE_PAIRED_PARAM_SPFUNCTION		0x00
--#define DEVICE_PAIRED_PARAM_EQUAD_ID_LSB	0x01
--#define DEVICE_PAIRED_PARAM_EQUAD_ID_MSB	0x02
--#define DEVICE_PAIRED_RF_REPORT_TYPE		0x03
--
--/* Device Un-Paired Notification */
--#define REPORT_TYPE_NOTIF_DEVICE_UNPAIRED	0x40
--
--
--/* Connection Status Notification */
--#define REPORT_TYPE_NOTIF_CONNECTION_STATUS	0x42
--#define CONNECTION_STATUS_PARAM_STATUS		0x00
--#define STATUS_LINKLOSS				0x01
--
--/* Error Notification */
--#define REPORT_TYPE_NOTIF_ERROR			0x7F
--#define NOTIF_ERROR_PARAM_ETYPE			0x00
--#define ETYPE_KEEPALIVE_TIMEOUT			0x01
--
--/* supported DJ HID && RF report types */
--#define REPORT_TYPE_KEYBOARD			0x01
--#define REPORT_TYPE_MOUSE			0x02
--#define REPORT_TYPE_CONSUMER_CONTROL		0x03
--#define REPORT_TYPE_SYSTEM_CONTROL		0x04
--#define REPORT_TYPE_MEDIA_CENTER		0x08
--#define REPORT_TYPE_LEDS			0x0E
--
--/* RF Report types bitfield */
--#define STD_KEYBOARD				0x00000002
--#define STD_MOUSE				0x00000004
--#define MULTIMEDIA				0x00000008
--#define POWER_KEYS				0x00000010
--#define MEDIA_CENTER				0x00000100
--#define KBD_LEDS				0x00004000
--
--struct dj_report {
--	u8 report_id;
--	u8 device_index;
--	u8 report_type;
--	u8 report_params[DJREPORT_SHORT_LENGTH - 3];
--};
--
--struct dj_receiver_dev {
--	struct hid_device *hdev;
--	struct dj_device *paired_dj_devices[DJ_MAX_PAIRED_DEVICES +
--					    DJ_DEVICE_INDEX_MIN];
--	struct work_struct work;
--	struct kfifo notif_fifo;
--	spinlock_t lock;
--	bool querying_devices;
--};
--
--struct dj_device {
--	struct hid_device *hdev;
--	struct dj_receiver_dev *dj_receiver_dev;
--	u32 reports_supported;
--	u8 device_index;
--};
--
--#endif
--- 
-2.1.0
-
+-	/*
+ 	 * If this context is a clone; unclone it so it can't get
+ 	 * swapped to another process while we're removing all
+ 	 * the events from it.
+ 	 */
+-	unclone_ctx(child_ctx);
++	clone_ctx = unclone_ctx(child_ctx);
+ 	update_context_time(child_ctx);
+ 	raw_spin_unlock_irqrestore(&child_ctx->lock, flags);
+ 
+-	/*
+-	 * Now that we no longer hold perf_event_context::lock, drop
+-	 * our extra child_ctx->parent_ctx reference.
+-	 */
+-	if (parent_ctx)
+-		put_ctx(parent_ctx);
++	if (clone_ctx)
++		put_ctx(clone_ctx);
+ 
+ 	/*
+ 	 * Report the task dead after unscheduling the events so that we
