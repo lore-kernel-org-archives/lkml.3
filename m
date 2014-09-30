@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaI3OIo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:08:44 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:58531 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaI3OIn convert rfc822-to-8bit (ORCPT
+	id S1751920AbaI3OJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:09:48 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:33033 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaI3OJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:08:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412085083.10205.8.camel@L80496>
-References: <1412079396-26005-1-git-send-email-thibaut.robert@gmail.com>
-	<CAMuHMdXj=b0G7foTRkcEtRC_De8+WjVefxBfW=s1sjaXLeF5nQ@mail.gmail.com>
-	<1412085083.10205.8.camel@L80496>
-Date: Tue, 30 Sep 2014 16:08:39 +0200
-X-Google-Sender-Auth: RjdN3dojaAOz5BUxmZTo3-GsMmU
-Message-ID: <CAMuHMdWHMK7NxX9AUg3ihwds41dKW26A_jFnZELw5N9shMaBKw@mail.gmail.com>
-Subject: Re: [PATCH] tc: fix warning and coding style
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thibaut Robert <thibaut.robert@gmail.com>
-Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Sep 2014 10:09:46 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Cc: broonie@kernel.org, lee.jones@linaro.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-msm@vger.kernel.org,
+        bjorn.andersson@sonymobile.com,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v2 0/4] ARM: dts: apq8064 DT patches
+Date: Tue, 30 Sep 2014 15:09:19 +0100
+Message-Id: <1412086159-20894-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thibaut,
+These patches adds dt nodes for RPM, USB and SATA IPs found in APQ8064.
+All the driver support for these IPs are already available in v3.17, except
+the RPM driver which is now accepted by Lee and Mark.
 
-On Tue, Sep 30, 2014 at 3:51 PM, Thibaut Robert
-<thibaut.robert@gmail.com> wrote:
-> Le mardi 30 septembre 2014 à 14:28 +0200, Geert Uytterhoeven a écrit :
->> On Tue, Sep 30, 2014 at 2:16 PM, Thibaut Robert
->> <thibaut.robert@gmail.com> wrote:
->> > Fix gcc warning:
->> > warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘resource_size_t’ [-Wformat=]
->> >
->> > As resource_size_t can be 32 or 64 bits (depending on CONFIG_RESOURCES_64BIT), this patch uses "%lld" format along with a cast to u64 for printing resource_size_t values
->>
->> Please use %pR instead (cfr. Documentation/printk-formats.txt).
->
-> This code use 'resource_size_t' but I think %pR is for 'struct resource'. I got inspired by this patch: https://lkml.org/lkml/2008/8/29/187
+These patches depend on the header file from 
+http://www.spinics.net/lists/arm-kernel/msg364310.html
+for regulators.
 
-Oops, sorry for (mis)behaving like a bad script.
+Now that the RPM patch is accepted, should RPM patch go via arm-soc tree?
+so that we can get more functionality on IFC6410 board in v3.18 mainline.
 
-> However, I've thought again, and '%u' is probably enough for displaying a size in MiB. So I propose the following :
-> (Parens around the cast were also missing in my first patch):
->
-> @@ -117,10 +114,10 @@ static void __init tc_bus_add_devices(struct tc_bus *tbus)
->                         tdev->resource.start = extslotaddr;
->                         tdev->resource.end = extslotaddr + devsize - 1;
->                 } else {
-> -                       printk(KERN_ERR "%s: Cannot provide slot space "
-> -                              "(%dMiB required, up to %dMiB supported)\n",
-> -                              dev_name(&tdev->dev), devsize >> 20,
-> -                              max(slotsize, extslotsize) >> 20);
-> +                       dev_err(&tdev->dev,
-> +                               "Cannot provide slot space (%uMiB required, up to %uMiB supported)\n",
-> +                               (unsigned int) (devsize >> 20),
-> +                               (unsigned int) (max(slotsize, extslotsize) >> 20));
->                         kfree(tdev);
->                         goto out_err;
->                 }
->
->
-> WDYT ?
+All these patches are tested on IFC6410 board.
+Am hoping to get these patches for v3.18, as these patches were sitting in
+my dev tree since last 3 merge windows.
 
-I guess that's acceptable, as tc is probably limited to 32-bit anyway. Maciej?
+Changes since v1:
+	- Updated with all the regulators in the rpm as suggested by Bjorn.
+	- Fixed few indentations spotted by both Bjorn, Stephen and others.
+	
 
-Note that there's also %pa, for phys_addr_t/resource_size_t.
+Thanks,
+srini
 
-Gr{oetje,eeting}s,
 
-                        Geert
+Srinivas Kandagatla (4):
+  ARM: dts: apq8064: add RPM regulators support
+  ARM: dts: apq8064: Add usb host support.
+  ARM: dts: apq8064: Add USB OTG support
+  ARM: dts: apq8064: Add SATA controller support.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |  38 +++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        | 424 +++++++++++++++++++++++++++++
+ 2 files changed, 462 insertions(+)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+1.9.1
+
