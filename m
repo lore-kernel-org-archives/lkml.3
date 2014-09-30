@@ -1,277 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaI3Hfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:35:52 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36103 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaI3Hfu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:35:50 -0400
-Date: Mon, 29 Sep 2014 11:42:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mikhail Efremov <sem@altlinux.org>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20140929184218.GN5015@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+55aFzTs5R_TzwdsBRAkw+mGLWF0XT9_sGeb_+ETUy-gJsY_w@mail.gmail.com>
- <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
- <20140926164442.GA26897@ZenIV.linux.org.uk>
- <20140927044555.GS7996@ZenIV.linux.org.uk>
- <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
- <20140927183139.GT7996@ZenIV.linux.org.uk>
- <20140927191657.GU7996@ZenIV.linux.org.uk>
- <20140928074747.GZ7996@ZenIV.linux.org.uk>
- <20140928180556.GA7996@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140928180556.GA7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14093007-0928-0000-0000-000005420BA5
+	id S1754726AbaI3Hgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:36:46 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:48753 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413AbaI3Hgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:36:44 -0400
+Message-ID: <1412062606.5395.10.camel@iivanov-dev>
+Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Date: Tue, 30 Sep 2014 10:36:46 +0300
+In-Reply-To: <542A31DF.7020402@smartplayin.com>
+References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
+	  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>
+	 <542A31DF.7020402@smartplayin.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 28, 2014 at 07:05:56PM +0100, Al Viro wrote:
-> On Sun, Sep 28, 2014 at 08:47:47AM +0100, Al Viro wrote:
+On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
+> On Monday 29 September 2014 07:24 PM, Ivan T. Ivanov wrote:
+> > On Fri, 2014-09-26 at 16:51 +0530, Kiran Padwal wrote:
+> >> On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
+> >>> Add support for the temperature alarm peripheral found inside
+> >>> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
+> >>> peripheral outputs a pulse on an interrupt line whenever the
+> >>> thermal over temperature stage value changes.  Implement an ISR
+> >>> to manage this interrupt.
+> >>>
+> >>
+> >> <snip>
+> >>
+> >>> + * This function updates the internal temp value based on the
+> >>> + * current thermal stage and threshold as well as the previous stage
+> >>> + */
+> >>> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
+> >>> +{
+> >>> +	unsigned int stage;
+> >>> +	int rc;
+> >>> +	u8 reg;
+> >>> +
+> >>> +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> >>> +	if (rc < 0)
+> >>> +		return rc;
+> >>> +
+> >>> +	stage = reg & STATUS_STAGE_MASK;
+> >>
+> >> During compilation, getting a waring as below,
+> >>
+> >> drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
+> >> drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> >>   stage = reg & STATUS_STAGE_MASK;
+> > 
+> > Could you share compiler version and options which you are using.
+> > I am unable to trigger this warning. Looking code I can not 
+> > see how this could happen.
 > 
-> > The root cause, of course, is that we delay decrementing the refcount on
-> > dentry_free() path...  One variant is to rip freeing these suckers out of
-> > __d_free() and have dentry_free() do atomic_dec_and_test + kfree_rcu.
-> > That works (and we don't need to set DCACHE_RCUACCESS in copy_name();
-> > the interesting part of never-hashed case is for short names anyway), but
-> > the cost is twice the number of rcu callbacks on freeing long-name dentries.
-> > Is that really painful enough to care?  If not, something like the following
-> > would do; if it is... well, we could probably do make free_dentry() mark
-> > dentry->d_flags for __d_free() with "free the external name hanging off
-> > this one" in case if refcount decrement has ended up with zero.  Doable,
-> > but more complicated (and somewhat messy, since ->d_lock is not held
-> > at that point; OTOH, we could play with ->d_name instead of ->d_flags...).
-> > Anyway, the delta below might suffice.  Comments?
-> 
-> Now that I've got some sleep...  It's easy to avoid extra call_rcu, of
-> course - just have two variants of __d_free(), one freeing the external
-> name (always called via call_rcu()) and another just freeing the dentry
-> itself.
+> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
 
-Assuming that incrementing the external name's reference count is
-atomic_add_unless, I could believe this part.  Or if you have some
-locking that makes it impossible to increment the reference count
-in any case where there is any risk that it might be decremented
-to zero, I guess.
+Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
+arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
+indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
 
-Which might well be the pair of write_seqcount_begin() calls in __d_move(),
-now that I look more carefully.  So if the name has to be in use somewhere
-before it can be copied, then a copy can only be created if there is at
-least one copy that is not currently being removed?  If so, OK.
+I will say that this is false positive :-). Please update your tool-chain.
 
->          So free_dentry() would
-> 	* decrement the refcount on external name and if that has reached
-> zero - call_rcu the full variant.
-> 	* if there had been no external name or if its refcount has not
-> reached zero - call_rcu the variant that just frees dentry itself or
-> just do a direct call of the same if dentry has never been RCU-visible.
-> 
-> One thing that worries me is the barriers that might be needed on assignments
-> to ->d_name.name.  We should be no worse than we are right now - either RCU
-> accessors are careful enough with ACCESS_ONCE() and everything's fine,
-> or they are not, in which case we already have a bug in mainline - swapping
-> ->d_name followed by dput() and freeing of target is no better than
-> copying ->d_name from target to source followed by kfree_rcu() of what
-> used to be ->d_name.name of source.  IOW, if RCU lookup could pick
-> a value of ->d_name.name that got obsolete by d_move() happening
-> before our read_lock_rcu(), we would be in trouble anyway - it might
-> already have had its freeing RCU-scheduled and thus not delayed
-> by read_lock_rcu() done afterwards.
+Regards,
+Ivan
 
-Yep!  Of course, the usual advice is to wait until the structure is
-inaccessible to readers before starting the grace period.
-
->                                      So I think the patch below doesn't
-> introduce new problems of that sort, but I'd really appreciate if RCU
-> people would take a look at the situation with barriers in that area.
-> Are those ACCESS_ONCE() in dentry_cmp() and prepend_name() enough, or
-> do we need some barriers in switch_names() as well?
-> 
-> Folks, care to review and test the following?
-> 
-> Allow sharing external names after __d_move()
-> 
-> * external dentry names get a small structure prepended to them
-> (struct ext_name).
-> * it contains an atomic refcount, matching the number of struct dentry
-> instances that have ->d_name.name pointing to that ext name.  The
-> first thing free_dentry() does is decrementing refcount of ext name,
-> so the instances between the call of free_dentry() and RCU-delayed
-> actual freeing do not contribute.
-> * __d_move(x, y, false) makes the name of x equal to the name of y,
-> external or not.  If y has an external name, extra reference is grabbed
-> and put into x->d_name.name.  If x used to have an external name, the
-> reference to it is dropped and, should it reach zero, freeing is scheduled
-> via kfree_rcu().
-> 
-> All non-RCU accesses to dentry ext name are safe wrt freeing since they
-> all should happen before free_dentry() is called.  RCU accesses might run
-> into a dentry seen by free_dentry() or into an old name that got already
-> dropped by __d_move(); however, in both cases dentry must have been
-> alive and refer to that name at some point after we'd done rcu_read_lock(),
-> which means that any freeing must be still pending.
-> 
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> ---
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index cb25a1a..0cf5aff 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -235,20 +235,44 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
->  	return dentry_string_cmp(cs, ct, tcount);
->  }
-> 
-> +struct ext_name {
-> +	union {
-> +		atomic_t count;
-> +		struct rcu_head head;
-> +	};
-
-The usual trick to simplify handling string lengths is to put the
-length in the same structure as the name.  Probably doesn't play well
-with your swap operation, though.  I cannot find the code to which
-this patch applies, but vaguely recall something about nul termination.
-
-> +	unsigned char name[];
-> +};
-> +
-> +static inline struct ext_name *ext_name(struct dentry *dentry)
-> +{
-> +	if (likely(!dname_external(dentry)))
-> +		return NULL;
-> +	return container_of(dentry->d_name.name, struct ext_name, name[0]);
-> +}
-> +
->  static void __d_free(struct rcu_head *head)
->  {
->  	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
-> 
->  	WARN_ON(!hlist_unhashed(&dentry->d_alias));
-> -	if (dname_external(dentry))
-> -		kfree(dentry->d_name.name);
-> +	kmem_cache_free(dentry_cache, dentry); 
-> +}
-> +
-> +static void __d_free_ext(struct rcu_head *head)
-> +{
-> +	struct dentry *dentry = container_of(head, struct dentry, d_u.d_rcu);
-> +	WARN_ON(!hlist_unhashed(&dentry->d_alias));
-> +	kfree(ext_name(dentry));
->  	kmem_cache_free(dentry_cache, dentry); 
->  }
-> 
->  static void dentry_free(struct dentry *dentry)
->  {
-> +	struct ext_name *p = ext_name(dentry);
-> +	if (unlikely(p) && likely(atomic_dec_and_test(&p->count)))
-> +		call_rcu(&dentry->d_u.d_rcu, __d_free_ext);
->  	/* if dentry was never visible to RCU, immediate free is OK */
-> -	if (!(dentry->d_flags & DCACHE_RCUACCESS))
-> +	else if (!(dentry->d_flags & DCACHE_RCUACCESS))
->  		__d_free(&dentry->d_u.d_rcu);
->  	else
->  		call_rcu(&dentry->d_u.d_rcu, __d_free);
-> @@ -1438,11 +1462,14 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
->  	 */
->  	dentry->d_iname[DNAME_INLINE_LEN-1] = 0;
->  	if (name->len > DNAME_INLINE_LEN-1) {
-> -		dname = kmalloc(name->len + 1, GFP_KERNEL);
-> -		if (!dname) {
-> +		size_t size = offsetof(struct ext_name, name) + name->len + 1;
-> +		struct ext_name *p = kmalloc(size, GFP_KERNEL);
-> +		if (!p) {
->  			kmem_cache_free(dentry_cache, dentry); 
->  			return NULL;
->  		}
-> +		atomic_set(&p->count, 1);
-> +		dname = p->name;
->  	} else  {
->  		dname = dentry->d_iname;
->  	}	
-> @@ -2372,11 +2399,10 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
->  }
->  EXPORT_SYMBOL(dentry_update_name_case);
-> 
-> -static void switch_names(struct dentry *dentry, struct dentry *target,
-> -			 bool exchange)
-> +static void swap_names(struct dentry *dentry, struct dentry *target)
->  {
-> -	if (dname_external(target)) {
-> -		if (dname_external(dentry)) {
-> +	if (unlikely(dname_external(target))) {
-> +		if (unlikely(dname_external(dentry))) {
->  			/*
->  			 * Both external: swap the pointers
->  			 */
-> @@ -2392,7 +2418,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
->  			target->d_name.name = target->d_iname;
->  		}
->  	} else {
-> -		if (dname_external(dentry)) {
-> +		if (unlikely(dname_external(dentry))) {
->  			/*
->  			 * dentry:external, target:internal.  Give dentry's
->  			 * storage to target and make dentry internal
-> @@ -2407,12 +2433,6 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
->  			 */
->  			unsigned int i;
->  			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-> -			if (!exchange) {
-> -				memcpy(dentry->d_iname, target->d_name.name,
-> -						target->d_name.len + 1);
-> -				dentry->d_name.hash_len = target->d_name.hash_len;
-> -				return;
-> -			}
->  			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
->  				swap(((long *) &dentry->d_iname)[i],
->  				     ((long *) &target->d_iname)[i]);
-> @@ -2422,6 +2442,22 @@ static void switch_names(struct dentry *dentry, struct dentry *target,
->  	swap(dentry->d_name.hash_len, target->d_name.hash_len);
->  }
-> 
-> +static void copy_name(struct dentry *dentry, struct dentry *target)
-> +{
-> +	struct ext_name *old_name = ext_name(dentry);
-> +	if (unlikely(dname_external(target))) {
-> +		atomic_inc(&ext_name(target)->count);
-> +		dentry->d_name = target->d_name;
-> +	} else {
-> +		memcpy(dentry->d_iname, target->d_name.name,
-> +				target->d_name.len + 1);
-> +		dentry->d_name.name = dentry->d_iname;
-> +		dentry->d_name.hash_len = target->d_name.hash_len;
-> +	}
-> +	if (unlikely(old_name) && likely(atomic_dec_and_test(&old_name->count)))
-> +		kfree_rcu(old_name, head);
-> +}
-> +
->  static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
->  {
->  	/*
-> @@ -2518,7 +2554,10 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
->  	}
-> 
->  	/* Switch the names.. */
-> -	switch_names(dentry, target, exchange);
-> +	if (exchange)
-> +		swap_names(dentry, target);
-> +	else
-> +		copy_name(dentry, target);
-> 
->  	/* ... and switch them in the tree */
->  	if (IS_ROOT(dentry)) {
-> 
 
