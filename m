@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaI3HQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:16:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492AbaI3HQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:16:46 -0400
-Date: Tue, 30 Sep 2014 09:16:27 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH v2 1/2] perf callchain: Create an address space per thread
-Message-ID: <20140930071627.GA27883@krava.brq.redhat.com>
-References: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
- <20140929083452.GA1223@krava.brq.redhat.com>
- <87vbo5hc3a.fsf@sejong.aot.lge.com>
+	id S1755304AbaI3HRi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:17:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38775 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaI3HRg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:17:36 -0400
+Date: Tue, 30 Sep 2014 09:02:09 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Valdis.Kletnieks@vt.edu
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'Catalin Marinas'" <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
+        DL-WW-ContributionOfficers-Linux 
+	<DL-WW-ContributionOfficers-Linux@sonymobile.com>
+Subject: Re: [PATCH resend] arm:extend the reserved memory for initrd to be
+ page aligned
+Message-ID: <20140930070209.GG31554@pengutronix.de>
+References: <35FD53F367049845BC99AC72306C23D103D6DB49161F@CNBJMBX05.corpusers.net>
+ <20140919095959.GA2295@e104818-lin.cambridge.arm.com>
+ <20140925143142.GF5182@n2100.arm.linux.org.uk>
+ <20140925154403.GL10390@e104818-lin.cambridge.arm.com>
+ <35FD53F367049845BC99AC72306C23D103D6DB49163B@CNBJMBX05.corpusers.net>
+ <15815.1412018518@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87vbo5hc3a.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <15815.1412018518@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 03:11:21PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Mon, 29 Sep 2014 10:34:52 +0200, Jiri Olsa wrote:
-> > On Mon, Sep 29, 2014 at 01:58:11PM +0900, Namhyung Kim wrote:
-> >> @@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
-> >>  		thread->cpu = -1;
-> >>  		INIT_LIST_HEAD(&thread->comm_list);
-> >>  
-> >> +		if (unwind__prepare_access(thread) < 0)
-> >> +			goto err_thread;
-> >
-> > So this is something we need to do only for DWARF unwind via libunwind.
-> > Do we want some condition to bypass this in for the rest of the cases?
-> 
-> Ah, you're right, we need to check that before doing this.
-> 
-> 
-> >
-> > I think we could check for symbol_conf.use_callchain and for the
-> > PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER sample types in evlist,
-> > something like:
-> >
-> >   bool has_dwarf_data_for_callchains = symbol_conf.use_callchain && evlist_sample_type_has(evlist, PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER)
-> 
-> Hmm.. it seems that it's hard to get the evlist at this point.  Maybe we
-> need to add a field in the symbol_conf or a global variable.. :/
+Hello,
 
-yea, symbol_conf seems ok
+On Mon, Sep 29, 2014 at 03:21:58PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Fri, 26 Sep 2014 10:40:54 +0800, "Wang, Yalin" said:
+> 
+> > I am really confused,
+> > I read this web:
+> > http://www.arm.linux.org.uk/developer/patches/info.php
+> > it said use diff -urN to generate patch like this:
+> >
+> > diff -Nru linux.orig/lib/string.c linux/lib/string.c
+> >
+> > but I see other developers use git format-patch to generate patch and
+> > submit to the patch system.
+> > Git format-patch format can also be accepted by the patch system correctly ?
+> > If yes, I think this web should update,
+> > Use git format-patch to generate patch is more convenient than use diff -urN
+> 
+> 'diff -urN' has the advantage that it will work against a tree extracted
+> from a release tarball, and doesn't have a requirement that you have git
+That's wrong, patches generated by git-format-patch are also applicable
+just fine on top of an extracted tar ball by patch(1).
 
-jirka
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
