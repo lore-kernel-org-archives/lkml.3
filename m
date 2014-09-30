@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaI3VjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:39:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32927 "EHLO
+	id S1754682AbaI3VnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:43:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32937 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250AbaI3VjG (ORCPT
+	with ESMTP id S1752013AbaI3VjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:06 -0400
+	Tue, 30 Sep 2014 17:39:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 053/103] xhci: Treat not finding the event_seg on COMP_STOP the same as COMP_STOP_INVAL
-Date: Tue, 30 Sep 2014 14:30:58 -0700
-Message-Id: <1412112708-27356-54-git-send-email-kamal@canonical.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 097/103] i2c: rcar: fix MNR interrupt handling
+Date: Tue, 30 Sep 2014 14:31:42 -0700
+Message-Id: <1412112708-27356-98-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -29,45 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit 9a54886342e227433aebc9d374f8ae268a836475 upstream.
+commit dd318b0df27c582ac0d72a346fd6e693700be23c upstream.
 
-When using a Renesas uPD720231 chipset usb-3 uas to sata bridge with a 120G
-Crucial M500 ssd, model string: Crucial_ CT120M500SSD1, together with a
-the integrated Intel xhci controller on a Haswell laptop:
+Sometimes the MNR and MST interrupts happen simultaneously  (stop  automatically
+follows NACK, according to the manuals) and in such case the ID_NACK flag  isn't
+set since the MST interrupt handling precedes MNR and all interrupts are cleared
+and disabled then, so that MNR interrupt is never noticed -- this causes NACK'ed
+transfers to be falsely reported as successful. Exchanging MNR and  MST handlers
+fixes this issue, however the MNR bit  somehow  gets set again even after  being
+explicitly cleared, so I decided to completely suppress handling of all disabled
+interrupts (which is a good thing anyway)...
 
-00:14.0 USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
-
-The following error gets logged to dmesg:
-
-xhci error: Transfer event TRB DMA ptr not part of current TD
-
-Treating COMP_STOP the same as COMP_STOP_INVAL when no event_seg gets found
-fixes this.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-rcar.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index d0d906f..41deedb 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2626,7 +2626,8 @@ static int handle_tx_event(struct xhci_hcd *xhci,
- 		 * last TRB of the previous TD. The command completion handle
- 		 * will take care the rest.
- 		 */
--		if (!event_seg && trb_comp_code == COMP_STOP_INVAL) {
-+		if (!event_seg && (trb_comp_code == COMP_STOP ||
-+				   trb_comp_code == COMP_STOP_INVAL)) {
- 			ret = 0;
- 			goto cleanup;
- 		}
+diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
+index 56de337..e64bb5b 100644
+--- a/drivers/i2c/busses/i2c-rcar.c
++++ b/drivers/i2c/busses/i2c-rcar.c
+@@ -488,6 +488,9 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
+ 
+ 	msr = rcar_i2c_status_get(priv);
+ 
++	/* Only handle interrupts that are currently enabled */
++	msr &= rcar_i2c_read(priv, ICMIER);
++
+ 	/*
+ 	 * Arbitration lost
+ 	 */
+@@ -503,15 +506,6 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
+ 	}
+ 
+ 	/*
+-	 * Stop
+-	 */
+-	if (msr & MST) {
+-		dev_dbg(dev, "Stop\n");
+-		rcar_i2c_flags_set(priv, ID_DONE);
+-		goto out;
+-	}
+-
+-	/*
+ 	 * Nack
+ 	 */
+ 	if (msr & MNR) {
+@@ -524,6 +518,12 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
+ 		goto out;
+ 	}
+ 
++	/* Stop */
++	if (msr & MST) {
++		rcar_i2c_flags_set(priv, ID_DONE);
++		goto out;
++	}
++
+ 	/*
+ 	 * recv/send
+ 	 */
 -- 
 1.9.1
 
