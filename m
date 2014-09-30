@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaI3Dlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:41:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752976AbaI3Dlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:41:50 -0400
-Date: Mon, 29 Sep 2014 23:41:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de, hmh@hmh.eng.br,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: Bugfix bit-rot in the calling of
- legacy_cache_size
-Message-ID: <20140930034129.GB14558@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Bryan O'Donoghue <pure.logic@nexus-software.ie>, mingo@redhat.com,
-	hpa@zytor.com, tglx@linutronix.de, hmh@hmh.eng.br, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie>
- <1412046710-2686-2-git-send-email-pure.logic@nexus-software.ie>
+	id S1755355AbaI3Dns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:43:48 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:64961 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaI3Dnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:43:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412046710-2686-2-git-send-email-pure.logic@nexus-software.ie>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Mon, 29 Sep 2014 20:43:46 -0700
+Message-ID: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
+Subject: Please backport commit 3812c8c8f39 to stable
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Michal Hocko <mhocko@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 04:11:48AM +0100, Bryan O'Donoghue wrote:
+Hi, Johannes and Greg
 
- > Make an update to identify_cpu to make an explicit call to default_init()
- > We want to do this since some processors that report vendor strings via
- > cpuid also want to run legacy_cache_size callbacks - which won't happen
- > since init_intel() init_amd() and friends take the place of default_init()
- > and don't themselves make explicit calls to legacy_cache_size.
- > 
- > Also current code has an
- > #ifdef CONFIG_X86_64
- >         cpu_detect_cache_sizes(c);
- > #endif
 
-...
+Please consider to backport the following commit to stable kernels < 3.12.
 
- >  static void default_init(struct cpuinfo_x86 *c)
- >  {
- > -#ifdef CONFIG_X86_64
- >  	cpu_detect_cache_sizes(c);
- > -#else
- > +
- >  	/* Not much we can do here... */
- >  	/* Check if at least it has cpuid */
- >  	if (c->cpuid_level == -1) {
- > @@ -79,7 +78,6 @@ static void default_init(struct cpuinfo_x86 *c)
- >  		else if (c->x86 == 3)
- >  			strcpy(c->x86_model_id, "386");
- >  	}
- > -#endif
+commit 3812c8c8f3953921ef18544110dafc3505c1ac62
+Author: Johannes Weiner <hannes@cmpxchg.org>
+Date:   Thu Sep 12 15:13:44 2013 -0700
 
-Shouldn't this patch be more like..
+    mm: memcg: do not trap chargers with full callstack on OOM
 
--#ifdef CONFIG_X86_64
-  	cpu_detect_cache_sizes(c);
--#else
-+
-+#ifdef CONFIG_X86_32
+It should solve some soft lockup I observed on different machines
+recently. For me myself, I only care about 3.10. :-p
 
- ?
+commit 4942642080ea82d99ab5b65 (mm: memcg: handle non-error OOM
+situations more gracefully) seems needed as a followup. Johannes
+should know much better than I do.
 
-The 386/486 stuff in this codepath isn't huge, but it
-seems pointless to be compiling it on 64-bit.
+Let me know if you need any more information or help from me.
 
-	Dave
-
+Thanks much!
