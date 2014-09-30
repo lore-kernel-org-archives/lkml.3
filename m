@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaI3RWG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:22:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57435 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752075AbaI3RWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:22:03 -0400
-Date: Tue, 30 Sep 2014 19:21:49 +0200
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Peter Korsgaard <peter@korsgaard.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] hwrng: atmel: Add TRNG DT binding doc
-Message-ID: <20140930192149.464ac50f@bbrezillon>
-In-Reply-To: <87bnpxoww9.fsf@dell.be.48ers.dk>
-References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1412093987-30241-5-git-send-email-boris.brezillon@free-electrons.com>
-	<87bnpxoww9.fsf@dell.be.48ers.dk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753610AbaI3RWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:22:24 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60560 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753595AbaI3RWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:22:23 -0400
+Message-ID: <542AE6C2.6050703@ti.com>
+Date: Tue, 30 Sep 2014 20:22:10 +0300
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <kernel-build-reports@lists.linaro.org>,
+        <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH] clk: gpio-gate: Ensure gpiod_ APIs are prototyped
+References: <1412097382-8351-1-git-send-email-broonie@kernel.org>
+In-Reply-To: <1412097382-8351-1-git-send-email-broonie@kernel.org>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 09/30/2014 08:16 PM, Mark Brown wrote:
+> The gpio-gate clock uses the gpiod_ APIs but does not directly include the
+> header for them causing build failures in some configurations including ARM
+> allnoconfig. Include the header directly.
+>
+> Signed-off-by: Mark Brown <broonie@kernel.org>
 
-On Tue, 30 Sep 2014 19:12:22 +0200
-Peter Korsgaard <peter@korsgaard.com> wrote:
+Acked-by: Jyri Sarha <jsarha@ti.com>
 
-> >>>>> "Boris" == Boris Brezillon <boris.brezillon@free-electrons.com> writes:
-> 
->  > Document DT bindings of Atmel's TRNG (True Random Number Generator) IP.
->  > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->  > ---
->  >  Documentation/devicetree/bindings/hwrng/atmel-trng.txt | 16 ++++++++++++++++
->  >  1 file changed, 16 insertions(+)
->  >  create mode 100644 Documentation/devicetree/bindings/hwrng/atmel-trng.txt
-> 
->  > diff --git a/Documentation/devicetree/bindings/hwrng/atmel-trng.txt b/Documentation/devicetree/bindings/hwrng/atmel-trng.txt
->  > new file mode 100644
->  > index 0000000..4ac5aaa
->  > --- /dev/null
->  > +++ b/Documentation/devicetree/bindings/hwrng/atmel-trng.txt
->  > @@ -0,0 +1,16 @@
->  > +Atmel TRNG (True Random Number Generator) block
->  > +
->  > +Required properties:
->  > +- compatible : Should be "atmel,at91sam9g45-trng"
->  > +- reg : Offset and length of the register set of this block
->  > +- interrupts : the interrupt number for the TRNG block
-> 
-> The interrupt isn't strictly speaking required as it isn't used by the
-> driver, but as 9G45 has the signal wired up I guess it makes sense.
+Thanks.
+Jyri
 
-This irq might be used in a near future (in order to wait for data as
-requested by hwrng code when the wait argument is true).
-Thus I prefer to keep it as required.
+> ---
+>   drivers/clk/clk-gpio-gate.c | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
+> index 9dde88533684..08e43224fd52 100644
+> --- a/drivers/clk/clk-gpio-gate.c
+> +++ b/drivers/clk/clk-gpio-gate.c
+> @@ -13,6 +13,7 @@
+>   #include <linux/module.h>
+>   #include <linux/slab.h>
+>   #include <linux/gpio.h>
+> +#include <linux/gpio/consumer.h>
+>   #include <linux/of_gpio.h>
+>   #include <linux/err.h>
+>   #include <linux/device.h>
+>
 
-Best Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
