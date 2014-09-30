@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbaI3QH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:07:59 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38420
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752815AbaI3QH5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:07:57 -0400
-Date: Tue, 30 Sep 2014 18:07:55 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Mateusz Guzik <mguzik@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Pavel Emelyanov (xemul@parallels.com)" <xemul@parallels.com>
-Subject: Re: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according
- to ns
-Message-ID: <20140930160755.GB6838@mail.hallyn.com>
-References: <1411552827-31056-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1411552827-31056-3-git-send-email-chenhanxiao@cn.fujitsu.com>
- <5871495633F38949900D2BF2DC04883E5C7377@G08CNEXMBPEKD02.g08.fujitsu.local>
- <20140929140010.GA20069@mail.hallyn.com>
- <5871495633F38949900D2BF2DC04883E5CF0D5@G08CNEXMBPEKD02.g08.fujitsu.local>
- <20140930160549.GA6838@mail.hallyn.com>
+	id S1752989AbaI3QIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:08:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44653 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091AbaI3QIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:08:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,627,1406617200"; 
+   d="scan'208";a="610982291"
+Date: Tue, 30 Sep 2014 12:08:41 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
+Message-ID: <20140930160841.GB5098@wil.cx>
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
+ <15705.1412070301@turing-police.cc.vt.edu>
+ <20140930144854.GA5098@wil.cx>
+ <123795.1412088827@turing-police.cc.vt.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140930160549.GA6838@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <123795.1412088827@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Serge E. Hallyn (serge@hallyn.com):
-> Quoting Chen, Hanxiao (chenhanxiao@cn.fujitsu.com):
-> > Hi,
-> > 
-> > > -----Original Message-----
-> > > From: Serge E. Hallyn [mailto:serge@hallyn.com]
-> > > Sent: Monday, September 29, 2014 10:00 PM
-> > > Subject: Re: [PATCHv3 2/2] /proc/PID/status: show all sets of pid according to
-> > > ns
-> > [snip]
-> > > > >
-> > > > > This patch adds four fields: NStgid, NSpid, NSpgid and NSsid:
-> > > > > a) In init_pid_ns, nothing changed;
-> > > > >
-> > > > > b) In one pidns, will tell the pid inside containers:
-> > > > > NStgid:	21776   5       1
-> > > > > NSpid:  21776   5       1
-> > > > > NSpgid:	21776   5       1
-> > > > > NSsid:  21729   1       0
-> > > > > ** Process id is 21776 in level 0, 5 in level 1, 1 in level 2.
-> > > > >
-> > > > > c) If pidns is nested, it depends on which pidns are you in.
-> > > > > NStgid: 5       1
-> > > > > NSpid:  5       1
-> > > > > NSpgid: 5       1
-> > > > > NSsid:  1       0
-> > > > > ** Views from level 1
-> > > > >
-> > > >
-> > > > This patch is simple, useful and safe.
-> > > > But currently there is not any feedbacks.
-> > > >
-> > > > Any comments or ideas?
-> > > 
-> > > Thanks, Chen.  The code looks fine.  My concern is that you are
-> > > exposing information which cannot be checkpointed and restarted.
-> > > In particular, if I'm inside a nested container, so I'm in pidns
-> > > level 3, then my own NSpid info, when I read it, will show the
-> > > pids at parent namespaces.  If I'm restarted at the third pidns
-> > > level, only the one pid can be restored.
-> > 
-> > If you're in level 3, read your own proc, only level 3's NSpid info
-> > will be shown. No parent namesapces info could be seen.
+On Tue, Sep 30, 2014 at 10:53:47AM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 30 Sep 2014 10:48:54 -0400, Matthew Wilcox said:
 > 
-> D'oh!  Sorry, I see, you're starting at ns->level.  And ns is the ns
-> of the proc mount, not the caller.  that looks good.
+> > No, it doesn't try to do that.  Wouldn't you be better served with an
+> > LD_PRELOAD that forces O_DIRECT on?
 > 
-> So
-> 
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Not when you don't want it on every file, and users are creating and
+> deleting files once in a while.  A chattr-like command is easier and
+> more scalable than rebuilding the LD_PRELOAD every time the list of
+> files gets changed....
 
-Also
+The more I think about this, the more I think this is a bad idea.
+When you have a file open with O_DIRECT, your I/O has to be done in
+512-byte multiples, and it has to be aligned to 512-byte boundaries
+in memory.  If an unsuspecting application has O_DIRECT forced on it,
+it isn't going to know to do that, and so all its I/Os will fail.
+It'll also be horribly inefficient if a program has the file mmaped.
 
-Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
-
-as I've tested this between a few containers.
+What problem are you really trying to solve?  Some big files hogging
+the page cache?
