@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaI3IQl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:16:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52695 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208AbaI3IQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:16:39 -0400
-Date: Tue, 30 Sep 2014 10:16:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: Please backport commit 3812c8c8f39 to stable
-Message-ID: <20140930081637.GA4456@dhcp22.suse.cz>
-References: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
+	id S1755407AbaI3IRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:17:05 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39759 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaI3IRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 04:17:01 -0400
+Message-ID: <542A66F7.2000607@linaro.org>
+Date: Tue, 30 Sep 2014 09:16:55 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 2/4] ARM: DT: apq8064: Add usb host support.
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982100-7964-1-git-send-email-srinivas.kandagatla@linaro.org> <20140930051728.GI28481@sonymobile.com>
+In-Reply-To: <20140930051728.GI28481@sonymobile.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-09-14 20:43:46, Cong Wang wrote:
-> Hi, Johannes and Greg
-> 
-> 
-> Please consider to backport the following commit to stable kernels < 3.12.
-> 
-> commit 3812c8c8f3953921ef18544110dafc3505c1ac62
-> Author: Johannes Weiner <hannes@cmpxchg.org>
-> Date:   Thu Sep 12 15:13:44 2013 -0700
-> 
->     mm: memcg: do not trap chargers with full callstack on OOM
->
-> It should solve some soft lockup I observed on different machines
-> recently. For me myself, I only care about 3.10. :-p
 
-Could you be more specific about the soft lockup you are seeing?
--- 
-Michal Hocko
-SUSE Labs
+
+On 30/09/14 06:17, Bjorn Andersson wrote:
+> On Mon 29 Sep 02:15 PDT 2014, Srinivas Kandagatla wrote:
+>
+>> This patch adds device tree nodes to support two usb hosts on APQ8064
+>> SOC.
+
+>> +				compatible	= "qcom,rpm-pm8921-smps";
+>> +				reg		= <QCOM_RPM_PM8921_SMPS3>;
+>> +
+>> +				regulator-min-microvolt = <1000000>;
+>> +				regulator-max-microvolt = <1400000>;
+>> +				qcom,boot-load 		= <49360>;
+>
+> As it was unclear how to handle load in the driver I dropped boot-load for now.
+> Please leave it out until someone have added it to the driver.
+
+Ok, will drop this in next version.
+
+>
+>> +				regulator-always-on;
+>
+> Why are all these "always-on"?
+I added this for a regulator which was shared between hdmi and sata, I 
+think for other regualtors this was just a copy paste error. I will 
+recheck it once again and send a new version.
+
+thanks,
+srini
+>
+>> +			};
+>> +
+>> +		};
+>> +
+>>
+>>   		/* Temporary fixed regulator */
+>> --
+>> 1.9.1
+>>
