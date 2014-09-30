@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaI3G0L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:26:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:34695 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbaI3G0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:26:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,625,1406617200"; 
-   d="scan'208";a="598620066"
-Message-ID: <1412058366.23429.77.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/4] UBI: Ensure that all fastmap work is done upon WL
- shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 30 Sep 2014 09:26:06 +0300
-In-Reply-To: <1412029248-22454-2-git-send-email-richard@nod.at>
-References: <1412029248-22454-1-git-send-email-richard@nod.at>
-	 <1412029248-22454-2-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	id S1755273AbaI3G0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:26:49 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46067 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaI3G0r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 02:26:47 -0400
+Message-ID: <542A4E79.4020109@gmail.com>
+Date: Tue, 30 Sep 2014 14:32:25 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, Juergen Gross <jgross@suse.com>,
+        Jan Beulich <JBeulich@suse.com>
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen-scsiback: Need go to fail after xenbus_dev_error()
+References: <5425967F.7020002@gmail.com> <5428E0ED.1050107@suse.com>	<54293742020000780003A48A@mail.emea.novell.com>	<54292707.90008@gmail.com> <542927C3.8010204@suse.com> <54292D6E.4060903@gmail.com> <54296559.5020301@citrix.com>
+In-Reply-To: <54296559.5020301@citrix.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
-> ...otherwise the deferred work might run after datastructures
-> got freed and corrupt memory.
+On 9/29/14 21:57, David Vrabel wrote:
+> On 29/09/14 10:59, Chen Gang wrote:
+>>
+>>
+>> If no any additional reply within 2 days, I shall send patch v2 for it:
+>>
+>>   "use dev_warn() instead of xenbus_dev_error() and remove 'fail' code block"
+> 
+> I think this driver is fine as-is and does not need any changes.
+> 
 
-How can this happend? The background thread is stopped by this time
-already, so what are the other possibilities? And why is this
-fastmap-only?
+OK, at least, at present, it is not a bug (will cause any issue).
 
+But for me, xenbus_dev_error() seems for printing generic errors,
+dev_warn() is more suitable than it.
+
+And 'fail' code block is useless now, need be removed, too (which will
+let compiler report warning).
+
+
+Thanks.
 -- 
-Best Regards,
-Artem Bityutskiy
+Chen Gang
 
+Open, share, and attitude like air, water, and life which God blessed
