@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaI3V5y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:57:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60938 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779AbaI3Vhc (ORCPT
+	id S1755162AbaI3V5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:57:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33719 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422AbaI3V5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:32 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 062/103] staging: r8188eu: Add new USB ID
-Date: Tue, 30 Sep 2014 14:31:07 -0700
-Message-Id: <1412112708-27356-63-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 30 Sep 2014 17:57:51 -0400
+Date: Tue, 30 Sep 2014 23:57:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+cc: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        oleg@redhat.com, kamaleshb@in.ibm.com, hechjie@cn.ibm.com,
+        akpm@linux-foundation.org, dvlasenk@redhat.com, prarit@redhat.com,
+        lwoodman@redhat.com, hannsj_uhl@de.ibm.com,
+        torvalds@linux-foundation.org
+Subject: Re: [RESEND PATCH 2/4] x86: add phys addr validity check for /dev/mem
+ mmap
+In-Reply-To: <20140930163353.GC3073@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1409302357290.4455@nanos>
+References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com> <1411990382-11902-3-git-send-email-fhrbata@redhat.com> <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de> <20140930124121.GB3073@localhost.localdomain> <542ABDE7.7090808@intel.com>
+ <20140930163353.GC3073@localhost.localdomain>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 30 Sep 2014, Frantisek Hrbata wrote:
+> On Tue, Sep 30, 2014 at 07:27:51AM -0700, Dave Hansen wrote:
+> > On 09/30/2014 05:41 AM, Frantisek Hrbata wrote:
+> > > Does it make sense to replace "count" with "size" so it's consistent with the
+> > > rest or do you prefer "nr_bytes" or as Dave proposed "len_bytes"?
+> > 
+> > I don't care what it is as long as it has a unit in it.
+> 
+> Hi Dave/Thomas,
+> 
+> I sent v2 of this patch set, which uses the "len_bytes". Again, I'm sorry I
+> forgot to fix this the first time.
 
-------------------
-
-From: Larry Finger <Larry.Finger@lwfinger.net>
-
-commit a2fa6721c7237b5a666f16f732628c0c09c0b954 upstream.
-
-The Elecom WDC-150SU2M uses this chip.
-
-Reported-by: Hiroki Kondo <kompiro@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 97806b9..596ac8b 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -53,6 +53,7 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
- 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0179)}, /* 8188ETV */
- 	/*=== Customer ID ===*/
- 	/****** 8188EUS ********/
-+	{USB_DEVICE(0x056e, 0x4008)}, /* Elecom WDC-150SU2M */
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
--- 
-1.9.1
-
+No problem. Shit happens.
