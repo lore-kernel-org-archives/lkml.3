@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719AbaI3Vus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:50:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32810 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754059AbaI3ViU (ORCPT
+	id S1754881AbaI3Vuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:50:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33652 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059AbaI3Vut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:20 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 036/103] drm/radeon: add additional SI pci ids
-Date: Tue, 30 Sep 2014 14:30:41 -0700
-Message-Id: <1412112708-27356-37-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 30 Sep 2014 17:50:49 -0400
+Date: Tue, 30 Sep 2014 23:50:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+cc: Jisheng Zhang <jszhang@marvell.com>, jason@lakedaemon.net,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] irqchip: dw-apb-ictl: always use use
+ {readl|writel}_relaxed
+In-Reply-To: <542AA157.8080908@gmail.com>
+Message-ID: <alpine.DEB.2.11.1409302350080.4455@nanos>
+References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-2-git-send-email-jszhang@marvell.com> <542AA157.8080908@gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
 
-------------------
+> On 09/23/2014 08:34 AM, Jisheng Zhang wrote:
+> > relaxed version and non-relaxed version are mixed, this patch always
+> > use the relaxed version to unify the memory access usage.
+> > 
+> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> 
+> While I don't agree with the above reason (unification) for this
 
-From: Alex Deucher <alexander.deucher@amd.com>
+Then we want a proper changelog for it, really.
 
-commit 37dbeab788a8f23fd946c0be083e5484d6f929a1 upstream.
+Thanks,
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- include/drm/drm_pciids.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index a8df29d..bcec4c4 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -165,8 +165,11 @@
- 	{0x1002, 0x6601, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6602, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6603, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6604, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6605, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6606, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6607, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6608, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6610, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6611, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6613, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_OLAND|RADEON_NEW_MEMMAP}, \
-@@ -300,6 +303,7 @@
- 	{0x1002, 0x6829, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x682C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x682F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6830, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_VERDE|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
--- 
-1.9.1
-
+	tglx
