@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaI3Vqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:46:32 -0400
-Received: from mga14.intel.com ([192.55.52.115]:26586 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753923AbaI3Vqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:46:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,629,1406617200"; 
-   d="scan'208";a="599007148"
-Subject: [PATCH] x86, sched: fix up typo in topology detection
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
-        akpm@linux-foundation.org, peterz@infradead.org, mingo@kernel.org
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 30 Sep 2014 14:45:46 -0700
-Message-Id: <20140930214546.FD481CFF@viggo.jf.intel.com>
+	id S1754787AbaI3Vqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:46:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32872 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236AbaI3Vis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:38:48 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 032/103] HID: logitech: perform bounds checking on device_id early enough
+Date: Tue, 30 Sep 2014 14:30:37 -0700
+Message-Id: <1412112708-27356-33-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+------------------
 
-Commit cebf15eb09 (in linux-next now) added some code to try to
-detect the situation where we have a NUMA node inside of the
-"DIE" sched domain.  It detected this by looking for cpus which
-match_die() but do not match NUMA nodes via topology_same_node().
+From: Jiri Kosina <jkosina@suse.cz>
 
-I wrote it up as:
+commit ad3e14d7c5268c2e24477c6ef54bbdf88add5d36 upstream.
 
-	if (match_die(c, o) == !topology_same_node(c, o))
+device_index is a char type and the size of paired_dj_deivces is 7
+elements, therefore proper bounds checking has to be applied to
+device_index before it is used.
 
-which actually seemed to work some of the time, albiet
-accidentally.
+We are currently performing the bounds checking in
+logi_dj_recv_add_djhid_device(), which is too late, as malicious device
+could send REPORT_TYPE_NOTIF_DEVICE_UNPAIRED early enough and trigger the
+problem in one of the report forwarding functions called from
+logi_dj_raw_event().
 
-It should have been doing an &&, not an ==.
+Fix this by performing the check at the earliest possible ocasion in
+logi_dj_raw_event().
 
-This code essentially chopped off the "DIE" domain on one of
-Andrew Morton's systems.  He reported that this patch fixed his
-issue.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
+Reported-by: Ben Hawkes <hawkes@google.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
+ drivers/hid/hid-logitech-dj.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
- b/arch/x86/kernel/smpboot.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN arch/x86/kernel/smpboot.c~fix-up-typo arch/x86/kernel/smpboot.c
---- a/arch/x86/kernel/smpboot.c~fix-up-typo	2014-09-30 14:24:52.934235516 -0700
-+++ b/arch/x86/kernel/smpboot.c	2014-09-30 14:30:42.074917876 -0700
-@@ -445,7 +445,7 @@ void set_cpu_sibling_map(int cpu)
- 			} else if (i != cpu && !c->booted_cores)
- 				c->booted_cores = cpu_data(i).booted_cores;
- 		}
--		if (match_die(c, o) == !topology_same_node(c, o))
-+		if (match_die(c, o) && !topology_same_node(c, o))
- 			primarily_use_numa_for_topology();
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index a7947d8..e19efd6 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -237,13 +237,6 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
+ 		return;
  	}
- }
-_
+ 
+-	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
+-	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
+-		dev_err(&djrcv_hdev->dev, "%s: invalid device index:%d\n",
+-			__func__, dj_report->device_index);
+-		return;
+-	}
+-
+ 	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
+ 		/* The device is already known. No need to reallocate it. */
+ 		dbg_hid("%s: device is already known\n", __func__);
+@@ -713,6 +706,12 @@ static int logi_dj_raw_event(struct hid_device *hdev,
+ 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
+ 	 * anything else with it.
+ 	 */
++	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
++	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
++		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
++				__func__, dj_report->device_index);
++		return false;
++	}
+ 
+ 	spin_lock_irqsave(&djrcv_dev->lock, flags);
+ 	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
+-- 
+1.9.1
+
