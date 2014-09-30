@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaI3Vny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:43:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32917 "EHLO
+	id S1754740AbaI3VoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:44:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32914 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754349AbaI3VjD (ORCPT
+	with ESMTP id S1754287AbaI3VjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:03 -0400
+	Tue, 30 Sep 2014 17:39:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Filipe Brandenburger <filbranden@google.com>,
-        Allan McRae <allan@archlinux.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 077/103] xattr: fix check for simultaneous glibc header inclusion
-Date: Tue, 30 Sep 2014 14:31:22 -0700
-Message-Id: <1412112708-27356-78-git-send-email-kamal@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 051/103] USB: serial: pl2303: add device id for ztek device
+Date: Tue, 30 Sep 2014 14:30:56 -0700
+Message-Id: <1412112708-27356-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -30,52 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Brandenburger <filbranden@google.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-commit bfcfd44cce2774f19daeb59fb4e43fc9aa80e7b8 upstream.
+commit 91fcb1ce420e0a5f8d92d556d7008a78bc6ce1eb upstream.
 
-The guard was introduced in commit ea1a8217b06b ("xattr: guard against
-simultaneous glibc header inclusion") but it is using #ifdef to check
-for a define that is either set to 1 or 0.  Fix it to use #if instead.
+This adds a new device id to the pl2303 driver for the ZTEK device.
 
-* Without this patch:
-
-  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
-  include/uapi/linux/xattr.h:19:0: warning: "XATTR_CREATE" redefined [enabled by default]
-   #define XATTR_CREATE 0x1 /* set value, fail if attr already exists */
-   ^
-  /usr/include/x86_64-linux-gnu/sys/xattr.h:32:0: note: this is the location of the previous definition
-   #define XATTR_CREATE XATTR_CREATE
-   ^
-
-* With this patch:
-
-  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
-  (no warnings)
-
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Cc: Allan McRae <allan@archlinux.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mike Chu <Mike-Chu@prolific.com.tw>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/uapi/linux/xattr.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/pl2303.c | 1 +
+ drivers/usb/serial/pl2303.h | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
-index a63c146..f2765c1 100644
---- a/include/uapi/linux/xattr.h
-+++ b/include/uapi/linux/xattr.h
-@@ -13,7 +13,7 @@
- #ifndef _UAPI_LINUX_XATTR_H
- #define _UAPI_LINUX_XATTR_H
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index 6e09306..81ab710 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -48,6 +48,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
++	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_ZTEK) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
+ 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
+diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+index 42bc082..71fd9da 100644
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -22,6 +22,7 @@
+ #define PL2303_PRODUCT_ID_GPRS		0x0609
+ #define PL2303_PRODUCT_ID_HCR331	0x331a
+ #define PL2303_PRODUCT_ID_MOTOROLA	0x0307
++#define PL2303_PRODUCT_ID_ZTEK		0xe1f1
  
--#ifdef __UAPI_DEF_XATTR
-+#if __UAPI_DEF_XATTR
- #define __USE_KERNEL_XATTR_DEFS
- 
- #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
+ #define ATEN_VENDOR_ID		0x0557
+ #define ATEN_VENDOR_ID2		0x0547
 -- 
 1.9.1
 
