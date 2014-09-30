@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaI3KEM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:04:12 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47880 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751077AbaI3KEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:04:08 -0400
-Date: Tue, 30 Sep 2014 11:03:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH 0/5] ARM: move #include <asm/cp15.h> into cacheflush.h
-Message-ID: <20140930100355.GM5182@n2100.arm.linux.org.uk>
-References: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com> <alpine.LFD.2.11.1409300016060.5311@knanqh.ubzr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1409300016060.5311@knanqh.ubzr>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751677AbaI3KFC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:05:02 -0400
+Received: from mga03.intel.com ([134.134.136.65]:64213 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751442AbaI3KE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:04:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,625,1406617200"; 
+   d="scan'208";a="610784152"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Carl Peng <carlpeng008@gmail.com>, Huang Rui <ray.huang@amd.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 2/3] i2c: designware: Rework probe() to get clock a bit later
+Date: Tue, 30 Sep 2014 13:04:54 +0300
+Message-Id: <1412071495-15323-3-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412071495-15323-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1412071495-15323-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 12:30:06AM -0400, Nicolas Pitre wrote:
-> On Mon, 29 Sep 2014, Brian Norris wrote:
-> 
-> > There are several places where an explicit include of <asm/cp15.h> is needed
-> > just because cacheflush.h uses one of its macros in v7_exit_coherency_flush().
-> > Let's put the include in the proper header.
-> > 
-> > These obviously have some dependencies, so I'd focus on:
-> >   (1) Is patch 1 acceptable? If so, then:
-> 
-> Well, I'm wondering if it is really a gain to force a dependency for 
-> cp15.h on every user of cacheflush.h just because of the seldomly used 
-> v7_exit_coherency_flush(). But I don't mind either ways.
+In order to be able to create missing clock for AMD (and in future possibly
+others) we move getting clock for the device a bit later. Also make ACPI/DT
+configuration in the same place depending on from where the device was
+enumerated from.
 
-I don't like unnecessary dependencies.  We have too many of them already,
-and it basically means that touching any header file triggers a full
-kernel rebuild.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/i2c/busses/i2c-designware-platdrv.c | 38 ++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 20 deletions(-)
 
-If we go down the path of adding unnecessary dependencies, we might as
-well do away with make and just script the damn thing, and that'll
-probably be faster since there'll be no dependencies to track.  Just
-throw everything through ccache and let it deal with anything which
-has changed.  Just don't allow your disk to fill up during the build,
-ccache really doesn't like that.
-
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index 353adc4dc583..e59c63ae4d41 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -81,9 +81,6 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
+ {
+ 	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
+ 
+-	if (!ACPI_HANDLE(&pdev->dev))
+-		return -ENODEV;
+-
+ 	dev->adapter.nr = -1;
+ 	dev->tx_fifo_depth = 32;
+ 	dev->rx_fifo_depth = 32;
+@@ -123,7 +120,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	struct resource *mem;
+ 	struct dw_i2c_platform_data *pdata;
+ 	int irq, r;
+-	u32 clk_freq;
++	u32 clk_freq, ht = 0;
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+@@ -146,24 +143,14 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	dev->irq = irq;
+ 	platform_set_drvdata(pdev, dev);
+ 
+-	dev->clk = devm_clk_get(&pdev->dev, NULL);
+-	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
+-
+-	if (IS_ERR(dev->clk))
+-		return PTR_ERR(dev->clk);
+-	clk_prepare_enable(dev->clk);
+-
+ 	/* fast mode by default because of legacy reasons */
+ 	clk_freq = 400000;
+ 
+-	if (pdev->dev.of_node) {
+-		u32 ht = 0;
+-		u32 ic_clk = dev->get_clk_rate_khz(dev);
+-
++	if (ACPI_COMPANION(&pdev->dev)) {
++		dw_i2c_acpi_configure(pdev);
++	} else if (pdev->dev.of_node) {
+ 		of_property_read_u32(pdev->dev.of_node,
+ 					"i2c-sda-hold-time-ns", &ht);
+-		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
+-					     1000000);
+ 
+ 		of_property_read_u32(pdev->dev.of_node,
+ 				     "i2c-sda-falling-time-ns",
+@@ -202,9 +189,20 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+ 			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+ 
+-	/* Try first if we can configure the device from ACPI */
+-	r = dw_i2c_acpi_configure(pdev);
+-	if (r) {
++	dev->clk = devm_clk_get(&pdev->dev, NULL);
++	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
++	if (IS_ERR(dev->clk))
++		return PTR_ERR(dev->clk);
++	clk_prepare_enable(dev->clk);
++
++	if (!dev->sda_hold_time && ht) {
++		u32 ic_clk = dev->get_clk_rate_khz(dev);
++
++		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
++					     1000000);
++	}
++
++	if (!dev->tx_fifo_depth) {
+ 		u32 param1 = i2c_dw_read_comp_param(dev);
+ 
+ 		dev->tx_fifo_depth = ((param1 >> 16) & 0xff) + 1;
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.0
+
