@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaI3Tzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:55:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59563 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaI3Tzq (ORCPT
+	id S1752608AbaI3T4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:56:46 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8648 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031AbaI3T4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:55:46 -0400
-Date: Tue, 30 Sep 2014 14:55:44 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: Re: [Patch v2] spi: qup: Fix incorrect block transfers
-Message-ID: <20140930195544.GA26928@qualcomm.com>
-References: <1411592698-30952-1-git-send-email-agross@codeaurora.org>
- <1412080080.26751.15.camel@iivanov-dev>
+	Tue, 30 Sep 2014 15:56:44 -0400
+Date: Tue, 30 Sep 2014 12:56:53 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
+Message-ID: <20140930195652.GT28481@sonymobile.com>
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <5429DA95.80505@codeaurora.org>
+ <20140930050203.GG28481@sonymobile.com>
+ <542AF5FE.1000006@codeaurora.org>
+ <20140930190023.GS28481@sonymobile.com>
+ <542B00C1.3010702@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1412080080.26751.15.camel@iivanov-dev>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <542B00C1.3010702@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 03:28:00PM +0300, Ivan T. Ivanov wrote:
-> 
-> Hi Andy, just few comments.
-> 
-> On Wed, 2014-09-24 at 16:04 -0500, Andy Gross wrote:
-> 
-> <snip>
-> 
-> > +static void spi_qup_fifo_read(struct spi_qup *controller,
-> > +			    struct spi_transfer *xfer)
-> > +{
-> > +	u32 data;
-> > +
-> > +	/* clear service request */
-> > +	writel_relaxed(QUP_OP_IN_SERVICE_FLAG,
-> > +		controller->base + QUP_OPERATIONAL);
-> > +
-> 
-> Please, could you indent function parameters to open brace, when
-> they can not fit into one line.
+On Tue 30 Sep 12:13 PDT 2014, Stephen Boyd wrote:
 
-Missed this.  Fixed.
-
-> > +	while (controller->rx_bytes < xfer->len) {
-> > +		if (!(readl_relaxed(controller->base + QUP_OPERATIONAL) &
-> > +			QUP_OP_IN_FIFO_NOT_EMPTY))
+> On 09/30/14 12:00, Bjorn Andersson wrote:
+> >
+> > Hmm, seems I got that wrong, sorry about that.
+> >
+> > But do you mean "all wrong" as in that I use the wrong bit or to some greater
+> > extent? Currently all following requests should timeout, but maybe we should
+> > have a faster fail-path when we've hit this point?
 > 
-> Should be aligned just after first open brace.
-
-Agreed.
- 
-> > +			break;
-> > +
-> > +		data = readl_relaxed(controller->base + QUP_INPUT_FIFO);
-> > +
-> > +		spi_qup_fill_read_buffer(controller, xfer, data);
-> >  	}
-> >  }
-> >  
+> Yes. We just ack the interrupt and go on happy to keep allowing clients
+> to request things. I'd rather see us blow up or start failing requests,
+> or maybe both.
 > 
-> > +static void spi_qup_block_read(struct spi_qup *controller,
-> > +	struct spi_transfer *xfer)
-> > +{
-> > +	u32 data;
-> > +	u32 words_per_blk = controller->in_blk_sz >> 2;
+
+Okay, I naively figured that the RPM would be dead after this happened and from
+this point we would start getting timeouts. Let's ack the right bit and fail
+early after the RPM have rejected things.
+
+> >
+> > From a practical pov I guess that once the rpm starts returning errors on
+> > updates to regulators, root clocks and bus scaling then most of the system is
+> > becoming useless.
 > 
-> I have been confused from the variable name. These are number of 
-> 32 bits reads, not SPI words, right? 
-
-Correct.  Naming is always a little funky when words can mean more than one
-thing.  Let me change this to reads(writes)_per_blk.
-
-> > +	u32 num_words = (xfer->len - controller->rx_bytes) / controller->w_size;
-> > +	int i;
-> > +
-> > +	do {
-
-<snip>
-
-> > +		/* ACK by clearing service flag */
-> > -		spi_qup_fifo_write(controller, xfer);
-> > +	if (opflags & QUP_OP_OUT_SERVICE_FLAG) {
-> > +		if (opflags & QUP_OP_OUT_BLOCK_WRITE_REQ)
-> > +			spi_qup_block_write(controller, xfer);
-> > +		else
-> > +			spi_qup_fifo_write(controller, xfer,1);
-> > +	}
+> Right. Rebooting will be required fairly soon.
 > 
-> ERROR: space required after that ',' (ctx:VxV)
-> #414: FILE: drivers/spi/spi-qup.c:414:
-> +			spi_qup_fifo_write(controller, xfer,1);
->  			                                   ^
-> 
-> You don't really need this last parameter, right?
 
-Fixed.  Sorry, that shouldn't have remained.
+Yes, but we want something else to trigger that right?
 
-> 
-> Regards,
-> Ivan
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
+Bjorn
