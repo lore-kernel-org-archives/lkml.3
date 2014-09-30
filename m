@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaI3Kfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:35:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:59494 "EHLO ozlabs.org"
+	id S1752672AbaI3KhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:37:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:58894 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898AbaI3Kfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:35:44 -0400
+	id S1752001AbaI3Kfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:35:47 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
@@ -13,9 +13,9 @@ Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v2 09/17] powerpc/mm: Add new hash_page_mm()
-Date: Tue, 30 Sep 2014 20:34:58 +1000
-Message-Id: <1412073306-13812-10-git-send-email-mikey@neuling.org>
+Subject: [PATCH v2 13/17] cxl: Add base builtin support
+Date: Tue, 30 Sep 2014 20:35:02 +1000
+Message-Id: <1412073306-13812-14-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412073306-13812-1-git-send-email-mikey@neuling.org>
 References: <1412073306-13812-1-git-send-email-mikey@neuling.org>
@@ -25,109 +25,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This adds a new function hash_page_mm() based on the existing hash_page().
-This version allows any struct mm to be passed in, rather than assuming
-current.  This is useful for servicing co-processor faults which are not in the
-context of the current running process.
+This adds the base cxl support that needs to be build into the kernel to use
+cxl as a module.  This is needed so that the cxl call backs from the core
+powerpc mm code always exist irrespective of if the cxl module is loaded or
+not.  This is similar to how cell works with CONFIG_SPU_BASE.
 
-We need to be careful here as the current hash_page() assumes current in a few
-places.
+This adds a cxl_slbia() call (similar to spu_flush_all_slbs()) which checks for
+the cxl module being loaded.  If the modules is not loaded we return, otherwise
+we call into the cxl SLB invalidation code.
+
+This also adds the cxl_ctx_in_use() function for use in the mm code to see if
+any cxl contexts are currently in use.  This is used by the tlbie() to
+determine if it can do local TLB invalidations or not.  This also adds get/put
+calls for the cxl driver module to refcount the active cxl contexts.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/mmu-hash64.h |  1 +
- arch/powerpc/mm/hash_utils_64.c       | 22 ++++++++++++++--------
- 2 files changed, 15 insertions(+), 8 deletions(-)
+ drivers/misc/Kconfig      |   1 +
+ drivers/misc/Makefile     |   1 +
+ drivers/misc/cxl/Kconfig  |   8 ++++
+ drivers/misc/cxl/Makefile |   1 +
+ drivers/misc/cxl/base.c   | 102 ++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 113 insertions(+)
+ create mode 100644 drivers/misc/cxl/Kconfig
+ create mode 100644 drivers/misc/cxl/Makefile
+ create mode 100644 drivers/misc/cxl/base.c
 
-diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-index 6d0b7a2..f84e5a5 100644
---- a/arch/powerpc/include/asm/mmu-hash64.h
-+++ b/arch/powerpc/include/asm/mmu-hash64.h
-@@ -322,6 +322,7 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
- 			   unsigned int local, int ssize);
- struct mm_struct;
- unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
-+extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
- extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
- int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
- 		     pte_t *ptep, unsigned long trap, int local, int ssize,
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index bbdb054..0a5c8c0 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
- 		return;
- 	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
- 	copro_flush_all_slbs(mm);
--	if (get_paca_psize(addr) != MMU_PAGE_4K) {
-+	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
- 		get_paca()->context = mm->context;
- 		slb_flush_and_rebolt();
- 	}
-@@ -989,26 +989,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
-  * -1 - critical hash insertion error
-  * -2 - access not permitted by subpage protection mechanism
-  */
--int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-+int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
- {
- 	enum ctx_state prev_state = exception_enter();
- 	pgd_t *pgdir;
- 	unsigned long vsid;
--	struct mm_struct *mm;
- 	pte_t *ptep;
- 	unsigned hugeshift;
- 	const struct cpumask *tmp;
- 	int rc, user_region = 0, local = 0;
- 	int psize, ssize;
- 
--	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
--		ea, access, trap);
-+	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
-+		__func__, ea, access, trap);
- 
- 	/* Get region & vsid */
-  	switch (REGION_ID(ea)) {
- 	case USER_REGION_ID:
- 		user_region = 1;
--		mm = current->mm;
- 		if (! mm) {
- 			DBG_LOW(" user region with no mm !\n");
- 			rc = 1;
-@@ -1104,7 +1102,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- 			WARN_ON(1);
- 		}
- #endif
--		check_paca_psize(ea, mm, psize, user_region);
-+		if (current->mm == mm)
-+			check_paca_psize(ea, mm, psize, user_region);
- 
- 		goto bail;
- 	}
-@@ -1145,7 +1144,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- 		}
- 	}
- 
--	check_paca_psize(ea, mm, psize, user_region);
-+	if (current->mm == mm)
-+		check_paca_psize(ea, mm, psize, user_region);
- #endif /* CONFIG_PPC_64K_PAGES */
- 
- #ifdef CONFIG_PPC_HAS_HASH_64K
-@@ -1180,6 +1180,12 @@ bail:
- 	exception_exit(prev_state);
- 	return rc;
- }
-+EXPORT_SYMBOL_GPL(hash_page_mm);
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index b841180..bbeb451 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -527,4 +527,5 @@ source "drivers/misc/vmw_vmci/Kconfig"
+ source "drivers/misc/mic/Kconfig"
+ source "drivers/misc/genwqe/Kconfig"
+ source "drivers/misc/echo/Kconfig"
++source "drivers/misc/cxl/Kconfig"
+ endmenu
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 5497d02..7d5c4cd 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -55,3 +55,4 @@ obj-y				+= mic/
+ obj-$(CONFIG_GENWQE)		+= genwqe/
+ obj-$(CONFIG_ECHO)		+= echo/
+ obj-$(CONFIG_VEXPRESS_SYSCFG)	+= vexpress-syscfg.o
++obj-$(CONFIG_CXL_BASE)		+= cxl/
+diff --git a/drivers/misc/cxl/Kconfig b/drivers/misc/cxl/Kconfig
+new file mode 100644
+index 0000000..5cdd319
+--- /dev/null
++++ b/drivers/misc/cxl/Kconfig
+@@ -0,0 +1,8 @@
++#
++# IBM Coherent Accelerator (CXL) compatible devices
++#
 +
-+int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
++config CXL_BASE
++	bool
++	default n
++	select PPC_COPRO_BASE
+diff --git a/drivers/misc/cxl/Makefile b/drivers/misc/cxl/Makefile
+new file mode 100644
+index 0000000..e30ad0a
+--- /dev/null
++++ b/drivers/misc/cxl/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_CXL_BASE)		+= base.o
+diff --git a/drivers/misc/cxl/base.c b/drivers/misc/cxl/base.c
+new file mode 100644
+index 0000000..f4cbcfb
+--- /dev/null
++++ b/drivers/misc/cxl/base.c
+@@ -0,0 +1,102 @@
++/*
++ * Copyright 2014 IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/rcupdate.h>
++#include <asm/errno.h>
++#include <misc/cxl.h>
++#include "cxl.h"
++
++/* protected by rcu */
++static struct cxl_calls *cxl_calls;
++
++static atomic_t use_count = ATOMIC_INIT(0);
++
++#ifdef CONFIG_CXL_MODULE
++
++static inline struct cxl_calls *cxl_calls_get(void)
 +{
-+	return hash_page_mm(current->mm, ea, access, trap);
++	struct cxl_calls *calls = NULL;
++
++	rcu_read_lock();
++	calls = rcu_dereference(cxl_calls);
++	if (calls && !try_module_get(calls->owner))
++		calls = NULL;
++	rcu_read_unlock();
++
++	return calls;
 +}
- EXPORT_SYMBOL_GPL(hash_page);
- 
- void hash_preload(struct mm_struct *mm, unsigned long ea,
++
++static inline void cxl_calls_put(struct cxl_calls *calls)
++{
++	BUG_ON(calls != cxl_calls);
++
++	/* we don't need to rcu this, as we hold a reference to the module */
++	module_put(cxl_calls->owner);
++}
++
++#else /* !defined CONFIG_CXL_MODULE */
++
++static inline struct cxl_calls *cxl_calls_get(void)
++{
++	return cxl_calls;
++}
++
++static inline void cxl_calls_put(struct cxl_calls *calls) { }
++
++#endif /* CONFIG_CXL_MODULE */
++
++void cxl_slbia(struct mm_struct *mm)
++{
++	struct cxl_calls *calls;
++
++	calls = cxl_calls_get();
++	if (!calls)
++		return;
++
++	calls->cxl_slbia(mm);
++	cxl_calls_put(calls);
++}
++EXPORT_SYMBOL(cxl_slbia);
++
++void cxl_ctx_get(void)
++{
++	atomic_inc(&use_count);
++}
++EXPORT_SYMBOL(cxl_ctx_get);
++
++void cxl_ctx_put(void)
++{
++	atomic_dec(&use_count);
++}
++EXPORT_SYMBOL(cxl_ctx_put);
++
++bool cxl_ctx_in_use(void)
++{
++	return (atomic_read(&use_count) != 0);
++}
++EXPORT_SYMBOL(cxl_ctx_in_use);
++
++int register_cxl_calls(struct cxl_calls *calls)
++{
++	if (cxl_calls)
++		return -EBUSY;
++
++	rcu_assign_pointer(cxl_calls, calls);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(register_cxl_calls);
++
++void unregister_cxl_calls(struct cxl_calls *calls)
++{
++	BUG_ON(cxl_calls->owner != calls->owner);
++	RCU_INIT_POINTER(cxl_calls, NULL);
++	synchronize_rcu();
++}
++EXPORT_SYMBOL_GPL(unregister_cxl_calls);
 -- 
 1.9.1
 
