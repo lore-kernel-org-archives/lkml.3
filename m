@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaI3S6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:58:55 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:43485 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaI3S6y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:58:54 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1752959AbaI3S7a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:59:30 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752713AbaI3S72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 14:59:28 -0400
+Message-ID: <542AFD8A.8060806@nod.at>
+Date: Tue, 30 Sep 2014 20:59:22 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Mark Brown <broonie@kernel.org>, "Jyri Sarha" <jsarha@ti.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1412097382-8351-1-git-send-email-broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, kernel-build-reports@lists.linaro.org,
-        linaro-kernel@lists.linaro.org, "Mark Brown" <broonie@kernel.org>
-References: <1412097382-8351-1-git-send-email-broonie@kernel.org>
-Message-ID: <20140930185828.19023.40412@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: gpio-gate: Ensure gpiod_ APIs are prototyped
-Date: Tue, 30 Sep 2014 11:58:28 -0700
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Daniel Walter <dwalter@google.com>
+Subject: Re: linux-next: Tree for Sep 30 (uml)
+References: <20140930201244.0a4596ec@canb.auug.org.au> <542AFB5E.7040308@infradead.org>
+In-Reply-To: <542AFB5E.7040308@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Mark Brown (2014-09-30 10:16:22)
-> The gpio-gate clock uses the gpiod_ APIs but does not directly include the
-> header for them causing build failures in some configurations including ARM
-> allnoconfig. Include the header directly.
+Am 30.09.2014 20:50, schrieb Randy Dunlap:
+> On 09/30/14 03:12, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20140926:
+>>
 > 
-> Signed-off-by: Mark Brown <broonie@kernel.org>
-
-Thanks Mark. Applied.
-
-Regards,
-Mike
-
-> ---
->  drivers/clk/clk-gpio-gate.c | 1 +
->  1 file changed, 1 insertion(+)
+> uml defconfig on i386 and x86_64:
 > 
-> diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
-> index 9dde88533684..08e43224fd52 100644
-> --- a/drivers/clk/clk-gpio-gate.c
-> +++ b/drivers/clk/clk-gpio-gate.c
-> @@ -13,6 +13,7 @@
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/gpio.h>
-> +#include <linux/gpio/consumer.h>
->  #include <linux/of_gpio.h>
->  #include <linux/err.h>
->  #include <linux/device.h>
-> -- 
-> 2.1.1
-> 
+> In file included from ../arch/x86/um/asm/processor.h:31:0,
+>                  from ../arch/um/include/asm/uaccess.h:16,
+>                  from ../arch/um/include/asm/thread_info.h:13,
+>                  from ../include/linux/thread_info.h:54,
+>                  from ../include/asm-generic/current.h:4,
+>                  from arch/um/include/generated/asm/current.h:1,
+>                  from ../include/linux/mutex.h:13,
+>                  from ../include/linux/kernfs.h:13,
+>                  from ../include/linux/sysfs.h:15,
+>                  from ../include/linux/kobject.h:21,
+>                  from ../include/linux/device.h:17,
+>                  from ../include/linux/platform_device.h:14,
+>                  from ../drivers/base/platform.c:14:
+> ../arch/um/include/asm/processor-generic.h:107:19: error: expected identifier or '(' before '&' token
+>  #define cpu_data (&boot_cpu_data)
+>                    ^
+> ../include/linux/pm_domain.h:74:23: note: in expansion of macro 'cpu_data'
+>   struct gpd_cpu_data *cpu_data;
+
+Thank you Randy, will look into this tomorrow.
+
+Thanks,
+//richard
