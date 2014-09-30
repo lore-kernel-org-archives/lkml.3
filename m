@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaI3E1M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 00:27:12 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:41096 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaI3E1K (ORCPT
+	id S1751411AbaI3EaM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 00:30:12 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:64109 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaI3EaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 00:27:10 -0400
+	Tue, 30 Sep 2014 00:30:10 -0400
+Date: Tue, 30 Sep 2014 00:30:06 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+cc: linux-arm-kernel@lists.infradead.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH 0/5] ARM: move #include <asm/cp15.h> into cacheflush.h
+In-Reply-To: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com>
+Message-ID: <alpine.LFD.2.11.1409300016060.5311@knanqh.ubzr>
+References: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140930033327.GA14558@redhat.com>
-References: <20140930033327.GA14558@redhat.com>
-Date: Mon, 29 Sep 2014 21:27:09 -0700
-X-Google-Sender-Auth: 9vx2L6yeX1DXSxjZn_7AMtYmUvA
-Message-ID: <CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>
-Subject: Re: pipe/page fault oddness.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 8:33 PM, Dave Jones <davej@redhat.com> wrote:
->
-> Looking at the dump, there's only one running trinity child,
-> with all the others blocking on it.
->
-> trinity-c49     R  running task    12856 19464   7633 0x00000004
-> ffff8800a09bf960 0000000000000002 ffff8800a09bf9f8 ffff880219650000
-> 00000000001d4080 0000000000000000 ffff8800a09bffd8 00000000001d4080
-> ffff88023f755bc0 ffff880219650000 ffff8800a09bffd8 ffff88010b017e00
-> Call Trace:
-> [<ffffffff911c3c67>] handle_mm_fault+0x3a7/0xcd0
-> [<ffffffff91042c84>] __do_page_fault+0x1a4/0x600
-> [<ffffffff910430fe>] do_page_fault+0x1e/0x70
-> [<ffffffff918264b2>] page_fault+0x22/0x30
-> [<ffffffff911bd7e3>] ? copy_page_to_iter+0x3b3/0x500
-> [<ffffffff9120eddf>] pipe_read+0xdf/0x330
->
-> Running the function tracer on that pid shows it spinning forever..
-> http://codemonkey.org.uk/junk/pipe-trace.txt
->
-> Kernel bug (missing EFAULT check somewhere perhaps?), or is this a
-> case where the fuzzer asked the kernel to do something stupid, and it obliged ?
+On Mon, 29 Sep 2014, Brian Norris wrote:
 
-Hmm. It looks like copy_page_to_iter_iovec() is broken and keeps not
-making any progress while just faulting.
+> There are several places where an explicit include of <asm/cp15.h> is needed
+> just because cacheflush.h uses one of its macros in v7_exit_coherency_flush().
+> Let's put the include in the proper header.
+> 
+> These obviously have some dependencies, so I'd focus on:
+>   (1) Is patch 1 acceptable? If so, then:
 
-I don't see how that could happen, though. All the loops there are
-conditional on the user copies *not* failing (ie "!left"), and they
-seem to properly update "iov".
+Well, I'm wondering if it is really a gain to force a dependency for 
+cp15.h on every user of cacheflush.h just because of the seldomly used 
+v7_exit_coherency_flush(). But I don't mind either ways.
 
-Mind sending a disassembly of your "copy_page_to_iter" function, in
-particular around that whole "0x3b3/0x500" area which is where the
-page fault seems to happen?
 
-Adding Al to the cc, since this code is from his commit 6e58e79db8a1
-("introduce copy_page_to_iter, kill loop over iovec in
-generic_file_aio_read()") but I don't see anything obviously wrong
-there.
-
-Al? Do you see something I don't? Dave's function trace does seem to
-say that it doesn't even get back to pipe_read(), though, so the loop
-really must be inside copy_page_to_iter().
-
-             Linus
+Nicolas
