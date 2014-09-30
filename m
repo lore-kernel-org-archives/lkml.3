@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaI3NTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:19:47 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:59903 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaI3NTp (ORCPT
+	id S1751786AbaI3NXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:23:48 -0400
+Received: from mail01-md.ns.itscom.net ([175.177.155.111]:33602 "EHLO
+	mail01-md.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaI3NXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:19:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        devicetree@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
-Date: Tue, 30 Sep 2014 15:19:05 +0200
-Message-ID: <706416181.hbVGLDA3o6@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:0SmIMmY0RYykU1Lqgb7jOd1at2TEoitqeW5DtXCqbWb
- XJB5Y8LHjHP1P8qUxnGm1x+X/nktuJFWExLE6XyrOuFl+l79fZ
- 0dFCJCsUmrtH3kwyDxWPZnxS49u6QIl72hWi71CDbVb9IOX4Nj
- nGnHeb8lrd34NDoF92dfOlQyJ2Kr/4vbx2sJ/2rsq5rlsCHgAs
- 8DA9ZBYO2dfxiF0AGQVswV8KCsA5vEeIQRuo9w2iTodJ8O27yN
- nY2BK0voQItBaumOlnyIZJp59jhPDyKpIRtO2YDfucNo9hah9p
- G2XJJfJO9dYWoKJs0IIX5q1lWJF4JZB6f3OSzTeynZfywW0V6H
- pMTghSZmL8ppcNr1vCzU=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 30 Sep 2014 09:23:46 -0400
+From: "J. R. Okajima" <hooanon05g@gmail.com>
+Subject: Re: [PULL for 3.18] overlay filesystem v24
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
+In-Reply-To: <CAJfpeguWkWOeWYS1o2gW4P1DJhXn=enBGukPcfscd-guas7h8w@mail.gmail.com>
+References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu> <26822.1412028003@warthog.procyon.org.uk> <27645.1412052879@jrobl> <CAJfpeguWkWOeWYS1o2gW4P1DJhXn=enBGukPcfscd-guas7h8w@mail.gmail.com>
+Date: Tue, 30 Sep 2014 22:23:42 +0900
+Message-ID: <6637.1412083422@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pci_register_io_range() and pci_pio_to_address() were recently
-introduced to generalize the handling of memory mapped PCI I/O space,
-but they are only valid when CONFIG_OF is set, leading to a possible
-build error:
 
-drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
-drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
-   res_start = pci_pio_to_address(res->start);
-   ^
-drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
-drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
-   err = of_pci_range_to_resource(&range, pdev->dev.of_node,
-   ^
-cc1: some warnings being treated as errors
+Miklos Szeredi:
+> It would be good to have an inode based union as well.  I suggest (as
+> I suggested many times) to try slimming aufs to a bare minimum and
+> submit that.  It may be easier to just start from scratch instead
+> trying to drop features from the existing codebase.   I'd be happy to
+> review and generally help with such an effort.
 
-This provides inline dummy implementations for the case that
-CONFIG_OF is disabled, to allow better build testing.
+??
+In 2009, I have posted the "feature-reduced" version of aufs2 as
+following your advice. Also a git-branch called "aufs2-tmp-ro" was
+created whose size was a half of aufs2's. Have you ever posted your
+review comments about them?
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
+It was 2005 when I got an idea of aufs. Its history is almost a decade.
+In my current local aufs3 develpment branch, I got about 350
+commits. And 680 and 1120 commits for aufs2 and aufs1 individually.
 
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 7ebb877b07c2..851097aab115 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -71,6 +71,11 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
- 	return NULL;
- }
- 
-+static inline phys_addr_t pci_pio_to_address(unsigned long pio)
-+{
-+	return 0;
-+}
-+
- static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
- 			struct device_node *node)
- {
-@@ -144,6 +149,12 @@ static inline const __be32 *of_get_pci_address(struct device_node *dev,
- {
- 	return NULL;
- }
-+static inline int of_pci_range_to_resource(struct of_pci_range *range,
-+					   struct device_node *np,
-+					   struct resource *res)
-+{
-+	return -ENOSYS;
-+}
- #endif /* CONFIG_OF_ADDRESS && CONFIG_PCI */
- 
- #endif /* __OF_ADDRESS_H */
+aufs3-linux.git#aufs3.x-rcN/25lktr$ git log1 --no-merges fs/aufs/*.c | wc -l
+348
+aufs2-2.6.git#aufs2.2-stdalone-38-lktr$ git log1 --no-merges fs/aufs/*.c | wc -l
+685
+aufs1.git#master$ git log1 --no-merges aufs/fs/aufs/*.c | wc -l
+1126
 
+Of cource it won't be 2000 commits to create the patch series you
+wrote. I don't know how large the number will be but I am sure this is
+incredibly tough work both in commiting and reviewing. Is it still
+helpful and really meaningful for you to review? Don't you think it will
+be easier to review the resulted code?
+For example, this branch was created for linux-3.9 when Al Viro wrote
+about the dir mutex lock in copy-up. It has only 20 commits.
+
+aufs3-linux.git#mainline-v3.9-rc8-20130428$ git log1 --no-merges fs/aufs/*.c | wc -l
+20
+
+
+J. R. Okajima
