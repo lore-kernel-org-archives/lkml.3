@@ -1,67 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaI3IqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:46:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:47042 "EHLO ozlabs.org"
+	id S1755440AbaI3IsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:48:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48937 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaI3IqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:46:16 -0400
-Date: Tue, 30 Sep 2014 18:46:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>, Greg KH <greg@kroah.com>
-Subject: linux-next: build warning after merge of the wireless-next tree
-Message-ID: <20140930184607.081d38de@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1751017AbaI3IsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 04:48:06 -0400
+Message-ID: <542A6E71.10703@ti.com>
+Date: Tue, 30 Sep 2014 11:48:49 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Ky82CY1m2a09NxseJ6Rtz6n"; protocol="application/pgp-signature"
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <tony@atomide.com>, <nm@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: prevent erronous parsing of children during rate
+ change
+References: <1408628866-32351-1-git-send-email-t-kristo@ti.com> <20140922191816.GF10233@codeaurora.org> <542177E5.9060606@ti.com> <5424C2FA.4000508@codeaurora.org> <5425135F.2070809@ti.com> <20140926232453.19023.25483@quantum> <542913B4.2020808@ti.com> <20140930070732.19023.37829@quantum>
+In-Reply-To: <20140930070732.19023.37829@quantum>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Ky82CY1m2a09NxseJ6Rtz6n
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/30/2014 10:07 AM, Mike Turquette wrote:
+> Quoting Tero Kristo (2014-09-29 01:09:24)
+>> On 09/27/2014 02:24 AM, Mike Turquette wrote:
+>>> Quoting Tero Kristo (2014-09-26 00:18:55)
+>>>> On 09/26/2014 04:35 AM, Stephen Boyd wrote:
+>>>>> On 09/23/14 06:38, Tero Kristo wrote:
+>>>>>> On 09/22/2014 10:18 PM, Stephen Boyd wrote:
+>>>>>>> On 08/21, Tero Kristo wrote:
+>>>>>>>>              /* Skip children who will be reparented to another clock */
+>>>>>>>>              if (child->new_parent && child->new_parent != clk)
+>>>>>>>>                  continue;
+>>>>>>>
+>>>>>>> Are we not hitting the new_parent check here? I don't understand
+>>>>>>> how we can be changing parents here unless the check is being
+>>>>>>> avoided, in which case I wonder why determine_rate isn't being
+>>>>>>> used.
+>>>>>>>
+>>>>>>
+>>>>>> It depends how the clock underneath handles the situation. The error I
+>>>>>> am seeing actually happens with a SoC specific compound clock (DPLL)
+>>>>>> which integrates set_rate + mux functionality into a single clock
+>>>>>> node. A call to the clk_set_rate changes the parent of this clock
+>>>>>> (from bypass clock to reference clock), in addition to changing the
+>>>>>> rate (tune the mul+div.) I looked at using the determine rate call
+>>>>>> with this type but it breaks everything up... the parent gets changed
+>>>>>> but not the clock rate, in addition to some other issues.
+>>>>>
+>>>>> Ok. Is this omap3_noncore_dpll_set_rate()?
+>>>>
+>>>> Yes.
+>>>>
+>>>>    > Can we use determine_rate +
+>>>>> clk_set_parent_and_rate()? At least clk_set_parent_and_rate() would
+>>>>> allow us to do the mult+div and the parent in the same op call, although
+>>>>> I don't understand why setting the parent and then setting the rate is
+>>>>> not going to work.
+>>>>
+>>>> Well, setting parent first, then rate later causes problems with the
+>>>> DPLL ending up running with illegal (non-specified) rate, the M+N values
+>>>> are most likely wrong if you just switch from bypass clock to reference
+>>>> clock first without programming the M+N first.
+>>>
+>>> I took a quick look and it still seems to me that the OMAP DPLLs are
+>>> still not modeled properly as mux clocks. Is this correct?
+>>
+>> Yeah, they are not mux clocks, but rather a compound of mux + DPLL
+>> multiplier/divider logic. Changing the DPLL to be a separate mux + DPLL
+>> div/mult clock will still have overlapping usage of the DPLL_EN field,
+>
+> I'm not talking about splitting up the clock into two separate clocks.
+> If memory serves the DPLL clock implementation "cheats" and hides the
+> bypass_clk info from the clock framework. To be explicit, from the
+> perspective of Linux clock framework DPLL clocks only have one parent.
+>
+> In reality a typical DPLL should have at least 2 parents (and in some
+> cases starting with OMAP4, some of the DPLL output clocks should have a
+> second HSD parent). But the implementation does not reflect this.
 
-Hi John,
+No, this is not the DPLLs are modelled. Each DPLL has currently two 
+parents, ref-clk and bypass-clk, which are both modelled as separate 
+clock nodes, and the DPLL switches parents based on bypass/lock mode. 
+The bypass clock is also usually a mux clock, which further selects 
+separate bypass parent, resulting in 3 or more parents for a certain DPLL.
 
-After merging the wireless-next tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+>
+>> as the DPLL must be in bypass mode during M+N change. Or, should the
+>> DPLL rate change only be allowed if the mux is in bypass setting?
+>> Several drivers still depend on direct dpll clk_set_rate working
+>> 'properly' (there are some other issues currently present also which
+>> have nothing to do with the mux behavior.)
+>>
+>>> This issue has been lingering for a long time and we can't use
+>>> determine_rate unless that clock has multiple parents. Simply hacking
+>>> knowledge of the parent bypass clock into the .set_rate callback is not
+>>> enough.
+>>
+>> If you believe this _must_ be changed, I can take a look at this for
+>> next merge window, but this will cause a DT data compatibility break if
+>> nothing else (personally I don't care about this as I always rebuild DT
+>> blob with kernel, but lots of other people seem to do.)
+>
+> Well I guess the question is how long will we put up with the many small
+> headaches caused by incorrectly modeling the clock?
 
-WARNING: drivers/staging/rtl8192ee/r8192ee: 'rtl_evm_dbm_jaguar' exported t=
-wice. Previous export was in drivers/net/wireless/rtlwifi/rtlwifi.ko
+Well, its not kind of incorrectly modelled, it is just modelled in such 
+way that clk_set_rate doesn't cope too well with it.
 
-Introduced by commit f3a97e93814a ("rtlwifi: Finish modifying core
-routines for new drivers").
+> determine_rate and clk_set_parent_and_rate should be sufficient for the
+> OMAP DPLLs but only if they are correctly modeled in the framework.
 
-I suspect that there is a staging driver that needs removing/updating?
+Do we have implementation for clk_set_parent_and_rate someplace? I 
+looked at rc7 and didn't find this. I think this would fix the issues I 
+am seeing combined with determine_rate, if clk_set_rate would internally 
+handle changing both rate + parent.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-Tero
 
---Sig_/Ky82CY1m2a09NxseJ6Rtz6n
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+>
+> Regards,
+> Mike
+>
+>>
+>> -Tero
+>>
+>>>
+>>> Regards,
+>>> Mike
+>>>
+>>>>
+>>>>     I'm interested in the other issues that you mentioned
+>>>>> too.
+>>>>
+>>>> Mostly these were side-effects from the illegal DPLL setup I guess, like
+>>>> boot hang, failed drivers etc. I didn't really investigate this that
+>>>> much as it is much more simpler just to use safe list iteration here.
+>>>>
+>>>> -Tero
+>>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKm3VAAoJEMDTa8Ir7ZwVqOAP/AmhEJ6TU7HAXqKR2l0bulK/
-FE5Pmm8Yz6jFw6dl56Pv88Va/lPf6OO48rP+DNEQjOfrM/Osb4FM+KsZ4EB46vLm
-izAiQvOpoajXxWDaFUnjWXESj4jtAih7+OWxNFwKlTJua6PpZPkGZDGZ3CdcFeFV
-862+FGuRnRAzYHaACuS18GB8+DvtO4y8wosszTW45OCq8ll5X/7Ky41kgft/7uYv
-ypP7n0FelXl9Y3qDvW2kqa8iJBKynIIASEttfZLhvnkin9pWq8HhGl5b81OkIXS/
-gtt6hlDdIH3F4otGsiQ2VqDGHXCT9pkx8gqTZV38qR4b9fhtQgcGuC4rvTsTkLVO
-nALFza/+hrEAKzrugqaf9o/Fqq323qfQd90qwnjuI6+jDTgWiBlK5bfJa6oZyBbt
-a/W1y+lzbF6BayxvMrTkLjQuwExhDwTl+wMOEh0X4qpWWZAc2bUiYPRuGbNq2+HG
-FxUfxQuA5JVgsR9ztyelwLcyJWQgZ9nk5oN3SOpFgR+DFbKCJQ3utPnAWDjxCLUl
-e4ObAnCt192rW4A0uFNhFtQq+HISXOa6UQDTYIzx5dTmZpggCsnfmB0YRiynaVE1
-rep9e2K89KTJ2/k3f42DsLZAWUnMOhooNlsmYU8NGtdmARxBFo1ZJchaV6NU/PP8
-SLP+8kElyOzkIz9QWwnM
-=ibSm
------END PGP SIGNATURE-----
-
---Sig_/Ky82CY1m2a09NxseJ6Rtz6n--
