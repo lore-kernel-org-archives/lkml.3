@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaI3KIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:08:48 -0400
-Received: from mail-wi0-f193.google.com ([209.85.212.193]:34781 "EHLO
-	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaI3KIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:08:45 -0400
+	id S1752163AbaI3KJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:09:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33895 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962AbaI3KJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:09:16 -0400
+Message-ID: <542A813A.6010603@ti.com>
+Date: Tue, 30 Sep 2014 13:08:58 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <3268049.TolhrmBCZA@wuerfel>
-References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
-	<1411992293-7729-7-git-send-email-zhang.lyra@gmail.com>
-	<3268049.TolhrmBCZA@wuerfel>
-Date: Tue, 30 Sep 2014 18:08:44 +0800
-Message-ID: <CAAfSe-sU0w6XTQ1yJd6v0q1eT5H3wvJXJYVBE8dv--QyZ3wHxw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] Documentation: Add entry for Spreadtrum's Shark64 SoC
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: catalin.marinas@arm.com, gregkh@linuxfoundation.org,
-        ijc+devicetree@hellion.org.uk, jslaby@suse.cz,
-        Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@linaro.org>,
-        mark.rutland@arm.com, m-karicheri2@ti.com, pawel.moll@arm.com,
-        Ramkumar Ramachandra <artagnon@gmail.com>, rrichter@cavium.com,
-        robh+dt@kernel.org, will.deacon@arm.com,
-        Orson Zhai <orsonzhai@gmail.com>, geng.ren@spreadtrum.com,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
-Content-Type: text/plain; charset=UTF-8
+To: Fabian Frederick <fabf@skynet.be>, <linux-kernel@vger.kernel.org>
+CC: <daniel.vetter@intel.com>, "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-parisc@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH 1/6] video: fbdev: stifb.c: use container_of to resolve
+ stifb_info from fb_info
+References: <1410980419-5326-1-git-send-email-fabf@skynet.be> <1410980419-5326-2-git-send-email-fabf@skynet.be>
+In-Reply-To: <1410980419-5326-2-git-send-email-fabf@skynet.be>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="p6vxtaDxfn1sGQMCs9rLURodcWsq1VG22"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Arnd
+--p6vxtaDxfn1sGQMCs9rLURodcWsq1VG22
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-[use plain text pattern to send again]
+Hi,
 
-Thank you very much for your review in detail so carefully. I'll
-address these changes which you mentioned in this patch set in V2, but
-the days from tomorrow to 10.7 are Chinese holidays, I'm going to send
-PATCHv2 a few days later.
+On 17/09/14 22:00, Fabian Frederick wrote:
+> Use container_of instead of casting first structure member.
+>=20
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> PARISC cross-compiled but untested.
+>=20
+>  drivers/video/fbdev/stifb.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/stifb.c b/drivers/video/fbdev/stifb.c
+> index cfe8a2f..86621fa 100644
+> --- a/drivers/video/fbdev/stifb.c
+> +++ b/drivers/video/fbdev/stifb.c
+> @@ -918,7 +918,7 @@ static int
+>  stifb_setcolreg(u_int regno, u_int red, u_int green,
+>  	      u_int blue, u_int transp, struct fb_info *info)
+>  {
+> -	struct stifb_info *fb =3D (struct stifb_info *) info;
+> +	struct stifb_info *fb =3D container_of(info, struct stifb_info, info)=
+;
+>  	u32 color;
+> =20
+>  	if (regno >=3D NR_PALETTE)
+> @@ -978,7 +978,7 @@ stifb_setcolreg(u_int regno, u_int red, u_int green=
+,
+>  static int
+>  stifb_blank(int blank_mode, struct fb_info *info)
+>  {
+> -	struct stifb_info *fb =3D (struct stifb_info *) info;
+> +	struct stifb_info *fb =3D container_of(info, struct stifb_info, info)=
+;
+>  	int enable =3D (blank_mode =3D=3D 0) ? ENABLE : DISABLE;
+> =20
+>  	switch (fb->id) {
+>=20
 
-I'm also sorry that make you confused about my name, I'll solve this
-problem in the next submit.
+Thanks, queuing the series for 3.18.
 
-Thanks,
-Chunyan
+ Tomi
 
-2014-09-29 21:59 GMT+08:00 Arnd Bergmann <arnd@arndb.de>:
-> On Monday 29 September 2014 20:04:53 zhang.lyra@gmail.com wrote:
->> From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
->>
->> Adds a devicetree binding documentation for Spreadtrum's Shark64 SoC.
->>
->> Signed-off-by: chunyan.zhang <chunyan.zhang@spreadtrum.com>
->
-> One more thing: The email addresses look wrong, please use the form in
-> which you normally write the names, such as
->
-> Signed-off-by: Zhang Chunyan <chunyan.zhang@spreadtrum.com>
->
-> You can set the user name that git will add using the
-> 'git config --global user.name ...'.
->
-> Also, I notice that the email from which the patch is sent does not
-> match the last 'Signed-off-by' line. If Chunyan and Lyra are both
-> your names, better pick one that you use for both the email and the
-> signoff. If you are Lyra and are posting a patch from Chunyan, please
-> add your own line below hers, like
->
-> Signed-off-by: Zhang Chunyan <chunyan.zhang@spreadtrum.com>
-> Signed-off-by: Zhang Lyra <zhang.lyra@gmail.com>
->
-> so that you include everybody who was involved in sending the
-> patch, but have your own list last.
->
->         Arnd
+
+
+--p6vxtaDxfn1sGQMCs9rLURodcWsq1VG22
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUKoE6AAoJEPo9qoy8lh71ge8P/1hcSpUn1+7zt50TUtefryPc
+vGc+vd4QuI1GOh73BwV8O0PWR3R7OWkIHjoEK+ShZsv/W8r2auaHqwqaOH43nwED
+P/yHj/sZGxluOlYixwehs0zNaOYWp7DTRZzWJb1AyqAueba2jPMslvYT6eGXiZP6
++esvP4GQ8kKc+NoiZ7ODz1Nzk35VUNoHzTPm0xoRtK8Hv4TKWWpAQxSY7KoUwnoG
+5bWHPAYtnVhgMJchkB9CfAeD1KzLHKMHvdlrFju0hZw/tVNtS02kyz9hfK8Vx3n1
+rW5O/57W7hAmobhjzNLsGutZfXUYuGArjU610tAaRekTFfmhFS1ggICYtoHGYh+X
+P+GZcCumuac+RM8ETTTcFj/mCS8wPSGK5cp5GxEU1HWXK1sVk7jMaIuh9IIn8TIb
+FeqlHtts1efr/mO7HYcNt4n0QZ0VhNoMAriZh1QuH7u/lE8fhV7xPRKXQCbQ+7uV
+APMe1z1P7X1K60ROeaosLZgifU9hOXzVITNF2TO84fiCM2hsRgV2mJItPzUE0Hzb
+COz/iCSMylDKV9guHOQc3K0sKiF5dgjDgbxAOQIL17zAXvUwdbfUf5BOZUxN2KXa
+jeKb+xs8iRN5qz4e7kjzFDxMK5EMLRMZxjXK9BkuSBh5mHVFHiHdgSBsICmIUTg2
+JeMii1QDpuS24HXKCNoK
+=5q0y
+-----END PGP SIGNATURE-----
+
+--p6vxtaDxfn1sGQMCs9rLURodcWsq1VG22--
