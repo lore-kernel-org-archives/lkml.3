@@ -1,48 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaI3V5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:57:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33719 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422AbaI3V5v (ORCPT
+	id S1753776AbaI3Vhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:37:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60933 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703AbaI3Vh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:57:51 -0400
-Date: Tue, 30 Sep 2014 23:57:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frantisek Hrbata <fhrbata@redhat.com>
-cc: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        oleg@redhat.com, kamaleshb@in.ibm.com, hechjie@cn.ibm.com,
-        akpm@linux-foundation.org, dvlasenk@redhat.com, prarit@redhat.com,
-        lwoodman@redhat.com, hannsj_uhl@de.ibm.com,
-        torvalds@linux-foundation.org
-Subject: Re: [RESEND PATCH 2/4] x86: add phys addr validity check for /dev/mem
- mmap
-In-Reply-To: <20140930163353.GC3073@localhost.localdomain>
-Message-ID: <alpine.DEB.2.11.1409302357290.4455@nanos>
-References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com> <1411990382-11902-3-git-send-email-fhrbata@redhat.com> <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de> <20140930124121.GB3073@localhost.localdomain> <542ABDE7.7090808@intel.com>
- <20140930163353.GC3073@localhost.localdomain>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 30 Sep 2014 17:37:28 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>, Jens Axboe <axboe@fb.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 065/103] cfq-iosched: Fix wrong children_weight calculation
+Date: Tue, 30 Sep 2014 14:31:10 -0700
+Message-Id: <1412112708-27356-66-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Frantisek Hrbata wrote:
-> On Tue, Sep 30, 2014 at 07:27:51AM -0700, Dave Hansen wrote:
-> > On 09/30/2014 05:41 AM, Frantisek Hrbata wrote:
-> > > Does it make sense to replace "count" with "size" so it's consistent with the
-> > > rest or do you prefer "nr_bytes" or as Dave proposed "len_bytes"?
-> > 
-> > I don't care what it is as long as it has a unit in it.
-> 
-> Hi Dave/Thomas,
-> 
-> I sent v2 of this patch set, which uses the "len_bytes". Again, I'm sorry I
-> forgot to fix this the first time.
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-No problem. Shit happens.
+------------------
+
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+
+commit e15693ef18e13e3e6bffe891fe140f18b8ff6d07 upstream.
+
+cfq_group_service_tree_add() is applying new_weight at the beginning of
+the function via cfq_update_group_weight().
+This actually allows weight to change between adding it to and subtracting
+it from children_weight, and triggers WARN_ON_ONCE() in
+cfq_group_service_tree_del(), or even causes oops by divide error during
+vfr calculation in cfq_group_service_tree_add().
+
+The detailed scenario is as follows:
+1. Create blkio cgroups X and Y as a child of X.
+   Set X's weight to 500 and perform some I/O to apply new_weight.
+   This X's I/O completes before starting Y's I/O.
+2. Y starts I/O and cfq_group_service_tree_add() is called with Y.
+3. cfq_group_service_tree_add() walks up the tree during children_weight
+   calculation and adds parent X's weight (500) to children_weight of root.
+   children_weight becomes 500.
+4. Set X's weight to 1000.
+5. X starts I/O and cfq_group_service_tree_add() is called with X.
+6. cfq_group_service_tree_add() applies its new_weight (1000).
+7. I/O of Y completes and cfq_group_service_tree_del() is called with Y.
+8. I/O of X completes and cfq_group_service_tree_del() is called with X.
+9. cfq_group_service_tree_del() subtracts X's weight (1000) from
+   children_weight of root. children_weight becomes -500.
+   This triggers WARN_ON_ONCE().
+10. Set X's weight to 500.
+11. X starts I/O and cfq_group_service_tree_add() is called with X.
+12. cfq_group_service_tree_add() applies its new_weight (500) and adds it
+    to children_weight of root. children_weight becomes 0. Calcularion of
+    vfr triggers oops by divide error.
+
+weight should be updated right before adding it to children_weight.
+
+Reported-by: Ruki Sekiya <sekiya.ruki@lab.ntt.co.jp>
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ block/cfq-iosched.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 4d5cec1..8f5fdf3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1275,12 +1275,16 @@ __cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ static void
+ cfq_update_group_weight(struct cfq_group *cfqg)
+ {
+-	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+-
+ 	if (cfqg->new_weight) {
+ 		cfqg->weight = cfqg->new_weight;
+ 		cfqg->new_weight = 0;
+ 	}
++}
++
++static void
++cfq_update_group_leaf_weight(struct cfq_group *cfqg)
++{
++	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+ 
+ 	if (cfqg->new_leaf_weight) {
+ 		cfqg->leaf_weight = cfqg->new_leaf_weight;
+@@ -1299,7 +1303,7 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	/* add to the service tree */
+ 	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+ 
+-	cfq_update_group_weight(cfqg);
++	cfq_update_group_leaf_weight(cfqg);
+ 	__cfq_group_service_tree_add(st, cfqg);
+ 
+ 	/*
+@@ -1323,6 +1327,7 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	 */
+ 	while ((parent = cfqg_parent(pos))) {
+ 		if (propagate) {
++			cfq_update_group_weight(pos);
+ 			propagate = !parent->nr_active++;
+ 			parent->children_weight += pos->weight;
+ 		}
+-- 
+1.9.1
+
