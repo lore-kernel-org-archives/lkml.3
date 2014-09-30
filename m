@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243AbaI3Vdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:33:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60805 "EHLO
+	id S1752815AbaI3VeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:34:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaI3VcD (ORCPT
+	with ESMTP id S1751917AbaI3VcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:32:03 -0400
+	Tue, 30 Sep 2014 17:32:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yuri Tikhonov <yur@emcraft.com>, Dan Williams <dan.j.williams@intel.com>,
-        NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 020/103] md/raid6: avoid data corruption during recovery of double-degraded RAID6
-Date: Tue, 30 Sep 2014 14:30:25 -0700
-Message-Id: <1412112708-27356-21-git-send-email-kamal@canonical.com>
+Cc: Oleg Chernovskiy <algonkvel@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 013/103] drm/radeon: Add missing lines to ci_set_thermal_temperature_range
+Date: Tue, 30 Sep 2014 14:30:18 -0700
+Message-Id: <1412112708-27356-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,50 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Oleg Chernovskiy <algonkvel@gmail.com>
 
-commit 9c4bdf697c39805078392d5ddbbba5ae5680e0dd upstream.
+commit 6bce8d9772c1c606921a9c99e566eb14202f6669 upstream.
 
-During recovery of a double-degraded RAID6 it is possible for
-some blocks not to be recovered properly, leading to corruption.
+Properly set the thermal min and max temp on CI.
+Otherwise, we end up setting the thermal ranges
+to 0 on resume and end up in the lowest power state.
 
-If a write happens to one block in a stripe that would be written to a
-missing device, and at the same time that stripe is recovering data
-to the other missing device, then that recovered data may not be written.
-
-This patch skips, in the double-degraded case, an optimisation that is
-only safe for single-degraded arrays.
-
-Bug was introduced in 2.6.32 and fix is suitable for any kernel since
-then.  In an older kernel with separate handle_stripe5() and
-handle_stripe6() functions the patch must change handle_stripe6().
-
-Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
-Cc: Yuri Tikhonov <yur@emcraft.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-Tested-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Oleg Chernovskiy <algonkvel@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid5.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/ci_dpm.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 48cdec8..fd900ef 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3779,6 +3779,8 @@ static void handle_stripe(struct stripe_head *sh)
- 				set_bit(R5_Wantwrite, &dev->flags);
- 				if (prexor)
- 					continue;
-+				if (s.failed > 1)
-+					continue;
- 				if (!test_bit(R5_Insync, &dev->flags) ||
- 				    ((i == sh->pd_idx || i == sh->qd_idx)  &&
- 				     s.failed == 0))
+diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
+index 8bfab60..9c769f7 100644
+--- a/drivers/gpu/drm/radeon/ci_dpm.c
++++ b/drivers/gpu/drm/radeon/ci_dpm.c
+@@ -852,6 +852,9 @@ static int ci_set_thermal_temperature_range(struct radeon_device *rdev,
+ 	WREG32_SMC(CG_THERMAL_CTRL, tmp);
+ #endif
+ 
++	rdev->pm.dpm.thermal.min_temp = low_temp;
++	rdev->pm.dpm.thermal.max_temp = high_temp;
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.1
 
