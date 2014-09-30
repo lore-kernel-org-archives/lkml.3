@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252AbaI3VqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:46:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32876 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaI3Vit (ORCPT
+	id S1753750AbaI3VqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:46:13 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:58169 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbaI3VqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:49 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 096/103] ALSA: hda - Fix COEF setups for ALC1150 codec
-Date: Tue, 30 Sep 2014 14:31:41 -0700
-Message-Id: <1412112708-27356-97-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Tue, 30 Sep 2014 17:46:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <542B2305.9060805@fds-team.de>
+References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
+ <542B2305.9060805@fds-team.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 30 Sep 2014 14:45:48 -0700
+Message-ID: <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+To: Sebastian Lackner <sebastian@fds-team.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Sep 30, 2014 at 2:39 PM, Sebastian Lackner
+<sebastian@fds-team.de> wrote:
+> On 30.09.2014 21:40, Andy Lutomirski wrote:
+>> what would happen.  Apparently Wine sometimes does this (!), and, if
+>> an IRET return happens, Wine will segfault.
+>>
+>> I think that Wine should be fixed to stop setting NT when a syscall
+>> happens, but handling NT more gracefully is still nice.
+>>
+>
+> Just to give some more background about this issue: Wine has no influence
+> if the NT flag is set or not - as Wine doesn't trace each individual opcode,
+> there is no chance to know, if a Windows program messes up the EFLAGS. This
+> happens in closed source Windows applications, so its not really Wines fault.
 
-------------------
+I don't buy this explanation at all.  Surely Wine is responsible for
+all system calls that happen.  There's only a problem when NT is set
+and a system call happens.
 
-From: Takashi Iwai <tiwai@suse.de>
+>
+> I think the current approach should be fine, but if other people prefer one of
+> the solutions without additional overhead on syscall entry:
+>
+> At least for Wine it would also be absolutely fine, when the application would
+> just get a proper signal (if adding the retry IRET is too complicated). I've
+> attached the url to an additional example program, which shows that currently
+> the signal handler is unable to process such a fault, and a proof-of-concept
+> patch to clear the NT flags at least for the signal handler. Such a patch
+> doesn't fix the potential issues with EFI though.
+>
+> Example program:
+> http://ix.io/ezl
+>
+> Proof-of-concept patch:
+> http://ix.io/ezm
 
-commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
+This patch would make more sense if you only cleared it from the
+actual regs, not the saved regs.  User code can do the latter on its
+own.
 
-ALC1150 codec seems to need the COEF- and PLL-setups just like its
-compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
-the problem like too low output volumes unless the COEF setup is
-applied.
+It would certainly be possible to clear NT and retry IRET if IRET
+fails with NT set.  This would have no overhead for anything relevant.
+That would be this alternative from my 0/2 email:
 
-Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/hda/patch_realtek.c | 2 ++
- 1 file changed, 2 insertions(+)
+ - Don't filter NT on sysenter.  Instead, filter it on EFI entry
+   and modify the IRET code to retry without NT set if NT was set.
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 6b1f38a..b2a5832 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -323,6 +323,7 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
- 		case 0x10ec0885:
- 		case 0x10ec0887:
- 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
-+		case 0x10ec0900:
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
-@@ -2281,6 +2282,7 @@ static int patch_alc882(struct hda_codec *codec)
- 	switch (codec->vendor_id) {
- 	case 0x10ec0882:
- 	case 0x10ec0885:
-+	case 0x10ec0900:
- 		break;
- 	default:
- 		/* ALC883 and variants */
+Thomas hpa, etc: any thoughts?
+
+>
+> Regards,
+> Sebastian
+>
+
+
+
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
