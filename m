@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaI3QUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:20:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56793 "EHLO
+	id S1753032AbaI3QUF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:20:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56839 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751208AbaI3QTx (ORCPT
+	with ESMTP id S1752647AbaI3QT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:19:53 -0400
+	Tue, 30 Sep 2014 12:19:57 -0400
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 2/6] hwrng: atmel: use clk_prepapre_enable/_disable_unprepare
-Date: Tue, 30 Sep 2014 18:19:43 +0200
-Message-Id: <1412093987-30241-3-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH 6/6] ARM: at91/dt: add ISI node
+Date: Tue, 30 Sep 2014 18:19:47 +0200
+Message-Id: <1412093987-30241-7-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,54 +30,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clk_prepapre_enable/_disable_unprepare instead of clk_enable/disable
-to work properly with the CCF.
+Add ISI (Image Sensor Interface) DT node.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- drivers/char/hw_random/atmel-rng.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/at91sam9g45.dtsi | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
-diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-index 851bc7e..644ec48 100644
---- a/drivers/char/hw_random/atmel-rng.c
-+++ b/drivers/char/hw_random/atmel-rng.c
-@@ -67,7 +67,7 @@ static int atmel_trng_probe(struct platform_device *pdev)
- 	if (IS_ERR(trng->clk))
- 		return PTR_ERR(trng->clk);
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index 790c890..5d8746a 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -804,6 +804,27 @@
+ 					};
+ 				};
  
--	ret = clk_enable(trng->clk);
-+	ret = clk_prepare_enable(trng->clk);
- 	if (ret)
- 		return ret;
++				isi {
++					pinctrl_isi: isi-0 {
++						atmel,pins = <AT91_PIOB 8 AT91_PERIPH_B AT91_PINCTRL_NONE /* D8 */
++							      AT91_PIOB 9 AT91_PERIPH_B AT91_PINCTRL_NONE /* D9 */
++							      AT91_PIOB 10 AT91_PERIPH_B AT91_PINCTRL_NONE /* D10 */
++							      AT91_PIOB 11 AT91_PERIPH_B AT91_PINCTRL_NONE /* D11 */
++							      AT91_PIOB 20 AT91_PERIPH_A AT91_PINCTRL_NONE /* D0 */
++							      AT91_PIOB 21 AT91_PERIPH_A AT91_PINCTRL_NONE /* D1 */
++							      AT91_PIOB 22 AT91_PERIPH_A AT91_PINCTRL_NONE /* D2 */
++							      AT91_PIOB 23 AT91_PERIPH_A AT91_PINCTRL_NONE /* D3 */
++							      AT91_PIOB 24 AT91_PERIPH_A AT91_PINCTRL_NONE /* D4 */
++							      AT91_PIOB 25 AT91_PERIPH_A AT91_PINCTRL_NONE /* D5 */
++							      AT91_PIOB 26 AT91_PERIPH_A AT91_PINCTRL_NONE /* D6 */
++							      AT91_PIOB 27 AT91_PERIPH_A AT91_PINCTRL_NONE /* D7 */
++							      AT91_PIOB 28 AT91_PERIPH_A AT91_PINCTRL_NONE /* PCK */
++							      AT91_PIOB 29 AT91_PERIPH_A AT91_PINCTRL_NONE /* VSYNC */
++							      AT91_PIOB 30 AT91_PERIPH_A AT91_PINCTRL_NONE /* HSYNC */
++							      AT91_PIOB 31 AT91_PERIPH_A AT91_PINCTRL_NONE /* MCK */>;
++					};
++				};
++
+ 				pioA: gpio@fffff200 {
+ 					compatible = "atmel,at91rm9200-gpio";
+ 					reg = <0xfffff200 0x200>;
+@@ -1029,6 +1050,17 @@
+ 				};
+ 			};
  
-@@ -95,7 +95,7 @@ static int atmel_trng_remove(struct platform_device *pdev)
- 	hwrng_unregister(&trng->rng);
- 
- 	writel(TRNG_KEY, trng->base + TRNG_CR);
--	clk_disable(trng->clk);
-+	clk_disable_unprepare(trng->clk);
- 
- 	return 0;
- }
-@@ -105,7 +105,7 @@ static int atmel_trng_suspend(struct device *dev)
- {
- 	struct atmel_trng *trng = dev_get_drvdata(dev);
- 
--	clk_disable(trng->clk);
-+	clk_disable_unprepare(trng->clk);
- 
- 	return 0;
- }
-@@ -114,7 +114,7 @@ static int atmel_trng_resume(struct device *dev)
- {
- 	struct atmel_trng *trng = dev_get_drvdata(dev);
- 
--	return clk_enable(trng->clk);
-+	return clk_prepare_enable(trng->clk);
- }
- 
- static const struct dev_pm_ops atmel_trng_pm_ops = {
++			isi@fffb4000 {
++				compatible = "atmel,at91sam9g45-isi";
++				reg = <0xfffb4000 0x4000>;
++				interrupts = <26 IRQ_TYPE_LEVEL_HIGH 5>;
++				clocks = <&isi_clk>;
++				clock-names = "isi_clk";
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_isi>;
++				status = "disabled";
++			};
++
+ 			pwm0: pwm@fffb8000 {
+ 				compatible = "atmel,at91sam9rl-pwm";
+ 				reg = <0xfffb8000 0x300>;
 -- 
 1.9.1
 
