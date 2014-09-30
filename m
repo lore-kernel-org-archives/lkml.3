@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443AbaI3DOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:14:19 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:54714 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaI3DOP (ORCPT
+	id S1755450AbaI3DPj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:15:39 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:62636 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaI3DPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:14:15 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: jay.xu@rock-chips.com
-X-FST-TO: mturquette@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <5025b10300502d91822cc90b8fc7639a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Jianqun <jay.xu@rock-chips.com>
-To: mturquette@linaro.org, dianders@chromium.org, heiko@sntech.de,
-        jay.xu@rock-chips.com, kever.yang@rock-chips.com,
-        dbasehore@chromium.org, mark.yao@rock-chips.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        huangtao@rock-chips.com, cf@rock-chips.com
-Subject: [PATCH] clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
-Date: Tue, 30 Sep 2014 11:12:04 +0800
-Message-Id: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 29 Sep 2014 23:15:37 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <CAJfpegsN8BRE8_RUT9n-h+o7Q5ayaqLtErJ01jSitxoZ7QU-BQ@mail.gmail.com>
+References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
+	<CAJfpegsN8BRE8_RUT9n-h+o7Q5ayaqLtErJ01jSitxoZ7QU-BQ@mail.gmail.com>
+Date: Tue, 30 Sep 2014 05:15:36 +0200
+Message-ID: <CAJfpegv76ZbHec=N3z1LfYazwbsgzwr0UZf6LWd+G=J3EPmi1Q@mail.gmail.com>
+Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Anand Avati <avati@gluster.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The relation of i2s nodes as follows:
-          i2s_src               0           0            594000000  0
-             i2s_frac           0           0            11289600   0
-                i2s_pre         0           0            11289600   0
-                   sclk_i2s0    0           0            11289600   0
-                   i2s0_clkout  0           0            11289600   0
-                      hclk_i2s0 1           1            99000000   0
+On Fri, Sep 26, 2014 at 5:28 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> [Adding CC's]
+>
+> On Thu, Sep 25, 2014 at 2:05 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>
+>> In short, the problem is that fuse_release (that's usually called on last
+>> user close(2)) sends FUSE_RELEASE to userspace and returns without waiting
+>> for ACK from userspace. Consequently, there is a gap when user regards the
+>> file released while userspace fuse is still working on it. An attempt to
+>> access the file from another node leads to complicated synchronization
+>> problems because the first node still "holds" the file.
+>>
+>> The patch-set resolves the problem by making fuse_release synchronous:
+>> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
+>>
+>> It must be emphasized that even if the feature is enabled (i.e. fuse_release
+>> is synchronous), nothing guarantees that fuse_release() will be called
+>> in the context of close(2). In fact, it may happen later, on last fput().
+>> However, there are still a lot of use cases when close(2) is synchronous,
+>> so the feature must be regarded as an optimization maximizing chances of
+>> synchronous behaviour of close(2).
+>
+> Okay, we have the common case of close -> last-fput ->release.  This
+> being synchronous is fine.  Related cases are munmap(), and weird
+> corner cases including I/O on file descriptor being done in parallel
+> with close() in another thread.  Synchronous behavior is also fine in
+> these cases, since the task calling the last fput() is in fact
+> responsible for releasing the file.
+>
+> And then we have the uncommon cases when fput() is called from
+> something unrelated.  Take the following DoS example:  malicious app
+> creates a socket loop (sockA is sent over sockB and sockB is sent over
+> sockA) and in addition it tacks a fuse fd onto one of the sockets.
+> The fuse fd is implemented to block forever on release.  In this case
+> the loop will persist after the sockets are closed due to refcounting.
+> Later, a garbage collection is triggered from a completely unrelated
+> socket operation.   This result in the unrelated task being blocked
+> forever.
+>
+> The simplest way to avoid such an attack is to make the sync-release
+> feature privileged.  But even if it's privileged, the fact that
+> ->release can take a lot of time and a completely unrelated task could
+> be waiting for it to finish is not a good thing.
+>
+> So I'm wondering: could we have some way of distinguishing "good
+> release" from "bad release"?  Maybe adding an fput_sync() variant that
+> passes an "sync" flag to ->release()?
 
-sclk_i2s0 is the master clock, when to set rate of sclk_i2s0, should
-allow to set its parent's rate, by add flag CLK_SET_RATE_PARENT for
-"i2s_frac", "i2s_pre", "i2s0_clkout" and "sclk_i2s0".
+If we just concentrate on close(2), then there's a much simpler
+solution: in fuse_flush() check if file_count(file) is 1.  If it is,
+then this is a final close and we can mark the FLUSH request as such
+with a flag (FUSE_FLUSH_FINAL).  Userspace filesystem can act
+accordingly and may even return an error value to close(2).  In this
+case we could even omit the RELEASE request as an optimization, since
+we know the file cannot be resurrected if this was the last reference.
 
-Tested on rk3288 board using max98090, with command "aplay <music.wav>"
+Do we need to be synchronous in any other case?  E.g. munmap() comes to mind.
 
-Change-Id: I12faad082566532b65a7de8c0a6845e1c17870e6
-Signed-off-by: Jianqun <jay.xu@rock-chips.com>
----
- drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index c770de0..baf19b4 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -301,15 +301,15 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
- 	COMPOSITE(0, "i2s_src", mux_pll_src_cpll_gpll_p, 0,
- 			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
- 			RK3288_CLKGATE_CON(4), 1, GFLAGS),
--	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
-+	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
- 			RK3288_CLKSEL_CON(8), 0,
- 			RK3288_CLKGATE_CON(4), 2, GFLAGS),
--	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
-+	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
- 			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
--	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
-+	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
- 			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
- 			RK3288_CLKGATE_CON(4), 0, GFLAGS),
--	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
-+	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
- 			RK3288_CLKGATE_CON(4), 3, GFLAGS),
- 
- 	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
--- 
-1.9.1
-
-
+Thanks,
+Miklos
