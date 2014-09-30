@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaI3Wdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:33:42 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:49913 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaI3Wdl (ORCPT
+	id S1753280AbaI3Wdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:33:47 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:58037 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaI3Wdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:33:41 -0400
+	Tue, 30 Sep 2014 18:33:44 -0400
+Date: Wed, 1 Oct 2014 00:33:37 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Chun-Hao Lin <hau@realtek.com>
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 06/10] r8169:change function name and behavior
+ of function "rtl_w1w0_phy"
+Message-ID: <20140930223337.GA27610@electric-eye.fr.zoreil.com>
+References: <1412089230-10208-1-git-send-email-hau@realtek.com>
+ <1412089230-10208-6-git-send-email-hau@realtek.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1410010025050.4455@nanos>
-References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
- <542B2305.9060805@fds-team.de> <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com>
- <alpine.DEB.2.11.1410010025050.4455@nanos>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Sep 2014 15:33:20 -0700
-Message-ID: <CALCETrWTVPjkgfU3sWyKgtfidccXkO=H7y+9XiX20AfeQsAf2w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sebastian Lackner <sebastian@fds-team.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412089230-10208-6-git-send-email-hau@realtek.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 3:27 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 30 Sep 2014, Andy Lutomirski wrote:
->> It would certainly be possible to clear NT and retry IRET if IRET
->> fails with NT set.  This would have no overhead for anything relevant.
->> That would be this alternative from my 0/2 email:
->>
->>  - Don't filter NT on sysenter.  Instead, filter it on EFI entry
->>    and modify the IRET code to retry without NT set if NT was set.
->>
->> Thomas hpa, etc: any thoughts?
->
-> Filter it right away. That's solid and obvious. Anything else is just
-> complex and prone for future brown paperbag failures.
+Chun-Hao Lin <hau@realtek.com> :
+> Change function name from "rtl_w1w0_phy" to "rtl_w0w1_phy".
+> And its behavior from "or first then mask" to "mask first then or".
 
-Yeah, agreed.  That's exactly what these patches do, although, if you
-put them in -tip and want to keep the stable CC, it's probably worth
-fixing the address (oops).
+- I don't mind if its changed for a reason but the commit message doesn't
+  tell why. Is it related to the overlap of the masks below ?
 
->
-> We get the context switch benefit from it, so there is some
-> compensation for the extra cycles.
+- rtl_w1w0_phy was supposed to abbreviate "write ones then write zeros"
+  where parameters are taken in this order. You won't hit the 80 cols
+  limit if you replace it with something like "rtl_set_clear_phy" (if you
+  use something longer it won't fit for rtl_w1w0_eri).
 
-If we ever want those cycles back, I bet that the compat sysenter path
-could be trimmed down a lot.  For example, I think that all of the
-zero-extension stuff is unnecessary now that we have the magic syscall
-wrappers for all (?) syscalls.
+[...]
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+> index 1bf6696..e68fe5e 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+[...]
+> @@ -3575,33 +3575,33 @@ static void rtl8168h_1_hw_phy_config(struct rtl8169_private *tp)
+>  	/* CHN EST parameters adjust - giga master */
+>  	rtl_writephy(tp, 0x1f, 0x0a43);
+>  	rtl_writephy(tp, 0x13, 0x809b);
+> -	rtl_w1w0_phy(tp, 0x14, 0x8000, 0xf800);
+> +	rtl_w0w1_phy(tp, 0x14, 0x8000, 0xf800);
+>  	rtl_writephy(tp, 0x13, 0x80a2);
+> -	rtl_w1w0_phy(tp, 0x14, 0x8000, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x8000, 0xff00);
+>  	rtl_writephy(tp, 0x13, 0x80a4);
+> -	rtl_w1w0_phy(tp, 0x14, 0x8500, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x8500, 0xff00);
+>  	rtl_writephy(tp, 0x13, 0x809c);
+> -	rtl_w1w0_phy(tp, 0x14, 0xbd00, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0xbd00, 0xff00);
+>  	rtl_writephy(tp, 0x1f, 0x0000);
+>  
+>  	/* CHN EST parameters adjust - giga slave */
+>  	rtl_writephy(tp, 0x1f, 0x0a43);
+>  	rtl_writephy(tp, 0x13, 0x80ad);
+> -	rtl_w1w0_phy(tp, 0x14, 0x7000, 0xf800);
+> +	rtl_w0w1_phy(tp, 0x14, 0x7000, 0xf800);
+>  	rtl_writephy(tp, 0x13, 0x80b4);
+> -	rtl_w1w0_phy(tp, 0x14, 0x5000, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x5000, 0xff00);
+>  	rtl_writephy(tp, 0x13, 0x80ac);
+> -	rtl_w1w0_phy(tp, 0x14, 0x4000, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x4000, 0xff00);
+>  	rtl_writephy(tp, 0x1f, 0x0000);
+>  
+>  	/* CHN EST parameters adjust - fnet */
+>  	rtl_writephy(tp, 0x1f, 0x0a43);
+>  	rtl_writephy(tp, 0x13, 0x808e);
+> -	rtl_w1w0_phy(tp, 0x14, 0x1200, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x1200, 0xff00);
+>  	rtl_writephy(tp, 0x13, 0x8090);
+> -	rtl_w1w0_phy(tp, 0x14, 0xe500, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0xe500, 0xff00);
+>  	rtl_writephy(tp, 0x13, 0x8092);
+> -	rtl_w1w0_phy(tp, 0x14, 0x9f00, 0xff00);
+> +	rtl_w0w1_phy(tp, 0x14, 0x9f00, 0xff00);
+>  	rtl_writephy(tp, 0x1f, 0x0000);
+>  
+>  	/* enable R-tune & PGA-retune function */
+> @@ -3620,57 +3620,57 @@ static void rtl8168h_1_hw_phy_config(struct rtl8169_private *tp)
+>  	dout_tapbin &= 0xf000;
+>  	rtl_writephy(tp, 0x1f, 0x0a43);
+>  	rtl_writephy(tp, 0x13, 0x827a);
+> -	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
+> +	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
+>  	rtl_writephy(tp, 0x13, 0x827b);
+> -	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
+> +	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
+>  	rtl_writephy(tp, 0x13, 0x827c);
+> -	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
+> +	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
+>  	rtl_writephy(tp, 0x13, 0x827d);
+> -	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
+> +	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
+[...]
 
---Andy
+-- 
+Ueimor
