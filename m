@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaI3QT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:19:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56820 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752047AbaI3QTz (ORCPT
+	id S1753294AbaI3QVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:21:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49854 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043AbaI3QVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:19:55 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH 4/6] hwrng: atmel: Add TRNG DT binding doc
-Date: Tue, 30 Sep 2014 18:19:45 +0200
-Message-Id: <1412093987-30241-5-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
+	Tue, 30 Sep 2014 12:21:31 -0400
+Date: Tue, 30 Sep 2014 09:21:30 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Eric Rost <eric.rost@mybabylon.net>
+Cc: jason@lakedaemon.net, jake@lwn.net, antonysaraev@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] drivers: staging: skein: In progress
+Message-ID: <20140930162130.GB1050@kroah.com>
+References: <cover.1412060010.git.eric.rost@mybabylon.net>
+ <33e2d606ef3220dc77dfcced21b8e7efcbd35bd1.1412060010.git.eric.rost@mybabylon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <33e2d606ef3220dc77dfcced21b8e7efcbd35bd1.1412060010.git.eric.rost@mybabylon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document DT bindings of Atmel's TRNG (True Random Number Generator) IP.
+On Tue, Sep 30, 2014 at 02:00:05AM -0500, Eric Rost wrote:
+> In progress commit
+> Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
+> ---
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- Documentation/devicetree/bindings/hwrng/atmel-trng.txt | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwrng/atmel-trng.txt
+What does this mean?
 
-diff --git a/Documentation/devicetree/bindings/hwrng/atmel-trng.txt b/Documentation/devicetree/bindings/hwrng/atmel-trng.txt
-new file mode 100644
-index 0000000..4ac5aaa
---- /dev/null
-+++ b/Documentation/devicetree/bindings/hwrng/atmel-trng.txt
-@@ -0,0 +1,16 @@
-+Atmel TRNG (True Random Number Generator) block
-+
-+Required properties:
-+- compatible : Should be "atmel,at91sam9g45-trng"
-+- reg : Offset and length of the register set of this block
-+- interrupts : the interrupt number for the TRNG block
-+- clocks: should contain the TRNG clk source
-+
-+Example:
-+
-+trng@fffcc000 {
-+	compatible = "atmel,at91sam9g45-trng";
-+	reg = <0xfffcc000 0x4000>;
-+	interrupts = <6 IRQ_TYPE_LEVEL_HIGH 0>;
-+	clocks = <&trng_clk>;
-+};
--- 
-1.9.1
+And you need a blank line before your signed-off-by: line.
 
+thanks,
+
+greg k-h
