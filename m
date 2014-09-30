@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaI3Suk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:50:40 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:54797 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaI3Sui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:50:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com, oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sched, time: fix build error with 64 bit cputime_t on 32 bit systems
-Date: Tue, 30 Sep 2014 20:49:34 +0200
-Message-ID: <6735433.ACfjMtVDYF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140930134011.232bc7bf@annuminas.surriel.com>
-References: <2547036.UshV4pXvhf@wuerfel> <20140930134011.232bc7bf@annuminas.surriel.com>
+	id S1752050AbaI3Swp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:52:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44068 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaI3Swn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 14:52:43 -0400
+Message-ID: <542AFBF8.1070004@suse.de>
+Date: Tue, 30 Sep 2014 20:52:40 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:HwPJguY9Byw83hoyLmyYs7kxmsgSvdwH/3Fu71bEBCS
- OZJ8P9GuLblWQnR5nKFKggJVu57yNILaXFo23w3Mst+K1Z+0vm
- Hj9jatEq31Mvr1BlIZHNVCkXI6GDCN9Tv4vbN7vbr/hS1iSk6a
- J8muBH1ofZjlPeVKLEWyjNN9YzXI9PFktPaJCzfUaPXjSdTd1d
- 89p1IzchucyWx/e1z3cS53oDlDUbcNSSLXe3dgnV1QytXV2TFf
- mTVeNCc0+98zbf7V43UqmXExO4Hna0lwjMm5HiXqz4iUUczh7G
- 15yjNVtRiywbxqpYrO2K92/uzX3X0NZiEwitj0Vx4TPfVLWFfB
- WluD6GmJBhqq83DlLUcM=
-X-UI-Out-Filterresults: notjunk:1;
+To: Petr Mladek <pmladek@suse.cz>
+CC: James Bottomley <jbottomley@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
+        Robert Elliott <elliott@hp.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 28/38] Externalize string buffer for printk
+References: <1411991947-130166-1-git-send-email-hare@suse.de> <1411991947-130166-29-git-send-email-hare@suse.de> <20140930163931.GG2707@dhcp128.suse.cz>
+In-Reply-To: <20140930163931.GG2707@dhcp128.suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 September 2014 13:40:11 Rik van Riel wrote:
-> On Tue, 30 Sep 2014 13:56:37 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > A recent change to update the stime/utime members of task_struct
-> > using atomic cmpxchg broke configurations on 32-bit machines with
-> > CONFIG_VIRT_CPU_ACCOUNTING_GEN set, because that uses 64-bit
-> > nanoseconds, leading to a link-time error:
-> > 
-> > kernel/built-in.o: In function `cputime_adjust':
-> > :(.text+0x25234): undefined reference to `__bad_cmpxchg'
-> 
-> Arnd, this should fix your problem, while still ensuring that
-> the cpu time counters only ever go forward.
-> 
-> I do not have cross compiling toolchains set up here, but I assume
-> this fixes your bug.
-> 
-> Ingo & Peter, if this patch fixes the bug for Arnd, could you please
-> merge it into -tip?
-> 
-> Linus, the changeset causing the problem is only in -tip right now,
-> and this patch will not apply to your tree.
+On 09/30/2014 06:39 PM, Petr Mladek wrote:
+> On Mon 29-09-14 13:58:57, Hannes Reinecke wrote:
+>> This patch splits off the actual logging from vprintk_emit()
+>> into printk_emit_string(), with vprintk_emit() just being a
+>> simple wrapper for formatting the message into a
+>> static buffer.
+>>
+>> With that the caller can pass in a local buffer for
+>> printk_emit_string() without increasing the overall stack size.
+>>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: LKML <linux-kernel@vger.kernel.org>
+>
+> Adding Andrew into CC here as well.
+>
+> There is one potential problem, see below.
+>
+>> Signed-off-by: Hannes Reinecke <hare@suse.de>
+>> ---
+>>   include/linux/printk.h |  5 +++++
+>>   kernel/printk/printk.c | 36 ++++++++++++++++++++++++------------
+>>   2 files changed, 29 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/include/linux/printk.h b/include/linux/printk.h
+>> index d78125f..9639900 100644
+>> --- a/include/linux/printk.h
+>> +++ b/include/linux/printk.h
+>> @@ -130,6 +130,11 @@ int vprintk_emit(int facility, int level,
+>>   		 const char *dict, size_t dictlen,
+>>   		 const char *fmt, va_list args);
+>>
+>> +asmlinkage
+>> +int printk_emit_string(int facility, int level,
+>> +		       const char *dict, size_t dictlen,
+>> +		       char *textbuf, size_t text_len);
+>> +
+>>   asmlinkage __printf(1, 0)
+>>   int vprintk(const char *fmt, va_list args);
+>>
+>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+>> index d13675e..303a1fe 100644
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -1618,22 +1618,11 @@ asmlinkage int vprintk_emit(int facility, int level,
+>>   			    const char *dict, size_t dictlen,
+>>   			    const char *fmt, va_list args)
+>>   {
+>> -	static int recursion_bug;
+>>   	static char textbuf[LOG_LINE_MAX];
+>>
+>>   	char *text = textbuf;
+>>   	size_t text_len = 0;
+>> -	enum log_flags lflags = 0;
+>> -	unsigned long flags;
+>> -	int this_cpu;
+>> -	int printed_len = 0;
+>> -	bool in_sched = false;
+>> -	/* cpu currently holding logbuf_lock in this function */
+>> -	static volatile unsigned int logbuf_cpu = UINT_MAX;
+>>
+>>   	if (level == SCHED_MESSAGE_LOGLEVEL) {
+>> -		level = -1;
+>> -		in_sched = true;
+>> -
+>>   		/*
+>>   		 * The printf needs to come first; we need the syslog
+>>   		 * prefix which might be passed-in as a parameter.
+>> @@ -1644,6 +1633,24 @@ asmlinkage int vprintk_emit(int facility, int level,
+>>
+>>   	text_len += vscnprintf(text + text_len,
+>>   			       sizeof(textbuf) - text_len, fmt, args);
+>> +	return printk_emit_string(facility, level, dict, dictlen,
+>> +				  textbuf, text_len);
+>> +}
+>> +EXPORT_SYMBOL(vprintk_emit);
+>> +
+>> +asmlinkage int printk_emit_string(int facility, int level,
+>> +				  const char *dict, size_t dictlen,
+>> +				  char *textbuf, size_t text_len)
+>> +{
+>> +	static int recursion_bug;
+>> +	char *text = textbuf;
+>> +	enum log_flags lflags = 0;
+>> +	unsigned long flags;
+>> +	int this_cpu;
+>> +	int printed_len = 0;
+>> +	bool in_sched = false;
+>> +	/* cpu currently holding logbuf_lock in this function */
+>> +	static volatile unsigned int logbuf_cpu = UINT_MAX;
+>
+> We should make sure that text_len is lower or equal LOG_LINE_MAX.
+>
+> I am afraid that printk() code is not able to process longer
+> lines. For example, syslog_print() does:
+>
+>         text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
+>
+> Then it calls msg_print_text() that works with entire messages. So,
+> any longer message would freeze syslog_print() because it would newer
+> fit into the buffer.
+>
+Ah. Okay, I haven't thought about this. But yes, you are right.
 
-It compiles and links on arm32 with both 32-bit and 64-bit cputime_t,
-but I now get a new warning for the former case:
+> I guess that there are more locations like this.
+>
+> Maybe, we should make LOG_LINE_MAX public, so it could be used on the
+> other location either to allocate the buffer or to check the size.
+>
+Well, for starters we should be truncating the buffer to LOG_LINE_MAX in 
+printk_emit_string().
+And document that it will only handle messages up to that length.
 
-kernel/sched/cputime.c: In function 'cputime_advance':
-kernel/sched/cputime.c:576:29: warning: passing argument 1 of '__cmpxchg64_mb' from incompatible pointer type
-    cmpxchg64(counter, old, new);
-                             ^
-In file included from /git/arm-soc/arch/arm/include/asm/atomic.h:19:0,
-                 from /git/arm-soc/include/linux/atomic.h:4,
-                 from /git/arm-soc/include/linux/debug_locks.h:5,
-                 from /git/arm-soc/include/linux/lockdep.h:23,
-                 from /git/arm-soc/include/linux/spinlock_types.h:18,
-                 from /git/arm-soc/include/linux/spinlock.h:81,
-                 from /git/arm-soc/include/linux/seqlock.h:35,
-                 from /git/arm-soc/include/linux/time.h:5,
-                 from /git/arm-soc/include/uapi/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/sched.h:19,
-                 from /git/arm-soc/kernel/sched/cputime.c:2:
-/git/arm-soc/arch/arm/include/asm/cmpxchg.h:255:105: note: expected 'long long unsigned int *' but argument is of type 'cputime_t *'
- static inline unsigned long long __cmpxchg64_mb(unsigned long long *ptr,
-       kernel/sched/cputime.c:576:5: warning: value computed is not used [-Wunused-value]
-    cmpxchg64(counter, old, new);
-     ^
-                                                                                                  ^
-I suspect there is no solution that doesn't involve the preprocessor.
-How about adding a cputime_cmpxchg() helper next to the cputime_t
-definition?
+I'll be posting an updated patchset.
 
-	Arnd
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
