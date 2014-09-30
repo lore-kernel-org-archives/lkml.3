@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaI3KPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:15:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52644 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaI3KPu (ORCPT
+	id S1751573AbaI3KRk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:17:40 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:35795 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaI3KRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:15:50 -0400
-Message-ID: <542A82C6.7090607@ti.com>
-Date: Tue, 30 Sep 2014 13:15:34 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 30 Sep 2014 06:17:38 -0400
+Message-ID: <542A8494.9040701@gmail.com>
+Date: Tue, 30 Sep 2014 18:23:16 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Behan Webster <behanw@converseincode.com>, <plagnioj@jcrosoft.com>
-CC: <daniel.vetter@ffwll.ch>, <geert@linux-m68k.org>,
-        <laurent.pinchart@ideasonboard.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <robdclark@gmail.com>
-Subject: Re: [PATCH 0/2] LLVMLinux: Patches to enable the kernel to be compiled
- with clang/LLVM
-References: <1411780253-4492-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1411780253-4492-1-git-send-email-behanw@converseincode.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="mvQ6K9J0owKcKksVvhS8puOJnSImu0b97"
+To: Juergen Gross <jgross@suse.com>, David Vrabel <david.vrabel@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>
+CC: xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH] xen/xen-scsiback: Need go to fail after xenbus_dev_error()
+References: <5425967F.7020002@gmail.com> <5428E0ED.1050107@suse.com>	<54293742020000780003A48A@mail.emea.novell.com>	<54292707.90008@gmail.com> <542927C3.8010204@suse.com> <54292D6E.4060903@gmail.com> <54296559.5020301@citrix.com> <542A4E79.4020109@gmail.com> <542A54D6.8070906@suse.com> <542A60C3.1090503@gmail.com>
+In-Reply-To: <542A60C3.1090503@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mvQ6K9J0owKcKksVvhS8puOJnSImu0b97
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 9/30/14 15:50, Chen Gang wrote:
+> On 9/30/14 14:59, Juergen Gross wrote:
+>> On 09/30/2014 08:32 AM, Chen Gang wrote:
+>>> On 9/29/14 21:57, David Vrabel wrote:
+>>>> On 29/09/14 10:59, Chen Gang wrote:
+>>>>>
+>>>>>
+>>>>> If no any additional reply within 2 days, I shall send patch v2 for it:
+>>>>>
+>>>>>    "use dev_warn() instead of xenbus_dev_error() and remove 'fail' code block"
+>>>>
+>>>> I think this driver is fine as-is and does not need any changes.
+>>>>
+>>>
+>>> OK, at least, at present, it is not a bug (will cause any issue).
+>>>
+>>> But for me, xenbus_dev_error() seems for printing generic errors,
+>>> dev_warn() is more suitable than it.
+>>
+>> I'm unbiased regarding this one.
+>>
+> 
+> After check all related code for xenbus_printf() and xenbus_dev_error(),
+> for me: if xenbus_printf() is for optional error, it will print warning;
+> all xenbus_dev_error() are not for optional error, except 2 area:
+> 
+>   drivers/pci/xen-pcifront.c:866:		xenbus_dev_error(pdev->xdev, err,
+>   drivers/pci/xen-pcifront.c:947:		xenbus_dev_error(pdev->xdev, err,
 
-On 27/09/14 04:10, Behan Webster wrote:
-> Replace the use of nested functions where a normal function will suffic=
-e.
->=20
-> Nested functions are not liked by upstream kernel developers in general=
-=2E Their
-> use breaks the use of clang as a compiler, and doesn't make the code an=
-y
-> better.
->=20
-> This code now works for both gcc and clang.
->=20
-> The LLVMLinux project aims to fully build the Linux kernel using both g=
-cc and
-> clang (the C front end for the LLVM compiler infrastructure project).=20
->=20
-> Behan Webster (2):
->   arm, fbdev, omap2, LLVMLinux: Remove nested function from omap2 dss
->   arm, fbdev, omap2, LLVMLinux: Remove nested function from omapfb
->=20
->  drivers/video/fbdev/omap2/dss/dispc-compat.c   |  9 +++++----
->  drivers/video/fbdev/omap2/dss/manager-sysfs.c  | 16 +++++++++-------
->  drivers/video/fbdev/omap2/omapfb/omapfb-main.c | 14 +++++++-------
->  3 files changed, 21 insertions(+), 18 deletions(-)
->=20
+And for this 2 xenbus_dev_error(), they have no much negative effect
+(not check return value, and according to the code below, readers can
+easily understand, they are for optional failure).
 
-I have to say I do like small helper funcs as nested functions, as they
-are restricted inside the parent function's scope. But, of course,
-nested funcs have their issues.
-
-So looks fine to me, queuing for 3.18.
-
- Tomi
-
+But for our case, I recommend to use dev_warn() instead of, or readers
+is really easy to misunderstand (xenbus_dev_error, and 'grant'), then
+may send spam again (like me).
 
 
---mvQ6K9J0owKcKksVvhS8puOJnSImu0b97
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+> 
+> In fact, for me, not only they need be improved, but also skip 'err' for
+> pcifront_scan_root() and pcifront_rescan_root(), are they bugs? (I guess
+> they are). If they are really bugs, I shall send related patch for it.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+If no any additional reply for them within 2 days, I shall assume they
+are bugs, and send related patch for them, in next month (2014-10-??).
 
-iQIcBAEBAgAGBQJUKoLGAAoJEPo9qoy8lh717FMQAKzuxDGrxHRLc9oBBOVmS/Xv
-WYPWzczjdD1HKcnWR1D9HO+Np7C9U4hZMQRrf+6ZlJcULbmoofreXbgwmiMaT7f/
-TRt8kBskR+nZS98MLF8q2wqHjyok7XsUDaNvp03FSzzCCtg7UC1rA9+j2+F8Q0YH
-/kTDK7d0e9wHi/WRZ3TUCMsyDEbH/ZxQnR/IGXXu1edy78kOPxwnl6kik2SmaQlx
-fZ6z2EAzR2MTVNWQrZmjxaFPuPALN5TBGBQQcqPIJ4pBBIV3PpBQPb3HLPMVm4cp
-lam5y/qdCJdCNPP6k18ApCd3SOSFnZGRWXbj/4FFugPnh4PQIJCoFNPyEUQ/SDMF
-+a32CT/oB+zr2pt6RGCS2P8mk1d+BUMrnZqyCDNqnqusiy1ZUdL7Llc+CDzjHX4u
-2t1ipuwGOQPNkGppENj9nL4bFZdaN+VbtWIxsWtRQchvAh2pwEPWhyUmA91gjSi2
-8AFSImnVArMf/66EChG04s2BHqi/sUB1chLC+Qz9UTzRpy4gVYVaUrwvBA14wMB1
-o7bxVKpZaUZe+vFXDfOOkS1RlorSowxL3Ous1JFfq+flWpxXOZ8PzywI78lnyg1l
-0WRsBICfD0P+rE/eLqGPXovEtFweudpi2eT7La6uloRBuAdBVyrAE9zw2e20UsYG
-i24+XyRCuEZg3EtuR/jG
-=KATX
------END PGP SIGNATURE-----
+>>>
+>>> And 'fail' code block is useless now, need be removed, too (which will
+>>> let compiler report warning).
+>>
+>> This should be part of the patch making the 'fail' block useless.
+>>
 
---mvQ6K9J0owKcKksVvhS8puOJnSImu0b97--
+The original related patch is canceled, so we need not remove 'fail'
+block (it still seems useful, although it is not).
+
+> 
+> Yeah, originally, it really should be, but if this patch can continue,
+> for me, can remove it in this patch, too (for the original patch, I
+> intended to remain it for discussing and analysing in this patch).
+> 
+> But all together, if you stick to remove 'fail' code block in original
+> patch, for me, it is OK.
+> 
+
+
+Thanks.
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
