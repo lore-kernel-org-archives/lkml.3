@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaI3NHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:07:06 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:45397 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaI3NHE (ORCPT
+	id S1752068AbaI3NHb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:07:31 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:47995 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994AbaI3NH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:07:04 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: nomadik: improve GPIO debug prints
-Date: Tue, 30 Sep 2014 15:06:57 +0200
-Message-Id: <1412082417-10178-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Tue, 30 Sep 2014 09:07:27 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <3e515885f74e73fe089d78abacbff06a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v9 3/3] dt-bindings: video: Add documentation for rockchip vop
+Date: Tue, 30 Sep 2014 21:06:11 +0800
+Message-Id: <1412082371-27800-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+References: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debugfs file would only define if the line was "pulled" and
-not which direction (pull up or pull down). Improve this by
-taking two print paths depending on whether the pin is set as
-input or output and use the data register directly to figure
-out whether the pin is set for pull up or pull down.
+From: Mark yao <mark.yao@rock-chips.com>
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This adds binding documentation for Rockchip SoC VOP driver.
+
+Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
 ---
- drivers/pinctrl/nomadik/pinctrl-nomadik.c | 36 +++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 11 deletions(-)
+Changes in v2:
+- rename "lcdc" to "vop"
+- add vop reset
+- add iommu node
+- add port for display-subsystem
 
-diff --git a/drivers/pinctrl/nomadik/pinctrl-nomadik.c b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-index c4d9c5daa21b..3b7c733de489 100644
---- a/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-@@ -986,6 +986,7 @@ static void nmk_gpio_dbg_show_one(struct seq_file *s,
- 		container_of(chip, struct nmk_gpio_chip, chip);
- 	int mode;
- 	bool is_out;
-+	bool data_out;
- 	bool pull;
- 	u32 bit = 1 << offset;
- 	const char *modes[] = {
-@@ -998,28 +999,41 @@ static void nmk_gpio_dbg_show_one(struct seq_file *s,
- 		[NMK_GPIO_ALT_C+3]	= "altC3",
- 		[NMK_GPIO_ALT_C+4]	= "altC4",
- 	};
-+	const char *pulls[] = {
-+		"none     ",
-+		"pull down",
-+		"pull up  ",
-+	};
- 
- 	clk_enable(nmk_chip->clk);
- 	is_out = !!(readl(nmk_chip->addr + NMK_GPIO_DIR) & bit);
- 	pull = !(readl(nmk_chip->addr + NMK_GPIO_PDIS) & bit);
-+	data_out = !!(readl(nmk_chip->addr + NMK_GPIO_DAT) & bit);
- 	mode = nmk_gpio_get_mode(gpio);
- 	if ((mode == NMK_GPIO_ALT_C) && pctldev)
- 		mode = nmk_prcm_gpiocr_get_mode(pctldev, gpio);
- 
--	seq_printf(s, " gpio-%-3d (%-20.20s) %s %s %s %s",
--		   gpio, label ?: "(none)",
--		   is_out ? "out" : "in ",
--		   chip->get
--		   ? (chip->get(chip, offset) ? "hi" : "lo")
--		   : "?  ",
--		   (mode < 0) ? "unknown" : modes[mode],
--		   pull ? "pull" : "none");
--
--	if (!is_out) {
-+	if (is_out) {
-+		seq_printf(s, " gpio-%-3d (%-20.20s) out %s        %s",
-+			   gpio,
-+			   label ?: "(none)",
-+			   data_out ? "hi" : "lo",
-+			   (mode < 0) ? "unknown" : modes[mode]);
-+	} else {
- 		int irq = gpio_to_irq(gpio);
- 		struct irq_desc	*desc = irq_to_desc(irq);
-+		int pullidx = 0;
- 
--		/* This races with request_irq(), set_irq_type(),
-+		if (pull)
-+			pullidx = data_out ? 1 : 2;
+Changes in v3: None
+
+Changes in v4: None
+
+Changes in v5: None
+
+Changes in v6: None
+
+Changes in v7: None
+
+Changes in v8: None
+
+Changes in v9: None
+
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
+
+diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+new file mode 100644
+index 0000000..d15351f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
+@@ -0,0 +1,58 @@
++device-tree bindings for rockchip soc display controller (vop)
 +
-+		seq_printf(s, " gpio-%-3d (%-20.20s) in  %s %s",
-+			   gpio,
-+			   label ?: "(none)",
-+			   pulls[pullidx],
-+			   (mode < 0) ? "unknown" : modes[mode]);
-+		/*
-+		 * This races with request_irq(), set_irq_type(),
- 		 * and set_irq_wake() ... but those are "rare".
- 		 */
- 		if (irq > 0 && desc && desc->action) {
++VOP (Visual Output Processor) is the Display Controller for the Rockchip
++series of SoCs which transfers the image data from a video memory
++buffer to an external LCD interface.
++
++Required properties:
++- compatible: value should be one of the following
++		"rockchip,rk3288-vop";
++
++- interrupts: should contain a list of all VOP IP block interrupts in the
++		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
++		 format depends on the interrupt controller used.
++
++- clocks: must include clock specifiers corresponding to entries in the
++		clock-names property.
++
++- clock-names: Must contain
++		aclk_vop: for ddr buffer transfer.
++		hclk_vop: for ahb bus to R/W the phy regs.
++		dclk_vop: pixel clock.
++
++- resets: Must contain an entry for each entry in reset-names.
++  See ../reset/reset.txt for details.
++- reset-names: Must include the following entries:
++  - axi
++  - ahb
++  - dclk
++
++- iommus: required a iommu node
++
++- port: A port node with endpoint definitions as defined in
++  Documentation/devicetree/bindings/media/video-interfaces.txt.
++
++Example:
++SoC specific DT entry:
++	vopb: vopb@ff930000 {
++		compatible = "rockchip,rk3288-vop";
++		reg = <0xff930000 0x19c>;
++		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
++		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
++		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
++		reset-names = "axi", "ahb", "dclk";
++		iommus = <&vopb_mmu>;
++		vopb_out: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			vopb_out_edp: endpoint@0 {
++				reg = <0>;
++				remote-endpoint=<&edp_in_vopb>;
++			};
++			vopb_out_hdmi: endpoint@1 {
++				reg = <1>;
++				remote-endpoint=<&hdmi_in_vopb>;
++			};
++		};
++	};
 -- 
-1.9.3
+1.7.9.5
+
 
