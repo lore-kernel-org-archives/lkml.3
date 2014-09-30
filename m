@@ -1,99 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaI3QzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:55:14 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:46171 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaI3QzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:55:11 -0400
-From: Peter Korsgaard <peter@korsgaard.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Peter Korsgaard <jacmet@sunsite.dk>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] hwrng: atmel: use clk_prepapre_enable/_disable_unprepare
-References: <1412093987-30241-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1412093987-30241-3-git-send-email-boris.brezillon@free-electrons.com>
-Date: Tue, 30 Sep 2014 18:55:05 +0200
-In-Reply-To: <1412093987-30241-3-git-send-email-boris.brezillon@free-electrons.com>
-	(Boris Brezillon's message of "Tue, 30 Sep 2014 18:19:43 +0200")
-Message-ID: <87k34loxp2.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1752239AbaI3QzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:55:24 -0400
+Received: from mta-out1.inet.fi ([62.71.2.234]:38249 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461AbaI3QzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:55:20 -0400
+Date: Tue, 30 Sep 2014 19:54:53 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Hugh Dickins <hughd@google.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 2/6] mm/hugetlb: take page table lock in
+ follow_huge_(addr|pmd|pud)()
+Message-ID: <20140930165453.GA29843@node.dhcp.inet.fi>
+References: <1409276340-7054-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1409276340-7054-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LSU.2.11.1409031243420.9023@eggly.anvils>
+ <20140905052751.GA6883@nhori.redhat.com>
+ <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1409072307430.1298@eggly.anvils>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Boris" == Boris Brezillon <boris.brezillon@free-electrons.com> writes:
+On Mon, Sep 08, 2014 at 12:13:16AM -0700, Hugh Dickins wrote:
+> > > One subtlety to take care over: it's a long time since I've had to
+> > > worry about pmd folding and pud folding (what happens when you only
+> > > have 2 or 3 levels of page table instead of the full 4): macros get
+> > > defined to each other, and levels get optimized out (perhaps
+> > > differently on different architectures).
+> > > 
+> > > So although at first sight the lock to take in follow_huge_pud()
+> > > would seem to be mm->page_table_lock, I am not at this point certain
+> > > that that's necessarily so - sometimes pud_huge might be pmd_huge,
+> > > and the size PMD_SIZE, and pmd_lockptr appropriate at what appears
+> > > to be the pud level.  Maybe: needs checking through the architectures
+> > > and their configs, not obvious to me.
+> > 
+> > I think that every architecture uses mm->page_table_lock for pud-level
+> > locking at least for now, but that could be changed in the future,
+> > for example when 1GB hugepages or pud-based hugepages become common and
+> > someone are interested in splitting lock for pud level.
+> 
+> I'm not convinced by your answer, that you understand the (perhaps
+> imaginary!) issue I'm referring to.  Try grep for __PAGETABLE_P.D_FOLDED.
+> 
+> Our infrastructure allows for 4 levels of pagetable, pgd pud pmd pte,
+> but many architectures/configurations support only 2 or 3 levels.
+> What pud functions and pmd functions work out to be in those
+> configs is confusing, and varies from architecture to architecture.
+> 
+> In particular, pud and pmd may be different expressions of the same
+> thing (with 1 pmd per pud, instead of say 512).  In that case PUD_SIZE
+> will equal PMD_SIZE: and then at the pud level huge_pte_lockptr()
+> will be using split locking instead of mm->page_table_lock.
 
- > Use clk_prepapre_enable/_disable_unprepare instead of clk_enable/disable
- > to work properly with the CCF.
+<sorry for delay -- just back from vacation>
 
-s/prepapre/prepare/
+Look like we can't have PMD folded unless PUD is folded too:
 
-Other than that, looks fine to me.
+include/asm-generic/pgtable-nopmd.h:#include <asm-generic/pgtable-nopud.h>
 
-Acked-by: Peter Korsgaard <peter@korsgaard.com>
+It means we have three cases:
 
- > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
- > ---
- >  drivers/char/hw_random/atmel-rng.c | 8 ++++----
- >  1 file changed, 4 insertions(+), 4 deletions(-)
+- Both PMD and PUD are not folded. PUD_SIZE == PMD_SIZE can be true only
+  if PUD table consits from one entry which is emm.. strange.
+- PUD folded, PMD is not. In this case PUD_SIZE is equal to PGDIR_SIZE
+  which is always (I believe) greater than PMD_SIZE.
+- Both are folded: PMD_SIZE == PUD_SIZE == PGDIR_SIZE, but we solve it
+  with ARCH_ENABLE_SPLIT_PMD_PTLOCK. It only enabled on configuration with
+  where PMD is not folded. Without ARCH_ENABLE_SPLIT_PMD_PTLOCK,
+  pmd_lockptr() points to mm->page_table_lock.
 
- > diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
- > index 851bc7e..644ec48 100644
- > --- a/drivers/char/hw_random/atmel-rng.c
- > +++ b/drivers/char/hw_random/atmel-rng.c
- > @@ -67,7 +67,7 @@ static int atmel_trng_probe(struct platform_device *pdev)
- >  	if (IS_ERR(trng->clk))
- >  		return PTR_ERR(trng->clk);
- 
- > -	ret = clk_enable(trng->clk);
- > +	ret = clk_prepare_enable(trng->clk);
- >  	if (ret)
- >  		return ret;
- 
- > @@ -95,7 +95,7 @@ static int atmel_trng_remove(struct platform_device *pdev)
- >  	hwrng_unregister(&trng->rng);
- 
- >  	writel(TRNG_KEY, trng->base + TRNG_CR);
- > -	clk_disable(trng->clk);
- > +	clk_disable_unprepare(trng->clk);
- 
- >  	return 0;
- >  }
- > @@ -105,7 +105,7 @@ static int atmel_trng_suspend(struct device *dev)
- >  {
- >  	struct atmel_trng *trng = dev_get_drvdata(dev);
- 
- > -	clk_disable(trng->clk);
- > +	clk_disable_unprepare(trng->clk);
- 
- >  	return 0;
- >  }
- > @@ -114,7 +114,7 @@ static int atmel_trng_resume(struct device *dev)
- >  {
- >  	struct atmel_trng *trng = dev_get_drvdata(dev);
- 
- > -	return clk_enable(trng->clk);
- > +	return clk_prepare_enable(trng->clk);
- >  }
- 
- >  static const struct dev_pm_ops atmel_trng_pm_ops = {
- > -- 
- > 1.9.1
+Does it make sense?
 
+> Many of the hugetlb architectures have a pud_huge() which just returns
+> 0, and we need not worry about those, nor the follow_huge_addr() powerpc.
+> But arm64, mips, tile, x86 look more interesting.
+> 
+> Frankly, I find myself too dumb to be sure of the right answer for all:
+> and think that when we put the proper locking into follow_huge_pud(),
+> we shall have to include a PUD_SIZE == PMD_SIZE test, to let the
+> compiler decide for us which is the appropriate locking to match
+> huge_pte_lockptr().
+> 
+> Unless Kirill can illuminate: I may be afraid of complications
+> where actually there are none.
 
+I'm more worry about false-negative result of huge_page_size(h) ==
+PMD_SIZE check. I can imagine that some architectures (power and ia64, i
+guess) allows several page sizes on the same page table level, but only
+one of them is PMD_SIZE.
+
+It seems not a problem currently since we enable split PMD lock only on
+x86 and s390.
+
+Possible solution is to annotate each hstate with page table level it
+corresponds to.
 
 -- 
-Bye, Peter Korsgaard
+ Kirill A. Shutemov
