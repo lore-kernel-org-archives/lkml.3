@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaI3SJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:09:48 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:57470 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751347AbaI3SJq (ORCPT
+	id S1753519AbaI3SKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:10:24 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:44815 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbaI3SKW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:09:46 -0400
-Message-ID: <1412100583.21730.31.camel@x220>
-Subject: [PATCH 1/1] kconfig: warn if an unknown symbol is selected
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 30 Sep 2014 20:09:44 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Sep 2014 18:09:44.0032 (UTC) FILETIME=[B63A4600:01CFDCD9]
-X-RcptDomain: vger.kernel.org
+	Tue, 30 Sep 2014 14:10:22 -0400
+MIME-Version: 1.0
+X-Originating-IP: [80.196.35.44]
+In-Reply-To: <alpine.LRH.2.03.1409301134580.4688@AMR>
+References: <1412098195-30133-1-git-send-email-m@bjorling.me>
+	<1412098195-30133-2-git-send-email-m@bjorling.me>
+	<alpine.LRH.2.03.1409301134580.4688@AMR>
+Date: Tue, 30 Sep 2014 20:10:21 +0200
+Message-ID: <CAOu_J6kb8pQRzhUWD=JOhi1_=mxORUiL-isSaCfrxQ-yxOUepw@mail.gmail.com>
+Subject: Re: [PATCH v13] NVMe: Convert to blk-mq
+From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
+To: Keith Busch <keith.busch@intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
+        Jens Axboe <axboe@fb.com>, Ming Lei <tom.leiming@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Rob Nelson <rlnelson@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-nvme <linux-nvme@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A select of an unknown symbol is basically treated as a nop and is
-silently skipped. This is annoying if the selected symbol contains a
-typo. It can also hide the fact that a treewide symbol cleanup was only
-done partially.
+On Tue, Sep 30, 2014 at 7:42 PM, Keith Busch <keith.busch@intel.com> wrote:
+> On Tue, 30 Sep 2014, Matias Bjørling wrote:
+>>
+>> @@ -1967,27 +1801,30 @@ static struct nvme_ns *nvme_alloc_ns(struct
+>> nvme_dev *dev, unsigned nsid,
+>> {
+>
+> ...
+>>
+>> -       ns->queue->queue_flags = QUEUE_FLAG_DEFAULT;
+>> +       queue_flag_set_unlocked(QUEUE_FLAG_DEFAULT, ns->queue);
+>
+>
+> Instead of the above, you want
+>
+> +       ns->queue->queue_flags |= QUEUE_FLAG_DEFAULT;
+>
+> I only caught it because of the fun dm-mpath attempt with nvme and
+> blk-mq. Or maybe we don't want to include "QUEUE_FLAG_STACKABLE" right
+> now (part of the default flags) because it will kernel crash if you're
+> using dm-multipath with a blk-mq driver today.
+>
 
-There are also a few cases were this might have been done on purpose.
-But that anti-pattern should be discouraged. Almost all select
-statements point to a known and reachable symbol. So people will likely
-assume that any selected symbol is actually set. Selects that violate
-this assumption can only be spotted by checking multiple Kconfig files,
-often across architectures. It is unlikely that people will do this
-regularly.
+Great find. We should properly add a bunch of patches that add the
+necessary support after the patch has gone in. I have a feeling that
+there is a lot of interesting corner cases for getting stackable to
+work.
 
-So let's warn when we notice a select of a symbol that is not known in
-the configuration we're creating.
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Michal Marek <mmarek@suse.cz>
----
-First sent as an RFC in https://lkml.org/lkml/2014/9/26/887 (and
-https://lkml.org/lkml/2014/9/26/886 for the cover letter).
-
-Small modification to the commit explanation in comparison to the RFC,
-but identical patch. Minor edits to the cover-letter too.
-
- scripts/kconfig/conf.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
-
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index fef75fc756f4..de8406287531 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -446,6 +446,45 @@ static void check_conf(struct menu *menu)
- 		check_conf(child);
- }
- 
-+static void check_selects(struct menu *menu)
-+{
-+	struct symbol *sym, *sel;
-+	struct property *prop;
-+
-+	while (menu) {
-+		sym = menu->sym;
-+
-+		if (sym && !sym_is_choice(sym) &&
-+		    sym->type != S_UNKNOWN &&
-+		    sym->flags & SYMBOL_WRITE) {
-+			for_all_properties(sym, prop, P_SELECT) {
-+				sel = prop->expr->left.sym;
-+				if (sel->type == S_UNKNOWN &&
-+				    expr_calc_value(prop->visible.expr) != no) {
-+					fprintf(stderr, "%s:%d:warning: ",
-+						prop->file->name,
-+						prop->lineno);
-+					fprintf(stderr,
-+						"'%s' selects unknown symbol '%s'\n",
-+						sym->name,
-+						sel->name);
-+				}
-+			}
-+		}
-+
-+		if (menu->list) {
-+			menu = menu->list;
-+		} else if (menu->next) {
-+			menu = menu->next;
-+		} else while ((menu = menu->parent)) {
-+			if (menu->next) {
-+				menu = menu->next;
-+				break;
-+			}
-+		}
-+	}
-+}
-+
- static struct option long_opts[] = {
- 	{"oldaskconfig",    no_argument,       NULL, oldaskconfig},
- 	{"oldconfig",       no_argument,       NULL, oldconfig},
-@@ -681,6 +720,8 @@ int main(int ac, char **av)
- 		break;
- 	}
- 
-+	check_selects(rootmenu.list);
-+
- 	if (sync_kconfig) {
- 		/* silentoldconfig is used during the build so we shall update autoconf.
- 		 * All other commands are only used to generate a config.
--- 
-1.9.3
-
+> Otherwise, looks great!
