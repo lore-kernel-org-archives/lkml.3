@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaI3Mls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 08:41:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933AbaI3Mlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 08:41:47 -0400
-Date: Tue, 30 Sep 2014 14:41:22 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
-        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
-        hannsj_uhl@de.ibm.com, torvalds@linux-foundation.org
-Subject: Re: [RESEND PATCH 2/4] x86: add phys addr validity check for
- /dev/mem mmap
-Message-ID: <20140930124121.GB3073@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
- <1411990382-11902-3-git-send-email-fhrbata@redhat.com>
- <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de>
+	id S1751914AbaI3Mnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 08:43:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37061 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaI3Mnu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 08:43:50 -0400
+Message-ID: <542AA587.7060407@arm.com>
+Date: Tue, 30 Sep 2014 13:43:51 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Rik van Riel <riel@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "umgwanakikbuti@gmail.com" <umgwanakikbuti@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "srao@redhat.com" <srao@redhat.com>,
+        "lwoodman@redhat.com" <lwoodman@redhat.com>,
+        "atheurer@redhat.com" <atheurer@redhat.com>,
+        "oleg@redhat.com" <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] sched, time: cmpxchg does not work on 64-bit variable
+References: <2547036.UshV4pXvhf@wuerfel> <542AA33E.2050008@redhat.com>
+In-Reply-To: <542AA33E.2050008@redhat.com>
+X-OriginalArrivalTime: 30 Sep 2014 12:43:46.0649 (UTC) FILETIME=[2D1E7490:01CFDCAC]
+X-MC-Unique: 114093013434702301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 10:15:28PM +0200, Thomas Gleixner wrote:
-> On Mon, 29 Sep 2014, Frantisek Hrbata wrote:
-> > V2: fix pfn check in valid_mmap_phys_addr_range, thanks to Dave Hansen
-> 
-> AFAICT, Dave also asked you to change size_t count into something more
-> intuitive, i.e. nr_bytes or such.
-
 Hi,
 
-mea culpa, I for unknown reason changed it from "size" to "count". I guess some
-cut&paste mess. The correct prototype used elsewhere in kernel is
+On 30/09/14 13:34, Rik van Riel wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 09/30/2014 07:56 AM, Arnd Bergmann wrote:
+>> A recent change to update the stime/utime members of task_struct 
+>> using atomic cmpxchg broke configurations on 32-bit machines with 
+>> CONFIG_VIRT_CPU_ACCOUNTING_GEN set, because that uses 64-bit 
+>> nanoseconds, leading to a link-time error:
+>>
+>> kernel/built-in.o: In function `cputime_adjust': :(.text+0x25234):
+>> undefined reference to `__bad_cmpxchg'
+>>
+>> This reverts the change that caused the problem, I suspect the real
+>> fix is to conditionally use cmpxchg64 instead, but I have not
+>> checked if that will work on all architectures.
+> 
+> I see that kernel/sched/clock.c uses cmpxchg64 in a non
+> architecture, non 64 bit specific piece of code, and
+> nobody complained about that file not building, so I have
+> to assume cmpxchg64 works :)
+> 
+> The revert seems like a bad idea, since it will reintroduce
+> a race condition with sys_times().
+> 
+> One problem is that include/asm-generic/cputime_nsecs.h
+> defines cputime_t as u64, while cputime_jiffies.h defines
+> cputime_t as a long...
+> 
+> Will anybody barf at a cmpxchg_cputime, or is the solution
+> to fix cmpxchg on architectures where it does not accept a
+> 64 bit type?  Not quite sure how to do the latter...
+> 
+> Arnd, on which architecture are you seeing a build failure?
+> Is it just 32 bit arm?
 
-int valid_mmap_phys_addr_range(unsigned long pfn, size_t size)
+I'm seeing it on ARMv7 build too in case I enable 'Full dynticks CPU
+time accounting'.
 
-Does it make sense to replace "count" with "size" so it's consistent with the
-rest or do you prefer "nr_bytes" or as Dave proposed "len_bytes"?
-
-I will fix this and I'm sorry Dave I did not change it as discussed. It totally
-slipped my mind.
-
-Many thanks Thomas.
+-- Dietmar
 
 > 
-> > +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-> 
-> And right he is. I really had to look twice to see that count is
-> actually number of bytes and not number of pages, which is what you
-> expect after pfn.
-> 
-> > +{
-> > +	return arch_pfn_possible(pfn + (count >> PAGE_SHIFT));
-> > +}
-> 
-> Thanks,
-> 
-> 	tglx
+[...]
 
--- 
-Frantisek Hrbata
