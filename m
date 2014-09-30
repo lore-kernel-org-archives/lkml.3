@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaI3Tgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:36:55 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:13418 "EHLO smtp3-g21.free.fr"
+	id S1752521AbaI3Th2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:37:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44747 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760AbaI3Tgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:36:54 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Jyri Sarha <jsarha@ti.com>, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH linux-next] clk-gpio-gate: include gpio/consumer to fix build
-Date: Tue, 30 Sep 2014 21:36:43 +0200
-Message-Id: <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140930162635.GA7135@roeck-us.net>
-References: <20140930162635.GA7135@roeck-us.net>
+	id S1751952AbaI3Th0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 15:37:26 -0400
+Date: Tue, 30 Sep 2014 21:37:14 +0200
+From: Petr Mladek <pmladek@suse.cz>
+To: Hannes Reinecke <hare@suse.de>
+Cc: James Bottomley <jbottomley@parallels.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
+        Robert Elliott <elliott@hp.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 27/38] Rearrange buffer formatting in printk()
+Message-ID: <20140930193714.GH2707@dhcp128.suse.cz>
+References: <1411991947-130166-1-git-send-email-hare@suse.de>
+ <1411991947-130166-28-git-send-email-hare@suse.de>
+ <20140930161619.GF2707@dhcp128.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930161619.GF2707@dhcp128.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following build error:
+On Tue 30-09-14 18:16:20, Petr Mladek wrote:
+> On Mon 29-09-14 13:58:56, Hannes Reinecke wrote:
+> > Move buffer formatting to the start of the function as it
+> > doesn't require to be done under any locks.
+> > No functional change, required by the next patch.
+> > 
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: LKML <linux-kernel@vger.kernel.org>
+> 
+> printk stuff is maintained by Andrew in mm tree, so adding him into CC.
+> 
+> > Signed-off-by: Hannes Reinecke <hare@suse.de>
+> 
+> Reviewed-by: Petr Mladek <pmladek@suse.cz>
 
-  drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_enable’:
-  drivers/clk/clk-gpio-gate.c:36:2: error: implicit declaration of function ‘gpiod_set_value’ [-Werror=implicit-function-declaration]
-  drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_is_enabled’:
-  drivers/clk/clk-gpio-gate.c:52:2: error: implicit declaration of function ‘gpiod_get_value’ [-Werror=implicit-function-declaration]
-  drivers/clk/clk-gpio-gate.c: In function ‘clk_register_gpio_gate’:
-  drivers/clk/clk-gpio-gate.c:79:2: error: implicit declaration of function ‘gpiod_is_active_low’ [-Werror=implicit-function-declaration]
-  drivers/clk/clk-gpio-gate.c:85:3: error: implicit declaration of function ‘desc_to_gpio’ [-Werror=implicit-function-declaration]
-  drivers/clk/clk-gpio-gate.c:125:2: error: implicit declaration of function ‘gpiod_put’ [-Werror=implicit-function-declaration]
-  drivers/clk/clk-gpio-gate.c: In function ‘of_clk_gpio_gate_delayed_register_get’:
-  drivers/clk/clk-gpio-gate.c:169:2: error: implicit declaration of function ‘gpio_to_desc’ [-Werror=implicit-function-declaration]
+I have just realized that textbuf[LOG_LINE_MAX] is a static variable.
+It means that it must be used under the lock and this patch is wrong.
+I want to take back the Reviewed-by and instead do
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Jyri Sarha <jsarha@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>
----
+Nacked->by: Petr Mladek <pmladek@suse.cz>
 
-Hi,
+also it means that it does not take the extra space on the stack
+and you probably does not need the two patches at all.
 
-This can be seen with e.g. linux next-20140930 and arm alldefconfig.
-
-Best regards,
-
-V.
-
- drivers/clk/clk-gpio-gate.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
-index 9dde885..08e4322 100644
---- a/drivers/clk/clk-gpio-gate.c
-+++ b/drivers/clk/clk-gpio-gate.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/gpio.h>
-+#include <linux/gpio/consumer.h>
- #include <linux/of_gpio.h>
- #include <linux/err.h>
- #include <linux/device.h>
--- 
-2.1.0
-
+Best Regards,
+Petr
+ 
+> I do not see any obvious problem. Just note that
+> [sched_delayed] has already been removed in -mm tree. You might
+> want to base this patch on top of the commit 460d73c35ffa17979422290
+> ("printk: git rid of [sched_delayed] message for printk_deferred")
+> from linux-next.
+> 
+> Best Regards,
+> Petr
+> 
+> > ---
+> >  kernel/printk/printk.c | 21 ++++++++++-----------
+> >  1 file changed, 10 insertions(+), 11 deletions(-)
+> > 
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > index 1ce7706..d13675e 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -1633,8 +1633,18 @@ asmlinkage int vprintk_emit(int facility, int level,
+> >  	if (level == SCHED_MESSAGE_LOGLEVEL) {
+> >  		level = -1;
+> >  		in_sched = true;
+> > +
+> > +		/*
+> > +		 * The printf needs to come first; we need the syslog
+> > +		 * prefix which might be passed-in as a parameter.
+> > +		 */
+> > +		text_len = scnprintf(text, sizeof(textbuf),
+> > +				     KERN_WARNING "[sched_delayed] ");
+> >  	}
+> >  
+> > +	text_len += vscnprintf(text + text_len,
+> > +			       sizeof(textbuf) - text_len, fmt, args);
+> > +
+> >  	boot_delay_msec(level);
+> >  	printk_delay();
+> >  
+> > @@ -1676,17 +1686,6 @@ asmlinkage int vprintk_emit(int facility, int level,
+> >  					 strlen(recursion_msg));
+> >  	}
+> >  
+> > -	/*
+> > -	 * The printf needs to come first; we need the syslog
+> > -	 * prefix which might be passed-in as a parameter.
+> > -	 */
+> > -	if (in_sched)
+> > -		text_len = scnprintf(text, sizeof(textbuf),
+> > -				     KERN_WARNING "[sched_delayed] ");
+> > -
+> > -	text_len += vscnprintf(text + text_len,
+> > -			       sizeof(textbuf) - text_len, fmt, args);
+> > -
+> >  	/* mark and strip a trailing newline */
+> >  	if (text_len && text[text_len-1] == '\n') {
+> >  		text_len--;
+> > -- 
+> > 1.8.5.2
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
