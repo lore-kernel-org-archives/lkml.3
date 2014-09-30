@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697AbaI3VhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:37:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60913 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbaI3VhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:14 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 056/103] spi/pxa2xx: Add ACPI ID for Intel Braswell
-Date: Tue, 30 Sep 2014 14:31:01 -0700
-Message-Id: <1412112708-27356-57-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1755206AbaI3V67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:58:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755183AbaI3V64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:58:56 -0400
+Message-ID: <542B277D.7050103@redhat.com>
+Date: Tue, 30 Sep 2014 17:58:21 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v2 2/2] sched/fair: leverage the idle state info when
+ choosing the "idlest" cpu
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org> <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+In-Reply-To: <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-------------------
+On 09/04/2014 11:32 AM, Nicolas Pitre wrote:
+> The code in find_idlest_cpu() looks for the CPU with the smallest
+> load. However, if multiple CPUs are idle, the first idle CPU is
+> selected irrespective of the depth of its idle state.
+> 
+> Among the idle CPUs we should pick the one with with the shallowest
+> idle state, or the latest to have gone idle if all idle CPUs are in
+> the same state.  The later applies even when cpuidle is configured
+> out.
+> 
+> This patch doesn't cover the following issues:
 
-From: Alan Cox <alan@linux.intel.com>
+The main thing it does not cover is already running tasks that
+get woken up again, since select_idle_sibling() covers everything
+except for newly forked and newly executed tasks.
 
-commit aca26364689e00e3b2052072424682231bdae6ae upstream.
+I am looking at adding similar logic to select_idle_sibling()
 
-The SPI host controller is the same as used in Baytrail, only the ACPI ID
-is different so add this new ID to the list.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/spi/spi-pxa2xx.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index cbc6884..4dc7036 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1078,6 +1078,7 @@ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
- 	{ "INT3430", 0 },
- 	{ "INT3431", 0 },
- 	{ "80860F0E", 0 },
-+	{ "8086228E", 0 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
--- 
-1.9.1
-
+iQEcBAEBAgAGBQJUKyd9AAoJEM553pKExN6DXZgH/1R26XfYv2FzYV9IGbty3vVx
+1kMPozdb7jRAUR8+WkUgs7ntkbqau2hC/nTjDsSsiLQwXdjaDdqvnbt8Y6srI1es
+/Z+IRaIPGx24D7D6nB5sLgsAq6DsANUdtFK3TsED8+07LbiY71o64YQ3X1IEVyRO
+FKBcDw9+DBPGVySKIdMm0h2txdnQ3Jy2lM3nKV8tBFheRuOhU4Rv/fumEYAUYvDV
+J9y91RhKOeEJYmaYL6oQYtZgBqhDoJmh/0DjOrK6H71oZYiNWeIUxtieNXaNQp7B
+Rd8khOVFLsf/qZK6qjmgnfO9Mm5ij/PvrALOBZt8O9KAD3/v3kXfWIm9tO1NDZU=
+=kTdn
+-----END PGP SIGNATURE-----
