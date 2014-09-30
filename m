@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaI3NxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:53:14 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:49773 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000AbaI3NxK convert rfc822-to-8bit (ORCPT
+	id S1751636AbaI3OIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:08:44 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:58531 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaI3OIn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:53:10 -0400
-Message-ID: <542AB5D0.3080007@arm.com>
-Date: Tue, 30 Sep 2014 14:53:20 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 30 Sep 2014 10:08:43 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v4 04/11] drivers: base: support cpu cache information
- interface to userspace via sysfs
-References: <1409763617-17074-1-git-send-email-sudeep.holla@arm.com> <1409763617-17074-5-git-send-email-sudeep.holla@arm.com> <5419C3F6.4050607@arm.com> <20140917190048.GA4063@kroah.com> <20140924063511.GA12929@kroah.com>
-In-Reply-To: <20140924063511.GA12929@kroah.com>
-X-OriginalArrivalTime: 30 Sep 2014 13:53:06.0445 (UTC) FILETIME=[DC8CF3D0:01CFDCB5]
-X-MC-Unique: 114093014530711901
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+In-Reply-To: <1412085083.10205.8.camel@L80496>
+References: <1412079396-26005-1-git-send-email-thibaut.robert@gmail.com>
+	<CAMuHMdXj=b0G7foTRkcEtRC_De8+WjVefxBfW=s1sjaXLeF5nQ@mail.gmail.com>
+	<1412085083.10205.8.camel@L80496>
+Date: Tue, 30 Sep 2014 16:08:39 +0200
+X-Google-Sender-Auth: RjdN3dojaAOz5BUxmZTo3-GsMmU
+Message-ID: <CAMuHMdWHMK7NxX9AUg3ihwds41dKW26A_jFnZELw5N9shMaBKw@mail.gmail.com>
+Subject: Re: [PATCH] tc: fix warning and coding style
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Thibaut Robert <thibaut.robert@gmail.com>
+Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Thibaut,
 
-On 24/09/14 07:35, Greg Kroah-Hartman wrote:
-> On Wed, Sep 17, 2014 at 12:00:48PM -0700, Greg Kroah-Hartman wrote:
->> On Wed, Sep 17, 2014 at 06:25:10PM +0100, Sudeep Holla wrote:
->>> Hi Greg,
->>>
->>> On 03/09/14 18:00, Sudeep Holla wrote:
-
-[...]
->>>
->>> Can you review the first 4 patches in this series please ?
+On Tue, Sep 30, 2014 at 3:51 PM, Thibaut Robert
+<thibaut.robert@gmail.com> wrote:
+> Le mardi 30 septembre 2014 à 14:28 +0200, Geert Uytterhoeven a écrit :
+>> On Tue, Sep 30, 2014 at 2:16 PM, Thibaut Robert
+>> <thibaut.robert@gmail.com> wrote:
+>> > Fix gcc warning:
+>> > warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘resource_size_t’ [-Wformat=]
+>> >
+>> > As resource_size_t can be 32 or 64 bits (depending on CONFIG_RESOURCES_64BIT), this patch uses "%lld" format along with a cast to u64 for printing resource_size_t values
 >>
->> It's in my todo queue, which is really long at the moment due to me
->> going to conferences (at one right now...)  Will be working on this
->> soon, thanks for your patience.
+>> Please use %pR instead (cfr. Documentation/printk-formats.txt).
 >
-> Based on the review comments, I think you are going to change at least
-> the first patch, right?  Please resend the latest version of this
-> series, with all of the accumulated tested-by and acked lines and
-> resend.
+> This code use 'resource_size_t' but I think %pR is for 'struct resource'. I got inspired by this patch: https://lkml.org/lkml/2008/8/29/187
+
+Oops, sorry for (mis)behaving like a bad script.
+
+> However, I've thought again, and '%u' is probably enough for displaying a size in MiB. So I propose the following :
+> (Parens around the cast were also missing in my first patch):
 >
+> @@ -117,10 +114,10 @@ static void __init tc_bus_add_devices(struct tc_bus *tbus)
+>                         tdev->resource.start = extslotaddr;
+>                         tdev->resource.end = extslotaddr + devsize - 1;
+>                 } else {
+> -                       printk(KERN_ERR "%s: Cannot provide slot space "
+> -                              "(%dMiB required, up to %dMiB supported)\n",
+> -                              dev_name(&tdev->dev), devsize >> 20,
+> -                              max(slotsize, extslotsize) >> 20);
+> +                       dev_err(&tdev->dev,
+> +                               "Cannot provide slot space (%uMiB required, up to %uMiB supported)\n",
+> +                               (unsigned int) (devsize >> 20),
+> +                               (unsigned int) (max(slotsize, extslotsize) >> 20));
+>                         kfree(tdev);
+>                         goto out_err;
+>                 }
+>
+>
+> WDYT ?
 
-I have posted the new version as you suggested. I was holding off
-assuming the merge window would open this week and hence the delay.
+I guess that's acceptable, as tc is probably limited to 32-bit anyway. Maciej?
 
-Regards,
-Sudeep
+Note that there's also %pa, for phys_addr_t/resource_size_t.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
