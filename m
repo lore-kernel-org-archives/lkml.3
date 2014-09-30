@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaI3Vxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:53:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32782 "EHLO
+	id S1755042AbaI3VyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:54:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32773 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaI3ViE (ORCPT
+	with ESMTP id S1753963AbaI3ViB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:04 -0400
+	Tue, 30 Sep 2014 17:38:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 050/103] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
-Date: Tue, 30 Sep 2014 14:30:55 -0700
-Message-Id: <1412112708-27356-51-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 089/103] fix EBUSY on umount() from MNT_SHRINKABLE
+Date: Tue, 30 Sep 2014 14:31:34 -0700
+Message-Id: <1412112708-27356-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -26,46 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
+commit 81b6b06197606b4bef4e427a197aeb808e8d89e1 upstream.
 
-Add device id for Basic Micro ATOM Nano USB2Serial adapters.
+We need the parents of victims alive until namespace_unlock() gets to
+dput() of the (ex-)mountpoints.  However, that screws up the "is it
+busy" checks in case when we have shrinkable mounts that need to be
+killed.  Solution: go ahead and decrement refcounts of parents right
+in umount_tree(), increment them again just before dropping rwsem in
+namespace_unlock() (and let the loop in the end of namespace_unlock()
+finally drop those references for good, as we do now).  Parents can't
+get freed until we drop rwsem - at least one reference is kept until
+then, both in case when parent is among the victims and when it is
+not.  So they'll still be around when we get to namespace_unlock().
 
-Reported-by: Nicolas Alt <n.alt@mytum.de>
-Tested-by: Nicolas Alt <n.alt@mytum.de>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 1 +
- drivers/usb/serial/ftdi_sio_ids.h | 2 ++
- 2 files changed, 3 insertions(+)
+ fs/namespace.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 594a707..6f4e126 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -152,6 +152,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 1e58d90..3168a01 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -42,6 +42,8 @@
- /* www.candapter.com Ewert Energy Systems CANdapter device */
- #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
+diff --git a/fs/namespace.c b/fs/namespace.c
+index a93e25a..b1af425 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1217,6 +1217,11 @@ static void namespace_unlock(void)
+ 	head.first->pprev = &head.first;
+ 	INIT_HLIST_HEAD(&unmounted);
  
-+#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
++	/* undo decrements we'd done in umount_tree() */
++	hlist_for_each_entry(mnt, &head, mnt_hash)
++		if (mnt->mnt_ex_mountpoint.mnt)
++			mntget(mnt->mnt_ex_mountpoint.mnt);
 +
- /*
-  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
-  * http://processors.wiki.ti.com/index.php/XDS100
+ 	up_write(&namespace_sem);
+ 
+ 	synchronize_rcu();
+@@ -1268,6 +1273,7 @@ void umount_tree(struct mount *mnt, int how)
+ 			p->mnt.mnt_flags |= MNT_SYNC_UMOUNT;
+ 		if (mnt_has_parent(p)) {
+ 			put_mountpoint(p->mnt_mp);
++			mnt_add_count(p->mnt_parent, -1);
+ 			/* move the reference to mountpoint into ->mnt_ex_mountpoint */
+ 			p->mnt_ex_mountpoint.dentry = p->mnt_mountpoint;
+ 			p->mnt_ex_mountpoint.mnt = &p->mnt_parent->mnt;
 -- 
 1.9.1
 
