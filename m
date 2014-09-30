@@ -1,72 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaI3KWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:22:22 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:65251 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaI3KWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:22:19 -0400
+	id S1751528AbaI3KW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:22:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55474 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246AbaI3KW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:22:26 -0400
+Date: Tue, 30 Sep 2014 12:22:21 +0200
+From: Petr Mladek <pmladek@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] netfilter: Convert print_tuple functions to return
+ void
+Message-ID: <20140930102221.GB2707@dhcp128.suse.cz>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+ <cover.1412031505.git.joe@perches.com>
+ <f2e8cf8df433a197daa62cbaf124c900c708edc7.1412031505.git.joe@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <20140929085908.GI12506@ulmo>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
-	<1407925738-26170-7-git-send-email-thierry.reding@gmail.com>
-	<CAMuHMdW4emoma3nRUGna985tE17yPh5pNjMb-jxe5yc5UVr=cw@mail.gmail.com>
-	<20140929085908.GI12506@ulmo>
-Date: Tue, 30 Sep 2014 14:22:18 +0400
-Message-ID: <CAMo8BfJ9VJ24zsn_6VwNrAntmDqdJu11O79OyMd8eThv3UaaUw@mail.gmail.com>
-Subject: Re: [PATCH v4 6/8] asm-generic/io.h: Implement generic {read,write}s*()
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, sparclinux <sparclinux@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f2e8cf8df433a197daa62cbaf124c900c708edc7.1412031505.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+On Mon 29-09-14 16:08:22, Joe Perches wrote:
+> Since adding a new function to seq_file (seq_is_full)
+> there isn't any value for functions called from seq_show to
+> return anything.   Remove the int returns of the various
+> print_tuple/<foo>_print_tuple functions.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  include/net/netfilter/nf_conntrack_core.h    |  2 +-
+>  include/net/netfilter/nf_conntrack_l3proto.h |  4 ++--
+>  include/net/netfilter/nf_conntrack_l4proto.h |  4 ++--
+>  net/netfilter/nf_conntrack_l3proto_generic.c |  5 ++---
+>  net/netfilter/nf_conntrack_proto_dccp.c      | 10 +++++-----
+>  net/netfilter/nf_conntrack_proto_generic.c   |  5 ++---
+>  net/netfilter/nf_conntrack_proto_gre.c       | 10 +++++-----
+>  net/netfilter/nf_conntrack_proto_sctp.c      | 10 +++++-----
+>  net/netfilter/nf_conntrack_proto_tcp.c       | 10 +++++-----
+>  net/netfilter/nf_conntrack_proto_udp.c       | 10 +++++-----
+>  net/netfilter/nf_conntrack_proto_udplite.c   | 10 +++++-----
+>  net/netfilter/nf_conntrack_standalone.c      | 15 +++++++--------
+>  12 files changed, 46 insertions(+), 49 deletions(-)
+> 
+> diff --git a/include/net/netfilter/nf_conntrack_core.h b/include/net/netfilter/nf_conntrack_core.h
+> index cc0c188..f2f0fa3 100644
+> --- a/include/net/netfilter/nf_conntrack_core.h
+> +++ b/include/net/netfilter/nf_conntrack_core.h
+> @@ -72,7 +72,7 @@ static inline int nf_conntrack_confirm(struct sk_buff *skb)
+>  	return ret;
+>  }
+>  
+> -int
+> +void
+>  print_tuple(struct seq_file *s, const struct nf_conntrack_tuple *tuple,
+>              const struct nf_conntrack_l3proto *l3proto,
+>              const struct nf_conntrack_l4proto *proto);
+> diff --git a/include/net/netfilter/nf_conntrack_l3proto.h b/include/net/netfilter/nf_conntrack_l3proto.h
+> index adc1fa3..cdc920b 100644
+> --- a/include/net/netfilter/nf_conntrack_l3proto.h
+> +++ b/include/net/netfilter/nf_conntrack_l3proto.h
+> @@ -38,8 +38,8 @@ struct nf_conntrack_l3proto {
+>  			     const struct nf_conntrack_tuple *orig);
+>  
+>  	/* Print out the per-protocol part of the tuple. */
+> -	int (*print_tuple)(struct seq_file *s,
+> -			   const struct nf_conntrack_tuple *);
+> +	void (*print_tuple)(struct seq_file *s,
+> +			    const struct nf_conntrack_tuple *);
+>  
+>  	/*
+>  	 * Called before tracking. 
+> diff --git a/include/net/netfilter/nf_conntrack_l4proto.h b/include/net/netfilter/nf_conntrack_l4proto.h
+> index 4c8d573..fead8ee 100644
+> --- a/include/net/netfilter/nf_conntrack_l4proto.h
+> +++ b/include/net/netfilter/nf_conntrack_l4proto.h
+> @@ -56,8 +56,8 @@ struct nf_conntrack_l4proto {
+>  		     u_int8_t pf, unsigned int hooknum);
+>  
+>  	/* Print out the per-protocol part of the tuple. Return like seq_* */
+> -	int (*print_tuple)(struct seq_file *s,
+> -			   const struct nf_conntrack_tuple *);
+> +	void (*print_tuple)(struct seq_file *s,
+> +			    const struct nf_conntrack_tuple *);
+>  
+>  	/* Print out the private part of the conntrack. */
+>  	int (*print_conntrack)(struct seq_file *s, struct nf_conn *);
+> diff --git a/net/netfilter/nf_conntrack_l3proto_generic.c b/net/netfilter/nf_conntrack_l3proto_generic.c
+> index e7eb807..cf9ace7 100644
+> --- a/net/netfilter/nf_conntrack_l3proto_generic.c
+> +++ b/net/netfilter/nf_conntrack_l3proto_generic.c
+> @@ -49,10 +49,9 @@ static bool generic_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  	return true;
+>  }
+>  
+> -static int generic_print_tuple(struct seq_file *s,
+> -			    const struct nf_conntrack_tuple *tuple)
+> +static void generic_print_tuple(struct seq_file *s,
+> +				const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return 0;
+>  }
+>  
+>  static int generic_get_l4proto(const struct sk_buff *skb, unsigned int nhoff,
+> diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
+> index cb372f9..40d96f9 100644
+> --- a/net/netfilter/nf_conntrack_proto_dccp.c
+> +++ b/net/netfilter/nf_conntrack_proto_dccp.c
+> @@ -618,12 +618,12 @@ out_invalid:
+>  	return -NF_ACCEPT;
+>  }
+>  
+> -static int dccp_print_tuple(struct seq_file *s,
+> -			    const struct nf_conntrack_tuple *tuple)
+> +static void dccp_print_tuple(struct seq_file *s,
+> +			     const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "sport=%hu dport=%hu ",
+> -			  ntohs(tuple->src.u.dccp.port),
+> -			  ntohs(tuple->dst.u.dccp.port));
+> +	seq_printf(s, "sport=%hu dport=%hu ",
+> +		   ntohs(tuple->src.u.dccp.port),
+> +		   ntohs(tuple->dst.u.dccp.port));
+>  }
+>  
+>  static int dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+> diff --git a/net/netfilter/nf_conntrack_proto_generic.c b/net/netfilter/nf_conntrack_proto_generic.c
+> index d25f293..0a3ded1 100644
+> --- a/net/netfilter/nf_conntrack_proto_generic.c
+> +++ b/net/netfilter/nf_conntrack_proto_generic.c
+> @@ -39,10 +39,9 @@ static bool generic_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  }
+>  
+>  /* Print out the per-protocol part of the tuple. */
+> -static int generic_print_tuple(struct seq_file *s,
+> -			       const struct nf_conntrack_tuple *tuple)
+> +static void generic_print_tuple(struct seq_file *s,
+> +				const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return 0;
+>  }
+>  
+>  static unsigned int *generic_get_timeouts(struct net *net)
+> diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
+> index d566573..cd85336 100644
+> --- a/net/netfilter/nf_conntrack_proto_gre.c
+> +++ b/net/netfilter/nf_conntrack_proto_gre.c
+> @@ -226,12 +226,12 @@ static bool gre_pkt_to_tuple(const struct sk_buff *skb, unsigned int dataoff,
+>  }
+>  
+>  /* print gre part of tuple */
+> -static int gre_print_tuple(struct seq_file *s,
+> -			   const struct nf_conntrack_tuple *tuple)
+> +static void gre_print_tuple(struct seq_file *s,
+> +			    const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "srckey=0x%x dstkey=0x%x ",
+> -			  ntohs(tuple->src.u.gre.key),
+> -			  ntohs(tuple->dst.u.gre.key));
+> +	seq_printf(s, "srckey=0x%x dstkey=0x%x ",
+> +		   ntohs(tuple->src.u.gre.key),
+> +		   ntohs(tuple->dst.u.gre.key));
+>  }
+>  
+>  /* print private data for conntrack */
+> diff --git a/net/netfilter/nf_conntrack_proto_sctp.c b/net/netfilter/nf_conntrack_proto_sctp.c
+> index 1314d33..1b1d0e9 100644
+> --- a/net/netfilter/nf_conntrack_proto_sctp.c
+> +++ b/net/netfilter/nf_conntrack_proto_sctp.c
+> @@ -166,12 +166,12 @@ static bool sctp_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  }
+>  
+>  /* Print out the per-protocol part of the tuple. */
+> -static int sctp_print_tuple(struct seq_file *s,
+> -			    const struct nf_conntrack_tuple *tuple)
+> +static void sctp_print_tuple(struct seq_file *s,
+> +			     const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "sport=%hu dport=%hu ",
+> -			  ntohs(tuple->src.u.sctp.port),
+> -			  ntohs(tuple->dst.u.sctp.port));
+> +	seq_printf(s, "sport=%hu dport=%hu ",
+> +		   ntohs(tuple->src.u.sctp.port),
+> +		   ntohs(tuple->dst.u.sctp.port));
+>  }
+>  
+>  /* Print out the private part of the conntrack. */
+> diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+> index 44d1ea3..c2693e78 100644
+> --- a/net/netfilter/nf_conntrack_proto_tcp.c
+> +++ b/net/netfilter/nf_conntrack_proto_tcp.c
+> @@ -302,12 +302,12 @@ static bool tcp_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  }
+>  
+>  /* Print out the per-protocol part of the tuple. */
+> -static int tcp_print_tuple(struct seq_file *s,
+> -			   const struct nf_conntrack_tuple *tuple)
+> +static void tcp_print_tuple(struct seq_file *s,
+> +			    const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "sport=%hu dport=%hu ",
+> -			  ntohs(tuple->src.u.tcp.port),
+> -			  ntohs(tuple->dst.u.tcp.port));
+> +	seq_printf(s, "sport=%hu dport=%hu ",
+> +		   ntohs(tuple->src.u.tcp.port),
+> +		   ntohs(tuple->dst.u.tcp.port));
+>  }
+>  
+>  /* Print out the private part of the conntrack. */
+> diff --git a/net/netfilter/nf_conntrack_proto_udp.c b/net/netfilter/nf_conntrack_proto_udp.c
+> index 9d7721c..6957281 100644
+> --- a/net/netfilter/nf_conntrack_proto_udp.c
+> +++ b/net/netfilter/nf_conntrack_proto_udp.c
+> @@ -63,12 +63,12 @@ static bool udp_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  }
+>  
+>  /* Print out the per-protocol part of the tuple. */
+> -static int udp_print_tuple(struct seq_file *s,
+> -			   const struct nf_conntrack_tuple *tuple)
+> +static void udp_print_tuple(struct seq_file *s,
+> +			    const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "sport=%hu dport=%hu ",
+> -			  ntohs(tuple->src.u.udp.port),
+> -			  ntohs(tuple->dst.u.udp.port));
+> +	seq_printf(s, "sport=%hu dport=%hu ",
+> +		   ntohs(tuple->src.u.udp.port),
+> +		   ntohs(tuple->dst.u.udp.port));
+>  }
+>  
+>  static unsigned int *udp_get_timeouts(struct net *net)
+> diff --git a/net/netfilter/nf_conntrack_proto_udplite.c b/net/netfilter/nf_conntrack_proto_udplite.c
+> index 2750e6c..c5903d1 100644
+> --- a/net/netfilter/nf_conntrack_proto_udplite.c
+> +++ b/net/netfilter/nf_conntrack_proto_udplite.c
+> @@ -71,12 +71,12 @@ static bool udplite_invert_tuple(struct nf_conntrack_tuple *tuple,
+>  }
+>  
+>  /* Print out the per-protocol part of the tuple. */
+> -static int udplite_print_tuple(struct seq_file *s,
+> -			       const struct nf_conntrack_tuple *tuple)
+> +static void udplite_print_tuple(struct seq_file *s,
+> +				const struct nf_conntrack_tuple *tuple)
+>  {
+> -	return seq_printf(s, "sport=%hu dport=%hu ",
+> -			  ntohs(tuple->src.u.udp.port),
+> -			  ntohs(tuple->dst.u.udp.port));
+> +	seq_printf(s, "sport=%hu dport=%hu ",
+> +		   ntohs(tuple->src.u.udp.port),
+> +		   ntohs(tuple->dst.u.udp.port));
+>  }
+>  
+>  static unsigned int *udplite_get_timeouts(struct net *net)
+> diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+> index cf65a1e..3c2ce5c 100644
+> --- a/net/netfilter/nf_conntrack_standalone.c
+> +++ b/net/netfilter/nf_conntrack_standalone.c
+> @@ -36,12 +36,13 @@
+>  MODULE_LICENSE("GPL");
+>  
+>  #ifdef CONFIG_NF_CONNTRACK_PROCFS
+> -int
+> +void
+>  print_tuple(struct seq_file *s, const struct nf_conntrack_tuple *tuple,
+>              const struct nf_conntrack_l3proto *l3proto,
+>              const struct nf_conntrack_l4proto *l4proto)
+>  {
+> -	return l3proto->print_tuple(s, tuple) || l4proto->print_tuple(s, tuple);
+> +	l3proto->print_tuple(s, tuple);
+> +	l4proto->print_tuple(s, tuple);
+>  }
+>  EXPORT_SYMBOL_GPL(print_tuple);
+>  
+> @@ -202,9 +203,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+>  		goto release;
+>  
+> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> -			l3proto, l4proto))
+> -		goto release;
+> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> +		    l3proto, l4proto);
 
-On Mon, Sep 29, 2014 at 12:59 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Sep 29, 2014 at 10:54:34AM +0200, Geert Uytterhoeven wrote:
->> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->> > #ifndef memset_io
->> > -#define memset_io(a, b, c)     memset(__io_virt(a), (b), (c))
->> > +#define memset_io memset_io
->> > +static inline void memset_io(void __iomem *addr, int value, size_t size)
->> > +{
->> > +       memset(__io_virt(addr), value, size);
->> > +}
->> >  #endif
->>
->> xtensa/allmodconfig:
->>
->> include/asm-generic/io.h:820:2: error: implicit declaration of
->> function 'memset' [-Werror=implicit-function-declaration]
->> include/asm-generic/io.h:829:2: error: implicit declaration of
->> function 'memcpy' [-Werror=implicit-function-declaration]
->> arch/xtensa/include/asm/string.h:110:14: error: conflicting types for 'memset'
->> arch/xtensa/include/asm/string.h:113:14: error: conflicting types for 'memcpy'
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/12028900/
->
-> I think this can be fixed by including linux/string.h for memset() and
-> memcpy() in include/asm-generic/io.h.
+To be precise, we should add:
 
-Will you send that fix or do I need to do it?
+	if (seq_overflow(s))
+		goto release;
+  
+>  	if (seq_print_acct(s, ct, IP_CT_DIR_ORIGINAL))
+>  		goto release;
+> @@ -213,9 +213,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+>  		if (seq_printf(s, "[UNREPLIED] "))
+>  			goto release;
+>  
+> -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+> -			l3proto, l4proto))
+> -		goto release;
+> +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_REPLY].tuple,
+> +		    l3proto, l4proto);
 
--- 
-Thanks.
--- Max
+same here
+
+>  	if (seq_print_acct(s, ct, IP_CT_DIR_REPLY))
+>  		goto release;
+> -- 
+> 1.8.1.2.459.gbcd45b4.dirty
+> 
+
+Best Regards,
+Petr
