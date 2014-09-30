@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518AbaI3RtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:49:10 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41130 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386AbaI3RtA (ORCPT
+	id S1753489AbaI3RtI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:49:08 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53060 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959AbaI3RtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:49:00 -0400
+	Tue, 30 Sep 2014 13:49:02 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Sebastian Reichel <sre@kernel.org>
 Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Anders Berg <anders.berg@lsi.com>
-Subject: [PATCH v2 07/10] power/reset: axxia: Register with kernel restart handler
-Date: Tue, 30 Sep 2014 10:48:33 -0700
-Message-Id: <1412099316-23167-8-git-send-email-linux@roeck-us.net>
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH v2 08/10] power/reset: keystone: Register with kernel restart handler
+Date: Tue, 30 Sep 2014 10:48:34 -0700
+Message-Id: <1412099316-23167-9-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
 References: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
@@ -24,80 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel restart handler instead of setting arm_pm_restart
-directly.
+Register with kernel restart handler instead of setting arm_pm_restart directly.
 
-Cc: Anders Berg <anders.berg@lsi.com>
-Tested-by: Anders Berg <anders.berg@avagotech.com>
+Move notifier registration to the end of the probe function to avoid having to
+implement error handling.
+
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Tested-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/power/reset/axxia-reset.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ drivers/power/reset/keystone-reset.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/power/reset/axxia-reset.c b/drivers/power/reset/axxia-reset.c
-index 3b1f8d6..4e4cd1c 100644
---- a/drivers/power/reset/axxia-reset.c
-+++ b/drivers/power/reset/axxia-reset.c
-@@ -19,14 +19,12 @@
- #include <linux/kernel.h>
- #include <linux/mfd/syscon.h>
+diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
+index 408a18f..4b6b12e 100644
+--- a/drivers/power/reset/keystone-reset.c
++++ b/drivers/power/reset/keystone-reset.c
+@@ -12,9 +12,9 @@
+ 
+ #include <linux/io.h>
  #include <linux/module.h>
 +#include <linux/notifier.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
  #include <linux/reboot.h>
  #include <linux/regmap.h>
- 
 -#include <asm/system_misc.h>
--
--
- #define SC_CRIT_WRITE_KEY	0x1000
- #define SC_LATCH_ON_RESET	0x1004
- #define SC_RESET_CONTROL	0x1008
-@@ -39,7 +37,8 @@
+ #include <linux/mfd/syscon.h>
+ #include <linux/of_platform.h>
  
- static struct regmap *syscon;
+@@ -52,7 +52,8 @@ static inline int rsctrl_enable_rspll_write(void)
+ 				  RSCTRL_KEY_MASK, RSCTRL_KEY);
+ }
  
--static void do_axxia_restart(enum reboot_mode reboot_mode, const char *cmd)
-+static int axxia_restart_handler(struct notifier_block *this,
-+				 unsigned long mode, void *cmd)
+-static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
++static int rsctrl_restart_handler(struct notifier_block *this,
++				  unsigned long mode, void *cmd)
  {
- 	/* Access Key (0xab) */
- 	regmap_write(syscon, SC_CRIT_WRITE_KEY, 0xab);
-@@ -50,11 +49,19 @@ static void do_axxia_restart(enum reboot_mode reboot_mode, const char *cmd)
- 	/* Assert chip reset */
- 	regmap_update_bits(syscon, SC_RESET_CONTROL,
- 			   RSTCTL_RST_CHIP, RSTCTL_RST_CHIP);
+ 	/* enable write access to RSTCTRL */
+ 	rsctrl_enable_rspll_write();
+@@ -60,8 +61,15 @@ static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
+ 	/* reset the SOC */
+ 	regmap_update_bits(pllctrl_regs, rspll_offset + RSCTRL_RG,
+ 			   RSCTRL_RESET_MASK, 0);
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block axxia_restart_nb = {
-+	.notifier_call = axxia_restart_handler,
++static struct notifier_block rsctrl_restart_nb = {
++	.notifier_call = rsctrl_restart_handler,
 +	.priority = 128,
 +};
 +
- static int axxia_reset_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-+	int err;
+ static struct of_device_id rsctrl_of_match[] = {
+ 	{.compatible = "ti,keystone-reset", },
+ 	{},
+@@ -114,8 +122,6 @@ static int rsctrl_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
  
- 	syscon = syscon_regmap_lookup_by_phandle(dev->of_node, "syscon");
- 	if (IS_ERR(syscon)) {
-@@ -62,9 +69,11 @@ static int axxia_reset_probe(struct platform_device *pdev)
- 		return PTR_ERR(syscon);
+-	arm_pm_restart = rsctrl_restart;
+-
+ 	/* disable a reset isolation for all module clocks */
+ 	ret = regmap_write(pllctrl_regs, rspll_offset + RSISO_RG, 0);
+ 	if (ret)
+@@ -147,7 +153,11 @@ static int rsctrl_probe(struct platform_device *pdev)
+ 			return ret;
  	}
  
--	arm_pm_restart = do_axxia_restart;
-+	err = register_restart_handler(&axxia_restart_nb);
-+	if (err)
-+		dev_err(dev, "cannot register restart handler (err=%d)\n", err);
- 
 -	return 0;
-+	return err;
++	ret = register_restart_handler(&rsctrl_restart_nb);
++	if (ret)
++		dev_err(dev, "cannot register restart handler (err=%d)\n", ret);
++
++	return ret;
  }
  
- static const struct of_device_id of_axxia_reset_match[] = {
+ static struct platform_driver rsctrl_driver = {
 -- 
 1.9.1
 
