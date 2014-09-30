@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaI3KJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:09:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33846 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaI3KJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:09:43 -0400
-Date: Tue, 30 Sep 2014 12:09:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20140930100940.GD4639@pd.tnic>
-References: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
- <1411460354.25617.3.camel@debian>
- <20140929120546.GB6495@pd.tnic>
- <1412037578.21488.11.camel@debian>
- <20140930072553.GA4639@pd.tnic>
- <1412070991.16556.12.camel@cyc>
+	id S1751456AbaI3KMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:12:19 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:41548 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaI3KMR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:12:17 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 30 Sep 2014 12:09:36 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Johan Hovold <johan@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>
+Subject: Re: [PATCH 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C
+ adapter
+Message-ID: <20140930100936.GB17834@localhost>
+References: <1411378426-18387-1-git-send-email-muth@cypress.com>
+ <20140922113026.GF5237@localhost>
+ <6876ca326315426889d3dc596a495b23@BY2PR06MB076.namprd06.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412070991.16556.12.camel@cyc>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <6876ca326315426889d3dc596a495b23@BY2PR06MB076.namprd06.prod.outlook.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 05:56:31PM +0800, Chen Yucong wrote:
-> I just clear it to avoid that the mce_log() call logs the above
-> threshold event again in machine_check_poll().
+On Thu, Sep 25, 2014 at 05:46:16AM +0000, Muthu Mani wrote:
 
-Ok, that's a good point, please put it in the commit message.
+> > > +static int cy_i2c_xfer(struct i2c_adapter *adapter,
+> > > +                    struct i2c_msg *msgs, int num) {
+> > > +     int ret = 0;
+> > > +     struct cyusbs_i2c *cy_i2c;
+> > > +     struct cyusbs23x *cyusbs = (struct cyusbs23x
+> > > +*)adapter->algo_data;
+> > > +
+> > > +     dev_dbg(&adapter->dev, "%s\n", __func__);
+> > > +
+> > > +     if (num > 1) {
+> > > +             dev_err(&adapter->dev, "i2c_msg number is > 1\n");
+> > > +             return -EIO;
+> > > +     }
+> > 
+> > Why not handle multiple messages?
+> 
+> This iteration of the driver is designed to handle only a single
+> message at a time.
+> It can be expanded to handle multiple messages in future.
 
-> It is just used for scanning other banks for recording other valid
-> error information.
+No, please do that now. It's just a matter of adding a for loop.
 
-This is actually not what we want - we want to log the errors which
-cause the overflow first and then the rest. So you don't need the goto
-but simply have the machine_check_poll() at the end.
-
-Now let me repeat my question: how are you testing your patches?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Johan
