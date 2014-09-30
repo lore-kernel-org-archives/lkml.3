@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaI3SKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:10:24 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:44815 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaI3SKW convert rfc822-to-8bit (ORCPT
+	id S1753601AbaI3SKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:10:34 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36294 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaI3SKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:10:22 -0400
+	Tue, 30 Sep 2014 14:10:31 -0400
 MIME-Version: 1.0
-X-Originating-IP: [80.196.35.44]
-In-Reply-To: <alpine.LRH.2.03.1409301134580.4688@AMR>
-References: <1412098195-30133-1-git-send-email-m@bjorling.me>
-	<1412098195-30133-2-git-send-email-m@bjorling.me>
-	<alpine.LRH.2.03.1409301134580.4688@AMR>
-Date: Tue, 30 Sep 2014 20:10:21 +0200
-Message-ID: <CAOu_J6kb8pQRzhUWD=JOhi1_=mxORUiL-isSaCfrxQ-yxOUepw@mail.gmail.com>
-Subject: Re: [PATCH v13] NVMe: Convert to blk-mq
-From: =?UTF-8?Q?Matias_Bj=C3=B8rling?= <m@bjorling.me>
-To: Keith Busch <keith.busch@intel.com>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        "Sam Bradshaw (sbradshaw)" <sbradshaw@micron.com>,
-        Jens Axboe <axboe@fb.com>, Ming Lei <tom.leiming@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Rob Nelson <rlnelson@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-nvme <linux-nvme@lists.infradead.org>
+Date: Tue, 30 Sep 2014 19:10:30 +0100
+Message-ID: <CABz95_CN0eDwfgpTTBq0QymxtPJBYmBWw0X5K=Xa4rVKddrrzA@mail.gmail.com>
+Subject: [PATCH] zram: trivial improvements to the startup message
+From: Steven Honeyman <stevenhoneyman@gmail.com>
+To: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 7:42 PM, Keith Busch <keith.busch@intel.com> wrote:
-> On Tue, 30 Sep 2014, Matias Bjørling wrote:
->>
->> @@ -1967,27 +1801,30 @@ static struct nvme_ns *nvme_alloc_ns(struct
->> nvme_dev *dev, unsigned nsid,
->> {
->
-> ...
->>
->> -       ns->queue->queue_flags = QUEUE_FLAG_DEFAULT;
->> +       queue_flag_set_unlocked(QUEUE_FLAG_DEFAULT, ns->queue);
->
->
-> Instead of the above, you want
->
-> +       ns->queue->queue_flags |= QUEUE_FLAG_DEFAULT;
->
-> I only caught it because of the fun dm-mpath attempt with nvme and
-> blk-mq. Or maybe we don't want to include "QUEUE_FLAG_STACKABLE" right
-> now (part of the default flags) because it will kernel crash if you're
-> using dm-multipath with a blk-mq driver today.
->
+Originally I intended to just remove the ellipsis, because it usually
+signifies that something is in progress and will take some time to
+complete.
+The plural "device"/"devices" is just a bonus addition, because it was
+in the same line I was editing!
 
-Great find. We should properly add a bunch of patches that add the
-necessary support after the patch has gone in. I have a feeling that
-there is a lot of interesting corner cases for getting stackable to
-work.
+Signed-off-by: Steven Honeyman <stevenhoneyman@gmail.com>
+---
+ drivers/block/zram/zram_drv.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Otherwise, looks great!
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c..71e6fe0 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -1018,7 +1018,8 @@ static int __init zram_init(void)
+             goto free_devices;
+     }
+
+-    pr_info("Created %u device(s) ...\n", num_devices);
++    pr_info("Created %u device%s\n", num_devices,
++                num_devices > 1 ? "s" : "");
+
+     return 0;
+
+-- 
+2.1.1
