@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaI3TLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:11:09 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55248 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaI3TLF (ORCPT
+	id S1752757AbaI3TNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:13:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57016 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaI3TNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:11:05 -0400
-Date: Tue, 30 Sep 2014 20:10:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Message-ID: <20140930191030.GK4273@sirena.org.uk>
-References: <cover.1411547014.git.moinejf@free.fr>
+	Tue, 30 Sep 2014 15:13:07 -0400
+Message-ID: <542B00C1.3010702@codeaurora.org>
+Date: Tue, 30 Sep 2014 12:13:05 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UlsYxwg8UDQn+EKZ"
-Content-Disposition: inline
-In-Reply-To: <cover.1411547014.git.moinejf@free.fr>
-X-Cookie: So you're back... about time...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 0/2] ASoC: tda998x: add a codec to the HDMI transmitter
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org> <5429DA95.80505@codeaurora.org> <20140930050203.GG28481@sonymobile.com> <542AF5FE.1000006@codeaurora.org> <20140930190023.GS28481@sonymobile.com>
+In-Reply-To: <20140930190023.GS28481@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/30/14 12:00, Bjorn Andersson wrote:
+>
+> Hmm, seems I got that wrong, sorry about that.
+>
+> But do you mean "all wrong" as in that I use the wrong bit or to some greater
+> extent? Currently all following requests should timeout, but maybe we should
+> have a faster fail-path when we've hit this point?
 
---UlsYxwg8UDQn+EKZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes. We just ack the interrupt and go on happy to keep allowing clients
+to request things. I'd rather see us blow up or start failing requests,
+or maybe both.
 
-On Wed, Sep 24, 2014 at 10:23:34AM +0200, Jean-Francois Moine wrote:
-> The NXP TDA998x HDMI transmitter may transmit audio to the HDMI link
-> from 2 different sources, I2S and S/PDIF.
->=20
-> This patch set adds an interface between the HDMI transmitter and
-> the HDMI CODEC.
+>
+> From a practical pov I guess that once the rpm starts returning errors on
+> updates to regulators, root clocks and bus scaling then most of the system is
+> becoming useless.
 
-I'd really like to see some of the other people who are working with
-HDMI reviewing this - this is a generic part which seems to be very
-widely used so we need to make sure that what's being done works for
-other systems.  Jyri, I see you're on CC?
+Right. Rebooting will be required fairly soon.
 
---UlsYxwg8UDQn+EKZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUKwAlAAoJECTWi3JdVIfQH1MH/3CB9KcMtVo91cYIGvwoDf7G
-9bnZgjZihsfen3s+tExspWb38pBZKUmDP+W82O9Qdzr58ir0KpE4RdbtyL9jpSGZ
-5pc2apejQwKkuvgZsVrRiuk0vM1c2+Sf+E7D8gL4CiSAT7SJhqgG0x0dveSRG4Hp
-t+s3Q5cymJphI1YE0EeNE1QwjCvXWQW2nrr6Km7X/JtbCrhbs6pOBWxoGNPgIW7o
-yDjvUQWDfLU3AcKD/P7TAXstScJU8hYR4XUGoxJRbP25c3dcsJJhJvDFhz/YXfMF
-nhlKYKzwVzgJtnM8k70ZxZyWasqAiSkKoDLXr6mHLjZKMO9i6eZDf3hglhkuXCY=
-=hbwq
------END PGP SIGNATURE-----
-
---UlsYxwg8UDQn+EKZ--
