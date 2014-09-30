@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751196AbaI3V16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:27:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:56872 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbaI3V14 convert rfc822-to-8bit (ORCPT
+	id S1751445AbaI3V2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:28:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45411 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaI3V2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:27:56 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 30 Sep 2014 17:28:11 -0400
+Message-ID: <542B204D.7050105@ti.com>
+Date: Tue, 30 Sep 2014 16:27:41 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: =?utf-8?q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        linux-next@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
-Cc: linux-kernel@vger.kernel.org,
-        =?utf-8?q?Vincent_Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        "Jyri Sarha" <jsarha@ti.com>
-References: <20140930162635.GA7135@roeck-us.net>
- <1412105803-9954-1-git-send-email-vincent.stehle@laposte.net>
-Message-ID: <20140930212730.19023.54223@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH linux-next] clk-gpio-gate: include gpio/consumer to fix build
-Date: Tue, 30 Sep 2014 14:27:30 -0700
+To: Bjorn Andersson <bjorn@kryo.se>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv6 0/5] hwspinlock core/omap dt support
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com> <CAJAp7Ogbj5K4N7=TEQQ8HJ0X7hkOqzFwv=1bRicVCNX9cv_jaA@mail.gmail.com>
+In-Reply-To: <CAJAp7Ogbj5K4N7=TEQQ8HJ0X7hkOqzFwv=1bRicVCNX9cv_jaA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Vincent Stehlé (2014-09-30 12:36:43)
-> This fixes the following build error:
-> 
->   drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_enable’:
->   drivers/clk/clk-gpio-gate.c:36:2: error: implicit declaration of function ‘gpiod_set_value’ [-Werror=implicit-function-declaration]
->   drivers/clk/clk-gpio-gate.c: In function ‘clk_gpio_gate_is_enabled’:
->   drivers/clk/clk-gpio-gate.c:52:2: error: implicit declaration of function ‘gpiod_get_value’ [-Werror=implicit-function-declaration]
->   drivers/clk/clk-gpio-gate.c: In function ‘clk_register_gpio_gate’:
->   drivers/clk/clk-gpio-gate.c:79:2: error: implicit declaration of function ‘gpiod_is_active_low’ [-Werror=implicit-function-declaration]
->   drivers/clk/clk-gpio-gate.c:85:3: error: implicit declaration of function ‘desc_to_gpio’ [-Werror=implicit-function-declaration]
->   drivers/clk/clk-gpio-gate.c:125:2: error: implicit declaration of function ‘gpiod_put’ [-Werror=implicit-function-declaration]
->   drivers/clk/clk-gpio-gate.c: In function ‘of_clk_gpio_gate_delayed_register_get’:
->   drivers/clk/clk-gpio-gate.c:169:2: error: implicit declaration of function ‘gpio_to_desc’ [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-> Cc: Jyri Sarha <jsarha@ti.com>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> ---
-> 
-> Hi,
-> 
-> This can be seen with e.g. linux next-20140930 and arm alldefconfig.
+Hi Bjorn,
 
-Fixed with:
+On 09/30/2014 03:54 PM, Bjorn Andersson wrote:
+> On Fri, Sep 12, 2014 at 1:24 PM, Suman Anna <s-anna@ti.com> wrote:
+>> Hi Ohad,
+>>
+>> This is an update to the hwspinlock dt support series. The series
+>> is rebased onto v3.17-rc3, and addresses the review comments on the
+>> previous v5 series. I have also split and left out the RFC patches
+>> about the support for reserved locks (will post these as a separate
+>> series) and return code convention changes in the hwspinlock core
+>> (will not be needed anymore). The support for deferred probing of
+>> clients is supported in the new of_hwspin_lock_get_id() function
+>> itself.
+>>
+> 
+> Thanks for your reply to me, I had missed that you continued this work.
+> 
+> 
+> I find it somewhat awkward to have to call both of_hwspin_lock_get_id() and
+> then hwspin_lock_request_specific(), but I found the request from Ohad, so
+> let's stick with it.
+> 
+> Am I right that hwlock-num-locks and hwlock-base-id are optional from the
+> frameworks perspective and only there to aid the hwspin drivers? If so it is
+> strange to have in the common binding and have the helper functions in the core
+> for simply reading hwspin device specific properties.
 
-https://git.linaro.org/people/mike.turquette/linux.git/commit/44b4aa97bea84fa8ac179155f147e3483cc7a6e0
+The hwlock-num-locks and hwlock-base-id would be common features to all
+the hwspinlock drivers, so they are added as common bindings which the
+individual implementations should use instead of defining their own
+properties. These are added based on discussion way back on v1. You
+ought to replace the "qcom,num-locks" with the first one.
 
-Regards,
-Mike
+I will respond to your v4 with a few comments so that we don't loose the
+context in that thread.
 
 > 
-> Best regards,
+> Otherwise I think it looks sane, although I haven't spend that much time
+> reviewing it.
 > 
-> V.
+> I did throw it into my tree and gave it a testrun with the Qualcomm code I've
+> been working on. So for the non-omap parts:
 > 
->  drivers/clk/clk-gpio-gate.c | 1 +
->  1 file changed, 1 insertion(+)
+> Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 > 
-> diff --git a/drivers/clk/clk-gpio-gate.c b/drivers/clk/clk-gpio-gate.c
-> index 9dde885..08e4322 100644
-> --- a/drivers/clk/clk-gpio-gate.c
-> +++ b/drivers/clk/clk-gpio-gate.c
-> @@ -13,6 +13,7 @@
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/gpio.h>
-> +#include <linux/gpio/consumer.h>
->  #include <linux/of_gpio.h>
->  #include <linux/err.h>
->  #include <linux/device.h>
-> -- 
-> 2.1.0
-> 
+
+Thanks for testing this with the new Qualcomm driver.
+
+regards
+Suman
+
