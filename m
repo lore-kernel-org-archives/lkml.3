@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaI3LDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 07:03:15 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:34821 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbaI3LDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 07:03:13 -0400
-From: Thibaut Robert <thibaut.robert@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michalis Pappas <mpappas@fastmail.fm>,
-        Davide Gianforte <davide@gengisdave.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Thibaut Robert <thibaut.robert@gmail.com>
-Subject: [PATCH] staging: gdm72xx: fix typo and coding style
-Date: Tue, 30 Sep 2014 13:03:03 +0200
-Message-Id: <1412074983-10909-1-git-send-email-thibaut.robert@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412015484.4302.51.camel@joe-AO725>
-References: <1412015484.4302.51.camel@joe-AO725>
+	id S1752050AbaI3LEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 07:04:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182AbaI3LD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 07:03:59 -0400
+Message-ID: <1412075023.7155.21.camel@localhost>
+Subject: Re: [PATCH] tun: make sure interface usage can not overflow
+From: Hannes Frederic Sowa <hannes@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Tom Herbert <therbert@google.com>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>,
+        stephen hemminger <stephen@networkplumber.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Tue, 30 Sep 2014 13:03:43 +0200
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174A0C5C@AcuExch.aculab.com>
+References: <20140928232753.GA31180@www.outflux.net>
+	 <063D6719AE5E284EB5DD2968C1650D6D1749FC70@AcuExch.aculab.com>
+	 <CAGXu5jKL13qdCBet3yqpc3vLYh_LifBACzL+NP8n-A+E8RMZXw@mail.gmail.com>
+	 <1412021098.14757.6.camel@localhost>
+	 <063D6719AE5E284EB5DD2968C1650D6D174A0C5C@AcuExch.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a typo in error message.
-Add missing curling braces to conform to coding style.
-Improve readibility.
+On Di, 2014-09-30 at 08:20 +0000, David Laight wrote:
+> From: Hannes Frederic
+> > On Mo, 2014-09-29 at 12:41 -0700, Kees Cook wrote:
+> > > On Mon, Sep 29, 2014 at 4:04 AM, David Laight <David.Laight@aculab.com> wrote:
+> > > > From: Kees Cook
+> > > >> This makes the size argument a const, since it is always populated by
+> > > >> the caller.
+> > > >
+> > > > There is almost no point making parameters 'const.
+> > > > ('const foo *' makes sense).
+> > > >
+> > > >> Additionally double-checks to make sure the copy_from_user
+> > > >> can never overflow, keeping CONFIG_DEBUG_STRICT_USER_COPY_CHECKS happy:
+> > > >>
+> > > >>    In function 'copy_from_user',
+> > > >>        inlined from '__tun_chr_ioctl' at drivers/net/tun.c:1871:7:
+> > > >>        ... copy_from_user() buffer size is not provably correct
+> > > >
+> > > > If 'ifreq_len' could be too big then you want to error the ioctl, not panic.
+> > > > If it can't be too big you don't need the check.
+> > >
+> > > The ifreq_len comes from the callers, and is the output of "sizeof"
+> > > which is const. Changing the function parameter to "const" means any
+> > > changes made in the future where the incoming value isn't const, the
+> > > compiler will throw a warning.
+> > 
+> > Hmmm, I think you want something like BUILD_BUG_ON(!
+> > __builtin_constant_p(var)). const in function argument only ensures that
+> > the value cannot be modified in the function.
+> 
+> You'd have to do something in the header file - nothing in the function
+> body can do that check.
 
-Signed-off-by: Thibaut Robert <thibaut.robert@gmail.com>
----
- drivers/staging/gdm72xx/netlink_k.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Sure, it should work. You only need to make sure that gcc inlines the
+function, so the value is constant (it is not enough that gcc knows the
+value range, one specific constant is needed). So the simplest fix for
+this is to specify __tun_chr_ioctl as __always_inline. ;)
 
-diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
-index 9d78bfc..31862e5 100644
---- a/drivers/staging/gdm72xx/netlink_k.c
-+++ b/drivers/staging/gdm72xx/netlink_k.c
-@@ -71,10 +71,11 @@ static void netlink_rcv_cb(struct sk_buff *skb)
- 			if (dev) {
- 				rcv_cb(dev, nlh->nlmsg_type, msg, mlen);
- 				dev_put(dev);
--			} else
-+			} else {
- 				netdev_err(skb->dev,
- 					   "dev_get_by_index(%d) is not found.\n",
- 					   ifindex);
-+			}
- 		} else {
- 			netdev_err(skb->dev, "Unregistered Callback\n");
- 		}
-@@ -120,9 +121,9 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
- 	struct nlmsghdr *nlh;
- 	int ret = 0;
- 
--	if (group > ND_MAX_GROUP) {
--		pr_err("Group %d is invalied.\n", group);
--		pr_err("Valid group is 0 ~ %d.\n", ND_MAX_GROUP);
-+	if (group < 0 || group > ND_MAX_GROUP) {
-+		pr_err("Invalid group %d (valid groups are 0 to %d)\n",
-+			group, ND_MAX_GROUP);
- 		return -EINVAL;
- 	}
- 
-@@ -147,10 +148,9 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
- 
- 	if (!ret)
- 		return len;
--	if (ret != -ESRCH) {
-+
-+	if (ret != -ESRCH)
- 		pr_err("netlink_broadcast g=%d, t=%d, l=%d, r=%d\n",
- 		       group, type, len, ret);
--	}
--	ret = 0;
--	return ret;
-+	return 0;
- }
--- 
-1.9.1
+Bye,
+Hannes
 
