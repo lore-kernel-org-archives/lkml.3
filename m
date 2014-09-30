@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaI3QZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55827 "EHLO mx1.redhat.com"
+	id S1753280AbaI3Q0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:26:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57411 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752984AbaI3QZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:25:55 -0400
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
-        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
-        hannsj_uhl@de.ibm.com, torvalds@linux-foundation.org
-Subject: [PATCH v2 3/4] x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
-Date: Tue, 30 Sep 2014 18:25:02 +0200
-Message-Id: <1412094303-28183-4-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1412094303-28183-1-git-send-email-fhrbata@redhat.com>
-References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
- <1412094303-28183-1-git-send-email-fhrbata@redhat.com>
+	id S1752864AbaI3Q0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:26:04 -0400
+Message-ID: <542AD979.9000901@ti.com>
+Date: Tue, 30 Sep 2014 11:25:29 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv6 0/5] hwspinlock core/omap dt support
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+In-Reply-To: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far (xlate|unxlate)_dev_mem_ptr for read/write /dev/mem relies on a generic
-high_memory check in valid_phys_addr_range(), which does not allow to access any
-memory above high_memory whatsoever. By adding the high_memory check to
-(xlate|unxlate)_dev_mem_ptr, it still will be possible to use __va safely for
-kernel mapped memory and it will also allow read/write to access non-system RAM
-above high_memory once the high_memory check is removed from
-valid_phys_addr_range.
+Hi Ohad,
 
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
----
- arch/x86/mm/ioremap.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+>
+> This is an update to the hwspinlock dt support series. The series
+> is rebased onto v3.17-rc3, and addresses the review comments on the
+> previous v5 series. I have also split and left out the RFC patches
+> about the support for reserved locks (will post these as a separate
+> series) and return code convention changes in the hwspinlock core
+> (will not be needed anymore). The support for deferred probing of
+> clients is supported in the new of_hwspin_lock_get_id() function
+> itself.
+> 
+> Following are the main changes in v6 w.r.t v5:
+> - [Patch 1] Updated generic hwspinlock bindings after folding back
+>   the hwlock-base-id property from v5 Patch 8 [1]. [Patch 1]
+> - [Patch 4] Updated the common OF helpers patch based on review
+>   comments on v5. of_hwspin_lock_request_specific() is replaced
+>   with of_hwspin_lock_get_id(). of_hwspin_lock_simple_xlate() is
+>   made internal, and of_hwspin_lock_get_base_id() is added.
+> - [Patch 5] Updated the OMAP hwspinlock DT support patch to address
+>   review comments about hard-coded base-id, it is parsed from DT
+>   if present.
+> - Patches 2 and 3 are unchanged from previous version.
+> - Support patches for AM335x and AM437x SoCs (v5 patches 6 and 7)
+>   have been dropped as they are merged in separately for 3.17
+> - RFC patches (v5 patches 9 through 15) adding the concept of
+>   reserved locks and return code change convention dropped.
+> 
+> I had looked into dropping the patch to maintain the list of registered
+> spinlocks, but had to retain the patch as it was needed to perform the
+> validity of the args-specifier value in of_hwspin_lock_get_id().
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index baff1da..1ae7323 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -320,8 +320,11 @@ void *xlate_dev_mem_ptr(unsigned long phys)
- 	void *addr;
- 	unsigned long start = phys & PAGE_MASK;
- 
--	/* If page is RAM, we can use __va. Otherwise ioremap and unmap. */
--	if (page_is_ram(start >> PAGE_SHIFT))
-+	/*
-+	 * If page is RAM and is mapped by kernel, we can use __va.
-+	 * Otherwise ioremap and unmap.
-+	 */
-+	if (page_is_ram(start >> PAGE_SHIFT) && phys <= __pa(high_memory))
- 		return __va(phys);
- 
- 	addr = (void __force *)ioremap_cache(start, PAGE_SIZE);
-@@ -333,7 +336,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
- 
- void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
- {
--	if (page_is_ram(phys >> PAGE_SHIFT))
-+	if (page_is_ram(phys >> PAGE_SHIFT) && phys <= __pa(high_memory))
- 		return;
- 
- 	iounmap((void __iomem *)((unsigned long)addr & PAGE_MASK));
--- 
-1.9.3
+Ping, do you have any comments on this revised series? If not, can we
+queue this for 3.18?
+
+regards
+Suman
+
+> 
+> The validation logs on all the applicable OMAP SoCs are at:
+>   OMAP4  - http://pastebin.ubuntu.com/8329228
+>   OMAP5  - http://pastebin.ubuntu.com/8329301
+>   DRA74x - http://pastebin.ubuntu.com/8329261
+>   AM33xx - http://pastebin.ubuntu.com/8329199
+>   AM43xx - http://pastebin.ubuntu.com/8329273
+> 
+> The above logs are generated with some additional test patches staged
+> here for reference:
+> https://github.com/sumananna/omap-kernel/commits/hwspinlock/test/3.17-rc3-dt-v6
+> https://github.com/sumananna/omap-kernel/commits/hwspinlock/submit/3.17-rc3-dt-v6
+> 
+> regards
+> Suman
+> 
+> [1] https://patchwork.kernel.org/patch/4096741/
+> 
+> ---
+> v5:
+> http://marc.info/?l=linux-omap&m=139890478402807&w=2
+> - Rebased v4 patches plus additional RFC patches.
+> - Added back the patch to support DT-based hwlock-base-id property,
+>   for registration purposes.
+> - RFC patches introducing the concept of reserved locks.
+> - Staged patches for converting return convention to better support
+>   deferred probing of client drivers.
+> 
+> v4:
+> - The DT bindings are split into separate patches, and updated to
+>   add comments about #hwlock-cells
+> - Fixed a registration issue with repeated module installation and
+>   removal.
+> - Added a new OF helper to support #hwlock-cells in addition to the
+>   previous OF functions. The OMAP adaptation patch is updated to use
+>   the default translate function
+> - Updated hwspinlock documentation to adjust for the structure
+>   changes and the new api additions.
+> - Added build support for AM335x, AM43xx and DRA7xx
+> http://marc.info/?l=linux-omap&m=138965904015225&w=2
+> 
+> v3:
+> - Removed the DT property hwlock-base-id and associated OF helper
+> - Added changes in core to support requesting a specific hwlock using
+>   phandle + args approach
+> - Revised both the common and OMAP DT bindings document
+> http://marc.info/?l=linux-omap&m=138143992932197&w=2
+> 
+> v2:
+> - Added a new common DT binding documentation and OF helpers.
+> - Revised OMAP DT parse support to use the new OF helper (Patch2)
+> - OMAP5 hwspinlock support including the hwmod entry and DT node
+> - Add AM335x support to OMAP hwspinlock driver, including a fix
+>   needed in driver given that AM335 spinlock module requires s/w wakeup
+> - AM335 DT node for spinlock, and a hwmod change to enable smart-idle
+>   for AM335.
+> - OMAP4 DT node patch is unchanged
+> http://marc.info/?l=linux-omap&m=137944644112727&w=2
+> 
+> v1:
+> - Add DT parse support to OMAP hwspinlock driver
+> - Add OMAP4 DT node and bindings information
+> http://marc.info/?l=linux-omap&m=137823082308009&w=2
+> 
+> ---
+> 
+> Suman Anna (5):
+>   Documentation: dt: add common bindings for hwspinlock
+>   Documentation: dt: add the omap hwspinlock bindings document
+>   hwspinlock/core: maintain a list of registered hwspinlock banks
+>   hwspinlock/core: add common OF helpers
+>   hwspinlock/omap: add support for dt nodes
+> 
+>  .../devicetree/bindings/hwlock/hwlock.txt          |  55 +++++++
+>  .../devicetree/bindings/hwlock/omap-hwspinlock.txt |  24 +++
+>  Documentation/hwspinlock.txt                       |  28 ++++
+>  MAINTAINERS                                        |   1 -
+>  arch/arm/mach-omap2/Makefile                       |   3 -
+>  arch/arm/mach-omap2/hwspinlock.c                   |  60 -------
+>  drivers/hwspinlock/hwspinlock_core.c               | 173 +++++++++++++++++++++
+>  drivers/hwspinlock/hwspinlock_internal.h           |   2 +
+>  drivers/hwspinlock/omap_hwspinlock.c               |  23 ++-
+>  include/linux/hwspinlock.h                         |  15 +-
+>  10 files changed, 312 insertions(+), 72 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>  create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+>  delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
+> 
 
