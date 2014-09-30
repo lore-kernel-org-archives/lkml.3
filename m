@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaI3Kv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:51:27 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:44866 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaI3KvX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:51:23 -0400
-Date: Tue, 30 Sep 2014 12:51:19 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Max Filippov <jcmvbkbc@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, sparclinux <sparclinux@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 6/8] asm-generic/io.h: Implement generic
- {read,write}s*()
-Message-ID: <20140930105118.GA27560@ulmo>
-References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
- <CAMo8BfJ9VJ24zsn_6VwNrAntmDqdJu11O79OyMd8eThv3UaaUw@mail.gmail.com>
- <CAMo8Bf+u8er_KF4nJPSPNf9OmKZHu4y0x3Pcb7DU17y5ocBJqw@mail.gmail.com>
- <1799506.5Clfp6gmMu@wuerfel>
+	id S1751365AbaI3Kz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:55:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56010 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaI3KzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:55:24 -0400
+Date: Tue, 30 Sep 2014 12:55:20 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH v2] i2c: move acpi code back into the core
+Message-ID: <20140930125520.61b57882@endymion.delvare>
+In-Reply-To: <1411594591-5048-1-git-send-email-wsa@the-dreams.de>
+References: <1411594591-5048-1-git-send-email-wsa@the-dreams.de>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
-In-Reply-To: <1799506.5Clfp6gmMu@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfram,
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry for the late reply, I was on the road for most of the past 2
+weeks.
 
-On Tue, Sep 30, 2014 at 12:39:37PM +0200, Arnd Bergmann wrote:
-> On Tuesday 30 September 2014 14:26:20 Max Filippov wrote:
-> > On Tue, Sep 30, 2014 at 2:22 PM, Max Filippov <jcmvbkbc@gmail.com> wrot=
-e:
-> > > Hi Thierry,
-> > >
-> > >> I think this can be fixed by including linux/string.h for memset() a=
-nd
-> > >> memcpy() in include/asm-generic/io.h.
-> > >
-> > > Will you send that fix or do I need to do it?
-> >=20
-> > Never mind, found that it's fixed in today's next.
-> >=20
-> >=20
->=20
->=20
-> Actually I just backed out the original patches, the problem is still
-> there in my tree.
+On Wed, 24 Sep 2014 23:36:31 +0200, Wolfram Sang wrote:
+> Commit 5d98e61d337c ("I2C/ACPI: Add i2c ACPI operation region support")
+> renamed the i2c-core module. This may cause regressions for
+> distributions, so put the ACPI code back into the core.
+> 
+> Reported-by: Jean Delvare <jdelvare@suse.de>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Cc: Lan Tianyu <tianyu.lan@intel.com>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> ---
+> 
+> v2: - make all acpi functions static
+>     - annotate #endif
+>     - remove declarations in i2c.h
+>     - add dummy functions to i2c-core.c
+>     - make two seperate #ifdef blocks instead of two nested ones
+>       (otherwise build errors due to no external decl. anymore)
+> 
+> Mika, Lan, Jean: please test/review. I am still waiting for some testbot
+> results, yet your audit is very wanted.
 
-I'll integrate the fix for this in my series, so this should be gone
-with v5.
+I see that the patch is already upstream. Nevertheless I reviewed the
+integration part of it and it looks OK to me. Thanks for doing that!
 
-Thierry
+The only thing which I find curious is that ACPI_I2C_OPREGION depends
+on I2C=y. Is this limitation a leftover from when the code was split to
+a separate file? It builds just fine with I2C=m, and I can't see why it
+wouldn't work. I have a patch to enable that, I can send it if it is
+the right thing to do. But maybe I'm missing something?
 
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUKosmAAoJEN0jrNd/PrOhrE8QAK/BmvywtJzQDgITRXV6OmlR
-zGytBnkrGNB6GPzrir+o11WlOAira8bcr17OWn0JasMkvH8rN1tS0uC91XPt3IPL
-EHxFZl2I7AkNvdv2/Iwi/UntwkPBBbBNNeIl+b9ueKeNAEMB7BvzUiYZ00q7plqg
-Kkmy09cqoOAOGxaMY5r57/bhitoy8+OM72mamqU/JKApmuJ08jIkRHSWZkWlPq2F
-aPd8E0lD/E/skDQ9RDUYPDUl58pSsfiM4YFYZvsaLgJyDua/8dFwVg8QehbegrOh
-+hBfs7Kzk5ZMwzfyv+pj/64+Ub3l7i8hVb5h1LIS91xPdCBSr74FeYLp6qgEc/Mp
-ina5Oh7+Cv34Us0hvBX1NJRsAA3bgmUnt1XeEGbm2V2p+tq+I5XtYIJTkg7R39YR
-51u1oJGL9zjpFk0p5QtnIWl75t/po9TPoxyhW1HXr4XyWRicPE46Si4gA2/y/FWI
-PmCy5HLR38yOGNNQFB02lSRdPSGKRoggpMeu2cQEOTFf37D2OphxmSR1LMsCbLml
-fqrIbqJqXah4S8wmbaAT81LOBB+/5g/r7BLbYn+tvw2ckxroY9Jyd+UjaiByJ/aZ
-6fOGyBc6/jy36Ox6QZCI75pZf+XSgsuva5yBbkdSqKQCrWsKYHrhcaAc3w6fxJAt
-NZQ3rK42O9a/3d6wyzTx
-=yVff
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
+Thanks again,
+-- 
+Jean Delvare
+SUSE L3 Support
