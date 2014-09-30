@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaI3Vw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:52:57 -0400
-Received: from omr2.cc.vt.edu ([198.82.141.100]:37082 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710AbaI3Vwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:52:54 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-In-Reply-To: Your message of "Tue, 30 Sep 2014 15:25:17 -0600."
-             <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
-From: Valdis.Kletnieks@vt.edu
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx> <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx> <15704.1412109476@turing-police.cc.vt.edu>
-            <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1412113956_2351P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 30 Sep 2014 17:52:36 -0400
-Message-ID: <62749.1412113956@turing-police.cc.vt.edu>
+	id S1755000AbaI3VxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:53:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33675 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaI3Vw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:52:59 -0400
+Date: Tue, 30 Sep 2014 23:52:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+cc: Jisheng Zhang <jszhang@marvell.com>, jason@lakedaemon.net,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
+In-Reply-To: <542AA336.6070206@gmail.com>
+Message-ID: <alpine.DEB.2.11.1409302351500.4455@nanos>
+References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-4-git-send-email-jszhang@marvell.com> <542AA336.6070206@gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1412113956_2351P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
+> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
+> > This patch adds in support for S2R for dw-apb-ictl irqchip driver.
+> > 
+> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> > ---
+> >   drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
+> >   1 file changed, 19 insertions(+)
+> > 
+> > diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
+> > b/drivers/irqchip/irq-dw-apb-ictl.c
+> > index c136b67..53bb732 100644
+> > --- a/drivers/irqchip/irq-dw-apb-ictl.c
+> > +++ b/drivers/irqchip/irq-dw-apb-ictl.c
+> > @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
+> > struct irq_desc *desc)
+> >   	chained_irq_exit(chip, desc);
+> >   }
+> > 
+> > +#ifdef CONFIG_PM
+> > +static void dw_apb_ictl_resume(struct irq_data *d)
+> > +{
+> > +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> > +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
+> > +
+> > +	irq_gc_lock(gc);
+> > +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
+> > +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
+> > +	irq_gc_unlock(gc);
+> > +}
+> 
+> I agree with the overall change, but may this also be suited for a
+> generic irq_chip helper instead of being a driver specific one?
+> 
+> Maybe Thomas or Jason can comment on this.
 
-On Tue, 30 Sep 2014 15:25:17 -0600, Andreas Dilger said:
+If we have enough similar resume callbacks, yes. 
+ 
+> Also, now that you are using writel_relaxed, I understand that both
+> writes above can happen in any order? Are there any implication we
+> have to consider, i.e. do we require any of the registers above to
+> be written first?
 
-> I think you would be much better off having more aggressive "use once"
-> semantics in the page cache, so that page cache pages for streaming
-> writes are evicted more aggressively from cache rather than going down
-> the "automatic O_DIRECT" hole.
+Was about to ask that as well :)
 
-Well, I'm open to convincing.. an inode bit that says "I/O for this file is
-always first out of the page cache" would probably fix  most of the thrashing
-page cache problem (and avoid the "unexpected O_DIRECT kills the program"
-issue), at the cost of a little more CPU when we turn around and evict it
-from the page cache.
+Thanks,
 
-As long as we're at it, if we go that route we probably *also* want a
-way for a program to specify it at open() time (for instance, for the
-use of backup programs) - that should minimize the infamous "everything
-runs like a pig after the backup finishes running because  the *useful*
-pages are all cache-cold".
-
-(And yes, you really *do* want the ability in both places - one for a
-program to be able to say "do this for any file I touch", and another for
-the file to say "do this for any program that touches me").
-
-Matthew - would that sort of approach make more sense to you?  I admit
-I originally posted only because I'd just finished fighting with a
-similar issue, and code floated by that got filesystem pages into
-core without trashing the page cache.  I'm not at all tied to the specific
-solution.. :)
-
-
-
---==_Exmh_1412113956_2351P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVCsmJAdmEQWDXROgAQLF4w//bC27sR3tYMAXUDIz7gtBvyZfAgV6MZE8
-ISyDvTbznH26Whpz2lnZovOYcOQ492pq7/aWVwmpvoRdERD+pXygtKx2UcCH3Pra
-c9H/VVUHmEH0gRM99olZtyvIIdGG4nGW4fs9orw6DfnEnrurhybWlQGNgeCe8HgV
-ul+FQ+zOW+fP7rrQBCGn/y1mA5yYWbWy8ox+/kYnX6X0noMDpSYndV05nLp95MC2
-ThalxXom8Nxzi5J/aDKFpT7ihHEiCr6xiGV+EsyNGhIjtjR/Y/VhzsJ32f8aBBdh
-PqopyQvhNlfqY3jOKSIjaWbhatubQzyL5xcLQXRptok6xW90XXT9tDRr4mDshzhO
-UCOg7DQ8ylI6AVE6fVHD6cqSXu+VONSJRu1fBRTnSKbebKEz1pApXONkrFNRphsl
-yvm0dsT7cEF8qV6XRtl498nnNjeZv010x6L0aiP6gH7Uhb0DqlTfE0t+e5zaBe1T
-cubwHzDmxj4DLb0Iq6/KftAHq6J1zQ0EflHJH1al7VrUSoA0Ad8q1mBD0dN1KiQg
-DP6GU3n4PUhXBAO3K0z0DJdxvh8P54O3XOK808onOIvWEDLxiqrxjmTPSsehAtM6
-O1P4ip2Ko93dEr7iFEtAM4RKD7ZBQlz7DQj5r9Dl2XvfdwRYvKtEwf/VLWb2vCv0
-+90jeX7+1eM=
-=sOpo
------END PGP SIGNATURE-----
-
---==_Exmh_1412113956_2351P--
+	tglx
