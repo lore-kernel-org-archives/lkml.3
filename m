@@ -1,139 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaI3QMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:12:51 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52689 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaI3QMt convert rfc822-to-8bit (ORCPT
+	id S1752275AbaI3QOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:14:46 -0400
+Received: from auth-4.ukservers.net ([217.10.138.158]:50193 "EHLO
+	auth-4.ukservers.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaI3QOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:12:49 -0400
-Date: Tue, 30 Sep 2014 17:12:41 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Message-ID: <20140930161241.GA16583@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
- <8631927.qWHZsjCs8e@wuerfel>
- <20140930120344.GA14215@e102568-lin.cambridge.arm.com>
- <3090148.OUdB0fsdsR@wuerfel>
+	Tue, 30 Sep 2014 12:14:45 -0400
+X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Sep 2014 12:14:44 EDT
+Date: Tue, 30 Sep 2014 17:06:22 +0100 (BST)
+From: Carl Hetherington <cth@carlh.net>
+X-X-Sender: carl@main.carlh.net
+To: linux-kernel@vger.kernel.org
+Message-ID: <alpine.DEB.2.02.1409301704020.27485@main.carlh.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <3090148.OUdB0fsdsR@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 30 Sep 2014 16:12:45.0597 (UTC) FILETIME=[5EEA14D0:01CFDCC9]
-X-MC-Unique: 114093017124600801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: cth@carlh.net
+Subject: [PATCH] nfs/keys/idmap: intermittent erroneous uid/gid bug
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on main.carlh.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 01:31:44PM +0100, Arnd Bergmann wrote:
-> On Tuesday 30 September 2014 13:03:44 Lorenzo Pieralisi wrote:
-> > > >  static int gen_pci_probe(struct platform_device *pdev)
-> > > >  {
-> > > > @@ -326,6 +385,7 @@ static int gen_pci_probe(struct platform_device *pdev)
-> > > >         struct device *dev = &pdev->dev;
-> > > >         struct device_node *np = dev->of_node;
-> > > >         struct gen_pci *pci = devm_kzalloc(dev, sizeof(*pci), GFP_KERNEL);
-> > > > +#ifndef CONFIG_ARM64
-> > > >         struct hw_pci hw = {
-> > > >                 .nr_controllers = 1,
-> > > >                 .private_data   = (void **)&pci,
-> > > > @@ -333,6 +393,7 @@ static int gen_pci_probe(struct platform_device *pdev)
-> > > >                 .map_irq        = of_irq_parse_and_map_pci,
-> > > >                 .ops            = &gen_pci_ops,
-> > > >         };
-> > > > +#endif
-> > > >  
-> > > 
-> > > Same here, I'd suggest marking this "#ifdef CONFIG_ARM" instead, as hw_pci
-> > > is an arm32 specific data structure.
-> > 
-> > I do not think we need hw struct at all, see below, we can write code so
-> > that we do not rely on ARM32 PCI bios, I will have a stab at that and
-> > post the resulting code.
-> 
-> That would of course be best. I think it needs some rework of the
-> arm32 PCI code though, or you'd still have to create pci_sys_data
-> manually, and that is currently allocated by pcibios_init_hw.
+Hi,
 
-Right, as far as I can see, creating a pci_sys_data struct
-that's all we would need. "Problem" is that it does not exist on ARM64
-so to avoid ifdeffery we have to declare a struct with the same
-fields (ie only pci_sys_data.private_data is used by this driver -
-apart from arm32 specific functions usage) that is passed to the PCI layer
-and stored in the bus.sysdata, but that's extremely ugly (and we won't
-need this when the arm32 conversion is completed).
+I am investigating this bug:
+https://bugs.launchpad.net/ubuntu/+source/nfs-utils/+bug/1124250
+which is also:
+https://bugzilla.redhat.com/show_bug.cgi?id=876705
+and:
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=758870
 
-> > > > +       if (!gen_scan_root_bus(&pdev->dev, pci->cfg.bus_range.start,
-> > > > +                              &gen_pci_ops, pci, &pci->resources)) {
-> > > > +               dev_err(&pdev->dev, "failed to enable PCIe ports\n");
-> > > > +               return -ENODEV;
-> > > > +       }
-> > > > +#else
-> > > >         pci_common_init_dev(dev, &hw);
-> > > > +#endif /* CONFIG_ARM64 */
-> > > > 
-> > > 
-> > > Again, just make the pci_common_init_dev() call #ifdef CONFIG_ARM, and move
-> > > the generic case after it, outside of the #ifdef.
-> > 
-> > I went through the code quickly but I think we can (and should) remove
-> > this quite ugly ifdeffery altogether. Most of the functionality in
-> > pci_common_init_dev() can be implemented through the common PCI API (and this
-> > would make this driver arch agnostic as it should be), I will go through ARM32
-> > PCI bios code to check what is executed in detail in pci_common_init_dev() and
-> > make sure that we follow those initialization steps in the resulting probe code
-> > for this PCI generic host controller driver.
-> 
-> These are the functions I found that refer to pci_sys_data on arm32:
-> 
-> pcibios_add_bus
-> pcibios_remove_bus
-> pcibios_align_resource
-> pci_mmap_page_range
-> pci_domain_nr
-> pci_proc_domain
-> 
-> This is not as bad as I had feared, but we still have to ensure that
-> any caller of these functions will work with both the generic PCI support
-> and the arm32 specific drivers that today use hw_pci.
-> 
-> My idea for dealing with this was to convert all host drivers in
-> drivers/pci/host to the generic PCI code and never build the arm32
-> bios32 code when CONFIG_ARCH_MULTIPLATFORM is set. Unfortunately that
-> requires either doing them all at once or coming up with a migration
-> strategy so we don't break things in the process.
+After the keys which map NFS uid/gid to names expire there is sometimes a 
+delay in them being recreated.  I believe this is because 
+nfs_idmap_request_key calls request_key_with_auxdata which returns expired 
+keys if they exist.  If this happens there is no-one to re-create the key.
 
-That makes sense. Related to the migration strategy, thoughts
-appreciated. Declaring a static pci_sys_data (with some ifdef around it)
-seems a horrible hack to me. Calling pci_common_init() only if CONFIG_ARM
-is rather horrible too, but we can probably live with that.
+I think, instead, nfs_idmap_request_key should request a new key with a 
+userspace upcall if its key for a particular name has expired.
 
-I do not see anything else as possible solution at the moment unless
-we go the whole nine yards and do what you suggest above, might take a
-little while though.
+I have made the attached patch which fixes the problem in my tests.  It 
+adds request_valid_key_with_auxdata() which does the same as 
+request_key_with_auxdata() except that it ignores expired, revoked and 
+invalidated keys.  It does this by passing KEYRING_SEARCH_DO_STATE_CHECK 
+into the context for search_process_keyrings inside request_key_and_link. 
+If all keys are expired, this function then asks userspace for an updated 
+key.
 
-Probably leaving pci_common_init() call (and related hw_pci struct, and
-related ifdeffery to differentiate between different sysdata layouts for ARM
-and ARM64) is the fastest path but I still think it is not nice at all.
+I have no previous experience in the kernel, so please be gentle :)  I am 
+happy to change and re-test the patch to anyone's whim.
 
-Thanks,
-Lorenzo
+Thanks & best regards,
+Carl
+
+Signed-off-by: Carl Hetherington <cth@carlh.net>
+---
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 567983d..744e40f 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -278,8 +278,8 @@ static struct key *nfs_idmap_request_key(const char 
+*name, size_t namelen,
+  	rkey = request_key(&key_type_id_resolver, desc, "");
+  	if (IS_ERR(rkey)) {
+  		mutex_lock(&idmap->idmap_mutex);
+-		rkey = request_key_with_auxdata(&key_type_id_resolver_legacy,
+-						desc, "", 0, idmap);
++		rkey = request_valid_key_with_auxdata(&key_type_id_resolver_legacy,
++						      desc, "", 0, idmap);
+  		mutex_unlock(&idmap->idmap_mutex);
+  	}
+
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 80d6774..6a4ef03 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -252,6 +252,12 @@ extern struct key *request_key_with_auxdata(struct 
+key_type *type,
+  					    size_t callout_len,
+  					    void *aux);
+
++extern struct key *request_valid_key_with_auxdata(struct key_type *type,
++						  const char *description,
++						  const void *callout_info,
++						  size_t callout_len,
++						  void *aux);
++
+  extern struct key *request_key_async(struct key_type *type,
+  				     const char *description,
+  				     const void *callout_info,
+diff --git a/security/keys/internal.h b/security/keys/internal.h
+index 80b2aac..5c9bc62 100644
+--- a/security/keys/internal.h
++++ b/security/keys/internal.h
+@@ -150,7 +150,8 @@ extern struct key *request_key_and_link(struct 
+key_type *type,
+  					size_t callout_len,
+  					void *aux,
+  					struct key *dest_keyring,
+-					unsigned long flags);
++					unsigned long key_alloc_flags,
++					unsigned long 
+keyring_search_flags);
+
+  extern int lookup_user_key_possessed(const struct key *key, const void *target);
+  extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index cee72ce..25a12bc 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -212,7 +212,7 @@ SYSCALL_DEFINE4(request_key, const char __user *, _type,
+  	/* do the search */
+  	key = request_key_and_link(ktype, description, callout_info,
+  				   callout_len, NULL, key_ref_to_ptr(dest_ref),
+-				   KEY_ALLOC_IN_QUOTA);
++				   KEY_ALLOC_IN_QUOTA, 0);
+  	if (IS_ERR(key)) {
+  		ret = PTR_ERR(key);
+  		goto error5;
+diff --git a/security/keys/request_key.c b/security/keys/request_key.c
+index 3814119..af8345c 100644
+--- a/security/keys/request_key.c
++++ b/security/keys/request_key.c
+@@ -500,7 +500,11 @@ couldnt_alloc_key:
+   * @callout_len: The length of callout_info.
+   * @aux: Auxiliary data for the upcall.
+   * @dest_keyring: Where to cache the key.
+- * @flags: Flags to key_alloc().
++ * @key_alloc_flags: Flags to key_alloc().
++ * @keyring_search_flags: Flags to pass in the keyring search context
++ * (in addition to KEYRING_SEARCH_LOOKUP_DIRECT).  For example, passing
++ * KEYRING_SEARCH_DO_STATE_CHECK here will stop the function returning
++ * invalidated, revoked or expired keys.
+   *
+   * A key matching the specified criteria is searched for in the process's
+   * keyrings and returned with its usage count incremented if found. 
+Otherwise,
+@@ -525,7 +529,8 @@ struct key *request_key_and_link(struct key_type *type,
+  				 size_t callout_len,
+  				 void *aux,
+  				 struct key *dest_keyring,
+-				 unsigned long flags)
++				 unsigned long key_alloc_flags,
++				 unsigned long keyring_search_flags)
+  {
+  	struct keyring_search_context ctx = {
+  		.index_key.type		= type,
+@@ -533,7 +538,7 @@ struct key *request_key_and_link(struct key_type *type,
+  		.cred			= current_cred(),
+  		.match			= type->match,
+  		.match_data		= description,
+-		.flags			= KEYRING_SEARCH_LOOKUP_DIRECT,
++		.flags			= KEYRING_SEARCH_LOOKUP_DIRECT | keyring_search_flags
+  	};
+  	struct key *key;
+  	key_ref_t key_ref;
+@@ -541,7 +546,7 @@ struct key *request_key_and_link(struct key_type *type,
+
+  	kenter("%s,%s,%p,%zu,%p,%p,%lx",
+  	       ctx.index_key.type->name, ctx.index_key.description,
+-	       callout_info, callout_len, aux, dest_keyring, flags);
++	       callout_info, callout_len, aux, dest_keyring, key_alloc_flags);
+
+  	/* search all the process keyrings for a key */
+  	key_ref = search_process_keyrings(&ctx);
+@@ -568,7 +573,7 @@ struct key *request_key_and_link(struct key_type *type,
+  			goto error;
+
+  		key = construct_key_and_link(&ctx, callout_info, callout_len,
+-					     aux, dest_keyring, flags);
++					     aux, dest_keyring, 
+key_alloc_flags);
+  	}
+
+  error:
+@@ -629,7 +634,7 @@ struct key *request_key(struct key_type *type,
+  	if (callout_info)
+  		callout_len = strlen(callout_info);
+  	key = request_key_and_link(type, description, callout_info, 
+callout_len,
+-				   NULL, NULL, KEY_ALLOC_IN_QUOTA);
++				   NULL, NULL, KEY_ALLOC_IN_QUOTA, 0);
+  	if (!IS_ERR(key)) {
+  		ret = wait_for_key_construction(key, false);
+  		if (ret < 0) {
+@@ -665,7 +670,7 @@ struct key *request_key_with_auxdata(struct key_type 
+*type,
+  	int ret;
+
+  	key = request_key_and_link(type, description, callout_info,
+callout_len,
+-				   aux, NULL, KEY_ALLOC_IN_QUOTA);
++				   aux, NULL, KEY_ALLOC_IN_QUOTA, 0);
+  	if (!IS_ERR(key)) {
+  		ret = wait_for_key_construction(key, false);
+  		if (ret < 0) {
+@@ -677,6 +682,42 @@ struct key *request_key_with_auxdata(struct key_type 
+*type,
+  }
+  EXPORT_SYMBOL(request_key_with_auxdata);
+
++/**
++ * request_valid_key_with_auxdata - Request a key with auxiliary data for the upcaller
++ * @type: The type of key we want.
++ * @description: The searchable description of the key.
++ * @callout_info: The data to pass to the instantiation upcall (or NULL).
++ * @callout_len: The length of callout_info.
++ * @aux: Auxiliary data for the upcall.
++ *
++ * As for request_key_with_auxdata() except that existing invalidated, revoked and expired
++ * keys are ignored during the search for the requested key.
++ *
++ * Furthermore, it then works as wait_for_key_construction() to wait for the
++ * completion of keys undergoing construction with a non-interruptible wait.
++ */
++struct key *request_valid_key_with_auxdata(struct key_type *type,
++				     const char *description,
++				     const void *callout_info,
++				     size_t callout_len,
++				     void *aux)
++{
++	struct key *key;
++	int ret;
++
++	key = request_key_and_link(type, description, callout_info, callout_len,
++				   aux, NULL, KEY_ALLOC_IN_QUOTA, KEYRING_SEARCH_DO_STATE_CHECK);
++	if (!IS_ERR(key)) {
++		ret = wait_for_key_construction(key, false);
++		if (ret < 0) {
++			key_put(key);
++			return ERR_PTR(ret);
++		}
++	}
++	return key;
++}
++EXPORT_SYMBOL(request_valid_key_with_auxdata);
++
+  /*
+   * request_key_async - Request a key (allow async construction)
+   * @type: Type of key.
+@@ -698,7 +739,7 @@ struct key *request_key_async(struct key_type *type,
+  {
+  	return request_key_and_link(type, description, callout_info,
+  				    callout_len, NULL, NULL,
+-				    KEY_ALLOC_IN_QUOTA);
++				    KEY_ALLOC_IN_QUOTA, 0);
+  }
+  EXPORT_SYMBOL(request_key_async);
+
+@@ -723,6 +764,6 @@ struct key *request_key_async_with_auxdata(struct 
+key_type *type,
+  					   void *aux)
+  {
+  	return request_key_and_link(type, description, callout_info,
+-				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
++				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA, 0);
+  }
+  EXPORT_SYMBOL(request_key_async_with_auxdata);
 
