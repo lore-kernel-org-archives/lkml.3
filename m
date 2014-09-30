@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaI3Sp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:45:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41305 "EHLO mail.kernel.org"
+	id S1753358AbaI3SqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:46:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43923 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717AbaI3Spz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:45:55 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        broonie@kernel.org, lee.jones@linaro.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-msm@vger.kernel.org,
-        bjorn.andersson@sonymobile.com
-Subject: Re: [PATCH v2 0/4] ARM: dts: apq8064 DT patches
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1412086159-20894-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Tue, 30 Sep 2014 11:45:52 -0700
-In-Reply-To: <1412086159-20894-1-git-send-email-srinivas.kandagatla@linaro.org>
-	(Srinivas Kandagatla's message of "Tue, 30 Sep 2014 15:09:19 +0100")
-Message-ID: <7hvbo5vten.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752117AbaI3SqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 14:46:11 -0400
+Date: Tue, 30 Sep 2014 20:46:07 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lan Tianyu <tianyu.lan@intel.com>
+Subject: Re: [PATCH v2] i2c: move acpi code back into the core
+Message-ID: <20140930204607.2ab3baed@endymion.delvare>
+In-Reply-To: <20140930160352.GV1786@lahna.fi.intel.com>
+References: <1411594591-5048-1-git-send-email-wsa@the-dreams.de>
+	<20140930125520.61b57882@endymion.delvare>
+	<20140930160352.GV1786@lahna.fi.intel.com>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srinivas Kandagatla <srinivas.kandagatla@linaro.org> writes:
+On Tue, 30 Sep 2014 19:03:52 +0300, Mika Westerberg wrote:
+> On Tue, Sep 30, 2014 at 12:55:20PM +0200, Jean Delvare wrote:
+> > The only thing which I find curious is that ACPI_I2C_OPREGION depends
+> > on I2C=y. Is this limitation a leftover from when the code was split to
+> > a separate file? It builds just fine with I2C=m, and I can't see why it
+> > wouldn't work. I have a patch to enable that, I can send it if it is
+> > the right thing to do. But maybe I'm missing something?
+> 
+> I think reason for the limitation is that if there happens to be some
+> AML code that is currently using the I2C operation region and the user
+> decides to unload the i2c-core.ko module or along those lines.
 
-> These patches adds dt nodes for RPM, USB and SATA IPs found in APQ8064.
-> All the driver support for these IPs are already available in v3.17, except
-> the RPM driver which is now accepted by Lee and Mark.
->
-> These patches depend on the header file from 
-> http://www.spinics.net/lists/arm-kernel/msg364310.html
-> for regulators.
->
-> Now that the RPM patch is accepted, should RPM patch go via arm-soc tree?
-> so that we can get more functionality on IFC6410 board in v3.18 mainline.
->
-> All these patches are tested on IFC6410 board.
-> Am hoping to get these patches for v3.18, as these patches were sitting in
-> my dev tree since last 3 merge windows.
+If that's the reason then shouldn't it be addressed by proper reference
+counting instead? We could simply increase the module reference count
+when entering the critical section, and decrease it when we're done.
 
-A nit on process, for future reference:
-
-You only need to send to arm@kernel.org if you're expecting the arm-soc
-maintainers to directly apply the patches or pull request.
-
-In this case, it seems like stuff that the qcom maintainers will queue
-up in their DT branch, and then submit to arm-soc maintainers.
-
-Kevin
+-- 
+Jean Delvare
+SUSE L3 Support
