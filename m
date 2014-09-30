@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaI3Ot5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:49:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44054 "EHLO mga02.intel.com"
+	id S1752047AbaI3Ou6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:50:58 -0400
+Received: from mx.treblig.org ([80.68.94.177]:44565 "EHLO mx.treblig.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaI3Oty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:49:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,626,1406617200"; 
-   d="scan'208";a="610929837"
-Date: Tue, 30 Sep 2014 10:48:54 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-Message-ID: <20140930144854.GA5098@wil.cx>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
- <15705.1412070301@turing-police.cc.vt.edu>
+	id S1751563AbaI3Ou4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 10:50:56 -0400
+Date: Tue, 30 Sep 2014 15:50:55 +0100
+From: "Dr. David Alan Gilbert" <dave@treblig.org>
+To: Marcin Gibula <m.gibula@gmail.com>
+Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com
+Subject: Re: 3.16.1 - general protection fault
+Message-ID: <20140930145055.GA24978@gallifrey>
+References: <CAGKO+35+H3MmkaN1m_PfHi0XhbRvtnSBqm3PDmOhs5YBmAZ1jg@mail.gmail.com>
+ <20140924201827.GA30643@gallifrey>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <15705.1412070301@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140924201827.GA30643@gallifrey>
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/3.2.60-kvm-i386-20140609 (i686)
+X-Uptime: 15:50:16 up 67 days, 22:14,  1 user,  load average: 0.01, 0.04, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 05:45:01AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 25 Sep 2014 16:33:17 -0400, Matthew Wilcox said:
+* Dr. David Alan Gilbert (dave@treblig.org) wrote:
+> * Marcin Gibula (m.gibula@gmail.com) wrote:
 > 
-> > Patch 19 adds some DAX infrastructure to support ext4.
-> >
-> > Patch 20 adds DAX support to ext4.  It is broadly similar to ext2's DAX
-> > support, but it is more efficient than ext4's due to its support for
-> > unwritten extents.
+> Hi Marcin,
 > 
-> I don't currently have a use case for NV-DIMM support.
+> > Hi,
+> > 
+> > I've been playing with 3.16 kernel on my test machine as a KVM
+> > hypervisor and encountered the following crash twice (almost identical
+> > backtraces).
+> > 
+> > Sep 24 09:39:31 dev4 kernel: general protection fault: 0000 [#1] SMP
 > 
-> However, it would be nice if this code could be leveraged to support
-> 'force O_DIRECT on all I/O to this file' - that I *do* have a use
-> case for.  Patch 20 looks to my untrained eye like it *almost* gets
-> there.
+> <snip>
 > 
-> (And if in fact it *does* do the whole enchilada, the Changelog etc should
-> mention it :)
+> > This machine is serving as NFS client and KVM hypervisor. I'm still
+> > not sure how to trigger it reliably (right now, I just have to run
+> > ubuntu instalation in VM guest multiple times and sometimes it
+> > triggers).
+> > 
+> > Attaching .config, slub.s and disassembled __kmalloc_node_track_caller function.
+> 
+> Yes, I hit something similar:
+> 
+> http://www.spinics.net/lists/linux-nfs/msg46047.html 'nfs: disallow duplicate pages in pgio page vectors'
+> http://www.spinics.net/lists/linux-nfs/msg46048.html 'nfs: can_coalesce_requests must enforce contiguity'
+> 
+> seem to stop the GPF's/crashes, although there's still something else
+> going on with a corruption I'm seeing every so often.
 
-No, it doesn't try to do that.  Wouldn't you be better served with an
-LD_PRELOAD that forces O_DIRECT on?
+And that 'something else' seems to be fixed by:
 
+http://marc.info/?l=linux-nfs&m=141208464631105&w=2
+
+Enjoy,
+
+Dave
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
