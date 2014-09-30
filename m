@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaI3GCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:02:01 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:34530 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaI3GCA (ORCPT
+	id S1752647AbaI3GCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:02:20 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15475 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaI3GCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:02:00 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-c2-542a474fcdd9
+	Tue, 30 Sep 2014 02:02:19 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-ba-542a4769a75a
 From: Chao Yu <chao2.yu@samsung.com>
 To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
 Cc: linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
 References: <1411447990-37919-1-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1411447990-37919-1-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 1/3] f2fs: introduce cp_control structure
-Date: Tue, 30 Sep 2014 14:01:09 +0800
-Message-id: <005f01cfdc74$081ba420$1852ec60$@samsung.com>
+ <1411447990-37919-2-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1411447990-37919-2-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 2/3] f2fs: introduce FITRIM in f2fs_ioctl
+Date: Tue, 30 Sep 2014 14:01:58 +0800
+Message-id: <006001cfdc74$178dcdc0$46a96940$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJfDGgbbMp3eCh6ndgph+iyAEGBoZr5Wtug
+Thread-index: AQJfDGgbbMp3eCh6ndgph+iyAEGBoQIW3l8Ymui2IWA=
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t9jQd0Ad60Qgykz2S2erJ/FbHFpkbvF
-	5V1z2ByYPTat6mTz2L3gM5PH501yAcxRXDYpqTmZZalF+nYJXBl/z35nLXjKUrFm8T3GBsZG
-	li5GTg4JAROJ+deWsEHYYhIX7q0Hsrk4hASmM0p8ePkarEhI4AejxI8N+iA2m4CKxPKO/0wg
-	toiAmkTvvilANgcHs4CHxK5jpRDlThLfbu1kBbE5BZwlGv99ARsjDFTyp/s92C4WAVWJtY1r
-	wGxeAUuJF3+3MkHYghI/Jt8Dq2cW0JJYv/M4E4QtL7F5zVtmiDsVJHacfc0IcYKRxP6rcxgh
-	asQlNh65xTKBUWgWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIE
-	B/sz6R2MqxosDjEKcDAq8fByyGuFCLEmlhVX5h5ilOBgVhLhVTMHCvGmJFZWpRblxxeV5qQW
-	H2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamCcWGBpGlsxg52t49kt2R4ZueS16/K8
-	Q/6eF1ouWmX8TOjZ7glzHhTqr5t859vTfQpdotlaiYZvHwlLbhE0uNG14GeeJQdvjMQP00Nl
-	9T4HQyewRgaFf9jOvowv2HDrxVj+1hjjv5ou82JbuQpeWWib3OGNE55Wbsbh52Gr25kmW7L4
-	SPr/qUosxRmJhlrMRcWJAN/0zBVyAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jQd1Md60Qgzdf9CyerJ/FbHFpkbvF
+	5V1z2ByYPTat6mTz2L3gM5PH501yAcxRXDYpqTmZZalF+nYJXBlHTu1gK/jGXjF583u2BsbN
+	bF2MnBwSAiYSs5qnMkLYYhIX7q0HinNxCAlMZ5ToXtfGBOH8YJTYtO4bWBWbgIrE8o7/TCC2
+	iICaRO++KUA2BwezgIfErmOlIGEhgWqJts8dLCA2p4CzxPWfZ8DKhYFKri67BmazCKhK3P50
+	mhXE5hWwlFi+4hgzhC0o8WPyPbBeZgEtifU7jzNB2PISm9e8ZYY4VEFix9nXjBAnWEncOzKJ
+	EaJGXGLjkVssExiFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4m
+	RnC4P5PawbiyweIQowAHoxIPL4e8VogQa2JZcWXuIUYJDmYlEV41c6AQb0piZVVqUX58UWlO
+	avEhRmkOFiVx3gOt1oFCAumJJanZqakFqUUwWSYOTqkGxmXWd9Y6/zCbKrLP6bzKAfeCZ6db
+	IiYscEyUeJ5UbmrPFe5Ttz9k2pT7L8POTBRkOOyyOvzu5VqvW9t+Mm9df1D2OsMRq565ifFb
+	YnXeSx16w/UhNqM+JG+ZEv8tRtvputKGxtnuanVrDrrmXNebUnfgXPj3g+fYJQvX/zb6fnrN
+	/Kuzj27MM1NiKc5INNRiLipOBACTV36WcwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,16 +44,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
 > linux-f2fs-devel@lists.sourceforge.net
 > Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 1/3] f2fs: introduce cp_control structure
+> Subject: [f2fs-dev] [PATCH 2/3] f2fs: introduce FITRIM in f2fs_ioctl
 > 
-> This patch add a new data structure to control checkpoint parameters.
-> Currently, it presents the reason of checkpoint such as is_umount and normal
-> sync.
+> This patch introduces FITRIM in f2fs_ioctl.
+> In this case, f2fs will issue small discards and prefree discards as many as
+> possible for the given area.
 > 
 > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 
 Looks good!
 
 Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+
+> +
+>  	/* zero block will be discarded through the prefree list */
+>  	if (!se->valid_blocks || se->valid_blocks == max_blocks)
+>  		return;
+> 
+> +	dmap = kzalloc(SIT_VBLOCK_MAP_SIZE, GFP_KERNEL);
+
+We can afford 64 bytes allocation in stack, how about altering dmap to a local
+array to reduce memory pressure at that moment and avoid delay of allocation?
+
+> +	if (!dmap)
+> +		return;
+> +
 
 
