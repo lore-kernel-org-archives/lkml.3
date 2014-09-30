@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaI3Vio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:38:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32850 "EHLO
+	id S1754416AbaI3VsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:48:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32845 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaI3Vil (ORCPT
+	with ESMTP id S1753165AbaI3Vii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:41 -0400
+	Tue, 30 Sep 2014 17:38:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ja=C5=A1a=20Bartelj?= <jasa.bartelj@gmail.com>,
-        Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 052/103] USB: ftdi_sio: Added PID for new ekey device
-Date: Tue, 30 Sep 2014 14:30:57 -0700
-Message-Id: <1412112708-27356-53-git-send-email-kamal@canonical.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 034/103] drm/radeon: add new KV pci id
+Date: Tue, 30 Sep 2014 14:30:39 -0700
+Message-Id: <1412112708-27356-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,47 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ja=C5=A1a=20Bartelj?= <jasa.bartelj@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 646907f5bfb0782c731ae9ff6fb63471a3566132 upstream.
+commit 6dc14baf4ced769017c7a7045019c7a19f373865 upstream.
 
-Added support to the ftdi_sio driver for ekey Converter USB which
-uses an FT232BM chip.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=82912
 
-Signed-off-by: Jaša Bartelj <jasa.bartelj@gmail.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+ drivers/gpu/drm/radeon/cik.c | 1 +
+ include/drm/drm_pciids.h     | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 6f4e126..d429761 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -949,6 +949,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
-+	/* ekey Devices */
-+	{ USB_DEVICE(FTDI_VID, FTDI_EKEY_CONV_USB_PID) },
- 	/* Infineon Devices */
- 	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
- 	{ }					/* Terminating entry */
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 3168a01..70b0b1d 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1380,3 +1380,8 @@
- #define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
- #define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
- #define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
-+
-+/*
-+ * ekey biometric systems GmbH (http://ekey.net/)
-+ */
-+#define FTDI_EKEY_CONV_USB_PID		0xCB08	/* Converter USB */
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index 1523902..4c5828b 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -3231,6 +3231,7 @@ static void cik_gpu_init(struct radeon_device *rdev)
+ 			   (rdev->pdev->device == 0x130B) ||
+ 			   (rdev->pdev->device == 0x130E) ||
+ 			   (rdev->pdev->device == 0x1315) ||
++			   (rdev->pdev->device == 0x1318) ||
+ 			   (rdev->pdev->device == 0x131B)) {
+ 			rdev->config.cik.max_cu_per_sh = 4;
+ 			rdev->config.cik.max_backends_per_se = 1;
+diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
+index 49376ae..c99e0ad9 100644
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -17,6 +17,7 @@
+ 	{0x1002, 0x1315, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x1316, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x1317, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
++	{0x1002, 0x1318, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x131B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x131C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
+ 	{0x1002, 0x131D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_KAVERI|RADEON_NEW_MEMMAP|RADEON_IS_IGP}, \
 -- 
 1.9.1
 
