@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284AbaI3R0c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:26:32 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:35651 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaI3R0b (ORCPT
+	id S1753326AbaI3R1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:27:03 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54801 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbaI3R1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:26:31 -0400
-From: Karthik Nayak <karthik.188@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gamerh2o@gmail.com, gregkh@linuxfoundation.org,
-        mark.einon@gmail.com, Karthik Nayak <karthik.188@gmail.com>
-Subject: [PATCH] staging: bcm: multiple checkpatch fixes for InterfaceIdleMode.c
-Date: Tue, 30 Sep 2014 22:56:17 +0530
-Message-Id: <1412097977-3254-1-git-send-email-karthik.188@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 30 Sep 2014 13:27:01 -0400
+From: Romain Perier <romain.perier@gmail.com>
+To: devicetree@vger.kernel.org
+Cc: broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        heiko@sntech.de
+Subject: [RFC][PATCH 1/4] regulator: Add helper function to get "poweroff-source" property
+Date: Tue, 30 Sep 2014 17:29:43 +0000
+Message-Id: <1412098186-5042-1-git-send-email-romain.perier@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. WARNING: else is not generally useful after a break or return
+Several drivers create their own devicetree property when they register
+poweroff capabilites. This is for example the case for mfd, regulator
+or power drivers which define "vendor,system-power-controller" property.
+This patch adds support for a standard property "poweroff-source"
+which marks the device as able to shutdown the system.
 
-2. WARNING: quoted string split across lines
-
-3. WARNING: break quoted strings at a space character
-
-Signed-off-by: Karthik Nayak <karthik.188@gmail.com>
+Signed-off-by: Romain Perier <romain.perier@gmail.com>
 ---
- drivers/staging/bcm/InterfaceIdleMode.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/regulator/of_regulator.c       | 12 ++++++++++++
+ include/linux/regulator/of_regulator.h |  6 ++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/drivers/staging/bcm/InterfaceIdleMode.c b/drivers/staging/bcm/InterfaceIdleMode.c
-index c84ee49..9a77a98 100644
---- a/drivers/staging/bcm/InterfaceIdleMode.c
-+++ b/drivers/staging/bcm/InterfaceIdleMode.c
-@@ -188,10 +188,9 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter,
- 			5000);
- 		if (status)
- 			return status;
--		else
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
--				IDLE_MODE, DBG_LVL_ALL,
--				"NOB Sent down :%d", lenwritten);
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
-+			IDLE_MODE, DBG_LVL_ALL,
-+			"NOB Sent down :%d", lenwritten);
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 7a51814..94e0ec4 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -240,3 +240,15 @@ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
  
- 		/* mdelay(25); */
+ 	return init_data;
+ }
++
++/**
++ * of_get_regulator_poweroff_source - Get poweroff-source for given device_node
++ * @np: Pointer to the given device_node
++ *
++ * return true if present false otherwise
++ */
++bool of_get_regulator_poweroff_source(const struct device_node *np)
++{
++	return of_property_read_bool(np, "poweroff-source");
++}
++EXPORT_SYMBOL_GPL(of_get_regulator_poweroff_source);
+diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
+index f921796..2e7aa89 100644
+--- a/include/linux/regulator/of_regulator.h
++++ b/include/linux/regulator/of_regulator.h
+@@ -20,6 +20,7 @@ extern struct regulator_init_data
+ extern int of_regulator_match(struct device *dev, struct device_node *node,
+ 			      struct of_regulator_match *matches,
+ 			      unsigned int num_matches);
++extern bool of_get_regulator_poweroff_source(const struct device_node *np);
+ #else
+ static inline struct regulator_init_data
+ 	*of_get_regulator_init_data(struct device *dev,
+@@ -35,6 +36,11 @@ static inline int of_regulator_match(struct device *dev,
+ {
+ 	return 0;
+ }
++
++static inline bool of_get_regulator_poweroff_source(const struct device_node *np)
++{
++	return false;
++}
+ #endif /* CONFIG_OF */
  
-@@ -211,8 +210,8 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter,
- 		else
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS,
- 				IDLE_MODE, DBG_LVL_ALL,
--				"Number of completed iteration to"
--				"read chip-id :%lu", itr);
-+				"Number of completed iteration to read chip-id :%lu",
-+					itr);
- 
- 		status = wrmalt(Adapter, SW_ABORT_IDLEMODE_LOC,
- 				&Pattern, sizeof(status));
+ #endif /* __LINUX_OF_REG_H */
 -- 
-2.1.0
+1.9.1
 
