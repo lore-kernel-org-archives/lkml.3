@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaI3UqM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:46:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49679 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbaI3UqK (ORCPT
+	id S1751181AbaI3Ut4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:49:56 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54016 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaI3Utz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:46:10 -0400
-Date: Tue, 30 Sep 2014 16:46:08 -0400 (EDT)
-Message-Id: <20140930.164608.2229644163648293678.davem@davemloft.net>
-To: hau@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 10/10] r8169:call "rtl8168_driver_start"
- "rtl8168_driver_stop" only when dash is enabled
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1412089230-10208-10-git-send-email-hau@realtek.com>
-References: <1412089230-10208-1-git-send-email-hau@realtek.com>
-	<1412089230-10208-10-git-send-email-hau@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 30 Sep 2014 16:49:55 -0400
+Message-ID: <542B176E.6000007@gmail.com>
+Date: Tue, 30 Sep 2014 21:49:50 +0100
+From: Paul McQuade <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?B?S3J6eXN6dG9mIEhh?= =?UTF-8?B?xYJhc2E=?= 
+	<khalasa@piap.pl>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        jiri Kosina <jkosina@suse.cz>, Hiroshige Sato <sato.vintage@gmail.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Paul McQuade <paulmcquad@gmail.com>
+Subject: [PATCH] MM: dmapool: Fixed a brace coding style issue
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 30 Sep 2014 13:46:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Hao Lin <hau@realtek.com>
-Date: Tue, 30 Sep 2014 23:00:30 +0800
+>From 33890970bfffc2bd64b307c41e5c1c92aaba8a2e Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Tue, 30 Sep 2014 21:39:37 +0100
+Subject: [PATCH] MM: dmapool: Fixed a brace coding style issue
 
-> These two functions are to inform dash firmware driver is been brought up or
-> brought down. So only call these two functions when dash is enabled.
-> 
-> Signed-off-by: Chun-Hao Lin <hau@realtek.com>
-> ---
->  drivers/net/ethernet/realtek/r8169.c | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index b5aab28..583ebca 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-> @@ -7388,9 +7388,10 @@ static void rtl_remove_one(struct pci_dev *pdev)
->  	struct net_device *dev = pci_get_drvdata(pdev);
->  	struct rtl8169_private *tp = netdev_priv(dev);
->  
-> -	if (tp->mac_version == RTL_GIGA_MAC_VER_27 ||
-> -	    tp->mac_version == RTL_GIGA_MAC_VER_28 ||
-> -	    tp->mac_version == RTL_GIGA_MAC_VER_31) {
-> +	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
-> +	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
-> +	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
-> +	     r8168_check_dash(tp)) {
+Removed 3 brace coding style for any arm of this statement
 
-Please fix the indentation on the final line of this if statement, it
-needs 1 TAB and 4 SPACE characters.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ mm/dmapool.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-> +	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
-> +	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
-> +	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
-> +	     r8168_check_dash(tp)) {
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index ba8019b..8b3b050 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -133,28 +133,27 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+     struct dma_pool *retval;
+     size_t allocation;
+ 
+-    if (align == 0) {
++    if (align == 0)
+         align = 1;
+-    } else if (align & (align - 1)) {
++    else if (align & (align - 1))
+         return NULL;
+-    }
+ 
+-    if (size == 0) {
++
++    if (size == 0)
+         return NULL;
+-    } else if (size < 4) {
++    else if (size < 4)
+         size = 4;
+-    }
++
+ 
+     if ((size % align) != 0)
+         size = ALIGN(size, align);
+ 
+     allocation = max_t(size_t, size, PAGE_SIZE);
+ 
+-    if (!boundary) {
++    if (!boundary)
+         boundary = allocation;
+-    } else if ((boundary < size) || (boundary & (boundary - 1))) {
++    else if ((boundary < size) || (boundary & (boundary - 1)))
+         return NULL;
+-    }
+ 
+     retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
+     if (!retval)
+-- 
+1.9.1
 
-Likewise.
