@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaI3HZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:25:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38602 "EHLO mail.skyhub.de"
+	id S1752275AbaI3H0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:26:43 -0400
+Received: from ozlabs.org ([103.22.144.67]:34723 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791AbaI3HZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:25:57 -0400
-Date: Tue, 30 Sep 2014 09:25:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: tony.luck@intel.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20140930072553.GA4639@pd.tnic>
-References: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
- <1411460354.25617.3.camel@debian>
- <20140929120546.GB6495@pd.tnic>
- <1412037578.21488.11.camel@debian>
+	id S1751268AbaI3H0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:26:42 -0400
+Date: Tue, 30 Sep 2014 17:26:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: linux-next: manual merge of the tty tree with the slave-dma tree
+Message-ID: <20140930172632.78398c4f@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1412037578.21488.11.camel@debian>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5luF3=_qzQJpTbudsRp6FLe"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 08:39:38AM +0800, Chen Yucong wrote:
-> machine_check_poll() will scan all banks, so I think we can move it out
-> of the loop body.
+--Sig_/5luF3=_qzQJpTbudsRp6FLe
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Ok.
+Hi Greg,
 
-> From: Chen Yucong
-> 
-> machine_check_poll() will reset IA32_MCi_STATUS register to zero.
-> So we need to save the content of IA32_MCi_STATUS MSRs before
-> calling machine_check_poll() for logging threshold interrupt event.
-> 
-> mce_setup() does not gather the content of IA32_MCG_STATUS, so it
-> should be read explicitly. And we also need to save MSR_IA32_MCx_ADDR
-> if MCI_STATUS_ADDRV bit field is valid.  
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce_amd.c |   21 +++++++++++++--------
->  1 file changed, 13 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> index f8c56bd..f5a5beb 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> @@ -274,6 +274,7 @@ static void amd_threshold_interrupt(void)
->  	struct mce m;
->  
->  	mce_setup(&m);
-> +	rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus);
->  
->  	/* assume first bank caused it */
->  	for (bank = 0; bank < mca_cfg.banks; ++bank) {
-> @@ -305,24 +306,28 @@ static void amd_threshold_interrupt(void)
->  			     (high & MASK_LOCKED_HI))
->  				continue;
->  
-> -			/*
-> -			 * Log the machine check that caused the threshold
-> -			 * event.
-> -			 */
-> -			machine_check_poll(MCP_TIMESTAMP,
-> -					this_cpu_ptr(&mce_poll_banks));
-> -
->  			if (high & MASK_OVERFLOW_HI) {
->  				rdmsrl(address, m.misc);
->  				rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
-> +				if (m.status & MCI_STATUS_ADDRV)
-> +					rdmsrl(MSR_IA32_MCx_ADDR(bank), m.addr);
->  				m.bank = K8_MCE_THRESHOLD_BASE
->  				       + bank * NR_BLOCKS
->  				       + block;
->  				mce_log(&m);
-> -				return;
-> +
-> +				wrmsrl(MSR_IA32_MCx_STATUS(bank), 0);
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/8250/8250_pci.c between commit 29897087d901 ("Add
+new PCI IDs to cover newer Intel SoCs such as Braswell") from the
+slave-dma tree and commit 1ede7dcca3c4 ("serial: 8250: Add Quark X1000
+to 8250_pci.c") from the tty tree.
 
-No, machine_check_poll will clear it anyway and now you're adding a
-purely useless MSR write here which costs.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> +				goto log_mcheck;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Why goto? It will hit that machine_check_poll below even without it...
+diff --cc drivers/tty/serial/8250/8250_pci.c
+index 85a2eb986ffe,4f1cd296f1b1..000000000000
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@@ -1934,18 -1888,11 +1922,25 @@@ static struct pci_serial_quirk pci_seri
+  	},
+  	{
+  		.vendor		=3D PCI_VENDOR_ID_INTEL,
+ +		.device		=3D PCI_DEVICE_ID_INTEL_BSW_UART1,
+ +		.subvendor	=3D PCI_ANY_ID,
+ +		.subdevice	=3D PCI_ANY_ID,
+ +		.setup		=3D byt_serial_setup,
+ +	},
+ +	{
+ +		.vendor		=3D PCI_VENDOR_ID_INTEL,
+ +		.device		=3D PCI_DEVICE_ID_INTEL_BSW_UART2,
+ +		.subvendor	=3D PCI_ANY_ID,
+ +		.subdevice	=3D PCI_ANY_ID,
+ +		.setup		=3D byt_serial_setup,
+ +	},
+++	{
+++		.vendor		=3D PCI_VENDOR_ID_INTEL,
++ 		.device		=3D PCI_DEVICE_ID_INTEL_QRK_UART,
++ 		.subvendor	=3D PCI_ANY_ID,
++ 		.subdevice	=3D PCI_ANY_ID,
++ 		.setup		=3D pci_default_setup,
++ 	},
+  	/*
+  	 * ITE
+  	 */
 
-> +
-> +log_mcheck:
-> +	/*
-> +	 * Log the machine check that caused the threshold event.
-> +	 */
-> +	machine_check_poll(MCP_TIMESTAMP,
-> +				this_cpu_ptr(&mce_poll_banks));
->  }
+--Sig_/5luF3=_qzQJpTbudsRp6FLe
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Of course, the more important question is: how are you testing your patches?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks.
+iQIcBAEBCAAGBQJUKlsuAAoJEMDTa8Ir7ZwVI5wP/iRSeUdhiKNE9kb+sdtif8nh
+hZSv6nyi7ZRA3qeEJni+g5xpI0S3ng/o65Y7wshb1eJAPcMCNFHN31Dvjvu3sYgj
+F33mxDhjjGbzDb420D25PV6YoXG0m/+VILIG4nMDQt2nVJWbCcERtgu9cBCPZ1An
+S0R9eyVCjwnHtIgScmzicJfC72+dFip9f3vIDWekawB2iS/7sRgJMWl4VeBx9Zcx
+I+g/cMC/WnZv6Tx/uLcEeakBHMCSCX/qOpPt9bSQp8kpA84ezzYq49rH87rtONZ7
+vdtEbp/Wi2UOBopKQfpIWGlooDQou31BA3jE1ZUkBqjAuo2Y0svtu0gaElM8FpRA
+LwCkSesjTnbFGDqU7LKIUNVPz8l9fdOLhbZGzLdTkRIg1+2Q8uyWf1OuVLSQO+hs
+pHcQ4LK/nEOL1hTVTVOyRQ0MUUJYZH/TDnVp8Qz9Qczy9/HvcOv3ns64b5yOmcu8
+AMIGxNVO1VaFfSHRIjEH8JzofWLL8RvSFQzKfVuxjrovheldxctooMqI9As6mAHE
+t5xnACipyU0bcyTQEPpjfgyqpH1o1vQT2sJRHFj5Ewpo629L22N3uEip62iBRcgH
+x7/aQgeFqwTVLDwI/6SUE2CB++VEK2kJ5TWMVHSF5H0D8FIIdDc5IXNwx5nWZODa
+nJfDQedVYFk1AWtp8so6
+=54AO
+-----END PGP SIGNATURE-----
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--Sig_/5luF3=_qzQJpTbudsRp6FLe--
