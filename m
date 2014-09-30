@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaI3HoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:44:20 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:65187 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbaI3HoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:44:18 -0400
-Message-ID: <542A5F4D.8070407@linaro.org>
-Date: Tue, 30 Sep 2014 08:44:13 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755459AbaI3Hol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:44:41 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208AbaI3Hok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:44:40 -0400
+Message-ID: <542A5F64.5000302@nod.at>
+Date: Tue, 30 Sep 2014 09:44:36 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org
-CC: broonie@kernel.org, lee.jones@linaro.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, linux-arm-msm@vger.kernel.org,
-        bjorn.andersson@sonymobile.com
-Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org> <5429DA95.80505@codeaurora.org>
-In-Reply-To: <5429DA95.80505@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
+CC: "dedekind1@gmail.com" <dedekind1@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH 4/4] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+References: <1412029248-22454-1-git-send-email-richard@nod.at>		 <1412029248-22454-5-git-send-email-richard@nod.at>	 <1412059523.3904.11.camel@sauron.fi.intel.com> <542A54E4.2060407@nod.at> <1412062762.2379.2.camel@sauron.fi.intel.com>
+In-Reply-To: <1412062762.2379.2.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 29/09/14 23:17, Stephen Boyd wrote:
-> On 09/29/14 02:14, Srinivas Kandagatla wrote:
->> @@ -246,6 +247,24 @@
->>   			#reset-cells = <1>;
->>   		};
+Am 30.09.2014 09:39, schrieb Bityutskiy, Artem:
+> On Tue, 2014-09-30 at 08:59 +0200, Richard Weinberger wrote:
+>> Am 30.09.2014 08:45, schrieb Bityutskiy, Artem:
+>>> On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
+>>>> +       spin_lock(&ubi->wl_lock);
+>>>> +       ubi->fm_work_scheduled = 0;
+>>>> +       spin_unlock(&ubi->wl_lock);
+>>>
+>>> Andrew Morton once said me that if I am protecting an integer change
+>>> like this with a spinlock, I have a problem in my locking design. He was
+>>> right for my particular case.
+>>>
+>>> Integer is changes atomic. The only other thing spinlock adds are the
+>>> barriers.
 >>
->> +		apcs: syscon@2011000 {
->> +			compatible = "syscon";
->> +			reg = <0x2011000 0x1000>;
->> +		};
->
-> This is actually a clock controller block that hw designers decided was
-> good place to shove the ipc bits (because there's room!). Can we call it
->
->                  l2cc: clock-controller@2011000 {
->                          compatible = "syscon";
->                          reg = <0x2011000 0x1000>;
->                  };
->
-yep, I will rename this in next version.
+>> I've added the spinlock to have a barrier in any case.
+> 
+> Examples of any?
 
-> Eventually I'll add the specific krait compatible when we merge krait
-> clock support:
-sounds good.
+You mean a case where the compiler would reorder code and the barrier is needed?
+I don't have one, but I'm not that creative as a modern C compiler.
+If you say that no barrier is needed I'll trust you. :-)
 
---srini
->
->                  l2cc: clock-controller@2011000 {
->                          compatible = "qcom,kpss-gcc", "syscon";
->                          reg = <0x2011000 0x1000>;
->                          clock-output-names = "acpu_l2_aux";
->                  };
->
->> +
->> +		rpm@108000 {
->> +			compatible	= "qcom,rpm-apq8064";
->> +			reg		= <0x108000 0x1000>;
->> +			qcom,ipc = <&apcs 0x8 2>;
->
-> There are actually 3 ipc bits. I guess if we ever have to use the other
-> two we'll extend this binding to have the other bits specified some
-> other way?
->
+Thanks,
+//richard
+
