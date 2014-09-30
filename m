@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaI3NRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:17:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48988 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717AbaI3NRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:17:40 -0400
-Date: Tue, 30 Sep 2014 10:17:34 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH v2 1/2] perf callchain: Create an address space per thread
-Message-ID: <20140930131734.GA2799@kernel.org>
-References: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
- <20140929083452.GA1223@krava.brq.redhat.com>
- <87vbo5hc3a.fsf@sejong.aot.lge.com>
+	id S1751610AbaI3NTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:19:47 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59903 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaI3NTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 09:19:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Herring <robh@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        devicetree@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
+Date: Tue, 30 Sep 2014 15:19:05 +0200
+Message-ID: <706416181.hbVGLDA3o6@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vbo5hc3a.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:0SmIMmY0RYykU1Lqgb7jOd1at2TEoitqeW5DtXCqbWb
+ XJB5Y8LHjHP1P8qUxnGm1x+X/nktuJFWExLE6XyrOuFl+l79fZ
+ 0dFCJCsUmrtH3kwyDxWPZnxS49u6QIl72hWi71CDbVb9IOX4Nj
+ nGnHeb8lrd34NDoF92dfOlQyJ2Kr/4vbx2sJ/2rsq5rlsCHgAs
+ 8DA9ZBYO2dfxiF0AGQVswV8KCsA5vEeIQRuo9w2iTodJ8O27yN
+ nY2BK0voQItBaumOlnyIZJp59jhPDyKpIRtO2YDfucNo9hah9p
+ G2XJJfJO9dYWoKJs0IIX5q1lWJF4JZB6f3OSzTeynZfywW0V6H
+ pMTghSZmL8ppcNr1vCzU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 30, 2014 at 03:11:21PM +0900, Namhyung Kim escreveu:
-> 
-> On Mon, 29 Sep 2014 10:34:52 +0200, Jiri Olsa wrote:
-> > On Mon, Sep 29, 2014 at 01:58:11PM +0900, Namhyung Kim wrote:
-> >> @@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
-> >>  		thread->cpu = -1;
-> >>  		INIT_LIST_HEAD(&thread->comm_list);
+The pci_register_io_range() and pci_pio_to_address() were recently
+introduced to generalize the handling of memory mapped PCI I/O space,
+but they are only valid when CONFIG_OF is set, leading to a possible
+build error:
 
-> >> +		if (unwind__prepare_access(thread) < 0)
-> >> +			goto err_thread;
+drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
+drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
+   res_start = pci_pio_to_address(res->start);
+   ^
+drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
+drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
+   err = of_pci_range_to_resource(&range, pdev->dev.of_node,
+   ^
+cc1: some warnings being treated as errors
 
-> > So this is something we need to do only for DWARF unwind via libunwind.
-> > Do we want some condition to bypass this in for the rest of the cases?
+This provides inline dummy implementations for the case that
+CONFIG_OF is disabled, to allow better build testing.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
+
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 7ebb877b07c2..851097aab115 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -71,6 +71,11 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+ 	return NULL;
+ }
  
-> Ah, you're right, we need to check that before doing this.
++static inline phys_addr_t pci_pio_to_address(unsigned long pio)
++{
++	return 0;
++}
++
+ static inline int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+ 			struct device_node *node)
+ {
+@@ -144,6 +149,12 @@ static inline const __be32 *of_get_pci_address(struct device_node *dev,
+ {
+ 	return NULL;
+ }
++static inline int of_pci_range_to_resource(struct of_pci_range *range,
++					   struct device_node *np,
++					   struct resource *res)
++{
++	return -ENOSYS;
++}
+ #endif /* CONFIG_OF_ADDRESS && CONFIG_PCI */
+ 
+ #endif /* __OF_ADDRESS_H */
 
-> > I think we could check for symbol_conf.use_callchain and for the
-> > PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER sample types in evlist,
-> > something like:
-
-> >   bool has_dwarf_data_for_callchains = symbol_conf.use_callchain && evlist_sample_type_has(evlist, PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER)
-
-> Hmm.. it seems that it's hard to get the evlist at this point.  Maybe we
-> need to add a field in the symbol_conf or a global variable.. :/
-
-Please don't export evlist in a global way, just set some flag on
-symbol_conf.
-
-At some point we need to ditch even symbol_conf :-\
-
-- Arnaldo
