@@ -1,118 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaI3JWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:22:38 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:53141 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaI3JWf (ORCPT
+	id S1755314AbaI3JWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:22:55 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:49445 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945AbaI3JWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:22:35 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.208.172.182]
-In-Reply-To: <20140930022751.GA14081@wotan.suse.de>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
- <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com> <20140930022751.GA14081@wotan.suse.de>
-From: Tom Gundersen <teg@jklm.no>
-Date: Tue, 30 Sep 2014 11:22:14 +0200
-Message-ID: <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
-        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Sep 2014 05:22:52 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] pinctrl: abx500: use helpers for map allocation/free
+Date: Tue, 30 Sep 2014 11:22:47 +0200
+Message-Id: <1412068967-24253-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 4:27 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> On Sun, Sep 28, 2014 at 07:07:24PM +0200, Tom Gundersen wrote:
->> On Fri, Sep 26, 2014 at 11:57 PM, Luis R. Rodriguez
->> <mcgrof@do-not-panic.com> wrote:
->> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
->> > Systemd has a general timeout for all workers currently set to 180
->> > seconds after which it will send a sigkill signal. Systemd now has a
->> > warning which is issued once it reaches 1/3 of the timeout. The original
->> > motivation for the systemd timeout was to help track device drivers
->> > which do not use asynch firmware loading on init() and the timeout was
->> > originally set to 30 seconds.
->>
->> Please note that the motivation for the timeout in systemd had nothing
->> to do with async firmware loading (that was just the case where
->> problems cropped up).
->
-> *Part *of the original kill logic, according to the commit log, was actually
-> due to the assumption that the issues observed *were* synchronous firmware
-> loading on module init():
->
-> commit e64fae5573e566ce4fd9b23c68ac8f3096603314
-> Author: Kay Sievers <kay.sievers@vrfy.org>
-> Date:   Wed Jan 18 05:06:18 2012 +0100
->
->     udevd: kill hanging event processes after 30 seconds
->
->     Some broken kernel drivers load firmware synchronously in the module init
->     path and block modprobe until the firmware request is fulfilled.
->     <...>
+This switches the abx500 driver to use the pin control helper
+utils for allocating and free:ing maps.
 
-This was a workaround to avoid a deadlock between udev and the kernel.
-The 180 s timeout was already in place before this change, and was not
-motivated by firmware loading. Also note that this patch was not about
-"tracking device drivers", just about avoiding dead-lock.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/nomadik/pinctrl-abx500.c | 43 ++++----------------------------
+ 1 file changed, 5 insertions(+), 38 deletions(-)
 
-> My point here is not to point fingers but to explain why we went on with
-> this and how we failed to realize only until later that the driver core
-> ran probe together with init. When a few folks pointed out the issues
-> with the kill the issue was punted back to kernel developers and the
-> assumption even among some kernel maintainers was that it was init paths
-> with sync behaviour that was causing some delays and they were broken
-> drivers. It is important to highlight these assumptions ended up setting
-> us off on the wrong path for a while in a hunt to try to fix this issue
-> either in driver or elsewhere.
+diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+index b0289824cf73..be95f5e68c01 100644
+--- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
++++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
+@@ -34,6 +34,7 @@
+ #include "pinctrl-abx500.h"
+ #include "../core.h"
+ #include "../pinconf.h"
++#include "../pinctrl-utils.h"
+ 
+ /*
+  * The AB9540 and AB8540 GPIO support are extended versions
+@@ -827,41 +828,6 @@ static void abx500_pin_dbg_show(struct pinctrl_dev *pctldev,
+ 				 chip->base + offset - 1);
+ }
+ 
+-static void abx500_dt_free_map(struct pinctrl_dev *pctldev,
+-		struct pinctrl_map *map, unsigned num_maps)
+-{
+-	int i;
+-
+-	for (i = 0; i < num_maps; i++)
+-		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN)
+-			kfree(map[i].data.configs.configs);
+-	kfree(map);
+-}
+-
+-static int abx500_dt_reserve_map(struct pinctrl_map **map,
+-		unsigned *reserved_maps,
+-		unsigned *num_maps,
+-		unsigned reserve)
+-{
+-	unsigned old_num = *reserved_maps;
+-	unsigned new_num = *num_maps + reserve;
+-	struct pinctrl_map *new_map;
+-
+-	if (old_num >= new_num)
+-		return 0;
+-
+-	new_map = krealloc(*map, sizeof(*new_map) * new_num, GFP_KERNEL);
+-	if (!new_map)
+-		return -ENOMEM;
+-
+-	memset(new_map + old_num, 0, (new_num - old_num) * sizeof(*new_map));
+-
+-	*map = new_map;
+-	*reserved_maps = new_num;
+-
+-	return 0;
+-}
+-
+ static int abx500_dt_add_map_mux(struct pinctrl_map **map,
+ 		unsigned *reserved_maps,
+ 		unsigned *num_maps, const char *group,
+@@ -958,7 +924,8 @@ static int abx500_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 
+ 	reserve *= ret;
+ 
+-	ret = abx500_dt_reserve_map(map, reserved_maps, num_maps, reserve);
++	ret = pinctrl_utils_reserve_map(pctldev, map, reserved_maps,
++					num_maps, reserve);
+ 	if (ret < 0)
+ 		goto exit;
+ 
+@@ -999,7 +966,7 @@ static int abx500_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 		ret = abx500_dt_subnode_to_map(pctldev, np, map,
+ 				&reserved_maps, num_maps);
+ 		if (ret < 0) {
+-			abx500_dt_free_map(pctldev, *map, *num_maps);
++			pinctrl_utils_dt_free_map(pctldev, *map, *num_maps);
+ 			return ret;
+ 		}
+ 	}
+@@ -1013,7 +980,7 @@ static const struct pinctrl_ops abx500_pinctrl_ops = {
+ 	.get_group_pins = abx500_get_group_pins,
+ 	.pin_dbg_show = abx500_pin_dbg_show,
+ 	.dt_node_to_map = abx500_dt_node_to_map,
+-	.dt_free_map = abx500_dt_free_map,
++	.dt_free_map = pinctrl_utils_dt_free_map,
+ };
+ 
+ static int abx500_pin_config_get(struct pinctrl_dev *pctldev,
+-- 
+1.9.3
 
-Ok. I'm not sure the motivations for user-space changes is important
-to include in the commit message, but if you do I'll try to clarify
-things to avoid misunderstandings.
-
-> Thanks for clarifying this, can you explain what issues could arise
-> from making an exception to allowing kmod workers to hang around
-> completing init + probe over a certain defined amount of time without
-> being killed?
-
-We could run out of udev workers and the whole boot would hang.
-
-The way I see it, the current status from systemd's side is: our
-short-term work-around is to increase the timeout, and at the moment
-it appears no long-term solution is needed (i.e., it seems like the
-right thing to do is to make sure insmod can be near instantaneous, it
-appears people are working towards this goal, and so far no examples
-have cropped up showing that it is fundamentally impossible (once/if
-they do, we should of course revisit the problem)).
-
-Cheers,
-
-Tom
