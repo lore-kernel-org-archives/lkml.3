@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaI3O3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:29:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55707 "EHLO
+	id S1753125AbaI3O37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:29:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55681 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752647AbaI3O2x (ORCPT
+	with ESMTP id S1752109AbaI3O2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:28:53 -0400
-Date: Tue, 30 Sep 2014 16:28:50 +0200
+	Tue, 30 Sep 2014 10:28:22 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: David Miller <davem@davemloft.net>
-Cc: antoine.tenart@free-electrons.com, sebastian.hesselbarth@gmail.com,
+To: sebastian.hesselbarth@gmail.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         alexandre.belloni@free-electrons.com,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 02/10] net: pxa168_eth: add device tree support
-Message-ID: <20140930142850.GA30288@kwain>
-References: <1411742036-23520-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411742036-23520-3-git-send-email-antoine.tenart@free-electrons.com>
- <20140929.160436.1932620234954504510.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140929.160436.1932620234954504510.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v6 08/10] net: pxa168_eth: allow to compile the pxa168_eth driver for tests
+Date: Tue, 30 Sep 2014 16:28:14 +0200
+Message-Id: <1412087296-18475-9-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
+Add a dependency to COMPILE_TEST so that the driver can be compiled for
+test purposes.
 
-On Mon, Sep 29, 2014 at 04:04:36PM -0400, David Miller wrote:
-> From: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Date: Fri, 26 Sep 2014 16:33:48 +0200
-> 
-> > @@ -1603,6 +1620,12 @@ static int pxa168_eth_suspend(struct platform_device *pdev, pm_message_t state)
-> >  #define pxa168_eth_suspend NULL
-> >  #endif
-> >  
-> > +static const struct of_device_id pxa168_eth_of_match[] = {
-> > +	{ .compatible = "marvell,pxa168-eth" },
-> > +	{ },
-> > +};
-> > +MODULE_DEVICE_TABLE(of, pxa168_eth_of_match)
-> > +
-> >  static struct platform_driver pxa168_eth_driver = {
-> 
-> You didn't even compile test this change with module support enabled.
-> 
-> drivers/net/ethernet/marvell/pxa168_eth.c:1670:1: error: expected ‘,’ or ‘;’ before ‘static’
-> 
-> MODULE_DEVICE_TABLE() must be completed with a trailing ';'
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/net/ethernet/marvell/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Oops, thanks for spotting this!
-
-Antoine
-
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index 48b9466d1781..bed8fbb3edc5 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -64,7 +64,7 @@ config MVPP2
+ 
+ config PXA168_ETH
+ 	tristate "Marvell pxa168 ethernet support"
+-	depends on CPU_PXA168 || ARCH_BERLIN
++	depends on CPU_PXA168 || ARCH_BERLIN || COMPILE_TEST
+ 	select PHYLIB
+ 	---help---
+ 	  This driver supports the pxa168 Ethernet ports.
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.1
+
