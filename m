@@ -1,86 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577AbaI3Txb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:53:31 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:50587 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaI3Tx3 (ORCPT
+	id S1752033AbaI3Txv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:53:51 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57199 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751474AbaI3Txt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:53:29 -0400
+	Tue, 30 Sep 2014 15:53:49 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
+Date: Tue, 30 Sep 2014 22:13:45 +0200
+Message-ID: <2668893.Uahb5Sli9g@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <542A65D5.4090003@linux.vnet.ibm.com>
+References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com> <128377046.aOTypBOIY8@vostro.rjw.lan> <542A65D5.4090003@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140930171002.GB15854@bart.dudau.co.uk>
-References: <706416181.hbVGLDA3o6@wuerfel> <20140930160139.GA5625@google.com> <20140930171002.GB15854@bart.dudau.co.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 30 Sep 2014 13:53:06 -0600
-Message-ID: <CAErSpo61favodLTSwCYzFZq-sB60+ZH6_WvwSGHgRx6cPKtXpA@mail.gmail.com>
-Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
-To: Liviu Dudau <liviu@dudau.co.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robh@kernel.org>, Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 11:10 AM, Liviu Dudau <liviu@dudau.co.uk> wrote:
-> On Tue, Sep 30, 2014 at 10:01:39AM -0600, Bjorn Helgaas wrote:
->> On Tue, Sep 30, 2014 at 03:19:05PM +0200, Arnd Bergmann wrote:
->> > The pci_register_io_range() and pci_pio_to_address() were recently
->> > introduced to generalize the handling of memory mapped PCI I/O space,
->> > but they are only valid when CONFIG_OF is set, leading to a possible
->> > build error:
->> >
->> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_setup_window':
->> > drivers/pci/host/pcie-rcar.c:340:3: error: implicit declaration of function 'pci_pio_to_address' [-Werror=implicit-function-declaration]
->> >    res_start = pci_pio_to_address(res->start);
->> >    ^
->> > drivers/pci/host/pcie-rcar.c: In function 'rcar_pcie_probe':
->> > drivers/pci/host/pcie-rcar.c:945:3: error: implicit declaration of function 'of_pci_range_to_resource' [-Werror=implicit-function-declaration]
->> >    err = of_pci_range_to_resource(&range, pdev->dev.of_node,
->> >    ^
->> > cc1: some warnings being treated as errors
->> >
->> > This provides inline dummy implementations for the case that
->> > CONFIG_OF is disabled, to allow better build testing.
->> >
->> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> > Fixes: 279c5dd046 ("of/pci: Add pci_register_io_range() and pci_pio_to_address()")
->>
->> I'm rebuilding the pci/host-generic branch to pick up the other v13 fixes,
->> so I folded this fix directly into the "of/pci: Add pci_register_io_range()
->> and pci_pio_to_address()" patch.  Thanks for finding this; the config
->> dependencies are a bit of a mess.
->
-> Bjorn,
->
-> I suggest splitting this patch into 2 parts, move the one that adds pci_pio_to_address() in patch 2
-> and the other in patch 5.
+On Tuesday, September 30, 2014 01:42:05 PM Shreyas B Prabhu wrote:
+> Hi Rafael,
+> 
+> On Tuesday 30 September 2014 04:58 AM, Rafael J. Wysocki wrote:
+> > On Monday, September 29, 2014 03:53:06 PM Shreyas B Prabhu wrote:
+> >> Hi,
+> >> Any updates on this patch series?
+> > 
+> > I have a couple of patches from there in my tree it seems.  Please have a look
+> > at linux-pm.git/linux-next and please let me know if that's the case.
+> > 
+> 
+> I checked linux-pm.git/linux-net (Last commit 067c17382165). None of the patches
+> in this series are present in the tree. 
 
-Yeah, I screwed that up.  I had just applied Arnd's patch completely
-to 279c5dd046, which doesn't quite make sense.
+OK, thanks for checking.
 
-I tried again like this:
+Would you mind resending it with any ACKs or Reviewed-by tags received so far?
 
-  - In "of/pci: Add pci_register_io_range() and pci_pio_to_address()",
-I added the dummy pci_pio_to_address(), so there's an extern and a
-definition in address.c when CONFIG_OF_ADDRESS=y, and an inline dummy
-otherwise.
 
-  - I dropped "of/pci: Define of_pci_range_to_resource() only when
-CONFIG_PCI=y".
+> >> On Thursday 18 September 2014 08:41 AM, Shreyas B Prabhu wrote:
+> >>> Hi,
+> >>>
+> >>> In this patch series we use winkle for offlined cores. I successfully
+> >>> tested the working of this with subcore functionality.
+> >>>
+> >>> Test scenario was as follows:
+> >>> 1. Set SMT mode to 1, Set subores-per-core to 1
+> >>> 2. Offline a core, in this case cpu 32 (sending it to winkle)
+> >>> 3. Set subcores-per-core to 4
+> >>> 4. Online the core
+> >>> 5. Start a guest (Topology 1 core 2 threads) on a subcore, in this case
+> >>> on cpu 36
+> >>>
+> >>> This works without any glitch.
+> >>>
+> >>> Thanks,
+> >>> Shreyas
+> >>>
+> >>> On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
+> >>>> Fast sleep is an idle state, where the core and the L1 and L2
+> >>>> caches are brought down to a threshold voltage. This also means that
+> >>>> the communication between L2 and L3 caches have to be fenced. However
+> >>>> the current P8 chips have a bug wherein this fencing between L2 and
+> >>>> L3 caches get delayed by a cpu cycle. This can delay L3 response to
+> >>>> the other cpus if they request for data during this time. Thus they
+> >>>> would fetch the same data from the memory which could lead to data
+> >>>> corruption if L3 cache is not flushed.
+> >>>> Patch 4 adds support to work around this.
+> >>>>
+> >>>> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
+> >>>> off. While it offers higher power savings, it is at the cost of losing
+> >>>> hypervisor register state and higher latency.
+> >>>> Patch 5-9 adds support for winkle and uses it for offline cpus.
+> >>>>
+> >>>> Patch 1 - Moves parameters required discover idle states to a location 
+> >>>> common to both cpuidle driver and powernv core code
+> >>>> Patch 2 - Populates idle state details from device tree
+> >>>> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
+> >>>>
+> >>>>
+> >>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >>>> Cc: Paul Mackerras <paulus@samba.org>
+> >>>> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> >>>> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> >>>> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
+> >>>> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+> >>>> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> >>>> Cc: Rob Herring <robh+dt@kernel.org>
+> >>>> Cc: Grant Likely <grant.likely@linaro.org>
+> >>>> Cc: devicetree@vger.kernel.org
+> >>>> Cc: linux-pm@vger.kernel.org
+> >>>> Cc: linuxppc-dev@lists.ozlabs.org
+> >>>>
+> >>>> Preeti U Murthy (2):
+> >>>>   cpuidle/powernv: Populate cpuidle state details by querying the
+> >>>>     device-tree
+> >>>>   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
+> >>>>
+> >>>> Shreyas B. Prabhu (6):
+> >>>>   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
+> >>>>     fast-sleep
+> >>>>   powerpc/powernv: Add OPAL call to save and restore
+> >>>>   powerpc: Adding macro for accessing Thread Switch Control Register
+> >>>>   powerpc/powernv: Add winkle infrastructure
+> >>>>   powerpc/powernv: Discover and enable winkle
+> >>>>   powerpc/powernv: Enter deepest supported idle state in offline
+> >>>>
+> >>>> Srivatsa S. Bhat (1):
+> >>>>   powerpc/powernv: Enable Offline CPUs to enter deep idle states
+> >>>>
+> >>>>  arch/powerpc/include/asm/machdep.h             |   4 +
+> >>>>  arch/powerpc/include/asm/opal.h                |  10 ++
+> >>>>  arch/powerpc/include/asm/paca.h                |   3 +
+> >>>>  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
+> >>>>  arch/powerpc/include/asm/processor.h           |   6 +-
+> >>>>  arch/powerpc/include/asm/reg.h                 |   1 +
+> >>>>  arch/powerpc/kernel/asm-offsets.c              |   1 +
+> >>>>  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
+> >>>>  arch/powerpc/kernel/idle.c                     |  30 ++++
+> >>>>  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
+> >>>>  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
+> >>>>  arch/powerpc/platforms/powernv/powernv.h       |   8 +
+> >>>>  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
+> >>>>  arch/powerpc/platforms/powernv/smp.c           |  13 +-
+> >>>>  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
+> >>>>  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
+> >>>>  16 files changed, 439 insertions(+), 33 deletions(-)
+> >>>>
+> >>
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-  - In "of/pci: Move of_pci_range_to_resource() to of/address.c", I
-added the dummy of_pci_range_to_resource(), so there's an extern an a
-definition in address.c when CONFIG_OF_ADDRESS=y and CONFIG_PCI=y, and
-an inline dummy otherwise.
-
-I'm not really set up to build test this, and my head is swimming a
-bit, so I hope this is it.  I pushed the pci/host-generic branch
-again, so you can look at it yourself.
-
-Bjorn
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
