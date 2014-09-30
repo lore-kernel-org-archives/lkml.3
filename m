@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbaI3VjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:39:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32950 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415AbaI3VjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754419AbaI3VjL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Sep 2014 17:39:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32925 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988AbaI3VjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 17:39:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Chinner <dchinner@redhat.com>, Dave Chinner <david@fromorbit.com>,
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 095/103] xfs: don't zero partial page cache pages during O_DIRECT writes
-Date: Tue, 30 Sep 2014 14:31:40 -0700
-Message-Id: <1412112708-27356-96-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 079/103] KVM: s390/mm: try a cow on read only pages for key ops
+Date: Tue, 30 Sep 2014 14:31:24 -0700
+Message-Id: <1412112708-27356-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,49 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 834ffca6f7e345a79f6f2e2d131b0dfba8a4b67a upstream.
+commit ab3f285f227fec62868037e9b1b1fd18294a83b8 upstream.
 
-Similar to direct IO reads, direct IO writes are using
-truncate_pagecache_range to invalidate the page cache. This is
-incorrect due to the sub-block zeroing in the page cache that
-truncate_pagecache_range() triggers.
+The PFMF instruction handler  blindly wrote the storage key even if
+the page was mapped R/O in the host. Lets try a COW before continuing
+and bail out in case of errors.
 
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/xfs/xfs_file.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/s390/mm/pgtable.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
-index 5825705..d86a7eb 100644
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -689,7 +689,15 @@ xfs_file_dio_aio_write(
- 						    pos, -1);
- 		if (ret)
- 			goto out;
--		truncate_pagecache_range(VFS_I(ip), pos, -1);
-+		/*
-+		 * Invalidate whole pages. This can return an error if
-+		 * we fail to invalidate a page, but this should never
-+		 * happen on XFS. Warn if it does fail.
-+		 */
-+		ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+		WARN_ON_ONCE(ret);
-+		ret = 0;
- 	}
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index e794c88..9cffb96 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -810,11 +810,21 @@ int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
+ 	pte_t *ptep;
  
- 	/*
+ 	down_read(&mm->mmap_sem);
++retry:
+ 	ptep = get_locked_pte(current->mm, addr, &ptl);
+ 	if (unlikely(!ptep)) {
+ 		up_read(&mm->mmap_sem);
+ 		return -EFAULT;
+ 	}
++	if (!(pte_val(*ptep) & _PAGE_INVALID) &&
++	     (pte_val(*ptep) & _PAGE_PROTECT)) {
++			pte_unmap_unlock(*ptep, ptl);
++			if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
++				up_read(&mm->mmap_sem);
++				return -EFAULT;
++			}
++			goto retry;
++		}
+ 
+ 	new = old = pgste_get_lock(ptep);
+ 	pgste_val(new) &= ~(PGSTE_GR_BIT | PGSTE_GC_BIT |
 -- 
 1.9.1
 
