@@ -1,231 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaI3QtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:49:20 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:14349 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaI3QtT (ORCPT
+	id S1751807AbaI3QyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:54:00 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:34108 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaI3Qx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:49:19 -0400
-Message-ID: <542ADF03.7070609@hp.com>
-Date: Tue, 30 Sep 2014 12:49:07 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Tue, 30 Sep 2014 12:53:56 -0400
+Date: Tue, 30 Sep 2014 10:53:53 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Tanmay Inamdar <tinamdar@apm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
+Subject: Re: [PATCH v9 0/4] APM X-Gene PCIe host controller
+Message-ID: <20140930165353.GC5625@google.com>
+References: <1410906824-9321-1-git-send-email-tinamdar@apm.com>
+ <CACVXFVNEFSMjA=h_pyNF1AyYX4C336iM9nkYY=ocGQxjGpDCJA@mail.gmail.com>
+ <CACoXjc=eA0nnK2_dRxktFeSKsfV6fQr=mDfN09sbe34H4GADrA@mail.gmail.com>
+ <CACVXFVMWTeOnVMp2SCzjhPEc1M=zTLg4O8yFhv_jDPYn_6DfeQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH v5 2/2] perf tool: improves DSO long names lookup speed
- with rbtree
-References: <1412021249-19201-1-git-send-email-Waiman.Long@hp.com> <1412021249-19201-3-git-send-email-Waiman.Long@hp.com> <20140930152154.GC2799@kernel.org>
-In-Reply-To: <20140930152154.GC2799@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVMWTeOnVMp2SCzjhPEc1M=zTLg4O8yFhv_jDPYn_6DfeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 11:21 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Sep 29, 2014 at 04:07:29PM -0400, Waiman Long escreveu:
->> With workload that spawns and destroys many threads and processes,
->> it was found that perf-mem could took a long time to post-process
->> the perf data after the target workload had completed its operation.
->> The performance bottleneck was found to be the lookup and insertion
->> of the new DSO structures (thousands of them in this case).
->>
->> In a dual-socket Ivy-Bridge E7-4890 v2 machine (30-core, 60-thread),
->> the perf profile below shows what perf was doing after the profiled
->> AIM7 shared workload completed:
->>
->> -     83.94%  perf  libc-2.11.3.so     [.] __strcmp_sse42
->>     - __strcmp_sse42
->>        - 99.82% map__new
->>             machine__process_mmap_event
->>             perf_session_deliver_event
->>             perf_session__process_event
->>             __perf_session__process_events
->>             cmd_record
->>             cmd_mem
->>             run_builtin
->>             main
->>             __libc_start_main
->> -     13.17%  perf  perf               [.] __dsos__findnew
->>       __dsos__findnew
->>       map__new
->>       machine__process_mmap_event
->>       perf_session_deliver_event
->>       perf_session__process_event
->>       __perf_session__process_events
->>       cmd_record
->>       cmd_mem
->>       run_builtin
->>       main
->>       __libc_start_main
->>
->> So about 97% of CPU times were spent in the map__new() function
->> trying to insert new DSO entry into the DSO linked list. The whole
->> post-processing step took about 9 minutes.
->>
->> The DSO structures are currently searched linearly. So the total
->> processing time will be proportional to n^2.
->>
->> To overcome this performance problem, the DSO code is modified to
->> also put the DSO structures in a RB tree sorted by its long name
->> in additional to being in a simple linked list. With this change,
->> the processing time will become proportional to n*log(n) which will
->> be much quicker for large n. However, the short name will still be
->> searched using the old linear searching method.  With that patch
->> in place, the same perf-mem post-processing step took less than 30
->> seconds to complete.
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   tools/perf/util/dso.c     |   72 ++++++++++++++++++++++++++++++++++++++++++--
->>   tools/perf/util/dso.h     |    1 +
->>   tools/perf/util/machine.c |    1 +
->>   tools/perf/util/machine.h |    4 ++-
->>   4 files changed, 73 insertions(+), 5 deletions(-)
->>
->> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
->> index 901a58f..9a81c03 100644
->> --- a/tools/perf/util/dso.c
->> +++ b/tools/perf/util/dso.c
->> @@ -653,6 +653,67 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
->>   	return dso;
->>   }
->>
->> +/*
->> + * Find a matching entry and/or link current entry to RB tree.
->> + * Either one of the dso or name parameter must be non-NULL or the
->> + * function will not work.
->> + */
->> +static struct dso *dso__findlink_by_longname(struct rb_root *root,
->> +					     struct dso *dso, const char *name)
->> +{
->> +	struct rb_node **p =&root->rb_node;
->> +	struct rb_node  *parent = NULL;
->> +	int warned = false;
->> +
->> +	if (!name)
->> +		name = dso->long_name;
->> +	/*
->> +	 * Find node with the matching name
->> +	 */
->> +	while (*p) {
->> +		struct dso *this = rb_entry(*p, struct dso, rb_node);
->> +		int rc = strcmp(name, this->long_name);
->> +
->> +		parent = *p;
->> +		if (rc == 0) {
->> +			/*
->> +			 * In case the new DSO is a duplicate of an existing
->> +			 * one, print an one-time warning&  put the new entry
->> +			 * at the end of the list of duplicates.
->> +			 */
->> +			if (!dso || (dso == this))
->> +				return this;	/* Find matching dso */
->> +			/*
->> +			 * The core kernel DSOs may have duplicated long name.
->> +			 * (See dso__load_sym()). Don't print warning for them.
->> +			 */
->> +			if (!warned&&  !strstr(name, "kernel.kallsyms")
->> +				&&  !strstr(name, "/vmlinux")) {
->> +				pr_warning("Duplicated dso long name: %s\n",
->> +					   name);
->> +				warned = true;
-> I still wonder if in this case we should just return, i.e. why would we
-> want to have multiple entries with the same name here? Anyway, I guess
-> it doesn't hurt, right?
->
-> Something to be further investigated to find a better solution, but I
-> guess that the patch as-is now should provide that speedup without
-> introducing any new oddities. Will apply.
+On Mon, Sep 22, 2014 at 09:23:51AM +0800, Ming Lei wrote:
+> Hi Tanmay,
+> 
+> On Sat, Sep 20, 2014 at 1:15 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> > Hi Ming Lei,
+> >
+> > On Thu, Sep 18, 2014 at 8:08 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+> >> Hi Tanmay,
+> >>
+> >> On Wed, Sep 17, 2014 at 6:33 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> >>> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+> >>> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+> >>> cards.
+> >>>
+> >>> X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+> >>> Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+> >>> support for creating generic pcie bridge from device tree. Liviu's patches
+> >>> are available here
+> >>> https://lkml.org/lkml/2014/9/8/333
+> >>>
+> >>> If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+> >>> patches from Liviu must be applied before the patches in this patch set. Also
+> >>> please use latest xgene u-boot firmware.
+> >>>
+> >>> changes since V8:
+> >>> 1. Add 'dma-coherent' attribute in device node.
+> >>
+> >>
+> >> I just tested your V9 patches plus Liviu's V10 PCI/ARM64 patches
+> >> against 3.17-rc5 on Mustang, and the following failure is triggered:
+> >>
+> >> [    1.190131] bnx2x: Broadcom NetXtreme II 5771x/578xx 10/20-Gigabit
+> >> Ethernet Driver bnx2x 1.78.19-0 (2014/02/10)
+> >> [    1.200249] tg3.c:v3.137 (May 11, 2014)
+> >> [    1.204087] ------------[ cut here ]------------
+> >> [    1.208682] WARNING: CPU: 1 PID: 1 at drivers/pci/pci.c:131
+> >> pci_ioremap_bar+0x70/0x78()
+> >> [    1.216646] Modules linked in:
+> >> [    1.219696] CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5+ #1
+> >> [    1.226018] Call trace:
+> >> [    1.228453] [<ffffffc0000884f0>] dump_backtrace+0x0/0x16c
+> >> [    1.233826] [<ffffffc00008866c>] show_stack+0x10/0x1c
+> >> [    1.238851] [<ffffffc0006e3210>] dump_stack+0x74/0x94
+> >> [    1.243878] [<ffffffc0000a934c>] warn_slowpath_common+0x88/0xb0
+> >> [    1.249767] [<ffffffc0000a9438>] warn_slowpath_null+0x14/0x20
+> >> [    1.255485] [<ffffffc0003994c4>] pci_ioremap_bar+0x6c/0x78
+> >> [    1.260942] [<ffffffc0005598cc>] tg3_init_one+0x148/0x16f4
+> >> [    1.266401] [<ffffffc00039ccf0>] pci_device_probe+0x78/0xd4
+> >> [    1.271946] [<ffffffc00042785c>] driver_probe_device+0x94/0x390
+> >> [    1.277834] [<ffffffc000427c44>] __driver_attach+0x98/0xa0
+> >> [    1.283293] [<ffffffc000425a54>] bus_for_each_dev+0x54/0x98
+> >> [    1.288835] [<ffffffc00042730c>] driver_attach+0x1c/0x28
+> >> [    1.294121] [<ffffffc000426f04>] bus_add_driver+0x164/0x240
+> >> [    1.299663] [<ffffffc000428430>] driver_register+0x64/0x130
+> >> [    1.305207] [<ffffffc00039c97c>] __pci_register_driver+0x3c/0x48
+> >> [    1.311181] [<ffffffc000aa8a5c>] tg3_driver_init+0x1c/0x28
+> >> [    1.316640] [<ffffffc0000814e0>] do_one_initcall+0xc4/0x1b4
+> >> [    1.322186] [<ffffffc000a74b64>] kernel_init_freeable+0x1b8/0x25c
+> >> [    1.328246] [<ffffffc0006de318>] kernel_init+0xc/0xd4
+> >> [    1.333278] ---[ end trace f4dca5ab5b436080 ]---
+> >> [    1.337871] tg3 0000:01:00.0: Cannot map device registers, aborting
+> >> [    1.344122] tg3: probe of 0000:01:00.0 failed with error -12
+> >>
+> >>
+> >
+> > Thanks for trying out the patches. Which firmware version are you
+> > using? We may have release new firmware version for PCI to work if not
+> > released yet.
+> 
+> U-Boot 2013.04-mustang_sw_1.13.28-beta (Aug 25 2014 - 14:16:10)
+> 
+> I will check if there is newer fw available.
+> 
+> > Also can you please send out the entire boot log?
+> 
+> Please see below link:
+> 
+>       http://pastebin.com/fLqaDn6t
 
-If I don't add the kernel name check, I will get a warning every time I 
-run mem recording with the workloads that I am using. So it is happening 
-in the current code. I think the short name may be different. I will do 
-more test to find out. If that is the case, an alternative is to do a 
-short name comparison if the long name match.
+>From Ming's log, using the v9 patches:
 
->> +			}
->> +			rc = 1;
->> +		}
->> +		if (rc<  0)
->> +			p =&parent->rb_left;
->> +		else
->> +			p =&parent->rb_right;
->> +	}
->> +	if (dso) {
->> +		/* Add new node and rebalance tree */
->> +		rb_link_node(&dso->rb_node, parent, p);
->> +		rb_insert_color(&dso->rb_node, root);
->> +	}
->> +	return NULL;
->> +}
->> +
->> +static inline struct dso *
->> +dso__find_by_longname(struct rb_root *root, const char *name)
->> +{
->> +	return dso__findlink_by_longname(root, NULL, name);
->> +}
->> +
->>   void dso__set_long_name(struct dso *dso, const char *name, bool name_allocated)
->>   {
->>   	if (name == NULL)
->> @@ -755,6 +816,7 @@ struct dso *dso__new(const char *name)
->>   		dso->a2l_fails = 1;
->>   		dso->kernel = DSO_TYPE_USER;
->>   		dso->needs_swap = DSO_SWAP__UNSET;
->> +		RB_CLEAR_NODE(&dso->rb_node);
->>   		INIT_LIST_HEAD(&dso->node);
->>   		INIT_LIST_HEAD(&dso->data.open_entry);
->>   	}
->> @@ -765,6 +827,10 @@ struct dso *dso__new(const char *name)
->>   void dso__delete(struct dso *dso)
->>   {
->>   	int i;
->> +
->> +	if (!RB_EMPTY_NODE(&dso->rb_node))
->> +		pr_err("DSO %s is still in rbtree when being deleted!\n",
->> +		       dso->long_name);
->>   	for (i = 0; i<  MAP__NR_TYPES; ++i)
->>   		symbols__delete(&dso->symbols[i]);
->>
->> @@ -854,6 +920,7 @@ bool __dsos__read_build_ids(struct list_head *head, bool with_hits)
->>   void dsos__add(struct dsos *dsos, struct dso *dso)
->>   {
->>   	list_add_tail(&dso->node,&dsos->head);
->> +	dso__findlink_by_longname(&dsos->root, dso, NULL);
->>   }
->>
->>   struct dso *dsos__find(const struct dsos *dsos, const char *name,
->> @@ -867,10 +934,7 @@ struct dso *dsos__find(const struct dsos *dsos, const char *name,
->>   				return pos;
->>   		return NULL;
->>   	}
->> -	list_for_each_entry(pos,&dsos->head, node)
->> -		if (strcmp(pos->long_name, name) == 0)
->> -			return pos;
->> -	return NULL;
->> +	return dso__find_by_longname((struct rb_root *)&dsos->root, name);
-> Why do you need this cast? Humm, because in the end it will get to a
-> function that either does insertion or does a simple search. Ok, I think
-> that dso__find_by_longname is the closest to that thing where the cast
-> should be applied, after making dso__find_by_longname receive a const
-> rb_root pointer.
->
-> I.e. the dso__find_by_longname name implies it will not change any of
-> its parameters, its supposed to be a simple search. I will do this
-> change while applying it.
->
-> - Arnaldo
+  PCI host bridge /soc/pcie@1f2b0000 ranges:
+    No bus range found for /soc/pcie@1f2b0000, using [??? 0xffffffc3eb4292c0-0xffffffc0005e3b8c flags 0x40]
 
-Yes, you are right. I should do the casting in dso__find_by_longname(). 
-Please make the adjustment.
+What's going on here?  It looks like it's from
+of_pci_get_host_bridge_resources(), but I don't see how this output could
+happen.
 
-Thanks,
-Longman
+     IO 0xe010000000..0xe01000ffff -> 0x00000000
+    MEM 0xe180000000..0xe1ffffffff -> 0x80000000
+  xgene-pcie 1f2b0000.pcie: (rc) x1 gen-1 link up
+  xgene-pcie 1f2b0000.pcie: PCI host bridge to bus 0000:00
+  pci_bus 0000:00: root bus resource [bus 00-ff]
+  pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+  pci_bus 0000:00: root bus resource [mem 0xe180000000-0xe1ffffffff] (bus address [0x80000000-0xffffffff])
+  pci_bus 0000:00: scanning bus
+  pci 0000:00:00.0: [19aa:e008] type 01 class 0x060400
+  pci 0000:00:00.0: reg 0x10: [mem 0x8000000000-0x807fffffff 64bit pref]
+
+I guess this is the "inbound BAR" that you hid in the v10 patches.  Hiding
+it will prevent some of BAR assignment problems below.  This is probably
+what caused the tg3 mapping problem Ming initially reported above.  We
+tried to reassign the inbound BAR, and it took up the entire space that we
+thought was available for CPU accesses to the PCI bus, leaving none for the
+tg3 device.
+
+Was Ming just unlucky by having an unusual configuration, e.g., with a lot
+of memory or something?  He certainly doesn't have a complicated PCIe
+hierarchy.  I assume you've tested this and had it work *somewhere*.
+
+  pci 0000:00:00.0: supports D1 D2
+  pci_bus 0000:00: fixups for bus
+  pci 0000:00:00.0: scanning [bus 01-01] behind bridge, pass 0
+  pci_bus 0000:01: scanning bus
+  pci 0000:01:00.0: [14e4:165a] type 00 class 0x020000
+  pci 0000:01:00.0: reg 0x10: [mem 0x00100000-0x0010ffff 64bit]
+  pci 0000:01:00.0: PME# supported from D3hot
+  pci 0000:01:00.0: PME# disabled
+  pci_bus 0000:01: fixups for bus
+  pci_bus 0000:01: bus scan returning with max=01
+  pci 0000:00:00.0: scanning [bus 01-01] behind bridge, pass 1
+  pci_bus 0000:00: bus scan returning with max=01
+  pci 0000:00:00.0: BAR 0: assigned [mem 0xe180000000-0xe1ffffffff 64bit pref]
+  pci 0000:00:00.0: BAR 8: no space for [mem size 0x00100000]
+  pci 0000:00:00.0: BAR 8: failed to assign [mem size 0x00100000]
+  pci 0000:01:00.0: BAR 0: no space for [mem size 0x00010000 64bit]
+  pci 0000:01:00.0: BAR 0: failed to assign [mem size 0x00010000 64bit]
+  pci 0000:00:00.0: PCI bridge to [bus 01]
