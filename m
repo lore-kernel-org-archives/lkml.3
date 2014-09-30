@@ -1,728 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaI3GQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:16:09 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:42822 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452AbaI3GQE (ORCPT
+	id S1755451AbaI3GQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:16:08 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:37356 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754755AbaI3GQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 02:16:04 -0400
-Date: Tue, 30 Sep 2014 01:13:51 -0500
-From: Eric Rost <eric.rost@mybabylon.net>
-To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] staging: skein: File Reorg
-Message-ID: <ddd8b0f3569a302d4242dafd155c7330dd4c7461.1412056800.git.eric.rost@mybabylon.net>
-References: <cover.1412056799.git.eric.rost@mybabylon.net>
+Message-ID: <542A4A99.4030204@hp.com>
+Date: Tue, 30 Sep 2014 14:15:53 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1412056799.git.eric.rost@mybabylon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+CC: "Li, Zhen-Hua" <zhen-hual@hp.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        linda.knippers@hp.com
+Subject: Re: [PATCH 1/1] pci/quirks: fix a dmar fault for intel 82599 card
+References: <1412057394-7186-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1412057394-7186-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganizes file to remove #defines from middle of functions. Also
-removes #if'd loop declarations and adds ternary if driven loops.
+Add Joerg to CC list. For it is also related to iommu module.
 
-Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
----
- drivers/staging/skein/skein_block.c |  568 ++++++++++++++++++-----------------
- 1 file changed, 291 insertions(+), 277 deletions(-)
+Joerg,
+There was a try for this dmar fault,
+	https://lkml.org/lkml/2014/8/18/118
 
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index b8e4bd8..88bc718 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -122,8 +122,248 @@ do {                                                     \
- 	SKEIN_256_ROUNDS_TOTAL / 8 > (NN)) || \
- 	(SKEIN_UNROLL_256 > (NN)))
- 
-+#if  (SKEIN_UNROLL_256 > 14)
-+#error  "need more unrolling in skein_256_process_block"
-+#endif
-+#endif
-+
-+#if !(SKEIN_USE_ASM & 512)
-+#undef  RCNT
-+#define RCNT  (SKEIN_512_ROUNDS_TOTAL/8)
-+
-+#ifdef SKEIN_LOOP /* configure how much to unroll the loop */
-+#define SKEIN_UNROLL_512 (((SKEIN_LOOP)/10)%10)
-+#else
-+#define SKEIN_UNROLL_512 (0)
-+#endif
-+
-+#if SKEIN_UNROLL_512
-+#if (RCNT % SKEIN_UNROLL_512)
-+#error "Invalid SKEIN_UNROLL_512" /* sanity check on unroll count */
-+#endif
-+#endif
-+#define ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) \
-+do {                                                         \
-+	X##p0 += X##p1;                                      \
-+	X##p1 = rotl_64(X##p1, ROT##_0);                     \
-+	X##p1 ^= X##p0;                                      \
-+	X##p2 += X##p3;                                      \
-+	X##p3 = rotl_64(X##p3, ROT##_1);                     \
-+	X##p3 ^= X##p2;                                      \
-+	X##p4 += X##p5;					     \
-+	X##p5 = rotl_64(X##p5, ROT##_2);                     \
-+	X##p5 ^= X##p4;                                      \
-+	X##p6 += X##p7; X##p7 = rotl_64(X##p7, ROT##_3);     \
-+	X##p7 ^= X##p6;                                      \
-+} while (0)
-+
-+#if SKEIN_UNROLL_512 == 0
-+#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) /* unrolled */ \
-+do {                                                                    \
-+	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)            \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, r_num, X_ptr);              \
-+} while (0)
-+
-+#define I512(R)                                                           \
-+do {                                                                      \
-+	/* inject the key schedule value */                               \
-+	X0   += ks[((R) + 1) % 9];                                        \
-+	X1   += ks[((R) + 2) % 9];                                        \
-+	X2   += ks[((R) + 3) % 9];                                        \
-+	X3   += ks[((R) + 4) % 9];                                        \
-+	X4   += ks[((R) + 5) % 9];                                        \
-+	X5   += ks[((R) + 6) % 9] + ts[((R) + 1) % 3];                    \
-+	X6   += ks[((R) + 7) % 9] + ts[((R) + 2) % 3];                    \
-+	X7   += ks[((R) + 8) % 9] + (R) + 1;                              \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
-+} while (0)
-+
-+#else /* looping version */
-+#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
-+do {                                                                     \
-+	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + r_num, X_ptr); \
-+} while (0)
-+
-+#define I512(R)                                                           \
-+do {                                                                      \
-+	/* inject the key schedule value */                               \
-+	X0   += ks[r + (R) + 0];                                          \
-+	X1   += ks[r + (R) + 1];                                          \
-+	X2   += ks[r + (R) + 2];                                          \
-+	X3   += ks[r + (R) + 3];                                          \
-+	X4   += ks[r + (R) + 4];                                          \
-+	X5   += ks[r + (R) + 5] + ts[r + (R) + 0];                        \
-+	X6   += ks[r + (R) + 6] + ts[r + (R) + 1];                        \
-+	X7   += ks[r + (R) + 7] + r + (R);                                \
-+	/* rotate key schedule */                                         \
-+	ks[r + (R) + 8] = ks[r + (R) - 1];                                \
-+	ts[r + (R) + 2] = ts[r + (R) - 1];                                \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
-+} while (0)
-+#endif /* end of looped code definitions */
-+#define R512_8_ROUNDS(R)  /* do 8 full rounds */                      \
-+do {                                                                  \
-+		R512(0, 1, 2, 3, 4, 5, 6, 7, R_512_0, 8 * (R) + 1);   \
-+		R512(2, 1, 4, 7, 6, 5, 0, 3, R_512_1, 8 * (R) + 2);   \
-+		R512(4, 1, 6, 3, 0, 5, 2, 7, R_512_2, 8 * (R) + 3);   \
-+		R512(6, 1, 0, 7, 2, 5, 4, 3, R_512_3, 8 * (R) + 4);   \
-+		I512(2 * (R));                              \
-+		R512(0, 1, 2, 3, 4, 5, 6, 7, R_512_4, 8 * (R) + 5);   \
-+		R512(2, 1, 4, 7, 6, 5, 0, 3, R_512_5, 8 * (R) + 6);   \
-+		R512(4, 1, 6, 3, 0, 5, 2, 7, R_512_6, 8 * (R) + 7);   \
-+		R512(6, 1, 0, 7, 2, 5, 4, 3, R_512_7, 8 * (R) + 8);   \
-+		I512(2 * (R) + 1);        /* and key injection */     \
-+} while (0)
-+#define R512_UNROLL_R(NN)                             \
-+		((SKEIN_UNROLL_512 == 0 &&            \
-+		SKEIN_512_ROUNDS_TOTAL/8 > (NN)) ||   \
-+		(SKEIN_UNROLL_512 > (NN)))
-+
-+#if  (SKEIN_UNROLL_512 > 14)
-+#error  "need more unrolling in skein_512_process_block"
-+#endif
-+#endif
-+
-+#if !(SKEIN_USE_ASM & 1024)
-+#undef  RCNT
-+#define RCNT  (SKEIN_1024_ROUNDS_TOTAL/8)
-+#ifdef SKEIN_LOOP /* configure how much to unroll the loop */
-+#define SKEIN_UNROLL_1024 ((SKEIN_LOOP)%10)
-+#else
-+#define SKEIN_UNROLL_1024 (0)
-+#endif
-+
-+#if (SKEIN_UNROLL_1024 != 0)
-+#if (RCNT % SKEIN_UNROLL_1024)
-+#error "Invalid SKEIN_UNROLL_1024" /* sanity check on unroll count */
-+#endif
-+#endif
-+#define ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
-+		  pF, ROT, r_num)                                             \
-+do {                                                                          \
-+	X##p0 += X##p1;                                                       \
-+	X##p1 = rotl_64(X##p1, ROT##_0);                                      \
-+	X##p1 ^= X##p0;                                                       \
-+	X##p2 += X##p3;                                                       \
-+	X##p3 = rotl_64(X##p3, ROT##_1);                                      \
-+	X##p3 ^= X##p2;                                                       \
-+	X##p4 += X##p5;                                                       \
-+	X##p5 = rotl_64(X##p5, ROT##_2);                                      \
-+	X##p5 ^= X##p4;                                                       \
-+	X##p6 += X##p7;                                                       \
-+	X##p7 = rotl_64(X##p7, ROT##_3);                                      \
-+	X##p7 ^= X##p6;                                                       \
-+	X##p8 += X##p9;                                                       \
-+	X##p9 = rotl_64(X##p9, ROT##_4);                                      \
-+	X##p9 ^= X##p8;                                                       \
-+	X##pA += X##pB;                                                       \
-+	X##pB = rotl_64(X##pB, ROT##_5);                                      \
-+	X##pB ^= X##pA;                                                       \
-+	X##pC += X##pD;                                                       \
-+	X##pD = rotl_64(X##pD, ROT##_6);                                      \
-+	X##pD ^= X##pC;                                                       \
-+	X##pE += X##pF;                                                       \
-+	X##pF = rotl_64(X##pF, ROT##_7);                                      \
-+	X##pF ^= X##pE;                                                       \
-+} while (0)
-+
-+#if SKEIN_UNROLL_1024 == 0
-+#define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
-+	      ROT, rn)                                                        \
-+do {                                                                          \
-+	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
-+		  pF, ROT, rn);                                               \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, rn, X_ptr);                       \
-+} while (0)
-+
-+#define I1024(R)                                                          \
-+do {                                                                      \
-+	/* inject the key schedule value */                               \
-+	X00 += ks[((R) + 1) % 17];                                        \
-+	X01 += ks[((R) + 2) % 17];                                        \
-+	X02 += ks[((R) + 3) % 17];                                        \
-+	X03 += ks[((R) + 4) % 17];                                        \
-+	X04 += ks[((R) + 5) % 17];                                        \
-+	X05 += ks[((R) + 6) % 17];                                        \
-+	X06 += ks[((R) + 7) % 17];                                        \
-+	X07 += ks[((R) + 8) % 17];                                        \
-+	X08 += ks[((R) + 9) % 17];                                        \
-+	X09 += ks[((R) + 10) % 17];                                       \
-+	X10 += ks[((R) + 11) % 17];                                       \
-+	X11 += ks[((R) + 12) % 17];                                       \
-+	X12 += ks[((R) + 13) % 17];                                       \
-+	X13 += ks[((R) + 14) % 17] + ts[((R) + 1) % 3];                   \
-+	X14 += ks[((R) + 15) % 17] + ts[((R) + 2) % 3];                   \
-+	X15 += ks[((R) + 16) % 17] + (R) + 1;                             \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
-+} while (0)
-+#else /* looping version */
-+#define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
-+	      ROT, rn)                                                        \
-+do {                                                                          \
-+	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
-+		  pF, ROT, rn);                                               \
-+	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + rn, X_ptr);         \
-+} while (0)
-+
-+#define I1024(R)                                                           \
-+do {                                                                       \
-+	/* inject the key schedule value */                                \
-+	X00 += ks[r + (R) + 0];                                            \
-+	X01 += ks[r + (R) + 1];                                            \
-+	X02 += ks[r + (R) + 2];                                            \
-+	X03 += ks[r + (R) + 3];                                            \
-+	X04 += ks[r + (R) + 4];                                            \
-+	X05 += ks[r + (R) + 5];                                            \
-+	X06 += ks[r + (R) + 6];                                            \
-+	X07 += ks[r + (R) + 7];                                            \
-+	X08 += ks[r + (R) + 8];                                            \
-+	X09 += ks[r + (R) + 9];                                            \
-+	X10 += ks[r + (R) + 10];                                           \
-+	X11 += ks[r + (R) + 11];                                           \
-+	X12 += ks[r + (R) + 12];                                           \
-+	X13 += ks[r + (R) + 13] + ts[r + (R) + 0];                         \
-+	X14 += ks[r + (R) + 14] + ts[r + (R) + 1];                         \
-+	X15 += ks[r + (R) + 15] + r + (R);                                 \
-+	/* rotate key schedule */                                          \
-+	ks[r + (R) + 16] = ks[r + (R) - 1];                                \
-+	ts[r + (R) + 2] = ts[r + (R) - 1];                                 \
-+	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
-+} while (0)
-+
- #endif
-+#define R1024_8_ROUNDS(R)                                                     \
-+do {                                                                          \
-+	R1024(00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, \
-+	      R1024_0, 8*(R) + 1);                                            \
-+	R1024(00, 09, 02, 13, 06, 11, 04, 15, 10, 07, 12, 03, 14, 05, 08, 01, \
-+	      R1024_1, 8*(R) + 2);                                            \
-+	R1024(00, 07, 02, 05, 04, 03, 06, 01, 12, 15, 14, 13, 08, 11, 10, 09, \
-+	      R1024_2, 8*(R) + 3);                                            \
-+	R1024(00, 15, 02, 11, 06, 13, 04, 09, 14, 01, 08, 05, 10, 03, 12, 07, \
-+	      R1024_3, 8*(R) + 4);                                            \
-+	I1024(2*(R));                                                         \
-+	R1024(00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, \
-+	      R1024_4, 8*(R) + 5);                                            \
-+	R1024(00, 09, 02, 13, 06, 11, 04, 15, 10, 07, 12, 03, 14, 05, 08, 01, \
-+	      R1024_5, 8*(R) + 6);                                            \
-+	R1024(00, 07, 02, 05, 04, 03, 06, 01, 12, 15, 14, 13, 08, 11, 10, 09, \
-+	      R1024_6, 8*(R) + 7);                                            \
-+	R1024(00, 15, 02, 11, 06, 13, 04, 09, 14, 01, 08, 05, 10, 03, 12, 07, \
-+	      R1024_7, 8*(R) + 8);                                            \
-+	I1024(2*(R)+1);                                                       \
-+} while (0)
- 
-+#define R1024_UNROLL_R(NN)                              \
-+		((SKEIN_UNROLL_1024 == 0 &&             \
-+		SKEIN_1024_ROUNDS_TOTAL/8 > (NN)) ||  \
-+		(SKEIN_UNROLL_1024 > (NN)))
-+
-+#if  (SKEIN_UNROLL_1024 > 14)
-+#error  "need more unrolling in Skein_1024_Process_Block"
-+#endif
-+#endif
- 
- /*****************************  SKEIN_256 ******************************/
- #if !(SKEIN_USE_ASM & 256)
-@@ -133,19 +373,23 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- 	enum {
- 		WCNT = SKEIN_256_STATE_WORDS
- 	};
--
-+	size_t r;
- #if SKEIN_UNROLL_256
--	size_t  r;
--	u64  kw[WCNT+4+RCNT*2]; /* key schedule: chaining vars + tweak + "rot"*/
-+	/* key schedule: chaining vars + tweak + "rot"*/
-+	u64  kw[WCNT+4+RCNT*2];
- #else
--	u64  kw[WCNT+4]; /* key schedule words : chaining vars + tweak */
-+	/* key schedule words : chaining vars + tweak */
-+	u64  kw[WCNT+4];
- #endif
- 	u64  X0, X1, X2, X3; /* local copy of context vars, for speed */
- 	u64  w[WCNT]; /* local copy of input block */
- #ifdef SKEIN_DEBUG
- 	const u64 *X_ptr[4]; /* use for debugging (help cc put Xn in regs) */
- 
--	X_ptr[0] = &X0;  X_ptr[1] = &X1;  X_ptr[2] = &X2;  X_ptr[3] = &X3;
-+	X_ptr[0] = &X0;
-+	X_ptr[1] = &X1;
-+	X_ptr[2] = &X2;
-+	X_ptr[3] = &X3;
- #endif
- 	skein_assert(blk_cnt != 0); /* never call with blk_cnt == 0! */
- 	ts[0] = ctx->h.tweak[0];
-@@ -184,58 +428,51 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- 		blk_ptr += SKEIN_256_BLOCK_BYTES;
- 
- 		/* run the rounds */
--#if SKEIN_UNROLL_256
--
--	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_256)
--#endif
--		{
--
--		R256_8_ROUNDS(0);
--
-+		for (r = 1;
-+			r < (SKEIN_UNROLL_256 ? 2 * RCNT : 2);
-+			r += (SKEIN_UNROLL_256 ? 2 * SKEIN_UNROLL_256 : 1)) {
-+			R256_8_ROUNDS(0);
- #if   R256_UNROLL_R(1)
--		R256_8_ROUNDS(1);
-+			R256_8_ROUNDS(1);
- #endif
- #if   R256_UNROLL_R(2)
--		R256_8_ROUNDS(2);
-+			R256_8_ROUNDS(2);
- #endif
- #if   R256_UNROLL_R(3)
--		R256_8_ROUNDS(3);
-+			R256_8_ROUNDS(3);
- #endif
- #if   R256_UNROLL_R(4)
--		R256_8_ROUNDS(4);
-+			R256_8_ROUNDS(4);
- #endif
- #if   R256_UNROLL_R(5)
--		R256_8_ROUNDS(5);
-+			R256_8_ROUNDS(5);
- #endif
- #if   R256_UNROLL_R(6)
--		R256_8_ROUNDS(6);
-+			R256_8_ROUNDS(6);
- #endif
- #if   R256_UNROLL_R(7)
--		R256_8_ROUNDS(7);
-+			R256_8_ROUNDS(7);
- #endif
- #if   R256_UNROLL_R(8)
--		R256_8_ROUNDS(8);
-+			R256_8_ROUNDS(8);
- #endif
- #if   R256_UNROLL_R(9)
--		R256_8_ROUNDS(9);
-+			R256_8_ROUNDS(9);
- #endif
- #if   R256_UNROLL_R(10)
--		R256_8_ROUNDS(10);
-+			R256_8_ROUNDS(10);
- #endif
- #if   R256_UNROLL_R(11)
--		R256_8_ROUNDS(11);
-+			R256_8_ROUNDS(11);
- #endif
- #if   R256_UNROLL_R(12)
--		R256_8_ROUNDS(12);
-+			R256_8_ROUNDS(12);
- #endif
- #if   R256_UNROLL_R(13)
--		R256_8_ROUNDS(13);
-+			R256_8_ROUNDS(13);
- #endif
- #if   R256_UNROLL_R(14)
--		R256_8_ROUNDS(14);
--#endif
--#if  (SKEIN_UNROLL_256 > 14)
--#error  "need more unrolling in skein_256_process_block"
-+			R256_8_ROUNDS(14);
- #endif
- 		}
- 		/* do the final "feedforward" xor, update context chaining */
-@@ -273,20 +510,8 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- 	enum {
- 		WCNT = SKEIN_512_STATE_WORDS
- 	};
--#undef  RCNT
--#define RCNT  (SKEIN_512_ROUNDS_TOTAL/8)
--
--#ifdef SKEIN_LOOP /* configure how much to unroll the loop */
--#define SKEIN_UNROLL_512 (((SKEIN_LOOP)/10)%10)
--#else
--#define SKEIN_UNROLL_512 (0)
--#endif
--
--#if SKEIN_UNROLL_512
--#if (RCNT % SKEIN_UNROLL_512)
--#error "Invalid SKEIN_UNROLL_512" /* sanity check on unroll count */
--#endif
- 	size_t  r;
-+#if SKEIN_UNROLL_512
- 	u64  kw[WCNT+4+RCNT*2]; /* key sched: chaining vars + tweak + "rot"*/
- #else
- 	u64  kw[WCNT+4]; /* key schedule words : chaining vars + tweak */
-@@ -296,8 +521,14 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- #ifdef SKEIN_DEBUG
- 	const u64 *X_ptr[8]; /* use for debugging (help cc put Xn in regs) */
- 
--	X_ptr[0] = &X0;  X_ptr[1] = &X1;  X_ptr[2] = &X2;  X_ptr[3] = &X3;
--	X_ptr[4] = &X4;  X_ptr[5] = &X5;  X_ptr[6] = &X6;  X_ptr[7] = &X7;
-+	X_ptr[0] = &X0;
-+	X_ptr[1] = &X1;
-+	X_ptr[2] = &X2;
-+	X_ptr[3] = &X3;
-+	X_ptr[4] = &X4;
-+	X_ptr[5] = &X5;
-+	X_ptr[6] = &X6;
-+	X_ptr[7] = &X7;
- #endif
- 
- 	skein_assert(blk_cnt != 0); /* never call with blk_cnt == 0! */
-@@ -330,104 +561,26 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- 		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
- 
- 		/* do the first full key injection */
--		X0   = w[0] + ks[0];
--		X1   = w[1] + ks[1];
--		X2   = w[2] + ks[2];
--		X3   = w[3] + ks[3];
--		X4   = w[4] + ks[4];
--		X5   = w[5] + ks[5] + ts[0];
--		X6   = w[6] + ks[6] + ts[1];
--		X7   = w[7] + ks[7];
-+		X0 = w[0] + ks[0];
-+		X1 = w[1] + ks[1];
-+		X2 = w[2] + ks[2];
-+		X3 = w[3] + ks[3];
-+		X4 = w[4] + ks[4];
-+		X5 = w[5] + ks[5] + ts[0];
-+		X6 = w[6] + ks[6] + ts[1];
-+		X7 = w[7] + ks[7];
- 
- 		blk_ptr += SKEIN_512_BLOCK_BYTES;
- 
- 		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
- 				 X_ptr);
- 		/* run the rounds */
--#define ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) \
--do {                                                         \
--	X##p0 += X##p1;                                      \
--	X##p1 = rotl_64(X##p1, ROT##_0);                     \
--	X##p1 ^= X##p0;                                      \
--	X##p2 += X##p3;                                      \
--	X##p3 = rotl_64(X##p3, ROT##_1);                     \
--	X##p3 ^= X##p2;                                      \
--	X##p4 += X##p5;					     \
--	X##p5 = rotl_64(X##p5, ROT##_2);                     \
--	X##p5 ^= X##p4;                                      \
--	X##p6 += X##p7; X##p7 = rotl_64(X##p7, ROT##_3);     \
--	X##p7 ^= X##p6;                                      \
--} while (0)
--
--#if SKEIN_UNROLL_512 == 0
--#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) /* unrolled */ \
--do {                                                                    \
--	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)            \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, r_num, X_ptr);              \
--} while (0)
--
--#define I512(R)                                                           \
--do {                                                                      \
--	/* inject the key schedule value */                               \
--	X0   += ks[((R) + 1) % 9];                                        \
--	X1   += ks[((R) + 2) % 9];                                        \
--	X2   += ks[((R) + 3) % 9];                                        \
--	X3   += ks[((R) + 4) % 9];                                        \
--	X4   += ks[((R) + 5) % 9];                                        \
--	X5   += ks[((R) + 6) % 9] + ts[((R) + 1) % 3];                    \
--	X6   += ks[((R) + 7) % 9] + ts[((R) + 2) % 3];                    \
--	X7   += ks[((R) + 8) % 9] + (R) + 1;                              \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
--} while (0)
--
--#else /* looping version */
--#define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
--do {                                                                     \
--	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + r_num, X_ptr); \
--} while (0)
--
--#define I512(R)                                                           \
--do {                                                                      \
--	/* inject the key schedule value */                               \
--	X0   += ks[r + (R) + 0];                                          \
--	X1   += ks[r + (R) + 1];                                          \
--	X2   += ks[r + (R) + 2];                                          \
--	X3   += ks[r + (R) + 3];                                          \
--	X4   += ks[r + (R) + 4];                                          \
--	X5   += ks[r + (R) + 5] + ts[r + (R) + 0];                        \
--	X6   += ks[r + (R) + 6] + ts[r + (R) + 1];                        \
--	X7   += ks[r + (R) + 7] + r + (R);                                \
--	/* rotate key schedule */                                         \
--	ks[r + (R) + 8] = ks[r + (R) - 1];                                \
--	ts[r + (R) + 2] = ts[r + (R) - 1];                                \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
--} while (0)
--
--		for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_512)
--#endif /* end of looped code definitions */
--		{
--#define R512_8_ROUNDS(R)  /* do 8 full rounds */                      \
--do {                                                                  \
--		R512(0, 1, 2, 3, 4, 5, 6, 7, R_512_0, 8 * (R) + 1);   \
--		R512(2, 1, 4, 7, 6, 5, 0, 3, R_512_1, 8 * (R) + 2);   \
--		R512(4, 1, 6, 3, 0, 5, 2, 7, R_512_2, 8 * (R) + 3);   \
--		R512(6, 1, 0, 7, 2, 5, 4, 3, R_512_3, 8 * (R) + 4);   \
--		I512(2 * (R));                              \
--		R512(0, 1, 2, 3, 4, 5, 6, 7, R_512_4, 8 * (R) + 5);   \
--		R512(2, 1, 4, 7, 6, 5, 0, 3, R_512_5, 8 * (R) + 6);   \
--		R512(4, 1, 6, 3, 0, 5, 2, 7, R_512_6, 8 * (R) + 7);   \
--		R512(6, 1, 0, 7, 2, 5, 4, 3, R_512_7, 8 * (R) + 8);   \
--		I512(2 * (R) + 1);        /* and key injection */     \
--} while (0)
-+		for (r = 1;
-+			r < (SKEIN_UNROLL_512 ? 2 * RCNT : 2);
-+			r += (SKEIN_UNROLL_512 ? 2 * SKEIN_UNROLL_512 : 1)) {
- 
- 			R512_8_ROUNDS(0);
- 
--#define R512_UNROLL_R(NN)                             \
--		((SKEIN_UNROLL_512 == 0 &&            \
--		SKEIN_512_ROUNDS_TOTAL/8 > (NN)) ||   \
--		(SKEIN_UNROLL_512 > (NN)))
--
- #if   R512_UNROLL_R(1)
- 			R512_8_ROUNDS(1);
- #endif
-@@ -470,9 +623,6 @@ do {                                                                  \
- #if   R512_UNROLL_R(14)
- 			R512_8_ROUNDS(14);
- #endif
--#if  (SKEIN_UNROLL_512 > 14)
--#error  "need more unrolling in skein_512_process_block"
--#endif
- 		}
- 
- 		/* do the final "feedforward" xor, update context chaining */
-@@ -513,20 +663,8 @@ void skein_1024_process_block(struct skein_1024_ctx *ctx, const u8 *blk_ptr,
- 	enum {
- 		WCNT = SKEIN_1024_STATE_WORDS
- 	};
--#undef  RCNT
--#define RCNT  (SKEIN_1024_ROUNDS_TOTAL/8)
--
--#ifdef SKEIN_LOOP /* configure how much to unroll the loop */
--#define SKEIN_UNROLL_1024 ((SKEIN_LOOP)%10)
--#else
--#define SKEIN_UNROLL_1024 (0)
--#endif
--
--#if (SKEIN_UNROLL_1024 != 0)
--#if (RCNT % SKEIN_UNROLL_1024)
--#error "Invalid SKEIN_UNROLL_1024" /* sanity check on unroll count */
--#endif
- 	size_t  r;
-+#if (SKEIN_UNROLL_1024 != 0)
- 	u64  kw[WCNT+4+RCNT*2]; /* key sched: chaining vars + tweak + "rot" */
- #else
- 	u64  kw[WCNT+4]; /* key schedule words : chaining vars + tweak */
-@@ -617,131 +755,10 @@ void skein_1024_process_block(struct skein_1024_ctx *ctx, const u8 *blk_ptr,
- 		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
- 				 X_ptr);
- 
--#define ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
--		  pF, ROT, r_num)                                             \
--do {                                                                          \
--	X##p0 += X##p1;                                                       \
--	X##p1 = rotl_64(X##p1, ROT##_0);                                      \
--	X##p1 ^= X##p0;                                                       \
--	X##p2 += X##p3;                                                       \
--	X##p3 = rotl_64(X##p3, ROT##_1);                                      \
--	X##p3 ^= X##p2;                                                       \
--	X##p4 += X##p5;                                                       \
--	X##p5 = rotl_64(X##p5, ROT##_2);                                      \
--	X##p5 ^= X##p4;                                                       \
--	X##p6 += X##p7;                                                       \
--	X##p7 = rotl_64(X##p7, ROT##_3);                                      \
--	X##p7 ^= X##p6;                                                       \
--	X##p8 += X##p9;                                                       \
--	X##p9 = rotl_64(X##p9, ROT##_4);                                      \
--	X##p9 ^= X##p8;                                                       \
--	X##pA += X##pB;                                                       \
--	X##pB = rotl_64(X##pB, ROT##_5);                                      \
--	X##pB ^= X##pA;                                                       \
--	X##pC += X##pD;                                                       \
--	X##pD = rotl_64(X##pD, ROT##_6);                                      \
--	X##pD ^= X##pC;                                                       \
--	X##pE += X##pF;                                                       \
--	X##pF = rotl_64(X##pF, ROT##_7);                                      \
--	X##pF ^= X##pE;                                                       \
--} while (0)
--
--#if SKEIN_UNROLL_1024 == 0
--#define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
--	      ROT, rn)                                                        \
--do {                                                                          \
--	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
--		  pF, ROT, rn);                                               \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, rn, X_ptr);                       \
--} while (0)
--
--#define I1024(R)                                                          \
--do {                                                                      \
--	/* inject the key schedule value */                               \
--	X00 += ks[((R) + 1) % 17];                                        \
--	X01 += ks[((R) + 2) % 17];                                        \
--	X02 += ks[((R) + 3) % 17];                                        \
--	X03 += ks[((R) + 4) % 17];                                        \
--	X04 += ks[((R) + 5) % 17];                                        \
--	X05 += ks[((R) + 6) % 17];                                        \
--	X06 += ks[((R) + 7) % 17];                                        \
--	X07 += ks[((R) + 8) % 17];                                        \
--	X08 += ks[((R) + 9) % 17];                                        \
--	X09 += ks[((R) + 10) % 17];                                       \
--	X10 += ks[((R) + 11) % 17];                                       \
--	X11 += ks[((R) + 12) % 17];                                       \
--	X12 += ks[((R) + 13) % 17];                                       \
--	X13 += ks[((R) + 14) % 17] + ts[((R) + 1) % 3];                   \
--	X14 += ks[((R) + 15) % 17] + ts[((R) + 2) % 3];                   \
--	X15 += ks[((R) + 16) % 17] + (R) + 1;                             \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
--} while (0)
--#else /* looping version */
--#define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
--	      ROT, rn)                                                        \
--do {                                                                          \
--	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
--		  pF, ROT, rn);                                               \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + rn, X_ptr);         \
--} while (0)
--
--#define I1024(R)                                                           \
--do {                                                                       \
--	/* inject the key schedule value */                                \
--	X00 += ks[r + (R) + 0];                                            \
--	X01 += ks[r + (R) + 1];                                            \
--	X02 += ks[r + (R) + 2];                                            \
--	X03 += ks[r + (R) + 3];                                            \
--	X04 += ks[r + (R) + 4];                                            \
--	X05 += ks[r + (R) + 5];                                            \
--	X06 += ks[r + (R) + 6];                                            \
--	X07 += ks[r + (R) + 7];                                            \
--	X08 += ks[r + (R) + 8];                                            \
--	X09 += ks[r + (R) + 9];                                            \
--	X10 += ks[r + (R) + 10];                                           \
--	X11 += ks[r + (R) + 11];                                           \
--	X12 += ks[r + (R) + 12];                                           \
--	X13 += ks[r + (R) + 13] + ts[r + (R) + 0];                         \
--	X14 += ks[r + (R) + 14] + ts[r + (R) + 1];                         \
--	X15 += ks[r + (R) + 15] + r + (R);                                 \
--	/* rotate key schedule */                                          \
--	ks[r + (R) + 16] = ks[r + (R) - 1];                                \
--	ts[r + (R) + 2] = ts[r + (R) - 1];                                 \
--	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
--} while (0)
--
--		for (r = 1; r <= 2 * RCNT; r += 2 * SKEIN_UNROLL_1024)
--#endif
--		{
--#define R1024_8_ROUNDS(R)                                                     \
--do {                                                                          \
--	R1024(00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, \
--	      R1024_0, 8*(R) + 1);                                            \
--	R1024(00, 09, 02, 13, 06, 11, 04, 15, 10, 07, 12, 03, 14, 05, 08, 01, \
--	      R1024_1, 8*(R) + 2);                                            \
--	R1024(00, 07, 02, 05, 04, 03, 06, 01, 12, 15, 14, 13, 08, 11, 10, 09, \
--	      R1024_2, 8*(R) + 3);                                            \
--	R1024(00, 15, 02, 11, 06, 13, 04, 09, 14, 01, 08, 05, 10, 03, 12, 07, \
--	      R1024_3, 8*(R) + 4);                                            \
--	I1024(2*(R));                                                         \
--	R1024(00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, \
--	      R1024_4, 8*(R) + 5);                                            \
--	R1024(00, 09, 02, 13, 06, 11, 04, 15, 10, 07, 12, 03, 14, 05, 08, 01, \
--	      R1024_5, 8*(R) + 6);                                            \
--	R1024(00, 07, 02, 05, 04, 03, 06, 01, 12, 15, 14, 13, 08, 11, 10, 09, \
--	      R1024_6, 8*(R) + 7);                                            \
--	R1024(00, 15, 02, 11, 06, 13, 04, 09, 14, 01, 08, 05, 10, 03, 12, 07, \
--	      R1024_7, 8*(R) + 8);                                            \
--	I1024(2*(R)+1);                                                       \
--} while (0)
--
-+		for (r = 1;
-+			r < (SKEIN_UNROLL_1024 ? 2 * RCNT : 2);
-+			r += (SKEIN_UNROLL_1024 ? 2 * SKEIN_UNROLL_1024 : 1)) {
- 			R1024_8_ROUNDS(0);
--
--#define R1024_UNROLL_R(NN)                              \
--		((SKEIN_UNROLL_1024 == 0 &&             \
--		SKEIN_1024_ROUNDS_TOTAL/8 > (NN)) ||  \
--		(SKEIN_UNROLL_1024 > (NN)))
--
- #if   R1024_UNROLL_R(1)
- 			R1024_8_ROUNDS(1);
- #endif
-@@ -784,9 +801,6 @@ do {                                                                          \
- #if   R1024_UNROLL_R(14)
- 			R1024_8_ROUNDS(14);
- #endif
--#if  (SKEIN_UNROLL_1024 > 14)
--#error  "need more unrolling in Skein_1024_Process_Block"
-- #endif
- 		}
- 		/* do the final "feedforward" xor, update context chaining */
- 
--- 
-1.7.10.4
+This patch is trying to fix the same thing.
+
+
+Zhenhua
+On 09/30/2014 02:09 PM, Li, Zhen-Hua wrote:
+> On a HP system with Intel Corporation 82599 ethernet adapter, when kernel
+> crashed and the kdump kernel boots with intel_iommu=on, there may be some
+> unexpected DMA requests on this adapter, which will cause DMA Remapping
+> faults like:
+>      dmar: DRHD: handling fault status reg 102
+>      dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>      DMAR:[fault reason 01] Present bit in root entry is clear
+>
+> Analysis for this bug:
+>
+> The present bit is set in this function:
+>
+> static struct context_entry * device_to_context_entry(
+> 		struct intel_iommu *iommu, u8 bus, u8 devfn)
+> {
+>      ......
+>                  set_root_present(root);
+>      ......
+> }
+>
+> Calling tree:
+> ixgbe_open
+>      ixgbe_setup_tx_resources
+>          intel_alloc_coherent
+>              __intel_map_single
+>                  domain_context_mapping
+>                      domain_context_mapping_one
+>                          device_to_context_entry
+>
+> This means, the present bit in root entry will not be set until the device
+>   driver is loaded.
+>
+> But in the kdump kernel, some hardware device does not know the OS is the
+>   second kernel and the drivers should be loaded again, this causes there are
+>   some unexpected DMA requsts on this device when it has not been initialized,
+>   and then the DMA Remapping errors come.
+>
+> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+>   the device itself does not work.
+>
+> There also was a discussion:
+> https://lkml.org/lkml/2013/5/14/9
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>   drivers/pci/quirks.c | 11 +++++++++++
+>   1 file changed, 11 insertions(+)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 80c2d01..5198af3 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -25,6 +25,7 @@
+>   #include <linux/sched.h>
+>   #include <linux/ktime.h>
+>   #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+> +#include <linux/crash_dump.h>
+>   #include "pci.h"
+>
+>   /*
+> @@ -3832,3 +3833,13 @@ void pci_dev_specific_enable_acs(struct pci_dev *dev)
+>   		}
+>   	}
+>   }
+> +
+> +#ifdef CONFIG_CRASH_DUMP
+> +void quirk_reset_buggy_devices(struct pci_dev *dev)
+> +{
+> +	if (unlikely(is_kdump_kernel()))
+> +		pci_try_reset_bus(dev->bus);
+> +}
+> +DECLARE_PCI_FIXUP_CLASS_HEADER(PCI_VENDOR_ID_INTEL, 0x10f8,
+> +		PCI_CLASS_NETWORK_ETHERNET, 8, quirk_reset_buggy_devices);
+> +#endif
+>
 
