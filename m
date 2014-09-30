@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaI3UYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:24:18 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49473 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaI3UYQ (ORCPT
+	id S1752213AbaI3UYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:24:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:47102 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaI3UYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:24:16 -0400
-Date: Tue, 30 Sep 2014 16:24:13 -0400 (EDT)
-Message-Id: <20140930.162413.1928220515698421769.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net] r8152: fix setting RTL8152_UNPLUG
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-50-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-50-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 30 Sep 2014 16:24:49 -0400
+Message-ID: <542B118D.3030306@gmail.com>
+Date: Tue, 30 Sep 2014 21:24:45 +0100
+From: Paul McQuade <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daeseok Youn <daeseok.youn@gmail.com>,
+        Paul McQuade <paulmcquad@gmail.com>, Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] MM: bootmem: Added headers
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 30 Sep 2014 13:24:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Tue, 30 Sep 2014 16:48:01 +0800
+>From b9f5d476a5aaad7a21c319b6bce6b3717925d9c9 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Tue, 30 Sep 2014 20:51:54 +0100
+Subject: [PATCH] MM: bootmem: Added headers
 
-> The flag of RTL8152_UNPLUG should only be set when the device is
-> unplugged, not each time the rtl8152_disconnect() is called.
-> Otherwise, the device wouldn't be stopped normally.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Replace asm headers with the following linux headers.
+<linux/bug.h>
+<linux/io.h>
 
-Applied, thanks.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ mm/bootmem.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 90bd350..8a000ce 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -16,9 +16,9 @@
+ #include <linux/kmemleak.h>
+ #include <linux/range.h>
+ #include <linux/memblock.h>
++#include <linux/bug.h>
++#include <linux/io.h>
+ 
+-#include <asm/bug.h>
+-#include <asm/io.h>
+ #include <asm/processor.h>
+ 
+ #include "internal.h"
+-- 
+1.9.1
+
