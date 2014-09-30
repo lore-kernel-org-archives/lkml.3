@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450AbaI3DPj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:15:39 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:62636 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaI3DPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:15:37 -0400
+	id S1755232AbaI3DWX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:22:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:50558 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742AbaI3DWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:22:21 -0400
+Date: Tue, 30 Sep 2014 13:22:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140930132213.0dfa99e3@canb.auug.org.au>
+In-Reply-To: <20140930131354.792033e7@canb.auug.org.au>
+References: <20140930131354.792033e7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CAJfpegsN8BRE8_RUT9n-h+o7Q5ayaqLtErJ01jSitxoZ7QU-BQ@mail.gmail.com>
-References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
-	<CAJfpegsN8BRE8_RUT9n-h+o7Q5ayaqLtErJ01jSitxoZ7QU-BQ@mail.gmail.com>
-Date: Tue, 30 Sep 2014 05:15:36 +0200
-Message-ID: <CAJfpegv76ZbHec=N3z1LfYazwbsgzwr0UZf6LWd+G=J3EPmi1Q@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/e/JX/fF_gMe5SAgkHNp7sGg"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 5:28 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> [Adding CC's]
->
-> On Thu, Sep 25, 2014 at 2:05 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
->
->> In short, the problem is that fuse_release (that's usually called on last
->> user close(2)) sends FUSE_RELEASE to userspace and returns without waiting
->> for ACK from userspace. Consequently, there is a gap when user regards the
->> file released while userspace fuse is still working on it. An attempt to
->> access the file from another node leads to complicated synchronization
->> problems because the first node still "holds" the file.
->>
->> The patch-set resolves the problem by making fuse_release synchronous:
->> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
->>
->> It must be emphasized that even if the feature is enabled (i.e. fuse_release
->> is synchronous), nothing guarantees that fuse_release() will be called
->> in the context of close(2). In fact, it may happen later, on last fput().
->> However, there are still a lot of use cases when close(2) is synchronous,
->> so the feature must be regarded as an optimization maximizing chances of
->> synchronous behaviour of close(2).
->
-> Okay, we have the common case of close -> last-fput ->release.  This
-> being synchronous is fine.  Related cases are munmap(), and weird
-> corner cases including I/O on file descriptor being done in parallel
-> with close() in another thread.  Synchronous behavior is also fine in
-> these cases, since the task calling the last fput() is in fact
-> responsible for releasing the file.
->
-> And then we have the uncommon cases when fput() is called from
-> something unrelated.  Take the following DoS example:  malicious app
-> creates a socket loop (sockA is sent over sockB and sockB is sent over
-> sockA) and in addition it tacks a fuse fd onto one of the sockets.
-> The fuse fd is implemented to block forever on release.  In this case
-> the loop will persist after the sockets are closed due to refcounting.
-> Later, a garbage collection is triggered from a completely unrelated
-> socket operation.   This result in the unrelated task being blocked
-> forever.
->
-> The simplest way to avoid such an attack is to make the sync-release
-> feature privileged.  But even if it's privileged, the fact that
-> ->release can take a lot of time and a completely unrelated task could
-> be waiting for it to finish is not a good thing.
->
-> So I'm wondering: could we have some way of distinguishing "good
-> release" from "bad release"?  Maybe adding an fput_sync() variant that
-> passes an "sync" flag to ->release()?
+--Sig_/e/JX/fF_gMe5SAgkHNp7sGg
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-If we just concentrate on close(2), then there's a much simpler
-solution: in fuse_flush() check if file_count(file) is 1.  If it is,
-then this is a final close and we can mark the FLUSH request as such
-with a flag (FUSE_FLUSH_FINAL).  Userspace filesystem can act
-accordingly and may even return an error value to close(2).  In this
-case we could even omit the RELEASE request as an optimization, since
-we know the file cannot be resurrected if this was the last reference.
+Hi all,
 
-Do we need to be synchronous in any other case?  E.g. munmap() comes to mind.
+On Tue, 30 Sep 2014 13:13:54 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Hi all,
+>=20
+> After merging the net-next tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> net/bridge/br_nf_core.c:77:1: error: expected identifier or '(' before '{=
+' token
+>  {
+>  ^
+> net/bridge/br_nf_core.c:88:12: error: redefinition of 'br_nf_core_init'
+>  int __init br_nf_core_init(void)
+>             ^
+> In file included from net/bridge/br_nf_core.c:23:0:
+> net/bridge/br_private.h:762:19: note: previous definition of 'br_nf_core_=
+init' was here
+>  static inline int br_nf_core_init(void) { return 0; }
+>                    ^
+> net/bridge/br_nf_core.c:93:6: error: redefinition of 'br_nf_core_fini'
+>  void br_nf_core_fini(void)
+>       ^
+> In file included from net/bridge/br_nf_core.c:23:0:
+> net/bridge/br_private.h:763:20: note: previous definition of 'br_nf_core_=
+fini' was here
+>  static inline void br_nf_core_fini(void) {}
+>                     ^
+>=20
+> Caused by commit 34666d467cbf ("netfilter: bridge: move br_netfilter
+> out of the core").  This build has CONFIG_BRIDGE_NETFILTER not set ...
+>=20
+> I have applied the following patch for today:
+>=20
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 30 Sep 2014 13:09:09 +1000
+> Subject: [PATCH] netfilter: bridge: don't build br_nf_core unless necessa=
+ry
+>=20
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  net/bridge/Makefile | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/net/bridge/Makefile b/net/bridge/Makefile
+> index 5e3eac5dc8b9..eb653a225397 100644
+> --- a/net/bridge/Makefile
+> +++ b/net/bridge/Makefile
+> @@ -6,12 +6,11 @@ obj-$(CONFIG_BRIDGE) +=3D bridge.o
+> =20
+>  bridge-y	:=3D br.o br_device.o br_fdb.o br_forward.o br_if.o br_input.o \
+>  			br_ioctl.o br_stp.o br_stp_bpdu.o \
+> -			br_stp_if.o br_stp_timer.o br_netlink.o \
+> -			br_nf_core.o
+> +			br_stp_if.o br_stp_timer.o br_netlink.o
+> =20
+>  bridge-$(CONFIG_SYSFS) +=3D br_sysfs_if.o br_sysfs_br.o
+> =20
+> -obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o
+> +obj-$(CONFIG_BRIDGE_NETFILTER) +=3D br_netfilter.o br_nf_core.o
+> =20
+>  bridge-$(CONFIG_BRIDGE_IGMP_SNOOPING) +=3D br_multicast.o br_mdb.o
+> =20
+> --=20
+> 2.1.1
 
-Thanks,
-Miklos
+After whish I get this from an x86_64 allmodconfig build:
+
+ERROR: "br_nf_core_fini" [net/bridge/bridge.ko] undefined!
+ERROR: "br_netfilter_rtable_init" [net/bridge/bridge.ko] undefined!
+ERROR: "br_nf_core_init" [net/bridge/bridge.ko] undefined!
+
+So I gave up :-(
+
+I have used the net-next tree from next-20140926 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/e/JX/fF_gMe5SAgkHNp7sGg
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUKiHqAAoJEMDTa8Ir7ZwVqJEP/2CWa8brbLZxrt9S+q4o6CE6
+dxy7kXf7vnxQ7ToNAz7zTgtKYrMRryCQc7Vr86z8gRHsWIYeldI8jwV1RpuUp5K7
++fQIYP8AMRA1MG2qIowdGIDh0aS42U8xXeQh2dtJWXeHGKsKK3hG/BIYF4yOwMK6
+Roa+m6Z+HVzfVAxgu4MFMdcReAF9esXcHh6q414X00NDWL///FCs36zI3pmMgOAM
+Npe00ytCypk/gcIBT3zRqN2ATwxqlHsUI4soxjIByf4pwcGWFjtvUHJIRzziW5Kq
+mg6L1swhdU9r//j6psDPJlwm2JiPnE/rDZ4w07UBbBiaoZF2Zy1Kf+8uRwDsRbOi
+/7VixGAxlBQ7aFooeCizlSqubTCLMEWfaUzf63oBOXS5OEznQxE6zqCoFlmdRXLz
+D7ClT/LUcBUkREmFZwZKfsHNLBQUj8An5senf+3IuvFyGC35r3bsqghzDPWDN9Rg
+lY6TwkaC+30xj7+zTM8XZBdPfHLWRmyAWKHMhAyU9OyOkBLhEqkAFFcu3QBUC86N
+GU41UQow0wD+By6x3/o5wD7+t9gBuFfE9dG69jmmgrhUnv9v+u4TARuY1RvZCKJE
+GE+mkSaJHlF7IG0Vl9aebi/UMKOsxWazQiJ7KENSaBmAIDmIVrZa+OdXmc9QF/uS
+MINsl6plGQ1SNqmC9qfW
+=bbjg
+-----END PGP SIGNATURE-----
+
+--Sig_/e/JX/fF_gMe5SAgkHNp7sGg--
