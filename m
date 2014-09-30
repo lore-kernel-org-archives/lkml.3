@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaI3Kfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:35:37 -0400
-Received: from ozlabs.org ([103.22.144.67]:56200 "EHLO ozlabs.org"
+	id S1751917AbaI3Kfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:35:44 -0400
+Received: from ozlabs.org ([103.22.144.67]:49609 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028AbaI3Kff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:35:35 -0400
+	id S1751844AbaI3Kfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:35:43 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
@@ -13,117 +13,247 @@ Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v2 0/17] POWER8 Coherent Accelerator device driver
-Date: Tue, 30 Sep 2014 20:34:49 +1000
-Message-Id: <1412073306-13812-1-git-send-email-mikey@neuling.org>
+Subject: [PATCH v2 08/17] powerpc/powerpc: Add new PCIe functions for allocating cxl interrupts
+Date: Tue, 30 Sep 2014 20:34:57 +1000
+Message-Id: <1412073306-13812-9-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412073306-13812-1-git-send-email-mikey@neuling.org>
+References: <1412073306-13812-1-git-send-email-mikey@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
- - Updates based on comments from, Anton, Gavin, Aneesh, jk and offline reviews
- - Simplified copro_data_segment() and merged code with hash_page_mm()
-    (New patch 10/17)
- - PCIe code simplifications based on Gavin's review
- - Removed redundant comment in msi_bitmap_alloc_hwirqs()
- - Fix for locking in idr_remove in core driver
- - Ensure PSL is enabled when PHB is flipped to CXL mode
- - Added CONFIG_PPC_COPRO_BASE to compile copro_fault.c
- - Merged SPU and cxl slb flushing calls into copro_flush_all_slbs()
-    (New patch 03/17)
- - Moved slb_vsid_shift() to static inline from #define
- - Don't write paca->context when demoting segments and mm != current
- - Fix minor typos in documentation
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-v1:
- - Initial post
+This adds a number of functions for allocating IRQs under powernv PCIe for cxl.
 
-This add support for the Coherent Accelerator (cxl) attached to POWER8
-processors.  This coherent accelerator interface is designed to allow the
-coherent connection of FPGA based accelerators (and other devices) to a POWER
-systems.
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+---
+ arch/powerpc/include/asm/pnv-pci.h        |  27 +++++
+ arch/powerpc/platforms/powernv/pci-ioda.c | 161 ++++++++++++++++++++++++++++++
+ 2 files changed, 188 insertions(+)
+ create mode 100644 arch/powerpc/include/asm/pnv-pci.h
 
-IBM refers to this as the Coherent Accelerator Processor Interface or CAPI.  In
-this driver it's referred to by the name cxl to avoid confusion with the ISDN
-CAPI subsystem.
+diff --git a/arch/powerpc/include/asm/pnv-pci.h b/arch/powerpc/include/asm/pnv-pci.h
+new file mode 100644
+index 0000000..71717b5
+--- /dev/null
++++ b/arch/powerpc/include/asm/pnv-pci.h
+@@ -0,0 +1,27 @@
++/*
++ * Copyright 2014 IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#ifndef _ASM_PNV_PCI_H
++#define _ASM_PNV_PCI_H
++
++#include <linux/pci.h>
++#include <misc/cxl.h>
++
++int pnv_phb_to_cxl(struct pci_dev *dev);
++int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
++			   unsigned int virq);
++int pnv_cxl_alloc_hwirqs(struct pci_dev *dev, int num);
++void pnv_cxl_release_hwirqs(struct pci_dev *dev, int hwirq, int num);
++int pnv_cxl_alloc_hwirq_ranges(struct cxl_irq_ranges *irqs,
++			       struct pci_dev *dev, int num);
++void pnv_cxl_release_hwirq_ranges(struct cxl_irq_ranges *irqs,
++				  struct pci_dev *dev);
++int pnv_cxl_get_irq_count(struct pci_dev *dev);
++
++#endif
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index 329164f..b0b96f0 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -38,6 +38,8 @@
+ #include <asm/debug.h>
+ #include <asm/firmware.h>
+ 
++#include <misc/cxl.h>
++
+ #include "powernv.h"
+ #include "pci.h"
+ 
+@@ -503,6 +505,138 @@ static struct pnv_ioda_pe *pnv_ioda_get_pe(struct pci_dev *dev)
+ 		return NULL;
+ 	return &phb->ioda.pe_array[pdn->pe_number];
+ }
++
++struct device_node *pnv_pci_to_phb_node(struct pci_dev *dev)
++{
++        struct pci_controller *hose = pci_bus_to_host(dev->bus);
++
++        return hose->dn;
++}
++EXPORT_SYMBOL(pnv_pci_to_phb_node);
++
++#ifdef CONFIG_CXL_BASE
++int pnv_phb_to_cxl(struct pci_dev *dev)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++	struct pnv_ioda_pe *pe;
++	int rc;
++
++	if (!(pe = pnv_ioda_get_pe(dev))) {
++		rc = -ENODEV;
++		goto out;
++	}
++	pe_info(pe, "switch PHB to CXL\n");
++	pe_info(pe, "PHB-ID  : 0x%016llx\n", phb->opal_id);
++	pe_info(pe, "     pe : %i\n", pe->pe_number);
++
++	if ((rc = opal_pci_set_phb_cxl_mode(phb->opal_id, 1, pe->pe_number)))
++		dev_err(&dev->dev, "opal_pci_set_phb_cxl_mode failed: %i\n", rc);
++
++out:
++	return rc;
++}
++EXPORT_SYMBOL(pnv_phb_to_cxl);
++
++int pnv_cxl_alloc_hwirqs(struct pci_dev *dev, int num)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++	int hwirq = msi_bitmap_alloc_hwirqs(&phb->msi_bmp, num);
++
++	if (hwirq < 0) {
++		dev_warn(&dev->dev, "Failed to find a free MSI\n");
++		return -ENOSPC;
++	}
++
++	return phb->msi_base + hwirq;
++}
++EXPORT_SYMBOL(pnv_cxl_alloc_hwirqs);
++
++void pnv_cxl_release_hwirqs(struct pci_dev *dev, int hwirq, int num)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++
++	msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq - phb->msi_base, num);
++}
++EXPORT_SYMBOL(pnv_cxl_release_hwirqs);
++
++
++int pnv_cxl_alloc_hwirq_ranges(struct cxl_irq_ranges *irqs,
++			       struct pci_dev *dev, int num)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++	int range = 0;
++	int hwirq;
++	int try;
++
++	memset(irqs, 0, sizeof(struct cxl_irq_ranges));
++
++	for (range = 1; range < CXL_IRQ_RANGES && num; range++) {
++		try = num;
++		while (try) {
++			hwirq = msi_bitmap_alloc_hwirqs(&phb->msi_bmp, try);
++			if (hwirq >= 0)
++				break;
++			try /= 2;
++		}
++		if (!try)
++			goto fail;
++
++		irqs->offset[range] = phb->msi_base + hwirq;
++		irqs->range[range] = try;
++		pr_devel("cxl alloc irq range 0x%x: offset: 0x%lx  limit: %li\n",
++			 range, irqs->offset[range], irqs->range[range]);
++		num -= try;
++	}
++	if (num)
++		goto fail;
++
++	return 0;
++fail:
++	for (range--; range >= 0; range--) {
++		hwirq = irqs->offset[range] - phb->msi_base;
++		msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
++				       irqs->range[range]);
++		irqs->range[range] = 0;
++	}
++	return -ENOSPC;
++}
++EXPORT_SYMBOL(pnv_cxl_alloc_hwirq_ranges);
++
++void pnv_cxl_release_hwirq_ranges(struct cxl_irq_ranges *irqs,
++				  struct pci_dev *dev)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++	int range = 0;
++	int hwirq;
++
++	for (range = 0; range < 4; range++) {
++		hwirq = irqs->offset[range] - phb->msi_base;
++		if (irqs->range[range]) {
++			pr_devel("cxl release irq range 0x%x: offset: 0x%lx  limit: %ld\n",
++				 range, irqs->offset[range],
++				 irqs->range[range]);
++			msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
++					       irqs->range[range]);
++		}
++	}
++}
++EXPORT_SYMBOL(pnv_cxl_release_hwirq_ranges);
++
++int pnv_cxl_get_irq_count(struct pci_dev *dev)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++        struct pnv_phb *phb = hose->private_data;
++
++	return phb->msi_bmp.irq_count;
++}
++EXPORT_SYMBOL(pnv_cxl_get_irq_count);
++
++#endif /* CONFIG_CXL_BASE */
+ #endif /* CONFIG_PCI_MSI */
+ 
+ static int pnv_ioda_configure_pe(struct pnv_phb *phb, struct pnv_ioda_pe *pe)
+@@ -1330,6 +1464,33 @@ static void set_msi_irq_chip(struct pnv_phb *phb, unsigned int virq)
+ 	irq_set_chip(virq, &phb->ioda.irq_chip);
+ }
+ 
++#ifdef CONFIG_CXL_BASE
++int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
++			   unsigned int virq)
++{
++	struct pci_controller *hose = pci_bus_to_host(dev->bus);
++	struct pnv_phb *phb = hose->private_data;
++	unsigned int xive_num = hwirq - phb->msi_base;
++	struct pnv_ioda_pe *pe;
++	int rc;
++
++	if (!(pe = pnv_ioda_get_pe(dev)))
++		return -ENODEV;
++
++	/* Assign XIVE to PE */
++	rc = opal_pci_set_xive_pe(phb->opal_id, pe->pe_number, xive_num);
++	if (rc) {
++		pr_warn("%s: OPAL error %d setting msi_base 0x%x hwirq 0x%x XIVE 0x%x PE\n",
++			pci_name(dev), rc, phb->msi_base, hwirq, xive_num);
++		return -EIO;
++	}
++	set_msi_irq_chip(phb, virq);
++
++	return 0;
++}
++EXPORT_SYMBOL(pnv_cxl_ioda_msi_setup);
++#endif
++
+ static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
+ 				  unsigned int hwirq, unsigned int virq,
+ 				  unsigned int is_64, struct msi_msg *msg)
+-- 
+1.9.1
 
-An overview of the patches:
-  Patches  1-3:  Split some of the old Cell co-processor code out so it can be
-		   reused.
-  Patches  4-11: Add infrastructure to arch/powerpc needed by cxl.
-  Patches  12:   Add call backs needed for invalidating cxl mm contexts.
-  Patch    13:   Add cxl specific support that needs to be built in to the
-		   kernel (can't be a module).
-  Patches 14-16: Add the majority of the device driver and API header.
-  Patch    17:   Documentation.
-
-The documentation in this last patch gives an overview of the hardware
-architecture as well as the userspace API.
-
-The cxl driver has a user-space interface described in include/uapi/misc/cxl.h
-and Documentation/powerpc/cxl.txt.  There are two ioctls which can be used to
-talk to the driver once the new /dev/cxl/afu0.0 device is opened.  This device
-can also be read and mmaped.
-
-There's also sysfs entries used to communicate information about the cxl
-configuration to userspace.  These are documented in
-Documentation/ABI/testing/sysfs-class-cxl.
-
-Many contributed to this device driver but Ian Munsie is the principal author.
-
-Driver can also be found here (based on 3.17-rc5):
-   git://github.com/mikey/linux.git cxl
-   https://github.com/mikey/linux/commits/cxl
-(Series rebases on recent linux-next with one trivial include file conflict)
-
-Please consider for inclusion.  Feedback welcome!
-
-Regards,
-Mikey
-
- Documentation/ABI/testing/sysfs-class-cxl      | 125 ++++
- Documentation/ioctl/ioctl-number.txt           |   1 +
- Documentation/powerpc/00-INDEX                 |   2 +
- Documentation/powerpc/cxl.txt                  | 310 ++++++++
- MAINTAINERS                                    |   7 +
- arch/powerpc/Kconfig                           |   4 +
- arch/powerpc/include/asm/copro.h               |  24 +
- arch/powerpc/include/asm/mmu-hash64.h          |  10 +-
- arch/powerpc/include/asm/opal.h                |   2 +
- arch/powerpc/include/asm/pnv-pci.h             |  27 +
- arch/powerpc/include/asm/spu.h                 |   5 +-
- arch/powerpc/mm/Makefile                       |   1 +
- arch/powerpc/mm/copro_fault.c                  | 124 ++++
- arch/powerpc/mm/hash_native_64.c               |   6 +-
- arch/powerpc/mm/hash_utils_64.c                |  95 ++-
- arch/powerpc/mm/slb.c                          |   3 -
- arch/powerpc/mm/slice.c                        |  10 +-
- arch/powerpc/platforms/cell/Kconfig            |   1 +
- arch/powerpc/platforms/cell/Makefile           |   2 +-
- arch/powerpc/platforms/cell/spu_base.c         |  41 +-
- arch/powerpc/platforms/cell/spu_fault.c        |  94 ---
- arch/powerpc/platforms/cell/spufs/fault.c      |   4 +-
- arch/powerpc/platforms/powernv/opal-wrappers.S |   1 +
- arch/powerpc/platforms/powernv/pci-ioda.c      | 204 +++++-
- arch/powerpc/sysdev/msi_bitmap.c               |  23 +-
- drivers/misc/Kconfig                           |   1 +
- drivers/misc/Makefile                          |   1 +
- drivers/misc/cxl/Kconfig                       |  26 +
- drivers/misc/cxl/Makefile                      |   4 +
- drivers/misc/cxl/base.c                        | 102 +++
- drivers/misc/cxl/context.c                     | 171 +++++
- drivers/misc/cxl/cxl-pci.c                     | 964 +++++++++++++++++++++++++
- drivers/misc/cxl/cxl.h                         | 605 ++++++++++++++++
- drivers/misc/cxl/debugfs.c                     | 116 +++
- drivers/misc/cxl/fault.c                       | 298 ++++++++
- drivers/misc/cxl/file.c                        | 503 +++++++++++++
- drivers/misc/cxl/irq.c                         | 405 +++++++++++
- drivers/misc/cxl/main.c                        | 238 ++++++
- drivers/misc/cxl/native.c                      | 649 +++++++++++++++++
- drivers/misc/cxl/sysfs.c                       | 348 +++++++++
- include/misc/cxl.h                             |  34 +
- include/uapi/Kbuild                            |   1 +
- include/uapi/misc/Kbuild                       |   2 +
- include/uapi/misc/cxl.h                        |  88 +++
- 44 files changed, 5469 insertions(+), 213 deletions(-)
