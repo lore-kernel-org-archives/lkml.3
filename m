@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801AbaI3VE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:04:28 -0400
-Received: from forward8l.mail.yandex.net ([84.201.143.141]:47026 "EHLO
-	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaI3VE0 (ORCPT
+	id S1751860AbaI3VEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:04:40 -0400
+Received: from forward4l.mail.yandex.net ([84.201.143.137]:47319 "EHLO
+	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaI3VEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:04:26 -0400
-X-Yandex-Uniq: 0419ea50-2e6e-4ee1-8a01-da91abc61dd1
-Authentication-Results: smtp12.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Subject: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
- switched_from_dl()
+	Tue, 30 Sep 2014 17:04:38 -0400
+X-Yandex-Uniq: a33afdf6-fed3-44bd-be1c-0a04100c6b5a
+Authentication-Results: smtp14.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
 From: Kirill Tkhai <tkhai@yandex.ru>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
         Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Wed, 01 Oct 2014 01:04:22 +0400
-Message-ID: <20140930210412.5258.35299.stgit@localhost>
+Date: Wed, 01 Oct 2014 01:04:35 +0400
+Message-ID: <20140930210428.5258.32223.stgit@localhost>
+In-Reply-To: <20140930210412.5258.35299.stgit@localhost>
+References: <20140930210412.5258.35299.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,95 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kirill Tkhai <ktkhai@parallels.com>
 
-hrtimer_try_to_cancel() may bring a suprise, its call may fail.
+rq->curr task can't be in "dequeued" state in prio_changed_dl().
+(The only place we can have that is __schedule()). So, we delete
+rq->curr check.
 
-raw_spin_lock(&rq->lock)
-...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-...                               raw_spin_lock(&rq->lock)   ...
-   switched_from_dl()             ...                        ...
-      hrtimer_try_to_cancel()     ...                        ...
-   switched_to_fair()             ...                        ...
-...                               ...                        ...
-...                               ...                        ...
-raw_spin_unlock(&rq->lock)        ...                        (asquired)
-...                               ...                        ...
-...                               ...                        ...
-do_exit()                         ...                        ...
-   schedule()                     ...                        ...
-      raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-      ...                         ...                        ...
-      raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-      ...                         ...                        (asquired)
-      put_task_struct()           ...                        ...
-          free_task_struct()      ...                        ...
-      ...                         ...                        raw_spin_unlock(&rq->lock)
-...                               (asquired)                 ...
-...                               ...                        ...
-...                               Surprise!!!                ...
-
-So, let's implement 100% guaranteed way to cancel the timer and let's
-be sure we are safe even in very unlikely situations.
-
-We do not create any problem with rq unlocking, because it already
-may happed below in pull_dl_task(). No problem with deadline tasks
-balancing too.
+Also delete "else" branch which is dead code (switched_to_dl()
+is not interested in dequeued tasks and we are not interested
+in balancing in this case).
 
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/deadline.c |   33 ++++++++++++++++++++++++++-------
- 1 file changed, 26 insertions(+), 7 deletions(-)
+ kernel/sched/deadline.c |   50 +++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index abfaf3d..63f8b4a 100644
+index 63f8b4a..38b4f19 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
-@@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
+@@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+ 			    int oldprio)
  {
- 	struct hrtimer *timer = &dl_se->dl_timer;
- 
--	if (hrtimer_active(timer)) {
--		hrtimer_try_to_cancel(timer);
--		return;
--	}
+-	if (task_on_rq_queued(p) || rq->curr == p) {
++	if (!task_on_rq_queued(p))
++		return;
+ #ifdef CONFIG_SMP
+-		/*
+-		 * This might be too much, but unfortunately
+-		 * we don't have the old deadline value, and
+-		 * we can't argue if the task is increasing
+-		 * or lowering its prio, so...
+-		 */
+-		if (!rq->dl.overloaded)
+-			pull_dl_task(rq);
 -
- 	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	timer->function = dl_task_timer;
- }
-@@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
- 
+-		/*
+-		 * If we now have a earlier deadline task than p,
+-		 * then reschedule, provided p is still on this
+-		 * runqueue.
+-		 */
+-		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
+-		    rq->curr == p)
+-			resched_curr(rq);
+-#else
+-		/*
+-		 * Again, we don't know if p has a earlier
+-		 * or later deadline, so let's blindly set a
+-		 * (maybe not needed) rescheduling point.
+-		 */
++	/*
++	 * This might be too much, but unfortunately
++	 * we don't have the old deadline value, and
++	 * we can't argue if the task is increasing
++	 * or lowering its prio, so...
++	 */
++	if (!rq->dl.overloaded)
++		pull_dl_task(rq);
++	/*
++	 * If we now have a earlier deadline task than p,
++	 * then reschedule, provided p is still on this
++	 * runqueue.
++	 */
++	if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
++	    rq->curr == p)
+ 		resched_curr(rq);
++#else
++	/*
++	 * Again, we don't know if p has a earlier
++	 * or later deadline, so let's blindly set a
++	 * (maybe not needed) rescheduling point.
++	 */
++	resched_curr(rq);
  #endif /* CONFIG_SMP */
+-	} else
+-		switched_to_dl(rq, p);
+ }
  
-+/*
-+ *  Surely cancel task's dl_timer. May drop rq->lock.
-+ */
-+static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
-+{
-+	struct hrtimer *dl_timer = &p->dl.dl_timer;
-+
-+	/* Nobody will change task's class if pi_lock is held */
-+	lockdep_assert_held(&p->pi_lock);
-+
-+	if (hrtimer_active(dl_timer)) {
-+		int ret = hrtimer_try_to_cancel(dl_timer);
-+
-+		if (unlikely(ret == -1)) {
-+			/*
-+			 * Note, p may migrate OR new deadline tasks
-+			 * may appear in rq when we are unlocking it.
-+			 */
-+			raw_spin_unlock(&rq->lock);
-+			hrtimer_cancel(dl_timer);
-+			raw_spin_lock(&rq->lock);
-+		}
-+	}
-+}
-+
- static void switched_from_dl(struct rq *rq, struct task_struct *p)
- {
--	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
--		hrtimer_try_to_cancel(&p->dl.dl_timer);
-+	cancel_dl_timer(rq, p);
- 
- 	__dl_clear_params(p);
- 
+ const struct sched_class dl_sched_class = {
 
