@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaI3Ob1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:31:27 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:49551 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752417AbaI3ObW (ORCPT
+	id S1753520AbaI3Obl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:31:41 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:42880 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752417AbaI3Obf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:31:22 -0400
+	Tue, 30 Sep 2014 10:31:35 -0400
 X-Sender-Id: pramod.gurav@smartplayin.com
 From: Pramod Gurav <pramod.gurav@smartplayin.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: [PATCH 1/2] input: remove use of gpiochip_remove() retval
-Date: Tue, 30 Sep 2014 20:04:53 +0530
-Message-Id: <1412087693-8277-1-git-send-email-pramod.gurav@smartplayin.com>
+        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-gpio@vger.kernel.org
+Subject: [PATCH 2/2] led: remove use of gpiochip_remove() retval
+Date: Tue, 30 Sep 2014 20:05:07 +0530
+Message-Id: <1412087707-8313-1-git-send-email-pramod.gurav@smartplayin.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,68 +28,57 @@ void.
 
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-leds@vger.kernel.org
+
 Cc: linux-gpio@vger.kernel.org
 
 Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- drivers/input/keyboard/adp5588-keys.c |    4 +---
- drivers/input/keyboard/adp5589-keys.c |    4 +---
- drivers/input/touchscreen/ad7879.c    |    9 ++-------
- 3 files changed, 4 insertions(+), 13 deletions(-)
+ drivers/leds/leds-pca9532.c |   10 ++--------
+ drivers/leds/leds-tca6507.c |    7 ++-----
+ 2 files changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/input/keyboard/adp5588-keys.c b/drivers/input/keyboard/adp5588-keys.c
-index 5ef7fcf..b97ed44 100644
---- a/drivers/input/keyboard/adp5588-keys.c
-+++ b/drivers/input/keyboard/adp5588-keys.c
-@@ -251,9 +251,7 @@ static void adp5588_gpio_remove(struct adp5588_kpad *kpad)
- 			dev_warn(dev, "teardown failed %d\n", error);
+diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
+index 4a0e786..5a6363d 100644
+--- a/drivers/leds/leds-pca9532.c
++++ b/drivers/leds/leds-pca9532.c
+@@ -319,14 +319,8 @@ static int pca9532_destroy_devices(struct pca9532_data *data, int n_devs)
  	}
  
--	error = gpiochip_remove(&kpad->gc);
--	if (error)
--		dev_warn(dev, "gpiochip_remove failed %d\n", error);
-+	gpiochip_remove(&kpad->gc);
- }
- #else
- static inline int adp5588_gpio_add(struct adp5588_kpad *kpad)
-diff --git a/drivers/input/keyboard/adp5589-keys.c b/drivers/input/keyboard/adp5589-keys.c
-index 6329549..a452677 100644
---- a/drivers/input/keyboard/adp5589-keys.c
-+++ b/drivers/input/keyboard/adp5589-keys.c
-@@ -567,9 +567,7 @@ static void adp5589_gpio_remove(struct adp5589_kpad *kpad)
- 			dev_warn(dev, "teardown failed %d\n", error);
- 	}
- 
--	error = gpiochip_remove(&kpad->gc);
--	if (error)
--		dev_warn(dev, "gpiochip_remove failed %d\n", error);
-+	gpiochip_remove(&kpad->gc);
- }
- #else
- static inline int adp5589_gpio_add(struct adp5589_kpad *kpad)
-diff --git a/drivers/input/touchscreen/ad7879.c b/drivers/input/touchscreen/ad7879.c
-index fce5906..ee3bb4d 100644
---- a/drivers/input/touchscreen/ad7879.c
-+++ b/drivers/input/touchscreen/ad7879.c
-@@ -470,14 +470,9 @@ static int ad7879_gpio_add(struct ad7879 *ts,
- static void ad7879_gpio_remove(struct ad7879 *ts)
- {
- 	const struct ad7879_platform_data *pdata = dev_get_platdata(ts->dev);
--	int ret;
- 
--	if (pdata->gpio_export) {
--		ret = gpiochip_remove(&ts->gc);
--		if (ret)
--			dev_err(ts->dev, "failed to remove gpio %d\n",
--				ts->gc.base);
+ #ifdef CONFIG_LEDS_PCA9532_GPIO
+-	if (data->gpio.dev) {
+-		int err = gpiochip_remove(&data->gpio);
+-		if (err) {
+-			dev_err(&data->client->dev, "%s failed, %d\n",
+-						"gpiochip_remove()", err);
+-			return err;
+-		}
 -	}
-+	if (pdata->gpio_export)
-+		gpiochip_remove(&ts->gc);
++	if (data->gpio.dev)
++		gpiochip_remove(&data->gpio);
+ #endif
+ 
+ 	return 0;
+diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+index 3d9e267..20fa8e7 100644
+--- a/drivers/leds/leds-tca6507.c
++++ b/drivers/leds/leds-tca6507.c
+@@ -667,11 +667,8 @@ static int tca6507_probe_gpios(struct i2c_client *client,
+ 
+ static void tca6507_remove_gpio(struct tca6507_chip *tca)
+ {
+-	if (tca->gpio.ngpio) {
+-		int err = gpiochip_remove(&tca->gpio);
+-		dev_err(&tca->client->dev, "%s failed, %d\n",
+-			"gpiochip_remove()", err);
+-	}
++	if (tca->gpio.ngpio)
++		gpiochip_remove(&tca->gpio);
  }
- #else
- static inline int ad7879_gpio_add(struct ad7879 *ts,
+ #else /* CONFIG_GPIOLIB */
+ static int tca6507_probe_gpios(struct i2c_client *client,
 -- 
 1.7.9.5
 
