@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000AbaI3VxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:53:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33675 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaI3Vw7 (ORCPT
+	id S1755018AbaI3Vxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:53:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32782 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaI3ViE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:52:59 -0400
-Date: Tue, 30 Sep 2014 23:52:54 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-cc: Jisheng Zhang <jszhang@marvell.com>, jason@lakedaemon.net,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
-In-Reply-To: <542AA336.6070206@gmail.com>
-Message-ID: <alpine.DEB.2.11.1409302351500.4455@nanos>
-References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-4-git-send-email-jszhang@marvell.com> <542AA336.6070206@gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 30 Sep 2014 17:38:04 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 050/103] USB: ftdi_sio: add Basic Micro ATOM Nano USB2Serial PID
+Date: Tue, 30 Sep 2014 14:30:55 -0700
+Message-Id: <1412112708-27356-51-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
-> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
-> > This patch adds in support for S2R for dw-apb-ictl irqchip driver.
-> > 
-> > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > ---
-> >   drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
-> >   1 file changed, 19 insertions(+)
-> > 
-> > diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
-> > b/drivers/irqchip/irq-dw-apb-ictl.c
-> > index c136b67..53bb732 100644
-> > --- a/drivers/irqchip/irq-dw-apb-ictl.c
-> > +++ b/drivers/irqchip/irq-dw-apb-ictl.c
-> > @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
-> > struct irq_desc *desc)
-> >   	chained_irq_exit(chip, desc);
-> >   }
-> > 
-> > +#ifdef CONFIG_PM
-> > +static void dw_apb_ictl_resume(struct irq_data *d)
-> > +{
-> > +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> > +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
-> > +
-> > +	irq_gc_lock(gc);
-> > +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
-> > +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
-> > +	irq_gc_unlock(gc);
-> > +}
-> 
-> I agree with the overall change, but may this also be suited for a
-> generic irq_chip helper instead of being a driver specific one?
-> 
-> Maybe Thomas or Jason can comment on this.
+3.13.11.8 -stable review patch.  If anyone has any objections, please let me know.
 
-If we have enough similar resume callbacks, yes. 
+------------------
+
+From: Johan Hovold <johan@kernel.org>
+
+commit 6552cc7f09261db2aeaae389aa2c05a74b3a93b4 upstream.
+
+Add device id for Basic Micro ATOM Nano USB2Serial adapters.
+
+Reported-by: Nicolas Alt <n.alt@mytum.de>
+Tested-by: Nicolas Alt <n.alt@mytum.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/serial/ftdi_sio.c     | 1 +
+ drivers/usb/serial/ftdi_sio_ids.h | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 594a707..6f4e126 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -152,6 +152,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_BM_ATOM_NANO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_EV3CON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 1e58d90..3168a01 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -42,6 +42,8 @@
+ /* www.candapter.com Ewert Energy Systems CANdapter device */
+ #define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
  
-> Also, now that you are using writel_relaxed, I understand that both
-> writes above can happen in any order? Are there any implication we
-> have to consider, i.e. do we require any of the registers above to
-> be written first?
++#define FTDI_BM_ATOM_NANO_PID	0xa559	/* Basic Micro ATOM Nano USB2Serial */
++
+ /*
+  * Texas Instruments XDS100v2 JTAG / BeagleBone A3
+  * http://processors.wiki.ti.com/index.php/XDS100
+-- 
+1.9.1
 
-Was about to ask that as well :)
-
-Thanks,
-
-	tglx
