@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaI3P2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 11:28:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35088 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaI3P2o (ORCPT
+	id S1751640AbaI3Pdp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:33:45 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6789 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750782AbaI3Pdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 11:28:44 -0400
-Date: Tue, 30 Sep 2014 08:28:40 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: David Jeffery <djeffery@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Return short read or 0 at end of a raw device, not EIO
-Message-ID: <20140930152840.GA9666@infradead.org>
-References: <20140929142110.GA12562@fury.redhat.com>
- <20140929190509.GA2767@infradead.org>
- <5429D84B.7080902@redhat.com>
+	Tue, 30 Sep 2014 11:33:44 -0400
+Date: Tue, 30 Sep 2014 08:33:54 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Kumar Gala <galak@codeaurora.org>, Mark Brown <broonie@kernel.org>
+CC: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v7 3/3] regulator: qcom-rpm: Regulator driver for the
+ Qualcomm RPM
+Message-ID: <20140930153353.GO28481@sonymobile.com>
+References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1411428329-23172-4-git-send-email-bjorn.andersson@sonymobile.com>
+ <20140924083518.GB4015@sirena.org.uk>
+ <4437DA50-D8BC-4E78-821C-41440A08B9A9@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5429D84B.7080902@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4437DA50-D8BC-4E78-821C-41440A08B9A9@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 06:08:11PM -0400, David Jeffery wrote:
-> On 09/29/2014 03:05 PM, Christoph Hellwig wrote:
-> > Seems like this should be changed in the generic code, or is there some
-> > reason why it would return EIO only for devices, but not for regular
-> > files in this case?
-> > 
+On Wed 24 Sep 06:50 PDT 2014, Kumar Gala wrote:
+
 > 
-> Regular files shouldn't be returning EIO and don't in my tests. The file
-> systems manage direct I/O EOF handling in their own block or direct_IO
-> callbacks.  Block devices do not and instead do the size checks up
-> front.  Raw devices were bypassing the block device check, so only the
-> raw driver should be having this issue.
+> On Sep 24, 2014, at 3:35 AM, Mark Brown <broonie@kernel.org> wrote:
+> 
+> > On Mon, Sep 22, 2014 at 04:25:29PM -0700, Bjorn Andersson wrote:
+> >> Driver for regulators exposed by the Resource Power Manager (RPM) found
+> >> in Qualcomm 8660, 8960 and 8064 based devices.
+> > 
+> > Applied, thanks.
 
-So I guess the problem is commit
+Thanks Mark, sorry for sending this to you so many times.  I'll keep the smd
+rpm regulator separate from the smd series (after the RFC) to reduce the
+traffic.
 
-"blkdev_aio_read(): switch to generic_file_read_iter(), get rid of iov_shorten()"
+> 
+> Mark, can you drop this until we see at least an RFC patch for the RPM
+> support for b-family SoCs (8074, 8084, etc) chips.  The regulator could
+> should either be the same or highly similar for b-family, but until we see
+> the core RPM driver on the b-family SoCs we will not know that.
+> 
 
-which removes the iov_shorten call in blkdev_aio_read?  This should be
-mentioned in the changelog.
+As you can see in the smd rpm regulator driver, the protocol for regulator
+updates are completely different in the two cases.  I'm not sure about msm_bus,
+but the clocks implementation is equivalent, so there's some room for re-use.
 
-But maybe we should instead make block devices behave more similar to
-regular files in this respect?
+So I think we're good here.
 
-Also did you make sure to add your regression test somewhere, e.g. ltp?
+Regards,
+Bjorn
