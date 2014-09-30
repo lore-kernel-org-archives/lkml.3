@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaI3PAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 11:00:45 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54603 "EHLO
+	id S1751770AbaI3PAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:00:44 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:54602 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaI3PAn (ORCPT
+	with ESMTP id S1750809AbaI3PAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 11:00:43 -0400
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8UF0eY9017647, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8UF0dxL017501, This message is accepted by code: ctloc85258
 From: Chun-Hao Lin <hau@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         Chun-Hao Lin <hau@realtek.com>
-Subject: [PATCH net-next 02/10] r8169:add disable/enable RTL8168G pll function
-Date: Tue, 30 Sep 2014 23:00:22 +0800
-Message-ID: <1412089230-10208-2-git-send-email-hau@realtek.com>
+Subject: [PATCH net-next 01/10] r8169:change uppercase number to lowercase nubmer
+Date: Tue, 30 Sep 2014 23:00:21 +0800
+Message-ID: <1412089230-10208-1-git-send-email-hau@realtek.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412089230-10208-1-git-send-email-hau@realtek.com>
-References: <1412089230-10208-1-git-send-email-hau@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.21.71.94]
@@ -28,32 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Chun-Hao Lin <hau@realtek.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/realtek/r8169.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 000bd6c..6d68229 100644
+index 1d81238..000bd6c 100644
 --- a/drivers/net/ethernet/realtek/r8169.c
 +++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4375,6 +4375,7 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_41:
- 		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0x00000000,
- 			     0xfc000000, ERIAR_EXGMAC);
-+		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
+@@ -3692,8 +3692,8 @@ static void rtl8168h_2_hw_phy_config(struct rtl8169_private *tp)
+ 	ioffset_p0 |= (data & (0x07));
+ 	data = (ioffset_p3<<12)|(ioffset_p2<<8)|(ioffset_p1<<4)|(ioffset_p0);
+ 
+-	if ((ioffset_p3 != 0x0F) || (ioffset_p2 != 0x0F) ||
+-	    (ioffset_p1 != 0x0F) || (ioffset_p0 == 0x0F)) {
++	if ((ioffset_p3 != 0x0f) || (ioffset_p2 != 0x0f) ||
++	    (ioffset_p1 != 0x0f) || (ioffset_p0 == 0x0f)) {
+ 		rtl_writephy(tp, 0x1f, 0x0bcf);
+ 		rtl_writephy(tp, 0x16, data);
+ 		rtl_writephy(tp, 0x1f, 0x0000);
+@@ -4265,7 +4265,7 @@ static void r810x_pll_power_up(struct rtl8169_private *tp)
  		break;
- 	}
- }
-@@ -4399,8 +4400,10 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
+-		RTL_W8(PMCH, RTL_R8(PMCH) | 0xC0);
++		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
+ 		break;
+ 	default:
+ 		RTL_W8(PMCH, RTL_R8(PMCH) | 0x80);
+@@ -4395,7 +4395,7 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
+ 		break;
+ 	case RTL_GIGA_MAC_VER_45:
+ 	case RTL_GIGA_MAC_VER_46:
+-		RTL_W8(PMCH, RTL_R8(PMCH) | 0xC0);
++		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
  		break;
  	case RTL_GIGA_MAC_VER_40:
  	case RTL_GIGA_MAC_VER_41:
-+		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
- 		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0xfc000000,
- 			     0x00000000, ERIAR_EXGMAC);
-+
- 		break;
- 	}
+@@ -4975,7 +4975,7 @@ static void rtl_hw_start_8169(struct net_device *dev)
  
+ 	if (tp->mac_version == RTL_GIGA_MAC_VER_02 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_03) {
+-		dprintk("Set MAC Reg C+CR Offset 0xE0. "
++		dprintk("Set MAC Reg C+CR Offset 0xe0. "
+ 			"Bit-3 and bit-14 MUST be 1\n");
+ 		tp->cp_cmd |= (1 << 14);
+ 	}
+@@ -5010,7 +5010,7 @@ static void rtl_hw_start_8169(struct net_device *dev)
+ 	rtl_set_rx_mode(dev);
+ 
+ 	/* no early-rx interrupts */
+-	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xF000);
++	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xf000);
+ }
+ 
+ static void rtl_csi_write(struct rtl8169_private *tp, int addr, int value)
+@@ -5858,7 +5858,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 
+ 	rtl_set_rx_mode(dev);
+ 
+-	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xF000);
++	RTL_W16(MultiIntr, RTL_R16(MultiIntr) & 0xf000);
+ }
+ 
+ #define R810X_CPCMD_QUIRK_MASK (\
+@@ -7706,8 +7706,8 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_48) {
+ 		u16 mac_addr[3];
+ 
+-		*(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xE0, ERIAR_EXGMAC);
+-		*(u16 *)&mac_addr[2] = rtl_eri_read(tp, 0xE4, ERIAR_EXGMAC);
++		*(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xe0, ERIAR_EXGMAC);
++		*(u16 *)&mac_addr[2] = rtl_eri_read(tp, 0xe4, ERIAR_EXGMAC);
+ 
+ 		if (is_valid_ether_addr((u8 *)mac_addr))
+ 			rtl_rar_set(tp, (u8 *)mac_addr);
 -- 
 1.8.3.2
 
