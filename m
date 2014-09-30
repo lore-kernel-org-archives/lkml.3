@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaI3W1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:27:47 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13349 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750962AbaI3W1q (ORCPT
+	id S1752914AbaI3W1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:27:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33853 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433AbaI3W1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:27:46 -0400
-Date: Tue, 30 Sep 2014 15:27:55 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Jeffrey Hugo <jhugo@codeaurora.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Suman Anna <s-anna@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Tue, 30 Sep 2014 18:27:52 -0400
+Date: Wed, 1 Oct 2014 00:27:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: Sebastian Lackner <sebastian@fds-team.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Anish Bhatt <anish@chelsio.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Eric Holmberg <eholmber@codeaurora.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonymobile.com>
-Subject: Re: [PATCH v4] hwspinlock: qcom: Add support for Qualcomm HW Mutex
- block
-Message-ID: <20140930222754.GX28481@sonymobile.com>
-References: <1412051728-3289-1-git-send-email-bjorn.andersson@sonymobile.com>
- <542B2B4A.7060002@codeaurora.org>
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@kernel.org
+Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from
+ userspace
+In-Reply-To: <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410010025050.4455@nanos>
+References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net> <542B2305.9060805@fds-team.de> <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <542B2B4A.7060002@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 15:14 PDT 2014, Jeffrey Hugo wrote:
+On Tue, 30 Sep 2014, Andy Lutomirski wrote:
+> It would certainly be possible to clear NT and retry IRET if IRET
+> fails with NT set.  This would have no overhead for anything relevant.
+> That would be this alternative from my 0/2 email:
+> 
+>  - Don't filter NT on sysenter.  Instead, filter it on EFI entry
+>    and modify the IRET code to retry without NT set if NT was set.
+> 
+> Thomas hpa, etc: any thoughts?
 
-> On 9/29/2014 10:35 PM, Bjorn Andersson wrote:
+Filter it right away. That's solid and obvious. Anything else is just
+complex and prone for future brown paperbag failures.
 
-[..]
+We get the context switch benefit from it, so there is some
+compensation for the extra cycles.
 
-> > +static int qcom_hwspinlock_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device_node *node = pdev->dev.of_node;
-> > +	const struct of_device_id *match;
-> > +	struct hwspinlock_device *bank;
-> > +	struct hwspinlock *hwlock;
-> > +	struct resource *res;
-> > +	void __iomem *iobase;
-> > +	unsigned stride, i;
-> > +	size_t array_size;
-> > +	u32 num_locks;
-> > +	int ret;
-> > +
-> > +	match = of_match_device(qcom_hwspinlock_of_match, &pdev->dev);
-> Didn't this have error handling in v2?
+Thanks,
 
-It did, but as this is a platform_device and we only support DTthere is no way
-match will be NULL if we end up here. So the possible check would be to see
-that data is non-null, but for this driver that wouldn't make sense.
-
-Regards,
-Bjorn
+	tglx
