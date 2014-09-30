@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060AbaI3CVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 22:21:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54264 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaI3CVf (ORCPT
+	id S1755029AbaI3C13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 22:27:29 -0400
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:45547 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753861AbaI3C11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 22:21:35 -0400
-Date: Tue, 30 Sep 2014 03:21:33 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: Removing shared subtrees?
-Message-ID: <20140930022133.GR7996@ZenIV.linux.org.uk>
-References: <CALCETrWivFAqiWAfAYzZ4fgKC87H+VhyOLrfb+ONCjMmqKG9eQ@mail.gmail.com>
- <20140930000924.GO7996@ZenIV.linux.org.uk>
- <CALCETrW8xvOr0WfyzqBUxZkw_PXckUh8AdGPxU3sd7=cLayPyQ@mail.gmail.com>
- <20140930002948.GP7996@ZenIV.linux.org.uk>
- <CALCETrVnXXjDjh9+vOGfFh08-wtjJeuC=n=PtNusOS_nq0puFA@mail.gmail.com>
- <20140930011446.GQ7996@ZenIV.linux.org.uk>
- <CALCETrXXFCfwEdi+AYELdr4umWPTr8=2x4AzvSTBX6E55Do2sw@mail.gmail.com>
+	Mon, 29 Sep 2014 22:27:27 -0400
+Message-ID: <542A150E.5070406@nexus-software.ie>
+Date: Tue, 30 Sep 2014 03:27:26 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Reply-To: pure.logic@nexus-software.ie
+Organization: Nexus Software
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXXFCfwEdi+AYELdr4umWPTr8=2x4AzvSTBX6E55Do2sw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] x86: Quark: Add if/else to setup_arch for Quark TLB
+ bug
+References: <1411754118-11665-1-git-send-email-pure.logic@nexus-software.ie> <20140926205955.GA22407@khazad-dum.debian.net> <5425DA8A.1030500@nexus-software.ie> <AF233D1473C1364ABD51D28909A1B1B73259A4FF@pgsmsx105.gar.corp.intel.com>
+In-Reply-To: <AF233D1473C1364ABD51D28909A1B1B73259A4FF@pgsmsx105.gar.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 06:24:05PM -0700, Andy Lutomirski wrote:
-> On Mon, Sep 29, 2014 at 6:14 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Mon, Sep 29, 2014 at 05:36:27PM -0700, Andy Lutomirski wrote:
-> >
-> >> Ideally it would leave them around until the whole subtree had no
-> >> references, at which point /mnt and everything under it would
-> >> disappear with no side effects, because it has no references.
-> >
-> > So, assuming you've got a stuck NFS mount with a bunch of local stuff
-> > bound on top of it, in your ideal we'd have the latter all remaining
-> > mounted until the server comes back.  Lovely, that...
-> 
-> No, not at all.
+On 30/09/14 02:46, Ong, Boon Leong wrote:
+>>
+>> My view is that the CR3 load should have flushed the TLB in it's entirety.
+>>
+>> Ong Boong Leong said that a discussion he had which included HPA concluded
+>> with a flush of the TLB being required after the CR3 reload.
+>
+> The proposed patch was discussed in April and after much thought into this,
+> I will suggest that as long as the commentary properly captured down why
+> __flush_tlb() is **NOT** needed because load_cr3() will have the same effect.
 
-Er...  How so?  /mnt is stuck NFS.  /mnt/foo/bar and /mnt/foo/barf have
-/dev/sda1 and /dev/sda2 mounted on them.  Both are currently not busy.
-/mnt is - there's that shell trying to expand *.c in /mnt/splat, sitting
-around blocked with opened directory in its descriptor table.
+Agree.
 
-Just how would your ideal prevent sda1 and sda2 staying mounted?  You can't
-say umount /mnt/foo/bar; it'll get blocked trying to revalidate foo and
-waiting for server to reply.  In real world you can say umount -l /mnt and
-be done with that - everything in there becomes detached, what used to be
-/mnt stays alive (but not mounted on /mnt anymore) until it ceases to be
-busy.  What used to be /mnt/foo/bar and /mnt/foo/barf end up shut down
-immediately (what with not being busy).  In your ideal they would stay around
-until the "whole subtree" (of what?) loses all references, i.e. until that
-shell closes opened directory.
+>>
+>> The current code
+>>
+>> My preference is
+>>
+>> 1. Just comment the code as is to explain why it works for Quark.
+>>
+>> If that's not good enough for people then
+>>
+>> 2. if/else the flow so that Quark does __flush_tlb() and the rest of the world
+>> does a __flush_tlb_all()
+> Bryan, just drop this proposal from my submission even though __flush_tlb() is
+> more obvious in what is supposed to do and does not consume any significant cpu-time.
 
-> Let me try this one more time:
-> 
-> I don't *care* whether MNT_DETACH unmounts submounts immediately or
-> when all the references are finally gone.  I didn't read the docs or
-> the code to see which is the case *because I don't care*.
-> 
-> I think it's somewhere between ridiculous and flat-out broken that
-> MNT_DETACH of the *root* of a shared subtree *propagates* the unmount
-> of submounts to the parent of the shared subtree.  This is IMO
-> completely bogus.
+Very good. I've a new patchset ready to report cache size based on the 
+callbacks that Ingo and Dave suggested - found a bug too - so I'll 
+submit those changes as one.
 
-Parent in which sense?  Try to experiment with this: mount something on
-/tmp/foo, then mount --rbind /tmp/foo /mnt/foo, mount something on /mnt/bar
-and /tmp/bar and umount -l /mnt/foo.  Then think what does and does not
-happen.
+1. Comment
+2. Reporting of cache size
+3. Bugfix to the code path for legacy_cache_size => currently broken for 
+{PIII Tualatin, a bunch of AMDs, and some VIAs too by the looks of it}
 
-> IOW, if I do:
-> 
-> mount --make-rshared /
-> mount --rbind / /mnt
-> umount -l /mnt/dev
-> 
-> then I fully expect /dev to be unmounted (although I think that this
-> is a misfeature).
-> 
-> But I did:
-> 
-> mount --make-rshared /
-> mount --rbind / /mnt
-> umount -l /mnt  <- the ROOT of the fscking shared subtree
-> 
-> And /dev got unmounted.  How does this make any sense at all?
 
-Sigh... umount -l /mnt *includes* unmounting /mnt/dev.  Which you
-do expect to take /dev out.  "I expect Y to cause Z; I don't care if X
-causes Y; why does it end up causing W?!!!?"  Where W is vague as hell
-and depending on what is meant either refers to Z or to something more
-than that; in the letter case the answer would be "W isn't happening".
