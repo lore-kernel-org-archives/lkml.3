@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaI3VUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:20:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54713 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaI3VUE (ORCPT
+	id S1751729AbaI3VUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:20:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33481 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaI3VUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:20:04 -0400
-Date: Tue, 30 Sep 2014 14:20:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/11] kernel: Add support for restart handler call
- chain
-Message-Id: <20140930142002.e09ef32392a2b5a7c81e5e57@linux-foundation.org>
-In-Reply-To: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Sep 2014 17:20:48 -0400
+Date: Tue, 30 Sep 2014 23:20:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+cc: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v3 1/2] clocksource: Update to the newer memory
+ functions.
+In-Reply-To: <1412053408-21751-2-git-send-email-Li.Xiubo@freescale.com>
+Message-ID: <alpine.DEB.2.11.1409302229400.4455@nanos>
+References: <1412053408-21751-1-git-send-email-Li.Xiubo@freescale.com> <1412053408-21751-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014 17:45:27 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+On Tue, 30 Sep 2014, Xiubo Li wrote:
 
-> Introduce a system restart handler call chain to solve the described problems.
+> Use ioread{16,32} instead of read{w,l}_relaxed.
+> 
+> For read{w,l}_relaxed accessor, if one arch has its own defination,
+> then used it. Or will use the generic one, which will be read as LE
+> endian as default.
+>  
+> For some ARCHes, such PowerPC, if using the clocksource mmio, the
+> read{w,l}_relaxed will couldn't be used directly. There must be its
+> own BE accessor in its individual clocksource driver.
+>
+> The ioread{16,32} will be read as LE endian as default if the arch
+> hasn't any defination of it too, like read{w,l}_relaxed do.
+> 
+> To prepare supporting the BE APIs and to be more unified with them,
+> using ioread{16,32}[be] is a good chioce here.
 
-So someone has merged eight of these patches into linux-next but these
-three:
+This is complete nonsense. I asked you to split this change out and
+provide a very reasonable changelog for it in the hope that you would
+start to think about what the difference between read*, read*_relaxed
+and ioread* are.
 
-watchdog-s3c2410-add-restart-handler.patch
-clk-samsung-register-restart-handlers-for-s3c2412-and-s3c2443.patch
-clk-rockchip-add-restart-handler.patch
+I bet you did not even try to think about it for a split second.
 
-were omitted.  What's up?
+You just mechanically split out the changes and dumped your completely
+incompetent opinion how these interfaces work and why they are there
+in the first place into a uncomprehensible changelog.
+
+Try again, once you understood the semantics of the interfaces and a
+proper explanation why inflicting a massive performance hit on most
+existing users seems to be a brilliant idea.
+
+Once you've done that use that acquired knowledge to look at your
+proposed BE functions and figure out why they are wrong as well.
+
+Thanks,
+
+	tglx
