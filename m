@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaI3H0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:26:43 -0400
-Received: from ozlabs.org ([103.22.144.67]:34723 "EHLO ozlabs.org"
+	id S1753963AbaI3H12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:27:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51659 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaI3H0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:26:42 -0400
-Date: Tue, 30 Sep 2014 17:26:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>,
-        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: linux-next: manual merge of the tty tree with the slave-dma tree
-Message-ID: <20140930172632.78398c4f@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1751530AbaI3H11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:27:27 -0400
+Message-ID: <542A5B5B.7060207@suse.cz>
+Date: Tue, 30 Sep 2014 09:27:23 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5luF3=_qzQJpTbudsRp6FLe"; protocol="application/pgp-signature"
+To: Xiubo Li <Li.Xiubo@freescale.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, mgorman@suse.de, rientjes@google.com,
+        minchan@kernel.org
+Subject: Re: [PATCH] mm, compaction: using uninitialized_var insteads setting
+ 'flags' to 0 directly.
+References: <1411961425-8045-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1411961425-8045-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5luF3=_qzQJpTbudsRp6FLe
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/29/2014 05:30 AM, Xiubo Li wrote:
+> Setting 'flags' to zero will be certainly a misleading way to avoid
+> warning of 'flags' may be used uninitialized. uninitialized_var is
+> a correct way because the warning is a false possitive.
 
-Hi Greg,
+Agree.
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/8250/8250_pci.c between commit 29897087d901 ("Add
-new PCI IDs to cover newer Intel SoCs such as Braswell") from the
-slave-dma tree and commit 1ede7dcca3c4 ("serial: 8250: Add Quark X1000
-to 8250_pci.c") from the tty tree.
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> ---
+>  mm/compaction.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 92075d5..59a116d 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -344,7 +344,7 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+>  {
+>  	int nr_scanned = 0, total_isolated = 0;
+>  	struct page *cursor, *valid_page = NULL;
+> -	unsigned long flags = 0;
+> +	unsigned long uninitialized_var(flags);
+>  	bool locked = false;
+>  	unsigned long blockpfn = *start_pfn;
+>  
+> @@ -573,7 +573,7 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
+>  	unsigned long nr_scanned = 0, nr_isolated = 0;
+>  	struct list_head *migratelist = &cc->migratepages;
+>  	struct lruvec *lruvec;
+> -	unsigned long flags = 0;
+> +	unsigned long uninitialized_var(flags);
+>  	bool locked = false;
+>  	struct page *page = NULL, *valid_page = NULL;
+>  
+> 
 
-diff --cc drivers/tty/serial/8250/8250_pci.c
-index 85a2eb986ffe,4f1cd296f1b1..000000000000
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@@ -1934,18 -1888,11 +1922,25 @@@ static struct pci_serial_quirk pci_seri
-  	},
-  	{
-  		.vendor		=3D PCI_VENDOR_ID_INTEL,
- +		.device		=3D PCI_DEVICE_ID_INTEL_BSW_UART1,
- +		.subvendor	=3D PCI_ANY_ID,
- +		.subdevice	=3D PCI_ANY_ID,
- +		.setup		=3D byt_serial_setup,
- +	},
- +	{
- +		.vendor		=3D PCI_VENDOR_ID_INTEL,
- +		.device		=3D PCI_DEVICE_ID_INTEL_BSW_UART2,
- +		.subvendor	=3D PCI_ANY_ID,
- +		.subdevice	=3D PCI_ANY_ID,
- +		.setup		=3D byt_serial_setup,
- +	},
-++	{
-++		.vendor		=3D PCI_VENDOR_ID_INTEL,
-+ 		.device		=3D PCI_DEVICE_ID_INTEL_QRK_UART,
-+ 		.subvendor	=3D PCI_ANY_ID,
-+ 		.subdevice	=3D PCI_ANY_ID,
-+ 		.setup		=3D pci_default_setup,
-+ 	},
-  	/*
-  	 * ITE
-  	 */
-
---Sig_/5luF3=_qzQJpTbudsRp6FLe
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUKlsuAAoJEMDTa8Ir7ZwVI5wP/iRSeUdhiKNE9kb+sdtif8nh
-hZSv6nyi7ZRA3qeEJni+g5xpI0S3ng/o65Y7wshb1eJAPcMCNFHN31Dvjvu3sYgj
-F33mxDhjjGbzDb420D25PV6YoXG0m/+VILIG4nMDQt2nVJWbCcERtgu9cBCPZ1An
-S0R9eyVCjwnHtIgScmzicJfC72+dFip9f3vIDWekawB2iS/7sRgJMWl4VeBx9Zcx
-I+g/cMC/WnZv6Tx/uLcEeakBHMCSCX/qOpPt9bSQp8kpA84ezzYq49rH87rtONZ7
-vdtEbp/Wi2UOBopKQfpIWGlooDQou31BA3jE1ZUkBqjAuo2Y0svtu0gaElM8FpRA
-LwCkSesjTnbFGDqU7LKIUNVPz8l9fdOLhbZGzLdTkRIg1+2Q8uyWf1OuVLSQO+hs
-pHcQ4LK/nEOL1hTVTVOyRQ0MUUJYZH/TDnVp8Qz9Qczy9/HvcOv3ns64b5yOmcu8
-AMIGxNVO1VaFfSHRIjEH8JzofWLL8RvSFQzKfVuxjrovheldxctooMqI9As6mAHE
-t5xnACipyU0bcyTQEPpjfgyqpH1o1vQT2sJRHFj5Ewpo629L22N3uEip62iBRcgH
-x7/aQgeFqwTVLDwI/6SUE2CB++VEK2kJ5TWMVHSF5H0D8FIIdDc5IXNwx5nWZODa
-nJfDQedVYFk1AWtp8so6
-=54AO
------END PGP SIGNATURE-----
-
---Sig_/5luF3=_qzQJpTbudsRp6FLe--
