@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaI3FV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 01:21:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39097 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaI3FV5 (ORCPT
+	id S1752068AbaI3F2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 01:28:34 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52262 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750899AbaI3F2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 01:21:57 -0400
-Date: Tue, 30 Sep 2014 01:21:55 -0400 (EDT)
-Message-Id: <20140930.012155.1518822116021687917.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH net 1/1 V2] hyperv: Fix a bug in netvsc_start_xmit()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1411967803-29233-1-git-send-email-kys@microsoft.com>
-References: <1411967803-29233-1-git-send-email-kys@microsoft.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 30 Sep 2014 01:28:32 -0400
+Message-ID: <542A3F7C.5000308@free-electrons.com>
+Date: Tue, 30 Sep 2014 07:28:28 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: schwidefsky@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: remove unused Kconfig params
+References: <1411799130-17875-1-git-send-email-michael.opdenacker@free-electrons.com> <20140927075701.GA6926@osiris>
+In-Reply-To: <20140927075701.GA6926@osiris>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 29 Sep 2014 22:21:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-Date: Sun, 28 Sep 2014 22:16:43 -0700
+Hi Heiko,
 
-> After the packet is successfully sent, we should not touch the skb 
-> as it may have been freed. This patch is based on the work done by 
-> Long Li <longli@microsoft.com>.
-> 
-> In this version of the patch I have fixed issues pointed out by David.
-> David, please queue this up for stable.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Tested-by: Long Li <longli@microsoft.com>
+On 09/27/2014 09:57 AM, Heiko Carstens wrote:
+> On Sat, Sep 27, 2014 at 08:25:30AM +0200, Michael Opdenacker wrote:
+>> Remove the below Kconfig parameters, which are no longer
+>> used anywhere in the source code and Makefiles:
+>>
+>> HAVE_MARCH_Z900_FEATURES
+>> HAVE_MARCH_Z990_FEATURES
+>>
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> What I wrote you a year ago is still true:
+>
+> https://lkml.org/lkml/2013/11/4/69
 
-Applied and queued up for -stable.
+Thanks for your reply. I forgot about my earlier submission, as I only
+keep track of patches that haven't been accepted yet. I will keep track
+of "hopeless" rejected patches too...
+
+There are multiple opinions about whether adding stuff not needed yet,
+or adding stuff only once they are needed. Anyway, as a maintainer, the
+decision is yours!
+
+Cheers,
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
