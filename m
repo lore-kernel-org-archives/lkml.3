@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaI3Vht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:37:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60966 "EHLO
+	id S1755136AbaI3V5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:57:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60960 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaI3Vhq (ORCPT
+	with ESMTP id S1752072AbaI3Vhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:46 -0400
+	Tue, 30 Sep 2014 17:37:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 066/103] USB: sisusb: add device id for Magic Control USB video
-Date: Tue, 30 Sep 2014 14:31:11 -0700
-Message-Id: <1412112708-27356-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 076/103] memblock, memhotplug: fix wrong type in memblock_find_in_range_node().
+Date: Tue, 30 Sep 2014 14:31:21 -0700
+Message-Id: <1412112708-27356-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -28,32 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Hemminger <stephen@networkplumber.org>
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-commit 5b6b80aeb21091ed3030b9b6aae597d81326f1aa upstream.
+commit 0cfb8f0c3e21e36d4a6e472e4c419d58ba848698 upstream.
 
-I have a j5 create (JUA210) USB 2 video device and adding it device id
-to SIS USB video gets it to work.
+In memblock_find_in_range_node(), we defined ret as int.  But it should
+be phys_addr_t because it is used to store the return value from
+__memblock_find_range_bottom_up().
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The bug has not been triggered because when allocating low memory near
+the kernel end, the "int ret" won't turn out to be negative.  When we
+started to allocate memory on other nodes, and the "int ret" could be
+minus.  Then the kernel will panic.
+
+A simple way to reproduce this: comment out the following code in
+numa_init(),
+
+        memblock_set_bottom_up(false);
+
+and the kernel won't boot.
+
+Reported-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/misc/sisusbvga/sisusb.c | 1 +
- 1 file changed, 1 insertion(+)
+ mm/memblock.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
-index de98906..0aef801 100644
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3248,6 +3248,7 @@ static const struct usb_device_id sisusb_table[] = {
- 	{ USB_DEVICE(0x0711, 0x0918) },
- 	{ USB_DEVICE(0x0711, 0x0920) },
- 	{ USB_DEVICE(0x0711, 0x0950) },
-+	{ USB_DEVICE(0x0711, 0x5200) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 53e477b..4ae6835 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -177,8 +177,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 					phys_addr_t end, phys_addr_t size,
+ 					phys_addr_t align, int nid)
+ {
+-	int ret;
+-	phys_addr_t kernel_end;
++	phys_addr_t kernel_end, ret;
+ 
+ 	/* pump up @end */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
 -- 
 1.9.1
 
