@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaI3SBX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:01:23 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:57557 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbaI3SBT (ORCPT
+	id S1753801AbaI3SFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:05:39 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64286 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaI3SBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:01:19 -0400
+	Tue, 30 Sep 2014 14:01:21 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,10 +14,11 @@ Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
         linux-parisc@vger.kernel.org, linux-sh@vger.kernel.org,
         xen-devel@lists.xenproject.org, Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 04/16] arm: support poweroff through poweroff handler call chain
-Date: Tue, 30 Sep 2014 11:00:44 -0700
-Message-Id: <1412100056-15517-5-git-send-email-linux@roeck-us.net>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [RFC PATCH 05/16] arm64: support poweroff through poweroff handler call chain
+Date: Tue, 30 Sep 2014 11:00:45 -0700
+Message-Id: <1412100056-15517-6-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412100056-15517-1-git-send-email-linux@roeck-us.net>
 References: <1412100056-15517-1-git-send-email-linux@roeck-us.net>
@@ -29,18 +30,19 @@ The kernel core now supports a poweroff handler call chain
 to remove power from the system. Call it if pm_power_off
 is set to NULL.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/arm/kernel/process.c | 2 ++
+ arch/arm64/kernel/process.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 250b6f6..848c578 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -207,6 +207,8 @@ void machine_power_off(void)
- 
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 398ab05..cc0c63e 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -157,6 +157,8 @@ void machine_power_off(void)
+ 	smp_send_stop();
  	if (pm_power_off)
  		pm_power_off();
 +	else
