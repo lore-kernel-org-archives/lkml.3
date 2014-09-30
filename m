@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaI3Hrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:47:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52197 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaI3Hrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:47:39 -0400
-Date: Tue, 30 Sep 2014 09:47:35 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
-        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
-	support
-Message-ID: <20140930074735.GE14081@wotan.suse.de>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com> <20140930022751.GA14081@wotan.suse.de>
+	id S1755265AbaI3Htj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:49:39 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:43807 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaI3Hth (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 03:49:37 -0400
+Message-ID: <542A608B.5010408@linaro.org>
+Date: Tue, 30 Sep 2014 08:49:31 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930022751.GA14081@wotan.suse.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org> <20140930051138.GH28481@sonymobile.com>
+In-Reply-To: <20140930051138.GH28481@sonymobile.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 04:27:51AM +0200, Luis R. Rodriguez wrote:
-> On Sun, Sep 28, 2014 at 07:07:24PM +0200, Tom Gundersen wrote:
-> > On Fri, Sep 26, 2014 at 11:57 PM, Luis R. Rodriguez
-> > <mcgrof@do-not-panic.com> wrote:
-> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > > 0) Not all drivers are killed, the signal is just sent and
-> > >    the kill will only be acted upoon if the driver you loaded
-> > >    happens to have some code path that either uses kthreads (which
-> > >    as of 786235ee are now killable), or uses some code which checks for
-> > >    fatal_signal_pending() on the kernel somewhere -- i.e: pci_read_vpd().
-> > 
-> > Shouldn't this be seen as something to be fixed in the kernel?
-> 
-> That's a great question. In practice now after CVE-2012-4398 and its series of
-> patches added which enabled OOM to kill things followed by 786235ee to also
-> handle OOM on kthreads it seems imperative we strive towards this, in practive
-> however if you're getting OOMs on boot you have far more serious issue to be
-> concerned over than handling CVE-2012-4398. Another issue is that even if we
-> wanted to address this a critical right now on module loading driver error
-> paths tend to be pretty buggy and we'd probably end up causing more issues than
-> fixing anything if the sigkill that triggered this was an arbitrary timeout,
-> specially if the timeout is not properly justified.
 
-<-- snip -->
 
-> So extending the kill onto more drivers *because* of the timeout is probably
-> not a good reason as it would probably create more issue than fix anything
-> right now.
+On 30/09/14 06:11, Bjorn Andersson wrote:
 
-A bit more on this. Tejun had added devres while trying to convert libata to
-use iomap but in that process also help address buggy failure paths on drivers [0].
-Even with devres in place and devm functions being available they actually
-haven't been popularized until recent kernels [1]. There is even further
-research on precicely these sorts of errors, such as "Hector: Detecting
-Resource-Release Omission Faults in error-handling code for systems software" [2]
-but unfortunately there is no data over time. Another paper is "An approach to
-improving the structure of error-handling code in the Linux kernel" [3] which
-tries to address moving error handling code in the middle of the function to gotos
-to shared code at the end of the function...
+>>
+>> +		apcs: syscon@2011000 {
+>> +			compatible = "syscon";
+>> +			reg = <0x2011000 0x1000>;
+>> +		};
+>> +
+>> +		rpm@108000 {
+>> +			compatible	= "qcom,rpm-apq8064";
+>> +			reg		= <0x108000 0x1000>;
+>> +			qcom,ipc = <&apcs 0x8 2>;
+>
+> I don't like your indentation, but please stick with one way of doing it :)
+>
+I agree, Will fix this in next version.
+>> +
+>> +			interrupts	= <0 19 0>, <0 21 0>, <0 22 0>;
+>> +			interrupt-names = "ack", "err", "wakeup";
+>> +
+>> +			#address-cells	= <1>;
+>> +			#size-cells	= <0>;
+>> +
+>
+> This part looks good.
+>
+> But how about adding all the regulators here as well?
+Yes we can add for the sake of completeness but w.r.t testing only some 
+of them will be tested
+> Like:
+>
+>                          pm8921_l5: pm8921-l5 {
+> 				compatible = "qcom,rpm-pm8921-pldo";
+> 				reg = <QCOM_RPM_PM8921_LDO5>;
+> 			};
+>
+Adding nodes like this should be trival.
+> 			...
+>
+> That way we can update the references from this file (while still allowing the
+> dts to override it if needed). I'm not sure if we should add some sane defaults
+> or just completely deferr specifying the voltage ranges to the dts. The benefit
+> of the latter is that the regulators not configured by the dts author will not
+> be accessible.
+>
+> But simply listing all the nodes here would be nice and I dont see much reason
+> to postpone this work.
+Ok.. will be done in next version.
 
-So we have buggy error paths on drivers and trusting them unfortunately isn't
-a good idea at this point. They should be fixed but saying we should equally
-kill all drivers right now would likley introduce more issues than anything.
 
-[0] http://lwn.net/Articles/215861/
-[1] http://www.slideshare.net/ennael/kernel-recipes-2013?qid=f0888b85-377b-4b29-95c3-f4e59822f5b3&v=default&b=&from_search=6
-    See slide 6 on graph usage of devm functions over time
-[2] http://coccinelle.lip6.fr/papers/dsn2013.pdf
-[3] http://coccinelle.lip6.fr/papers/lctes11.pdf
-
-  Luis
+--srini
+>
+>> +		};
+>> +
+>>   		/* Temporary fixed regulator */
+>>   		vsdcc_fixed: vsdcc-regulator {
+>>   			compatible = "regulator-fixed";
+>
+> Regards,
+> Bjorn
+>
