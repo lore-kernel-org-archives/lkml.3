@@ -1,104 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaI3SRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 14:17:06 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36131 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaI3SRF (ORCPT
+	id S1752487AbaI3STL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 14:19:11 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:39259 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714AbaI3STI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 14:17:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18szGU3h4tzTBJFbwHQ/90z
-Date: Tue, 30 Sep 2014 11:16:59 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tero Kristo <t-kristo@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [RFC] clk: Make clk API return per-user struct clk instances
-Message-ID: <20140930181658.GG3122@atomide.com>
-References: <20140926232009.19023.15825@quantum>
- <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com>
- <542A0A07.8040205@codeaurora.org>
- <20140930065432.19023.19492@quantum>
- <542A5E9F.2010006@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542A5E9F.2010006@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 30 Sep 2014 14:19:08 -0400
+From: Puthikorn Voravootivat <puthik@chromium.org>
+To: linux-pm@vger.kernel.org
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Gwendal Grignou <gwendal@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Puthikorn Voravootivat <puthik@chromium.org>
+Subject: [PATCH] bq27x00_battery: Fix flag reading for bq27742
+Date: Tue, 30 Sep 2014 11:18:56 -0700
+Message-Id: <1412101136-26037-1-git-send-email-puthik@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tero Kristo <t-kristo@ti.com> [140930 00:41]:
-> On 09/30/2014 09:54 AM, Mike Turquette wrote:
-> >Quoting Stephen Boyd (2014-09-29 18:40:23)
-> >>On 09/29/14 11:17, Tomeu Vizoso wrote:
-> >>>Also moves clock state to struct clk_core, but takes care to change as little
-> >>>API as possible.
-> >>>
-> >>>struct clk_hw still has a pointer to a struct clk, which is the
-> >>>implementation's per-user clk instance, for backwards compatibility.
-> >>>
-> >>>Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> >>>
-> >>>---
-> >>>
-> >>>Hello,
-> >>>
-> >>>I'm sending this alternate implementation of the switch to per-user clocks,
-> >>>with the added goal of not requiring any substantial changes to existing users
-> >>>of the API.
-> >>>
-> >>>This is pretty much RFC-quality right now, having only tested that it builds on
-> >>>tegra_defconfig.
-> >>>
-> >>>My main question right now is what do we want to do with those drivers that
-> >>>statically declare clocks. State is now in struct clk_core, so updating the
-> >>>drivers accordingly will amount to a substantial amount of lines changed, which
-> >>>we are now trying to avoid.
-> >>
-> >>Who's actually using the static clocks? Isn't it just omap2? It looks
-> >>like all of those are behind the DEFINE_CLK define so changing it in
-> >>clk-private.h should "just work". I'm lost as to why static clocks are
-> >>being used there though. If it was a problem with allocating memory too
-> >>early it doesn't seem to be the case given that sometimes the .parents
-> >>field isn't set for a mux and __clk_init() will go and allocate an array
-> >>of pointers. Maybe I missed something though.
-> >
-> >Yeah, the old omap2+ static clocks were due to very very early init of
-> >things which required clocks
-> >
-> >If memory serves, that isn't a problem any more. I've talked to Tony and
-> >Tero about my desire to remove clk-private.h and the need to get rid of
-> >its use in the omap clock code.
-> >
-> >Tero, what is the status of DT conversion for OMAP2/OMAP3? Can we get
-> >get away with only defining clock data in DT for those platforms? Can we
-> >finally kill off clk-private.h?
-> 
-> Clock data has been converted for all SoCs. The problem is currently that we
-> are missing some OMAP3 based DT board definitions and still require legacy
-> boot => thus requiring legacy clock data also => omap3 legacy clock data
-> can't be removed yet.
-> 
-> Tony, whats the latest status with these missing omap3 boards? How many
-> board->dt conversions are still needed? Is there anything someone can do on
-> this front?
+This patch fix the following issues.
+- Flag for bq27742 is 2 bytes contracy to 1 byte for older hardware
+- Don't read FLAG_CI as bq27742 does not have it
+- Use Battery full capacity register as last measure discharge
 
-Well things are looking good for device tree based booting for omap3
-in general. We just need to wait so people have enough time to update
-their boards and do the missing .dts files. I guess all we can say is
-we drop omap3 legacy booting when we can. 
+Signed-off-by: Puthikorn Voravootivat <puthik@chromium.org>
+Reviewed-by: Benson Leung <bleung@chromium.org>
+---
+The incremental patch of [PATCH v2] bq27x00_battery: Add support to bq27742
+Sorry, I didn't see that the old patch was already applied.
+ drivers/power/bq27x00_battery.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-Can we remove the depenency to the omap3 DT conversion for the clocks
-to remove the DT conversion dependency here?
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index 5b9f0ea..e3bacfe 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -254,9 +254,11 @@ static inline int bq27x00_battery_read_nac(struct bq27x00_device_info *di)
+ {
+ 	int flags;
+ 	bool is_bq27500 = di->chip == BQ27500;
++	bool is_bq27742 = di->chip == BQ27742;
+ 	bool is_higher = bq27xxx_is_chip_version_higher(di);
++	bool flags_1b = !(is_bq27500 || is_bq27742);
+ 
+-	flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
++	flags = bq27x00_read(di, BQ27x00_REG_FLAGS, flags_1b);
+ 	if (flags >= 0 && !is_higher && (flags & BQ27000_FLAG_CI))
+ 		return -ENODATA;
+ 
+@@ -436,13 +438,14 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ 	bool is_bq27500 = di->chip == BQ27500;
+ 	bool is_bq27425 = di->chip == BQ27425;
+ 	bool is_bq27742 = di->chip == BQ27742;
++	bool flags_1b = !(is_bq27500 || is_bq27742);
+ 
+-	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, !is_bq27500);
++	cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, flags_1b);
+ 	if ((cache.flags & 0xff) == 0xff)
+ 		/* read error */
+ 		cache.flags = -1;
+ 	if (cache.flags >= 0) {
+-		if (!is_bq27500 && !is_bq27425
++		if (!is_bq27500 && !is_bq27425 && !is_bq27742
+ 				&& (cache.flags & BQ27000_FLAG_CI)) {
+ 			dev_info(di->dev, "battery is not calibrated! ignoring capacity values\n");
+ 			cache.capacity = -ENODATA;
+@@ -470,9 +473,7 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+ 					bq27x00_battery_read_time(di,
+ 							BQ27x00_REG_TTF);
+ 			}
+-			if (!is_bq27742)
+-				cache.charge_full =
+-					bq27x00_battery_read_lmd(di);
++			cache.charge_full = bq27x00_battery_read_lmd(di);
+ 			cache.health = bq27x00_battery_read_health(di);
+ 		}
+ 		cache.temperature = bq27x00_battery_read_temperature(di);
+-- 
+2.1.0.rc2.206.gedb03e5
 
-Regards,
-
-Tony
