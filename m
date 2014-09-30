@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaI3EdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 00:33:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12005 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbaI3EdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 00:33:17 -0400
-Date: Tue, 30 Sep 2014 00:33:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: pipe/page fault oddness.
-Message-ID: <20140930043309.GA16196@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20140930033327.GA14558@redhat.com>
- <CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>
+	id S1755028AbaI3EeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 00:34:09 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51028 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaI3EeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 00:34:06 -0400
+Date: Mon, 29 Sep 2014 21:32:20 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3 2/5] mm/hugetlb: take page table lock in
+ follow_huge_pmd()
+In-Reply-To: <1410820799-27278-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.LSU.2.11.1409292041540.4640@eggly.anvils>
+References: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1410820799-27278-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 09:27:09PM -0700, Linus Torvalds wrote:
- > On Mon, Sep 29, 2014 at 8:33 PM, Dave Jones <davej@redhat.com> wrote:
- > >
- > > Looking at the dump, there's only one running trinity child,
- > > with all the others blocking on it.
- > >
- > > trinity-c49     R  running task    12856 19464   7633 0x00000004
- > > ffff8800a09bf960 0000000000000002 ffff8800a09bf9f8 ffff880219650000
- > > 00000000001d4080 0000000000000000 ffff8800a09bffd8 00000000001d4080
- > > ffff88023f755bc0 ffff880219650000 ffff8800a09bffd8 ffff88010b017e00
- > > Call Trace:
- > > [<ffffffff911c3c67>] handle_mm_fault+0x3a7/0xcd0
- > > [<ffffffff91042c84>] __do_page_fault+0x1a4/0x600
- > > [<ffffffff910430fe>] do_page_fault+0x1e/0x70
- > > [<ffffffff918264b2>] page_fault+0x22/0x30
- > > [<ffffffff911bd7e3>] ? copy_page_to_iter+0x3b3/0x500
- > > [<ffffffff9120eddf>] pipe_read+0xdf/0x330
- > >
- > > Running the function tracer on that pid shows it spinning forever..
- > > http://codemonkey.org.uk/junk/pipe-trace.txt
- > >
- > > Kernel bug (missing EFAULT check somewhere perhaps?), or is this a
- > > case where the fuzzer asked the kernel to do something stupid, and it obliged ?
- > 
- > Hmm. It looks like copy_page_to_iter_iovec() is broken and keeps not
- > making any progress while just faulting.
- > 
- > I don't see how that could happen, though. All the loops there are
- > conditional on the user copies *not* failing (ie "!left"), and they
- > seem to properly update "iov".
- > 
- > Mind sending a disassembly of your "copy_page_to_iter" function, in
- > particular around that whole "0x3b3/0x500" area which is where the
- > page fault seems to happen?
- 
-Whole file is at http://codemonkey.org.uk/junk/iov_iter.txt
+On Mon, 15 Sep 2014, Naoya Horiguchi wrote:
+> We have a race condition between move_pages() and freeing hugepages,
 
-gcc is 4.8.3 btw
+I've been looking through these 5 today, and they're much better now,
+thank you.  But a new concern below, and a minor correction to 3/5.
 
-	Dave
+> --- mmotm-2014-09-09-14-42.orig/mm/gup.c
+> +++ mmotm-2014-09-09-14-42/mm/gup.c
+> @@ -162,33 +162,16 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+>  
+>  	pmd = pmd_offset(pud, address);
+>  	if (pmd_none(*pmd))
+>  		return no_page_table(vma, flags);
+> -	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+> -		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
+> -		if (flags & FOLL_GET) {
+> -			/*
+> -			 * Refcount on tail pages are not well-defined and
+> -			 * shouldn't be taken. The caller should handle a NULL
+> -			 * return when trying to follow tail pages.
+> -			 */
+> -			if (PageHead(page))
+> -				get_page(page);
+> -			else
+> -				page = NULL;
+> -		}
+> -		return page;
+> -	}
+> +	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB)
+> +		return follow_huge_pmd(mm, address, pmd, flags);
+
+This code here allows for pmd_none() and pmd_huge(), and for pmd_numa()
+and pmd_trans_huge() below; but makes no explicit allowance for !present
+migration and hwpoison entries.
+
+Is it assumed that the pmd_bad() test in follow_page_pte() will catch
+those?  But what of races? migration entries are highly volatile.  And
+is it assumed that a migration entry cannot pass the pmd_huge() test?
+
+That may be true of x86 today, I'm not certain; but if the soft-dirty
+people catch up with the hugetlb-migration people, that might change
+(they #define _PAGE_SWP_SOFT_DIRTY _PAGE_PSE).
+
+Why pmd_huge() does not itself test for present, I cannot say; but it
+probably didn't matter at all before hwpoison and migration were added.
+
+Mind you, with __get_user_pages()'s is_vm_hugtlb_page() test avoiding
+all this code, maybe the only thing that can stumble here is your own
+hugetlb migration code; but that appears to be guarded only by
+down_read of mmap_sem, so races would be possible (if userspace
+is silly enough or malicious enough to do so).
+
+What we have here today looks too fragile to me, but it's probably
+best dealt with by a separate patch.
+
+Or I may be over-anxious, and there may be something "obvious"
+that I'm missing, which saves us from further change.
+
+>  	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
+>  		return no_page_table(vma, flags);
+>  	if (pmd_trans_huge(*pmd)) {
+> diff --git mmotm-2014-09-09-14-42.orig/mm/hugetlb.c mmotm-2014-09-09-14-42/mm/hugetlb.c
+> index 34351251e164..941832ee3d5a 100644
+> --- mmotm-2014-09-09-14-42.orig/mm/hugetlb.c
+> +++ mmotm-2014-09-09-14-42/mm/hugetlb.c
+> @@ -3668,26 +3668,34 @@ follow_huge_addr(struct mm_struct *mm, unsigned long address,
+>  
+>  struct page * __weak
+>  follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+> -		pmd_t *pmd, int write)
+> +		pmd_t *pmd, int flags)
+>  {
+> -	struct page *page;
+> +	struct page *page = NULL;
+> +	spinlock_t *ptl;
+>  
+> -	page = pte_page(*(pte_t *)pmd);
+> -	if (page)
+> -		page += ((address & ~PMD_MASK) >> PAGE_SHIFT);
+> +	ptl = pmd_lockptr(mm, pmd);
+> +	spin_lock(ptl);
+> +
+> +	if (!pmd_huge(*pmd))
+> +		goto out;
+
+And similarly here.  Though at least here we now have the necessary
+lock, so it's no longer racy, and maybe this pmd_huge() test just needs
+to be replaced by a pmd_present() test?  Or are both needed?
+
+> +
+> +	page = pte_page(*(pte_t *)pmd) + ((address & ~PMD_MASK) >> PAGE_SHIFT);
+> +
+> +	if (flags & FOLL_GET)
+> +		get_page(page);
+> +out:
+> +	spin_unlock(ptl);
+>  	return page;
+>  }
