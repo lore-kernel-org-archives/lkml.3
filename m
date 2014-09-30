@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaI3QeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:34:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146AbaI3QeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:34:12 -0400
-Date: Tue, 30 Sep 2014 18:33:53 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        oleg@redhat.com, kamaleshb@in.ibm.com, hechjie@cn.ibm.com,
-        akpm@linux-foundation.org, dvlasenk@redhat.com, prarit@redhat.com,
-        lwoodman@redhat.com, hannsj_uhl@de.ibm.com,
-        torvalds@linux-foundation.org
-Subject: Re: [RESEND PATCH 2/4] x86: add phys addr validity check for
- /dev/mem mmap
-Message-ID: <20140930163353.GC3073@localhost.localdomain>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
- <1411990382-11902-3-git-send-email-fhrbata@redhat.com>
- <alpine.DEB.2.02.1409292211560.22082@ionos.tec.linutronix.de>
- <20140930124121.GB3073@localhost.localdomain>
- <542ABDE7.7090808@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542ABDE7.7090808@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751922AbaI3QjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:39:17 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:35779 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaI3QjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:39:15 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] next: mips: bpf: Fix build failure
+Date: Tue, 30 Sep 2014 09:39:00 -0700
+Message-Id: <1412095140-10953-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 07:27:51AM -0700, Dave Hansen wrote:
-> On 09/30/2014 05:41 AM, Frantisek Hrbata wrote:
-> > Does it make sense to replace "count" with "size" so it's consistent with the
-> > rest or do you prefer "nr_bytes" or as Dave proposed "len_bytes"?
-> 
-> I don't care what it is as long as it has a unit in it.
+Fix:
 
-Hi Dave/Thomas,
+arch/mips/net/bpf_jit.c: In function 'build_body':
+arch/mips/net/bpf_jit.c:762:6: error: unused variable 'tmp'
+cc1: all warnings being treated as errors
+make[2]: *** [arch/mips/net/bpf_jit.o] Error 1
 
-I sent v2 of this patch set, which uses the "len_bytes". Again, I'm sorry I
-forgot to fix this the first time.
+Seen when building mips:allmodconfig in -next since next-20140924.
 
-Many thanks
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/mips/net/bpf_jit.c | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
+index 7561833..9b55143 100644
+--- a/arch/mips/net/bpf_jit.c
++++ b/arch/mips/net/bpf_jit.c
+@@ -759,7 +759,6 @@ static int build_body(struct jit_ctx *ctx)
+ 	const struct sock_filter *inst;
+ 	unsigned int i, off, load_order, condt;
+ 	u32 k, b_off __maybe_unused;
+-	int tmp;
+ 
+ 	for (i = 0; i < prog->len; i++) {
+ 		u16 code;
 -- 
-Frantisek Hrbata
+1.9.1
+
