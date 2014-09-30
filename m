@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaI3UDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:03:21 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:9738 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901AbaI3UDT (ORCPT
+	id S1753557AbaI3UDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:03:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33197 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaI3UDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:03:19 -0400
-Date: Tue, 30 Sep 2014 13:03:30 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Andy Gross <agross@codeaurora.org>
-CC: Wolfram Sang <wsa@the-dreams.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] i2c: qup: Fix order of runtime pm initialization
-Message-ID: <20140930200329.GV28481@sonymobile.com>
-References: <1412028051-21774-1-git-send-email-agross@codeaurora.org>
- <20140930015323.GE28481@sonymobile.com>
- <20140930195923.GB26928@qualcomm.com>
+	Tue, 30 Sep 2014 16:03:30 -0400
+Date: Tue, 30 Sep 2014 22:03:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+cc: mingo@redhat.com, davej@redhat.com, hpa@zytor.com, hmh@hmh.eng.br,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86: Quark: Comment setup_arch for TLB/PGE bugfix
+In-Reply-To: <1412046710-2686-4-git-send-email-pure.logic@nexus-software.ie>
+Message-ID: <alpine.DEB.2.11.1409302140140.4455@nanos>
+References: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie> <1412046710-2686-4-git-send-email-pure.logic@nexus-software.ie>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140930195923.GB26928@qualcomm.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 12:59 PDT 2014, Andy Gross wrote:
+On Tue, 30 Sep 2014, Bryan O'Donoghue wrote:
+>  
+> +	/*
+> +	 * Locate the page directory and flush the TLB.
 
-> On Mon, Sep 29, 2014 at 06:53:24PM -0700, Bjorn Andersson wrote:
-> > On Mon 29 Sep 15:00 PDT 2014, Andy Gross wrote:
-> > 
-> > > The runtime pm calls need to be done before populating the children via the
-> > > i2c_add_adapter call.  If this is not done, a child can run into issues trying
-> > > to do i2c read/writes due to the pm_runtime_sync failing.
-> > > 
-> > 
-> > May I ask in what case this would fail?  I thought we tested this as we found
-> > the faulty error check after calling pm_runtime_get_sync().
-> 
-> This is a different kind of failure.   If during probe, the children do some I2C
-> activity, they will encounter issues with the runtime_sync due to the pm_runtime
-> not being initialized.  However, once the qup probe completes, everything works
-> fine.
-> 
-> The original runtime_sync issue revolved around the runtime_sync return value
-> being misinterpreted due to the incorrect check.
-> 
+s/Locate/Load/ ?
 
-Yeah, I just wondered why my testing didn't trigger this. But I suspect that
-the answer is simply that the client I ran with did not do i2c accesses from
-probe.
+Thats what we do here. CR3 is used by the CPU to locate the page
+directory.
 
-Regards,
-Bjorn
+> +	 *
+> +	 * On Quark X1000 CPUs we still have the PGE bit incorrectly set
+> +	 * due to a processor erratum, so __flush_tlb_all() is not yet
+> +	 * doing what it says.  Fortunately we have a cr3 load here,
+> +	 * which is what is needed on this processor to flush TLBs, so
+> +	 * there's no need to add a Quark X1000 quirk here.
+> +	 *
+> +	 * early_init_intel will unset the X86_FEATURE_PGE flag later
+> +	 * and __flush_tlb_all() will flush via cr3
+
+Can we please write that a bit less convoluted?
+
+> +	 */
+>  	load_cr3(swapper_pg_dir);
+
+	/*
+	 * Note: Quark X1000 CPUs advertise PGE incorrectly and require
+	 * a cr3 based tlb flush, so the following __flush_tlb_all()
+	 * will not flush anything because the cpu quirk which clears
+	 * X86_FEATURE_PGE has not been invoked yet. Though due to the
+	 * load_cr3() above the TLB has been flushed already. The
+	 * quirk is invoked before subsequent calls to __flush_tlb_all()
+	 * so proper operation is guaranteed.
+	 */
+>  	__flush_tlb_all();
+
+Thanks,
+
+	tglx
