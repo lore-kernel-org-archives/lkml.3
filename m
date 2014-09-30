@@ -1,156 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaI3VBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:01:13 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36177 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaI3VBK (ORCPT
+	id S1751514AbaI3VCs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:02:48 -0400
+Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:33642 "EHLO
+	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750844AbaI3VCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:01:10 -0400
-Date: Tue, 30 Sep 2014 23:01:08 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        kernel list <linux-kernel@vger.kernel.org>, jack@suse.cz,
-        linux-ext4@vger.kernel.org, adilger.kernel@dilger.ca,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: Re: ext4: 3.17? problems
-Message-ID: <20140930210108.GB14283@amd>
+	Tue, 30 Sep 2014 17:02:46 -0400
+Message-ID: <542B1A74.9000909@nexus-software.ie>
+Date: Tue, 30 Sep 2014 22:02:44 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Reply-To: pure.logic@nexus-software.ie
+Organization: Nexus Software
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929114408.GC2738@quack.suse.cz>
- <87iok6ojis.fsf@openvz.org>
- <20140928124658.GB6694@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mingo@redhat.com, davej@redhat.com, hpa@zytor.com, hmh@hmh.eng.br,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] x86: Bugfix bit-rot in the calling of legacy_cache_size
+References: <1412046710-2686-1-git-send-email-pure.logic@nexus-software.ie> <1412046710-2686-2-git-send-email-pure.logic@nexus-software.ie> <alpine.DEB.2.11.1409302211560.4455@nanos>
+In-Reply-To: <alpine.DEB.2.11.1409302211560.4455@nanos>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 30/09/14 21:28, Thomas Gleixner wrote:
+> On Tue, 30 Sep 2014, Bryan O'Donoghue wrote:
+>>   static void default_init(struct cpuinfo_x86 *c)
+>>   {
+>> -#ifdef CONFIG_X86_64
+>>   	cpu_detect_cache_sizes(c);
+>> -#else
+>> +
+>>   	/* Not much we can do here... */
+>>   	/* Check if at least it has cpuid */
+>>   	if (c->cpuid_level == -1) {
+>> @@ -79,7 +78,6 @@ static void default_init(struct cpuinfo_x86 *c)
+>>   		else if (c->x86 == 3)
+>>   			strcpy(c->x86_model_id, "386");
+>>   	}
+>> -#endif
+>
+> What's the exact point of this? This is the default init function
+> which is for X86_VENDOR_UNKNOWN, right?
+
+Correct
+
+>>   }
+>>
+>>   static const struct cpu_dev default_cpu = {
+>> @@ -874,6 +872,15 @@ static void identify_cpu(struct cpuinfo_x86 *c)
+>>   #endif
+>>
+>>   	/*
+>> +	 * If c_x86_vendor != X86_VENDOR_UNKNOWN i.e. a known vendor then
+>> +	 * there's a vendor specific c_init()
+>> +	 *
+>> +	 * Even still Intel, AMD and VIA make use of legacy_cache_size which
+>> +	 * is reachable only through default_init right now
+>
+> That's nonsense. It's called from cpu_detect_cache_sizes() and that is
+> called from:
+>
+> arch/x86/kernel/cpu/amd.c:      cpu_detect_cache_sizes(c);
+> arch/x86/kernel/cpu/centaur.c:  cpu_detect_cache_sizes(c);
+> arch/x86/kernel/cpu/common.c:   cpu_detect_cache_sizes(c);
+> arch/x86/kernel/cpu/cyrix.c:            cpu_detect_cache_sizes(c);
+> arch/x86/kernel/cpu/transmeta.c:        cpu_detect_cache_sizes(c);
+
+/uses grep
+
+Yes I see for everybody except Intel that'll get called. I mised that.
+
+> So we have 4 callsites outside of default_init() already. Now you're
+> adding another one into identify_cpu()
+>
+>> +	 */
+>> +	if (this_cpu->c_x86_vendor != X86_VENDOR_UNKNOWN)
+>> +		default_init(c);
+>
+> With the consequence that for amd/centaur/cyrix/transmeta
+> cpu_detect_cache_sizes() is invoked twice for nothing.
+
+Yes - I see what's needed here is for cpu_detect_cache_sizes to get 
+called for Intel only - so the bit rot is really only limited to
+
+1. PIII Tualatin
+2. New Intel additions on this path like Quark
 
 
-On Sun 2014-09-28 08:46:58, Theodore Ts'o wrote:
-> On Sun, Sep 28, 2014 at 12:44:56PM +0200, Pavel Machek wrote:
-> > 
-> > After update to debian testing, my machine sometimes fails to
-> > reboot. (aptitude upgrade seems to be the trigger).
-> > 
-> > So I had to hard power-down the machine. That should be perfectly
-> > safe, as ext4 has a journal, and this is plain SATA disk, right?
-> > 
-> > On next boot to Debian stable, I got stacktrace, and messages about
-> > ext4 corruption. Back to Debian testing. systemd ran fsck, determined
-> > it can't fix it, dropped me into emergency shell, _but mounted the
-> > filesstem, anyway_. Oops.
-> 
-> I've been running 3.17-rc4 plus the ext4 dev patches and due to either
-> regressions in i915 or the X server (not sure which) over the last
-> couple of weeks, I've had to power-down my system a number of times
-> after the system has hung when either shutting down the X server or
-> when trying to add or remove an external display.  So I've had to
-> unfortunately do a fair number of hard-power-offs on my T540p, and
-> I've not noticed any like what you've described.
+> So the only CPU vendor c_init() callback which does not call
+> cpu_detect_cache_sizes() is the Intel one. And therefor we inflict
+> that call on all others twice. Brilliant solution!
 
-Ok, I'm not 100% sure it was 3.17-rcX... but according to logs, it
-is. 3.17-rc4
+Haha. When you put it like that you make it sound mad and unreasonable.
 
-> Can you give any more details?  Are you using LVM or dm-crypt?  Is
-> this repeatable?
+> So the proper solution is to add the call to identify_cpu()
+> unconditionally and remove it from _all_ other call sites, make it
+> static and be done with it.
 
-No, I don't think it is repeatable in useful way for debugging, but it
-is not first time it happened here. No LVM or dm-crypt in use.
+Agree I'll make that update.
 
-> > So I had to hard power-down the machine. That should be perfectly
-> > safe, as ext4 has a journal, and this is plain SATA disk, right?
-> > 
-> AFAIU you have some corruption on your fs (the root of cause is unknown
-> at this moment)
-> So you have following stages:
-> 1) fs corruption
-> 2) boot-> mount attempt
-> 3) fsck
-> During (1) Once ext4 driver found this error it will call ext4_error
-> which will tag sb with FS_ERROR flag.
-> During (2) it will found that tag and clear s_orphan which result
-> in complain you have seen  during(3)
+Thanks for your review.
 
-I tried to search syslog, but could not find original messages. It
-happened during shutdown. I guess syslog was already stopped at that
-point..>?
-
-Logs say:
-
-Sep 28 11:45:38 amd NetworkManager[3422]: <info> Activation (tun0)
-successful, device activated.
-Sep 28 11:45:38 amd nm-dispatcher: Dispatching action 'up' for tun0
-Sep 28 11:45:39 amd systemd[1]: Stopping OpenBSD Secure Shell
-server...
-Sep 28 11:45:39 amd systemd[1]: Starting OpenBSD Secure Shell
-server...
-Sep 28 11:45:39 amd systemd[1]: Started OpenBSD Secure Shell server.
-Sep 28 11:45:41 amd NetworkManager[3422]: <warn> Could not send ARP
-for local address 10.10.0.14: Failed to execute child process
-"/sbin/arping" (No such file or directory)
-Sep 28 11:45:49 amd ntpdate[1413]: adjust time server 193.85.174.5
-offset 0.002797 sec
-Sep 28 12:17:01 amd /USR/SBIN/CRON[3612]: (root) CMD (   cd / &&
-run-parts --report /etc/cron.hourly)
-Sep 28 12:58:12 amd rsyslogd: [origin software="rsyslogd"
-swVersion="8.4.0" x-pid="3380" x-info="http://www.rsyslog.com"] start
-Sep 28 12:58:12 amd systemd[1]: Starting Load Kernel Modules...
-Sep 28 12:58:12 amd systemd[1]: Mounted POSIX Message Queue File
-System.
-Sep 28 12:58:12 amd systemd[1]: Starting udev Kernel Socket.
-Sep 28 12:58:12 amd systemd[1]: Listening on udev Kernel Socket.
-Sep 28 12:58:12 amd systemd[1]: Starting udev Control Socket.
-Sep 28 12:58:12 amd systemd[1]: Listening on udev Control Socket.
-Sep 28 12:58:12 amd systemd[1]: Starting udev Coldplug all Devices...
-Sep 28 12:58:12 amd systemd[1]: Started Set Up Additional Binary
-Formats.
-Sep 28 12:58:12 amd systemd[1]: Starting Dispatch Password Requests to
-Console Directory Watch.
-Sep 28 12:58:12 amd systemd[1]: Started Dispatch Password Requests to
-Console Directory Watch.
-Sep 28 12:58:12 amd systemd[1]: Mounting Debug File System...
-Sep 28 12:58:12 amd kernel: Initializing cgroup subsys cpu
-Sep 28 12:58:12 amd kernel: Linux version 3.17.0-rc4 (pavel@amd) (gcc
-version 4.9.1 (Debian 4.9.1-12) ) #1 SMP Sun Sep 14 21:24:53 CEST 2014
-
-> > After update to debian testing, my machine sometimes fails to
-> > reboot. (aptitude upgrade seems to be the trigger).
-> > 
-> > So I had to hard power-down the machine. That should be perfectly
-> > safe, as ext4 has a journal, and this is plain SATA disk, right?
->   Yes, it should be safe.
-
-Good.
-
-> > On next boot to Debian stable, I got stacktrace, and messages about
-> > ext4 corruption. Back to Debian testing. systemd ran fsck, determined
->   It would be really good to get those messages... Ideally you could also
-> use
->   e2image -r <partition> | bzip2 -c
-> to store fs metadata before doing anything else with the fs to a usb stick.
-> That is invaluable for future analysis.
-
-Too late for that :-(.
-
-> > it can't fix it, dropped me into emergency shell, _but mounted the
-> > filesstem, anyway_. Oops.
->   What kernel versions are you running in Debian testing and stable?
-
-Debian testing was 3.17-rc4, AFAICT. For debian stable -- not sure.
-
-> My guess would be that kernel had problems only during orphan inode
-> recovery (i.e. when deleting already deleted files) and we let the mount
-> proceed if this fails because it's a relatively harmless problem.
-
-Is there some phase during shutdown where journalling no longer
-protects fs integrity?
-
-Thanks,
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--
+BOD
