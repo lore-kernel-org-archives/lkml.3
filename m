@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaI3RlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:41:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56975 "EHLO mx1.redhat.com"
+	id S1752602AbaI3Rmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:42:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28351 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181AbaI3RlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:41:10 -0400
-Date: Tue, 30 Sep 2014 13:40:11 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com, oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] sched, time: fix build error with 64 bit cputime_t on 32
- bit systems
-Message-ID: <20140930134011.232bc7bf@annuminas.surriel.com>
-In-Reply-To: <2547036.UshV4pXvhf@wuerfel>
-References: <2547036.UshV4pXvhf@wuerfel>
-Organization: Red Hat, Inc.
+	id S1751332AbaI3Rmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:42:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,628,1406617200"; 
+   d="scan'208";a="611038799"
+Date: Tue, 30 Sep 2014 11:42:34 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: =?ISO-8859-15?Q?Matias_Bj=F8rling?= <m@bjorling.me>
+cc: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@fb.com, tom.leiming@gmail.com, hch@infradead.org,
+        rlnelson@google.com, linux-kernel@vger.kernel.org,
+        linux-nvme@lists.infradead.org
+Subject: Re: [PATCH v13] NVMe: Convert to blk-mq
+In-Reply-To: <1412098195-30133-2-git-send-email-m@bjorling.me>
+Message-ID: <alpine.LRH.2.03.1409301134580.4688@AMR>
+References: <1412098195-30133-1-git-send-email-m@bjorling.me> <1412098195-30133-2-git-send-email-m@bjorling.me>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1747668169-1412098955=:4688"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014 13:56:37 +0200
-Arnd Bergmann <arnd@arndb.de> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> A recent change to update the stime/utime members of task_struct
-> using atomic cmpxchg broke configurations on 32-bit machines with
-> CONFIG_VIRT_CPU_ACCOUNTING_GEN set, because that uses 64-bit
-> nanoseconds, leading to a link-time error:
-> 
-> kernel/built-in.o: In function `cputime_adjust':
-> :(.text+0x25234): undefined reference to `__bad_cmpxchg'
+--8323328-1747668169-1412098955=:4688
+Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-Arnd, this should fix your problem, while still ensuring that
-the cpu time counters only ever go forward.
+On Tue, 30 Sep 2014, Matias Bjørling wrote:
+> @@ -1967,27 +1801,30 @@ static struct nvme_ns *nvme_alloc_ns(struct nvme_dev *dev, unsigned nsid,
+> {
+...
+> -	ns->queue->queue_flags = QUEUE_FLAG_DEFAULT;
+> +	queue_flag_set_unlocked(QUEUE_FLAG_DEFAULT, ns->queue);
 
-I do not have cross compiling toolchains set up here, but I assume
-this fixes your bug.
+Instead of the above, you want
 
-Ingo & Peter, if this patch fixes the bug for Arnd, could you please
-merge it into -tip?
++	ns->queue->queue_flags |= QUEUE_FLAG_DEFAULT;
 
-Linus, the changeset causing the problem is only in -tip right now,
-and this patch will not apply to your tree.
+I only caught it because of the fun dm-mpath attempt with nvme and
+blk-mq. Or maybe we don't want to include "QUEUE_FLAG_STACKABLE" right
+now (part of the default flags) because it will kernel crash if you're
+using dm-multipath with a blk-mq driver today.
 
----8<---
-
-Subject: sched,time: fix build error with 64 bit cputime_t on 32 bit systems
-
-On 32 bit systems cmpxchg cannot handle 64 bit values, and
-cmpxchg64 needs to be used when full dynticks CPU accounting
-is enabled, since that turns cputime_t into a u64.
-
-With jiffies based CPU accounting, cputime_t is an unsigned
-long. On 64 bit systems, cputime_t is always the size of a
-long.
-
-Luckily the compiler can figure out whether we need to call
-cmpxchg or cmpxchg64.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Arnd Bergmann <arnd@arndb.de>
----
- kernel/sched/cputime.c | 35 +++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
-
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 64492df..db239c9 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -555,6 +555,29 @@ static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
- }
- 
- /*
-+ * Atomically advance counter to the new value. Interrupts, vcpu
-+ * scheduling, and scaling inaccuracies can cause cputime_advance
-+ * to be occasionally called with a new value smaller than counter.
-+ * Let's enforce atomicity.
-+ *
-+ * Normally a caller will only go through this loop once, or not
-+ * at all in case a previous caller updated counter the same jiffy.
-+ */
-+static void cputime_advance(cputime_t *counter, cputime_t new)
-+{
-+	cputime_t old;
-+
-+	while (new > (old = ACCESS_ONCE(*counter))) {
-+		/* The compiler will optimize away this branch.  */
-+		if (sizeof(cputime_t) == sizeof(long))
-+			cmpxchg(counter, old, new);
-+		else
-+			/* 64 bit cputime_t on a 32 bit system... */
-+			cmpxchg64(counter, old, new);
-+	}
-+}
-+
-+/*
-  * Adjust tick based cputime random precision against scheduler
-  * runtime accounting.
-  */
-@@ -599,16 +622,8 @@ static void cputime_adjust(struct task_cputime *curr,
- 		utime = rtime - stime;
- 	}
- 
--	/*
--	 * If the tick based count grows faster than the scheduler one,
--	 * the result of the scaling may go backward.
--	 * Let's enforce monotonicity.
--	 * Atomic exchange protects against concurrent cputime_adjust().
--	 */
--	while (stime > (rtime = ACCESS_ONCE(prev->stime)))
--		cmpxchg(&prev->stime, rtime, stime);
--	while (utime > (rtime = ACCESS_ONCE(prev->utime)))
--		cmpxchg(&prev->utime, rtime, utime);
-+	cputime_advance(&prev->stime, stime);
-+	cputime_advance(&prev->utime, utime);
- 
- out:
- 	*ut = prev->utime;
+Otherwise, looks great!
+--8323328-1747668169-1412098955=:4688--
