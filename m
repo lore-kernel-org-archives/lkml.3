@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaI3EaM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 00:30:12 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:64109 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaI3EaK (ORCPT
+	id S1751453AbaI3Ebp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 00:31:45 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49484 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaI3Ebo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 00:30:10 -0400
-Date: Tue, 30 Sep 2014 00:30:06 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-cc: linux-arm-kernel@lists.infradead.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH 0/5] ARM: move #include <asm/cp15.h> into cacheflush.h
-In-Reply-To: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com>
-Message-ID: <alpine.LFD.2.11.1409300016060.5311@knanqh.ubzr>
-References: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 30 Sep 2014 00:31:44 -0400
+From: Ankit Jindal <ankit.jindal@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Tushar Jagad <tushar.jagad@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, Ankit Jindal <ankit.jindal@linaro.org>
+Subject: [PATCH v2 0/6] UIO driver for APM X-Gene QMTM
+Date: Tue, 30 Sep 2014 09:56:03 +0530
+Message-Id: <1412051169-9142-1-git-send-email-ankit.jindal@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014, Brian Norris wrote:
+This patchset enables user space access to APM X-Gene QMTM
+using UIO framework.
 
-> There are several places where an explicit include of <asm/cp15.h> is needed
-> just because cacheflush.h uses one of its macros in v7_exit_coherency_flush().
-> Let's put the include in the proper header.
-> 
-> These obviously have some dependencies, so I'd focus on:
->   (1) Is patch 1 acceptable? If so, then:
+The patchset also introduces new type UIO_MEM_PHYS_CACHE
+for mem regions because APM X-Gene QMTM device supports
+cache coherency with CPU caches.
 
-Well, I'm wondering if it is really a gain to force a dependency for 
-cp15.h on every user of cacheflush.h just because of the seldomly used 
-v7_exit_coherency_flush(). But I don't mind either ways.
+Changes since v1:
+ - Factor-out formating related change in uio/uio.c as separate patch.
+ - Use devm_xxx() APIs where appilicable.
+ - Some cleanups and buggy loop fixed in qmtm_reset().
+ - Removed open and release functions.
+ - Use phandle for specifying QMTM qpool resource.
+ - Removed "uio" from the compatible string.
+ - Added more information about QMTM in binding documentation.
 
+Ankit Jindal (6):
+  uio: code style cleanup
+  uio: Add new UIO_MEM_PHYS_CACHE type for mem regions
+  Documentation: Update documentation for UIO_MEM_PHYS_CACHE
+  drivers: uio: Add X-Gene QMTM UIO driver
+  Documentation: dt-bindings: Add binding info for X-Gene QMTM UIO
+    driver
+  MAINTAINERS: Add entry for APM X-Gene QMTM UIO driver
 
-Nicolas
+ Documentation/DocBook/uio-howto.tmpl               |    5 +-
+ .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   53 ++++
+ MAINTAINERS                                        |    7 +
+ drivers/uio/Kconfig                                |    8 +
+ drivers/uio/Makefile                               |    1 +
+ drivers/uio/uio.c                                  |   23 +-
+ drivers/uio/uio_xgene_qmtm.c                       |  278 ++++++++++++++++++++
+ include/linux/uio_driver.h                         |    1 +
+ 8 files changed, 365 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
+ create mode 100644 drivers/uio/uio_xgene_qmtm.c
+
+-- 
+1.7.9.5
+
