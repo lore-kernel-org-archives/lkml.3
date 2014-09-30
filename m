@@ -1,299 +1,963 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaI3RVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 13:21:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15869 "EHLO mx1.redhat.com"
+	id S1753515AbaI3RV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 13:21:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43182 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752721AbaI3RSt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 13:18:49 -0400
+	id S1752647AbaI3RSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 13:18:48 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>,
         Nestor Lopez Casado <nlopezcasad@logitech.com>,
         Andrew de los Reyes <andrew-vger@gizmolabs.org>
 Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 07/13] HID: logitech-dj: allow transfer of HID++ reports from/to the correct dj device
-Date: Tue, 30 Sep 2014 13:18:29 -0400
-Message-Id: <1412097515-17241-8-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 05/13] HID: Introduce hidpp, a module to handle Logitech hid++ devices
+Date: Tue, 30 Sep 2014 13:18:27 -0400
+Message-Id: <1412097515-17241-6-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HID++ is a Logitech-specific protocol for communicating with HID
-devices. DJ devices implement HID++, and so we can add the HID++
-collection in the report descriptor and forward the incoming
-reports from the receiver to the appropriate DJ device.
+Logitech devices use a vendor protocol to communicate various
+information with the device. This protocol is called HID++,
+and an exerpt can be found here:
+https://drive.google.com/folderview?id=0BxbRzx7vEV7eWmgwazJ3NUFfQ28&usp=shar
 
-The same can be done in the other way, if someone calls a
-.raw_request(), we can forward it to the correct dj device
-by overriding the device_index in the HID++ report.
+The main difficulty which is related to this protocol is that
+it is a synchronous protocol using the input reports.
+So when we want to get some information from the device, we need
+to wait for a matching input report.
 
-Signed-off-by: Benjamin Tisssoires <benjamin.tissoires@redhat.com>
+This driver introduce this capabilities to be able to support
+the multitouch mode of the Logitech Wireless Touchpad T651
+(the bluetooth one). The multitouch data is available directly
+from the mouse input reports, and we just need to query the device
+on connect about its caracteristics.
+
+HID++ and the touchpad features has a specific reporting mode
+which uses pure HID++ reports, but Logitech told us not to use
+it for this specific device. During QA, they detected that
+some bluetooth input reports where lost, and so the only supported
+mode is the pointer mode.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-logitech-dj.c | 188 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 160 insertions(+), 28 deletions(-)
+ drivers/hid/Kconfig              |  11 +
+ drivers/hid/Makefile             |   1 +
+ drivers/hid/hid-core.c           |   1 +
+ drivers/hid/hid-ids.h            |   1 +
+ drivers/hid/hid-logitech-hidpp.c | 842 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 856 insertions(+)
+ create mode 100644 drivers/hid/hid-logitech-hidpp.c
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 45a7eac..feddacd 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -42,6 +42,15 @@
- #define REPORT_ID_DJ_SHORT			0x20
- #define REPORT_ID_DJ_LONG			0x21
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index f42df4d..6f299cd 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -378,6 +378,17 @@ config HID_LOGITECH_DJ
+ 	generic USB_HID driver and all incoming events will be multiplexed
+ 	into a single mouse and a single keyboard device.
  
++config HID_LOGITECH_HIDPP
++	tristate "Logitech HID++ devices support"
++	depends on HID_LOGITECH
++	---help---
++	Support for Logitech devices relyingon the HID++ Logitech specification
++
++	Say Y if you want support for Logitech devices relying on the HID++
++	specification. Such devices are the various Logitech Touchpads (T650,
++	T651, TK820), some mice (Zone Touch mouse), or even keyboards (Solar
++	Keayboard).
++
+ config LOGITECH_FF
+ 	bool "Logitech force feedback support"
+ 	depends on HID_LOGITECH
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index e2850d8..b102774b 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -63,6 +63,7 @@ obj-$(CONFIG_HID_LCPOWER)       += hid-lcpower.o
+ obj-$(CONFIG_HID_LENOVO)	+= hid-lenovo.o
+ obj-$(CONFIG_HID_LOGITECH)	+= hid-logitech.o
+ obj-$(CONFIG_HID_LOGITECH_DJ)	+= hid-logitech-dj.o
++obj-$(CONFIG_HID_LOGITECH_HIDPP)	+= hid-logitech-hidpp.o
+ obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
+ obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
+ obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index f4323d2..ee7320a 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1815,6 +1815,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_RECEIVER) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_HARMONY_PS3) },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_LOGITECH_T651) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_DINOVO_DESKTOP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_DINOVO_EDGE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_DINOVO_MINI) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index d4673ae..3a5681c 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -575,6 +575,7 @@
+ 
+ #define USB_VENDOR_ID_LOGITECH		0x046d
+ #define USB_DEVICE_ID_LOGITECH_AUDIOHUB 0x0a0e
++#define USB_DEVICE_ID_LOGITECH_T651	0xb00c
+ #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
+ #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
+ #define USB_DEVICE_ID_LOGITECH_HARMONY_LAST 0xc14f
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+new file mode 100644
+index 0000000..7dd9163
+--- /dev/null
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -0,0 +1,842 @@
++/*
++ *  HIDPP protocol for Logitech Unifying receivers
++ *
++ *  Copyright (c) 2011 Logitech (c)
++ *  Copyright (c) 2012-2013 Google (c)
++ *  Copyright (c) 2013-2014 Red Hat Inc.
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; version 2 of the License.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/device.h>
++#include <linux/hid.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/sched.h>
++#include <linux/kfifo.h>
++#include <linux/input/mt.h>
++#include <asm/unaligned.h>
++#include "hid-ids.h"
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
++MODULE_AUTHOR("Nestor Lopez Casado <nlopezcasad@logitech.com>");
++
 +#define REPORT_ID_HIDPP_SHORT			0x10
 +#define REPORT_ID_HIDPP_LONG			0x11
 +
 +#define HIDPP_REPORT_SHORT_LENGTH		7
 +#define HIDPP_REPORT_LONG_LENGTH		20
 +
-+#define HIDPP_RECEIVER_INDEX			0xff
++#define HIDPP_QUIRK_CLASS_WTP			BIT(0)
 +
-+#define REPORT_TYPE_RFREPORT_FIRST		0x01
- #define REPORT_TYPE_RFREPORT_LAST		0x1F
- 
- /* Command Switch to DJ mode */
-@@ -242,6 +251,57 @@ static const char media_descriptor[] = {
- 	0xc0,			/* EndCollection                       */
- };				/*                                     */
- 
-+/* HIDPP descriptor */
-+static const char hidpp_descriptor[] = {
-+	0x06, 0x00, 0xff,	/* Usage Page (Vendor Defined Page 1)  */
-+	0x09, 0x01,		/* Usage (Vendor Usage 1)              */
-+	0xa1, 0x01,		/* Collection (Application)            */
-+	0x85, 0x10,		/*   Report ID (16)                    */
-+	0x75, 0x08,		/*   Report Size (8)                   */
-+	0x95, 0x06,		/*   Report Count (6)                  */
-+	0x15, 0x00,		/*   Logical Minimum (0)               */
-+	0x26, 0xff, 0x00,	/*   Logical Maximum (255)             */
-+	0x09, 0x01,		/*   Usage (Vendor Usage 1)            */
-+	0x81, 0x00,		/*   Input (Data,Arr,Abs)              */
-+	0x09, 0x01,		/*   Usage (Vendor Usage 1)            */
-+	0x91, 0x00,		/*   Output (Data,Arr,Abs)             */
-+	0xc0,			/* End Collection                      */
-+	0x06, 0x00, 0xff,	/* Usage Page (Vendor Defined Page 1)  */
-+	0x09, 0x02,		/* Usage (Vendor Usage 2)              */
-+	0xa1, 0x01,		/* Collection (Application)            */
-+	0x85, 0x11,		/*   Report ID (17)                    */
-+	0x75, 0x08,		/*   Report Size (8)                   */
-+	0x95, 0x13,		/*   Report Count (19)                 */
-+	0x15, 0x00,		/*   Logical Minimum (0)               */
-+	0x26, 0xff, 0x00,	/*   Logical Maximum (255)             */
-+	0x09, 0x02,		/*   Usage (Vendor Usage 2)            */
-+	0x81, 0x00,		/*   Input (Data,Arr,Abs)              */
-+	0x09, 0x02,		/*   Usage (Vendor Usage 2)            */
-+	0x91, 0x00,		/*   Output (Data,Arr,Abs)             */
-+	0xc0,			/* End Collection                      */
-+	0x06, 0x00, 0xff,	/* Usage Page (Vendor Defined Page 1)  */
-+	0x09, 0x04,		/* Usage (Vendor Usage 0x04)           */
-+	0xa1, 0x01,		/* Collection (Application)            */
-+	0x85, 0x20,		/*   Report ID (32)                    */
-+	0x75, 0x08,		/*   Report Size (8)                   */
-+	0x95, 0x0e,		/*   Report Count (14)                 */
-+	0x15, 0x00,		/*   Logical Minimum (0)               */
-+	0x26, 0xff, 0x00,	/*   Logical Maximum (255)             */
-+	0x09, 0x41,		/*   Usage (Vendor Usage 0x41)         */
-+	0x81, 0x00,		/*   Input (Data,Arr,Abs)              */
-+	0x09, 0x41,		/*   Usage (Vendor Usage 0x41)         */
-+	0x91, 0x00,		/*   Output (Data,Arr,Abs)             */
-+	0x85, 0x21,		/*   Report ID (33)                    */
-+	0x95, 0x1f,		/*   Report Count (31)                 */
-+	0x15, 0x00,		/*   Logical Minimum (0)               */
-+	0x26, 0xff, 0x00,	/*   Logical Maximum (255)             */
-+	0x09, 0x42,		/*   Usage (Vendor Usage 0x42)         */
-+	0x81, 0x00,		/*   Input (Data,Arr,Abs)              */
-+	0x09, 0x42,		/*   Usage (Vendor Usage 0x42)         */
-+	0x91, 0x00,		/*   Output (Data,Arr,Abs)             */
-+	0xc0,			/* End Collection                      */
++/*
++ * There are two hidpp protocols in use, the first version hidpp10 is known
++ * as register access protocol or RAP, the second version hidpp20 is known as
++ * feature access protocol or FAP
++ *
++ * Most older devices (including the Unifying usb receiver) use the RAP protocol
++ * where as most newer devices use the FAP protocol. Both protocols are
++ * compatible with the underlying transport, which could be usb, Unifiying, or
++ * bluetooth. The message lengths are defined by the hid vendor specific report
++ * descriptor for the HIDPP_SHORT report type (total message lenth 7 bytes) and
++ * the HIDPP_LONG report type (total message length 20 bytes)
++ *
++ * The RAP protocol uses both report types, whereas the FAP only uses HIDPP_LONG
++ * messages. The Unifying receiver itself responds to RAP messages (device index
++ * is 0xFF for the receiver), and all messages (short or long) with a device
++ * index between 1 and 6 are passed untouched to the corresponding paired
++ * Unifying device.
++ *
++ * The paired device can be RAP or FAP, it will receive the message untouched
++ * from the Unifiying receiver.
++ */
++
++struct fap {
++	u8 feature_index;
++	u8 funcindex_clientid;
++	u8 params[HIDPP_REPORT_LONG_LENGTH - 4U];
 +};
 +
- /* Maximum size of all defined hid reports in bytes (including report id) */
- #define MAX_REPORT_SIZE 8
- 
-@@ -251,7 +311,8 @@ static const char media_descriptor[] = {
- 	 sizeof(mse_descriptor) +		\
- 	 sizeof(consumer_descriptor) +		\
- 	 sizeof(syscontrol_descriptor) +	\
--	 sizeof(media_descriptor))
-+	 sizeof(media_descriptor) +	\
-+	 sizeof(hidpp_descriptor))
- 
- /* Number of possible hid report types that can be created by this driver.
-  *
-@@ -512,6 +573,13 @@ static void logi_dj_recv_forward_report(struct dj_receiver_dev *djrcv_dev,
- 	}
- }
- 
-+static void logi_dj_recv_forward_hidpp(struct dj_device *dj_dev, u8 *data,
-+				       int size)
-+{
-+	/* We are called from atomic context (tasklet && djrcv->lock held) */
-+	if (hid_input_report(dj_dev->hdev, HID_INPUT_REPORT, data, size, 1))
-+		dbg_hid("hid_input_report error\n");
-+}
- 
- static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
- 				    struct dj_report *dj_report)
-@@ -609,6 +677,16 @@ static int logi_dj_ll_raw_request(struct hid_device *hid,
- 	u8 *out_buf;
- 	int ret;
- 
-+	if ((buf[0] == REPORT_ID_HIDPP_SHORT) ||
-+	    (buf[0] == REPORT_ID_HIDPP_LONG)) {
-+		if (count < 2)
-+			return -EINVAL;
++struct rap {
++	u8 sub_id;
++	u8 reg_address;
++	u8 params[HIDPP_REPORT_LONG_LENGTH - 4U];
++};
 +
-+		buf[1] = djdev->device_index;
-+		return hid_hw_raw_request(djrcv_dev->hdev, reportnum, buf,
-+				count, report_type, reqtype);
++struct hidpp_report {
++	u8 report_id;
++	u8 device_index;
++	union {
++		struct fap fap;
++		struct rap rap;
++		u8 rawbytes[sizeof(struct fap)];
++	};
++} __packed;
++
++struct hidpp_device {
++	struct hid_device *hid_dev;
++	struct mutex send_mutex;
++	void *send_receive_buf;
++	wait_queue_head_t wait;
++	bool answer_available;
++	u8 protocol_major;
++	u8 protocol_minor;
++
++	void *private_data;
++
++	unsigned long quirks;
++};
++
++
++#define HIDPP_ERROR				0x8f
++#define HIDPP_ERROR_SUCCESS			0x00
++#define HIDPP_ERROR_INVALID_SUBID		0x01
++#define HIDPP_ERROR_INVALID_ADRESS		0x02
++#define HIDPP_ERROR_INVALID_VALUE		0x03
++#define HIDPP_ERROR_CONNECT_FAIL		0x04
++#define HIDPP_ERROR_TOO_MANY_DEVICES		0x05
++#define HIDPP_ERROR_ALREADY_EXISTS		0x06
++#define HIDPP_ERROR_BUSY			0x07
++#define HIDPP_ERROR_UNKNOWN_DEVICE		0x08
++#define HIDPP_ERROR_RESOURCE_ERROR		0x09
++#define HIDPP_ERROR_REQUEST_UNAVAILABLE		0x0a
++#define HIDPP_ERROR_INVALID_PARAM_VALUE		0x0b
++#define HIDPP_ERROR_WRONG_PIN_CODE		0x0c
++
++static int __hidpp_send_report(struct hid_device *hdev,
++				struct hidpp_report *hidpp_report)
++{
++	int fields_count, ret;
++
++	switch (hidpp_report->report_id) {
++	case REPORT_ID_HIDPP_SHORT:
++		fields_count = HIDPP_REPORT_SHORT_LENGTH;
++		break;
++	case REPORT_ID_HIDPP_LONG:
++		fields_count = HIDPP_REPORT_LONG_LENGTH;
++		break;
++	default:
++		return -ENODEV;
 +	}
 +
- 	if (buf[0] != REPORT_TYPE_LEDS)
- 		return -EINVAL;
- 
-@@ -687,6 +765,8 @@ static int logi_dj_ll_parse(struct hid_device *hid)
- 			__func__, djdev->reports_supported);
- 	}
- 
-+	rdcat(rdesc, &rsize, hidpp_descriptor, sizeof(hidpp_descriptor));
-+
- 	retval = hid_parse_report(hid, rdesc, rsize);
- 	kfree(rdesc);
- 
-@@ -714,8 +794,7 @@ static struct hid_ll_driver logi_dj_ll_driver = {
- 	.raw_request = logi_dj_ll_raw_request,
- };
- 
--
--static int logi_dj_raw_event(struct hid_device *hdev,
-+static int logi_dj_dj_event(struct hid_device *hdev,
- 			     struct hid_report *report, u8 *data,
- 			     int size)
- {
-@@ -723,36 +802,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 	struct dj_report *dj_report = (struct dj_report *) data;
- 	unsigned long flags;
- 
--	dbg_hid("%s, size:%d\n", __func__, size);
--
--	/* Here we receive all data coming from iface 2, there are 4 cases:
--	 *
--	 * 1) Data should continue its normal processing i.e. data does not
--	 * come from the DJ collection, in which case we do nothing and
--	 * return 0, so hid-core can continue normal processing (will forward
--	 * to associated hidraw device)
 +	/*
-+	 * Here we receive all data coming from iface 2, there are 3 cases:
- 	 *
--	 * 2) Data is from DJ collection, and is intended for this driver i. e.
--	 * data contains arrival, departure, etc notifications, in which case
--	 * we queue them for delayed processing by the work queue. We return 1
--	 * to hid-core as no further processing is required from it.
-+	 * 1) Data is intended for this driver i. e. data contains arrival,
-+	 * departure, etc notifications, in which case we queue them for delayed
-+	 * processing by the work queue. We return 1 to hid-core as no further
-+	 * processing is required from it.
- 	 *
--	 * 3) Data is from DJ collection, and informs a connection change,
--	 * if the change means rf link loss, then we must send a null report
--	 * to the upper layer to discard potentially pressed keys that may be
--	 * repeated forever by the input layer. Return 1 to hid-core as no
--	 * further processing is required.
-+	 * 2) Data informs a connection change, if the change means rf link
-+	 * loss, then we must send a null report to the upper layer to discard
-+	 * potentially pressed keys that may be repeated forever by the input
-+	 * layer. Return 1 to hid-core as no further processing is required.
- 	 *
--	 * 4) Data is from DJ collection and is an actual input event from
--	 * a paired DJ device in which case we forward it to the correct hid
--	 * device (via hid_input_report() ) and return 1 so hid-core does not do
--	 * anything else with it.
-+	 * 3) Data is an actual input event from a paired DJ device in which
-+	 * case we forward it to the correct hid device (via hid_input_report()
-+	 * ) and return 1 so hid-core does not anything else with it.
- 	 */
- 
--	/* case 1) */
--	if (data[0] != REPORT_ID_DJ_SHORT)
--		return false;
--
- 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
- 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
- 		/*
-@@ -797,6 +864,71 @@ out:
- 	return true;
- }
- 
-+static int logi_dj_hidpp_event(struct hid_device *hdev,
-+			     struct hid_report *report, u8 *data,
-+			     int size)
-+{
-+	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
-+	struct dj_report *dj_report = (struct dj_report *) data;
-+	unsigned long flags;
-+	u8 device_index = dj_report->device_index;
-+
-+	if (device_index == HIDPP_RECEIVER_INDEX)
-+		return false;
-+
-+	/*
-+	 * Data is from the HID++ collection, in this case, we forward the
-+	 * data to the corresponding child dj device and return 0 to hid-core
-+	 * so he data also goes to the hidraw device of the receiver. This
-+	 * allows a user space application to implement the full HID++ routing
-+	 * via the receiver.
++	 * set the device_index as the receiver, it will be overwritten by
++	 * hid_hw_request if needed
 +	 */
++	hidpp_report->device_index = 0xff;
 +
-+	if ((device_index < DJ_DEVICE_INDEX_MIN) ||
-+	    (device_index > DJ_DEVICE_INDEX_MAX)) {
-+		/*
-+		 * Device index is wrong, bail out.
-+		 * This driver can ignore safely the receiver notifications,
-+		 * so ignore those reports too.
-+		 */
-+		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+				__func__, dj_report->device_index);
-+		return false;
-+	}
++	ret = hid_hw_raw_request(hdev, hidpp_report->report_id,
++		(u8 *)hidpp_report, fields_count, HID_OUTPUT_REPORT,
++		HID_REQ_SET_REPORT);
 +
-+	spin_lock_irqsave(&djrcv_dev->lock, flags);
-+
-+	if (!djrcv_dev->paired_dj_devices[device_index])
-+		/* received an event for an unknown device, bail out */
-+		goto out;
-+
-+	logi_dj_recv_forward_hidpp(djrcv_dev->paired_dj_devices[device_index],
-+				   data, size);
-+
-+out:
-+	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
-+
-+	return false;
++	return ret == fields_count ? 0 : -1;
 +}
 +
-+static int logi_dj_raw_event(struct hid_device *hdev,
-+			     struct hid_report *report, u8 *data,
-+			     int size)
++static int hidpp_send_message_sync(struct hidpp_device *hidpp,
++	struct hidpp_report *message,
++	struct hidpp_report *response)
 +{
-+	dbg_hid("%s, size:%d\n", __func__, size);
++	int ret;
++
++	mutex_lock(&hidpp->send_mutex);
++
++	hidpp->send_receive_buf = response;
++	hidpp->answer_available = false;
++
++	/*
++	 * So that we can later validate the answer when it arrives
++	 * in hidpp_raw_event
++	 */
++	*response = *message;
++
++	ret = __hidpp_send_report(hidpp->hid_dev, message);
++
++	if (ret) {
++		dbg_hid("__hidpp_send_report returned err: %d\n", ret);
++		memset(response, 0, sizeof(struct hidpp_report));
++		goto exit;
++	}
++
++	if (!wait_event_timeout(hidpp->wait, hidpp->answer_available,
++				5*HZ)) {
++		dbg_hid("%s:timeout waiting for response\n", __func__);
++		memset(response, 0, sizeof(struct hidpp_report));
++		ret = -ETIMEDOUT;
++	}
++
++	if (response->report_id == REPORT_ID_HIDPP_SHORT &&
++	    response->fap.feature_index == HIDPP_ERROR) {
++		ret = response->fap.params[1];
++		dbg_hid("__hidpp_send_report got hidpp error %02X\n", ret);
++		goto exit;
++	}
++
++exit:
++	mutex_unlock(&hidpp->send_mutex);
++	return ret;
++
++}
++
++static int hidpp_send_fap_command_sync(struct hidpp_device *hidpp,
++	u8 feat_index, u8 funcindex_clientid, u8 *params, int param_count,
++	struct hidpp_report *response)
++{
++	struct hidpp_report *message = kzalloc(sizeof(struct hidpp_report),
++			GFP_KERNEL);
++	int ret;
++
++	if (param_count > sizeof(message->fap.params))
++		return -EINVAL;
++
++	message->report_id = REPORT_ID_HIDPP_LONG;
++	message->fap.feature_index = feat_index;
++	message->fap.funcindex_clientid = funcindex_clientid;
++	memcpy(&message->fap.params, params, param_count);
++
++	ret = hidpp_send_message_sync(hidpp, message, response);
++	kfree(message);
++	return ret;
++}
++
++static inline bool hidpp_match_answer(struct hidpp_report *question,
++		struct hidpp_report *answer)
++{
++	return (answer->fap.feature_index == question->fap.feature_index) &&
++	   (answer->fap.funcindex_clientid == question->fap.funcindex_clientid);
++}
++
++static inline bool hidpp_match_error(struct hidpp_report *question,
++		struct hidpp_report *answer)
++{
++	return (answer->fap.feature_index == HIDPP_ERROR) &&
++	    (answer->fap.funcindex_clientid == question->fap.feature_index) &&
++	    (answer->fap.params[0] == question->fap.funcindex_clientid);
++}
++
++/* -------------------------------------------------------------------------- */
++/* 0x0000: Root                                                               */
++/* -------------------------------------------------------------------------- */
++
++#define HIDPP_PAGE_ROOT					0x0000
++#define HIDPP_PAGE_ROOT_IDX				0x00
++
++#define CMD_ROOT_GET_FEATURE				0x01
++#define CMD_ROOT_GET_PROTOCOL_VERSION			0x11
++
++static int hidpp_root_get_feature(struct hidpp_device *hidpp, u16 feature,
++	u8 *feature_index, u8 *feature_type)
++{
++	struct hidpp_report response;
++	int ret;
++	u8 params[2] = { feature >> 8, feature & 0x00FF };
++
++	ret = hidpp_send_fap_command_sync(hidpp,
++			HIDPP_PAGE_ROOT_IDX,
++			CMD_ROOT_GET_FEATURE,
++			params, 2, &response);
++	if (ret)
++		return ret;
++
++	*feature_index = response.fap.params[0];
++	*feature_type = response.fap.params[1];
++
++	return ret;
++}
++
++static int hidpp_root_get_protocol_version(struct hidpp_device *hidpp)
++{
++	struct hidpp_report response;
++	int ret;
++
++	ret = hidpp_send_fap_command_sync(hidpp,
++			HIDPP_PAGE_ROOT_IDX,
++			CMD_ROOT_GET_PROTOCOL_VERSION,
++			NULL, 0, &response);
++
++	if (ret == 1) {
++		hidpp->protocol_major = 1;
++		hidpp->protocol_minor = 0;
++		return 0;
++	}
++
++	if (ret)
++		return -ret;
++
++	hidpp->protocol_major = response.fap.params[0];
++	hidpp->protocol_minor = response.fap.params[1];
++
++	return ret;
++}
++
++static bool hidpp_is_connected(struct hidpp_device *hidpp)
++{
++	int ret;
++
++	ret = hidpp_root_get_protocol_version(hidpp);
++	if (!ret)
++		hid_dbg(hidpp->hid_dev, "HID++ %u.%u device connected.\n",
++			hidpp->protocol_major, hidpp->protocol_minor);
++	return ret == 0;
++}
++
++/* -------------------------------------------------------------------------- */
++/* 0x0005: GetDeviceNameType                                                  */
++/* -------------------------------------------------------------------------- */
++
++#define HIDPP_PAGE_GET_DEVICE_NAME_TYPE			0x0005
++
++#define CMD_GET_DEVICE_NAME_TYPE_GET_COUNT		0x01
++#define CMD_GET_DEVICE_NAME_TYPE_GET_DEVICE_NAME	0x11
++#define CMD_GET_DEVICE_NAME_TYPE_GET_TYPE		0x21
++
++static int hidpp_devicenametype_get_count(struct hidpp_device *hidpp,
++	u8 feature_index, u8 *nameLength)
++{
++	struct hidpp_report response;
++	int ret;
++
++	ret = hidpp_send_fap_command_sync(hidpp, feature_index,
++		CMD_GET_DEVICE_NAME_TYPE_GET_COUNT, NULL, 0, &response);
++
++	if (ret)
++		return -ret;
++
++	*nameLength = response.fap.params[0];
++
++	return ret;
++}
++
++static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
++	u8 feature_index, u8 char_index, char *device_name, int len_buf)
++{
++	struct hidpp_report response;
++	int ret, i;
++	int count;
++
++	ret = hidpp_send_fap_command_sync(hidpp, feature_index,
++		CMD_GET_DEVICE_NAME_TYPE_GET_DEVICE_NAME, &char_index, 1,
++		&response);
++
++	if (ret)
++		return -ret;
++
++	if (response.report_id == REPORT_ID_HIDPP_LONG)
++		count = HIDPP_REPORT_LONG_LENGTH - 4;
++	else
++		count = HIDPP_REPORT_SHORT_LENGTH - 4;
++
++	if (len_buf < count)
++		count = len_buf;
++
++	for (i = 0; i < count; i++)
++		device_name[i] = response.fap.params[i];
++
++	return count;
++}
++
++static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
++{
++	u8 feature_type;
++	u8 feature_index;
++	u8 __name_length;
++	char *name;
++	unsigned index = 0;
++	int ret;
++
++	ret = hidpp_root_get_feature(hidpp, HIDPP_PAGE_GET_DEVICE_NAME_TYPE,
++		&feature_index, &feature_type);
++	if (ret)
++		goto out_err;
++
++	ret = hidpp_devicenametype_get_count(hidpp, feature_index,
++		&__name_length);
++	if (ret)
++		goto out_err;
++
++	name = kzalloc(__name_length + 1, GFP_KERNEL);
++	if (!name)
++		goto out_err;
++
++	*name_length = __name_length + 1;
++	while (index < __name_length)
++		index += hidpp_devicenametype_get_device_name(hidpp,
++			feature_index, index, name + index,
++			__name_length - index);
++
++	return name;
++
++out_err:
++	*name_length = 0;
++	return NULL;
++}
++
++/* -------------------------------------------------------------------------- */
++/* 0x6100: TouchPadRawXY                                                      */
++/* -------------------------------------------------------------------------- */
++
++#define HIDPP_PAGE_TOUCHPAD_RAW_XY			0x6100
++
++#define CMD_TOUCHPAD_GET_RAW_INFO			0x01
++
++#define TOUCHPAD_RAW_XY_ORIGIN_LOWER_LEFT		0x01
++#define TOUCHPAD_RAW_XY_ORIGIN_UPPER_LEFT		0x03
++
++struct hidpp_touchpad_raw_info {
++	u16 x_size;
++	u16 y_size;
++	u8 z_range;
++	u8 area_range;
++	u8 timestamp_unit;
++	u8 maxcontacts;
++	u8 origin;
++	u16 res;
++};
++
++struct hidpp_touchpad_raw_xy_finger {
++	u8 contact_type;
++	u8 contact_status;
++	u16 x;
++	u16 y;
++	u8 z;
++	u8 area;
++	u8 finger_id;
++};
++
++struct hidpp_touchpad_raw_xy {
++	u16 timestamp;
++	struct hidpp_touchpad_raw_xy_finger fingers[2];
++	u8 spurious_flag;
++	u8 end_of_frame;
++	u8 finger_count;
++	u8 button;
++};
++
++static int hidpp_touchpad_get_raw_info(struct hidpp_device *hidpp,
++	u8 feature_index, struct hidpp_touchpad_raw_info *raw_info)
++{
++	struct hidpp_report response;
++	int ret;
++	u8 *params = (u8 *)response.fap.params;
++
++	ret = hidpp_send_fap_command_sync(hidpp, feature_index,
++		CMD_TOUCHPAD_GET_RAW_INFO, NULL, 0, &response);
++
++	if (ret)
++		return -ret;
++
++	raw_info->x_size = get_unaligned_be16(&params[0]);
++	raw_info->y_size = get_unaligned_be16(&params[2]);
++	raw_info->z_range = params[4];
++	raw_info->area_range = params[5];
++	raw_info->maxcontacts = params[7];
++	raw_info->origin = params[8];
++	/* res is given in unit per inch */
++	raw_info->res = get_unaligned_be16(&params[13]) * 2 / 51;
++
++	return ret;
++}
++
++/* ************************************************************************** */
++/*                                                                            */
++/* Device Support                                                             */
++/*                                                                            */
++/* ************************************************************************** */
++
++/* -------------------------------------------------------------------------- */
++/* Touchpad HID++ devices                                                     */
++/* -------------------------------------------------------------------------- */
++
++struct wtp_data {
++	struct input_dev *input;
++	u16 x_size, y_size;
++	u8 finger_count;
++	u8 mt_feature_index;
++	u8 button_feature_index;
++	u8 maxcontacts;
++	bool flip_y;
++	unsigned int resolution;
++};
++
++static int wtp_input_mapping(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	return -1;
++}
++
++static void wtp_input_configured(struct hid_device *hdev,
++				struct hid_input *hidinput)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++	struct wtp_data *wd = hidpp->private_data;
++	struct input_dev *input_dev = hidinput->input;
++
++	__set_bit(EV_ABS, input_dev->evbit);
++	__set_bit(EV_KEY, input_dev->evbit);
++	__clear_bit(EV_REL, input_dev->evbit);
++	__clear_bit(EV_LED, input_dev->evbit);
++
++	input_set_abs_params(input_dev, ABS_MT_POSITION_X, 0, wd->x_size, 0, 0);
++	input_abs_set_res(input_dev, ABS_MT_POSITION_X, wd->resolution);
++	input_set_abs_params(input_dev, ABS_MT_POSITION_Y, 0, wd->y_size, 0, 0);
++	input_abs_set_res(input_dev, ABS_MT_POSITION_Y, wd->resolution);
++
++	/* Max pressure is not given by the devices, pick one */
++	input_set_abs_params(input_dev, ABS_MT_PRESSURE, 0, 50, 0, 0);
++
++	input_set_capability(input_dev, EV_KEY, BTN_LEFT);
++
++	__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
++
++	input_mt_init_slots(input_dev, wd->maxcontacts, INPUT_MT_POINTER |
++		INPUT_MT_DROP_UNUSED);
++
++	wd->input = input_dev;
++}
++
++static void wtp_touch_event(struct wtp_data *wd,
++	struct hidpp_touchpad_raw_xy_finger *touch_report)
++{
++	int slot;
++
++	if (!touch_report->finger_id || touch_report->contact_type)
++		/* no actual data */
++		return;
++
++	slot = input_mt_get_slot_by_key(wd->input, touch_report->finger_id);
++
++	input_mt_slot(wd->input, slot);
++	input_mt_report_slot_state(wd->input, MT_TOOL_FINGER,
++					touch_report->contact_status);
++	if (touch_report->contact_status) {
++		input_event(wd->input, EV_ABS, ABS_MT_POSITION_X,
++				touch_report->x);
++		input_event(wd->input, EV_ABS, ABS_MT_POSITION_Y,
++				wd->flip_y ? wd->y_size - touch_report->y :
++					     touch_report->y);
++		input_event(wd->input, EV_ABS, ABS_MT_PRESSURE,
++				touch_report->area);
++	}
++}
++
++static void wtp_send_raw_xy_event(struct hidpp_device *hidpp,
++		struct hidpp_touchpad_raw_xy *raw)
++{
++	struct wtp_data *wd = hidpp->private_data;
++	int i;
++
++	for (i = 0; i < 2; i++)
++		wtp_touch_event(wd, &(raw->fingers[i]));
++
++	if (raw->end_of_frame)
++		input_event(wd->input, EV_KEY, BTN_LEFT, raw->button);
++
++	if (raw->end_of_frame || raw->finger_count <= 2) {
++		input_mt_sync_frame(wd->input);
++		input_sync(wd->input);
++	}
++}
++
++static int wtp_mouse_raw_xy_event(struct hidpp_device *hidpp, u8 *data)
++{
++	struct wtp_data *wd = hidpp->private_data;
++	u8 c1_area = ((data[7] & 0xf) * (data[7] & 0xf) +
++		      (data[7] >> 4) * (data[7] >> 4)) / 2;
++	u8 c2_area = ((data[13] & 0xf) * (data[13] & 0xf) +
++		      (data[13] >> 4) * (data[13] >> 4)) / 2;
++	struct hidpp_touchpad_raw_xy raw = {
++		.timestamp = data[1],
++		.fingers = {
++			{
++				.contact_type = 0,
++				.contact_status = !!data[7],
++				.x = get_unaligned_le16(&data[3]),
++				.y = get_unaligned_le16(&data[5]),
++				.z = c1_area,
++				.area = c1_area,
++				.finger_id = data[2],
++			}, {
++				.contact_type = 0,
++				.contact_status = !!data[13],
++				.x = get_unaligned_le16(&data[9]),
++				.y = get_unaligned_le16(&data[11]),
++				.z = c2_area,
++				.area = c2_area,
++				.finger_id = data[8],
++			}
++		},
++		.finger_count = wd->maxcontacts,
++		.spurious_flag = 0,
++		.end_of_frame = (data[0] >> 7) == 0,
++		.button = data[0] & 0x01,
++	};
++
++	wtp_send_raw_xy_event(hidpp, &raw);
++
++	return 1;
++}
++
++static int wtp_raw_event(struct hid_device *hdev, u8 *data, int size)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++	struct wtp_data *wd = hidpp->private_data;
++
++	if (!wd || !wd->input || (data[0] != 0x02) || size < 21)
++		return 1;
++
++	return wtp_mouse_raw_xy_event(hidpp, &data[7]);
++}
++
++static int wtp_get_config(struct hidpp_device *hidpp)
++{
++	struct wtp_data *wd = hidpp->private_data;
++	struct hidpp_touchpad_raw_info raw_info = {0};
++	u8 feature_type;
++	int ret;
++
++	ret = hidpp_root_get_feature(hidpp, HIDPP_PAGE_TOUCHPAD_RAW_XY,
++		&wd->mt_feature_index, &feature_type);
++	if (ret)
++		/* means that the device is not powered up */
++		return ret;
++
++	ret = hidpp_touchpad_get_raw_info(hidpp, wd->mt_feature_index,
++		&raw_info);
++	if (ret)
++		return ret;
++
++	wd->x_size = raw_info.x_size;
++	wd->y_size = raw_info.y_size;
++	wd->maxcontacts = raw_info.maxcontacts;
++	wd->flip_y = raw_info.origin == TOUCHPAD_RAW_XY_ORIGIN_LOWER_LEFT;
++	wd->resolution = raw_info.res;
++
++	return 0;
++}
++
++static int wtp_allocate(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++	struct wtp_data *wd;
++
++	wd = devm_kzalloc(&hdev->dev, sizeof(struct wtp_data),
++			GFP_KERNEL);
++	if (!wd)
++		return -ENOMEM;
++
++	hidpp->private_data = wd;
++
++	return 0;
++};
++
++/* -------------------------------------------------------------------------- */
++/* Generic HID++ devices                                                      */
++/* -------------------------------------------------------------------------- */
++
++static int hidpp_input_mapping(struct hid_device *hdev, struct hid_input *hi,
++		struct hid_field *field, struct hid_usage *usage,
++		unsigned long **bit, int *max)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
++		return wtp_input_mapping(hdev, hi, field, usage, bit, max);
++
++	return 0;
++}
++
++static void hidpp_input_configured(struct hid_device *hdev,
++				struct hid_input *hidinput)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
++		wtp_input_configured(hdev, hidinput);
++}
++
++static int hidpp_raw_hidpp_event(struct hidpp_device *hidpp, u8 *data,
++		int size)
++{
++	struct hidpp_report *question = hidpp->send_receive_buf;
++	struct hidpp_report *answer = hidpp->send_receive_buf;
++	struct hidpp_report *report = (struct hidpp_report *)data;
++
++	/*
++	 * If the mutex is locked then we have a pending answer from a
++	 * previoulsly sent command
++	 */
++	if (unlikely(mutex_is_locked(&hidpp->send_mutex))) {
++		/*
++		 * Check for a correct hidpp20 answer or the corresponding
++		 * error
++		 */
++		if (hidpp_match_answer(question, report) ||
++				hidpp_match_error(question, report)) {
++			*answer = *report;
++			hidpp->answer_available = true;
++			wake_up(&hidpp->wait);
++			/*
++			 * This was an answer to a command that this driver sent
++			 * We return 1 to hid-core to avoid forwarding the
++			 * command upstream as it has been treated by the driver
++			 */
++
++			return 1;
++		}
++	}
++
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
++		return wtp_raw_event(hidpp->hid_dev, data, size);
++
++	return 0;
++}
++
++static int hidpp_raw_event(struct hid_device *hdev, struct hid_report *report,
++		u8 *data, int size)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
 +
 +	switch (data[0]) {
-+	case REPORT_ID_DJ_SHORT:
-+		return logi_dj_dj_event(hdev, report, data, size);
-+	case REPORT_ID_HIDPP_SHORT:
-+		/* intentional fallthrough */
 +	case REPORT_ID_HIDPP_LONG:
-+		return logi_dj_hidpp_event(hdev, report, data, size);
++		if (size != HIDPP_REPORT_LONG_LENGTH) {
++			hid_err(hdev, "received hid++ report of bad size (%d)",
++				size);
++			return 1;
++		}
++		return hidpp_raw_hidpp_event(hidpp, data, size);
++	case REPORT_ID_HIDPP_SHORT:
++		if (size != HIDPP_REPORT_SHORT_LENGTH) {
++			hid_err(hdev, "received hid++ report of bad size (%d)",
++				size);
++			return 1;
++		}
++		return hidpp_raw_hidpp_event(hidpp, data, size);
 +	}
 +
-+	return false;
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
++		return wtp_raw_event(hdev, data, size);
++
++	return 0;
 +}
 +
- static int logi_dj_probe(struct hid_device *hdev,
- 			 const struct hid_device_id *id)
- {
++static void hidpp_overwrite_name(struct hid_device *hdev)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++	char *name;
++	u8 name_length;
++
++	name = hidpp_get_device_name(hidpp, &name_length);
++
++	if (!name)
++		hid_err(hdev, "unable to retrieve the name of the device");
++	else
++		snprintf(hdev->name, sizeof(hdev->name), "%s", name);
++
++	kfree(name);
++}
++
++static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	struct hidpp_device *hidpp;
++	int ret;
++	bool connected;
++
++	hidpp = devm_kzalloc(&hdev->dev, sizeof(struct hidpp_device),
++			GFP_KERNEL);
++	if (!hidpp)
++		return -ENOMEM;
++
++	hidpp->hid_dev = hdev;
++	hid_set_drvdata(hdev, hidpp);
++
++	hidpp->quirks = id->driver_data;
++
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
++		ret = wtp_allocate(hdev, id);
++		if (ret)
++			return ret;
++	}
++
++	mutex_init(&hidpp->send_mutex);
++	init_waitqueue_head(&hidpp->wait);
++
++	ret = hid_parse(hdev);
++	if (ret) {
++		hid_err(hdev, "%s:parse failed\n", __func__);
++		goto hid_parse_fail;
++	}
++
++	/* Allow incoming packets */
++	hid_device_io_start(hdev);
++
++	connected = hidpp_is_connected(hidpp);
++	if (!connected) {
++		hid_err(hdev, "Device not connected");
++		goto hid_parse_fail;
++	}
++
++	/* the device is connected, we can ask for its name */
++	hid_info(hdev, "HID++ %u.%u device connected.\n",
++		 hidpp->protocol_major, hidpp->protocol_minor);
++	hidpp_overwrite_name(hdev);
++
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
++		ret = wtp_get_config(hidpp);
++		if (ret)
++			goto hid_parse_fail;
++	}
++
++	/* Block incoming packets */
++	hid_device_io_stop(hdev);
++
++	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
++	if (ret) {
++		hid_err(hdev, "%s:hid_hw_start returned error\n", __func__);
++		goto hid_hw_start_fail;
++	}
++
++	return ret;
++
++hid_hw_start_fail:
++hid_parse_fail:
++	mutex_destroy(&hidpp->send_mutex);
++	hid_set_drvdata(hdev, NULL);
++	return ret;
++}
++
++static void hidpp_remove(struct hid_device *hdev)
++{
++	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
++
++	mutex_destroy(&hidpp->send_mutex);
++	hid_hw_stop(hdev);
++}
++
++static const struct hid_device_id hidpp_devices[] = {
++	{ /* wireless touchpad T651 */
++	  HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_LOGITECH,
++		USB_DEVICE_ID_LOGITECH_T651),
++	  .driver_data = HIDPP_QUIRK_CLASS_WTP },
++	{}
++};
++
++MODULE_DEVICE_TABLE(hid, hidpp_devices);
++
++static struct hid_driver hidpp_driver = {
++	.name = "logitech-hidpp-device",
++	.id_table = hidpp_devices,
++	.probe = hidpp_probe,
++	.remove = hidpp_remove,
++	.raw_event = hidpp_raw_event,
++	.input_configured = hidpp_input_configured,
++	.input_mapping = hidpp_input_mapping,
++};
++
++module_hid_driver(hidpp_driver);
 -- 
 2.1.0
 
