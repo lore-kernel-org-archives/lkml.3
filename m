@@ -1,52 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaI3QjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:39:17 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:35779 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaI3QjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:39:15 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-mips@linux-mips.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] next: mips: bpf: Fix build failure
-Date: Tue, 30 Sep 2014 09:39:00 -0700
-Message-Id: <1412095140-10953-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	id S1752183AbaI3Qjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:39:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaI3QjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:39:22 -0400
+From: Marcel Apfelbaum <marcel.a@redhat.com>
+To: linux-pci@vger.kernel.org, bhelgaas@google.com
+Cc: linux-kernel@vger.kernel.org, marcel@redhat.com, mst@redhat.com,
+        alex.williamson@redhat.com
+Subject: [PATCH] PCI: add kernel parameter to override devid<->driver mapping.
+Date: Tue, 30 Sep 2014 19:38:35 +0300
+Message-Id: <1412095115-28982-1-git-send-email-marcel.a@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix:
+Scanning a lot of devices during boot requires a lot of time.
+On other scenarios there is a need to bind a driver to a specific slot.
 
-arch/mips/net/bpf_jit.c: In function 'build_body':
-arch/mips/net/bpf_jit.c:762:6: error: unused variable 'tmp'
-cc1: all warnings being treated as errors
-make[2]: *** [arch/mips/net/bpf_jit.o] Error 1
+Binding devices to pci-stub driver does not work,
+as it will not differentiate between devices of the
+same type. Using some start scripts is error prone.
 
-Seen when building mips:allmodconfig in -next since next-20140924.
+The solution leverages driver_override functionality introduced by
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+	commit: 782a985d7af26db39e86070d28f987cad21313c0
+	Author: Alex Williamson <alex.williamson@redhat.com>
+	Date:   Tue May 20 08:53:21 2014 -0600
+
+    	PCI: Introduce new device binding path using pci_dev.driver_override
+
+In order to bind PCI slot 0001:02:03.4 to pci-stub use:
+	driver[0001:02:03.4]=pci-stub
+
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
 ---
- arch/mips/net/bpf_jit.c | 1 -
- 1 file changed, 1 deletion(-)
+Notes:
+ - For the moment only 32 slots can be assigned specific driver.
+ - I have further ideas on top of this patch based on your reviews.
+   I thought of:
+   - Use wildcards to specify entire buses/devices, something like:
+     	driver[0001:02:*.*]=pci-stub
+   - Use comma to separate several devices:
+     	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+   - Make domain optional:
+   	driver[00:03.0]=pci-stub
 
-diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
-index 7561833..9b55143 100644
---- a/arch/mips/net/bpf_jit.c
-+++ b/arch/mips/net/bpf_jit.c
-@@ -759,7 +759,6 @@ static int build_body(struct jit_ctx *ctx)
- 	const struct sock_filter *inst;
- 	unsigned int i, off, load_order, condt;
- 	u32 k, b_off __maybe_unused;
--	int tmp;
+Comments will be appreciated,
+Thanks,
+Marcel
+
+Documentation/kernel-parameters.txt |  4 +++
+ drivers/pci/bus.c                   |  1 +
+ drivers/pci/pci.c                   | 61 +++++++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h                   |  1 +
+ 4 files changed, 67 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 5ae8608..c1cbb4c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2631,6 +2631,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
+ 				only look for one device below a PCIe downstream
+ 				port.
++		driver		Provide an override to the devid<->driver mapping
++				for a specific slot.
++				Bind PCI slot 0001:02:03.4 to pci-stub by:
++					driver[0001:02:03.4]=pci-stub
  
- 	for (i = 0; i < prog->len; i++) {
- 		u16 code;
+ 	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+ 			Management.
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 73aef51..7a7ed85 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -245,6 +245,7 @@ void pci_bus_add_device(struct pci_dev *dev)
+ 	 * are not assigned yet for some devices.
+ 	 */
+ 	pci_fixup_device(pci_fixup_final, dev);
++	pci_device_setup_driver_override(dev);
+ 	pci_create_sysfs_dev_files(dev);
+ 	pci_proc_attach_device(dev);
+ 
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index b7678be..0a3e07c 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -4426,6 +4426,65 @@ void __weak pci_fixup_cardbus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pci_fixup_cardbus);
+ 
++#define DRIVER_OVERRIDE_NAME_LENGTH 64
++#define DRIVER_OVERRIDE_MAP_SIZE 32
++
++struct driver_override_entry {
++	unsigned int domain;
++	unsigned char bus;
++	unsigned int devfn;
++	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
++};
++
++static struct driver_override_entry __initdata
++	driver_override_map[DRIVER_OVERRIDE_MAP_SIZE];
++static int driver_override_num_entries __initdata;
++
++void pci_device_setup_driver_override(struct pci_dev *dev)
++{
++	int i;
++
++	for (i = 0; i < driver_override_num_entries; i++) {
++		if (pci_domain_nr(dev->bus) != driver_override_map[i].domain ||
++		    dev->bus->number != driver_override_map[i].bus ||
++		    dev->devfn != driver_override_map[i].devfn)
++			continue;
++
++		dev->driver_override = kstrndup(driver_override_map[i].driver_name,
++						DRIVER_OVERRIDE_NAME_LENGTH,
++						GFP_KERNEL);
++		break;
++	}
++}
++
++static void __init pci_parse_driver_override(char *str)
++{
++	unsigned int domain, bus, dev, fn;
++	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
++	int ret, next_entry;
++	char format[] = "[%4x:%2x:%2x.%2x]=%%%ds";
++
++	sprintf(format + 18, "%%%ds", DRIVER_OVERRIDE_NAME_LENGTH);
++	ret = sscanf(str, format, &domain, &bus, &dev, &fn, driver_name);
++
++	if (ret != 5) {
++		pr_err("PCI: Invalid command line: driver%s\n", str);
++		return;
++	}
++
++	if (driver_override_num_entries == DRIVER_OVERRIDE_MAP_SIZE) {
++		pr_err("PCI: Driver map overflow - ignoring driver%s\n", str);
++		return;
++	}
++
++	next_entry = driver_override_num_entries++;
++	driver_override_map[next_entry].domain = domain;
++	driver_override_map[next_entry].bus = bus && 0xff;
++	driver_override_map[next_entry].devfn = ((dev & 0x1f) << 3) | (fn & 0x7);
++	memcpy(driver_override_map[next_entry].driver_name,
++	       driver_name, sizeof(driver_name));
++}
++
+ static int __init pci_setup(char *str)
+ {
+ 	while (str) {
+@@ -4468,6 +4527,8 @@ static int __init pci_setup(char *str)
+ 				pcie_bus_config = PCIE_BUS_PEER2PEER;
+ 			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+ 				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
++			} else if (!strncmp(str, "driver", 6)) {
++				pci_parse_driver_override(str + 6);
+ 			} else {
+ 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+ 						str);
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 0601890..023d78b 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -197,6 +197,7 @@ enum pci_bar_type {
+ bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
+ 				int crs_timeout);
+ int pci_setup_device(struct pci_dev *dev);
++void pci_device_setup_driver_override(struct pci_dev *dev);
+ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 		    struct resource *res, unsigned int reg);
+ int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
 -- 
-1.9.1
+1.8.3.1
 
