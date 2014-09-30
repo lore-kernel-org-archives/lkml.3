@@ -1,209 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440AbaI3GOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:14:47 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:44406 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaI3GOp (ORCPT
+	id S1754059AbaI3GP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:15:56 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:45838 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaI3GPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:14:45 -0400
-Date: Tue, 30 Sep 2014 01:12:30 -0500
-From: Eric Rost <eric.rost@mybabylon.net>
-To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/4] staging: skein: In progress changes
-Message-ID: <c3ad83d6f37a60a7d54d434fbf60914e5bc3cb83.1412056800.git.eric.rost@mybabylon.net>
-References: <cover.1412056799.git.eric.rost@mybabylon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1412056799.git.eric.rost@mybabylon.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Sep 2014 02:15:53 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <8c9c06a2554e95c50dad6d921cc30d6b>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v8 2/3] dt-bindings: video: Add for rockchip display subsytem
+Date: Tue, 30 Sep 2014 14:14:19 +0800
+Message-Id: <1412057659-19483-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com>
+References: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In progress commit
-Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
----
- drivers/staging/skein/skein_block.c |  132 +++++++++++++++++++----------------
- 1 file changed, 70 insertions(+), 62 deletions(-)
+From: Mark yao <mark.yao@rock-chips.com>
 
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index 71c14f5..b8e4bd8 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -42,17 +42,9 @@
- #define debug_save_tweak(ctx)
- #endif
- 
--/*****************************  SKEIN_256 ******************************/
- #if !(SKEIN_USE_ASM & 256)
--void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
--			     size_t blk_cnt, size_t byte_cnt_add)
--{ /* do it in C */
--	enum {
--		WCNT = SKEIN_256_STATE_WORDS
--	};
- #undef  RCNT
- #define RCNT (SKEIN_256_ROUNDS_TOTAL / 8)
--
- #ifdef SKEIN_LOOP /* configure how much to unroll the loop */
- #define SKEIN_UNROLL_256 (((SKEIN_LOOP) / 100) % 10)
- #else
-@@ -63,56 +55,7 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- #if (RCNT % SKEIN_UNROLL_256)
- #error "Invalid SKEIN_UNROLL_256" /* sanity check on unroll count */
- #endif
--	size_t  r;
--	u64  kw[WCNT+4+RCNT*2]; /* key schedule: chaining vars + tweak + "rot"*/
--#else
--	u64  kw[WCNT+4]; /* key schedule words : chaining vars + tweak */
- #endif
--	u64  X0, X1, X2, X3; /* local copy of context vars, for speed */
--	u64  w[WCNT]; /* local copy of input block */
--#ifdef SKEIN_DEBUG
--	const u64 *X_ptr[4]; /* use for debugging (help cc put Xn in regs) */
--
--	X_ptr[0] = &X0;  X_ptr[1] = &X1;  X_ptr[2] = &X2;  X_ptr[3] = &X3;
--#endif
--	skein_assert(blk_cnt != 0); /* never call with blk_cnt == 0! */
--	ts[0] = ctx->h.tweak[0];
--	ts[1] = ctx->h.tweak[1];
--	do  {
--		/*
--		 * this implementation only supports 2**64 input bytes
--		 * (no carry out here)
--		 */
--		ts[0] += byte_cnt_add; /* update processed length */
--
--		/* precompute the key schedule for this block */
--		ks[0] = ctx->x[0];
--		ks[1] = ctx->x[1];
--		ks[2] = ctx->x[2];
--		ks[3] = ctx->x[3];
--		ks[4] = ks[0] ^ ks[1] ^ ks[2] ^ ks[3] ^ SKEIN_KS_PARITY;
--
--		ts[2] = ts[0] ^ ts[1];
--
--		/* get input block in little-endian format */
--		skein_get64_lsb_first(w, blk_ptr, WCNT);
--		debug_save_tweak(ctx);
--		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
--
--		/* do the first full key injection */
--		X0 = w[0] + ks[0];
--		X1 = w[1] + ks[1] + ts[0];
--		X2 = w[2] + ks[2] + ts[1];
--		X3 = w[3] + ks[3];
--
--		/* show starting state values */
--		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
--				 x_ptr);
--
--		blk_ptr += SKEIN_256_BLOCK_BYTES;
--
--		/* run the rounds */
--
- #define ROUND256(p0, p1, p2, p3, ROT, r_num) \
- do {                                         \
- 	X##p0 += X##p1;                      \
-@@ -159,10 +102,7 @@ do { \
- 	ts[r + (R) + 2] = ts[r + (R) - 1];                                \
- 	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
--
--	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_256)
- #endif
--		{
- #define R256_8_ROUNDS(R)                                 \
- do {                                                     \
- 		R256(0, 1, 2, 3, R_256_0, 8 * (R) + 1);  \
-@@ -177,13 +117,81 @@ do {                                                     \
- 		I256(2 * (R) + 1);                       \
- } while (0)
- 
--		R256_8_ROUNDS(0);
--
- #define R256_UNROLL_R(NN)                     \
- 	((SKEIN_UNROLL_256 == 0 &&            \
- 	SKEIN_256_ROUNDS_TOTAL / 8 > (NN)) || \
- 	(SKEIN_UNROLL_256 > (NN)))
- 
-+#endif
+This add a display subsystem comprise the all display interface nodes.
+
+Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Acked-by: Daniel Vetter <daniel@ffwll.ch>
+Reviewed-by: Rob Clark <robdclark@gmail.com>
+---
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+
+Changes in v3: None
+
+Changes in v4: None
+
+Changes in v5: None
+
+Changes in v6: None
+
+Changes in v7: None
+
+Changes in v8: None
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+
+diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+new file mode 100644
+index 0000000..7fff582
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+@@ -0,0 +1,19 @@
++Rockchip DRM master device
++================================
 +
++The Rockchip DRM master device is a virtual device needed to list all
++vop devices or other display interface nodes that comprise the
++graphics subsystem.
 +
-+/*****************************  SKEIN_256 ******************************/
-+#if !(SKEIN_USE_ASM & 256)
-+void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
-+			     size_t blk_cnt, size_t byte_cnt_add)
-+{ /* do it in C */
-+	enum {
-+		WCNT = SKEIN_256_STATE_WORDS
-+	};
++Required properties:
++- compatible: Should be "rockchip,display-subsystem"
++- ports: Should contain a list of phandles pointing to display interface port
++  of vop devices. vop definitions as defined in
++  Documentation/devicetree/bindings/video/rockchip-vop.txt
 +
-+#if SKEIN_UNROLL_256
-+	size_t  r;
-+	u64  kw[WCNT+4+RCNT*2]; /* key schedule: chaining vars + tweak + "rot"*/
-+#else
-+	u64  kw[WCNT+4]; /* key schedule words : chaining vars + tweak */
-+#endif
-+	u64  X0, X1, X2, X3; /* local copy of context vars, for speed */
-+	u64  w[WCNT]; /* local copy of input block */
-+#ifdef SKEIN_DEBUG
-+	const u64 *X_ptr[4]; /* use for debugging (help cc put Xn in regs) */
++example:
 +
-+	X_ptr[0] = &X0;  X_ptr[1] = &X1;  X_ptr[2] = &X2;  X_ptr[3] = &X3;
-+#endif
-+	skein_assert(blk_cnt != 0); /* never call with blk_cnt == 0! */
-+	ts[0] = ctx->h.tweak[0];
-+	ts[1] = ctx->h.tweak[1];
-+	do  {
-+		/*
-+		 * this implementation only supports 2**64 input bytes
-+		 * (no carry out here)
-+		 */
-+		ts[0] += byte_cnt_add; /* update processed length */
-+
-+		/* precompute the key schedule for this block */
-+		ks[0] = ctx->x[0];
-+		ks[1] = ctx->x[1];
-+		ks[2] = ctx->x[2];
-+		ks[3] = ctx->x[3];
-+		ks[4] = ks[0] ^ ks[1] ^ ks[2] ^ ks[3] ^ SKEIN_KS_PARITY;
-+
-+		ts[2] = ts[0] ^ ts[1];
-+
-+		/* get input block in little-endian format */
-+		skein_get64_lsb_first(w, blk_ptr, WCNT);
-+		debug_save_tweak(ctx);
-+		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
-+
-+		/* do the first full key injection */
-+		X0 = w[0] + ks[0];
-+		X1 = w[1] + ks[1] + ts[0];
-+		X2 = w[2] + ks[2] + ts[1];
-+		X3 = w[3] + ks[3];
-+
-+		/* show starting state values */
-+		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
-+				 x_ptr);
-+
-+		blk_ptr += SKEIN_256_BLOCK_BYTES;
-+
-+		/* run the rounds */
-+#if SKEIN_UNROLL_256
-+
-+	for (r = 1; r < 2 * RCNT; r += 2 * SKEIN_UNROLL_256)
-+#endif
-+		{
-+
-+		R256_8_ROUNDS(0);
-+
- #if   R256_UNROLL_R(1)
- 		R256_8_ROUNDS(1);
- #endif
++display-subsystem {
++	compatible = "rockchip,display-subsystem";
++	ports = <&vopl_out>, <&vopb_out>;
++};
 -- 
-1.7.10.4
+1.7.9.5
+
 
