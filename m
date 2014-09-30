@@ -1,267 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaI3Odd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:33:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55655 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751719AbaI3O2T (ORCPT
+	id S1752966AbaI3Oer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:34:47 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:60780 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751467AbaI3Oep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:28:19 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 01/10] net: pxa168_eth: clean up
-Date: Tue, 30 Sep 2014 16:28:07 +0200
-Message-Id: <1412087296-18475-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 30 Sep 2014 10:34:45 -0400
+Message-ID: <542ABF77.1020402@hurleysoftware.com>
+Date: Tue, 30 Sep 2014 10:34:31 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>	<5426CA0A.7000806@hurleysoftware.com>	<CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>	<54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
+In-Reply-To: <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up a bit the pxa168_eth driver before adding the device tree
-support.
+On 09/29/2014 10:32 AM, Akinobu Mita wrote:
+> 2014-09-29 21:09 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>> On 09/27/2014 08:31 PM, Akinobu Mita wrote:
+>>> 2014-09-27 23:30 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>>>> On 04/15/2014 09:08 AM, Akinobu Mita wrote:
+>>>>> This patch set enhances the DMA Contiguous Memory Allocator on x86.
+>>
+>> [...]
+>>
+>>>> What this patchset does is restrict all iommu configurations which can
+>>>> map all of system memory to one _very_ small physical region, thus disabling
+>>>> the whole point of an iommu.
+>>>>
+>>>> Now I know why my GPU is causing paging to disk! And why my RAID controller
+>>>> stalls for ages when I do a git log at the same time as a kernel build!
+>>>
+>>> The solution I have for this is that instead of trying to
+>>> dma_alloc_from_contiguous() firstly, call alloc_pages() in dma_alloc_coherent().
+>>> dma_alloc_from_contiguous() should be called only when alloc_pages() is failed
+>>> or DMA_ATTR_FORCE_CONTIGUOUS is specified in dma_attr.
+>>
+>> Why is all this extra complexity being added when there are no X86 users
+>> of DMA_ATTR_FORCE_CONTIGUOUS?
+> 
+> I misunderstood DMA_ATTR_FORCE_CONTIGUOUS.  It is specified to request
+> that underlaying DMA mapping span physically contiguous with IOMMU.
+> But current alloc_dma_coherent() for intel-iommu always returns
+> physically contiguous memory, so it is ignored on x86.
+> 
+>>>> And the apparent goal of this patchset is to enable DMA allocation below
+>>>> 4GB, which is already supported in the existing page allocator with the
+>>>> GFP_DMA32 flag?!
+>>>
+>>> The goal of this patchset is to enable huge DMA allocation which
+>>> alloc_pages() can't (> MAX_ORDER) for the devices that require it.
+>>
+>> What x86 devices need > MAX_ORDER DMA allocation and why can't they allocate
+>> directly from dma_alloc_from_contiguous()?
+> 
+> I need this for UFS unified memory extension which is apparently not in
+> mainline for now.
+> http://www.jedec.org/standards-documents/docs/jesd220-1
+> http://www.jedec.org/sites/default/files/T_Fujisawa_MF_2013.pdf
+> 
+> But there must be some other use cases on x86, too.  Because I have
+> received several emails privately from developers who care its status.
+> 
+> And allocating directly from dma_alloc_from_contiguous() in the driver
+> doesn't work with IOMMU, as it just returns memory regoin and doesn't
+> create DMA mapping.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/net/ethernet/marvell/pxa168_eth.c | 102 +++++++++++++++---------------
- 1 file changed, 50 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 8f5aa7c62b18..b370162dbe02 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -22,27 +22,29 @@
-  * along with this program; if not, see <http://www.gnu.org/licenses/>.
-  */
- 
--#include <linux/dma-mapping.h>
--#include <linux/in.h>
--#include <linux/ip.h>
--#include <linux/tcp.h>
--#include <linux/udp.h>
--#include <linux/etherdevice.h>
- #include <linux/bitops.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/etherdevice.h>
- #include <linux/ethtool.h>
--#include <linux/platform_device.h>
--#include <linux/module.h>
-+#include <linux/in.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/ip.h>
- #include <linux/kernel.h>
--#include <linux/workqueue.h>
--#include <linux/clk.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/phy.h>
--#include <linux/io.h>
--#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/pxa168_eth.h>
-+#include <linux/tcp.h>
- #include <linux/types.h>
-+#include <linux/udp.h>
-+#include <linux/workqueue.h>
-+
- #include <asm/pgtable.h>
- #include <asm/cacheflush.h>
--#include <linux/pxa168_eth.h>
- 
- #define DRIVER_NAME	"pxa168-eth"
- #define DRIVER_VERSION	"0.3"
-@@ -296,7 +298,7 @@ static void abort_dma(struct pxa168_eth_private *pep)
- 	} while (max_retries-- > 0 && delay <= 0);
- 
- 	if (max_retries <= 0)
--		printk(KERN_ERR "%s : DMA Stuck\n", __func__);
-+		netdev_err(pep->dev, "%s : DMA Stuck\n", __func__);
- }
- 
- static int ethernet_phy_get(struct pxa168_eth_private *pep)
-@@ -507,9 +509,10 @@ static int add_del_hash_entry(struct pxa168_eth_private *pep,
- 
- 	if (i == HOP_NUMBER) {
- 		if (!del) {
--			printk(KERN_INFO "%s: table section is full, need to "
--					"move to 16kB implementation?\n",
--					 __FILE__);
-+			netdev_info(pep->dev,
-+				    "%s: table section is full, need to "
-+				    "move to 16kB implementation?\n",
-+				    __FILE__);
- 			return -ENOSPC;
- 		} else
- 			return 0;
-@@ -726,7 +729,7 @@ static int txq_reclaim(struct net_device *dev, int force)
- 
- 		if (cmd_sts & TX_ERROR) {
- 			if (net_ratelimit())
--				printk(KERN_ERR "%s: Error in TX\n", dev->name);
-+				netdev_err(dev, "Error in TX\n");
- 			dev->stats.tx_errors++;
- 		}
- 		dma_unmap_single(NULL, addr, count, DMA_TO_DEVICE);
-@@ -743,8 +746,7 @@ static void pxa168_eth_tx_timeout(struct net_device *dev)
- {
- 	struct pxa168_eth_private *pep = netdev_priv(dev);
- 
--	printk(KERN_INFO "%s: TX timeout  desc_count %d\n",
--	       dev->name, pep->tx_desc_count);
-+	netdev_info(dev, "TX timeout  desc_count %d\n", pep->tx_desc_count);
- 
- 	schedule_work(&pep->tx_timeout_task);
- }
-@@ -814,9 +816,8 @@ static int rxq_process(struct net_device *dev, int budget)
- 			if ((cmd_sts & (RX_FIRST_DESC | RX_LAST_DESC)) !=
- 			    (RX_FIRST_DESC | RX_LAST_DESC)) {
- 				if (net_ratelimit())
--					printk(KERN_ERR
--					       "%s: Rx pkt on multiple desc\n",
--					       dev->name);
-+					netdev_err(dev,
-+						   "Rx pkt on multiple desc\n");
- 			}
- 			if (cmd_sts & RX_ERROR)
- 				stats->rx_errors++;
-@@ -871,7 +872,7 @@ static void handle_link_event(struct pxa168_eth_private *pep)
- 	port_status = rdl(pep, PORT_STATUS);
- 	if (!(port_status & LINK_UP)) {
- 		if (netif_carrier_ok(dev)) {
--			printk(KERN_INFO "%s: link down\n", dev->name);
-+			netdev_info(dev, "link down\n");
- 			netif_carrier_off(dev);
- 			txq_reclaim(dev, 1);
- 		}
-@@ -884,9 +885,8 @@ static void handle_link_event(struct pxa168_eth_private *pep)
- 
- 	duplex = (port_status & FULL_DUPLEX) ? 1 : 0;
- 	fc = (port_status & FLOW_CONTROL_ENABLED) ? 1 : 0;
--	printk(KERN_INFO "%s: link up, %d Mb/s, %s duplex, "
--	       "flow control %sabled\n", dev->name,
--	       speed, duplex ? "full" : "half", fc ? "en" : "dis");
-+	netdev_info(dev, "link up, %d Mb/s, %s duplex, flow control %sabled\n",
-+		    speed, duplex ? "full" : "half", fc ? "en" : "dis");
- 	if (!netif_carrier_ok(dev))
- 		netif_carrier_on(dev);
- }
-@@ -1039,9 +1039,8 @@ static void rxq_deinit(struct net_device *dev)
- 		}
- 	}
- 	if (pep->rx_desc_count)
--		printk(KERN_ERR
--		       "Error in freeing Rx Ring. %d skb's still\n",
--		       pep->rx_desc_count);
-+		netdev_err(dev, "Error in freeing Rx Ring. %d skb's still\n",
-+			   pep->rx_desc_count);
- 	/* Free RX ring */
- 	if (pep->p_rx_desc_area)
- 		dma_free_coherent(pep->dev->dev.parent, pep->rx_desc_area_size,
-@@ -1280,15 +1279,15 @@ static int pxa168_smi_read(struct mii_bus *bus, int phy_addr, int regnum)
- 	int val;
- 
- 	if (smi_wait_ready(pep)) {
--		printk(KERN_WARNING "pxa168_eth: SMI bus busy timeout\n");
-+		netdev_warn(pep->dev, "pxa168_eth: SMI bus busy timeout\n");
- 		return -ETIMEDOUT;
- 	}
- 	wrl(pep, SMI, (phy_addr << 16) | (regnum << 21) | SMI_OP_R);
- 	/* now wait for the data to be valid */
- 	for (i = 0; !((val = rdl(pep, SMI)) & SMI_R_VALID); i++) {
- 		if (i == PHY_WAIT_ITERATIONS) {
--			printk(KERN_WARNING
--				"pxa168_eth: SMI bus read not valid\n");
-+			netdev_warn(pep->dev,
-+				    "pxa168_eth: SMI bus read not valid\n");
- 			return -ENODEV;
- 		}
- 		msleep(10);
-@@ -1303,7 +1302,7 @@ static int pxa168_smi_write(struct mii_bus *bus, int phy_addr, int regnum,
- 	struct pxa168_eth_private *pep = bus->priv;
- 
- 	if (smi_wait_ready(pep)) {
--		printk(KERN_WARNING "pxa168_eth: SMI bus busy timeout\n");
-+		netdev_warn(pep->dev, "pxa168_eth: SMI bus busy timeout\n");
- 		return -ETIMEDOUT;
- 	}
- 
-@@ -1311,7 +1310,7 @@ static int pxa168_smi_write(struct mii_bus *bus, int phy_addr, int regnum,
- 	    SMI_OP_W | (value & 0xffff));
- 
- 	if (smi_wait_ready(pep)) {
--		printk(KERN_ERR "pxa168_eth: SMI bus busy timeout\n");
-+		netdev_err(pep->dev, "pxa168_eth: SMI bus busy timeout\n");
- 		return -ETIMEDOUT;
- 	}
- 
-@@ -1425,23 +1424,23 @@ static void pxa168_get_drvinfo(struct net_device *dev,
- }
- 
- static const struct ethtool_ops pxa168_ethtool_ops = {
--	.get_settings = pxa168_get_settings,
--	.set_settings = pxa168_set_settings,
--	.get_drvinfo = pxa168_get_drvinfo,
--	.get_link = ethtool_op_get_link,
--	.get_ts_info = ethtool_op_get_ts_info,
-+	.get_settings	= pxa168_get_settings,
-+	.set_settings	= pxa168_set_settings,
-+	.get_drvinfo	= pxa168_get_drvinfo,
-+	.get_link	= ethtool_op_get_link,
-+	.get_ts_info	= ethtool_op_get_ts_info,
- };
- 
- static const struct net_device_ops pxa168_eth_netdev_ops = {
--	.ndo_open = pxa168_eth_open,
--	.ndo_stop = pxa168_eth_stop,
--	.ndo_start_xmit = pxa168_eth_start_xmit,
--	.ndo_set_rx_mode = pxa168_eth_set_rx_mode,
--	.ndo_set_mac_address = pxa168_eth_set_mac_address,
--	.ndo_validate_addr = eth_validate_addr,
--	.ndo_do_ioctl = pxa168_eth_do_ioctl,
--	.ndo_change_mtu = pxa168_eth_change_mtu,
--	.ndo_tx_timeout = pxa168_eth_tx_timeout,
-+	.ndo_open		= pxa168_eth_open,
-+	.ndo_stop		= pxa168_eth_stop,
-+	.ndo_start_xmit		= pxa168_eth_start_xmit,
-+	.ndo_set_rx_mode	= pxa168_eth_set_rx_mode,
-+	.ndo_set_mac_address	= pxa168_eth_set_mac_address,
-+	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_do_ioctl		= pxa168_eth_do_ioctl,
-+	.ndo_change_mtu		= pxa168_eth_change_mtu,
-+	.ndo_tx_timeout		= pxa168_eth_tx_timeout,
- };
- 
- static int pxa168_eth_probe(struct platform_device *pdev)
-@@ -1456,8 +1455,7 @@ static int pxa168_eth_probe(struct platform_device *pdev)
- 
- 	clk = clk_get(&pdev->dev, "MFUCLK");
- 	if (IS_ERR(clk)) {
--		printk(KERN_ERR "%s: Fast Ethernet failed to get clock\n",
--			DRIVER_NAME);
-+		dev_err(&pdev->dev, "Fast Ethernet failed to get clock\n");
- 		return -ENODEV;
- 	}
- 	clk_enable(clk);
-@@ -1492,7 +1490,7 @@ static int pxa168_eth_probe(struct platform_device *pdev)
- 
- 	INIT_WORK(&pep->tx_timeout_task, pxa168_eth_tx_timeout_task);
- 
--	printk(KERN_INFO "%s:Using random mac address\n", DRIVER_NAME);
-+	dev_info(&pdev->dev, "Using random mac address\n");
- 	eth_hw_addr_random(dev);
- 
- 	pep->pd = dev_get_platdata(&pdev->dev);
--- 
-1.9.1
+I read the UFS Unified Memory Extension v1.0 (JESD220-1) specification and
+it is not clear to me that using DMA mapping is the right approach to
+supporting UM, at least on x86.
+
+And without a mainline user, the merits of this approach are not evident.
+I cannot even find a production x86 UFS controller, much less one that
+supports UME.
+
+The only PCI UFS controller I could find (and that mainline supports) is
+Samsung's x86 FPGA-based test unit for developing UFS devices in a x86 test
+environment, and not a production x86 design.
+
+Samsung's own roadmap (http://www.slideshare.net/linaroorg/next-gen-mobilestorageufs)
+mentions nothing about bringing UFS to x86 designs.
+
+Unless there's something else I've missed, I don't think these patches
+belong in mainline.
+
+Regards,
+Peter Hurley
+
+
 
