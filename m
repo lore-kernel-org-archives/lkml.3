@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaI3ItK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:49:10 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:52687 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751922AbaI3ItH (ORCPT
+	id S1752713AbaI3IyT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:54:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50464 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaI3IyP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:49:07 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-Message-ID: <542A6DFD.7020107@smartplayin.com>
-Date: Tue, 30 Sep 2014 14:16:53 +0530
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Tue, 30 Sep 2014 04:54:15 -0400
+Date: Tue, 30 Sep 2014 09:54:07 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yinghai Lu <yinghai@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH v13 10/12] PCI: Assign unassigned bus resources in
+ pci_scan_root_bus()
+Message-ID: <20140930085407.GL841@e106497-lin.cambridge.arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+ <1412000971-9242-11-git-send-email-Liviu.Dudau@arm.com>
+ <CAE9FiQXEUZvkuzwOrK+2zGVj0ywFaQsiWH7SHufZk9BRWnwddQ@mail.gmail.com>
+ <CAE9FiQUkcPRMUEn01VJMyXz8aYvk6C5MBNZi5NCV2m3qkNabeg@mail.gmail.com>
+ <1412024521.4285.98.camel@pasglop>
+ <CAErSpo62ap1YkzvuZ6MCpXry9=VpLv+Skzrwr10h=+Lc4VfVgQ@mail.gmail.com>
+ <1412029912.4285.110.camel@pasglop>
+ <CAErSpo70t9TMdntjBt+GdTw3FVmMquACQePX8=SKkySPuG3F3Q@mail.gmail.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
-References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>   <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>  <542A31DF.7020402@smartplayin.com> <1412062606.5395.10.camel@iivanov-dev>
-In-Reply-To: <1412062606.5395.10.camel@iivanov-dev>
+In-Reply-To: <CAErSpo70t9TMdntjBt+GdTw3FVmMquACQePX8=SKkySPuG3F3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 30 Sep 2014 08:54:08.0685 (UTC) FILETIME=[18CFFDD0:01CFDC8C]
+X-MC-Unique: 114093009541107901
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 September 2014 01:06 PM, Ivan T. Ivanov wrote:
-> On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
->> On Monday 29 September 2014 07:24 PM, Ivan T. Ivanov wrote:
->>> On Fri, 2014-09-26 at 16:51 +0530, Kiran Padwal wrote:
->>>> On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
->>>>> Add support for the temperature alarm peripheral found inside
->>>>> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
->>>>> peripheral outputs a pulse on an interrupt line whenever the
->>>>> thermal over temperature stage value changes.  Implement an ISR
->>>>> to manage this interrupt.
->>>>>
->>>>
->>>> <snip>
->>>>
->>>>> + * This function updates the internal temp value based on the
->>>>> + * current thermal stage and threshold as well as the previous stage
->>>>> + */
->>>>> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
->>>>> +{
->>>>> +	unsigned int stage;
->>>>> +	int rc;
->>>>> +	u8 reg;
->>>>> +
->>>>> +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
->>>>> +	if (rc < 0)
->>>>> +		return rc;
->>>>> +
->>>>> +	stage = reg & STATUS_STAGE_MASK;
->>>>
->>>> During compilation, getting a waring as below,
->>>>
->>>> drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
->>>> drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->>>>   stage = reg & STATUS_STAGE_MASK;
->>>
->>> Could you share compiler version and options which you are using.
->>> I am unable to trigger this warning. Looking code I can not 
->>> see how this could happen.
->>
->> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
+On Tue, Sep 30, 2014 at 12:08:49AM +0100, Bjorn Helgaas wrote:
+> On Mon, Sep 29, 2014 at 4:31 PM, Benjamin Herrenschmidt
+> <benh@kernel.crashing.org> wrote:
+> > On Mon, 2014-09-29 at 15:33 -0600, Bjorn Helgaas wrote:
+> >> > Right and on powerpc and others as well. We need to survey existing
+> >> > resources. We also have a number of platform things that might need
+> >> > to happen before we do the final re-assignment pass.
+> >>
+> >> That's true today.  But I don't know whether it *has* to be this way
+> >> forever.  On x86, pcibios_resource_survey() throws in E820 information
+> >> (which we know long before we do any PCI enumeration) and some IO-APIC
+> >> resources (it looks like we also know these before PCI enumeration).
+> >> Powerpc has pcibios_reserve_legacy_regions(), but that looks like
+> >> mostly stuff that could be done when we find the host bridge, before
+> >> we enumerate PCI devices below it.
+> >
+> > Oh we can probably change that but it's going to be much more work than
+> > just moving the assignment into pci_scan_root_bus().
 > 
-> Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
-> arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
-> indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
+> Agreed.  It's obvious that we can't apply Liviu's patch as-is.
+
+Thanks everyone for the feedback!
+
+Bjorn, you can drop this patch from the series if you want to add it to
+your tree, and the host bridge drivers will have to reimplement pci_scan_root_bus()
+for now (most do it already as they need to add msi information as well).
+
+Benjamin, I still have on my ToDo list to convert powerpc. I might not be
+able to do it successfully on my own (as I don't understand a lot of the
+corner cases) but Bjorn is correct here in that pcibios_reserve_legacy_regions()
+will move out of the scanning of the root bus.
+
 > 
-> I will say that this is false positive :-). Please update your tool-chain.
+> > There are also a
+> > number of subtle and not-so-subtle bits of code that rely on side
+> > effects of the current code such as anything that tests for bus->added
+> > or dev->added. Again, nothing we can't sort out eventually but the
+> > transition might be a bit painful.
+> >
+> > We might need to introduce a new flag for platforms converted to the
+> > "new style" generalized resource assignment which we can deprecate once
+> > everybody has moved over.
+> 
+> There's definitely a lot of work here if we ever want to make this happen.
+
+I know :)
+
+Best regards,
+Liviu
+
+> 
+> Bjorn
 > 
 
-Thanks to verify, I will do that.
-
-Thanks,
---Kiran
-
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
