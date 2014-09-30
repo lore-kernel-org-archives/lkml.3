@@ -1,59 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaI3PDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 11:03:22 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:54604 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaI3PAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 11:00:44 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8UF0f8c017764, This message is accepted by code: ctloc85258
-From: Chun-Hao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chun-Hao Lin <hau@realtek.com>
-Subject: [PATCH net-next 03/10] r8169:add disable/enable RTL8168GU mcu power managment interrupt
-Date: Tue, 30 Sep 2014 23:00:23 +0800
-Message-ID: <1412089230-10208-3-git-send-email-hau@realtek.com>
+	id S1751898AbaI3PKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:10:19 -0400
+Received: from mx.vmgattei.com ([77.223.18.35]:48164 "EHLO mx.vmgattei.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908AbaI3PKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 11:10:16 -0400
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Sep 2014 11:10:15 EDT
+From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+To: chris@printf.net, ulf.hansson@linaro.org
+Cc: shc_work@mail.ru, s.hauer@pengutronix.de, peter.griffin@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linucppc-dev@lists.ozlabs.org, agust@denx.de, gsi@denx.de,
+        sbabic@denx.de, Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+Subject: [PATCH 1/2] mmc: mxcmmc: fix race condition when dma finish a data transfer
+Date: Tue, 30 Sep 2014 16:59:37 +0200
+Message-Id: <1412089178-21946-2-git-send-email-matteo.facchinetti@sirius-es.it>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412089230-10208-1-git-send-email-hau@realtek.com>
-References: <1412089230-10208-1-git-send-email-hau@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+In-Reply-To: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
+References: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RTL8168GU also need to disable/enable mcu power managment interrupt
-before disable/eable pll.
+From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
 
-Signed-off-by: Chun-Hao Lin <hau@realtek.com>
+During a read of data block using dma, driver might have two ways to finish to read
+and free the resources:
+1) checking STATUS_DATA_TRANS_DONE mask, in the mxcmci_irq() routine
+   (pending to mmc irq)
+2) mxmmc driver, registers also a mxcmci_dma_callback() and when transfer is finished,
+   dma driver calls this callback. (pending to dma irq)
+Both ways are concurrent with each other.
+
+Race condition happens when following events occur:
+/* (1) mxcmci driver start data transfer */
+         158.418970: mpc_dma_execute: mpc_dma_execute(): will_access_peripheral start cid=31
+         158.418976: mpc_dma_issue_pending <-mxcmci_request
+         158.418983: mxcmci_start_cmd <-mxcmci_request
+/* (2) mxcmci driver receive mmc irq */
+         158.419656: mxcmci_irq <-handle_irq_event_percpu
+         158.419692: mxcmci_read_response <-mxcmci_irq
+/* (3) mxcmci driver checks that transfer is complete and call mxcmci_finish_data() */
+         158.419726: mxcmci_data_done <-mxcmci_irq
+         158.419729: mxcmci_finish_data <-mxcmci_data_done
+         158.419733: dma_direct_unmap_sg <-mxcmci_finish_data
+         158.419736: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
+         158.419762: mxcmci_read_response <-mxcmci_data_done
+/* (4) mxcmci driver (no dma): send stop command */
+         158.419765: mxcmci_start_cmd <-mxcmci_data_done
+/* (5) mxcmci driver (no dma): receive the stop command irq response */
+         158.419782: mxcmci_irq <-handle_irq_event_percpu
+         158.419812: mxcmci_read_response <-mxcmci_irq
+         158.419843: mxcmci_finish_request <-mxcmci_irq
+/* (6) dma driver: receive dma irq (finish data transfer) related by request on step 1 */
+         158.419853: mpc_dma_irq <-handle_irq_event_percpu
+         158.420001: mpc_dma_irq_process <-mpc_dma_irq
+         158.420004: mpc_dma_irq_process <-mpc_dma_irq
+/* (7) dma driver: start dma tasklet to finish the dma irq handling */
+         158.420008: mpc_dma_irq_process: mpc_dma_irq_process(): completed ch:31
+/* (8) mxcmci driver: start next data transfer using dma */
+         158.420174: mxcmci_request <-mmc_start_req
+         158.420182: dma_direct_map_sg <-mxcmci_request
+         158.420192: mpc_dma_prep_slave_sg <-mxcmci_request
+/* (9) dma driver: schedule irq tasklet and execute mxcmci dma driver callback */
+         158.420250: mpc_dma_tasklet <-tasklet_action
+         158.420254: mpc_dma_process_completed <-tasklet_action
+         158.420267: mxcmci_dma_callback <-mpc_dma_process_completed
+/* ERROR!!! (10) mxcmci driver callback works on dma data related to the step 1
+                 that is already finished */
+         158.420271: mxcmci_data_done <-mpc_dma_process_completed
+         158.420273: mxcmci_finish_data <-mxcmci_data_done
+/* ERROR!!! (11) mxcmci driver: clear data that should be used by step 8 and
+                 send an other mmc stop command (already sended on step 4) */
+         158.420276: dma_direct_unmap_sg <-mxcmci_finish_data
+         158.420279: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
+         158.420330: mxcmci_read_response <-mxcmci_data_done
+         158.420333: mxcmci_start_cmd <-mxcmci_data_done
+         158.420338: dma_run_dependencies <-mpc_dma_process_completed
+...
+...
+...
+         168.474223: mxcmci_watchdog <-call_timer_fn
+         168.474236: mxcmci_watchdog: mxcmci_watchdog
+         168.474397: mpc_dma_device_control <-mxcmci_watchdog
+
+
+In accordance with the other drivers that using the dma engine,
+fix it, leaving *only* to dma driver the complete control to
+ending the read operation.
+
+Removing STATUS_READ_OP_DONE event activation, has as effect
+to force mxcmci driver to handle the finish data transfer only
+by mxcmci dma callback.
+
+Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
 ---
- drivers/net/ethernet/realtek/r8169.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/mmc/host/mxcmmc.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 6d68229..f7b0c7d8 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4373,6 +4373,7 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0x00000000,
- 			     0xfc000000, ERIAR_EXGMAC);
- 		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
-@@ -4400,6 +4401,7 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
- 		break;
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
- 		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
- 		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0xfc000000,
- 			     0x00000000, ERIAR_EXGMAC);
+diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+index ad11142..536a898 100644
+--- a/drivers/mmc/host/mxcmmc.c
++++ b/drivers/mmc/host/mxcmmc.c
+@@ -373,13 +373,9 @@ static void mxcmci_dma_callback(void *data)
+ 	del_timer(&host->watchdog);
+ 
+ 	stat = mxcmci_readl(host, MMC_REG_STATUS);
+-	mxcmci_writel(host, stat & ~STATUS_DATA_TRANS_DONE, MMC_REG_STATUS);
+ 
+ 	dev_dbg(mmc_dev(host->mmc), "%s: 0x%08x\n", __func__, stat);
+ 
+-	if (stat & STATUS_READ_OP_DONE)
+-		mxcmci_writel(host, STATUS_READ_OP_DONE, MMC_REG_STATUS);
+-
+ 	mxcmci_data_done(host, stat);
+ }
+ 
+@@ -743,10 +739,8 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
+ 	sdio_irq = (stat & STATUS_SDIO_INT_ACTIVE) && host->use_sdio;
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
+-	if (mxcmci_use_dma(host) &&
+-	    (stat & (STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE)))
+-		mxcmci_writel(host, STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE,
+-			MMC_REG_STATUS);
++	if (mxcmci_use_dma(host) && (stat & (STATUS_WRITE_OP_DONE)))
++		mxcmci_writel(host, STATUS_WRITE_OP_DONE, MMC_REG_STATUS);
+ 
+ 	if (sdio_irq) {
+ 		mxcmci_writel(host, STATUS_SDIO_INT_ACTIVE, MMC_REG_STATUS);
+@@ -756,8 +750,7 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
+ 	if (stat & STATUS_END_CMD_RESP)
+ 		mxcmci_cmd_done(host, stat);
+ 
+-	if (mxcmci_use_dma(host) &&
+-		  (stat & (STATUS_DATA_TRANS_DONE | STATUS_WRITE_OP_DONE))) {
++	if (mxcmci_use_dma(host) && (stat & STATUS_WRITE_OP_DONE)) {
+ 		del_timer(&host->watchdog);
+ 		mxcmci_data_done(host, stat);
+ 	}
 -- 
 1.8.3.2
 
