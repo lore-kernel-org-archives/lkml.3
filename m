@@ -1,55 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaI3Kjl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:39:41 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:64760 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060AbaI3Kji (ORCPT
+	id S1753212AbaI3Kjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:39:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58059 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaI3Kjt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:39:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, naushad@samsung.com, tomasz.figa@gmail.com,
-        thomas.ab@samsung.com, vikas.sajjan@samsung.com
-Subject: Re: [PATCH v8 2/2] ARM: EXYNOS: Move PMU specific definitions from common.h
-Date: Tue, 30 Sep 2014 12:38:58 +0200
-Message-ID: <11948982.c37J1JPj8N@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412072481-22370-3-git-send-email-pankaj.dubey@samsung.com>
-References: <1412072481-22370-1-git-send-email-pankaj.dubey@samsung.com> <1412072481-22370-3-git-send-email-pankaj.dubey@samsung.com>
+	Tue, 30 Sep 2014 06:39:49 -0400
+Date: Tue, 30 Sep 2014 11:39:42 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH v13 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20140930103942.GO841@e106497-lin.cambridge.arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140929194335.GA13747@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:RphkNFm2L4bWMPMZR2x8AwI/CVzr/YmGZZsnqKa7xhb
- HwWstnFT/+WWNtr2yDu3mHmMP70uwDYcttl/GvIhvZVtH/dBs2
- evNO4WivIyc3ZfO8RNZkShXhwczx2V+gV567B3kJQ4zH7Wn2iF
- dXyoOyk4fEP7xD2tWinI60vD+s0ZLwUgiAb5IEl0M7d55Eu4u8
- b41dyctFxtp6cjt/v1TNBUBg5GiJeVHhETl/qXPjPFQeXTL99a
- GrIxh41q4nVeCsitUQhsMSJJVk/YOkZG46gBAQakec9309Tapy
- 7ujczmQKchDbfZ4CYKr4S7xv8Z4NicuE3ZA3LHJguO1xciCtT1
- VUxXF7FUx5f+6h2lXDHQ=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20140929194335.GA13747@google.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 30 Sep 2014 10:39:43.0942 (UTC) FILETIME=[D8EB7E60:01CFDC9A]
+X-MC-Unique: 114093011394515401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 September 2014 15:51:21 Pankaj Dubey wrote:
+On Mon, Sep 29, 2014 at 08:43:35PM +0100, Bjorn Helgaas wrote:
+> On Mon, Sep 29, 2014 at 03:29:19PM +0100, Liviu Dudau wrote:
+> > This is my version 13 of the attempt at adding support for generic PCI host
+> > bridge controllers. It contains only cleanups to make it play nice with the
+> > linux-next tree as of 09/25. If Bjorn deems it safe, now that it looks like
+> > asm-generic is going to revert some of its more aggresive patches, he has the
+> > choice of queueing it into linux-next again.
+> > ...
 > 
-> +static inline void pmu_raw_writel(u32 val, u32 offset)
-> +{
-> +       __raw_writel(val, pmu_base_addr + offset);
-> +}
-> +
-> +static inline u32 pmu_raw_readl(u32 offset)
-> +{
-> +       return __raw_readl(pmu_base_addr + offset);
-> +}
-> +
+> These patches above were already on my pci/host-generic branch and in
+> linux-next:
+> 
+>    asm-generic/io.h: Fix ioport_map() for !CONFIG_GENERIC_IOMAP
+This ^ ...
+
+>    of/pci: Add pci_register_io_range() and pci_pio_to_address()
+>    ARM: Define PCI_IOBASE as the base of virtual PCI IO space
+
+and this ^ need to be refreshed from my series otherwise we will get conflicts with
+asm-generic branch (either now or in the future). While the asm-generic/io.h
+cast is arguably superflous, we need to define PCI_IOBASE as a void __iomem* to
+match all other standard declarations of PCI_IOBASE.
+
+>    of/pci: Define of_pci_range_to_resource() only when CONFIG_PCI=y
+>    of/pci: Move of_pci_range_to_resources() to of/address.c
+>    of/pci: Fix the conversion of IO ranges into IO resources
+> 
+> I added these three patches to my pci/host-generic branch:
+> 
+>    PCI: Add generic domain handling
+>    of/pci: Add pci_get_new_domain_nr() and of_get_pci_domain_nr()
+>    of/pci: Add support for parsing PCI host bridge resources from DT
+
+I can see these patches added to pci/host-generic but not on pci/next.
+
+> 
+> Yinghai pointed out a problem with this one, so I omitted it:
+> 
+>    PCI: Assign unassigned bus resources in pci_scan_root_bus()
+
+Thats fine, host bridge drivers will have to work around pci_scan_root_bus() reduced
+functionality for now.
+
+
+> 
+> I added this one to my pci/host-generic branch:
+> 
+>    PCI: Add pci_remap_iospace() to map bus I/O resources
+> 
+> I assume this depends on the pci_scan_root_bus() change (if not, let me
+> know), so I omitted this one:
+> 
+>    arm64: Add architectural support for PCI
+
+No, there is no dependency there on pci_scan_root_bus(), it can go in the series.
+The only thing that depends on a feature rich pci_scan_root_bus() is the host
+bridge driver in order to be able to use only one line to process the root bus.
+
+Thanks for huge support in getting these patches in and I do hope I'm not being
+too much of a burden to you.
+
+Best regards,
+Liviu
+
+> 
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-While you're at it, please convert these to use readl_relaxed() instead,
-which is safe to use in drivers and works independent of CPU endianess.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-	Arnd
