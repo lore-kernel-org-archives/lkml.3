@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaI3Nu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:50:56 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51779 "EHLO
+	id S1753041AbaI3NvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:51:20 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51576 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752428AbaI3NtI (ORCPT
+	by vger.kernel.org with ESMTP id S1752251AbaI3Ns5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:49:08 -0400
+	Tue, 30 Sep 2014 09:48:57 -0400
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Sudeep Holla <sudeep.holla@arm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v5 11/11] ARM: kernel: add outer cache support for cacheinfo implementation
-Date: Tue, 30 Sep 2014 14:48:32 +0100
-Message-Id: <1412084912-2767-12-git-send-email-sudeep.holla@arm.com>
+Subject: [PATCH v5 09/11] ARM64: kernel: add support for cpu cache information
+Date: Tue, 30 Sep 2014 14:48:30 +0100
+Message-Id: <1412084912-2767-10-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
 References: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
@@ -26,358 +26,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support outer cache in the cacheinfo infrastructure, a new
-function 'get_info' is added to outer_cache_fns. This function is used
-to get the outer cache information namely: line size, number of ways of
-associativity and number of sets.
+This patch adds support for cacheinfo on ARM64.
 
-This patch adds 'get_info' supports to all L2 cache implementations on
-ARM except Marvell's Feroceon L2 cache.
+On ARMv8, the cache hierarchy can be identified through Cache Level ID
+(CLIDR) register while the cache geometry is provided by Cache Size ID
+(CCSIDR) register.
+
+Since the architecture doesn't provide any way of detecting the cpus
+sharing particular cache, device tree is used for the same purpose.
 
 Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/arm/include/asm/outercache.h |  9 +++++++++
- arch/arm/kernel/cacheinfo.c       | 14 +++++++++++++-
- arch/arm/mm/cache-l2x0.c          | 35 ++++++++++++++++++++++++++++++++++-
- arch/arm/mm/cache-tauros2.c       | 36 ++++++++++++++++++++++++++++++++++++
- arch/arm/mm/cache-xsc3l2.c        | 17 +++++++++++++++++
- 5 files changed, 109 insertions(+), 2 deletions(-)
+ arch/arm64/include/asm/cachetype.h |  29 +++++++--
+ arch/arm64/kernel/Makefile         |   2 +-
+ arch/arm64/kernel/cacheinfo.c      | 128 +++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/cpuinfo.c        |  12 ----
+ 4 files changed, 152 insertions(+), 19 deletions(-)
+ create mode 100644 arch/arm64/kernel/cacheinfo.c
 
-diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
-index 891a56b35bcf..e063d8c87077 100644
---- a/arch/arm/include/asm/outercache.h
-+++ b/arch/arm/include/asm/outercache.h
-@@ -23,7 +23,10 @@
+diff --git a/arch/arm64/include/asm/cachetype.h b/arch/arm64/include/asm/cachetype.h
+index 4c631a0a3609..da2fc9e3cedd 100644
+--- a/arch/arm64/include/asm/cachetype.h
++++ b/arch/arm64/include/asm/cachetype.h
+@@ -39,24 +39,41 @@
  
- #include <linux/types.h>
+ extern unsigned long __icache_flags;
  
-+struct cacheinfo;
-+
- struct outer_cache_fns {
-+	void (*get_info)(struct cacheinfo *);
- 	void (*inv_range)(unsigned long, unsigned long);
- 	void (*clean_range)(unsigned long, unsigned long);
- 	void (*flush_range)(unsigned long, unsigned long);
-@@ -112,6 +115,11 @@ static inline void outer_resume(void)
- 		outer_cache.resume();
- }
- 
-+static inline void outer_get_info(struct cacheinfo *this_leaf)
-+{
-+	if (outer_cache.get_info)
-+		outer_cache.get_info(this_leaf);
-+}
- #else
- 
- static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
-@@ -123,6 +131,7 @@ static inline void outer_flush_range(phys_addr_t start, phys_addr_t end)
- static inline void outer_flush_all(void) { }
- static inline void outer_disable(void) { }
- static inline void outer_resume(void) { }
-+static inline void outer_get_info(struct cacheinfo *this_leaf) { }
- 
- #endif
- 
-diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-index 8e4f677741d8..2107e1d67914 100644
---- a/arch/arm/kernel/cacheinfo.c
-+++ b/arch/arm/kernel/cacheinfo.c
-@@ -24,6 +24,7 @@
- #include <linux/of.h>
- 
- #include <asm/cputype.h>
-+#include <asm/outercache.h>
- #include <asm/processor.h>
- #include <asm/system_info.h>
- 
-@@ -227,11 +228,19 @@ static inline enum cache_type get_cache_type(int level)
- 	return __get_cache_type(level);
- }
- 
-+static inline void __outer_ci_leaf_init(struct cacheinfo *this_leaf)
-+{
-+	outer_get_info(this_leaf);
-+	BUG_ON(this_leaf->type == CACHE_TYPE_SEPARATE);
-+}
-+
- static void ci_leaf_init(struct cacheinfo *this_leaf,
- 			 enum cache_type type, unsigned int level)
- {
- 	this_leaf->level = level;
--	if (cache_is_armv7())
-+	if (type == CACHE_TYPE_NOCACHE)	/* must be outer cache */
-+		__outer_ci_leaf_init(this_leaf);
-+	else if (cache_is_armv7())
- 		__armv7_ci_leaf_init(type, this_leaf);
- 	else
- 		__ci_leaf_init(type, this_leaf);
-@@ -255,6 +264,9 @@ static int __init_cache_level(unsigned int cpu)
- 	this_cpu_ci->num_levels = level;
- 	this_cpu_ci->num_leaves = leaves;
- 
-+	if (IS_ENABLED(CONFIG_OUTER_CACHE) && outer_cache.get_info)
-+		this_cpu_ci->num_leaves++, this_cpu_ci->num_levels++;
-+
- 	return 0;
- }
- 
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 5f2c988a06ac..4114b1944807 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -17,6 +17,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- #include <linux/cpu.h>
-+#include <linux/cacheinfo.h>
- #include <linux/err.h>
- #include <linux/init.h>
- #include <linux/smp.h>
-@@ -105,6 +106,22 @@ static inline void l2c_unlock(void __iomem *base, unsigned num)
- 	}
- }
- 
-+static void __l2x0_getinfo(struct cacheinfo *this_leaf)
-+{
-+	unsigned int assoc = get_count_order(l2x0_way_mask);
-+
-+	this_leaf->size = l2x0_size;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = assoc;
-+	this_leaf->number_of_sets = l2x0_size / (assoc * CACHE_LINE_SIZE);
-+}
-+
-+static void l2x0_getinfo(struct cacheinfo *this_leaf)
-+{
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	__l2x0_getinfo(this_leaf);
-+}
-+
- /*
-  * Enable the L2 cache controller.  This function must only be
-  * called when the cache controller is known to be disabled.
-@@ -309,6 +326,7 @@ static const struct l2c_init_data l2c210_data __initconst = {
- 		.disable = l2c_disable,
- 		.sync = l2c210_sync,
- 		.resume = l2c210_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -466,6 +484,7 @@ static const struct l2c_init_data l2c220_data = {
- 		.disable = l2c_disable,
- 		.sync = l2c220_sync,
- 		.resume = l2c210_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -814,6 +833,7 @@ static const struct l2c_init_data l2c310_init_fns __initconst = {
- 		.disable = l2c310_disable,
- 		.sync = l2c210_sync,
- 		.resume = l2c310_resume,
-+		.get_info = l2x0_getinfo,
- 	},
- };
- 
-@@ -894,7 +914,6 @@ static void __init __l2c_init(const struct l2c_init_data *data,
- 		data->enable(l2x0_base, aux, data->num_lock);
- 
- 	outer_cache = fns;
++/*
++ * NumSets, bits[27:13] - (Number of sets in cache) - 1
++ * Associativity, bits[12:3] - (Associativity of cache) - 1
++ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
++ */
++#define CCSIDR_EL1_WRITE_THROUGH	BIT(31)
++#define CCSIDR_EL1_WRITE_BACK		BIT(30)
++#define CCSIDR_EL1_READ_ALLOCATE	BIT(29)
++#define CCSIDR_EL1_WRITE_ALLOCATE	BIT(28)
+ #define CCSIDR_EL1_LINESIZE_MASK	0x7
+ #define CCSIDR_EL1_LINESIZE(x)		((x) & CCSIDR_EL1_LINESIZE_MASK)
 -
- 	/*
- 	 * It is strange to save the register state before initialisation,
- 	 * but hey, this is what the DT implementations decided to do.
-@@ -994,6 +1013,7 @@ static const struct l2c_init_data of_l2c210_data __initconst = {
- 		.disable     = l2c_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c210_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1012,6 +1032,7 @@ static const struct l2c_init_data of_l2c220_data __initconst = {
- 		.disable     = l2c_disable,
- 		.sync        = l2c220_sync,
- 		.resume      = l2c210_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1065,6 +1086,7 @@ static const struct l2c_init_data of_l2c310_data __initconst = {
- 		.disable     = l2c310_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1092,6 +1114,7 @@ static const struct l2c_init_data of_l2c310_coherent_data __initconst = {
- 		.flush_all   = l2c210_flush_all,
- 		.disable     = l2c310_disable,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1255,6 +1278,12 @@ static void __init aurora_of_parse(const struct device_node *np,
- 	*aux_mask &= ~mask;
- }
- 
-+static void aurora_no_outer_data_getinfo(struct cacheinfo *this_leaf)
-+{
-+	this_leaf->type = CACHE_TYPE_INST;
-+	__l2x0_getinfo(this_leaf);
-+}
++#define CCSIDR_EL1_ASSOCIATIVITY_SHIFT	3
++#define CCSIDR_EL1_ASSOCIATIVITY_MASK	0x3ff
++#define CCSIDR_EL1_ASSOCIATIVITY(x)	\
++	(((x) >> CCSIDR_EL1_ASSOCIATIVITY_SHIFT) & CCSIDR_EL1_ASSOCIATIVITY_MASK)
+ #define CCSIDR_EL1_NUMSETS_SHIFT	13
+-#define CCSIDR_EL1_NUMSETS_MASK		(0x7fff << CCSIDR_EL1_NUMSETS_SHIFT)
++#define CCSIDR_EL1_NUMSETS_MASK		0x7fff
+ #define CCSIDR_EL1_NUMSETS(x) \
+-	(((x) & CCSIDR_EL1_NUMSETS_MASK) >> CCSIDR_EL1_NUMSETS_SHIFT)
++	(((x) >> CCSIDR_EL1_NUMSETS_SHIFT) & CCSIDR_EL1_NUMSETS_MASK)
 +
- static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
- 	.type = "Aurora",
- 	.way_size_0 = SZ_4K,
-@@ -1271,6 +1300,7 @@ static const struct l2c_init_data of_aurora_with_outer_data __initconst = {
- 		.disable     = l2x0_disable,
- 		.sync        = l2x0_cache_sync,
- 		.resume      = aurora_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
++#define CACHE_LINESIZE(x)	(16 << CCSIDR_EL1_LINESIZE(x))
++#define CACHE_NUMSETS(x)	(CCSIDR_EL1_NUMSETS(x) + 1)
++#define CACHE_ASSOCIATIVITY(x)	(CCSIDR_EL1_ASSOCIATIVITY(x) + 1)
  
-@@ -1284,6 +1314,7 @@ static const struct l2c_init_data of_aurora_no_outer_data __initconst = {
- 	.save  = aurora_save,
- 	.outer_cache = {
- 		.resume      = aurora_resume,
-+		.get_info    = aurora_no_outer_data_getinfo,
- 	},
- };
+-extern u64 __attribute_const__ icache_get_ccsidr(void);
++extern u64 __attribute_const__ cache_get_ccsidr(u64 csselr);
  
-@@ -1439,6 +1470,7 @@ static const struct l2c_init_data of_bcm_l2x0_data __initconst = {
- 		.disable     = l2c310_disable,
- 		.sync        = l2c210_sync,
- 		.resume      = l2c310_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-@@ -1475,6 +1507,7 @@ static const struct l2c_init_data of_tauros3_data __initconst = {
- 	/* Tauros3 broadcasts L1 cache operations to L2 */
- 	.outer_cache = {
- 		.resume      = tauros3_resume,
-+		.get_info    = l2x0_getinfo,
- 	},
- };
- 
-diff --git a/arch/arm/mm/cache-tauros2.c b/arch/arm/mm/cache-tauros2.c
-index b273739e6359..0d4dd8ff6a56 100644
---- a/arch/arm/mm/cache-tauros2.c
-+++ b/arch/arm/mm/cache-tauros2.c
-@@ -14,6 +14,7 @@
-  *   Document ID MV-S105190-00, Rev 0.7, March 14 2008.
-  */
- 
-+#include <linux/cacheinfo.h>
- #include <linux/init.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -60,6 +61,7 @@ static inline void tauros2_inv_pa(unsigned long addr)
-  * noninclusive.
-  */
- #define CACHE_LINE_SIZE		32
-+#define CACHE_LINE_SHIFT	5
- 
- static void tauros2_inv_range(unsigned long start, unsigned long end)
++/* Helpers for Level 1 Instruction cache csselr = 1L */
+ static inline int icache_get_linesize(void)
  {
-@@ -131,6 +133,39 @@ static void tauros2_resume(void)
- 	"mcr	p15, 0, %0, c1, c0, 0 @Enable L2 Cache\n\t"
- 	: : "r" (0x0));
+-	return 16 << CCSIDR_EL1_LINESIZE(icache_get_ccsidr());
++	return CACHE_LINESIZE(cache_get_ccsidr(1L));
  }
+ 
+ static inline int icache_get_numsets(void)
+ {
+-	return 1 + CCSIDR_EL1_NUMSETS(icache_get_ccsidr());
++	return CACHE_NUMSETS(cache_get_ccsidr(1L));
+ }
+ 
+ /*
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index df7ef8768fc2..285cd88c1e37 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -15,7 +15,7 @@ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+ 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
+ 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
+ 			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o	\
+-			   cpuinfo.o
++			   cpuinfo.o cacheinfo.o
+ 
+ arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
+ 					   sys_compat.o
+diff --git a/arch/arm64/kernel/cacheinfo.c b/arch/arm64/kernel/cacheinfo.c
+new file mode 100644
+index 000000000000..497b0e557bd5
+--- /dev/null
++++ b/arch/arm64/kernel/cacheinfo.c
+@@ -0,0 +1,128 @@
++/*
++ *  ARM64 cacheinfo support
++ *
++ *  Copyright (C) 2014 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/bitops.h>
++#include <linux/cacheinfo.h>
++#include <linux/cpu.h>
++#include <linux/compiler.h>
++#include <linux/of.h>
++
++#include <asm/cachetype.h>
++#include <asm/processor.h>
++
++#define MAX_CACHE_LEVEL			7	/* Max 7 level supported */
++/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
++#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
++#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
++#define CLIDR_CTYPE(clidr, level)	\
++	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
++
++static inline enum cache_type get_cache_type(int level)
++{
++	u64 clidr;
++
++	if (level > MAX_CACHE_LEVEL)
++		return CACHE_TYPE_NOCACHE;
++	asm volatile ("mrs     %x0, clidr_el1" : "=r" (clidr));
++	return CLIDR_CTYPE(clidr, level);
++}
 +
 +/*
-+ *  +----------------------------------------+
-+ *  | 11 10 9  8 | 7  6  5  4  3 | 2 |  1  0 |
-+ *  +----------------------------------------+
-+ *  |  way size  | associativity | - |line_sz|
-+ *  +----------------------------------------+
++ * Cache Size Selection Register(CSSELR) selects which Cache Size ID
++ * Register(CCSIDR) is accessible by specifying the required cache
++ * level and the cache type. We need to ensure that no one else changes
++ * CSSELR by calling this in non-preemtible context
 + */
-+#define L2CTR_ASSOCIAT_SHIFT	3
-+#define L2CTR_ASSOCIAT_MASK	0x1F
-+#define L2CTR_WAYSIZE_SHIFT	8
-+#define L2CTR_WAYSIZE_MASK	0xF
-+#define CACHE_WAY_PER_SET(l2ctr)	\
-+	(((l2_ctr) >> L2CTR_ASSOCIAT_SHIFT) & L2CTR_ASSOCIAT_MASK)
-+#define CACHE_WAY_SIZE(l2ctr)		\
-+	(8192 << (((l2ctr) >> L2CTR_WAYSIZE_SHIFT) & L2CTR_WAYSIZE_MASK))
-+#define CACHE_SET_SIZE(l2ctr)	(CACHE_WAY_SIZE(l2ctr) >> CACHE_LINE_SHIFT)
-+
-+static void tauros2_getinfo(struct cacheinfo *this_leaf)
++u64 __attribute_const__ cache_get_ccsidr(u64 csselr)
 +{
-+	unsigned int l2_ctr;
++	u64 ccsidr;
 +
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2_ctr));
++	WARN_ON(preemptible());
 +
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET(l2_ctr);
-+	this_leaf->number_of_sets = CACHE_SET_SIZE(l2_ctr);
-+	this_leaf->size = this_leaf->coherency_line_size *
-+			  this_leaf->number_of_sets *
-+			  this_leaf->ways_of_associativity;
++	/* Put value into CSSELR */
++	asm volatile("msr csselr_el1, %x0" : : "r" (csselr));
++	isb();
++	/* Read result out of CCSIDR */
++	asm volatile("mrs %x0, ccsidr_el1" : "=r" (ccsidr));
++
++	return ccsidr;
 +}
 +
- #endif
++static void ci_leaf_init(struct cacheinfo *this_leaf,
++			 enum cache_type type, unsigned int level)
++{
++	bool is_icache = type & CACHE_TYPE_INST;
++	u64 tmp = cache_get_ccsidr((level - 1) << 1 | is_icache);
++
++	this_leaf->level = level;
++	this_leaf->type = type;
++	this_leaf->coherency_line_size = CACHE_LINESIZE(tmp);
++	this_leaf->number_of_sets = CACHE_NUMSETS(tmp);
++	this_leaf->ways_of_associativity = CACHE_ASSOCIATIVITY(tmp);
++	this_leaf->size = this_leaf->number_of_sets *
++	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
++	this_leaf->attributes =
++		((tmp & CCSIDR_EL1_WRITE_THROUGH) ? CACHE_WRITE_THROUGH : 0) |
++		((tmp & CCSIDR_EL1_WRITE_BACK) ? CACHE_WRITE_BACK : 0) |
++		((tmp & CCSIDR_EL1_READ_ALLOCATE) ? CACHE_READ_ALLOCATE : 0) |
++		((tmp & CCSIDR_EL1_WRITE_ALLOCATE) ? CACHE_WRITE_ALLOCATE : 0);
++}
++
++static int __init_cache_level(unsigned int cpu)
++{
++	unsigned int ctype, level, leaves;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++
++	for (level = 1, leaves = 0; level <= MAX_CACHE_LEVEL; level++) {
++		ctype = get_cache_type(level);
++		if (ctype == CACHE_TYPE_NOCACHE) {
++			level--;
++			break;
++		}
++		/* Separate instruction and data caches */
++		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
++	}
++
++	this_cpu_ci->num_levels = level;
++	this_cpu_ci->num_leaves = leaves;
++	return 0;
++}
++
++static int __populate_cache_leaves(unsigned int cpu)
++{
++	unsigned int level, idx;
++	enum cache_type type;
++	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
++	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
++
++	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
++	     idx < this_cpu_ci->num_leaves; idx++, level++) {
++		type = get_cache_type(level);
++		if (type == CACHE_TYPE_SEPARATE) {
++			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
++			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
++		} else {
++			ci_leaf_init(this_leaf++, type, level);
++		}
++	}
++	return 0;
++}
++
++DEFINE_SMP_CALL_CACHE_FUNCTION(init_cache_level)
++DEFINE_SMP_CALL_CACHE_FUNCTION(populate_cache_leaves)
+diff --git a/arch/arm64/kernel/cpuinfo.c b/arch/arm64/kernel/cpuinfo.c
+index 504fdaa8367e..8fc00e919b52 100644
+--- a/arch/arm64/kernel/cpuinfo.c
++++ b/arch/arm64/kernel/cpuinfo.c
+@@ -202,15 +202,3 @@ void __init cpuinfo_store_boot_cpu(void)
  
- static inline u32 __init read_extra_features(void)
-@@ -226,6 +261,7 @@ static void __init tauros2_internal_init(unsigned int features)
- 		outer_cache.flush_range = tauros2_flush_range;
- 		outer_cache.disable = tauros2_disable;
- 		outer_cache.resume = tauros2_resume;
-+		outer_cache.get_info = tauros2_getinfo;
- 	}
- #endif
- 
-diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
-index 6c3edeb66e74..175bf44eb039 100644
---- a/arch/arm/mm/cache-xsc3l2.c
-+++ b/arch/arm/mm/cache-xsc3l2.c
-@@ -16,6 +16,7 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
-+#include <linux/cacheinfo.h>
- #include <linux/init.h>
- #include <linux/highmem.h>
- #include <asm/cp15.h>
-@@ -201,6 +202,21 @@ static void xsc3_l2_flush_range(unsigned long start, unsigned long end)
- 	dsb();
+ 	boot_cpu_data = *info;
  }
- 
-+static void xsc3_l2_getinfo(struct cacheinfo *this_leaf)
-+{
-+	unsigned long l2ctype;
-+
-+	__asm__("mrc p15, 1, %0, c0, c0, 1" : "=r" (l2ctype));
-+
-+	this_leaf->type = CACHE_TYPE_UNIFIED;
-+	this_leaf->coherency_line_size = CACHE_LINE_SIZE;
-+	this_leaf->ways_of_associativity = CACHE_WAY_PER_SET;
-+	this_leaf->number_of_sets = CACHE_SET_SIZE(l2ctype);
-+	this_leaf->size = this_leaf->coherency_line_size *
-+			  this_leaf->number_of_sets *
-+			  this_leaf->ways_of_associativity;
-+}
-+
- static int __init xsc3_l2_init(void)
- {
- 	if (!cpu_is_xsc3() || !xsc3_l2_present())
-@@ -213,6 +229,7 @@ static int __init xsc3_l2_init(void)
- 		outer_cache.inv_range = xsc3_l2_inv_range;
- 		outer_cache.clean_range = xsc3_l2_clean_range;
- 		outer_cache.flush_range = xsc3_l2_flush_range;
-+		outer_cache.get_info    = xsc3_l2_getinfo;
- 	}
- 
- 	return 0;
+-
+-u64 __attribute_const__ icache_get_ccsidr(void)
+-{
+-	u64 ccsidr;
+-
+-	WARN_ON(preemptible());
+-
+-	/* Select L1 I-cache and read its size ID register */
+-	asm("msr csselr_el1, %1; isb; mrs %0, ccsidr_el1"
+-	    : "=r"(ccsidr) : "r"(1L));
+-	return ccsidr;
+-}
 -- 
 1.9.1
 
