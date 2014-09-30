@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaI3Ddv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 23:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaI3Ddu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 23:33:50 -0400
-Date: Mon, 29 Sep 2014 23:33:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: pipe/page fault oddness.
-Message-ID: <20140930033327.GA14558@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755229AbaI3DjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 23:39:01 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:35881 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaI3DjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 23:39:00 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: kever.yang@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: kever.yang@rock-chips.com
+X-UNIQUE-TAG: <61534966edc94e47bafa223601d6705a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <542A25D0.1030900@rock-chips.com>
+Date: Tue, 30 Sep 2014 11:38:56 +0800
+From: Kever Yang <kever.yang@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jianqun <jay.xu@rock-chips.com>, mturquette@linaro.org,
+        dianders@chromium.org, heiko@sntech.de, dbasehore@chromium.org,
+        mark.yao@rock-chips.com
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH] clk: rockchip: rk3288: i2s_frac adds flag to set parent's
+ rate
+References: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My fuzz tester ground to a halt, with many child processes blocked
-on pipe_lock.  sysrq-t output: http://codemonkey.org.uk/junk/pipe-lock-wtf.txt
+Hi Jianqun,
 
-Looking at the dump, there's only one running trinity child,
-with all the others blocking on it.
+     pls add linux-rockchip@lists.infradead.org next time.
 
-trinity-c49     R  running task    12856 19464   7633 0x00000004
-ffff8800a09bf960 0000000000000002 ffff8800a09bf9f8 ffff880219650000
-00000000001d4080 0000000000000000 ffff8800a09bffd8 00000000001d4080
-ffff88023f755bc0 ffff880219650000 ffff8800a09bffd8 ffff88010b017e00
-Call Trace:
-[<ffffffff9181df46>] preempt_schedule+0x36/0x60
-[<ffffffff9100e3d6>] ___preempt_schedule+0x56/0xb0
-[<ffffffff911c3c67>] ? handle_mm_fault+0x3a7/0xcd0
-[<ffffffff918239f1>] ? _raw_spin_unlock+0x31/0x50
-[<ffffffff91823a05>] ? _raw_spin_unlock+0x45/0x50
-[<ffffffff911c3c67>] handle_mm_fault+0x3a7/0xcd0
-[<ffffffff910cb687>] ? __lock_is_held+0x57/0x80
-[<ffffffff91042c84>] __do_page_fault+0x1a4/0x600
-[<ffffffff910ce485>] ? mark_held_locks+0x75/0xa0
-[<ffffffff910ce5bd>] ? trace_hardirqs_on_caller+0x10d/0x1d0
-[<ffffffff910ce68d>] ? trace_hardirqs_on+0xd/0x10
-[<ffffffff9118eda7>] ? context_tracking_user_exit+0x67/0x1b0
-[<ffffffff910430fe>] do_page_fault+0x1e/0x70
-[<ffffffff918264b2>] page_fault+0x22/0x30
-[<ffffffff911bd7e3>] ? copy_page_to_iter+0x3b3/0x500
-[<ffffffff9120eddf>] pipe_read+0xdf/0x330
-[<ffffffff9120ed00>] ? pipe_write+0x490/0x490
-[<ffffffff912051a0>] ? do_sync_readv_writev+0xa0/0xa0
-[<ffffffff912053b8>] do_iter_readv_writev+0x78/0xc0
-[<ffffffff91206bbe>] do_readv_writev+0xce/0x280
-[<ffffffff9120ed00>] ? pipe_write+0x490/0x490
-[<ffffffff910cbbf6>] ? lock_release_holdtime.part.29+0xe6/0x160
-[<ffffffff910ac74d>] ? get_parent_ip+0xd/0x50
-[<ffffffff910ac74d>] ? get_parent_ip+0xd/0x50
-[<ffffffff910ac8ab>] ? preempt_count_sub+0x6b/0xf0
-[<ffffffff91206da9>] vfs_readv+0x39/0x50
-[<ffffffff91206e6c>] SyS_readv+0x5c/0x100
-[<ffffffff918249e4>] tracesys+0xdd/0xe2
+On 09/30/2014 11:12 AM, Jianqun wrote:
+> The relation of i2s nodes as follows:
+>            i2s_src               0           0            594000000  0
+>               i2s_frac           0           0            11289600   0
+>                  i2s_pre         0           0            11289600   0
+>                     sclk_i2s0    0           0            11289600   0
+>                     i2s0_clkout  0           0            11289600   0
+>                        hclk_i2s0 1           1            99000000   0
+I always got the result as following when I set sclk_i2s0 to 11289600,
+any one knows the reason?
 
-Running the function tracer on that pid shows it spinning forever..
-http://codemonkey.org.uk/junk/pipe-trace.txt
+       gpll                     6           6            594000000 0
+           sclk_emmc             1           1            99000000 0
+           i2s_src               0           0            11207548 0
+              i2s_pre            0           0            11207548 0
+                 sclk_i2s0       0           0            11207548 0
+                 i2s0_clkout     0           0            11207548 0
+              i2s_frac           0           0            646456897 0
+> sclk_i2s0 is the master clock, when to set rate of sclk_i2s0, should
+> allow to set its parent's rate, by add flag CLK_SET_RATE_PARENT for
+> "i2s_frac", "i2s_pre", "i2s0_clkout" and "sclk_i2s0".
+>
+> Tested on rk3288 board using max98090, with command "aplay <music.wav>"
+>
+> Change-Id: I12faad082566532b65a7de8c0a6845e1c17870e6
+> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
+> ---
+>   drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+> index c770de0..baf19b4 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -301,15 +301,15 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+>   	COMPOSITE(0, "i2s_src", mux_pll_src_cpll_gpll_p, 0,
+>   			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
+>   			RK3288_CLKGATE_CON(4), 1, GFLAGS),
+> -	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
+> +	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
+>   			RK3288_CLKSEL_CON(8), 0,
+>   			RK3288_CLKGATE_CON(4), 2, GFLAGS),
+> -	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
+> +	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
+>   			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
+> -	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
+> +	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
+>   			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
+>   			RK3288_CLKGATE_CON(4), 0, GFLAGS),
+> -	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
+> +	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
+>   			RK3288_CLKGATE_CON(4), 3, GFLAGS),
+>   
+>   	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
 
-Kernel bug (missing EFAULT check somewhere perhaps?), or is this a
-case where the fuzzer asked the kernel to do something stupid, and it obliged ?
-
-Trinity's watchdog process has been repeatedly sending SIGKILL's to this
-running pid, but we never seem to get out of this state long enough for
-it to take effect.
-
-This is 3.17-rc7 fwiw.
-
-	Dave
 
