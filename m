@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbaI3HaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:30:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49517 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaI3HaF (ORCPT
+	id S1755239AbaI3Hb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:31:27 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:49327 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaI3HbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:30:05 -0400
-Message-ID: <542A5BF8.3030103@codeaurora.org>
-Date: Tue, 30 Sep 2014 10:30:00 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Tue, 30 Sep 2014 03:31:25 -0400
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        linux-mtd@lists.infradead.org, Kiran Padwal <kiran.padwal21@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] mtd: ubi: Extend UBI layer debug/messaging capabilities
-References: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org> <54293975.9040402@gmail.com> <54294A01.8070505@nod.at> <54295165.4030201@smartplayin.com> <54295274.4020805@nod.at>
-In-Reply-To: <54295274.4020805@nod.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <27645.1412052879@jrobl>
+References: <20140929141457.GB5011@tucsk.piliscsaba.szeredi.hu>
+	<26822.1412028003@warthog.procyon.org.uk>
+	<27645.1412052879@jrobl>
+Date: Tue, 30 Sep 2014 09:31:24 +0200
+Message-ID: <CAJfpeguWkWOeWYS1o2gW4P1DJhXn=enBGukPcfscd-guas7h8w@mail.gmail.com>
+Subject: Re: [PULL for 3.18] overlay filesystem v24
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. R. Okajima" <hooanon05g@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-unionfs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/29/2014 3:37 PM, Richard Weinberger wrote:
-> Am 29.09.2014 14:32, schrieb Kiran Padwal:
->> On Monday 29 September 2014 05:31 PM, Richard Weinberger wrote:
->>> Am 29.09.2014 12:50, schrieb Kiran Padwal:
->>>> Hi Tanya,
->>>>
->>>> On Sunday 28 September 2014 12:06 PM, Tanya Brokhman wrote:
->>>>> If there is more then one UBI device mounted, there is no way to
->>>>> distinguish between messages from different UBI devices.
->>>>> Add device number to all ubi layer message types.
->>>>>
->>>>>
->>>>> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
->>>>>
->>>>> ---
->>>>>   drivers/mtd/ubi/attach.c  | 138 ++++++++++++++++++++----------------
->>>>>   drivers/mtd/ubi/build.c   | 130 ++++++++++++++++++++--------------
->>>>>   drivers/mtd/ubi/cdev.c    |  37 +++++-----
->>>>>   drivers/mtd/ubi/debug.c   |   9 +--
->>>>>   drivers/mtd/ubi/eba.c     |  54 +++++++-------
->>>>>   drivers/mtd/ubi/fastmap.c | 108 ++++++++++++++++------------
->>>>>   drivers/mtd/ubi/io.c      | 177 +++++++++++++++++++++++++++-------------------
->>>>>   drivers/mtd/ubi/kapi.c    |   6 +-
->>>>>   drivers/mtd/ubi/misc.c    |   6 +-
->>>>>   drivers/mtd/ubi/ubi.h     |  13 ++--
->>>>>   drivers/mtd/ubi/vmt.c     |  76 +++++++++++---------
->>>>>   drivers/mtd/ubi/vtbl.c    |  54 ++++++++------
->>>>>   drivers/mtd/ubi/wl.c      |  87 +++++++++++++++--------
->>>>>   13 files changed, 521 insertions(+), 374 deletions(-)
->>>>
->>>> Compilation breaks while I try to compile with this patch.
->>>> May be you need to update remaining ubi layer messages also.
->>>
->>> Please always share the errors you face.
->>> Maybe you have a different config.
+On Tue, Sep 30, 2014 at 6:54 AM, J. R. Okajima <hooanon05g@gmail.com> wrote:
+>
+> David Howells:
+>> Miklos Szeredi <miklos@szeredi.hu> wrote:
 >>
->> Sure, I will take care of this next time.
+>> > I'd like to propose overlayfs for inclusion into 3.18.
+>> >
+>> > Al, would you mind giving it a review?
+>> >
+>> > Git tree is here:
+>> >
+>> >   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.current
 >>
->> Macros have been changed but some instances of older macros still remained, which caused many errors like,
->>
->> drivers/mtd/ubi/build.c: In function ‘ubi_init’:
->> drivers/mtd/ubi/build.c:1322:49: error: expected ‘)’ before ‘err’
->>     ubi_err("block: cannot initialize, error %d", err);
+>> Tested-by: David Howells <dhowells@redhat.com>
 >
-> Ohh. :(
-> Tanya, did you test your patch?
+> Does it mean overlayfs passed all your unionmount-testsuite? And does
+> the test suite contain tests for "inode-based" union? For example,
+> - read(2) may get the obsoleted filedata (fstat(2) for metadata too).
+> - fcntl(F_SETLK) may be broken by copy-up.
+> - inotify may not work when it refers to the file before being
+>   copied-up.
+> - unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+>   open(O_RDWR).
+> - exporting via NFS and fhandle systemcalls will not work.
+
+Most of this is explicitly documented.
+
 >
-
-Of course I did. I used nandsimulator on a virtual machine to test all 
-patches. Perhaps my error was testing them all together (with 
-read-disturb) and this got lost somehow. It's very strange you got 
-compilation errors. I'm sorry for the inconvenience. Will look into this 
-today and upload a new version ASAP. (with all previous comments 
-addressed as well)
-
-> Thanks,
-> //richard
+> A few releases ago, OFD file-lock was introduced to improve the
+> behaviour of POSIX lock. POSIX lock has made users confused and I am
+> afraid that the similar story will come up because of the "name-based"
+> union behaviour. Of course the story is not limited to the file-lock.
 >
-> ______________________________________________________
-> Linux MTD discussion mailing list
-> http://lists.infradead.org/mailman/listinfo/linux-mtd/
->
+> If I remember correctly, are you the one who consitunes the development
+> of UnionMount? Is the development totally stopped?
+> Next paragraph is what I wrote several times.
+>         AUFS is an "inode-based" stackable filesystem and solved them many years
+>         ago. But I have to admit that AUFS is big. Yes it is grown up.
+>         I don't stop including overlayfs into mainline, but if the development
+>         of UnionMount is really stopped, then I'd ask people to consider merging
+>         aufs as well as overlayfs.
 
+Union-mounts are namespace based as well.  There's little semantic
+difference between overlayfs and union-mounts.  The difference is
+mostly in the implementation.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation
+It would be good to have an inode based union as well.  I suggest (as
+I suggested many times) to try slimming aufs to a bare minimum and
+submit that.  It may be easier to just start from scratch instead
+trying to drop features from the existing codebase.   I'd be happy to
+review and generally help with such an effort.
+
+Thanks,
+Miklos
