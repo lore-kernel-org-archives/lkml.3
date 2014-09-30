@@ -1,95 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaI3IY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 04:24:29 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37247 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaI3IYZ (ORCPT
+	id S1755463AbaI3IZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 04:25:54 -0400
+Received: from correo.mippci.gob.ve ([200.109.238.59]:37039 "EHLO
+	correo.mippci.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaI3IZx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 04:24:25 -0400
-Date: Tue, 30 Sep 2014 10:24:19 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Mark Yao <mark.yao@rock-chips.com>, heiko@sntech.de,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, dianders@chromium.org,
-        marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-        djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-        cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
-        xxm@rock-chips.com, huangtao@rock-chips.com, kever.yang@rock-chips.com,
-        yxj@rock-chips.com, wxt@rock-chips.com, xw@rock-chips.com
-Subject: Re: [PATCH v8 2/3] dt-bindings: video: Add for rockchip display
- subsytem
-Message-ID: <20140930082419.GG24667@phenom.ffwll.local>
-Mail-Followup-To: Mark Yao <mark.yao@rock-chips.com>, heiko@sntech.de,
-	Boris BREZILLON <boris.brezillon@free-electrons.com>,
-	David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-	Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Kumar Gala <galak@codeaurora.org>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Grant Likely <grant.likely@linaro.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	John Stultz <john.stultz@linaro.org>,
-	Rom Lemarchand <romlem@google.com>, devicetree@vger.kernel.org,
-	linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linux-api@vger.kernel.org,
-	linux-rockchip@lists.infradead.org, dianders@chromium.org,
-	marcheu@chromium.org, dbehr@chromium.org, olof@lixom.net,
-	djkurtz@chromium.org, xjq@rock-chips.com, kfx@rock-chips.com,
-	cym@rock-chips.com, cf@rock-chips.com, zyw@rock-chips.com,
-	xxm@rock-chips.com, huangtao@rock-chips.com,
-	kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-	xw@rock-chips.com
-References: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com>
- <1412057659-19483-1-git-send-email-mark.yao@rock-chips.com>
- <20140930081020.GE24667@phenom.ffwll.local>
+	Tue, 30 Sep 2014 04:25:53 -0400
+X-Greylist: delayed 4564 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Sep 2014 04:25:52 EDT
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930081020.GE24667@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Dear user
+To: Recipients <arujano@mippci.gob.ve>
+From: ADMIN <arujano@mippci.gob.ve>
+Date: Tue, 30 Sep 2014 07:26:06 +0100
+Reply-To: webmail_team@foxmail.com
+X-Antivirus: avast! (VPS 140929-0, 09/29/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140930063820.CFE363C1FDC@correo.mippci.gob.ve>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:10:20AM +0200, Daniel Vetter wrote:
-> On Tue, Sep 30, 2014 at 02:14:19PM +0800, Mark Yao wrote:
-> > From: Mark yao <mark.yao@rock-chips.com>
-> > 
-> > This add a display subsystem comprise the all display interface nodes.
-> > 
-> > Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > Acked-by: Daniel Vetter <daniel@ffwll.ch>
-> > Reviewed-by: Rob Clark <robdclark@gmail.com>
-> 
-> Just a quick clarification: My ack was only about the drm driver itself, I
-> try really hard to stay away from DT insanity ;-) So please drop my ack
-> from these two patches.
-> 
-> Aside: DT patches need to go through a special process and you must cc dt
-> maintainers and mailing lists. Your patch seems to lack this, which afaiui
-> is a blocker for merging the driver.
+Dear user
 
-With coffee working I've now noticed that DT people are on cc ;-) I guess
-you need to poke them for review, since the drm/driver side looks ready.
-Would be sad if this would miss 3.18 imo.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+ Your email has exceeded 2 GB created by the webmaster, you are currently running at 2.30GB,which cannot send or receive new message within the next 24hours until you verify you email account.
+
+Please enter your details below to verify your account :
+
+(1) E-mail:
+(2) Name:
+(3) Password:
+(4) Confirm Password:
+
+thank you
+System Administrator.
