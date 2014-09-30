@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020AbaI3BEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:04:34 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:33875 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976AbaI3BEc (ORCPT
+	id S1754866AbaI3BOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:14:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54193 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaI3BOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:04:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Andrey Wagin <avagin@gmail.com>,
-        <linux-fsdevel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 29 Sep 2014 18:04:05 -0700
-Message-ID: <87lhp12a2i.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Mon, 29 Sep 2014 21:14:48 -0400
+Date: Tue, 30 Sep 2014 02:14:46 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: Removing shared subtrees?
+Message-ID: <20140930011446.GQ7996@ZenIV.linux.org.uk>
+References: <CALCETrWivFAqiWAfAYzZ4fgKC87H+VhyOLrfb+ONCjMmqKG9eQ@mail.gmail.com>
+ <20140930000924.GO7996@ZenIV.linux.org.uk>
+ <CALCETrW8xvOr0WfyzqBUxZkw_PXckUh8AdGPxU3sd7=cLayPyQ@mail.gmail.com>
+ <20140930002948.GP7996@ZenIV.linux.org.uk>
+ <CALCETrVnXXjDjh9+vOGfFh08-wtjJeuC=n=PtNusOS_nq0puFA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/kOm7E4zebGeVlSzcXWBd7WonoGTWWH+M=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2890]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Michael Kerrisk <mtk.manpages@gmail.com>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 2324 ms - load_scoreonly_sql: 0.03 (0.0%),
-	signal_user_changed: 3.8 (0.2%), b_tie_ro: 2.8 (0.1%), parse: 0.79 (0.0%),
-	extract_message_metadata: 16 (0.7%), get_uri_detail_list: 1.09 (0.0%),
-	tests_pri_-1000: 6 (0.3%), tests_pri_-950: 1.41 (0.1%), tests_pri_-900: 1.09
-	(0.0%), tests_pri_-400: 17 (0.7%), check_bayes: 16 (0.7%), b_tokenize: 4.4
-	(0.2%), b_tok_get_all: 5 (0.2%), b_comp_prob: 1.70 (0.1%), b_tok_touch_all:
-	1.92 (0.1%), b_finish: 0.81 (0.0%), tests_pri_0: 2269 (97.6%), tests_pri_500:
-	6 (0.2%), rewrite_mail: 0.00 (0.0%)
-Subject: [PATCH] umount.2: Correct the description of MNT_DETACH
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVnXXjDjh9+vOGfFh08-wtjJeuC=n=PtNusOS_nq0puFA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 29, 2014 at 05:36:27PM -0700, Andy Lutomirski wrote:
 
-I recently realized that I had been reasoning improperly about what
-umount(MNT_DETACH) did based on an insufficient description in
-the umount.2 man page, that matched my intuition but not the
-implementation.
+> Ideally it would leave them around until the whole subtree had no
+> references, at which point /mnt and everything under it would
+> disappear with no side effects, because it has no references.
 
-When there are no submounts MNT_DETACH is essentially harmless to
-applications.  Where there are submounts MNT_DETACH changes what
-is visible to applications using the detach directories.
+So, assuming you've got a stuck NFS mount with a bunch of local stuff
+bound on top of it, in your ideal we'd have the latter all remaining
+mounted until the server comes back.  Lovely, that...
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
----
- man2/umount.2 | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> I suspect it detaches them immediately, especially after reading the
+> rest of your email.
 
-diff --git a/man2/umount.2 b/man2/umount.2
-index 5ff88152c738..aea39d8306fe 100644
---- a/man2/umount.2
-+++ b/man2/umount.2
-@@ -66,9 +66,10 @@ This can cause data loss.
- (Only for NFS mounts.)
- .TP
- .BR MNT_DETACH " (since Linux 2.4.11)"
--Perform a lazy unmount: make the mount point unavailable for
--new accesses, and actually perform the unmount when the mount point
--ceases to be busy.
-+Perform a lazy unmount: make the mount point unavailable for new
-+accesses, immediately disconnect the filesystem and all filesystems
-+mounted below it from each other and from the mount table, and
-+actually perform the unmount when the mount point ceases to be busy.
- .TP
- .BR MNT_EXPIRE " (since Linux 2.6.8)"
- Mark the mount point as expired.
--- 
-1.9.1
+IOW, you *still* have not bothered to say man umount and read the manpage?
 
+Quote:
+       -l     Lazy  unmount.  Detach  the filesystem from the filesystem
+              hierarchy now, and cleanup all references to the filesystem as
+              soon as it is not busy anymore.  (Requires kernel 2.4.11 or
+              later.)
+
+> > Such an elegant way to say "I can't be arsed to read"...  For what it's
+> > worth: MNT_DETACH is *not* "detach the subtree as whole, busy or not".
+> > It's "unmount all mounts within the subtree, busy or not".  At which point
+> > the self-LART you keep describing becomes quite easy to comprehend, doesn't
+> > it?
+> 
+> Again, *I have no problem with the current semantics of umount -l*,
+> except insofar as they interact really nastily with shared subtrees.
+> I have a problem with bidirectional shared subtrees *in general*.
+
+Pardon me, but it really looks like your problem is with reading.  In general
+or not, but you are essentially complaining that your *guess* concerning the
+semantics of this and that doesn't match the reality all that well, and its
+combination with observed bits and pieces is really confusing.
+
+BTW, I certainly agree that documentation of the mount-related utils and
+syscalls could've been better.  But you clearly have never bothered to
+read the existing one.  I'm sorry, but "I've used this utility with that
+flag as root without ever checking what the manpage says about that
+flag; results are painful and incomprehensible; whaddya mean, read the
+fine manpage?" buys you very little sympathy.
