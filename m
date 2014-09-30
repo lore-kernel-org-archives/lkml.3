@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbaI3TdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:33:13 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:31034 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021AbaI3TdL convert rfc822-to-8bit (ORCPT
+	id S1751196AbaI3TfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:35:18 -0400
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:46036 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaI3TfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:33:11 -0400
-From: "Zuckerman, Boris" <borisz@hp.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-Thread-Topic: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-Thread-Index: AQHP2QCmreuMoL5IZEq3psYm2+FK5ZwZdKuhgABUowCAAAGMD4AAFL6AgAAL4QCAACrTAIAAAZuw
-Date: Tue, 30 Sep 2014 19:31:55 +0000
-Message-ID: <4C30833E5CDF444D84D942543DF65BDA6E047CAE@G4W3303.americas.hpqcorp.net>
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com>
- <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx>
- <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx>
- <4C30833E5CDF444D84D942543DF65BDA6E047B9B@G4W3303.americas.hpqcorp.net>
- <20140930192428.GF5098@wil.cx>
-In-Reply-To: <20140930192428.GF5098@wil.cx>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.16]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 30 Sep 2014 15:35:16 -0400
+Message-ID: <542b05f3.a2db440a.5533.fffffba9@mx.google.com>
+From: celina59827@googlemail.com
+X-Google-Original-From: CELINA59827@gmail.com
+To: linux-kernel@vger.kernel.org
+Reply-To: limpid75154@gmail.com
+Subject: Re: Guaranteed Top 10 Google Placements for mail-archive.com In 100
+ Days
+Date: Wed, 1 Oct 2014 01:05:15 +0530
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying to refocus this thread from a particular issue to more generic needs...
+Hello Sir / Mam
 
-Regards, Boris
+We would like to have a chance to work on your website and get it positioned top 10 on major search engines around the world ( Google & Bing ). We are presently working with 500+ clients world wide and we have made sure all our clients rank top 10 for their best keywords. None of our clients have been caught in any of the recent google updates. We only use ethical white hat methods to deliver rankings. Our search engine packages include both onsite & off optimization, we provide complete SEO solution to our clients and not just link building packages.
 
-> -----Original Message-----
-> From: Matthew Wilcox [mailto:willy@linux.intel.com]
-> Sent: Tuesday, September 30, 2014 3:24 PM
-> To: Zuckerman, Boris
-> Cc: Matthew Wilcox; Valdis.Kletnieks@vt.edu; Matthew Wilcox; linux-
-> fsdevel@vger.kernel.org; linux-mm@kvack.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-> 
-> On Tue, Sep 30, 2014 at 05:10:26PM +0000, Zuckerman, Boris wrote:
-> > >
-> > > The more I think about this, the more I think this is a bad idea.
-> > > When you have a file open with O_DIRECT, your I/O has to be done in
-> > > 512-byte multiples, and it has to be aligned to 512-byte boundaries
-> > > in memory.  If an unsuspecting application has O_DIRECT forced on
-> > > it, it isn't going to know to do that, and so all its I/Os will fail.
-> > > It'll also be horribly inefficient if a program has the file mmaped.
-> > >
-> > > What problem are you really trying to solve?  Some big files hogging the page
-> cache?
-> > > --
-> >
-> > Page cache? As another copy in RAM?
-> > NV_DIMMs may be viewed as a caching device. This caching can be implemented on
-> the level of NV block/offset or may have some hints from FS and applications.
-> Temporary files is one example. They may not need to hit NV domain ever. Some
-> transactional journals or DB files is another example. They may stay in RAM until power
-> off.
-> 
-> Boris, you're confused.  Valdis is trying to solve an unrelated problem (and hopes my
-> DAX patches will do it for him).  I'm explaining to him why what he wants to do is a bad
-> idea.  This tangent is unrelated to NV-DIMMs.
+We understand there are many SEO Scam companies mailing you each day over and over again and I am also sure you have been robbed off a few times in past with no results at all. To make sure you we show you our WORTH, we have launched 15 DAY FREE SEO TRIAL service. We want to build your faith in our service and make sure you see results before paying for our service.
 
+Is 15 days Enough time to deliver results ?
+
+15 days is good enough a time to show you huge movements in rankings for all your keywords. We start with A) choosing the best keywords for your website, B)  Approve a final list of keywords, C) Make onsite changes D) Build links for your website. If in these 15 days you are not happy with our performance, you can cancel or decide to opt-out. You will not be billed a single dime for these 15 days.
+
+Post Trial Pricing & Package
+
+In the 15 days trial, we only work for 10 keywords so that we can show best possible results in the time span. Once the trial is over you pick one of the packages listed below :
+
+Package A ) $99 / month (10 keywords optimized ) Package B ) $149 / month ( 20 keywords optimized ) Package C ) $199 / month ( 30 keywords optimized )
+
+To Sign up for our free trial email us back with the information below so we can send you our sign up link.
+
+1) " Website You Want To Optimize "
+2) Keywords ( Optional )
+3) SEO Done Before ( Yes / No )
+
+Looking forward working with you, let us know if you would like to have more information about our company and procedures.
+Regards
+
+Mishika Sahai
+SEO Manager : T.O.B
+7 B Green Avenue, Amritsar Punjab
+
+----------------------------------------------------------------------------------------------------------------
+
+Our email above is not intended to waste your time or fill your inbox with spam. If you would not like to hear from us, email us back with NOT INTERESTED. We will never email you again.
