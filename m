@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaI3M03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 08:26:29 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:40362 "EHLO
+	id S1752436AbaI3M1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 08:27:31 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:40474 "EHLO
 	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaI3M01 (ORCPT
+	with ESMTP id S1751870AbaI3M02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 08:26:27 -0400
+	Tue, 30 Sep 2014 08:26:28 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH/RFC v2 1/4] ARM: hw_breakpoint: Add arm_dbg_regs_available flag
-Date: Tue, 30 Sep 2014 14:26:24 +0200
-Message-Id: <1412079987-1827-2-git-send-email-geert+renesas@glider.be>
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        devicetree@vger.kernel.org
+Subject: [PATCH/RFC v2 4/4] ARM: shmobile: r8a7740 dtsi: Add minimal device node for Coresight-ETM
+Date: Tue, 30 Sep 2014 14:26:27 +0200
+Message-Id: <1412079987-1827-5-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412079987-1827-1-git-send-email-geert+renesas@glider.be>
 References: <1412079987-1827-1-git-send-email-geert+renesas@glider.be>
@@ -33,61 +34,42 @@ suspending from s2ram with:
 This happens because dbg_cpu_pm_notify() calls reset_ctrl_regs(), which
 can't access the debug registers as the debug module is powered down.
 
-As suggested by Russell King, track whether the ETM block is powered down
-to fix this.
-
-The availability of the debug registers depends on the platform and its
-state.  Hence provide a mechanism for platform code to indicate that the
-debug registers are available or not, using a boolean flag that defaults
-to true.
+Add a minimal device node for the Coresight-ETM hardware block, and hook
+it up to the D4 PM domain, so the R-Mobile System Controller driver can
+keep the arm_dbg_regs_available flag in sync with the state of the D4 PM
+domain.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: devicetree@vger.kernel.org
 ---
+This is a fix on top of series "[PATCH 00/13] ARM: shmobile: R-Mobile:
+DT PM domain support" (https://lkml.org/lkml/2014/9/25/452), to be
+folded into "[PATCH v3 10/13] ARM: shmobile: r8a7740 dtsi: Add PM domain
+support" (https://lkml.org/lkml/2014/9/25/450).
+
 v2:
   - New
 
- arch/arm/include/asm/hw_breakpoint.h | 2 ++
- arch/arm/kernel/hw_breakpoint.c      | 7 +++++++
- 2 files changed, 9 insertions(+)
+---
+ arch/arm/boot/dts/r8a7740.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/include/asm/hw_breakpoint.h b/arch/arm/include/asm/hw_breakpoint.h
-index 8e427c7b44257d2d..51ffdae41bfe3754 100644
---- a/arch/arm/include/asm/hw_breakpoint.h
-+++ b/arch/arm/include/asm/hw_breakpoint.h
-@@ -110,6 +110,8 @@ static inline void decode_ctrl_reg(u32 reg,
- 	asm volatile("mcr p14, 0, %0, " #N "," #M ", " #OP2 : : "r" (VAL));\
- } while (0)
+diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+index 0fb93df46af4ce08..2ae08fc99be678c3 100644
+--- a/arch/arm/boot/dts/r8a7740.dtsi
++++ b/arch/arm/boot/dts/r8a7740.dtsi
+@@ -44,6 +44,11 @@
+ 		interrupts = <0 83 IRQ_TYPE_LEVEL_HIGH>;
+ 	};
  
-+extern bool arm_dbg_regs_available;
++	ptm {
++		compatible = "arm,coresight-etm3x";
++		power-domains = <&pd_d4>;
++	};
 +
- struct notifier_block;
- struct perf_event;
- struct pmu;
-diff --git a/arch/arm/kernel/hw_breakpoint.c b/arch/arm/kernel/hw_breakpoint.c
-index b5b452f90f761bd2..96193c0165fbe5ca 100644
---- a/arch/arm/kernel/hw_breakpoint.c
-+++ b/arch/arm/kernel/hw_breakpoint.c
-@@ -38,6 +38,8 @@
- #include <asm/traps.h>
- #include <asm/hardware/coresight.h>
- 
-+bool arm_dbg_regs_available = true;
-+
- /* Breakpoint currently in use for each BRP. */
- static DEFINE_PER_CPU(struct perf_event *, bp_on_reg[ARM_MAX_BRP]);
- 
-@@ -931,6 +933,11 @@ static void reset_ctrl_regs(void *unused)
- 	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
- 	u32 val;
- 
-+	if (!arm_dbg_regs_available) {
-+		pr_warn_once("Debug registers are not available\n");
-+		return;
-+	}
-+
- 	/*
- 	 * v7 debug contains save and restore registers so that debug state
- 	 * can be maintained across low-power modes without leaving the debug
+ 	cmt1: timer@e6138000 {
+ 		compatible = "renesas,cmt-48-r8a7740", "renesas,cmt-48";
+ 		reg = <0xe6138000 0x170>;
 -- 
 1.9.1
 
