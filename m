@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaI3Vhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:37:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60950 "EHLO
+	id S1754771AbaI3V5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:57:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60955 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaI3Vhi (ORCPT
+	with ESMTP id S1753809AbaI3Vhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:37:38 -0400
+	Tue, 30 Sep 2014 17:37:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 057/103] ALSA: core: fix buffer overflow in snd_info_get_line()
-Date: Tue, 30 Sep 2014 14:31:02 -0700
-Message-Id: <1412112708-27356-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 071/103] USB: serial: fix potential stack buffer overflow
+Date: Tue, 30 Sep 2014 14:31:16 -0700
+Message-Id: <1412112708-27356-72-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,45 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Johan Hovold <johan@kernel.org>
 
-commit ddc64b278a4dda052390b3de1b551e59acdff105 upstream.
+commit d979e9f9ecab04c1ecca741370e30a8a498893f5 upstream.
 
-snd_info_get_line() documents that its last parameter must be one
-less than the buffer size, but this API design guarantees that
-(literally) every caller gets it wrong.
+Make sure to verify the maximum number of endpoints per type to avoid
+writing beyond the end of a stack-allocated array.
 
-Just change this parameter to have its obvious meaning.
+The current usb-serial implementation is limited to eight ports per
+interface but failed to verify that the number of endpoints of a certain
+type reported by a device did not exceed this limit.
 
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/core/info.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/usb-serial.c | 32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
-diff --git a/sound/core/info.c b/sound/core/info.c
-index e79baa1..08070e1 100644
---- a/sound/core/info.c
-+++ b/sound/core/info.c
-@@ -679,7 +679,7 @@ int snd_info_card_free(struct snd_card *card)
-  * snd_info_get_line - read one line from the procfs buffer
-  * @buffer: the procfs buffer
-  * @line: the buffer to store
-- * @len: the max. buffer size - 1
-+ * @len: the max. buffer size
-  *
-  * Reads one line from the buffer and stores the string.
-  *
-@@ -699,7 +699,7 @@ int snd_info_get_line(struct snd_info_buffer *buffer, char *line, int len)
- 			buffer->stop = 1;
- 		if (c == '\n')
- 			break;
--		if (len) {
-+		if (len > 1) {
- 			len--;
- 			*line++ = c;
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index 52260af..c08151d 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -764,29 +764,39 @@ static int usb_serial_probe(struct usb_interface *interface,
+ 		if (usb_endpoint_is_bulk_in(endpoint)) {
+ 			/* we found a bulk in endpoint */
+ 			dev_dbg(ddev, "found bulk in on endpoint %d\n", i);
+-			bulk_in_endpoint[num_bulk_in] = endpoint;
+-			++num_bulk_in;
++			if (num_bulk_in < MAX_NUM_PORTS) {
++				bulk_in_endpoint[num_bulk_in] = endpoint;
++				++num_bulk_in;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_bulk_out(endpoint)) {
+ 			/* we found a bulk out endpoint */
+ 			dev_dbg(ddev, "found bulk out on endpoint %d\n", i);
+-			bulk_out_endpoint[num_bulk_out] = endpoint;
+-			++num_bulk_out;
++			if (num_bulk_out < MAX_NUM_PORTS) {
++				bulk_out_endpoint[num_bulk_out] = endpoint;
++				++num_bulk_out;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_int_in(endpoint)) {
+ 			/* we found a interrupt in endpoint */
+ 			dev_dbg(ddev, "found interrupt in on endpoint %d\n", i);
+-			interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-			++num_interrupt_in;
++			if (num_interrupt_in < MAX_NUM_PORTS) {
++				interrupt_in_endpoint[num_interrupt_in] =
++						endpoint;
++				++num_interrupt_in;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_int_out(endpoint)) {
+ 			/* we found an interrupt out endpoint */
+ 			dev_dbg(ddev, "found interrupt out on endpoint %d\n", i);
+-			interrupt_out_endpoint[num_interrupt_out] = endpoint;
+-			++num_interrupt_out;
++			if (num_interrupt_out < MAX_NUM_PORTS) {
++				interrupt_out_endpoint[num_interrupt_out] =
++						endpoint;
++				++num_interrupt_out;
++			}
+ 		}
+ 	}
+ 
+@@ -809,8 +819,10 @@ static int usb_serial_probe(struct usb_interface *interface,
+ 				if (usb_endpoint_is_int_in(endpoint)) {
+ 					/* we found a interrupt in endpoint */
+ 					dev_dbg(ddev, "found interrupt in for Prolific device on separate interface\n");
+-					interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-					++num_interrupt_in;
++					if (num_interrupt_in < MAX_NUM_PORTS) {
++						interrupt_in_endpoint[num_interrupt_in] = endpoint;
++						++num_interrupt_in;
++					}
+ 				}
+ 			}
  		}
 -- 
 1.9.1
