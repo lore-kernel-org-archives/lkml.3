@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaI3NFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:05:04 -0400
-Received: from smtprelay0070.hostedemail.com ([216.40.44.70]:42165 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751306AbaI3NFB (ORCPT
+	id S1751990AbaI3NGE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:06:04 -0400
+Received: from regular1.263xmail.com ([211.150.99.137]:40905 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaI3NGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:05:01 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:6742:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13073:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tooth93_2b531a0d09d27
-X-Filterd-Recvd-Size: 2779
-Message-ID: <1412082296.4302.101.camel@joe-AO725>
-Subject: Re: [PATCH 2/7] netfilter: Convert print_tuple functions to return
- void
-From: Joe Perches <joe@perches.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 30 Sep 2014 06:04:56 -0700
-In-Reply-To: <20140930102221.GB2707@dhcp128.suse.cz>
-References: <20140929124246.3e39dac8@gandalf.local.home>
-	 <cover.1412031505.git.joe@perches.com>
-	 <f2e8cf8df433a197daa62cbaf124c900c708edc7.1412031505.git.joe@perches.com>
-	 <20140930102221.GB2707@dhcp128.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Sep 2014 09:06:01 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <7f8a82be7c4e11df7809945e5a8d9e5c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH v9 2/3] dt-bindings: video: Add for rockchip display subsytem
+Date: Tue, 30 Sep 2014 21:04:44 +0800
+Message-Id: <1412082284-27758-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+References: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 12:22 +0200, Petr Mladek wrote:
-> On Mon 29-09-14 16:08:22, Joe Perches wrote:
-> > Since adding a new function to seq_file (seq_is_full)
-> > there isn't any value for functions called from seq_show to
-> > return anything.   Remove the int returns of the various
-> > print_tuple/<foo>_print_tuple functions.
+From: Mark yao <mark.yao@rock-chips.com>
 
-[a bunch of quoted stuff]
+This add a display subsystem comprise the all display interface nodes.
 
-Please remember to cut out from your replies the unnecessary old stuff.
-It can take quite awhile to scan through looking for your comments.
+Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+---
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
 
-> > diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-[]
-> > @@ -202,9 +203,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
-> >  	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-> >  		goto release;
-> >  
-> > -	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> > -			l3proto, l4proto))
-> > -		goto release;
-> > +	print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-> > +		    l3proto, l4proto);
-> 
-> To be precise, we should add:
-> 
-> 	if (seq_overflow(s))
-> 		goto release;
+Changes in v3: None
 
-Precision isn't all that useful when checking seq_<output>.
+Changes in v4: None
 
-There really isn't much value in checking each possible
-overflow site.  A periodic check prior to or in the middle
-of a more costly/longish operation should be acceptable.
+Changes in v5: None
 
-The entire block that precedes any seq buffer full test will
-be redone when the buffer is expanded.
+Changes in v6: None
+
+Changes in v7: None
+
+Changes in v8: None
+
+Changes in v9: None
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/rockchip-drm.txt
+
+diff --git a/Documentation/devicetree/bindings/video/rockchip-drm.txt b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+new file mode 100644
+index 0000000..7fff582
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/rockchip-drm.txt
+@@ -0,0 +1,19 @@
++Rockchip DRM master device
++================================
++
++The Rockchip DRM master device is a virtual device needed to list all
++vop devices or other display interface nodes that comprise the
++graphics subsystem.
++
++Required properties:
++- compatible: Should be "rockchip,display-subsystem"
++- ports: Should contain a list of phandles pointing to display interface port
++  of vop devices. vop definitions as defined in
++  Documentation/devicetree/bindings/video/rockchip-vop.txt
++
++example:
++
++display-subsystem {
++	compatible = "rockchip,display-subsystem";
++	ports = <&vopl_out>, <&vopb_out>;
++};
+-- 
+1.7.9.5
+
 
