@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaI3Bau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 21:30:50 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:60656 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830AbaI3Bat (ORCPT
+	id S1755054AbaI3Bfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 21:35:48 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:52190 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946AbaI3Bfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 21:30:49 -0400
-From: Yunlei He <heyunlei@huawei.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <tony@atomide.com>, <grant.likely@linaro.org>, <robh+dt@kernel.org>
-CC: <liguozhu@hisilicon.com>, <kong.kongxinwei@hisilicon.com>,
-        <bintian.wang@huawei.com>, heyunlei <heyunlei@huawei.com>
-Subject: [PATCH] pinctrl: pinctrl-single.c: init pinctrl single at arch_initcall time
-Date: Tue, 30 Sep 2014 09:29:50 +0800
-Message-ID: <1412040590-10764-1-git-send-email-heyunlei@huawei.com>
-X-Mailer: git-send-email 1.9.4.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.111.64.99]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020208.542A07BA.0025,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 6ee4c1d2f6ddb5c57ab74e291b81405f
+	Mon, 29 Sep 2014 21:35:47 -0400
+From: Brian Norris <computersforpeace@gmail.com>
+To: <linux-arm-kernel@lists.infradead.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Marc Carino <marc.ceeeee@gmail.com>
+Subject: [PATCH 0/5] ARM: move #include <asm/cp15.h> into cacheflush.h
+Date: Mon, 29 Sep 2014 18:35:25 -0700
+Message-Id: <1412040930-16864-1-git-send-email-computersforpeace@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: heyunlei <heyunlei@huawei.com>
+There are several places where an explicit include of <asm/cp15.h> is needed
+just because cacheflush.h uses one of its macros in v7_exit_coherency_flush().
+Let's put the include in the proper header.
 
-On our arm platform, some modules (e.g. I2C bus driver) use the
-pinctrl-single driver to configure the SoC pin, but pinctrl-single
-driver uses module_init time, that makes some modules initialize ahead
-the pinctrl-single and fail to register.
+These obviously have some dependencies, so I'd focus on:
+  (1) Is patch 1 acceptable? If so, then:
+  (2) Make sure patch 1 is serialized before the rest
 
-This patch changes the initialization priority of pinctrl-single from
-module_init time to arch_initcall time.
+I did a cursory scan of every file that includes cp15.h, and these are the only
+ones I found that only needed it for the sake of v7_exit_coherency_flush().
 
-Signed-off-by: Yunlei He <heyunlei@huawei.com>
-Signed-off-by: Xinwei Kong <kong.kongxinwei@hisilicon.com>
----
- drivers/pinctrl/pinctrl-single.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+These are barely compile tested.
 
-diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-index 95dd9cf..4b9e5b9 100644
---- a/drivers/pinctrl/pinctrl-single.c
-+++ b/drivers/pinctrl/pinctrl-single.c
-@@ -2012,7 +2012,18 @@ static struct platform_driver pcs_driver = {
- #endif
- };
- 
--module_platform_driver(pcs_driver);
-+static int __init pinctrl_single_init(void)
-+{
-+		return platform_driver_register(&pcs_driver);
-+}
-+
-+static void __exit pinctrl_single_exit(void)
-+{
-+		platform_driver_unregister(&pcs_driver);
-+}
-+
-+arch_initcall(pinctrl_single_init);
-+module_exit(pinctrl_single_exit);
- 
- MODULE_AUTHOR("Tony Lindgren <tony@atomide.com>");
- MODULE_DESCRIPTION("One-register-per-pin type device tree based pinctrl driver");
+Thanks,
+Brian
+
+Brian Norris (5):
+  ARM: include missing cp15.h header
+  ARM: mvebu: drop unnecessary include
+  ARM: rockchip: drop unnecessary include
+  ARM: vexpress: drop unnecessary include
+  ARM: brcmstb: drop unnecessary include
+
+ arch/arm/include/asm/cacheflush.h   | 1 +
+ arch/arm/mach-bcm/platsmp-brcmstb.c | 1 -
+ arch/arm/mach-mvebu/pmsu.c          | 1 -
+ arch/arm/mach-rockchip/platsmp.c    | 1 -
+ arch/arm/mach-vexpress/dcscb.c      | 1 -
+ arch/arm/mach-vexpress/tc2_pm.c     | 1 -
+ 6 files changed, 1 insertion(+), 5 deletions(-)
+
 -- 
-1.7.9.5
-
+1.9.1
 
