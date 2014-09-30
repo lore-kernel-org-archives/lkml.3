@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372AbaI3WGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:06:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60736 "EHLO
+	id S1755358AbaI3WGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:06:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60755 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaI3VcA (ORCPT
+	with ESMTP id S1751869AbaI3VcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 17:32:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/103] udf: Avoid infinite loop when processing indirect ICBs
-Date: Tue, 30 Sep 2014 14:30:08 -0700
-Message-Id: <1412112708-27356-4-git-send-email-kamal@canonical.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 005/103] HID: fix a couple of off-by-ones
+Date: Tue, 30 Sep 2014 14:30:10 -0700
+Message-Id: <1412112708-27356-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -26,94 +26,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
+commit 4ab25786c87eb20857bbb715c3ae34ec8fd6a214 upstream.
 
-We did not implement any bound on number of indirect ICBs we follow when
-loading inode. Thus corrupted medium could cause kernel to go into an
-infinite loop, possibly causing a stack overflow.
+There are a few very theoretical off-by-one bugs in report descriptor size
+checking when performing a pre-parsing fixup. Fix those.
 
-Fix the possible stack overflow by removing recursion from
-__udf_read_inode() and limit number of indirect ICBs we follow to avoid
-infinite loops.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reference: CVE-2014-6410
+Reported-by: Ben Hawkes <hawkes@google.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/udf/inode.c | 35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
+ drivers/hid/hid-cherry.c   | 2 +-
+ drivers/hid/hid-kye.c      | 2 +-
+ drivers/hid/hid-lg.c       | 4 ++--
+ drivers/hid/hid-monterey.c | 2 +-
+ drivers/hid/hid-petalynx.c | 2 +-
+ drivers/hid/hid-sunplus.c  | 2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index ba59939..55ce50d 100644
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1269,6 +1269,13 @@ update_time:
- 	return 0;
- }
- 
-+/*
-+ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
-+ * arbitrary - just that we hopefully don't limit any real use of rewritten
-+ * inode on write-once media but avoid looping for too long on corrupted media.
-+ */
-+#define UDF_MAX_ICB_NESTING 1024
-+
- static void __udf_read_inode(struct inode *inode)
+diff --git a/drivers/hid/hid-cherry.c b/drivers/hid/hid-cherry.c
+index 1bdcccc..f745d2c 100644
+--- a/drivers/hid/hid-cherry.c
++++ b/drivers/hid/hid-cherry.c
+@@ -28,7 +28,7 @@
+ static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
  {
- 	struct buffer_head *bh = NULL;
-@@ -1278,7 +1285,9 @@ static void __udf_read_inode(struct inode *inode)
- 	struct udf_inode_info *iinfo = UDF_I(inode);
- 	struct udf_sb_info *sbi = UDF_SB(inode->i_sb);
- 	unsigned int link_count;
-+	unsigned int indirections = 0;
+-	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
++	if (*rsize >= 18 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
+ 		hid_info(hdev, "fixing up Cherry Cymotion report descriptor\n");
+ 		rdesc[11] = rdesc[16] = 0xff;
+ 		rdesc[12] = rdesc[17] = 0x03;
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index e776963..b92bf01 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -300,7 +300,7 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		 *   - change the button usage range to 4-7 for the extra
+ 		 *     buttons
+ 		 */
+-		if (*rsize >= 74 &&
++		if (*rsize >= 75 &&
+ 			rdesc[61] == 0x05 && rdesc[62] == 0x08 &&
+ 			rdesc[63] == 0x19 && rdesc[64] == 0x08 &&
+ 			rdesc[65] == 0x29 && rdesc[66] == 0x0f &&
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index 06eb45f..12fc48c 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -345,14 +345,14 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	struct usb_device_descriptor *udesc;
+ 	__u16 bcdDevice, rev_maj, rev_min;
  
-+reread:
- 	/*
- 	 * Set defaults, but the inode is still incomplete!
- 	 * Note: get_new_inode() sets the following on a new inode:
-@@ -1316,28 +1325,26 @@ static void __udf_read_inode(struct inode *inode)
- 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
- 					&ident);
- 		if (ident == TAG_IDENT_IE && ibh) {
--			struct buffer_head *nbh = NULL;
- 			struct kernel_lb_addr loc;
- 			struct indirectEntry *ie;
- 
- 			ie = (struct indirectEntry *)ibh->b_data;
- 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
- 
--			if (ie->indirectICB.extLength &&
--				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
--							&ident))) {
--				if (ident == TAG_IDENT_FE ||
--					ident == TAG_IDENT_EFE) {
--					memcpy(&iinfo->i_location,
--						&loc,
--						sizeof(struct kernel_lb_addr));
--					brelse(bh);
--					brelse(ibh);
--					brelse(nbh);
--					__udf_read_inode(inode);
-+			if (ie->indirectICB.extLength) {
-+				brelse(bh);
-+				brelse(ibh);
-+				memcpy(&iinfo->i_location, &loc,
-+				       sizeof(struct kernel_lb_addr));
-+				if (++indirections > UDF_MAX_ICB_NESTING) {
-+					udf_err(inode->i_sb,
-+						"too many ICBs in ICB hierarchy"
-+						" (max %d supported)\n",
-+						UDF_MAX_ICB_NESTING);
-+					make_bad_inode(inode);
- 					return;
- 				}
--				brelse(nbh);
-+				goto reread;
- 			}
- 		}
- 		brelse(ibh);
+-	if ((drv_data->quirks & LG_RDESC) && *rsize >= 90 && rdesc[83] == 0x26 &&
++	if ((drv_data->quirks & LG_RDESC) && *rsize >= 91 && rdesc[83] == 0x26 &&
+ 			rdesc[84] == 0x8c && rdesc[85] == 0x02) {
+ 		hid_info(hdev,
+ 			 "fixing up Logitech keyboard report descriptor\n");
+ 		rdesc[84] = rdesc[89] = 0x4d;
+ 		rdesc[85] = rdesc[90] = 0x10;
+ 	}
+-	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
++	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
+ 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
+ 			rdesc[49] == 0x81 && rdesc[50] == 0x06) {
+ 		hid_info(hdev,
+diff --git a/drivers/hid/hid-monterey.c b/drivers/hid/hid-monterey.c
+index 9e14c00..25daf28 100644
+--- a/drivers/hid/hid-monterey.c
++++ b/drivers/hid/hid-monterey.c
+@@ -24,7 +24,7 @@
+ static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
++	if (*rsize >= 31 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
+ 		hid_info(hdev, "fixing up button/consumer in HID report descriptor\n");
+ 		rdesc[30] = 0x0c;
+ 	}
+diff --git a/drivers/hid/hid-petalynx.c b/drivers/hid/hid-petalynx.c
+index 736b250..6aca4f2 100644
+--- a/drivers/hid/hid-petalynx.c
++++ b/drivers/hid/hid-petalynx.c
+@@ -25,7 +25,7 @@
+ static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
++	if (*rsize >= 62 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
+ 			rdesc[41] == 0x00 && rdesc[59] == 0x26 &&
+ 			rdesc[60] == 0xf9 && rdesc[61] == 0x00) {
+ 		hid_info(hdev, "fixing up Petalynx Maxter Remote report descriptor\n");
+diff --git a/drivers/hid/hid-sunplus.c b/drivers/hid/hid-sunplus.c
+index 87fc91e..91072fa 100644
+--- a/drivers/hid/hid-sunplus.c
++++ b/drivers/hid/hid-sunplus.c
+@@ -24,7 +24,7 @@
+ static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
++	if (*rsize >= 112 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
+ 			rdesc[106] == 0x03) {
+ 		hid_info(hdev, "fixing up Sunplus Wireless Desktop report descriptor\n");
+ 		rdesc[105] = rdesc[110] = 0x03;
 -- 
 1.9.1
 
