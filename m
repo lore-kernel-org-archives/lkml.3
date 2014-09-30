@@ -1,111 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbaI3Nwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:52:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52105 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaI3Nwk convert rfc822-to-8bit (ORCPT
+	id S1751782AbaI3Nsb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:48:31 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50978 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750780AbaI3Ns3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:52:40 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [RFC 1/7] soc: qcom: Add device tree binding for SMEM
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1412037291-16880-2-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Tue, 30 Sep 2014 08:52:35 -0500
-Cc: Andy Gross <agross@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Suman Anna <s-anna@ti.com>,
-        Jeffrey Hugo <jhugo@codeaurora.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8D91095C-63ED-4988-A4C8-68DADF95FF64@codeaurora.org>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com> <1412037291-16880-2-git-send-email-bjorn.andersson@sonymobile.com>
-To: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 30 Sep 2014 09:48:29 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v5 00/11] drivers: cacheinfo support
+Date: Tue, 30 Sep 2014 14:48:21 +0100
+Message-Id: <1412084912-2767-1-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series adds a generic cacheinfo support similar to topology. The
+implementation is based on x86 cacheinfo support. Currently x86, powerpc,
+ia64 and s390 have their own implementations. While adding similar support
+to ARM and ARM64, here is the attempt to make it generic quite similar to
+topology info support. It also adds the missing ABI documentation for
+the cacheinfo sysfs which is already being used.
 
-On Sep 29, 2014, at 7:34 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
+It moves all the existing different implementations on x86, ia64, powerpc
+and s390 to use the generic cacheinfo infrastructure introduced here.
+These changes on non-ARM platforms are only compile tested and tested on x86.
 
-> Add device tree binding documentation for the Qualcom Shared Memory
-> manager.
-> 
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-> 
-> Exposed by this node is a set of items of different sizes. For many things a
-> standard of_xlate method of referencing the individual nodes would be
-> preferable, so a #something-cells would make sense. We do however also needs
-> access to these items without explicitly stating the references in devicetree
-> (e.g. SMD references 257 of these). I haven't found any good example of how to
-> implement this, so suggestions are welcome.
-> 
-> Note that the hwspinlock reference is not yet supported in the mainline, but
-> this will likely need a few iterations so I wanted to get this out.
-> 
-> .../devicetree/bindings/soc/qcom/qcom,smem.txt     |   34 ++++++++++++++++++++
-> 1 file changed, 34 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,smem.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,smem.txt b/Documentation/devicetree/bindings/soc/qcom/qcom,smem.txt
-> new file mode 100644
-> index 0000000..ddd58c7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/soc/qcom/qcom,smem.txt
-> @@ -0,0 +1,34 @@
-> +Qualcomm Shared Memory binding
-> +
-> +This binding describes the Qualcomm Shared Memory, used to share data between
-> +various subsystems and OSes in Qualcomm platforms.
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <stringlist>
-> +	Definition: must be:
-> +		    "qcom,smem"
-> +
-> +- reg:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: base address and size pair for each area representing the
-> +		    shared memory. The first pair will must represent the "main"
-> +		    area, where the shared memory header and table-of-content
-> +		    can be found.
-> +
-> +- hwspinlocks:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: reference to a hwspinlock used to protect allocations from
-> +		    the shared memory
-> +
-> += EXAMPLE
-> +
-> +        smem: smem@fa00000 {
-> +                compatible = "qcom,smem";
-> +                reg = <0x0fa00000 0x200000>,
-> +                      <0xfc428000 0x4000>;
-> +
-> +                hwspinlocks = <&tcsr_mutex 3>;
-> +        };
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This series also adds support for ARM and ARM64 architectures based on
+the generic support.
+
+The code can be fetched from:
+ git://linux-arm.org/linux-skn cacheinfo
+
+Changes v4->v5:
+	- Refactoring of cpumask show_map updated as per PeterZ's suggestion
+	- ARM64 code rebased/reworked to use/extend the cachetype helpers
+	- Added tested/acked/reviewed-by tags received so far
+
+Changes v3->v4:
+        - since userspace tools can't handle class and bus with same name,
+          removed creating new cpu class and reused existing cpu bus with
+          new cpu_device_create function
+        - (no changes in the arch specific port)
+
+Changes v2->v3:
+        - Added {allocation,write}_policy instead of single attributes sysfs
+          (attributes retained on ia64 privately as it was used only on that)
+        - factored out show_cpumap into separate helper in cpumask.h
+        - populate cpu_{map,list} for non-DT system if they are not populated
+          by arch specific callbacks
+        - removed use of sysfs *_show callback in cache_attrs_is_visible
+        - all the review comments from Stephen Boyd implemented
+
+Changes v1->v2:
+        - removed custom device_{add,remove}_attrs, using is_visible callback
+          instead(suggested by GregKH)
+        - arm64: changes as per MarkR review comments
+        - Moved smp_call_function_single to architectures using it(arm, arm64,
+          x86) (suggested by Stephen Boyd)
+        - arm (mostly changes as per RMK's review comments)
+                - fixed to allow v7 + v6 build
+                - l2 cache changes to remove extra structure
+                - populated CTR for few StrongARM CPU's not implementing CTR
+
+Regards,
+Sudeep
+
+[v1] https://lkml.org/lkml/2014/6/25/603
+[v2] https://lkml.org/lkml/2014/7/25/467
+[v3] https://lkml.org/lkml/2014/8/21/175
+[v4] https://lkml.org/lkml/2014/9/3/588
+
+
+Sudeep Holla (11):
+  cpumask: factor out show_cpumap into separate helper function
+  topology: replace custom attribute macros with standard DEVICE_ATTR*
+  drivers: base: add cpu_device_create to support per-cpu devices
+  drivers: base: support cpu cache information interface to userspace
+    via sysfs
+  ia64: move cacheinfo sysfs to generic cacheinfo infrastructure
+  s390: move cacheinfo sysfs to generic cacheinfo infrastructure
+  x86: move cacheinfo sysfs to generic cacheinfo infrastructure
+  powerpc: move cacheinfo sysfs to generic cacheinfo infrastructure
+  ARM64: kernel: add support for cpu cache information
+  ARM: kernel: add support for cpu cache information
+  ARM: kernel: add outer cache support for cacheinfo implementation
+
+ Documentation/ABI/testing/sysfs-devices-system-cpu |  47 ++
+ arch/arm/include/asm/outercache.h                  |   9 +
+ arch/arm/kernel/Makefile                           |   1 +
+ arch/arm/kernel/cacheinfo.c                        | 294 ++++++++
+ arch/arm/mm/Kconfig                                |  13 +
+ arch/arm/mm/cache-l2x0.c                           |  35 +-
+ arch/arm/mm/cache-tauros2.c                        |  36 +
+ arch/arm/mm/cache-xsc3l2.c                         |  17 +
+ arch/arm64/include/asm/cachetype.h                 |  29 +-
+ arch/arm64/kernel/Makefile                         |   2 +-
+ arch/arm64/kernel/cacheinfo.c                      | 128 ++++
+ arch/arm64/kernel/cpuinfo.c                        |  12 -
+ arch/ia64/kernel/topology.c                        | 421 +++--------
+ arch/powerpc/kernel/cacheinfo.c                    | 812 +++------------------
+ arch/powerpc/kernel/cacheinfo.h                    |   8 -
+ arch/powerpc/kernel/sysfs.c                        |  12 +-
+ arch/s390/kernel/cache.c                           | 388 +++-------
+ arch/x86/kernel/cpu/intel_cacheinfo.c              | 709 +++++-------------
+ arch/x86/kernel/cpu/perf_event_amd_iommu.c         |   5 +-
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c        |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c        |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c      |   6 +-
+ drivers/acpi/acpi_pad.c                            |   8 +-
+ drivers/base/Makefile                              |   2 +-
+ drivers/base/cacheinfo.c                           | 541 ++++++++++++++
+ drivers/base/cpu.c                                 |  59 +-
+ drivers/base/node.c                                |  14 +-
+ drivers/base/topology.c                            |  71 +-
+ drivers/pci/pci-sysfs.c                            |  39 +-
+ include/linux/bitmap.h                             |   3 +
+ include/linux/cacheinfo.h                          | 100 +++
+ include/linux/cpu.h                                |   4 +
+ include/linux/cpumask.h                            |  17 +
+ lib/bitmap.c                                       |  29 +
+ 34 files changed, 1880 insertions(+), 2003 deletions(-)
+ create mode 100644 arch/arm/kernel/cacheinfo.c
+ create mode 100644 arch/arm64/kernel/cacheinfo.c
+ delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+ create mode 100644 drivers/base/cacheinfo.c
+ create mode 100644 include/linux/cacheinfo.h
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.9.1
 
