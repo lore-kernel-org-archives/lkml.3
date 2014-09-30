@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaI3Tk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:40:57 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:53202 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316AbaI3Tkx (ORCPT
+	id S1751801AbaI3TpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:45:16 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:38884 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaI3TpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:40:53 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/2] x86_64: Don't save flags on context switch
-Date: Tue, 30 Sep 2014 12:40:36 -0700
-Message-Id: <6fcba8b78a44292687e6317fcc89a72d0dd07976.1412105369.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1412105369.git.luto@amacapital.net>
-References: <cover.1412105369.git.luto@amacapital.net>
-In-Reply-To: <cover.1412105369.git.luto@amacapital.net>
-References: <cover.1412105369.git.luto@amacapital.net>
+	Tue, 30 Sep 2014 15:45:15 -0400
+Date: Tue, 30 Sep 2014 20:45:10 +0100
+From: Mark Einon <mark@einon.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mark Einon <mark.einon@gmail.com>, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] et131x: Promote staging et131x driver to drivers/net
+Message-ID: <20140930194510.GC1982@msilap.einon.net>
+References: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
+ <20140930193201.GA2349@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930193201.GA2349@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the kernel always runs with clean flags (in particular, NT
-is clear), there is no need to save and restore flags on every
-context switch.
+On Tue, Sep 30, 2014 at 12:32:01PM -0700, Greg KH wrote:
+> 
+> This is a fine way to make a patch, but it's no way that any of the
+> netdev developers could ever review it to know what the code happens to
+> look like in my staging-next branch :(
+> 
+> How about just sending a patch that adds the driver to drivers/net/...
+> Don't worry about the staging driver at the moment.  If it gets added to
+> drivers/net we can then delete the staging driver.
+> 
+> Sound easier?  Should make the patches half as big.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/switch_to.h | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+Sounds resonable, will do.
 
-diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
-index d7f3b3b78ac3..0464181b0cbe 100644
---- a/arch/x86/include/asm/switch_to.h
-+++ b/arch/x86/include/asm/switch_to.h
-@@ -79,8 +79,8 @@ do {									\
- #else /* CONFIG_X86_32 */
- 
- /* frame pointer must be last for get_wchan */
--#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
--#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
-+#define SAVE_CONTEXT    "pushq %%rbp ; movq %%rsi,%%rbp\n\t"
-+#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp\t"
- 
- #define __EXTRA_CLOBBER  \
- 	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
-@@ -100,7 +100,11 @@ do {									\
- #define __switch_canary_iparam
- #endif	/* CC_STACKPROTECTOR */
- 
--/* Save restore flags to clear handle leaking NT */
-+/*
-+ * There is no need to save or restore flags, because flags are always
-+ * clean in kernel mode, with the possible exception of IOPL.  Kernel IOPL
-+ * has no effect.
-+ */
- #define switch_to(prev, next, last) \
- 	asm volatile(SAVE_CONTEXT					  \
- 	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
--- 
-1.9.3
+Cheers,
 
+Mark
