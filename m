@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbaI3Gfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:35:52 -0400
-Received: from smtprelay0131.hostedemail.com ([216.40.44.131]:33112 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751715AbaI3Gfu (ORCPT
+	id S1751718AbaI3GlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:41:00 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49387 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaI3Gk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:35:50 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3867:3868:3870:3872:3873:3874:4321:4605:5007:7652:10004:10400:10848:11026:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fruit84_8a0580964475e
-X-Filterd-Recvd-Size: 1592
-Message-ID: <1412058947.4302.88.camel@joe-AO725>
-Subject: Re: [PATCH v2 2/4] staging: skein: Additional Whitespace Issues
-From: Joe Perches <joe@perches.com>
-To: Eric Rost <eric.rost@mybabylon.net>
-Cc: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 29 Sep 2014 23:35:47 -0700
-In-Reply-To: <86fca4750dfba1c25d7d8b3b5cb5f019e756fed7.1412056800.git.eric.rost@mybabylon.net>
-References: <cover.1412056799.git.eric.rost@mybabylon.net>
-	 <86fca4750dfba1c25d7d8b3b5cb5f019e756fed7.1412056800.git.eric.rost@mybabylon.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Tue, 30 Sep 2014 02:40:58 -0400
+Message-ID: <542A505A.5030109@i2se.com>
+Date: Tue, 30 Sep 2014 08:40:26 +0200
+From: Stefan Wahren <stefan.wahren@i2se.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, shawn.guo@linaro.org, festevam@gmail.com
+CC: lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH 2/2] regulator: add mxs regulator driver
+References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com> <1411779588-22031-3-git-send-email-stefan.wahren@i2se.com> <20140928101650.GL27755@sirena.org.uk> <5428FE7B.8060700@i2se.com> <20140929171314.GW16977@sirena.org.uk>
+In-Reply-To: <20140929171314.GW16977@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:53ao/3vq4Se7oc9EdYtNOF30NFjQz1Vuj160ty9nnRI
+ 9deiAhrMRg+ThYX7ZDNT1xhgGtev58SzbtjHf9KIl56QVe9IAr
+ OBWpdMi906wqz28uJyzEQw/Xww2sIWbldoAFwrfvelqYuPtBFl
+ gBMfx5p1vapAsv78C87wtnnwBGr/zxi9TE0L4XrfI9D5+W4CN3
+ H2TFqr2/pk1eEyRimh8ve5G4xEdrtqY/6NYkUxh1+MOxoQz6Iw
+ Cpj7S7T03bOw/9scbT/ZE7I9Q5aaSknQzVcg0yoiNWvG1CoYF3
+ BObllvXXi6lq/vFiBBrund8MjFv5cMGMPoPmXHOE2zXbCETGA4
+ Owc4KgCh+3cJf1sgSXco=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 01:10 -0500, Eric Rost wrote:
-> Fixes leading and trailing whitespace issues.
-[]
-> diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-[]
-> @@ -36,7 +36,7 @@
->  #define debug_save_tweak(ctx)       \
->  {                                   \
->  	ctx->h.tweak[0] = ts[0];    \
-> -       	ctx->h.tweak[1] = ts[1];    \
-> +	ctx->h.tweak[1] = ts[1];    \
+Am 29.09.2014 um 19:13 schrieb Mark Brown:
+> On Mon, Sep 29, 2014 at 08:38:51AM +0200, Stefan Wahren wrote:
+>
+>> I'm searching for a good regulator implementation example.
+>> Does it apply to ti-abb-regulator.c and twl-regulator.c?
+> Possibly.  But bear in mind that it's important to understand the
+> hardware you're trying to support.
 
-I know it's an extra step to reintegrate these, but
-please don't introduce whitespace problems in patch 1
-that you fix in patch 2.
+The question refer more to the devicetree binding and it's implementation.
 
-Do it correctly in patch 1.
+>
+>>> This really needs a comment to explain what on earth is going on here -
+>>> the whole thing with writing the same thing twice with two delays is
+>>> more than a little odd.  It looks like the driver is trying to busy wait
+>>> in cases where the change happens quickly but the comments about "fast"
+>>> and "normal" mode make this unclear.
+>> The regulator driver polls for the DC_OK bit in the power status register.
+>> Quote for reference manual (p. 935): "High when switching DC-DC
+>> converter control loop has stabilized after a voltage target change."
+>> The two loops comes from the different regulator modes
+>> (REGULATOR_MODE_FAST, REGULATOR_MODE_NORMAL).
+>> In REGULATOR_MODE_FAST the voltage steping is disabled and changing
+>> voltage should be fast. In REGULATOR_MODE_NORMAL voltage steping is
+>> enabled and it's take a while for reaching the target voltage.
+> I don't think you've fully understood what the different modes mean
+> here, that's not normally how a buck convertor works.  The different
+> modes would typically control the ability of the regulator to respond
+> quickly to changes in load without drifting off regulation, fast mode
+> makes the regulator less efficient but more responsive to load changes
+> (probably marginally with modern regulators).  It should have relatively
+> little to do with the ability to ramp the voltage and certainly not on
+> the scale there.
+>
+>> Do you see more a problem with the two different loops or the redundant
+>> register write?
+> Both.  The code right now just looks really obscure.
+
+That leads me to the conclusion to drop both mode functions. My
+intention is to get the cpufreq-cpu0 aka cpufreq-dt working on i.MX28,
+not to build up the complete power system.
+
+@Fabio, @Shawn: What is your opinion?
+
+Best regards
+
+Stefan
 
 
