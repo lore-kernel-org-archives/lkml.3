@@ -1,376 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaI3LG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 07:06:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56339 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaI3LG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 07:06:26 -0400
-Date: Tue, 30 Sep 2014 13:06:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
-Message-ID: <20140930110622.GB4456@dhcp22.suse.cz>
-References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
- <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
+	id S1751548AbaI3LLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 07:11:15 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:65046 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaI3LLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 07:11:11 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 30 Sep 2014 13:08:29 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rajaram Regupathy <rera@cypress.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: Re: [PATCH v2 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO
+ adapter
+Message-ID: <20140930110829.GB24736@localhost>
+References: <1411624319-5596-1-git-send-email-muth@cypress.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1411624319-5596-1-git-send-email-muth@cypress.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 11:43:08, Johannes Weiner wrote:
-> Memory is internally accounted in bytes, using spinlock-protected
-> 64-bit counters, even though the smallest accounting delta is a page.
-> The counter interface is also convoluted and does too many things.
+On Thu, Sep 25, 2014 at 11:21:58AM +0530, Muthu Mani wrote:
+> Adds support for USB-GPIO interface of Cypress Semiconductor
+> CYUSBS234 USB-Serial Bridge controller.
 > 
-> Introduce a new lockless word-sized page counter API, then change all
-> memory accounting over to it and remove the old one.  The translation
-> from and to bytes then only happens when interfacing with userspace.
+> The GPIO get/set can be done through vendor command on control endpoint.
 > 
-> Aside from the locking costs, this gets rid of the icky unsigned long
-> long types in the very heart of memcg, which is great for 32 bit and
-> also makes the code a lot more readable.
-
-Please describe the usual use pattern of the API. It is much easier to
-read it here than pulling it out from the source.
-
-Also I would expect some testing results. Especially on a larger machine
-(I guess you rely on Dave here, right?).
-
-Thanks for splitting the original patch and extracting the counter
-to a separate file. I think we should add F: mm/page_counter.c under
-MEMCG maintenance section.
-
-More comments inline (I only got to page_counter for now and will check
-the res_counter replacement in another go)
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Details about the device can be found at:
+> http://www.cypress.com/?rID=84126
+> 
+> Signed-off-by: Muthu Mani <muth@cypress.com>
+> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
 > ---
->  Documentation/cgroups/memory.txt |   4 +-
->  include/linux/memcontrol.h       |   5 +-
->  include/linux/page_counter.h     |  49 +++
->  include/net/sock.h               |  26 +-
->  init/Kconfig                     |   5 +-
->  mm/Makefile                      |   1 +
->  mm/memcontrol.c                  | 635 ++++++++++++++++++---------------------
->  mm/page_counter.c                | 191 ++++++++++++
->  net/ipv4/tcp_memcontrol.c        |  87 +++---
->  9 files changed, 598 insertions(+), 405 deletions(-)
->  create mode 100644 include/linux/page_counter.h
->  create mode 100644 mm/page_counter.c
+>  drivers/gpio/Kconfig          |  13 +++
+>  drivers/gpio/Makefile         |   1 +
+>  drivers/gpio/gpio-cyusbs23x.c | 182 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 196 insertions(+)
+>  create mode 100644 drivers/gpio/gpio-cyusbs23x.c
 > 
-[...]
-> diff --git a/include/linux/page_counter.h b/include/linux/page_counter.h
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 9de1515..932e07c 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -886,6 +886,19 @@ config GPIO_BCM_KONA
+>  
+>  comment "USB GPIO expanders:"
+>  
+> +config GPIO_CYUSBS23X
+> +	tristate "CYUSBS23x GPIO support"
+> +	depends on MFD_CYUSBS23X && USB
+> +	help
+> +	  Say yes here to access the GPIO signals of Cypress
+> +	  Semiconductor CYUSBS23x USB Serial Bridge Controller.
+> +
+> +	  This driver enables the GPIO interface of CYUSBS23x USB Serial
+> +	  Bridge controller.
+> +
+> +	  This driver can also be built as a module. If so, the module will be
+> +	  called gpio-cyusbs23x.
+> +
+>  config GPIO_VIPERBOARD
+>  	tristate "Viperboard GPIO a & b support"
+>  	depends on MFD_VIPERBOARD && USB
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index 5d024e3..3ad89f1 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -23,6 +23,7 @@ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
+>  obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
+>  obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
+>  obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
+> +obj-$(CONFIG_GPIO_CYUSBS23X)	+= gpio-cyusbs23x.o
+>  obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
+>  obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
+>  obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
+> diff --git a/drivers/gpio/gpio-cyusbs23x.c b/drivers/gpio/gpio-cyusbs23x.c
 > new file mode 100644
-> index 000000000000..d92d18949474
+> index 0000000..ad83b00
 > --- /dev/null
-> +++ b/include/linux/page_counter.h
-> @@ -0,0 +1,49 @@
-> +#ifndef _LINUX_PAGE_COUNTER_H
-> +#define _LINUX_PAGE_COUNTER_H
+> +++ b/drivers/gpio/gpio-cyusbs23x.c
+> @@ -0,0 +1,182 @@
+> +/*
+> + * GPIO subdriver for Cypress CYUSBS234 USB-Serial Bridge controller.
+> + * Details about the device can be found at:
+> + *    http://www.cypress.com/?rID=84126
+> + * All GPIOs are exposed for get operation and only unused GPIOs can be set.
+> + *
+> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
+> + *
+> + * Author:
+> + *   Muthu Mani <muth@cypress.com>
+> + *
+> + * Additional contributors include:
+> + *   Rajaram Regupathy <rera@cypress.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + */
 > +
-> +#include <linux/atomic.h>
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/mutex.h>
+> +#include <linux/platform_device.h>
 > +
-> +struct page_counter {
-> +	atomic_long_t count;
-> +	unsigned long limit;
-> +	struct page_counter *parent;
+> +#include <linux/usb.h>
+> +#include <linux/gpio.h>
 > +
-> +	/* legacy */
-> +	unsigned long watermark;
+> +#include <linux/mfd/cyusbs23x.h>
+> +
+> +#define CY_GPIO_GET_LEN		(2)
 
-The name suggest this is a restriction not a highest usage mark.
-max_count would be less confusing.
+No parentheses.
 
-> +	unsigned long failcnt;
+> +
+> +struct cyusbs_gpio {
+> +	struct gpio_chip gpio;
+> +	struct cyusbs23x *cyusbs;
 > +};
 > +
-> +#if BITS_PER_LONG == 32
-> +#define PAGE_COUNTER_MAX LONG_MAX
-> +#else
-> +#define PAGE_COUNTER_MAX (LONG_MAX / PAGE_SIZE)
-> +#endif
-
-It is not clear to me why you need a separate definitions here. LONG_MAX
-seems to be good for both 32b and 64b.
-
-[...]
-> diff --git a/mm/page_counter.c b/mm/page_counter.c
-> new file mode 100644
-> index 000000000000..51c45921b8d1
-> --- /dev/null
-> +++ b/mm/page_counter.c
-> @@ -0,0 +1,191 @@
-> +/*
-> + * Lockless hierarchical page accounting & limiting
-> + *
-> + * Copyright (C) 2014 Red Hat, Inc., Johannes Weiner
-> + */
-> +#include <linux/page_counter.h>
-> +#include <linux/atomic.h>
-> +
-> +/**
-> + * page_counter_cancel - take pages out of the local counter
-> + * @counter: counter
-> + * @nr_pages: number of pages to cancel
-> + *
-> + * Returns whether there are remaining pages in the counter.
-> + */
-> +int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+> +static int cy_gpio_get(struct gpio_chip *chip,
+> +			unsigned offset)
 > +{
-> +	long new;
+> +	int ret;
+> +	char *buf;
+> +	u16 wIndex, wValue;
+> +	struct cyusbs_gpio *gpio =
+> +				container_of(chip, struct cyusbs_gpio, gpio);
+
+Add helper macro?
+
+> +	struct cyusbs23x *cyusbs = gpio->cyusbs;
 > +
-> +	new = atomic_long_sub_return(nr_pages, &counter->count);
-> +
+> +	dev_dbg(&cyusbs->usb_intf->dev, "%s: %d\n", __func__,
+> +		offset);
 
-This really deserves a comment IMO. Something like the following:
-	/*
-	 * Charges and uncharges are always ordered properly from memory
-	 * ordering point of view. The only case where underflow can happen
-	 * is a mismatched uncharge. Report it and fix it up now rather
-	 * than blow up later.
-	 */
-> +	if (WARN_ON_ONCE(new < 0))
-> +		atomic_long_add(nr_pages, &counter->count);
+Drop this.
 
-anyway this doesn't look correct because you can have false positives:
-[counter->count = 1]
-	CPU0					CPU1
-new = atomic_long_sub_return(THP)
-					new = atomic_long_sub_return(1)
-(new < 0)				(new < 0)
-  atomic_long_add(THP)			  atomic_add(1)
+> +	wValue = offset;
+> +	wIndex = 0;
+> +	buf = kmalloc(CY_GPIO_GET_LEN, GFP_KERNEL);
 
-So we will end up with counter->count = 1 rather than 0. I think you
-need to use a lock in the slow path. Something like
-
-	if (new < 0) {
-		unsigned long flags;
-
-		/*
-		 * Multiple uncharger might race together and we do not
-		 * want to let any of them revert the uncharge just
-		 * because a faulty uncharge and the fixup are not
-		 * atomic.
-		 */
-		atomic_lond_add(nr_pages, &counter->count);
-
-		spin_lock_irqsave(&counter->lock, flags);
-		new = atomic_long_sub_return(nr_pages, &counter->count);
-		if (WARN_ON(new < 0))
-			atomic_long_add(nr_pages, &counter->count);
-		spin_unlock_irqrestore(&counter->lock, flags);
-	}
+Error handling missing.
 
 > +
-> +	return new > 0;
+> +	mutex_lock(&cyusbs->lock);
+
+Locking not needed.
+
+> +	ret = usb_control_msg(cyusbs->usb_dev,
+> +			usb_rcvctrlpipe(cyusbs->usb_dev, 0),
+> +			CY_GPIO_GET_VALUE_CMD,
+> +			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+> +			wValue, wIndex, buf, CY_GPIO_GET_LEN, 2000);
+
+timeout define.
+
+> +	mutex_unlock(&cyusbs->lock);
+> +
+> +	dev_dbg(&cyusbs->usb_intf->dev, "%s: %d %02x %02x\n", __func__,
+> +		ret, buf[0], buf[1]);
+
+Use the gpio_chip device rather than usb-interface device in gpio
+callbacks for debug and error messages.
+
+> +
+> +	if (ret == CY_GPIO_GET_LEN) {
+> +		if (buf[0] == 0)
+> +			ret = buf[1];
+> +		else
+> +			ret = -EINVAL;
+> +	} else {
+> +		ret = -EREMOTEIO;
+> +	}
+
+Just use -EIO for both error cases.
+
+> +
+> +	kfree(buf);
+> +	return ret;
 > +}
 > +
-> +/**
-> + * page_counter_charge - hierarchically charge pages
-> + * @counter: counter
-> + * @nr_pages: number of pages to charge
-> + *
-> + * NOTE: This may exceed the configured counter limits.
-
-The name is rather awkward. It sounds like a standard way to charge the
-counter. I would rather stick to _nofail suffix and the following
-addition to the doc.
-"
-Can be called only from contexts where the charge failure cannot be
-handled. This should be rare and used with extreme caution.
-"
-
-> + */
-> +void page_counter_charge(struct page_counter *counter, unsigned long nr_pages)
+> +static void cy_gpio_set(struct gpio_chip *chip,
+> +			unsigned offset, int value)
 > +{
-> +	struct page_counter *c;
+> +	int ret;
+> +	u16 wIndex, wValue;
+> +	struct cyusbs_gpio *gpio =
+> +			container_of(chip, struct cyusbs_gpio, gpio);
+> +	struct cyusbs23x *cyusbs = gpio->cyusbs;
 > +
-> +	for (c = counter; c; c = c->parent) {
-> +		long new;
+> +	dev_dbg(&cyusbs->usb_intf->dev, "%s: %d\n", __func__,
+> +		offset);
+
+Drop.
+
+> +	wValue = offset;
+> +	wIndex = value;
 > +
-> +		new = atomic_long_add_return(nr_pages, &c->count);
-> +		/*
-> +		 * This is racy, but with the per-cpu caches on top
-> +		 * it's just a ballpark metric anyway; and with lazy
-> +		 * cache reclaim, the majority of workloads peg the
-> +		 * watermark to the group limit soon after launch.
-> +		 */
-> +		if (new > c->watermark)
-> +			c->watermark = new;
-> +	}
+> +	mutex_lock(&cyusbs->lock);
+
+Not needed.
+
+> +	ret = usb_control_msg(cyusbs->usb_dev,
+> +			usb_sndctrlpipe(cyusbs->usb_dev, 0),
+> +			CY_GPIO_SET_VALUE_CMD,
+> +			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+> +			wValue, wIndex, NULL, 0, 2000);
+> +	mutex_unlock(&cyusbs->lock);
+> +
+> +	if (ret < 0)
+> +		dev_err(&cyusbs->usb_intf->dev, "error setting gpio:%d\n", ret);
+
+Add a space before %d.
+
 > +}
 > +
-> +/**
-> + * page_counter_try_charge - try to hierarchically charge pages
-> + * @counter: counter
-> + * @nr_pages: number of pages to charge
-> + * @fail: points first counter to hit its limit, if any
-> + *
-> + * Returns 0 on success, or -ENOMEM and @fail if the counter or one of
-> + * its ancestors has hit its limit.
-> + */
-> +int page_counter_try_charge(struct page_counter *counter,
-> +			    unsigned long nr_pages,
-> +			    struct page_counter **fail)
+> +static int cy_gpio_direction_input(struct gpio_chip *chip,
+> +					unsigned offset)
 > +{
-> +	struct page_counter *c;
-> +
-> +	for (c = counter; c; c = c->parent) {
-> +		long new;
-> +		/*
-> +		 * Charge speculatively to avoid an expensive CAS.  If
-> +		 * a bigger charge fails, it might falsely lock out a
-> +		 * racing smaller charge and send it into reclaim
-> +		 * eraly, but the error is limited to the difference
-> +		 * between the two sizes, which is less than 2M/4M in
-> +		 * case of a THP locking out a regular page charge.
-> +		 */
-
-If this ever turns out to be a problem then we can check the size of the
-overflow and retry if it is > nr_online_cpus or something like that. Not
-worth bothering now I guess but definitely good to have this documented.
-I would even like to have it in the changelog for users bisecting an
-excessive reclaim because it is easier to find that in the changelog
-than in the code.
-
-> +		new = atomic_long_add_return(nr_pages, &c->count);
-> +		if (new > c->limit) {
-> +			atomic_long_sub(nr_pages, &c->count);
-> +			/*
-> +			 * This is racy, but the failcnt is only a
-> +			 * ballpark metric anyway.
-> +			 */
-> +			c->failcnt++;
-> +			*fail = c;
-> +			goto failed;
-> +		}
-> +		/*
-> +		 * This is racy, but with the per-cpu caches on top
-> +		 * it's just a ballpark metric anyway; and with lazy
-> +		 * cache reclaim, the majority of workloads peg the
-> +		 * watermark to the group limit soon after launch.
-> +		 */
-> +		if (new > c->watermark)
-> +			c->watermark = new;
-> +	}
-> +	return 0;
-> +
-> +failed:
-> +	for (c = counter; c != *fail; c = c->parent)
-> +		page_counter_cancel(c, nr_pages);
-> +
-> +	return -ENOMEM;
-> +}
-[...]
-> +/**
-> + * page_counter_limit - limit the number of pages allowed
-> + * @counter: counter
-> + * @limit: limit to set
-> + *
-> + * Returns 0 on success, -EBUSY if the current number of pages on the
-> + * counter already exceeds the specified limit.
-> + *
-> + * The caller must serialize invocations on the same counter.
-> + */
-> +int page_counter_limit(struct page_counter *counter, unsigned long limit)
-> +{
-> +	for (;;) {
-> +		unsigned long old;
-> +		long count;
-> +
-> +		count = atomic_long_read(&counter->count);
-> +
-> +		old = xchg(&counter->limit, limit);
-> +
-> +		if (atomic_long_read(&counter->count) != count) {
-> +			counter->limit = old;
-> +			continue;
-> +		}
-> +
-> +		if (count > limit) {
-> +			counter->limit = old;
-> +			return -EBUSY;
-> +		}
-
-Ordering doesn't make much sense to me here. Say you really want to set
-limit < count. You are effectively pushing all concurrent charges to
-the reclaim even though you would revert your change and return with
-EBUSY later on.
-Wouldn't (count > limit) check make more sense right after the first
-atomic_long_read?
-Also the second count check should be sufficient to check > count and
-retry only when the count has increased.
-Finally continuous flow of charges can keep this loop running for quite
-some time and trigger lockup detector. cond_resched before continue
-would handle that. Something like the following:
-
-	for (;;) {
-		unsigned long old;
-		long count;
-
-		count = atomic_long_read(&counter->count);
-		if (count > limit)
-			return -EBUSY;
-
-		old = xchg(&counter->limit, limit);
-
-		/* Recheck for concurrent charges */
-		if (atomic_long_read(&counter->count) > count) {
-			counter->limit = old;
-			cond_resched();
-			continue;
-		}
-
-		return 0;
-	}
-
-> +
-> +		return 0;
-> +	}
-> +}
-> +
-> +/**
-> + * page_counter_memparse - memparse() for page counter limits
-> + * @buf: string to parse
-> + * @nr_pages: returns the result in number of pages
-> + *
-> + * Returns -EINVAL, or 0 and @nr_pages on success.  @nr_pages will be
-> + * limited to %PAGE_COUNTER_MAX.
-> + */
-> +int page_counter_memparse(const char *buf, unsigned long *nr_pages)
-> +{
-> +	char unlimited[] = "-1";
-> +	char *end;
-> +	u64 bytes;
-> +
-> +	if (!strncmp(buf, unlimited, sizeof(unlimited))) {
-> +		*nr_pages = PAGE_COUNTER_MAX;
-> +		return 0;
-> +	}
-> +
-> +	bytes = memparse(buf, &end);
-> +	if (*end != '\0')
-> +		return -EINVAL;
-
-res_counter used to round up to the next page boundary and there is no
-reason to not do the same here. 
-
-	bytes = PAGE_ALIGN(bytes);
-
-> +
-> +	*nr_pages = min(bytes / PAGE_SIZE, (u64)PAGE_COUNTER_MAX);
-> +
 > +	return 0;
 > +}
-[...]
--- 
-Michal Hocko
-SUSE Labs
+> +
+> +static int cy_gpio_direction_output(struct gpio_chip *chip,
+> +					unsigned offset, int value)
+> +{
+> +	return 0;
+> +}
+
+This is not a correct implementation of these. You're are supposed to
+return what direction the gpio is configured for. You should also add a
+call back to set the direction.
+
+> +
+> +static int cyusbs23x_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct cyusbs23x *cyusbs;
+> +	struct cyusbs_gpio *cy_gpio;
+> +	int ret = 0;
+> +
+> +	dev_dbg(&pdev->dev, "%s\n", __func__);
+> +
+> +	cyusbs = dev_get_drvdata(pdev->dev.parent);
+> +
+> +	cy_gpio = devm_kzalloc(&pdev->dev, sizeof(*cy_gpio), GFP_KERNEL);
+> +	if (cy_gpio == NULL)
+> +		return -ENOMEM;
+> +
+> +	cy_gpio->cyusbs = cyusbs;
+> +	/* registering gpio */
+> +	cy_gpio->gpio.label = dev_name(&pdev->dev);
+> +	cy_gpio->gpio.dev = &pdev->dev;
+> +	cy_gpio->gpio.owner = THIS_MODULE;
+> +	cy_gpio->gpio.base = -1;
+> +	cy_gpio->gpio.ngpio = 12; /* total GPIOs */
+> +	cy_gpio->gpio.can_sleep = true;
+> +	cy_gpio->gpio.set = cy_gpio_set;
+> +	cy_gpio->gpio.get = cy_gpio_get;
+> +	cy_gpio->gpio.direction_input = cy_gpio_direction_input;
+> +	cy_gpio->gpio.direction_output = cy_gpio_direction_output;
+> +	ret = gpiochip_add(&cy_gpio->gpio);
+> +	if (ret < 0) {
+> +		dev_err(cy_gpio->gpio.dev, "could not add gpio");
+
+Missing '\n' in message (double check throughout).
+
+Just return here and get rid of the error label below.
+
+> +		goto error;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, cy_gpio);
+> +
+> +	dev_dbg(&pdev->dev, "added GPIO\n");
+> +	return ret;
+> +
+> +error:
+> +	dev_dbg(&pdev->dev, "error occured %d\n", ret);
+> +	return ret;
+> +}
+> +
+> +static int cyusbs23x_gpio_remove(struct platform_device *pdev)
+> +{
+> +	struct cyusbs_gpio *cy_gpio = platform_get_drvdata(pdev);
+> +
+> +	dev_dbg(&pdev->dev, "%s\n", __func__);
+> +	gpiochip_remove(&cy_gpio->gpio);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver cyusbs23x_gpio_driver = {
+> +	.driver.name    = "cyusbs23x-gpio",
+> +	.driver.owner   = THIS_MODULE,
+
+No need to set the owner field when using module_platform_driver (check
+i2c driver as well).
+
+> +	.probe          = cyusbs23x_gpio_probe,
+> +	.remove         = cyusbs23x_gpio_remove,
+> +};
+> +
+> +module_platform_driver(cyusbs23x_gpio_driver);
+> +
+> +MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
+> +MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
+> +MODULE_DESCRIPTION("GPIO driver for CYUSBS23x");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:cyusbs23x-gpio");
+
+Johan
