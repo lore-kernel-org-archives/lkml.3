@@ -1,123 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaI3Ohf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:37:35 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5628 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752520AbaI3Ohc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:37:32 -0400
-Date: Tue, 30 Sep 2014 07:37:41 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Kumar Gala <galak@codeaurora.org>
-CC: Andy Gross <agross@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeffrey Hugo <jhugo@codeaurora.org>
-Subject: Re: [RFC 3/7] mfd: devicetree: bindings: Add Qualcomm SMD based RPM
- DT binding
-Message-ID: <20140930143740.GK28481@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412037291-16880-4-git-send-email-bjorn.andersson@sonymobile.com>
- <85C5C172-D309-41B4-B511-7820BAFDA017@codeaurora.org>
+	id S1752549AbaI3Ojz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:39:55 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:50857 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaI3Ojx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 10:39:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <85C5C172-D309-41B4-B511-7820BAFDA017@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <5429DF69.8000201@gmail.com>
+References: <1411967817-8423-1-git-send-email-a.kesavan@samsung.com>
+	<5429DF69.8000201@gmail.com>
+Date: Tue, 30 Sep 2014 20:02:22 +0530
+Message-ID: <CAM4voam9jEuYvwDUnAZzU4Q-aZdF-P+KUuSm=x-9beobpyeR1w@mail.gmail.com>
+Subject: Re: [PATCH] serial: samsung: Fix serial config dependencies for exynos7
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        jslaby@suse.cz, Pankaj Dubey <pankaj.dubey@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 06:46 PDT 2014, Kumar Gala wrote:
+Hi Tomasz,
 
-> 
-> On Sep 29, 2014, at 7:34 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
-> 
-> > diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
-> > new file mode 100644
-> > index 0000000..a846101
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mfd/qcom-rpm-smd.txt
-> > @@ -0,0 +1,122 @@
-> > +Qualcomm Resource Power Manager (RPM) over SMD
-> > +
-> > +This driver is used to interface with the Resource Power Manager (RPM) found in
-> > +various Qualcomm platforms. The RPM allows each component in the system to vote
-> > +for state of the system resources, such as clocks, regulators and bus
-> > +frequencies.
-> > +
-> > +- compatible:
-> > +	Usage: required
-> > +	Value type: <string>
-> > +	Definition: must be one of:
-> > +		    "qcom,rpm-msm8974”
-> 
-> Why not “qcom,rpm-smd”.  I’d like to get Jeff H’s input on how
-> what we do here for compat and distinguish the A-family RPM support vs
-> B-family/RPM-SMD support.
-> 
+On Tue, Sep 30, 2014 at 4:08 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> Hi Abhilash,
+>
+> The patch itself seems fine, but I wonder if those config options aren't
+> really just leftovers from the past and couldn't be completely removed.
+>
+> On 29.09.2014 07:16, Abhilash Kesavan wrote:
+>> From: Pankaj Dubey <pankaj.dubey@samsung.com>
+>>
+>> Exynos7 has a similar serial controller to that present in older Samsung
+>> SoCs. To re-use the existing serial driver on Exynos7 we need to have
+>> SERIAL_SAMSUNG_UARTS_4 and SERIAL_SAMSUNG_UARTS selected. This is not
+>> possible because these symbols are dependent on PLAT_SAMSUNG which is
+>> not present for the ARMv8 based exynos7.
+>>
+>> Change the dependency of these symbols from PLAT_SAMSUNG to the serial
+>> driver thus making it available on exynos7. As the existing platform
+>> specific code making use of these symbols is related to uart driver this
+>> change in dependency should not cause any issues.
+>>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
+>> Build tested with s3c6400_defconfig, exynos_defconfig and arm64's defconfig
+>> with and without the serial driver enabled.
+>>
+>>  drivers/tty/serial/Kconfig |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+>> index 81f6ee7..e6c0bcb 100644
+>> --- a/drivers/tty/serial/Kconfig
+>> +++ b/drivers/tty/serial/Kconfig
+>> @@ -249,14 +249,14 @@ config SERIAL_SAMSUNG
+>>
+>>  config SERIAL_SAMSUNG_UARTS_4
+>>       bool
+>> -     depends on PLAT_SAMSUNG
+>> +     depends on SERIAL_SAMSUNG
+>>       default y if !(CPU_S3C2410 || CPU_S3C2412 || CPU_S3C2440 || CPU_S3C2442)
+>>       help
+>>         Internal node for the common case of 4 Samsung compatible UARTs
+>
+> The only place where this symbol is used is below.
+>
+>>
+>>  config SERIAL_SAMSUNG_UARTS
+>>       int
+>> -     depends on PLAT_SAMSUNG
+>> +     depends on SERIAL_SAMSUNG
+>>       default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
+>>       default 3
+>>       help
+>>
+>
+> With this symbol the situation isn't that easy, but still should be
+> manageable.
+>
+> Looking at the serial-samsung driver, all occurrences of
+> CONFIG_SERIAL_SAMSUNG_UARTS could be simply replaced with a locally
+> defined number equal to the maximum value - in this case 4.
+>
+> There are also two places in arch/arm where this symbol is used:
+>
+> 1) In arch/arm/mach-s3c64xx/irq-pm.c it's used as the number of serial
+> ports which need suspend/resume handling. Since on s3c64xx the number is
+> always 4, it can be simply defined locally as a constant.
+>
+> 2) In arch/arm/plat-samsung/init.c it is used to determine size of a
+> static array of UART ports and to check whether the UART driver is
+> enabled. In former case I believe it should be safe to hardcode it to 4
+> as well, in latter CONFIG_SERIAL_SAMSUNG can be used.
 
-I don't see anything indicating changes in the actual communication, but as
-this also encodes what resources are exposed we have to keep this specific.
-
-I'm not sure what you mean with distinguish the A and B family, they are
-completely different and there are no overlap in compatibles or implementation.
-
-The overlap is in how children are communicating with the rpm, but this is an
-implementation detail - and noted in that patch as a future improvement.
-
-
-I forgot to add Jeff, but did send him a separate email asking for his input on
-all this.
-
-> > +
-> > +- qcom,smd-channels:
-> > +	Usage: required
-> > +	Value type: <stringlist>
-> > +	Definition: Shared Memory Channel used for communication with the RPM
-> > +
-> 
-> This needs more details.
-> 
-
-Not sure what more to add here. It should contain the name of the channel used
-for communication with the rpm. For all current platforms this would be
-"rpm_requests".
-
-> > +- #address-cells:
-> > +	Usage: required
-> > +	Value type: <u32>
-> > +	Definition: must be 1
-> > +
-> > +- #size-cells:
-> > +	Usage: required
-> > +	Value type: <u32>
-> > +	Definition: must be 0
-> > +
-> > += SUBDEVICES
-> 
-> As I mentioned for the the RPM binding on a-family, we should split out the
-> devices into their own binding specs.
-> 
-
-Please actually read https://lkml.org/lkml/2014/3/10/567, it's now the third
-time I send you that link. If you don't like it then ask Rob to revise his
-statement.
-
-For me it makes sense to consolidate the RPM binding in one document rather
-than spreading it out in 10 different documents with some implicit
-dependencies.
+I will post patches removing these two symbols.
 
 Regards,
-Bjorn
+Abhilash
+>
+> Best regards,
+> Tomasz
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
