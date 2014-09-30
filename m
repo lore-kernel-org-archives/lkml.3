@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaI3Htj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:49:39 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:43807 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530AbaI3Hth (ORCPT
+	id S1752629AbaI3Hwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:52:47 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56438 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaI3Hwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:49:37 -0400
-Message-ID: <542A608B.5010408@linaro.org>
-Date: Tue, 30 Sep 2014 08:49:31 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 30 Sep 2014 03:52:45 -0400
+Date: Tue, 30 Sep 2014 09:52:39 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-ID: <20140930075239.GA28481@linutronix.de>
+References: <20140930173900.51839e76@canb.auug.org.au>
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-CC: Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
-References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org> <20140930051138.GH28481@sonymobile.com>
-In-Reply-To: <20140930051138.GH28481@sonymobile.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140930173900.51839e76@canb.auug.org.au>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Stephen Rothwell | 2014-09-30 17:39:00 [+1000]:
 
+>Hi Greg,
+Hi Stephen,
 
-On 30/09/14 06:11, Bjorn Andersson wrote:
+>After merging the tty tree, today's linux-next build (powerpc
+>ppc64_defconfig) failed like this:
+>
+>
+>drivers/built-in.o: In function `.serial8250_stop_tx':
+>8250_core.c:(.text+0xda1f4): undefined reference to `.__xchg_called_with_bad_pointer'
+>drivers/built-in.o: In function `.serial8250_tx_chars':
+>(.text+0xda42c): undefined reference to `.__xchg_called_with_bad_pointer'
+>drivers/built-in.o: In function `.serial8250_start_tx':
+>8250_core.c:(.text+0xda630): undefined reference to `.__xchg_called_with_bad_pointer'
+>
+>Caused by commit d74d5d1b7288 ("tty: serial: 8250_core: add run time
+>pm").  xchg is called with &p->rpm_tx_active and that is an unsigned
+>char.  PowerPC (at least) only allows xchg with objects 4 (or 8 on 64
+>bit) bytes long.
+>
+>I have used the version of the tty tree from next-20140926 for today.
 
->>
->> +		apcs: syscon@2011000 {
->> +			compatible = "syscon";
->> +			reg = <0x2011000 0x1000>;
->> +		};
->> +
->> +		rpm@108000 {
->> +			compatible	= "qcom,rpm-apq8064";
->> +			reg		= <0x108000 0x1000>;
->> +			qcom,ipc = <&apcs 0x8 2>;
->
-> I don't like your indentation, but please stick with one way of doing it :)
->
-I agree, Will fix this in next version.
->> +
->> +			interrupts	= <0 19 0>, <0 21 0>, <0 22 0>;
->> +			interrupt-names = "ack", "err", "wakeup";
->> +
->> +			#address-cells	= <1>;
->> +			#size-cells	= <0>;
->> +
->
-> This part looks good.
->
-> But how about adding all the regulators here as well?
-Yes we can add for the sake of completeness but w.r.t testing only some 
-of them will be tested
-> Like:
->
->                          pm8921_l5: pm8921-l5 {
-> 				compatible = "qcom,rpm-pm8921-pldo";
-> 				reg = <QCOM_RPM_PM8921_LDO5>;
-> 			};
->
-Adding nodes like this should be trival.
-> 			...
->
-> That way we can update the references from this file (while still allowing the
-> dts to override it if needed). I'm not sure if we should add some sane defaults
-> or just completely deferr specifying the voltage ranges to the dts. The benefit
-> of the latter is that the regulators not configured by the dts author will not
-> be accessible.
->
-> But simply listing all the nodes here would be nice and I dont see much reason
-> to postpone this work.
-Ok.. will be done in next version.
+this should have been fixed by commit baeb7ef34952f ("tty: serial: 8250:
+use 32bit variable for rpm_tx_active") in Greg's tty-next tree. Isn't
+this the case or did you fetch the tty tree before Greg pushed it?
 
-
---srini
->
->> +		};
->> +
->>   		/* Temporary fixed regulator */
->>   		vsdcc_fixed: vsdcc-regulator {
->>   			compatible = "regulator-fixed";
->
-> Regards,
-> Bjorn
->
+Sebastian
