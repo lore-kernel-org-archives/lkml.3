@@ -1,93 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906AbaI3QZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:25:34 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:3870 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751192AbaI3QZb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:25:31 -0400
-Date: Tue, 30 Sep 2014 09:25:42 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Kumar Gala <galak@codeaurora.org>
-CC: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
-        Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
- binding
-Message-ID: <20140930162541.GQ28481@sonymobile.com>
-References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
- <334C6A04-9607-4E97-A7A7-2FEED5986E57@codeaurora.org>
- <20140930152838.GN28481@sonymobile.com>
- <2FC56515-E6AF-4A4D-9B04-70B4A8B2C4C7@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <2FC56515-E6AF-4A4D-9B04-70B4A8B2C4C7@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1752222AbaI3QZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:25:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751788AbaI3QZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:25:33 -0400
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
+        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
+        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
+        hannsj_uhl@de.ibm.com, torvalds@linux-foundation.org
+Subject: [PATCH v2 0/4] x86: /dev/mem fixes
+Date: Tue, 30 Sep 2014 18:24:59 +0200
+Message-Id: <1412094303-28183-1-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
+References: <1411990382-11902-1-git-send-email-fhrbata@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 09:02 PDT 2014, Kumar Gala wrote:
+This is a second version of the patch set. The only change is in
 
-> 
-> On Sep 30, 2014, at 10:28 AM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
-> 
-> > On Wed 24 Sep 09:39 PDT 2014, Kumar Gala wrote:
-> > 
-> >> 
-> >> On Sep 22, 2014, at 6:25 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
-> >> 
-> > 
-> > [..]
-> > 
-> >>> diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
-> > 
-> > [..]
-> > 
-> >>> +- qcom,ipc:
-> >>> +     Usage: required
-> >>> +     Value type: <prop-encoded-array>
-> >>> +
-> >>> +     Definition: three entries specifying the outgoing ipc bit used for
-> >>> +                 signaling the RPM:
-> >>> +                 - phandle to a syscon node representing the apcs registers
-> >>> +                 - u32 representing offset to the register within the syscon
-> >>> +                 - u32 representing the ipc bit within the register
-> >>> +
-> >> 
-> >> Does this really ever differ for the SoCs, and even if it does why do we need
-> >> to encode it in DT.  Can’t we determine it via the compatible setting?
-> >> 
-> > 
-> > The two offsets could be hard coded, especially based on the compatible.
-> > 
-> > But I don't know if it's worth respinning this just to get those two number out
-> > of here. Also this is now "symmetric" with the smd use cases, where it
-> > shouldn't be hard coded.
-> 
-> I do think its worth respinning until the DT is agreed to as we shouldn’t
-> be changing the binding.
-> 
+2/4 x86: add phys addr validity check for /dev/mem mmap
 
-Correct, if there's valid reason for it.
+where the "count" was replaced with "len_bytes" for better readability.
 
-> I’m not sure how being ‘symmetric’ with the smd use case maters if
-> we are treating this RPM support vs RPM-SMD as two different things.
-> 
+The rest is just a refresh because of this change.
 
-Not rpm-smd but smd. Which is also used on family a and uses the same kpss-gcc
-(or apcs) node as rpm for outgoing ipc on those platforms.
+The original message follows ...
 
-Regards,
-Bjorn
+Hi all,
+
+this is a combination of two patch sets I sent a while ago
+1) Prevent possible PTE corruption with /dev/mem mmap
+2) x86: allow read/write /dev/mem to access non-system RAM above high_memory
+
+The original thread with both patch sets can be found here
+   https://lkml.org/lkml/2014/8/14/229
+   lkml: <1408025927-16826-1-git-send-email-fhrbata@redhat.com>
+
+1) Prevent possible PTE corruption with /dev/mem mmap
+x86: add arch_pfn_possible helper
+x86: add phys addr validity check for /dev/mem mmap
+
+Many thanks goes to Dave Hansen, who helped with the "final" check. Other than
+that it did not get much attention, except H. Peter Anvin's complain that having
+two checks for mmap and read/write for /dev/mem access is ridiculous. I for sure
+do not object to this, but AFAICT it's not that simple to unify them and it's not
+"directly" related to the PTE corruption. Please note that there are other
+archs(ia64, arm) using these check. But I for sure can be missing something.
+
+What this patch set does is using the existing interface to implement x86 specific
+check in the least invasive way.
+
+Anyway I tried to remove the high_memory check with a follow-up patch set 2)
+
+2) x86: allow read/write /dev/mem to access non-system RAM above high_memory
+x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
+x86: remove high_memory check from valid_phys_addr_range
+
+This is an attempt to remove the high_memory limit for the read/write access to
+/dev/mem. IMHO there is no reason for this limit on x86. It is presented in
+the generic valid_phys_addr_range, which is used only by (read|write)_mem. IIUIC
+it's main purpose is for the generic xlate_dev_mem_ptr, which is using only the
+direct kernel mapping __va translation. Since the valid_phys_addr_range is
+called as the first check in (read|write)_mem, it basically does not allow to
+access anything above high_memory on x86.
+
+The first patch adds high_memory check to x86's (xlate|unxlate)_dev_mem_ptr, so
+the direct kernel mapping can be safely used for system RAM bellow high_memory.
+This is IMHO the only valid reason to use high_memory check in (read|write)_mem.
+
+The second patch removes the high_memory check from valid_phys_addr_range,
+allowing read/write to access non-system RAM above high_memory. So far this
+was possible only by using mmap.
+
+I hope I haven't overlooked something.
+
+Many thanks
+
+Frantisek Hrbata (4):
+  x86: add arch_pfn_possible helper
+  x86: add phys addr validity check for /dev/mem mmap
+  x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
+  x86: remove high_memory check from valid_phys_addr_range
+
+ arch/x86/include/asm/io.h |  4 ++++
+ arch/x86/mm/ioremap.c     |  9 ++++++---
+ arch/x86/mm/mmap.c        | 12 ++++++++++++
+ arch/x86/mm/physaddr.h    |  9 +++++++--
+ 4 files changed, 29 insertions(+), 5 deletions(-)
+
+-- 
+1.9.3
+
