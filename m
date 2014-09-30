@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaI3UIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:08:06 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:5865 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751283AbaI3UID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:08:03 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkEPALcMK1RXQAs+/2dsb2JhbABggw6BKrYcBQEBAQEBAQUBcgGaWYEQFwF7hGAjgRo3iEIBrkyQGIYSiShkHYQ1BZ0vlXCDZTsvgQaBRAEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Sage Weil <sage@inktank.com>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH 1/1 linux-next] libceph: remove redundant declaration
-Date: Tue, 30 Sep 2014 22:07:50 +0200
-Message-Id: <1412107670-4888-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	id S1751855AbaI3UJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:09:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208AbaI3UJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:09:42 -0400
+Date: Tue, 30 Sep 2014 22:06:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [PATCH] modules, split MODULE_STATE_UNFORMED into separate
+	states
+Message-ID: <20140930200642.GA27180@redhat.com>
+References: <1412104110-18441-1-git-send-email-prarit@redhat.com> <20140930195733.GA26492@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930195733.GA26492@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ceph_release_page_vector was defined twice in libceph.h
+argh, sorry for noise,
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- include/linux/ceph/libceph.h | 1 -
- 1 file changed, 1 deletion(-)
+On 09/30, Oleg Nesterov wrote:
+>
+> On 09/30, Prarit Bhargava wrote:
+> >
+> > MODULE_STATE_UNFORMED needs to be separated into two states; one for the
+> > module load (MODULE_STATE_LOAD), and one for the module delete
+> > (MODULE_STATE_DELETE).
+> 
+> And personally I think this makes sense in any case, but I can't really
+> comment the changes in this area.
+> 
+> > @@ -3647,18 +3646,29 @@ static int m_show(struct seq_file *m, void *p)
+> >  	struct module *mod = list_entry(p, struct module, list);
+> >  	char buf[8];
+> >  
+> > -	/* We always ignore unformed modules. */
+> > -	if (mod->state == MODULE_STATE_UNFORMED)
+> > +	/*
+> > +	 * If the state is MODULE_STATE_LOAD then the module is in
+> > +	 * the early stages of loading.  No information should be printed
+> > +	 * for this module as the data could be in an uninitialized state.
+> > +	 */
+> > +	if (mod->state == MODULE_STATE_LOAD)
+> >  		return 0;
+> 
+> So this assumes that _UNFORMED state is fine...
+                       ^^^^^^^^^
+I meant MODULE_STATE_DELETE of course...
 
-diff --git a/include/linux/ceph/libceph.h b/include/linux/ceph/libceph.h
-index 279b0af..07bc359 100644
---- a/include/linux/ceph/libceph.h
-+++ b/include/linux/ceph/libceph.h
-@@ -211,7 +211,6 @@ extern struct page **ceph_get_direct_page_vector(const void __user *data,
- 						 bool write_page);
- extern void ceph_put_page_vector(struct page **pages, int num_pages,
- 				 bool dirty);
--extern void ceph_release_page_vector(struct page **pages, int num_pages);
- extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
- extern int ceph_copy_user_to_page_vector(struct page **pages,
- 					 const void __user *data,
--- 
-1.9.3
+> Not sure, but I can be easily wrong. For example, print_unload_info() ->
+> module_refcount() plays with mod->refptr, while free_module() does
+> module_unload_free() -> free_percpu(mod->refptr). No?
+> 
+> Perhaps it makes sense to start with the simple patch for stable,
+> 
+> 	+	// sync with m_show()
+> 	+	mutex_lock(module_mutex);
+> 		mod->state = MODULE_STATE_UNFORMED;
+> 	+	mutex_unlock(module_mutex);
+> 
+> then do a more sophisticated fix?
+> 
+> Oleg.
 
