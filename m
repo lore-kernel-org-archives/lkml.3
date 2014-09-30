@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaI3WER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:04:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60845 "EHLO
+	id S1755354AbaI3WEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:04:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60837 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbaI3Vgb (ORCPT
+	with ESMTP id S1751516AbaI3Vg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:36:31 -0400
+	Tue, 30 Sep 2014 17:36:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/103] isofs: Fix unbounded recursion when processing relocated directories
-Date: Tue, 30 Sep 2014 14:30:35 -0700
-Message-Id: <1412112708-27356-31-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 026/103] md/raid10: fix memory leak when reshaping a RAID10.
+Date: Tue, 30 Sep 2014 14:30:31 -0700
+Message-Id: <1412112708-27356-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -26,208 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
+commit ce0b0a46955d1bb389684a2605dbcaa990ba0154 upstream.
 
-We did not check relocated directory in any way when processing Rock
-Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
-entry pointing to another CL entry leading to possibly unbounded
-recursion in kernel code and thus stack overflow or deadlocks (if there
-is a loop created from CL entries).
+raid10 reshape clears unwanted bits from a bio->bi_flags using
+a method which, while clumsy, worked until 3.10 when BIO_OWNS_VEC
+was added.
+Since then it clears that bit but shouldn't.  This results in a
+memory leak.
 
-Fix the problem by not allowing CL entry to point to a directory entry
-with CL entry (such use makes no good sense anyway) and by checking
-whether CL entry doesn't point to itself.
+So change to used the approved method of clearing unwanted bits.
 
-Reported-by: Chris Evans <cevans@google.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+As this causes a memory leak which can consume all of memory
+the fix is suitable for -stable.
+
+Fixes: a38352e0ac02dbbd4fa464dc22d1352b5fbd06fd
+Reported-by: mdraid.pkoch@dfgh.net (Peter Koch)
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/isofs/inode.c | 15 ++++++++-------
- fs/isofs/isofs.h | 23 +++++++++++++++++++----
- fs/isofs/rock.c  | 39 ++++++++++++++++++++++++++++-----------
- 3 files changed, 55 insertions(+), 22 deletions(-)
+ drivers/md/raid10.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/isofs/inode.c b/fs/isofs/inode.c
-index 4a9e10e..a9daccb 100644
---- a/fs/isofs/inode.c
-+++ b/fs/isofs/inode.c
-@@ -61,7 +61,7 @@ static void isofs_put_super(struct super_block *sb)
- 	return;
- }
- 
--static int isofs_read_inode(struct inode *);
-+static int isofs_read_inode(struct inode *, int relocated);
- static int isofs_statfs (struct dentry *, struct kstatfs *);
- 
- static struct kmem_cache *isofs_inode_cachep;
-@@ -1258,7 +1258,7 @@ out_toomany:
- 	goto out;
- }
- 
--static int isofs_read_inode(struct inode *inode)
-+static int isofs_read_inode(struct inode *inode, int relocated)
- {
- 	struct super_block *sb = inode->i_sb;
- 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
-@@ -1403,7 +1403,7 @@ static int isofs_read_inode(struct inode *inode)
- 	 */
- 
- 	if (!high_sierra) {
--		parse_rock_ridge_inode(de, inode);
-+		parse_rock_ridge_inode(de, inode, relocated);
- 		/* if we want uid/gid set, override the rock ridge setting */
- 		if (sbi->s_uid_set)
- 			inode->i_uid = sbi->s_uid;
-@@ -1482,9 +1482,10 @@ static int isofs_iget5_set(struct inode *ino, void *data)
-  * offset that point to the underlying meta-data for the inode.  The
-  * code below is otherwise similar to the iget() code in
-  * include/linux/fs.h */
--struct inode *isofs_iget(struct super_block *sb,
--			 unsigned long block,
--			 unsigned long offset)
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated)
- {
- 	unsigned long hashval;
- 	struct inode *inode;
-@@ -1506,7 +1507,7 @@ struct inode *isofs_iget(struct super_block *sb,
- 		return ERR_PTR(-ENOMEM);
- 
- 	if (inode->i_state & I_NEW) {
--		ret = isofs_read_inode(inode);
-+		ret = isofs_read_inode(inode, relocated);
- 		if (ret < 0) {
- 			iget_failed(inode);
- 			inode = ERR_PTR(ret);
-diff --git a/fs/isofs/isofs.h b/fs/isofs/isofs.h
-index 9916723..0ac4c1f 100644
---- a/fs/isofs/isofs.h
-+++ b/fs/isofs/isofs.h
-@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
- 
- struct inode;		/* To make gcc happy */
- 
--extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
-+extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
- extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
- extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
- 
-@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struct inode *, struct dentry *, unsigned int
- extern struct buffer_head *isofs_bread(struct inode *, sector_t);
- extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
- 
--extern struct inode *isofs_iget(struct super_block *sb,
--                                unsigned long block,
--                                unsigned long offset);
-+struct inode *__isofs_iget(struct super_block *sb,
-+			   unsigned long block,
-+			   unsigned long offset,
-+			   int relocated);
-+
-+static inline struct inode *isofs_iget(struct super_block *sb,
-+				       unsigned long block,
-+				       unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 0);
-+}
-+
-+static inline struct inode *isofs_iget_reloc(struct super_block *sb,
-+					     unsigned long block,
-+					     unsigned long offset)
-+{
-+	return __isofs_iget(sb, block, offset, 1);
-+}
- 
- /* Because the inode number is no longer relevant to finding the
-  * underlying meta-data for an inode, we are free to choose a more
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index c0bf424..f488bba 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -288,12 +288,16 @@ eio:
- 	goto out;
- }
- 
-+#define RR_REGARD_XA 1
-+#define RR_RELOC_DE 2
-+
- static int
- parse_rock_ridge_inode_internal(struct iso_directory_record *de,
--				struct inode *inode, int regard_xa)
-+				struct inode *inode, int flags)
- {
- 	int symlink_len = 0;
- 	int cnt, sig;
-+	unsigned int reloc_block;
- 	struct inode *reloc;
- 	struct rock_ridge *rr;
- 	int rootflag;
-@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
- 
- 	init_rock_state(&rs, inode);
- 	setup_rock_ridge(de, inode, &rs);
--	if (regard_xa) {
-+	if (flags & RR_REGARD_XA) {
- 		rs.chr += 14;
- 		rs.len -= 14;
- 		if (rs.len < 0)
-@@ -485,12 +489,22 @@ repeat:
- 					"relocated directory\n");
- 			goto out;
- 		case SIG('C', 'L'):
--			ISOFS_I(inode)->i_first_extent =
--			    isonum_733(rr->u.CL.location);
--			reloc =
--			    isofs_iget(inode->i_sb,
--				       ISOFS_I(inode)->i_first_extent,
--				       0);
-+			if (flags & RR_RELOC_DE) {
-+				printk(KERN_ERR
-+				       "ISOFS: Recursive directory relocation "
-+				       "is not supported\n");
-+				goto eio;
-+			}
-+			reloc_block = isonum_733(rr->u.CL.location);
-+			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
-+			    ISOFS_I(inode)->i_iget5_offset == 0) {
-+				printk(KERN_ERR
-+				       "ISOFS: Directory relocation points to "
-+				       "itself\n");
-+				goto eio;
-+			}
-+			ISOFS_I(inode)->i_first_extent = reloc_block;
-+			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
- 			if (IS_ERR(reloc)) {
- 				ret = PTR_ERR(reloc);
- 				goto out;
-@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpnt, struct rock_ridge *rr, char *plimit)
- 	return rpnt;
- }
- 
--int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
-+int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
-+			   int relocated)
- {
--	int result = parse_rock_ridge_inode_internal(de, inode, 0);
-+	int flags = relocated ? RR_RELOC_DE : 0;
-+	int result = parse_rock_ridge_inode_internal(de, inode, flags);
- 
- 	/*
- 	 * if rockridge flag was reset and we didn't look for attributes
-@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
- 	 */
- 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
- 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
--		result = parse_rock_ridge_inode_internal(de, inode, 14);
-+		result = parse_rock_ridge_inode_internal(de, inode,
-+							 flags | RR_REGARD_XA);
- 	}
- 	return result;
- }
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 496a46e..4800e56 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -4421,7 +4421,7 @@ read_more:
+ 	read_bio->bi_private = r10_bio;
+ 	read_bio->bi_end_io = end_sync_read;
+ 	read_bio->bi_rw = READ;
+-	read_bio->bi_flags &= ~(BIO_POOL_MASK - 1);
++	read_bio->bi_flags &= (~0UL << BIO_RESET_BITS);
+ 	read_bio->bi_flags |= 1 << BIO_UPTODATE;
+ 	read_bio->bi_vcnt = 0;
+ 	read_bio->bi_size = 0;
 -- 
 1.9.1
 
