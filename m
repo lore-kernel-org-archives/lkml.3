@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682AbaI3VnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:43:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32937 "EHLO
+	id S1754691AbaI3Vnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:43:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32931 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaI3VjI (ORCPT
+	with ESMTP id S1754368AbaI3VjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:08 -0400
+	Tue, 30 Sep 2014 17:39:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 097/103] i2c: rcar: fix MNR interrupt handling
-Date: Tue, 30 Sep 2014 14:31:42 -0700
-Message-Id: <1412112708-27356-98-git-send-email-kamal@canonical.com>
+Cc: Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 090/103] regmap: Don't attempt block writes when syncing cache on single_rw devices
+Date: Tue, 30 Sep 2014 14:31:35 -0700
+Message-Id: <1412112708-27356-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,70 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Mark Brown <broonie@linaro.org>
 
-commit dd318b0df27c582ac0d72a346fd6e693700be23c upstream.
+commit 5c1ebe7f73f9166893c3459915db8a09d6d1d715 upstream.
 
-Sometimes the MNR and MST interrupts happen simultaneously  (stop  automatically
-follows NACK, according to the manuals) and in such case the ID_NACK flag  isn't
-set since the MST interrupt handling precedes MNR and all interrupts are cleared
-and disabled then, so that MNR interrupt is never noticed -- this causes NACK'ed
-transfers to be falsely reported as successful. Exchanging MNR and  MST handlers
-fixes this issue, however the MNR bit  somehow  gets set again even after  being
-explicitly cleared, so I decided to completely suppress handling of all disabled
-interrupts (which is a good thing anyway)...
+If the device can't support block writes then don't attempt to use raw
+syncing which will automatically generate block writes for adjacent
+registers, use the existing _single() block syncing implementation.
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-[ kamal: backport to 3.13-stable: context ]
+Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Tested-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-rcar.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/base/regmap/regcache.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/i2c-rcar.c b/drivers/i2c/busses/i2c-rcar.c
-index 56de337..e64bb5b 100644
---- a/drivers/i2c/busses/i2c-rcar.c
-+++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -488,6 +488,9 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
- 
- 	msr = rcar_i2c_status_get(priv);
- 
-+	/* Only handle interrupts that are currently enabled */
-+	msr &= rcar_i2c_read(priv, ICMIER);
-+
- 	/*
- 	 * Arbitration lost
- 	 */
-@@ -503,15 +506,6 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
- 	}
- 
- 	/*
--	 * Stop
--	 */
--	if (msr & MST) {
--		dev_dbg(dev, "Stop\n");
--		rcar_i2c_flags_set(priv, ID_DONE);
--		goto out;
--	}
--
--	/*
- 	 * Nack
- 	 */
- 	if (msr & MNR) {
-@@ -524,6 +518,12 @@ static irqreturn_t rcar_i2c_irq(int irq, void *ptr)
- 		goto out;
- 	}
- 
-+	/* Stop */
-+	if (msr & MST) {
-+		rcar_i2c_flags_set(priv, ID_DONE);
-+		goto out;
-+	}
-+
- 	/*
- 	 * recv/send
- 	 */
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index d4dd771..154e7a8 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -701,7 +701,7 @@ int regcache_sync_block(struct regmap *map, void *block,
+ 			unsigned int block_base, unsigned int start,
+ 			unsigned int end)
+ {
+-	if (regmap_can_raw_write(map))
++	if (regmap_can_raw_write(map) && !map->use_single_rw)
+ 		return regcache_sync_block_raw(map, block, cache_present,
+ 					       block_base, start, end);
+ 	else
 -- 
 1.9.1
 
