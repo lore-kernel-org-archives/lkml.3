@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaI3XmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 19:42:10 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:40944 "EHLO
+	id S1751518AbaI3XmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 19:42:09 -0400
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:40340 "EHLO
 	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332AbaI3XmG (ORCPT
+	by vger.kernel.org with ESMTP id S1751208AbaI3XmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Sep 2014 19:42:06 -0400
 From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
@@ -12,9 +12,9 @@ To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, davej@redhat.com,
         hmh@hmh.eng.br
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
-Date: Wed,  1 Oct 2014 00:41:57 +0100
-Message-Id: <1412120517-14738-3-git-send-email-pure.logic@nexus-software.ie>
+Subject: [PATCH 1/2] x86: Quark: Update cache reporting, add Quark SoC X1000 string
+Date: Wed,  1 Oct 2014 00:41:56 +0100
+Message-Id: <1412120517-14738-2-git-send-email-pure.logic@nexus-software.ie>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412120517-14738-1-git-send-email-pure.logic@nexus-software.ie>
 References: <1412120517-14738-1-git-send-email-pure.logic@nexus-software.ie>
@@ -22,49 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quark X1000 requires CR3 to be rewritten to flush TLB entries
-irrespective of the PGE bits in CR4 or PTE.PGE
+Adds a path for legacy_cache_size to get a Quark SoC X1000 cache size
+Update init_intel to take account of Quark X1000 reporting cache size
+via legacy_cache_size
 
-Add a comment to setup_arch to indicate that the code
-
-load_cr3(swapper_pg_dir);
-__flush_tlb_all();
-
-Will already have flushed the TLB @ the CR3 reload allowing us
-to skip over a potential if/else for Quark.
-
-This comment clearly states the bug, the behaviour we rely on
-and the reason why we only do it this way - one time.
-
-Later on cpu_has_pge() will be false due to a fixup in
-intel_init_early() and __flush_tlb_all() will work as expected
-from that point onwards
+Add string to family/model structure for completeness and better
+output of /proc/cpuinfo
 
 Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 ---
- arch/x86/kernel/setup.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/kernel/cpu/intel.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 41ead8d..235cfd3 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -879,6 +879,15 @@ void __init setup_arch(char **cmdline_p)
- 			KERNEL_PGD_PTRS);
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 50ce751..f37f589 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -396,7 +396,15 @@ static void init_intel(struct cpuinfo_x86 *c)
+ #endif
+ 	}
  
- 	load_cr3(swapper_pg_dir);
+-	l2 = init_intel_cacheinfo(c);
 +	/*
-+	 * Note: Quark X1000 CPUs advertise PGE incorrectly and require
-+	 * a cr3 based tlb flush, so the following __flush_tlb_all()
-+	 * will not flush anything because the cpu quirk which clears
-+	 * X86_FEATURE_PGE has not been invoked yet. Though due to the
-+	 * load_cr3() above the TLB has been flushed already. The
-+	 * quirk is invoked before subsequent calls to __flush_tlb_all()
-+	 * so proper operation is guaranteed.
++	 * If cache_size has not been initialized via legacy_cache()
++	 * probe it via init_intel_cacheinfo().
 +	 */
- 	__flush_tlb_all();
- #else
- 	printk(KERN_INFO "Command line: %s\n", boot_command_line);
++	if (c->x86_cache_size == 0)
++		l2 = init_intel_cacheinfo(c);
++	else
++		l2 = c->x86_cache_size;
++
+ 	if (c->cpuid_level > 9) {
+ 		unsigned eax = cpuid_eax(10);
+ 		/* Check for version and the number of counters */
+@@ -500,6 +508,13 @@ static unsigned int intel_size_cache(struct cpuinfo_x86 *c, unsigned int size)
+ 	 */
+ 	if ((c->x86 == 6) && (c->x86_model == 11) && (size == 0))
+ 		size = 256;
++
++	/*
++	 * Intel Quark SoC X1000 contains a 4-way set associative
++	 * 16K cache with a 16 byte cache line and 256 lines per tag
++	 */
++	if ((c->x86 == 5) && (c->x86_model == 9))
++		size = 16;
+ 	return size;
+ }
+ #endif
+@@ -701,7 +716,8 @@ static const struct cpu_dev intel_cpu_dev = {
+ 			  [3] = "OverDrive PODP5V83",
+ 			  [4] = "Pentium MMX",
+ 			  [7] = "Mobile Pentium 75 - 200",
+-			  [8] = "Mobile Pentium MMX"
++			  [8] = "Mobile Pentium MMX",
++			  [9] = "Quark SoC X1000",
+ 		  }
+ 		},
+ 		{ .family = 6, .model_names =
 -- 
 1.9.1
 
