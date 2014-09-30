@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbaI3ViO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:38:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32791 "EHLO
+	id S1754085AbaI3ViV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:38:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32805 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969AbaI3ViK (ORCPT
+	with ESMTP id S1750939AbaI3ViS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:38:10 -0400
+	Tue, 30 Sep 2014 17:38:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pranith Kumar <bobby.prani@gmail.com>,
+Cc: Huang Rui <ray.huang@amd.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/103] staging: lustre: Remove circular dependency on header
-Date: Tue, 30 Sep 2014 14:30:49 -0700
-Message-Id: <1412112708-27356-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 054/103] usb: xhci: amd chipset also needs short TX quirk
+Date: Tue, 30 Sep 2014 14:30:59 -0700
+Message-Id: <1412112708-27356-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -28,52 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pranith Kumar <bobby.prani@gmail.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit e409842a03b0c2c41c0959fef8a7563208af36c1 upstream.
+commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
 
-The following patch fixes a build error on sparc32. I think it should go to
-stable 3.16.
+AMD xHC also needs short tx quirk after tested on most of chipset
+generations. That's because there is the same incorrect behavior like
+Fresco Logic host. Please see below message with on USB webcam
+attached on xHC host:
 
-Remove a circular dependency on atomic.h header file which leads to compilation
-failure on sparc32 as reported here:
-http://kisskb.ellerman.id.au/kisskb/buildresult/11340509/
+[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
 
-The specific dependency is as follows:
-
-In file included from arch/sparc/include/asm/smp_32.h:24:0,
-                 from arch/sparc/include/asm/smp.h:6,
-                 from arch/sparc/include/asm/switch_to_32.h:4,
-                 from arch/sparc/include/asm/switch_to.h:6,
-                 from arch/sparc/include/asm/ptrace.h:84,
-                 from arch/sparc/include/asm/processor_32.h:16,
-                 from arch/sparc/include/asm/processor.h:6,
-                 from arch/sparc/include/asm/barrier_32.h:4,
-                 from arch/sparc/include/asm/barrier.h:6,
-                 from arch/sparc/include/asm/atomic_32.h:17,
-                 from arch/sparc/include/asm/atomic.h:6,
-                 from drivers/staging/lustre/lustre/obdclass/class_obd.c:38
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reported-by: Arindam Nath <arindam.nath@amd.com>
+Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/lustre/lustre/obdclass/class_obd.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/obdclass/class_obd.c b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-index 4afd962..6d705db 100644
---- a/drivers/staging/lustre/lustre/obdclass/class_obd.c
-+++ b/drivers/staging/lustre/lustre/obdclass/class_obd.c
-@@ -35,7 +35,7 @@
-  */
- 
- #define DEBUG_SUBSYSTEM S_CLASS
--# include <asm/atomic.h>
-+# include <linux/atomic.h>
- 
- #include <obd_support.h>
- #include <obd_class.h>
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 67394da..3fc8d9e 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -101,6 +101,10 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 	/* AMD PLL quirk */
+ 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
+ 		xhci->quirks |= XHCI_AMD_PLL_FIX;
++
++	if (pdev->vendor == PCI_VENDOR_ID_AMD)
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
++
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
+ 		xhci->quirks |= XHCI_LPM_SUPPORT;
+ 		xhci->quirks |= XHCI_INTEL_HOST;
 -- 
 1.9.1
 
