@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaI3PwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 11:52:23 -0400
-Received: from mga14.intel.com ([192.55.52.115]:32591 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaI3PwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 11:52:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="393635453"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: RE: [PATCH 4/5] ACPICA: Introduce acpi_enable_all_wakeup_gpes()
-Thread-Topic: [PATCH 4/5] ACPICA: Introduce acpi_enable_all_wakeup_gpes()
-Thread-Index: AQHP3ELF3USyxg353ki32PStj86fCJwZ1ELg
-Date: Tue, 30 Sep 2014 15:52:16 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37D20AA35@ORSMSX112.amr.corp.intel.com>
-References: <1622293.rpSt5UtDk3@vostro.rjw.lan>
- <4021848.ZWdxDcq97A@vostro.rjw.lan>
-In-Reply-To: <4021848.ZWdxDcq97A@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1752474AbaI3PyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:54:22 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:56288 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaI3PyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 11:54:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Rob Herring <robh@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] of/pci: add pci_pio_to_address dummy for !CONFIG_OF
+Date: Tue, 30 Sep 2014 17:54:16 +0200
+Message-ID: <2735967.fhQeZkXvnj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140930154201.GR841@e106497-lin.cambridge.arm.com>
+References: <706416181.hbVGLDA3o6@wuerfel> <2033939.5UfzeSiRKs@wuerfel> <20140930154201.GR841@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y1xo68IBxFeXruzyFcYhF6hLIQczv9/OGXefama2Qwd
+ bfOrWYiRSRnsGgnfstB3SCfkPgVA/+pOY+vRhWYfi/Jo3Tfj0g
+ 1HmprshIcHtZqykiTt7Br9KKrJR/bcxDbEYFzBRJYPm3e3aItU
+ xaPwzXpq+JFIlghrT0T1E+JMzugrwWFSoqKDsR0L1wxWj9wA3X
+ VfwXqdIN9WfMVi111wc4cIyuJ4AmHOlKRPUtfR6Vw0f1eh05ch
+ YyvEwEiYKblToGorq8jcL7kUH136ivaSTu+p2NwivpflqMkfro
+ /zIlECTDoVrm7Lx5oaykwln31cIefsmyaB7zKpHKFa3lwCTIxn
+ 7GnWDvDcUONupbj4maMQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8UFqTvg023264
 
-If you need it, sure.
-Let me know when there is an ACPICA version
+On Tuesday 30 September 2014 16:42:02 Liviu Dudau wrote:
+> On Tue, Sep 30, 2014 at 04:15:19PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 30 September 2014 15:45:06 Liviu Dudau wrote:
+> > > 
+> > > Acked-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > > 
+> > > Is that triggered by shmobile_defconfig?
+> > > 
+> > > 
+> > 
+> > No, I only found it using randconfig testing, shmobile enables CONFIG_OF by
+> > default.
+> 
+> Hmm, I was looking at who defines CONFIG_PCI_RCAR_GEN2_PCIE and it's only
+> present in shmobile_defconfig, but that one does not select any OF options (other
+> than CONFIG_ARM_APPENDED_DTB). So there is no way of triggering this other
+> than by randconfig?
 
+It should be easy enough to build a kernel without CONFIG_OF that enables
+this driver manually on another platform.
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Monday, September 29, 2014 5:26 PM
-> To: ACPI Devel Maling List; Moore, Robert
-> Cc: Linux Kernel Mailing List; Zhang, Rui; Linux PM list
-> Subject: [PATCH 4/5] ACPICA: Introduce acpi_enable_all_wakeup_gpes()
-> 
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Add a routine for host OSes to enable all wakeup GPEs and disable all of
-> the non-wakeup ones at the same time.
-> 
-> It will be used for the handling of GPE wakeup from suspend-to-idle in
-> Linux.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
-> 
-> Bob, please let me know if I can fast-track this one.
-> 
-> ---
->  drivers/acpi/acpica/evxfgpe.c |   32 ++++++++++++++++++++++++++++++++
->  include/acpi/acpixf.h         |    1 +
->  2 files changed, 33 insertions(+)
-> 
-> Index: linux-pm/drivers/acpi/acpica/evxfgpe.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/acpica/evxfgpe.c
-> +++ linux-pm/drivers/acpi/acpica/evxfgpe.c
-> @@ -596,6 +596,38 @@ acpi_status acpi_enable_all_runtime_gpes
-> 
->  ACPI_EXPORT_SYMBOL(acpi_enable_all_runtime_gpes)
-> 
-> +/**********************************************************************
-> +********
-> + *
-> + * FUNCTION:    acpi_enable_all_wakeup_gpes
-> + *
-> + * PARAMETERS:  None
-> + *
-> + * RETURN:      Status
-> + *
-> + * DESCRIPTION: Enable all "wakeup" GPEs and disable all of the other
-> GPEs, in
-> + *              all GPE blocks.
-> + *
-> +
-> +***********************************************************************
-> +*******/
-> +
-> +acpi_status acpi_enable_all_wakeup_gpes(void) {
-> +	acpi_status status;
-> +
-> +	ACPI_FUNCTION_TRACE(acpi_enable_all_wakeup_gpes);
-> +
-> +	status = acpi_ut_acquire_mutex(ACPI_MTX_EVENTS);
-> +	if (ACPI_FAILURE(status)) {
-> +		return_ACPI_STATUS(status);
-> +	}
-> +
-> +	status = acpi_hw_enable_all_wakeup_gpes();
-> +	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
-> +
-> +	return_ACPI_STATUS(status);
-> +}
-> +
-> +ACPI_EXPORT_SYMBOL(acpi_enable_all_wakeup_gpes)
-> +
-> 
-> /*************************************************************************
-> ******
->   *
->   * FUNCTION:    acpi_install_gpe_block
-> Index: linux-pm/include/acpi/acpixf.h
-> ===================================================================
-> --- linux-pm.orig/include/acpi/acpixf.h
-> +++ linux-pm/include/acpi/acpixf.h
-> @@ -692,6 +692,7 @@ ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_sta
->  						     *event_status))
->  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status acpi_disable_all_gpes(void))
-> ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
-> acpi_enable_all_runtime_gpes(void))
-> +ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
-> +acpi_enable_all_wakeup_gpes(void))
-> 
->  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
->  				acpi_get_gpe_device(u32 gpe_index,
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Arnd
