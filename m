@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaI3ObB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:31:01 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55669 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752050AbaI3O2V (ORCPT
+	id S1753426AbaI3ObT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:31:19 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43496 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417AbaI3ObQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:28:21 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 05/10] net: pxa168_eth: set the mac address on the Ethernet controller
-Date: Tue, 30 Sep 2014 16:28:11 +0200
-Message-Id: <1412087296-18475-6-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 30 Sep 2014 10:31:16 -0400
+Message-ID: <1412087471.10205.12.camel@L80496>
+Subject: Re: [PATCH] tc: fix warning and coding style
+From: Thibaut Robert <thibaut.robert@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Sep 2014 16:31:11 +0200
+In-Reply-To: <CAMuHMdWHMK7NxX9AUg3ihwds41dKW26A_jFnZELw5N9shMaBKw@mail.gmail.com>
+References: <1412079396-26005-1-git-send-email-thibaut.robert@gmail.com>
+	 <CAMuHMdXj=b0G7foTRkcEtRC_De8+WjVefxBfW=s1sjaXLeF5nQ@mail.gmail.com>
+	 <1412085083.10205.8.camel@L80496>
+	 <CAMuHMdWHMK7NxX9AUg3ihwds41dKW26A_jFnZELw5N9shMaBKw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When changing the MAC address, in addition to updating the dev_addr in
-the net_device structure, this patch also update the MAC address
-registers (high and low) of the Ethernet controller with the new MAC.
-The address stored in these registers is used for IEEE 802.3x Ethernet
-flow control, which is already enabled.
+Le mardi 30 septembre 2014 à 16:08 +0200, Geert Uytterhoeven a écrit :
+> I guess that's acceptable, as tc is probably limited to 32-bit anyway. Maciej?
+> 
+> Note that there's also %pa, for phys_addr_t/resource_size_t.
+Yes, but unfortunately that needs a reference so we can't use it.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/net/ethernet/marvell/pxa168_eth.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 46b86714e9d7..6917904409b8 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -60,6 +60,8 @@
- #define PORT_COMMAND		0x0410
- #define PORT_STATUS		0x0418
- #define HTPR			0x0428
-+#define MAC_ADDR_LOW		0x0430
-+#define MAC_ADDR_HIGH		0x0438
- #define SDMA_CONFIG		0x0440
- #define SDMA_CMD		0x0448
- #define INT_CAUSE		0x0450
-@@ -609,11 +611,22 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
- 	struct sockaddr *sa = addr;
- 	struct pxa168_eth_private *pep = netdev_priv(dev);
- 	unsigned char oldMac[ETH_ALEN];
-+	u32 mac_h, mac_l;
- 
- 	if (!is_valid_ether_addr(sa->sa_data))
- 		return -EADDRNOTAVAIL;
- 	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
- 	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
-+
-+	mac_h = sa->sa_data[0] << 24;
-+	mac_h |= sa->sa_data[1] << 16;
-+	mac_h |= sa->sa_data[2] << 8;
-+	mac_h |= sa->sa_data[3];
-+	mac_l = sa->sa_data[4] << 8;
-+	mac_l |= sa->sa_data[5];
-+	wrl(pep, MAC_ADDR_HIGH, mac_h);
-+	wrl(pep, MAC_ADDR_LOW, mac_l);
-+
- 	netif_addr_lock_bh(dev);
- 	update_hash_table_mac_address(pep, oldMac, dev->dev_addr);
- 	netif_addr_unlock_bh(dev);
--- 
-1.9.1
+Thibaut
 
