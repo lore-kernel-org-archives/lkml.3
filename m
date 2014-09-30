@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaI3PYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 11:24:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36599 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaI3PY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 11:24:29 -0400
-Date: Tue, 30 Sep 2014 17:24:19 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
-        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
-	support
-Message-ID: <20140930152419.GF14081@wotan.suse.de>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com> <20140930022751.GA14081@wotan.suse.de> <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
+	id S1751909AbaI3P2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 11:28:31 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:5236 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750782AbaI3P2a convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 11:28:30 -0400
+Date: Tue, 30 Sep 2014 08:28:39 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Kumar Gala <galak@codeaurora.org>
+CC: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
+        Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v7 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
+ binding
+Message-ID: <20140930152838.GN28481@sonymobile.com>
+References: <1411428329-23172-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1411428329-23172-2-git-send-email-bjorn.andersson@sonymobile.com>
+ <334C6A04-9607-4E97-A7A7-2FEED5986E57@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="windows-1252"
 Content-Disposition: inline
-In-Reply-To: <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <334C6A04-9607-4E97-A7A7-2FEED5986E57@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 11:22:14AM +0200, Tom Gundersen wrote:
-> On Tue, Sep 30, 2014 at 4:27 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> > On Sun, Sep 28, 2014 at 07:07:24PM +0200, Tom Gundersen wrote:
-> >> On Fri, Sep 26, 2014 at 11:57 PM, Luis R. Rodriguez
-> >> <mcgrof@do-not-panic.com> wrote:
-> >> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> >> > Systemd has a general timeout for all workers currently set to 180
-> >> > seconds after which it will send a sigkill signal. Systemd now has a
-> >> > warning which is issued once it reaches 1/3 of the timeout. The original
-> >> > motivation for the systemd timeout was to help track device drivers
-> >> > which do not use asynch firmware loading on init() and the timeout was
-> >> > originally set to 30 seconds.
-> >>
-> >> Please note that the motivation for the timeout in systemd had nothing
-> >> to do with async firmware loading (that was just the case where
-> >> problems cropped up).
-> >
-> > *Part *of the original kill logic, according to the commit log, was actually
-> > due to the assumption that the issues observed *were* synchronous firmware
-> > loading on module init():
-> >
-> > commit e64fae5573e566ce4fd9b23c68ac8f3096603314
-> > Author: Kay Sievers <kay.sievers@vrfy.org>
-> > Date:   Wed Jan 18 05:06:18 2012 +0100
-> >
-> >     udevd: kill hanging event processes after 30 seconds
-> >
-> >     Some broken kernel drivers load firmware synchronously in the module init
-> >     path and block modprobe until the firmware request is fulfilled.
-> >     <...>
+On Wed 24 Sep 09:39 PDT 2014, Kumar Gala wrote:
+
 > 
-> This was a workaround to avoid a deadlock between udev and the kernel.
-> The 180 s timeout was already in place before this change, and was not
-> motivated by firmware loading. Also note that this patch was not about
-> "tracking device drivers", just about avoiding dead-lock.
-
-Thanks, can you elaborate on how a deadlock can occur if the kmod
-worker is not at some point sigkilled?
-
-> > My point here is not to point fingers but to explain why we went on with
-> > this and how we failed to realize only until later that the driver core
-> > ran probe together with init. When a few folks pointed out the issues
-> > with the kill the issue was punted back to kernel developers and the
-> > assumption even among some kernel maintainers was that it was init paths
-> > with sync behaviour that was causing some delays and they were broken
-> > drivers. It is important to highlight these assumptions ended up setting
-> > us off on the wrong path for a while in a hunt to try to fix this issue
-> > either in driver or elsewhere.
+> On Sep 22, 2014, at 6:25 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
 > 
-> Ok. I'm not sure the motivations for user-space changes is important
-> to include in the commit message, but if you do I'll try to clarify
-> things to avoid misunderstandings.
 
-I can try to omit it on the next series.
+[..]
 
-> > Thanks for clarifying this, can you explain what issues could arise
-> > from making an exception to allowing kmod workers to hang around
-> > completing init + probe over a certain defined amount of time without
-> > being killed?
+> > diff --git a/Documentation/devicetree/bindings/mfd/qcom-rpm.txt b/Documentation/devicetree/bindings/mfd/qcom-rpm.txt
+
+[..]
+
+> > +- qcom,ipc:
+> > +     Usage: required
+> > +     Value type: <prop-encoded-array>
+> > +
+> > +     Definition: three entries specifying the outgoing ipc bit used for
+> > +                 signaling the RPM:
+> > +                 - phandle to a syscon node representing the apcs registers
+> > +                 - u32 representing offset to the register within the syscon
+> > +                 - u32 representing the ipc bit within the register
+> > +
 > 
-> We could run out of udev workers and the whole boot would hang.
+> Does this really ever differ for the SoCs, and even if it does why do we need
+> to encode it in DT.  Can’t we determine it via the compatible setting?
+> 
 
-Is the issue that if there is no extra worker available and all are
-idling on sleep / synchronous long work boot will potentially hang
-unless a new worker becomes available to do more work? If so I can
-see the sigkill helping for hanging tasks but it doesn't necessarily
-mean its a good idea to kill modules loading taking a while. Also
-what if the sigkill is just avoided for *just* kmod workers?
+The two offsets could be hard coded, especially based on the compatible.
 
-> The way I see it, the current status from systemd's side is: our
-> short-term work-around is to increase the timeout, and at the moment
-> it appears no long-term solution is needed (i.e., it seems like the
-> right thing to do is to make sure insmod can be near instantaneous, it
-> appears people are working towards this goal, and so far no examples
-> have cropped up showing that it is fundamentally impossible (once/if
-> they do, we should of course revisit the problem)).
+But I don't know if it's worth respinning this just to get those two number out
+of here. Also this is now "symmetric" with the smd use cases, where it
+shouldn't be hard coded.
 
-That again would be reactive behaviour, what would prevent avoiding the
-sigkill only for kmod workers? Is it known the deadlock is immiment?
-If the amount of workers for kmod that would hit the timeout is
-considered low I don't see how that's possible and why not just lift
-the sigkill.
-
-  Luis
+Regards,
+Bjorn
