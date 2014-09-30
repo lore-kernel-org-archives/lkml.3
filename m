@@ -1,186 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405AbaI3AiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:38:07 -0400
-Received: from mail-bn1on0135.outbound.protection.outlook.com ([157.56.110.135]:11488
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755389AbaI3AiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:38:05 -0400
-X-Greylist: delayed 4737 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Sep 2014 20:38:05 EDT
-From: Jojy Varghese <jojyv@juniper.net>
-To: Guenter Roeck <linux@roeck-us.net>, Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <groeck@juniper.net>,
-        "hongtao.jia@freescale.com" <hongtao.jia@freescale.com>
-Subject: Re: [PATCH] powerpc/fsl: Add support for pci(e) machine check
- exception on E500MC / E5500
-Thread-Topic: [PATCH] powerpc/fsl: Add support for pci(e) machine check
- exception on E500MC / E5500
-Thread-Index: AQHP3AU6xL0ppKreQk6rqjZx79AU1JwYcGsAgAAIjYD//8zWgA==
-Date: Mon, 29 Sep 2014 23:03:37 +0000
-Message-ID: <D04F3201.10DEB%jojyv@juniper.net>
-In-Reply-To: <20140929190643.GA20189@roeck-us.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [66.129.239.13]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB518;
-x-forefront-prvs: 034902F5BC
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(479174003)(51704005)(24454002)(164054003)(377424004)(199003)(189002)(15202345003)(99396003)(120916001)(10300001)(4396001)(66066001)(92566001)(107046002)(86362001)(99286002)(92726001)(80022003)(46102003)(64706001)(31966008)(76482002)(54356999)(50986999)(19580405001)(95666004)(105586002)(106356001)(19580395003)(106116001)(87936001)(97736003)(85306004)(20776003)(21056001)(36756003)(15975445006)(85852003)(2656002)(101416001)(7059020);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB518;H:CO2PR05MB761.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="euc-kr"
-Content-ID: <6AB96FD972EE894EA66115811162952E@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
+	id S1755288AbaI3Ajv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:39:51 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55366 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452AbaI3Ajt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 20:39:49 -0400
+Message-ID: <1412037578.21488.11.camel@debian>
+Subject: Re: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
+ machine_check_poll() resets it
+From: Chen Yucong <slaoub@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: tony.luck@intel.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 30 Sep 2014 08:39:38 +0800
+In-Reply-To: <20140929120546.GB6495@pd.tnic>
+References: <1411438561-24319-1-git-send-email-slaoub@gmail.com>
+	 <1411460354.25617.3.camel@debian> <20140929120546.GB6495@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8U0cB3d018103
+
+On Mon, 2014-09-29 at 14:05 +0200, Borislav Petkov wrote:
+> > machine_check_poll() will reset IA32_MCi_STATUS register to zero.
+> > So we need to save the content of IA32_MCi_STATUS MSRs before
+> > calling machine_check_poll() for logging threshold interrupt event.
+> > 
+> > mce_setup() does not gather the content of IA32_MCG_STATUS, so it
+> > should be read explicitly.
+> > 
+> > Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> > ---
+> >  arch/x86/kernel/cpu/mcheck/mce_amd.c |   13 ++++++++++++-
+> >  1 file changed, 12 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > index f8c56bd..9148b4d 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > @@ -275,6 +275,12 @@ static void amd_threshold_interrupt(void)
+> >  
+> >       mce_setup(&m);
+> >  
+> > +     /*
+> > +      * mce_setup() can't gather the content of IA32_MCG_STATUS,
+> > +      * so it should be read explicitly.
+> > +      */
+> 
+> No need for that comment.
+> 
+> > +     rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus);
+> > +
+> >       /* assume first bank caused it */
+> >       for (bank = 0; bank < mca_cfg.banks; ++bank) {
+> >               if (!(per_cpu(bank_map, m.cpu) & (1 << bank)))
+> > @@ -305,6 +311,12 @@ static void amd_threshold_interrupt(void)
+> >                            (high & MASK_LOCKED_HI))
+> >                               continue;
+> >  
+> > +                     /*
+> > +                      * machine_check_poll() will reset
+> IA32_MCi_STATUS
+> > +                      * register to zero, save it for use later.
+> > +                      */
+> > +                     rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
+> 
+> Actually, to be more future-proof, I'd like to do the AMD-specific
+> logging first, i.e. before machine_check_poll() so that any future
+> changes there don't influence what we do in mce_amd.c.
+> 
+> So please move the machine_check_poll() call behind the
+> 
+>         if (high & MASK_OVERFLOW_HI) { 
+machine_check_poll() will scan all banks, so I think we can move it out
+of the loop body.
+
+thx!
+cyc
+
+
+From: Chen Yucong
+
+machine_check_poll() will reset IA32_MCi_STATUS register to zero.
+So we need to save the content of IA32_MCi_STATUS MSRs before
+calling machine_check_poll() for logging threshold interrupt event.
+
+mce_setup() does not gather the content of IA32_MCG_STATUS, so it
+should be read explicitly. And we also need to save MSR_IA32_MCx_ADDR
+if MCI_STATUS_ADDRV bit field is valid.  
+
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index f8c56bd..f5a5beb 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -274,6 +274,7 @@ static void amd_threshold_interrupt(void)
+ 	struct mce m;
+ 
+ 	mce_setup(&m);
++	rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus);
+ 
+ 	/* assume first bank caused it */
+ 	for (bank = 0; bank < mca_cfg.banks; ++bank) {
+@@ -305,24 +306,28 @@ static void amd_threshold_interrupt(void)
+ 			     (high & MASK_LOCKED_HI))
+ 				continue;
+ 
+-			/*
+-			 * Log the machine check that caused the threshold
+-			 * event.
+-			 */
+-			machine_check_poll(MCP_TIMESTAMP,
+-					this_cpu_ptr(&mce_poll_banks));
+-
+ 			if (high & MASK_OVERFLOW_HI) {
+ 				rdmsrl(address, m.misc);
+ 				rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
++				if (m.status & MCI_STATUS_ADDRV)
++					rdmsrl(MSR_IA32_MCx_ADDR(bank), m.addr);
+ 				m.bank = K8_MCE_THRESHOLD_BASE
+ 				       + bank * NR_BLOCKS
+ 				       + block;
+ 				mce_log(&m);
+-				return;
++
++				wrmsrl(MSR_IA32_MCx_STATUS(bank), 0);
++				goto log_mcheck;
+ 			}
+ 		}
+ 	}
++
++log_mcheck:
++	/*
++	 * Log the machine check that caused the threshold event.
++	 */
++	machine_check_poll(MCP_TIMESTAMP,
++				this_cpu_ptr(&mce_poll_banks));
+ }
+ 
+ /*
+-- 
+1.7.10.4
 
 
 
-On 9/29/14 12:06 PM, "Guenter Roeck" <linux@roeck-us.net> wrote:
 
->On Mon, Sep 29, 2014 at 01:36:06PM -0500, Scott Wood wrote:
->> On Mon, 2014-09-29 at 09:48 -0700, Guenter Roeck wrote:
->> > From: Jojy G Varghese <jojyv@juniper.net>
->> > 
->> > For E500MC and E5500, a machine check exception in pci(e) memory space
->> > crashes the kernel.
->> > 
->> > Testing shows that the MCAR(U) register is zero on a MC exception for
->>the
->> > E5500 core. At the same time, DEAR register has been found to have the
->> > address of the faulty load address during an MC exception for this
->>core.
->> > 
->> > This fix changes the current behavior to fixup the result register
->> > and instruction pointers in the case of a load operation on a faulty
->> > PCI address.
->> > 
->> > The changes are:
->> > - Added the hook to pci machine check handing to the e500mc machine
->>check
->> >   exception handler.
->> > - For the E5500 core, load faulting address from SPRN_DEAR register.
->> >   As mentioned above, this is necessary because the E5500 core does
->>not
->> >   report the fault address in the MCAR register.
->> > 
->> > Cc: Scott Wood <scottwood@freescale.com>
->> > Signed-off-by: Jojy G Varghese <jojyv@juniper.net>
->> > [Guenter Roeck: updated description]
->> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
->> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> > ---
->> >  arch/powerpc/kernel/traps.c   | 3 ++-
->> >  arch/powerpc/sysdev/fsl_pci.c | 5 +++++
->> >  2 files changed, 7 insertions(+), 1 deletion(-)
->> > 
->> > diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
->> > index 0dc43f9..ecb709b 100644
->> > --- a/arch/powerpc/kernel/traps.c
->> > +++ b/arch/powerpc/kernel/traps.c
->> > @@ -494,7 +494,8 @@ int machine_check_e500mc(struct pt_regs *regs)
->> >  	int recoverable = 1;
->> >  
->> >  	if (reason & MCSR_LD) {
->> > -		recoverable = fsl_rio_mcheck_exception(regs);
->> > +		recoverable = fsl_rio_mcheck_exception(regs) ||
->> > +			fsl_pci_mcheck_exception(regs);
->> >  		if (recoverable == 1)
->> >  			goto silent_out;
->> >  	}
->> > diff --git a/arch/powerpc/sysdev/fsl_pci.c
->>b/arch/powerpc/sysdev/fsl_pci.c
->> > index c507767..bdb956b 100644
->> > --- a/arch/powerpc/sysdev/fsl_pci.c
->> > +++ b/arch/powerpc/sysdev/fsl_pci.c
->> > @@ -1021,6 +1021,11 @@ int fsl_pci_mcheck_exception(struct pt_regs
->>*regs)
->> >  #endif
->> >  	addr += mfspr(SPRN_MCAR);
->> >  
->> > +#ifdef CONFIG_E5500_CPU
->> > +	if (mfspr(SPRN_EPCR) & SPRN_EPCR_ICM)
->> > +		addr = PFN_PHYS(vmalloc_to_pfn((void *)mfspr(SPRN_DEAR)));
->> > +#endif
->> 
->> Kconfig tells you what hardware is supported, not what hardware you're
->> actually running on.
->> 
->Hi Scott,
->
->Good point. Jojy, guess we'll have to check if the CPU is actually an
->E5500.
->Can you look into that ?
-
-
-"/proc/cpuinfo" shows the cpu as "e5500". Scott, are you suggesting that
-we use a runtime method of determining the cpu type (cpu_spec's cpu_name
-for
-example).  
-
-
->
->> Jia Hongtao, do you know anything about this issue?  Is there an
->> erratum?  What chips are affected by the the erratum covered by
->> <http://patchwork.ozlabs.org/patch/240239/>?
->> 
->We already have and use the above patch(es) in our kernel. It works fine
->for E500 (P2020), but does not address E5500 (P5020/P5040).
->
->> Can we rely on DEAR or is this just a side effect of likely having taken
->> a TLB miss for the address recently?  Perhaps we should use the
->> instruction emulation to determine the effective address instead.
->> 
->> Guenter, is this patch intended to deal with an erratum or are you
->> covering up legitimate errors?
->> 
->Those are errors related to PCIe hotplug, and are seen with unexpected
->PCIe
->device removals (triggered, for example, by removing power from a PCIe
->adapter).
->The behavior we see on E5500 is quite similar to the same behavior on
->E500:
->If unhandled, the CPU keeps executing the same instruction over and over
->again
->if there is an error on a PCIe access and thus stalls. I don't know if
->this
->is considered an erratum or expected behavior, but it is one we have to
->address
->since we have to be able to handle that condition. Ultimately, we'll want
->to
->implement PCIe error handlers for the affected drivers, but that will be
->a next
->step.
-
-According to the spec, we MCAR is supposed to hold the faulty data address
-but for 5500 core, we found that MCAR is zero. You are right that DEAR
-entry could
-be a resultOf a TLB miss but that©ˆs the register we could rely on.
-
-What do you mean by "instruction emulation"? Are you suggesting that we
-examine the RD, RS 
-registers for the instruction?
-
-
-
->
->Please let me know if you have a better solution to address this problem.
->
->Thanks,
->Guenter
-
-
-Thanks
-Jojy
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
