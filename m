@@ -1,168 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaI3Qjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 12:39:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38828 "EHLO mx2.suse.de"
+	id S1752794AbaI3Qk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 12:40:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31125 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453AbaI3Qji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 12:39:38 -0400
-Date: Tue, 30 Sep 2014 18:39:32 +0200
-From: Petr Mladek <pmladek@suse.cz>
-To: Hannes Reinecke <hare@suse.de>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        Robert Elliott <elliott@hp.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 28/38] Externalize string buffer for printk
-Message-ID: <20140930163931.GG2707@dhcp128.suse.cz>
-References: <1411991947-130166-1-git-send-email-hare@suse.de>
- <1411991947-130166-29-git-send-email-hare@suse.de>
+	id S1751492AbaI3Qk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 12:40:58 -0400
+Message-ID: <542ADC33.2040804@redhat.com>
+Date: Tue, 30 Sep 2014 12:37:07 -0400
+From: David Jeffery <djeffery@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411991947-130166-29-git-send-email-hare@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Return short read or 0 at end of a raw device, not EIO
+References: <20140929142110.GA12562@fury.redhat.com> <20140929190509.GA2767@infradead.org> <5429D84B.7080902@redhat.com> <20140930152840.GA9666@infradead.org>
+In-Reply-To: <20140930152840.GA9666@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-09-14 13:58:57, Hannes Reinecke wrote:
-> This patch splits off the actual logging from vprintk_emit()
-> into printk_emit_string(), with vprintk_emit() just being a
-> simple wrapper for formatting the message into a
-> static buffer.
+On 09/30/2014 11:28 AM, Christoph Hellwig wrote:
+> On Mon, Sep 29, 2014 at 06:08:11PM -0400, David Jeffery wrote:
+>> On 09/29/2014 03:05 PM, Christoph Hellwig wrote:
+>>> Seems like this should be changed in the generic code, or is there some
+>>> reason why it would return EIO only for devices, but not for regular
+>>> files in this case?
+>>>
+>>
+>> Regular files shouldn't be returning EIO and don't in my tests. The file
+>> systems manage direct I/O EOF handling in their own block or direct_IO
+>> callbacks.  Block devices do not and instead do the size checks up
+>> front.  Raw devices were bypassing the block device check, so only the
+>> raw driver should be having this issue.
 > 
-> With that the caller can pass in a local buffer for
-> printk_emit_string() without increasing the overall stack size.
+> So I guess the problem is commit
 > 
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: LKML <linux-kernel@vger.kernel.org>
-
-Adding Andrew into CC here as well.
-
-There is one potential problem, see below.
-
-> Signed-off-by: Hannes Reinecke <hare@suse.de>
-> ---
->  include/linux/printk.h |  5 +++++
->  kernel/printk/printk.c | 36 ++++++++++++++++++++++++------------
->  2 files changed, 29 insertions(+), 12 deletions(-)
+> "blkdev_aio_read(): switch to generic_file_read_iter(), get rid of iov_shorten()"
 > 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index d78125f..9639900 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -130,6 +130,11 @@ int vprintk_emit(int facility, int level,
->  		 const char *dict, size_t dictlen,
->  		 const char *fmt, va_list args);
->  
-> +asmlinkage
-> +int printk_emit_string(int facility, int level,
-> +		       const char *dict, size_t dictlen,
-> +		       char *textbuf, size_t text_len);
-> +
->  asmlinkage __printf(1, 0)
->  int vprintk(const char *fmt, va_list args);
->  
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index d13675e..303a1fe 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1618,22 +1618,11 @@ asmlinkage int vprintk_emit(int facility, int level,
->  			    const char *dict, size_t dictlen,
->  			    const char *fmt, va_list args)
->  {
-> -	static int recursion_bug;
->  	static char textbuf[LOG_LINE_MAX];
->
->  	char *text = textbuf;
->  	size_t text_len = 0;
-> -	enum log_flags lflags = 0;
-> -	unsigned long flags;
-> -	int this_cpu;
-> -	int printed_len = 0;
-> -	bool in_sched = false;
-> -	/* cpu currently holding logbuf_lock in this function */
-> -	static volatile unsigned int logbuf_cpu = UINT_MAX;
->  
->  	if (level == SCHED_MESSAGE_LOGLEVEL) {
-> -		level = -1;
-> -		in_sched = true;
-> -
->  		/*
->  		 * The printf needs to come first; we need the syslog
->  		 * prefix which might be passed-in as a parameter.
-> @@ -1644,6 +1633,24 @@ asmlinkage int vprintk_emit(int facility, int level,
->  
->  	text_len += vscnprintf(text + text_len,
->  			       sizeof(textbuf) - text_len, fmt, args);
-> +	return printk_emit_string(facility, level, dict, dictlen,
-> +				  textbuf, text_len);
-> +}
-> +EXPORT_SYMBOL(vprintk_emit);
-> +
-> +asmlinkage int printk_emit_string(int facility, int level,
-> +				  const char *dict, size_t dictlen,
-> +				  char *textbuf, size_t text_len)
-> +{
-> +	static int recursion_bug;
-> +	char *text = textbuf;
-> +	enum log_flags lflags = 0;
-> +	unsigned long flags;
-> +	int this_cpu;
-> +	int printed_len = 0;
-> +	bool in_sched = false;
-> +	/* cpu currently holding logbuf_lock in this function */
-> +	static volatile unsigned int logbuf_cpu = UINT_MAX;
-
-We should make sure that text_len is lower or equal LOG_LINE_MAX.
-
-I am afraid that printk() code is not able to process longer
-lines. For example, syslog_print() does:
-
-       text = kmalloc(LOG_LINE_MAX + PREFIX_MAX, GFP_KERNEL);
-
-Then it calls msg_print_text() that works with entire messages. So,
-any longer message would freeze syslog_print() because it would newer
-fit into the buffer.
-
-I guess that there are more locations like this.
-
-Maybe, we should make LOG_LINE_MAX public, so it could be used on the
-other location either to allocate the buffer or to check the size.
-
-Best Regards,
-Petr
-  
->  	boot_delay_msec(level);
->  	printk_delay();
-> @@ -1652,6 +1659,11 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	local_irq_save(flags);
->  	this_cpu = smp_processor_id();
->  
-> +	if (level == SCHED_MESSAGE_LOGLEVEL) {
-> +		level = -1;
-> +		in_sched = true;
-> +	}
-> +
->  	/*
->  	 * Ouch, printk recursed into itself!
->  	 */
-> @@ -1789,7 +1801,7 @@ asmlinkage int vprintk_emit(int facility, int level,
->  
->  	return printed_len;
->  }
-> -EXPORT_SYMBOL(vprintk_emit);
-> +EXPORT_SYMBOL(printk_emit_string);
->  
->  asmlinkage int vprintk(const char *fmt, va_list args)
->  {
-> -- 
-> 1.8.5.2
+> which removes the iov_shorten call in blkdev_aio_read?  This should be
+> mentioned in the changelog.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> But maybe we should instead make block devices behave more similar to
+> regular files in this respect?
+
+The issue's origin should be with bbec0270bdd8 "blkdev_max_block: make
+private to fs/buffer.c".  This change intentionally removed the size
+checks from blkdev_get_block() to avoid issues with the size variables
+changing underneath the calls.  Commit 684c9aaebbb0 is the initial
+commit to add the size checks with blkdev_aio_read() since
+blkdev_get_block() no longer checks size.  As the raw driver was also
+dependent on the size checks in blkdev_get_block(), it was broken by
+bbec0270bdd8 but not fixed at all by 684c9aaebbb0.
+
+> 
+> Also did you make sure to add your regression test somewhere, e.g. ltp?
+> 
+
+No I have not.  I'll see about an ltp test.
