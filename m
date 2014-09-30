@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaI3VjL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:39:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32925 "EHLO
+	id S1754672AbaI3Vms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:42:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:32941 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988AbaI3VjF (ORCPT
+	with ESMTP id S1754383AbaI3VjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:39:05 -0400
+	Tue, 30 Sep 2014 17:39:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 079/103] KVM: s390/mm: try a cow on read only pages for key ops
-Date: Tue, 30 Sep 2014 14:31:24 -0700
-Message-Id: <1412112708-27356-80-git-send-email-kamal@canonical.com>
+Cc: Will Deacon <will.deacon@arm.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 085/103] arm64: ptrace: fix compat hardware watchpoint reporting
+Date: Tue, 30 Sep 2014 14:31:30 -0700
+Message-Id: <1412112708-27356-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,47 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit ab3f285f227fec62868037e9b1b1fd18294a83b8 upstream.
+commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
 
-The PFMF instruction handler  blindly wrote the storage key even if
-the page was mapped R/O in the host. Lets try a COW before continuing
-and bail out in case of errors.
+I'm not sure what I was on when I wrote this, but when iterating over
+the hardware watchpoint array (hbp_watch_array), our index is off by
+ARM_MAX_BRP, so we walk off the end of our thread_struct...
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+... except, a dodgy condition in the loop means that it never executes
+at all (bp cannot be NULL).
+
+This patch fixes the code so that we remove the bp check and use the
+correct index for accessing the watchpoint structures.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/mm/pgtable.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm64/include/asm/hw_breakpoint.h | 1 -
+ arch/arm64/kernel/ptrace.c             | 3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index e794c88..9cffb96 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -810,11 +810,21 @@ int set_guest_storage_key(struct mm_struct *mm, unsigned long addr,
- 	pte_t *ptep;
+diff --git a/arch/arm64/include/asm/hw_breakpoint.h b/arch/arm64/include/asm/hw_breakpoint.h
+index d064047..52b484b 100644
+--- a/arch/arm64/include/asm/hw_breakpoint.h
++++ b/arch/arm64/include/asm/hw_breakpoint.h
+@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 reg,
+  */
+ #define ARM_MAX_BRP		16
+ #define ARM_MAX_WRP		16
+-#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
  
- 	down_read(&mm->mmap_sem);
-+retry:
- 	ptep = get_locked_pte(current->mm, addr, &ptl);
- 	if (unlikely(!ptep)) {
- 		up_read(&mm->mmap_sem);
- 		return -EFAULT;
+ /* Virtual debug register bases. */
+ #define AARCH64_DBG_REG_BVR	0
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index 7a50b86..b1269da 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -81,7 +81,8 @@ static void ptrace_hbptriggered(struct perf_event *bp,
+ 			break;
+ 		}
  	}
-+	if (!(pte_val(*ptep) & _PAGE_INVALID) &&
-+	     (pte_val(*ptep) & _PAGE_PROTECT)) {
-+			pte_unmap_unlock(*ptep, ptl);
-+			if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
-+				up_read(&mm->mmap_sem);
-+				return -EFAULT;
-+			}
-+			goto retry;
-+		}
- 
- 	new = old = pgste_get_lock(ptep);
- 	pgste_val(new) &= ~(PGSTE_GR_BIT | PGSTE_GC_BIT |
+-	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
++
++	for (i = 0; i < ARM_MAX_WRP; ++i) {
+ 		if (current->thread.debug.hbp_watch[i] == bp) {
+ 			info.si_errno = -((i << 1) + 1);
+ 			break;
 -- 
 1.9.1
 
