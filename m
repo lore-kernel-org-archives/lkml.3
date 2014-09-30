@@ -1,150 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432AbaI3CmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 22:42:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48975 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946AbaI3CmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 22:42:05 -0400
-From: NeilBrown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Date: Tue, 30 Sep 2014 12:33:34 +1000
-Subject: [PATCH 2/2] sysfs/kernfs: make read requests on pre-alloc files use
- the buffer.
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>
-Message-ID: <20140930023334.13407.61093.stgit@notabene.brown>
-In-Reply-To: <20140930022205.13407.99210.stgit@notabene.brown>
-References: <20140930022205.13407.99210.stgit@notabene.brown>
-User-Agent: StGit/0.16
+	id S1755035AbaI3Csb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 22:48:31 -0400
+Received: from mailout.micron.com ([137.201.242.129]:55124 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaI3Csa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 22:48:30 -0400
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkA==
+Date: Tue, 30 Sep 2014 02:47:39 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409251211.57183.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20984.003
+x-tm-as-result: No--28.896700-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To match the previous patch which used the pre-alloc buffer for
-writes, this patch causes reads to use the same buffer.
-This is not strictly necessary as the current seq_read() will allocate
-on first read, so user-space can trigger the required pre-alloc.  But
-consistency is valuable.
+For Micron spi norflash,enables or disables quad I/O
+protocol ,which controled by EVCR(Enhanced
+Volatile Configuration Register) Quad I/O
+protocol bit 7.When EVCR bit 7 is reset to 0,
+the spi norflash will operate in quad I/O following
+the next WRITE ENHANCED VOLATILE CONFIGURATION
+command.
 
-The read function is somewhat simpler than seq_read() and, for example,
-does not support reading from an offset into the file: reads must be
-at the start of the file.
-
-As the buffer is shared with writes and other reads, the mutex is
-extended to cover the copy_to_user.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: bean huo <beanhuo@micron.com>
 ---
- fs/kernfs/file.c |   17 ++++++++++-------
- fs/sysfs/file.c  |   28 ++++++++++++++++++++++++----
- 2 files changed, 34 insertions(+), 11 deletions(-)
+ v1-v2:modified to that capture wait_till_ready()
+	 return value,if error,directly return its
+	 the value.
+ v2-v3:directly use the reurning error value of
+	 read_reg and write_reg,instead of -EINVAL.
 
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 73bd5ed143cd..7072240604f5 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -189,7 +189,9 @@ static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
- 	const struct kernfs_ops *ops;
- 	char *buf;
- 
--	buf = kmalloc(len, GFP_KERNEL);
-+	buf = of->buf;
-+	if (!buf)
-+		buf = kmalloc(len, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
- 
-@@ -210,21 +212,22 @@ static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
- 	else
- 		len = -EINVAL;
- 
--	kernfs_put_active(of->kn);
--	mutex_unlock(&of->mutex);
--
- 	if (len < 0)
--		goto out_free;
-+		goto out_unlock;
- 
- 	if (copy_to_user(user_buf, buf, len)) {
- 		len = -EFAULT;
--		goto out_free;
-+		goto out_unlock;
- 	}
- 
- 	*ppos += len;
- 
-+ out_unlock:
-+	kernfs_put_active(of->kn);
-+	mutex_unlock(&of->mutex);
-  out_free:
--	kfree(buf);
-+	if (buf != of->buf)
-+		kfree(buf);
- 	return len;
+ drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/spi-nor.h   |    6 ++++++
+ 2 files changed, 52 insertions(+)
+
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+index b5ad6be..486b167 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
+ 	return 0;
  }
  
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 4a959d231b43..3f7e4d341546 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -102,6 +102,18 @@ static ssize_t sysfs_kf_bin_read(struct kernfs_open_file *of, char *buf,
- 	return battr->read(of->file, kobj, battr, buf, pos, count);
- }
- 
-+/* kernfs read callback for regular sysfs files with pre-alloc */
-+static ssize_t sysfs_kf_read(struct kernfs_open_file *of, char *buf,
-+                            size_t count, loff_t pos)
++static int micron_quad_enable(struct spi_nor *nor)
 +{
-+       const struct sysfs_ops *ops = sysfs_file_ops(of->kn);
-+       struct kobject *kobj = of->kn->parent->priv;
++	int ret, val;
 +
-+       if (pos)
-+               return 0;
-+       return ops->show(kobj, of->kn->priv, buf);
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++
++	write_enable(nor);
++
++	/* set EVCR ,enable quad I/O */
++	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
++	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
++	if (ret < 0) {
++		dev_err(nor->dev,
++			"error while writing EVCR register\n");
++		return ret;
++	}
++
++	ret = wait_till_ready(nor);
++	if (ret)
++		return ret;
++
++	/* read EVCR and check it */
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++	if (val & EVCR_QUAD_EN_MICRON) {
++		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
++		return -EINVAL;
++	}
++
++	return 0;
 +}
 +
- /* kernfs write callback for regular sysfs files */
- static ssize_t sysfs_kf_write(struct kernfs_open_file *of, char *buf,
- 			      size_t count, loff_t pos)
-@@ -184,13 +196,18 @@ static const struct kernfs_ops sysfs_file_kfops_rw = {
- 	.write		= sysfs_kf_write,
- };
+ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
+ {
+ 	int status;
+@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
+ 			return -EINVAL;
+ 		}
+ 		return status;
++	case CFI_MFR_ST:
++		status = micron_quad_enable(nor);
++		if (status) {
++			dev_err(nor->dev, "Micron quad-read not enabled\n");
++			return -EINVAL;
++		}
++		return status;
+ 	default:
+ 		status = spansion_quad_enable(nor);
+ 		if (status) {
+diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
+index 9e6294f..d71b659 100644
+--- a/include/linux/mtd/spi-nor.h
++++ b/include/linux/mtd/spi-nor.h
+@@ -56,6 +56,10 @@
+ /* Used for Spansion flashes only. */
+ #define SPINOR_OP_BRWR		0x17	/* Bank register write */
  
-+static const struct kernfs_ops sysfs_prealloc_kfops_ro = {
-+	.read		= sysfs_kf_read,
-+	.prealloc	= true,
-+};
++/* Used for Micron flashes only. */
++#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
++#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
 +
- static const struct kernfs_ops sysfs_prealloc_kfops_wo = {
- 	.write		= sysfs_kf_write,
- 	.prealloc	= true,
- };
+ /* Status Register bits. */
+ #define SR_WIP			1	/* Write in progress */
+ #define SR_WEL			2	/* Write enable latch */
+@@ -67,6 +71,8 @@
  
- static const struct kernfs_ops sysfs_prealloc_kfops_rw = {
--	.seq_show	= sysfs_kf_seq_show,
-+	.read		= sysfs_kf_read,
- 	.write		= sysfs_kf_write,
- 	.prealloc	= true,
- };
-@@ -238,9 +255,12 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
- 				ops = &sysfs_prealloc_kfops_rw;
- 			else
- 				ops = &sysfs_file_kfops_rw;
--		} else if (sysfs_ops->show)
--			ops = &sysfs_file_kfops_ro;
--		else if (sysfs_ops->store) {
-+		} else if (sysfs_ops->show) {
-+			if (mode & SYSFS_PREALLOC)
-+				ops = &sysfs_prealloc_kfops_ro;
-+			else
-+				ops = &sysfs_file_kfops_ro;
-+		} else if (sysfs_ops->store) {
- 			if (mode & SYSFS_PREALLOC)
- 				ops = &sysfs_prealloc_kfops_wo;
- 			else
-
+ #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
+ 
++#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
++
+ /* Flag Status Register bits */
+ #define FSR_READY		0x80
+ 
+-- 
+1.7.9.5
 
