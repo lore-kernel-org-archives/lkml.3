@@ -1,64 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaI3GLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 02:11:24 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49836 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaI3GLX (ORCPT
+	id S1755363AbaI3GLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 02:11:31 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:49041 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323AbaI3GL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 02:11:23 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Arun Sharma <asharma@fb.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH v2 1/2] perf callchain: Create an address space per thread
-References: <1411966692-26648-1-git-send-email-namhyung@kernel.org>
-	<20140929083452.GA1223@krava.brq.redhat.com>
-Date: Tue, 30 Sep 2014 15:11:21 +0900
-In-Reply-To: <20140929083452.GA1223@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Mon, 29 Sep 2014 10:34:52 +0200")
-Message-ID: <87vbo5hc3a.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 30 Sep 2014 02:11:26 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <10b4a633cfa9d0cbd8e619d1012d09f0>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: [PATCH v8 0/3] Add drm driver for Rockchip Socs
+Date: Tue, 30 Sep 2014 14:09:46 +0800
+Message-Id: <1412057386-19375-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-On Mon, 29 Sep 2014 10:34:52 +0200, Jiri Olsa wrote:
-> On Mon, Sep 29, 2014 at 01:58:11PM +0900, Namhyung Kim wrote:
->> @@ -37,6 +38,9 @@ struct thread *thread__new(pid_t pid, pid_t tid)
->>  		thread->cpu = -1;
->>  		INIT_LIST_HEAD(&thread->comm_list);
->>  
->> +		if (unwind__prepare_access(thread) < 0)
->> +			goto err_thread;
->
-> So this is something we need to do only for DWARF unwind via libunwind.
-> Do we want some condition to bypass this in for the rest of the cases?
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-Ah, you're right, we need to check that before doing this.
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
+
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
+
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
+
+Changes in v7:
+- fix memory leakage problem.
+
+Changes in v8:
+- fix iommu crash when use dual crtc.
+- use frame start interrupt for vsync instead of line flag interrupt,
+because the win config take affect at frame start time, if we use ling flag
+interrupt, the address check often failed.
+Adviced by Daniel Kurtz
+- fix some bugs, mistake, remove unused function
+- keep clock and vop disabled when probe end
+- use drm_plane_helper_check_update to check update_plane if vaild
+
+Mark yao (3):
+  drm: rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  509 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   65 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  209 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1438 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3118 insertions(+)
+
+-- 
+1.7.9.5
 
 
->
-> I think we could check for symbol_conf.use_callchain and for the
-> PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER sample types in evlist,
-> something like:
->
->   bool has_dwarf_data_for_callchains = symbol_conf.use_callchain && evlist_sample_type_has(evlist, PERF_SAMPLE_REGS_USER|PERF_SAMPLE_STACK_USER)
-
-Hmm.. it seems that it's hard to get the evlist at this point.  Maybe we
-need to add a field in the symbol_conf or a global variable.. :/
-
-Thanks,
-Namhyung
