@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaI3OvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 10:51:25 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:11028 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751563AbaI3OvX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 10:51:23 -0400
-Date: Tue, 30 Sep 2014 07:51:32 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Kumar Gala <galak@codeaurora.org>
-CC: Andy Gross <agross@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeffrey Hugo <jhugo@codeaurora.org>
-Subject: Re: [RFC 0/7] Qualcomm SMEM, SMD, RPM and regulators
-Message-ID: <20140930145131.GL28481@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <E6EEBBAE-C710-4280-824D-CC5D54CB2551@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="windows-1252"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <E6EEBBAE-C710-4280-824D-CC5D54CB2551@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1751870AbaI3OyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 10:54:01 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:44017 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064AbaI3Ox7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 10:53:59 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
+In-Reply-To: Your message of "Tue, 30 Sep 2014 10:48:54 -0400."
+             <20140930144854.GA5098@wil.cx>
+From: Valdis.Kletnieks@vt.edu
+References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu>
+            <20140930144854.GA5098@wil.cx>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1412088827_2231P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Sep 2014 10:53:47 -0400
+Message-ID: <123795.1412088827@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30 Sep 06:49 PDT 2014, Kumar Gala wrote:
+--==_Exmh_1412088827_2231P
+Content-Type: text/plain; charset=us-ascii
 
-> 
-> On Sep 29, 2014, at 7:34 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
-> 
-> > All Qualcomm platforms implements a shared heap among the processors in the
-> > SoC, used for sharing data with other parts of the system.
-> > 
-> > One consumer of items from this heap is the "Shared Memory Driver", a ring
-> > buffer based point-to-point communication mechanism used to send either stream
-> > or packet based data to remote processors.
-> > 
-> > Starting with 8x74 this system is used to talk to the Resource Power Manager
-> > (RPM), a power efficient "coprocessor" with responsibility of aggregate votes
-> > from the various systems in the SoC related to regulators, clocks and bus
-> > frequencies.
-> > 
-> > The PMIC regulators and root clocks in these platforms are only accessible via
-> > the RPM, so to get access to these we need the full chain of smem, smd, rpm and
-> > a regulator driver implemented. And that is exactly what this series provides.
-> > 
-> > 
-> > A key outstanding question is where in the tree we should put the
-> > implementation, for now I dropped them in drivers/soc/qcom but that's only
-> > because I don't know where to put it otherwise. I have not found any equivalent
-> > of the SMEM driver, SMD resembles mailbox and rpmsg - but comments in that
-> > patch on why it's neither.
-> > 
-> > RPM is a mfd and regulator is a regulator :)
-> 
-> I still don’t see why RPM support for either A-family or B-family should
-> exist in MFD vis drivers/soc/qcom.  What benefit is there in putting this in
-> MFD?
-> 
-> I think both A and B-family support should be in drivers/soc/qcom for the
-> current time being until we determine there is some framework that makes more
-> sense in the future.  I almost see RPM more like a bus controller than
-> anything else.  Something like an I2C bus controller that than has some set
-> of devices off of that bus.
-> 
+On Tue, 30 Sep 2014 10:48:54 -0400, Matthew Wilcox said:
 
-When you look at what functionality the RPM exposes it has very much in common
-with a PMIC. So after looking at this back and forth for months I think MFD is
-a nice fit.
+> No, it doesn't try to do that.  Wouldn't you be better served with an
+> LD_PRELOAD that forces O_DIRECT on?
 
-As with all the other pmics we could create a new subsystem (drivers/pmic?) for
-this kind of devices that exposes variable size registers for children to read
-and write.
+Not when you don't want it on every file, and users are creating and
+deleting files once in a while.  A chattr-like command is easier and
+more scalable than rebuilding the LD_PRELOAD every time the list of
+files gets changed....
 
-But if you can convince the maintainers about that then we have a whole bunch
-of stuff in mfd etc that we should move out, so let's not put this in
-qcom-staging just for the sake of it.
+--==_Exmh_1412088827_2231P
+Content-Type: application/pgp-signature
 
-Regards,
-Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVCrD+wdmEQWDXROgAQLYxw/+KGYWwJ0+oHZ6w4rAsmBsZGNLmCjxPEQc
+W4JimJCgapPxYR62Tk4njVsMAQtktGGxrnpg2uw3glO5093FJkc3DblQTT31ram4
+B/Vx17WwkB2X+j2E4zng0tuERF0QPuGgTGp/zfEVcDcR1oUftI8VFUoejdllGPyi
+wyboTr47oVpethWRPhc/25/y5J0f6aZUSxybMYo9qGygaMxGbjmDPt6l0QSyxSty
+hcEsAYSsjOpiA6yDe/8frog93FrsTuJQtFq5tHk/PC39bRp7zFWQZIUQhH74kPUU
+oT3MCN0qtKNA9ed36pRmNTVeInrRoGXrkANEFQYHdLL9v/ranNj1pb06TzBTQdvH
+tXmEVfiTZH+ZG2RWDPmBbs1Zjt3ASuhSCeymxHNscgOuaDH3+jigUpj1cOYmmWgT
+9IeR+2TlJVpA5jkT1akm5Y+gqIMK7WlnmanksnAoRUz/7rmJvFwYtfzpak5XX1Nb
+YmbZvwfiZDWMGvpUl9YdH53sB+KG2TVDkKy6UP+pZtWCUyfhCpALMldAlXm1spTh
+kfehsJZNO0BzYQGNJ9HBw75toK1zoBdPiULuzdq3AH50rVAY6Z8SxApwwemx5zld
+P6T6ZUgZDqTNhedhuBZ1/1NxIBSx7JiJcu/rBA8y44TJBBfQRpevLHVgjUkNmSSH
+5yU6Hwlbig0=
+=oz0U
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1412088827_2231P--
