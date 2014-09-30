@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbaI3EcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 00:32:23 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:48674 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbaI3EcT (ORCPT
+	id S1753418AbaI3Ecg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 00:32:36 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:53834 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102AbaI3Ecc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 00:32:19 -0400
-From: Ankit Jindal <ankit.jindal@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, Ankit Jindal <ankit.jindal@linaro.org>
-Subject: [PATCH v2 5/6] Documentation: dt-bindings: Add binding info for X-Gene QMTM UIO driver
-Date: Tue, 30 Sep 2014 09:56:08 +0530
-Message-Id: <1412051169-9142-6-git-send-email-ankit.jindal@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412051169-9142-1-git-send-email-ankit.jindal@linaro.org>
-References: <1412051169-9142-1-git-send-email-ankit.jindal@linaro.org>
+	Tue, 30 Sep 2014 00:32:32 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Message-ID: <542A31DF.7020402@smartplayin.com>
+Date: Tue, 30 Sep 2014 10:00:23 +0530
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
+References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>
+In-Reply-To: <1411998865.5395.5.camel@iivanov-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for
-X-Gene QMTM UIO driver.
+On Monday 29 September 2014 07:24 PM, Ivan T. Ivanov wrote:
+> On Fri, 2014-09-26 at 16:51 +0530, Kiran Padwal wrote:
+>> On Thursday 25 September 2014 07:00 PM, Ivan T. Ivanov wrote:
+>>> Add support for the temperature alarm peripheral found inside
+>>> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
+>>> peripheral outputs a pulse on an interrupt line whenever the
+>>> thermal over temperature stage value changes.  Implement an ISR
+>>> to manage this interrupt.
+>>>
+>>
+>> <snip>
+>>
+>>> + * This function updates the internal temp value based on the
+>>> + * current thermal stage and threshold as well as the previous stage
+>>> + */
+>>> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
+>>> +{
+>>> +	unsigned int stage;
+>>> +	int rc;
+>>> +	u8 reg;
+>>> +
+>>> +	rc = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+>>> +	if (rc < 0)
+>>> +		return rc;
+>>> +
+>>> +	stage = reg & STATUS_STAGE_MASK;
+>>
+>> During compilation, getting a waring as below,
+>>
+>> drivers/thermal/qpnp-temp-alarm.c: In function ‘qpnp_tm_update_temp_no_adc’:
+>> drivers/thermal/qpnp-temp-alarm.c:135:8: warning: ‘reg’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>>   stage = reg & STATUS_STAGE_MASK;
+> 
+> Could you share compiler version and options which you are using.
+> I am unable to trigger this warning. Looking code I can not 
+> see how this could happen.
 
-Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
-Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
----
- .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   53 ++++++++++++++++++++
- 1 file changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
+I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
 
-diff --git a/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
-new file mode 100644
-index 0000000..288ed92
---- /dev/null
-+++ b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
-@@ -0,0 +1,53 @@
-+APM X-Gene QMTM UIO nodes
-+
-+The Applied Micro X-Gene SOC has on-chip QMTM (Queue manager
-+and Traffic manager). It is a device for managing hardware queues.
-+It also implements QoS among hardware queues hence term "traffic"
-+manager is present in its name. QMTM UIO nodes are defined for user
-+space access to this device using UIO framework.
-+
-+Required properties:
-+- compatible: Should be "apm,xgene-qmtm"
-+- reg: Address and length of the register set for the device. It contains the
-+  information of registers in the same order as described by reg-names.
-+- reg-names: Should contain the register set names
-+  - "csr": QMTM control and status register address space.
-+  - "fabric": QMTM memory mapped access to queue states.
-+- qpool: Points to the phandle of the node defining memory location for
-+	 creating QMTM queues. This could point either to the reserved-memory
-+	 node (as-per reserved memory bindings) or to the node of on-chip
-+	 SRAM etc. It is expected that size and location of qpool memory will
-+	 be configurable via bootloader.
-+- clocks: Reference to the clock entry.
-+- num-queues: Number of queues under this QMTM device.
-+- devid: QMTM identification number for the system having multiple QMTM devices.
-+	 This is used to form a unique id (a tuple of queue number and
-+	 device id) for the queues belonging to this device.
-+
-+Example:
-+	qmtm1_uio_qpool: qmtm1_uio_qpool {
-+		reg = <0x0 0x0 0x0 0x0>
-+	};
-+
-+	qmtm1clk: qmtmclk@1f20c000 {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "qmtm1clk";
-+		status = "ok";
-+	};
-+
-+	qmtm1_uio: qmtm_uio@1f200000 {
-+		compatible = "apm,xgene-qmtm";
-+		status = "disabled";
-+		reg = <0x0 0x1f200000 0x0 0x10000>,
-+		      <0x0 0x1b000000 0x0 0x400000>;
-+		reg-names = "csr", "fabric";
-+		qpool = <&qmtm1_uio_qpool>;
-+		clocks = <&qmtm1clk 0>;
-+		num-queues = <0x400>;
-+		devid = <1>;
-+	};
-+
-+	/* Board-specific peripheral configurations */
-+	&qmtm1_uio {
-+		status = "ok";
-+	};
--- 
-1.7.9.5
+Thanks,
+--Kiran
+> 
+>>
+>>> +
+>>> +	if (stage > chip->stage) {
+>>> +		/* increasing stage, use lower bound */
+>>> +		chip->temp = (stage - 1) * TEMP_STAGE_STEP +
+>>> +			     chip->thresh * TEMP_THRESH_STEP +
+>>> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+>>> +	} else if (stage < chip->stage) {
+>>> +		/* decreasing stage, use upper bound */
+>>> +		chip->temp = stage * TEMP_STAGE_STEP +
+>>> +			     chip->thresh * TEMP_THRESH_STEP -
+>>> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+>>> +	}
+>>> +
+>>> +	chip->stage = stage;
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>
+>> <snip>
+>>
+>>> +
+>>> +#define QPNP_TM_PM_OPS	(&qpnp_tm_pm_ops)
+>>> +#else
+>>> +#define QPNP_TM_PM_OPS	NULL
+>>> +#endif
+>>> +
+>>> +static struct of_device_id qpnp_tm_match_table[] = {
+>>
+>> It must be static const struct of_device_id, because all OF functions handle it as const.
+> 
+> Sure, will fix it.
+> 
+> Thank you,
+> Ivan
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
