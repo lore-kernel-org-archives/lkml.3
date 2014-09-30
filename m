@@ -1,155 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035AbaI3Csb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 22:48:31 -0400
-Received: from mailout.micron.com ([137.201.242.129]:55124 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaI3Csa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 22:48:30 -0400
-From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkA==
-Date: Tue, 30 Sep 2014 02:47:39 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409251211.57183.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20984.003
-x-tm-as-result: No--28.896700-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1755256AbaI3CwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 22:52:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:56939 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926AbaI3CwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 22:52:02 -0400
+Date: Tue, 30 Sep 2014 12:51:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hayeswang <hayeswang@realtek.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-ID: <20140930125152.7c005583@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Geg8Xt0dMPYe2yGXMSjmQOh"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Micron spi norflash,enables or disables quad I/O
-protocol ,which controled by EVCR(Enhanced
-Volatile Configuration Register) Quad I/O
-protocol bit 7.When EVCR bit 7 is reset to 0,
-the spi norflash will operate in quad I/O following
-the next WRITE ENHANCED VOLATILE CONFIGURATION
-command.
+--Sig_/Geg8Xt0dMPYe2yGXMSjmQOh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: bean huo <beanhuo@micron.com>
----
- v1-v2:modified to that capture wait_till_ready()
-	 return value,if error,directly return its
-	 the value.
- v2-v3:directly use the reurning error value of
-	 read_reg and write_reg,instead of -EINVAL.
+Hi all,
 
- drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/spi-nor.h   |    6 ++++++
- 2 files changed, 52 insertions(+)
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/usb/r8152.c between commit 445f7f4d6262 ("r8152: fix the
+carrier off when autoresuming") from the net tree and commit
+b209af9981ee ("r8152: check code with checkpatch.pl") from the net-next
+tree.
 
-diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-index b5ad6be..486b167 100644
---- a/drivers/mtd/spi-nor/spi-nor.c
-+++ b/drivers/mtd/spi-nor/spi-nor.c
-@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
- 	return 0;
- }
- 
-+static int micron_quad_enable(struct spi_nor *nor)
-+{
-+	int ret, val;
-+
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+
-+	write_enable(nor);
-+
-+	/* set EVCR ,enable quad I/O */
-+	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
-+	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
-+	if (ret < 0) {
-+		dev_err(nor->dev,
-+			"error while writing EVCR register\n");
-+		return ret;
-+	}
-+
-+	ret = wait_till_ready(nor);
-+	if (ret)
-+		return ret;
-+
-+	/* read EVCR and check it */
-+	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
-+	if (ret < 0) {
-+		dev_err(nor->dev, "error %d reading EVCR\n", ret);
-+		return ret;
-+	}
-+	if (val & EVCR_QUAD_EN_MICRON) {
-+		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
- {
- 	int status;
-@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
- 			return -EINVAL;
- 		}
- 		return status;
-+	case CFI_MFR_ST:
-+		status = micron_quad_enable(nor);
-+		if (status) {
-+			dev_err(nor->dev, "Micron quad-read not enabled\n");
-+			return -EINVAL;
-+		}
-+		return status;
- 	default:
- 		status = spansion_quad_enable(nor);
- 		if (status) {
-diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
-index 9e6294f..d71b659 100644
---- a/include/linux/mtd/spi-nor.h
-+++ b/include/linux/mtd/spi-nor.h
-@@ -56,6 +56,10 @@
- /* Used for Spansion flashes only. */
- #define SPINOR_OP_BRWR		0x17	/* Bank register write */
- 
-+/* Used for Micron flashes only. */
-+#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
-+#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
-+
- /* Status Register bits. */
- #define SR_WIP			1	/* Write in progress */
- #define SR_WEL			2	/* Write enable latch */
-@@ -67,6 +71,8 @@
- 
- #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
- 
-+#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
-+
- /* Flag Status Register bits */
- #define FSR_READY		0x80
- 
--- 
-1.7.9.5
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/usb/r8152.c
+index e0394427e372,a4d4c4a1354f..000000000000
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@@ -2067,10 -2080,11 +2097,10 @@@ static void rtl_disable(struct r8152 *t
+  	for (i =3D 0; i < 1000; i++) {
+  		if (ocp_read_word(tp, MCU_TYPE_PLA, PLA_TCR0) & TCR0_TX_EMPTY)
+  			break;
+- 		mdelay(1);
++ 		usleep_range(1000, 2000);
+  	}
+ =20
+ -	for (i =3D 0; i < RTL8152_MAX_RX; i++)
+ -		usb_kill_urb(tp->rx_info[i].urb);
+ +	rtl_stop_rx(tp);
+ =20
+  	rtl8152_nic_reset(tp);
+  }
+@@@ -3131,12 -3211,13 +3229,13 @@@ static int rtl8152_resume(struct usb_in
+  		} else {
+  			tp->rtl_ops.up(tp);
+  			rtl8152_set_speed(tp, AUTONEG_ENABLE,
+- 				tp->mii.supports_gmii ? SPEED_1000 : SPEED_100,
+- 				DUPLEX_FULL);
++ 					  tp->mii.supports_gmii ?
++ 					  SPEED_1000 : SPEED_100,
++ 					  DUPLEX_FULL);
+ +			tp->speed =3D 0;
+ +			netif_carrier_off(tp->netdev);
+ +			set_bit(WORK_ENABLE, &tp->flags);
+  		}
+ -		tp->speed =3D 0;
+ -		netif_carrier_off(tp->netdev);
+ -		set_bit(WORK_ENABLE, &tp->flags);
+  		usb_submit_urb(tp->intr_urb, GFP_KERNEL);
+  	}
+ =20
+
+--Sig_/Geg8Xt0dMPYe2yGXMSjmQOh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUKhrOAAoJEMDTa8Ir7ZwVptUP/RVr+HasqmxxDaQOOd7b2mXx
+eur8suEkEjML19nq0H1pOhA41nrPoODyUuC6GAq7XdHjfAoPATKLheupO3heLEL8
+8wcn0QAu7FffSpJuocA79apRkw33I97DKHXXcY+rZ1VuUQwKCq2DJU+wdFDpV+Va
+PUNvLxbSadaMr4hwzqEiplf4u3P2D3Uh7OvPNVbU6n8Wc3bCjv+a9vf16RUpJkJD
+9SAuIMkvFdzE78RyxgxFp8zOqV6pySYykeRMIomcJ921HZnhUlGH5cBfYZjT2OQJ
+ubUFvyUek2Rf4w3iofQYNlpk5k6vYPGMLxVkGKqamqG1U/ul5xgq2HqpqCJBHEZZ
+7g+/1gQE7jouRPI56XIcBZFkJ5eiFFas/hXWwZXSac6MdT2SQhQl8dC//f4bPrJz
+juU/g1qfXO4ZEpXClH6//dvX5IUKbE1n0GseyUyViHJNckDco/A35Jr5vR3X2j0z
+cr3yHuxHvXBYe+MapZJL2zsdINoHZY56pvsudu4Jd5CgviKQVz8aX3QTMcBdn65q
+wkVjfWfsz/zawgKOZlLfoGBhY/VuNEB9XiO1Huxr4rKtrxdBrSmVCVktlfPKN2Rg
+lqkqpNk1RVLgS4NEW3cYGy3P4MU4xI2XNkdYvu1x1mTE7wnSrzOjsTxkzESvTf+K
+zRqMHa24O6/ydUn/BcPd
+=JhU5
+-----END PGP SIGNATURE-----
+
+--Sig_/Geg8Xt0dMPYe2yGXMSjmQOh--
