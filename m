@@ -1,148 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaI3NBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 09:01:14 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:54529 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaI3NBL (ORCPT
+	id S1751862AbaI3NDl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 09:03:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:30044 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750908AbaI3NDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 09:01:11 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <5cb180bdd8b80ef78b7a69d7079c5b73>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
-Subject: [PATCH v9 0/3] Add drm driver for Rockchip Socs
-Date: Tue, 30 Sep 2014 20:57:50 +0800
-Message-Id: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 30 Sep 2014 09:03:40 -0400
+Date: Tue, 30 Sep 2014 09:03:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Amit Virdi <amitvi128@gmail.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: Enabling ftrace on ARM MMU-less system
+Message-ID: <20140930090331.15a7b428@gandalf.local.home>
+In-Reply-To: <CAEOkp47rz9-V_qZkOGDjfsZQj5bRHq2hf8dghS3xRcwdrP9UzQ@mail.gmail.com>
+References: <CAEOkp47rz9-V_qZkOGDjfsZQj5bRHq2hf8dghS3xRcwdrP9UzQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This a series of patches is a DRM Driver for Rockchip Socs, add support
-for vop devices. Future patches will add additional encoders/connectors,
-such as eDP, HDMI.
+On Tue, 30 Sep 2014 16:26:49 +0530
+Amit Virdi <amitvi128@gmail.com> wrote:
 
-The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
-the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
-Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
-ARM_DMA_USE_IOMMU.
+> Hi,
+> 
+> I'm trying to enable Ftrace on my ARM based MMU-less system.
+> Unexpectedly, I don't see tracing directory under /sys/kernel/debug
+> I have done the following so far but no success:
+> 1. Verified that I have enabled these flags in my .config
+>     CONFIG_FUNCTION_TRACER
+>     CONFIG_FUNCTION_GRAPH_TRACER
+>     CONFIG_STACK_TRACER
+>     CONFIG_DYNAMIC_FTRACE
+> 
+> 2. Enabled Ftrace startup steps. The startup log output is
+> ----
+>
 
-Changes in v2:
-- add DRM master device node to list all display nodes that comprise
-  the graphics subsystem.
-- use the component framework to defer main drm driver probe
-  until all VOP devices have been probed.
-- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
-  master device and each vop device can shared the drm dma mapping.
-- use drm_crtc_init_with_planes and drm_universal_plane_init.
-- remove unnecessary middle layers.
-- add cursor set, move funcs to rockchip drm crtc.
-- add vop reset.
+> Can anyone help what I'm missing or if ftrace is supported on MMU-less
+> platforms?
 
-Changes in v3:
-- change "crtc->fb" to "crtc->primary-fb"
-Adviced by Daniel Vetter
-- init cursor plane with universal api, remove unnecessary cursor set,move 
+Well it's obviously supported if you see the tests running.
 
-Changes in v4:
-Adviced by David Herrmann
-- remove drm_platform_*() usage, use register drm device directly.
-Adviced by Rob Clark
-- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+Is there anything else under /sys/kernel/debug? If not you need to
+mount the debugfs filesytem there. It wont do it itself.
 
-Changes in v5:
-Adviced by Arnd Bergmann
-- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
-- fix some incorrect dependencies.
-Adviced by Boris BREZILLON
-- fix some mistake and bugs. 
-Adviced by Daniel Vetter
-- drop all special ioctl and use generic kms ioctl instead.
-Adviced by Rob Clark
-- use unlocked api for drm_fb_helper_restore_fbdev_mode.
-- remove unused rockchip_gem_prime_import_sg_table.
+# mount -t debugfs nodev /sys/kernel/debug
 
-Changes in v6:
-- set gem buffer pitch 64 bytes align, needed by mali gpu.
-Adviced by Daniel Kurtz
-- fix some mistake, bugs, remove unused define, more better code style etc. 
-- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
-  at runtime instead of clk_prepare_enable().
-- provide a help function from vop for encoder to do mode config, instead of
-  using drm_diaplay_mode private method.
-- change vop mode_set timing to make it more safely. 
-
-Changes in v7:
-- fix memory leakage problem.
-
-Changes in v8:
-- fix iommu crash when use dual crtc.
-- use frame start interrupt for vsync instead of line flag interrupt,
-because the win config take affect at frame start time, if we use ling flag
-interrupt, the address check often failed.
-Adviced by Daniel Kurtz
-- fix some bugs, mistake, remove unused function
-- keep clock and vop disabled when probe end
-- use drm_plane_helper_check_update to check update_plane if vaild
-
-Changes in v9:
-- fix suspend and resume bug, make iommu attach and detach safely.
-- fix mail info style.
-
-Mark yao (3):
-  drm: rockchip: Add basic drm driver
-  dt-bindings: video: Add for rockchip display subsytem
-  dt-bindings: video: Add documentation for rockchip vop
-
- .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
- drivers/gpu/drm/Kconfig                            |    2 +
- drivers/gpu/drm/Makefile                           |    1 +
- drivers/gpu/drm/rockchip/Kconfig                   |   17 +
- drivers/gpu/drm/rockchip/Makefile                  |    8 +
- drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  509 +++++++
- drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   65 +
- drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
- drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
- drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  209 +++
- drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
- drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
- drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
- drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1423 ++++++++++++++++++++
- drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
- 16 files changed, 3103 insertions(+)
-
--- 
-1.7.9.5
-
-
+-- Steve
