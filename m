@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaI3Vgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 17:36:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60849 "EHLO
+	id S1753465AbaI3Vgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 17:36:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaI3Vge (ORCPT
+	with ESMTP id S1753419AbaI3Vgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 17:36:34 -0400
+	Tue, 30 Sep 2014 17:36:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 025/103] ALSA: hda - restore the gpio led after resume
-Date: Tue, 30 Sep 2014 14:30:30 -0700
-Message-Id: <1412112708-27356-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 031/103] can: c_can: checking IS_ERR() instead of NULL
+Date: Tue, 30 Sep 2014 14:30:36 -0700
+Message-Id: <1412112708-27356-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412112708-27356-1-git-send-email-kamal@canonical.com>
 References: <1412112708-27356-1-git-send-email-kamal@canonical.com>
@@ -27,54 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hui Wang <hui.wang@canonical.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f475371aa65de84fa483a998ab7594531026b9d9 upstream.
+commit 37b75a3aa8ec7031df75219fe2f8e5e9b7be398f upstream.
 
-On some HP laptops, the mute led is controlled by codec gpio.
+devm_ioremap() returns NULL on error, not an ERR_PTR().
 
-When some machine resume from s3/s4, the codec gpio data will be
-cleared to 0 by BIOS:
-Before suspend:
-  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=1, unsol=0
-After resume:
-  IO[3]: enable=1, dir=1, wake=0, sticky=0, data=0, unsol=0
+Fixes: 33cf75656923 ('can: c_can_platform: Fix raminit, use devm_ioremap() instead of devm_ioremap_resource()')
 
-To skip the AFG node to enter D3 can't fix this problem.
-
-A workaround is to restore the gpio data when the system resume
-back from s3/s4. It is safe even on the machines without this
-problem.
-
-BugLink: https://bugs.launchpad.net/bugs/1358116
-Tested-by: Franz Hsieh <franz.hsieh@canonical.com>
-Signed-off-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/can/c_can/c_can_platform.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 515c4d9..6b1f38a 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3013,6 +3013,15 @@ static int alc269_resume(struct hda_codec *codec)
- 	snd_hda_codec_resume_cache(codec);
- 	alc_inv_dmic_sync(codec, true);
- 	hda_call_check_power_status(codec, 0x01);
-+
-+	/* on some machine, the BIOS will clear the codec gpio data when enter
-+	 * suspend, and won't restore the data after resume, so we restore it
-+	 * in the driver.
-+	 */
-+	if (spec->gpio_led)
-+		snd_hda_codec_write(codec, codec->afg, 0, AC_VERB_SET_GPIO_DATA,
-+			    spec->gpio_led);
-+
- 	if (spec->has_alc5505_dsp)
- 		alc5505_dsp_resume(codec);
- 
+diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
+index 873b83a..a7d4089 100644
+--- a/drivers/net/can/c_can/c_can_platform.c
++++ b/drivers/net/can/c_can/c_can_platform.c
+@@ -196,7 +196,7 @@ static int c_can_plat_probe(struct platform_device *pdev)
+ 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 		priv->raminit_ctrlreg = devm_ioremap(&pdev->dev, res->start,
+ 						     resource_size(res));
+-		if (IS_ERR(priv->raminit_ctrlreg) || (int)priv->instance < 0)
++		if (!priv->raminit_ctrlreg || priv->instance < 0)
+ 			dev_info(&pdev->dev, "control memory is not used for raminit\n");
+ 		else
+ 			priv->raminit = c_can_hw_raminit;
 -- 
 1.9.1
 
