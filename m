@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321AbaI3TcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 15:32:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52022 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaI3TcD (ORCPT
+	id S1753465AbaI3Tce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 15:32:34 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58239 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752239AbaI3Tcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 15:32:03 -0400
-Date: Tue, 30 Sep 2014 12:32:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Einon <mark.einon@gmail.com>
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] et131x: Promote staging et131x driver to drivers/net
-Message-ID: <20140930193201.GA2349@kroah.com>
-References: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
+	Tue, 30 Sep 2014 15:32:32 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 4/5] ACPICA: Introduce acpi_enable_all_wakeup_gpes()
+Date: Tue, 30 Sep 2014 21:52:28 +0200
+Message-ID: <3883340.iE5nWN8xny@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E37D20AA35@ORSMSX112.amr.corp.intel.com>
+References: <1622293.rpSt5UtDk3@vostro.rjw.lan> <4021848.ZWdxDcq97A@vostro.rjw.lan> <94F2FBAB4432B54E8AACC7DFDE6C92E37D20AA35@ORSMSX112.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412104572-2931-1-git-send-email-mark.einon@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 08:16:12PM +0100, Mark Einon wrote:
-> This patch moves the et131x gigabit ethernet driver from drivers/staging
-> to drivers/net/ethernet/agere.
+On Tuesday, September 30, 2014 03:52:16 PM Moore, Robert wrote:
+> If you need it, sure.
+
+Thanks!
+
+I hope this applies to https://patchwork.kernel.org/patch/4999321/ too?
+
+> Let me know when there is an ACPICA version
+
+OK
+
+
+> > -----Original Message-----
+> > From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
+> > Sent: Monday, September 29, 2014 5:26 PM
+> > To: ACPI Devel Maling List; Moore, Robert
+> > Cc: Linux Kernel Mailing List; Zhang, Rui; Linux PM list
+> > Subject: [PATCH 4/5] ACPICA: Introduce acpi_enable_all_wakeup_gpes()
+> > 
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Add a routine for host OSes to enable all wakeup GPEs and disable all of
+> > the non-wakeup ones at the same time.
+> > 
+> > It will be used for the handling of GPE wakeup from suspend-to-idle in
+> > Linux.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> > 
+> > Bob, please let me know if I can fast-track this one.
+> > 
+> > ---
+> >  drivers/acpi/acpica/evxfgpe.c |   32 ++++++++++++++++++++++++++++++++
+> >  include/acpi/acpixf.h         |    1 +
+> >  2 files changed, 33 insertions(+)
+> > 
+> > Index: linux-pm/drivers/acpi/acpica/evxfgpe.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/acpica/evxfgpe.c
+> > +++ linux-pm/drivers/acpi/acpica/evxfgpe.c
+> > @@ -596,6 +596,38 @@ acpi_status acpi_enable_all_runtime_gpes
+> > 
+> >  ACPI_EXPORT_SYMBOL(acpi_enable_all_runtime_gpes)
+> > 
+> > +/**********************************************************************
+> > +********
+> > + *
+> > + * FUNCTION:    acpi_enable_all_wakeup_gpes
+> > + *
+> > + * PARAMETERS:  None
+> > + *
+> > + * RETURN:      Status
+> > + *
+> > + * DESCRIPTION: Enable all "wakeup" GPEs and disable all of the other
+> > GPEs, in
+> > + *              all GPE blocks.
+> > + *
+> > +
+> > +***********************************************************************
+> > +*******/
+> > +
+> > +acpi_status acpi_enable_all_wakeup_gpes(void) {
+> > +	acpi_status status;
+> > +
+> > +	ACPI_FUNCTION_TRACE(acpi_enable_all_wakeup_gpes);
+> > +
+> > +	status = acpi_ut_acquire_mutex(ACPI_MTX_EVENTS);
+> > +	if (ACPI_FAILURE(status)) {
+> > +		return_ACPI_STATUS(status);
+> > +	}
+> > +
+> > +	status = acpi_hw_enable_all_wakeup_gpes();
+> > +	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+> > +
+> > +	return_ACPI_STATUS(status);
+> > +}
+> > +
+> > +ACPI_EXPORT_SYMBOL(acpi_enable_all_wakeup_gpes)
+> > +
+> > 
+> > /*************************************************************************
+> > ******
+> >   *
+> >   * FUNCTION:    acpi_install_gpe_block
+> > Index: linux-pm/include/acpi/acpixf.h
+> > ===================================================================
+> > --- linux-pm.orig/include/acpi/acpixf.h
+> > +++ linux-pm/include/acpi/acpixf.h
+> > @@ -692,6 +692,7 @@ ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_sta
+> >  						     *event_status))
+> >  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status acpi_disable_all_gpes(void))
+> > ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+> > acpi_enable_all_runtime_gpes(void))
+> > +ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+> > +acpi_enable_all_wakeup_gpes(void))
+> > 
+> >  ACPI_HW_DEPENDENT_RETURN_STATUS(acpi_status
+> >  				acpi_get_gpe_device(u32 gpe_index,
 > 
-> Signed-off-by: Mark Einon <mark.einon@gmail.com>
-> ---
 > 
-> This patch appiles to both staging-next and the linux-next tag next-20140930,
-> and takes into account all feedback recieved from the recent RFC for this
-> patch.
-> 
->  MAINTAINERS                                        | 10 +++----
->  drivers/net/ethernet/Kconfig                       |  1 +
->  drivers/net/ethernet/Makefile                      |  1 +
->  drivers/net/ethernet/agere/Kconfig                 | 31 ++++++++++++++++++++++
->  .../et131x => net/ethernet/agere}/Makefile         |  0
->  .../et131x => net/ethernet/agere}/et131x.c         |  0
->  .../et131x => net/ethernet/agere}/et131x.h         |  0
->  drivers/staging/Kconfig                            |  2 --
->  drivers/staging/Makefile                           |  1 -
->  drivers/staging/et131x/Kconfig                     | 10 -------
->  drivers/staging/et131x/README                      | 15 -----------
->  11 files changed, 38 insertions(+), 33 deletions(-)
->  create mode 100644 drivers/net/ethernet/agere/Kconfig
->  rename drivers/{staging/et131x => net/ethernet/agere}/Makefile (100%)
->  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.c (100%)
->  rename drivers/{staging/et131x => net/ethernet/agere}/et131x.h (100%)
->  delete mode 100644 drivers/staging/et131x/Kconfig
->  delete mode 100644 drivers/staging/et131x/README
 
-This is a fine way to make a patch, but it's no way that any of the
-netdev developers could ever review it to know what the code happens to
-look like in my staging-next branch :(
-
-How about just sending a patch that adds the driver to drivers/net/...
-Don't worry about the staging driver at the moment.  If it gets added to
-drivers/net we can then delete the staging driver.
-
-Sound easier?  Should make the patches half as big.
-
-thanks,
-
-greg k-h
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
