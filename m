@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbaI3JOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 05:14:52 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47827 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751017AbaI3JOu (ORCPT
+	id S1752806AbaI3JWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 05:22:38 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:53141 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaI3JWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 05:14:50 -0400
-Date: Tue, 30 Sep 2014 10:14:37 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [RFC] clk: Make clk API return per-user struct clk instances
-Message-ID: <20140930091437.GJ5182@n2100.arm.linux.org.uk>
-References: <20140926232009.19023.15825@quantum> <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com>
+	Tue, 30 Sep 2014 05:22:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412014643-29099-1-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [84.208.172.182]
+In-Reply-To: <20140930022751.GA14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
+ <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
+ <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com> <20140930022751.GA14081@wotan.suse.de>
+From: Tom Gundersen <teg@jklm.no>
+Date: Tue, 30 Sep 2014 11:22:14 +0200
+Message-ID: <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
+        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
+        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 08:17:23PM +0200, Tomeu Vizoso wrote:
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index da4bda8..ab22460 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -168,14 +168,20 @@ static struct clk_lookup *clk_find(const char *dev_id, const char *con_id)
->  struct clk *clk_get_sys(const char *dev_id, const char *con_id)
->  {
->  	struct clk_lookup *cl;
-> +	struct clk *clk = NULL;
->  
->  	mutex_lock(&clocks_mutex);
->  	cl = clk_find(dev_id, con_id);
-> -	if (cl && !__clk_get(cl->clk))
-> -		cl = NULL;
-> +	if (cl) {
-> +		clk = __clk_create_clk(cl->clk);
-> +		if (clk && !__clk_get(clk)) {
-> +			__clk_free_clk(clk);
-> +			clk = NULL;
-> +		}
-> +	}
->  	mutex_unlock(&clocks_mutex);
->  
-> -	return cl ? cl->clk : ERR_PTR(-ENOENT);
-> +	return clk ? clk : ERR_PTR(-ENOENT);
+On Tue, Sep 30, 2014 at 4:27 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> On Sun, Sep 28, 2014 at 07:07:24PM +0200, Tom Gundersen wrote:
+>> On Fri, Sep 26, 2014 at 11:57 PM, Luis R. Rodriguez
+>> <mcgrof@do-not-panic.com> wrote:
+>> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> > Systemd has a general timeout for all workers currently set to 180
+>> > seconds after which it will send a sigkill signal. Systemd now has a
+>> > warning which is issued once it reaches 1/3 of the timeout. The original
+>> > motivation for the systemd timeout was to help track device drivers
+>> > which do not use asynch firmware loading on init() and the timeout was
+>> > originally set to 30 seconds.
+>>
+>> Please note that the motivation for the timeout in systemd had nothing
+>> to do with async firmware loading (that was just the case where
+>> problems cropped up).
+>
+> *Part *of the original kill logic, according to the commit log, was actually
+> due to the assumption that the issues observed *were* synchronous firmware
+> loading on module init():
+>
+> commit e64fae5573e566ce4fd9b23c68ac8f3096603314
+> Author: Kay Sievers <kay.sievers@vrfy.org>
+> Date:   Wed Jan 18 05:06:18 2012 +0100
+>
+>     udevd: kill hanging event processes after 30 seconds
+>
+>     Some broken kernel drivers load firmware synchronously in the module init
+>     path and block modprobe until the firmware request is fulfilled.
+>     <...>
 
-NAK.  We have places where we explicitly expect clk_get* to return NULL.
+This was a workaround to avoid a deadlock between udev and the kernel.
+The 180 s timeout was already in place before this change, and was not
+motivated by firmware loading. Also note that this patch was not about
+"tracking device drivers", just about avoiding dead-lock.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> My point here is not to point fingers but to explain why we went on with
+> this and how we failed to realize only until later that the driver core
+> ran probe together with init. When a few folks pointed out the issues
+> with the kill the issue was punted back to kernel developers and the
+> assumption even among some kernel maintainers was that it was init paths
+> with sync behaviour that was causing some delays and they were broken
+> drivers. It is important to highlight these assumptions ended up setting
+> us off on the wrong path for a while in a hunt to try to fix this issue
+> either in driver or elsewhere.
+
+Ok. I'm not sure the motivations for user-space changes is important
+to include in the commit message, but if you do I'll try to clarify
+things to avoid misunderstandings.
+
+> Thanks for clarifying this, can you explain what issues could arise
+> from making an exception to allowing kmod workers to hang around
+> completing init + probe over a certain defined amount of time without
+> being killed?
+
+We could run out of udev workers and the whole boot would hang.
+
+The way I see it, the current status from systemd's side is: our
+short-term work-around is to increase the timeout, and at the moment
+it appears no long-term solution is needed (i.e., it seems like the
+right thing to do is to make sure insmod can be near instantaneous, it
+appears people are working towards this goal, and so far no examples
+have cropped up showing that it is fundamentally impossible (once/if
+they do, we should of course revisit the problem)).
+
+Cheers,
+
+Tom
