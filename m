@@ -1,523 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaI3Kem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 06:34:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55694 "EHLO mx2.suse.de"
+	id S1751580AbaI3Kfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 06:35:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:56200 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751221AbaI3Kek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 06:34:40 -0400
-Date: Tue, 30 Sep 2014 12:34:35 +0200
-From: Petr Mladek <pmladek@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7] dlm: Use seq_is_full - remove seq_printf returns
-Message-ID: <20140930103435.GC2707@dhcp128.suse.cz>
-References: <20140929124246.3e39dac8@gandalf.local.home>
- <cover.1412031505.git.joe@perches.com>
- <43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <43590057bcb83846acbbcc1fe641f792b2fb7773.1412031505.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751028AbaI3Kff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 06:35:35 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/17] POWER8 Coherent Accelerator device driver
+Date: Tue, 30 Sep 2014 20:34:49 +1000
+Message-Id: <1412073306-13812-1-git-send-email-mikey@neuling.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-09-14 16:08:23, Joe Perches wrote:
-> The seq_printf return should be ignored and the
-> seq_is_full function should be tested instead.
-> 
-> Convert functions returning int to void where
-> seq_printf is used.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/dlm/debug_fs.c | 248 +++++++++++++++++++++++++-----------------------------
->  1 file changed, 116 insertions(+), 132 deletions(-)
-> 
-> diff --git a/fs/dlm/debug_fs.c b/fs/dlm/debug_fs.c
-> index 1323c56..27c8335 100644
-> --- a/fs/dlm/debug_fs.c
-> +++ b/fs/dlm/debug_fs.c
-> @@ -48,8 +48,8 @@ static char *print_lockmode(int mode)
->  	}
->  }
->  
-> -static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
-> -			      struct dlm_rsb *res)
-> +static void print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
-> +			       struct dlm_rsb *res)
->  {
->  	seq_printf(s, "%08x %s", lkb->lkb_id, print_lockmode(lkb->lkb_grmode));
->  
-> @@ -68,21 +68,17 @@ static int print_format1_lock(struct seq_file *s, struct dlm_lkb *lkb,
->  	if (lkb->lkb_wait_type)
->  		seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
->  
-> -	return seq_puts(s, "\n");
-> +	seq_puts(s, "\n");
->  }
->  
-> -static int print_format1(struct dlm_rsb *res, struct seq_file *s)
-> +static void print_format1(struct dlm_rsb *res, struct seq_file *s)
->  {
->  	struct dlm_lkb *lkb;
->  	int i, lvblen = res->res_ls->ls_lvblen, recover_list, root_list;
-> -	int rv;
->  
->  	lock_rsb(res);
->  
-> -	rv = seq_printf(s, "\nResource %p Name (len=%d) \"",
-> -			res, res->res_length);
-> -	if (rv)
-> -		goto out;
-> +	seq_printf(s, "\nResource %p Name (len=%d) \"", res, res->res_length);
+v2:
+ - Updates based on comments from, Anton, Gavin, Aneesh, jk and offline reviews
+ - Simplified copro_data_segment() and merged code with hash_page_mm()
+    (New patch 10/17)
+ - PCIe code simplifications based on Gavin's review
+ - Removed redundant comment in msi_bitmap_alloc_hwirqs()
+ - Fix for locking in idr_remove in core driver
+ - Ensure PSL is enabled when PHB is flipped to CXL mode
+ - Added CONFIG_PPC_COPRO_BASE to compile copro_fault.c
+ - Merged SPU and cxl slb flushing calls into copro_flush_all_slbs()
+    (New patch 03/17)
+ - Moved slb_vsid_shift() to static inline from #define
+ - Don't write paca->context when demoting segments and mm != current
+ - Fix minor typos in documentation
 
-To keep the functionality, we should add
+v1:
+ - Initial post
 
-	if(seq_overflow(s))
-		goto out;
+This add support for the Coherent Accelerator (cxl) attached to POWER8
+processors.  This coherent accelerator interface is designed to allow the
+coherent connection of FPGA based accelerators (and other devices) to a POWER
+systems.
 
-  
->  	for (i = 0; i < res->res_length; i++) {
->  		if (isprint(res->res_name[i]))
-> @@ -92,17 +88,16 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
->  	}
->  
->  	if (res->res_nodeid > 0)
-> -		rv = seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
-> -				res->res_nodeid);
-> +		seq_printf(s, "\"\nLocal Copy, Master is node %d\n",
-> +			   res->res_nodeid);
->  	else if (res->res_nodeid == 0)
-> -		rv = seq_puts(s, "\"\nMaster Copy\n");
-> +		seq_puts(s, "\"\nMaster Copy\n");
->  	else if (res->res_nodeid == -1)
-> -		rv = seq_printf(s, "\"\nLooking up master (lkid %x)\n",
-> -			   	res->res_first_lkid);
-> +		seq_printf(s, "\"\nLooking up master (lkid %x)\n",
-> +			   res->res_first_lkid);
->  	else
-> -		rv = seq_printf(s, "\"\nInvalid master %d\n",
-> -				res->res_nodeid);
-> -	if (rv)
-> +		seq_printf(s, "\"\nInvalid master %d\n", res->res_nodeid);
-> +	if (seq_is_full(s))
->  		goto out;
+IBM refers to this as the Coherent Accelerator Processor Interface or CAPI.  In
+this driver it's referred to by the name cxl to avoid confusion with the ISDN
+CAPI subsystem.
 
-I would check for seq_overflow()
+An overview of the patches:
+  Patches  1-3:  Split some of the old Cell co-processor code out so it can be
+		   reused.
+  Patches  4-11: Add infrastructure to arch/powerpc needed by cxl.
+  Patches  12:   Add call backs needed for invalidating cxl mm contexts.
+  Patch    13:   Add cxl specific support that needs to be built in to the
+		   kernel (can't be a module).
+  Patches 14-16: Add the majority of the device driver and API header.
+  Patch    17:   Documentation.
 
-Etc. There are needed many more changes if we agree on introducing
-seq_is_full() and seq_overflow().
+The documentation in this last patch gives an overview of the hardware
+architecture as well as the userspace API.
 
-Well, we will need to touch most of these locations once again when
-Steven removes return value from all the seq_* functions.
+The cxl driver has a user-space interface described in include/uapi/misc/cxl.h
+and Documentation/powerpc/cxl.txt.  There are two ioctls which can be used to
+talk to the driver once the new /dev/cxl/afu0.0 device is opened.  This device
+can also be read and mmaped.
 
-Best Regards,
-Petr
+There's also sysfs entries used to communicate information about the cxl
+configuration to userspace.  These are documented in
+Documentation/ABI/testing/sysfs-class-cxl.
 
->  	/* Print the LVB: */
-> @@ -116,8 +111,8 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
->  		}
->  		if (rsb_flag(res, RSB_VALNOTVALID))
->  			seq_puts(s, " (INVALID)");
-> -		rv = seq_puts(s, "\n");
-> -		if (rv)
-> +		seq_puts(s, "\n");
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
-> @@ -125,32 +120,30 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
->  	recover_list = !list_empty(&res->res_recover_list);
->  
->  	if (root_list || recover_list) {
-> -		rv = seq_printf(s, "Recovery: root %d recover %d flags %lx "
-> -				"count %d\n", root_list, recover_list,
-> -			   	res->res_flags, res->res_recover_locks_count);
-> -		if (rv)
-> -			goto out;
-> +		seq_printf(s, "Recovery: root %d recover %d flags %lx count %d\n",
-> +			   root_list, recover_list,
-> +			   res->res_flags, res->res_recover_locks_count);
->  	}
->  
->  	/* Print the locks attached to this resource */
->  	seq_puts(s, "Granted Queue\n");
->  	list_for_each_entry(lkb, &res->res_grantqueue, lkb_statequeue) {
-> -		rv = print_format1_lock(s, lkb, res);
-> -		if (rv)
-> +		print_format1_lock(s, lkb, res);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	seq_puts(s, "Conversion Queue\n");
->  	list_for_each_entry(lkb, &res->res_convertqueue, lkb_statequeue) {
-> -		rv = print_format1_lock(s, lkb, res);
-> -		if (rv)
-> +		print_format1_lock(s, lkb, res);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	seq_puts(s, "Waiting Queue\n");
->  	list_for_each_entry(lkb, &res->res_waitqueue, lkb_statequeue) {
-> -		rv = print_format1_lock(s, lkb, res);
-> -		if (rv)
-> +		print_format1_lock(s, lkb, res);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
-> @@ -159,23 +152,23 @@ static int print_format1(struct dlm_rsb *res, struct seq_file *s)
->  
->  	seq_puts(s, "Lookup Queue\n");
->  	list_for_each_entry(lkb, &res->res_lookup, lkb_rsb_lookup) {
-> -		rv = seq_printf(s, "%08x %s", lkb->lkb_id,
-> -				print_lockmode(lkb->lkb_rqmode));
-> +		seq_printf(s, "%08x %s",
-> +			   lkb->lkb_id, print_lockmode(lkb->lkb_rqmode));
->  		if (lkb->lkb_wait_type)
->  			seq_printf(s, " wait_type: %d", lkb->lkb_wait_type);
-> -		rv = seq_puts(s, "\n");
-> +		seq_puts(s, "\n");
-> +		if (seq_is_full(s))
-> +			goto out;
->  	}
->   out:
->  	unlock_rsb(res);
-> -	return rv;
->  }
->  
-> -static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
-> -			      struct dlm_rsb *r)
-> +static void print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
-> +			       struct dlm_rsb *r)
->  {
->  	u64 xid = 0;
->  	u64 us;
-> -	int rv;
->  
->  	if (lkb->lkb_flags & DLM_IFL_USER) {
->  		if (lkb->lkb_ua)
-> @@ -188,103 +181,97 @@ static int print_format2_lock(struct seq_file *s, struct dlm_lkb *lkb,
->  	/* id nodeid remid pid xid exflags flags sts grmode rqmode time_us
->  	   r_nodeid r_len r_name */
->  
-> -	rv = seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
-> -			lkb->lkb_id,
-> -			lkb->lkb_nodeid,
-> -			lkb->lkb_remid,
-> -			lkb->lkb_ownpid,
-> -			(unsigned long long)xid,
-> -			lkb->lkb_exflags,
-> -			lkb->lkb_flags,
-> -			lkb->lkb_status,
-> -			lkb->lkb_grmode,
-> -			lkb->lkb_rqmode,
-> -			(unsigned long long)us,
-> -			r->res_nodeid,
-> -			r->res_length,
-> -			r->res_name);
-> -	return rv;
-> +	seq_printf(s, "%x %d %x %u %llu %x %x %d %d %d %llu %u %d \"%s\"\n",
-> +		   lkb->lkb_id,
-> +		   lkb->lkb_nodeid,
-> +		   lkb->lkb_remid,
-> +		   lkb->lkb_ownpid,
-> +		   (unsigned long long)xid,
-> +		   lkb->lkb_exflags,
-> +		   lkb->lkb_flags,
-> +		   lkb->lkb_status,
-> +		   lkb->lkb_grmode,
-> +		   lkb->lkb_rqmode,
-> +		   (unsigned long long)us,
-> +		   r->res_nodeid,
-> +		   r->res_length,
-> +		   r->res_name);
->  }
->  
-> -static int print_format2(struct dlm_rsb *r, struct seq_file *s)
-> +static void print_format2(struct dlm_rsb *r, struct seq_file *s)
->  {
->  	struct dlm_lkb *lkb;
-> -	int rv = 0;
->  
->  	lock_rsb(r);
->  
->  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
-> -		rv = print_format2_lock(s, lkb, r);
-> -		if (rv)
-> +		print_format2_lock(s, lkb, r);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
-> -		rv = print_format2_lock(s, lkb, r);
-> -		if (rv)
-> +		print_format2_lock(s, lkb, r);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
-> -		rv = print_format2_lock(s, lkb, r);
-> -		if (rv)
-> +		print_format2_lock(s, lkb, r);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->   out:
->  	unlock_rsb(r);
-> -	return rv;
->  }
->  
-> -static int print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
-> +static void print_format3_lock(struct seq_file *s, struct dlm_lkb *lkb,
->  			      int rsb_lookup)
->  {
->  	u64 xid = 0;
-> -	int rv;
->  
->  	if (lkb->lkb_flags & DLM_IFL_USER) {
->  		if (lkb->lkb_ua)
->  			xid = lkb->lkb_ua->xid;
->  	}
->  
-> -	rv = seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
-> -			lkb->lkb_id,
-> -			lkb->lkb_nodeid,
-> -			lkb->lkb_remid,
-> -			lkb->lkb_ownpid,
-> -			(unsigned long long)xid,
-> -			lkb->lkb_exflags,
-> -			lkb->lkb_flags,
-> -			lkb->lkb_status,
-> -			lkb->lkb_grmode,
-> -			lkb->lkb_rqmode,
-> -			lkb->lkb_last_bast.mode,
-> -			rsb_lookup,
-> -			lkb->lkb_wait_type,
-> -			lkb->lkb_lvbseq,
-> -			(unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
-> -			(unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
-> -	return rv;
-> +	seq_printf(s, "lkb %x %d %x %u %llu %x %x %d %d %d %d %d %d %u %llu %llu\n",
-> +		   lkb->lkb_id,
-> +		   lkb->lkb_nodeid,
-> +		   lkb->lkb_remid,
-> +		   lkb->lkb_ownpid,
-> +		   (unsigned long long)xid,
-> +		   lkb->lkb_exflags,
-> +		   lkb->lkb_flags,
-> +		   lkb->lkb_status,
-> +		   lkb->lkb_grmode,
-> +		   lkb->lkb_rqmode,
-> +		   lkb->lkb_last_bast.mode,
-> +		   rsb_lookup,
-> +		   lkb->lkb_wait_type,
-> +		   lkb->lkb_lvbseq,
-> +		   (unsigned long long)ktime_to_ns(lkb->lkb_timestamp),
-> +		   (unsigned long long)ktime_to_ns(lkb->lkb_last_bast_time));
->  }
->  
-> -static int print_format3(struct dlm_rsb *r, struct seq_file *s)
-> +static void print_format3(struct dlm_rsb *r, struct seq_file *s)
->  {
->  	struct dlm_lkb *lkb;
->  	int i, lvblen = r->res_ls->ls_lvblen;
->  	int print_name = 1;
-> -	int rv;
->  
->  	lock_rsb(r);
->  
-> -	rv = seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
-> -			r,
-> -			r->res_nodeid,
-> -			r->res_first_lkid,
-> -			r->res_flags,
-> -			!list_empty(&r->res_root_list),
-> -			!list_empty(&r->res_recover_list),
-> -			r->res_recover_locks_count,
-> -			r->res_length);
-> -	if (rv)
-> +	seq_printf(s, "rsb %p %d %x %lx %d %d %u %d ",
-> +		   r,
-> +		   r->res_nodeid,
-> +		   r->res_first_lkid,
-> +		   r->res_flags,
-> +		   !list_empty(&r->res_root_list),
-> +		   !list_empty(&r->res_recover_list),
-> +		   r->res_recover_locks_count,
-> +		   r->res_length);
-> +	if (seq_is_full(s))
->  		goto out;
->  
->  	for (i = 0; i < r->res_length; i++) {
-> @@ -300,8 +287,8 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
->  		else
->  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
->  	}
-> -	rv = seq_puts(s, "\n");
-> -	if (rv)
-> +	seq_puts(s, "\n");
-> +	if (seq_is_full(s))
->  		goto out;
->  
->  	if (!r->res_lvbptr)
-> @@ -311,58 +298,55 @@ static int print_format3(struct dlm_rsb *r, struct seq_file *s)
->  
->  	for (i = 0; i < lvblen; i++)
->  		seq_printf(s, " %02x", (unsigned char)r->res_lvbptr[i]);
-> -	rv = seq_puts(s, "\n");
-> -	if (rv)
-> +	seq_puts(s, "\n");
-> +	if (seq_is_full(s))
->  		goto out;
->  
->   do_locks:
->  	list_for_each_entry(lkb, &r->res_grantqueue, lkb_statequeue) {
-> -		rv = print_format3_lock(s, lkb, 0);
-> -		if (rv)
-> +		print_format3_lock(s, lkb, 0);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	list_for_each_entry(lkb, &r->res_convertqueue, lkb_statequeue) {
-> -		rv = print_format3_lock(s, lkb, 0);
-> -		if (rv)
-> +		print_format3_lock(s, lkb, 0);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	list_for_each_entry(lkb, &r->res_waitqueue, lkb_statequeue) {
-> -		rv = print_format3_lock(s, lkb, 0);
-> -		if (rv)
-> +		print_format3_lock(s, lkb, 0);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->  
->  	list_for_each_entry(lkb, &r->res_lookup, lkb_rsb_lookup) {
-> -		rv = print_format3_lock(s, lkb, 1);
-> -		if (rv)
-> +		print_format3_lock(s, lkb, 1);
-> +		if (seq_is_full(s))
->  			goto out;
->  	}
->   out:
->  	unlock_rsb(r);
-> -	return rv;
->  }
->  
-> -static int print_format4(struct dlm_rsb *r, struct seq_file *s)
-> +static void print_format4(struct dlm_rsb *r, struct seq_file *s)
->  {
->  	int our_nodeid = dlm_our_nodeid();
->  	int print_name = 1;
-> -	int i, rv;
-> +	int i;
->  
->  	lock_rsb(r);
->  
-> -	rv = seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
-> -			r,
-> -			r->res_nodeid,
-> -			r->res_master_nodeid,
-> -			r->res_dir_nodeid,
-> -			our_nodeid,
-> -			r->res_toss_time,
-> -			r->res_flags,
-> -			r->res_length);
-> -	if (rv)
-> -		goto out;
-> +	seq_printf(s, "rsb %p %d %d %d %d %lu %lx %d ",
-> +		   r,
-> +		   r->res_nodeid,
-> +		   r->res_master_nodeid,
-> +		   r->res_dir_nodeid,
-> +		   our_nodeid,
-> +		   r->res_toss_time,
-> +		   r->res_flags,
-> +		   r->res_length);
->  
->  	for (i = 0; i < r->res_length; i++) {
->  		if (!isascii(r->res_name[i]) || !isprint(r->res_name[i]))
-> @@ -377,10 +361,9 @@ static int print_format4(struct dlm_rsb *r, struct seq_file *s)
->  		else
->  			seq_printf(s, " %02x", (unsigned char)r->res_name[i]);
->  	}
-> -	rv = seq_puts(s, "\n");
-> - out:
-> +	seq_puts(s, "\n");
-> +
->  	unlock_rsb(r);
-> -	return rv;
->  }
->  
->  struct rsbtbl_iter {
-> @@ -390,11 +373,12 @@ struct rsbtbl_iter {
->  	int header;
->  };
->  
-> -/* seq_printf returns -1 if the buffer is full, and 0 otherwise.
-> -   If the buffer is full, seq_printf can be called again, but it
-> -   does nothing and just returns -1.  So, the these printing routines
-> -   periodically check the return value to avoid wasting too much time
-> -   trying to print to a full buffer. */
-> +/*
-> + * If the buffer is full, seq_printf can be called again, but it
-> + * does nothing.  So, the these printing routines periodically check
-> + * seq_is_full to avoid wasting too much time trying to print to
-> + * a full buffer.
-> + */
->  
->  static int table_seq_show(struct seq_file *seq, void *iter_ptr)
->  {
-> @@ -403,7 +387,7 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
->  
->  	switch (ri->format) {
->  	case 1:
-> -		rv = print_format1(ri->rsb, seq);
-> +		print_format1(ri->rsb, seq);
->  		break;
->  	case 2:
->  		if (ri->header) {
-> @@ -412,21 +396,21 @@ static int table_seq_show(struct seq_file *seq, void *iter_ptr)
->  					"r_nodeid r_len r_name\n");
->  			ri->header = 0;
->  		}
-> -		rv = print_format2(ri->rsb, seq);
-> +		print_format2(ri->rsb, seq);
->  		break;
->  	case 3:
->  		if (ri->header) {
->  			seq_printf(seq, "version rsb 1.1 lvb 1.1 lkb 1.1\n");
->  			ri->header = 0;
->  		}
-> -		rv = print_format3(ri->rsb, seq);
-> +		print_format3(ri->rsb, seq);
->  		break;
->  	case 4:
->  		if (ri->header) {
->  			seq_printf(seq, "version 4 rsb 2\n");
->  			ri->header = 0;
->  		}
-> -		rv = print_format4(ri->rsb, seq);
-> +		print_format4(ri->rsb, seq);
->  		break;
->  	}
->  
-> -- 
-> 1.8.1.2.459.gbcd45b4.dirty
-> 
+Many contributed to this device driver but Ian Munsie is the principal author.
+
+Driver can also be found here (based on 3.17-rc5):
+   git://github.com/mikey/linux.git cxl
+   https://github.com/mikey/linux/commits/cxl
+(Series rebases on recent linux-next with one trivial include file conflict)
+
+Please consider for inclusion.  Feedback welcome!
+
+Regards,
+Mikey
+
+ Documentation/ABI/testing/sysfs-class-cxl      | 125 ++++
+ Documentation/ioctl/ioctl-number.txt           |   1 +
+ Documentation/powerpc/00-INDEX                 |   2 +
+ Documentation/powerpc/cxl.txt                  | 310 ++++++++
+ MAINTAINERS                                    |   7 +
+ arch/powerpc/Kconfig                           |   4 +
+ arch/powerpc/include/asm/copro.h               |  24 +
+ arch/powerpc/include/asm/mmu-hash64.h          |  10 +-
+ arch/powerpc/include/asm/opal.h                |   2 +
+ arch/powerpc/include/asm/pnv-pci.h             |  27 +
+ arch/powerpc/include/asm/spu.h                 |   5 +-
+ arch/powerpc/mm/Makefile                       |   1 +
+ arch/powerpc/mm/copro_fault.c                  | 124 ++++
+ arch/powerpc/mm/hash_native_64.c               |   6 +-
+ arch/powerpc/mm/hash_utils_64.c                |  95 ++-
+ arch/powerpc/mm/slb.c                          |   3 -
+ arch/powerpc/mm/slice.c                        |  10 +-
+ arch/powerpc/platforms/cell/Kconfig            |   1 +
+ arch/powerpc/platforms/cell/Makefile           |   2 +-
+ arch/powerpc/platforms/cell/spu_base.c         |  41 +-
+ arch/powerpc/platforms/cell/spu_fault.c        |  94 ---
+ arch/powerpc/platforms/cell/spufs/fault.c      |   4 +-
+ arch/powerpc/platforms/powernv/opal-wrappers.S |   1 +
+ arch/powerpc/platforms/powernv/pci-ioda.c      | 204 +++++-
+ arch/powerpc/sysdev/msi_bitmap.c               |  23 +-
+ drivers/misc/Kconfig                           |   1 +
+ drivers/misc/Makefile                          |   1 +
+ drivers/misc/cxl/Kconfig                       |  26 +
+ drivers/misc/cxl/Makefile                      |   4 +
+ drivers/misc/cxl/base.c                        | 102 +++
+ drivers/misc/cxl/context.c                     | 171 +++++
+ drivers/misc/cxl/cxl-pci.c                     | 964 +++++++++++++++++++++++++
+ drivers/misc/cxl/cxl.h                         | 605 ++++++++++++++++
+ drivers/misc/cxl/debugfs.c                     | 116 +++
+ drivers/misc/cxl/fault.c                       | 298 ++++++++
+ drivers/misc/cxl/file.c                        | 503 +++++++++++++
+ drivers/misc/cxl/irq.c                         | 405 +++++++++++
+ drivers/misc/cxl/main.c                        | 238 ++++++
+ drivers/misc/cxl/native.c                      | 649 +++++++++++++++++
+ drivers/misc/cxl/sysfs.c                       | 348 +++++++++
+ include/misc/cxl.h                             |  34 +
+ include/uapi/Kbuild                            |   1 +
+ include/uapi/misc/Kbuild                       |   2 +
+ include/uapi/misc/cxl.h                        |  88 +++
+ 44 files changed, 5469 insertions(+), 213 deletions(-)
