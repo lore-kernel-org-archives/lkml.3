@@ -1,189 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaI3AMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 20:12:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54493 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289AbaI3AMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 20:12:07 -0400
-Message-ID: <5429F555.9030108@codeaurora.org>
-Date: Mon, 29 Sep 2014 17:12:05 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755346AbaI3AMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 20:12:24 -0400
+Received: from mail-bn1bon0145.outbound.protection.outlook.com ([157.56.111.145]:27119
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755271AbaI3AMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Sep 2014 20:12:21 -0400
+Date: Tue, 30 Sep 2014 08:12:07 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
+        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140930001206.GA11657@peterchendt>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, ccross@android.com
-Subject: Re: [PATCH v2 4/4] clk: Use ww_mutexes for clk_prepare_{lock/unlock}
-References: <1409792466-5092-1-git-send-email-sboyd@codeaurora.org> <1409792466-5092-5-git-send-email-sboyd@codeaurora.org> <20140928024131.19023.40641@quantum>
-In-Reply-To: <20140928024131.19023.40641@quantum>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(189002)(199003)(51704005)(20776003)(84676001)(85306004)(107046002)(104016003)(120916001)(57986006)(86362001)(92566001)(92726001)(10300001)(97756001)(47776003)(64706001)(87936001)(99396003)(85852003)(110136001)(33716001)(83506001)(76482002)(102836001)(33656002)(6806004)(23726002)(50986999)(105606002)(80022003)(95666004)(68736004)(31966008)(4396001)(21056001)(81156004)(19580395003)(26826002)(46102003)(50466002)(46406003)(97736003)(44976005)(76176999)(19580405001)(106466001)(54356999)(69596002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0636;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0636;
+X-Forefront-PRVS: 0350D7A55D
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/14 19:41, Mike Turquette wrote:
-> Quoting Stephen Boyd (2014-09-03 18:01:06)
->> @@ -1069,11 +1305,24 @@ static void __clk_recalc_accuracies(struct clk *clk)
->>   */
->>  long clk_get_accuracy(struct clk *clk)
->>  {
->> +       struct ww_acquire_ctx ctx;
->> +       LIST_HEAD(list);
->>         unsigned long accuracy;
->>  
->> -       clk_prepare_lock();
->> +       if (clk && !(clk->flags & CLK_GET_ACCURACY_NOCACHE)) {
->> +               ww_mutex_lock(&clk->lock, NULL);
->> +       } else {
->> +               ww_acquire_init(&ctx, &prepare_ww_class);
->> +               clk_lock_subtree(clk, &list, &ctx);
->> +               ww_acquire_done(&ctx);
->> +       }
-> It looks a little weird to access clk->flags outside of the lock, but
-> flags is immutable after registration-time, so I guess it is OK. Let me
-> know if I'm wrong.
+On Tue, Sep 23, 2014 at 12:28:03PM +0200, Antoine Tenart wrote:
+> Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
+> and DMA mask, to support USB2 ChipIdea controllers that don't need
+> specific functions.
+> 
+> Tested on the Marvell Berlin SoCs USB controllers.
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/usb/chipidea/Makefile       |   1 +
+>  drivers/usb/chipidea/ci_hdrc_usb2.c | 138 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 139 insertions(+)
+>  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+> 
+> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
+> index 2f099c7df7b5..1fc86a2ca22d 100644
+> --- a/drivers/usb/chipidea/Makefile
+> +++ b/drivers/usb/chipidea/Makefile
+> @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
+>  
+>  # Glue/Bridge layers go here
+>  
+> +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
+>  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
+>  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_zevio.o
+>  
+> diff --git a/drivers/usb/chipidea/ci_hdrc_usb2.c b/drivers/usb/chipidea/ci_hdrc_usb2.c
+> new file mode 100644
+> index 000000000000..6eae1de587f2
+> --- /dev/null
+> +++ b/drivers/usb/chipidea/ci_hdrc_usb2.c
+> @@ -0,0 +1,138 @@
+> +/*
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Tenart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/usb/chipidea.h>
+> +#include <linux/usb/hcd.h>
+> +#include <linux/usb/ulpi.h>
+> +
+> +#include "ci.h"
+> +
+> +struct ci_hdrc_usb2_priv {
+> +	struct platform_device	*ci_pdev;
+> +	struct clk		*clk;
+> +};
+> +
+> +static int ci_hdrc_usb2_dt_probe(struct device *dev,
+> +				 struct ci_hdrc_platform_data *ci_pdata)
+> +{
+> +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
+> +	if (IS_ERR(ci_pdata->phy)) {
+> +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
+> +			return -EPROBE_DEFER;
+> +
+> +		/* PHY is optional */
+> +		ci_pdata->phy = NULL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct ci_hdrc_platform_data ci_default_pdata = {
+> +	.capoffset	= DEF_CAPOFFSET,
+> +	.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
+> +			  CI_HDRC_DISABLE_STREAMING,
+> +};
+> +
+> +static int ci_hdrc_usb2_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct ci_hdrc_usb2_priv *priv;
+> +	struct ci_hdrc_platform_data *ci_pdata = dev_get_platdata(&pdev->dev);
+> +	int ret;
+> +
+> +	if (!ci_pdata)
+> +		ci_pdata = &ci_default_pdata;
+> +
+> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> +	if (!priv)
+> +		return -ENOMEM;
+> +
+> +	priv->clk = devm_clk_get(dev, NULL);
+> +	if (!IS_ERR(priv->clk)) {
+> +		ret = clk_prepare_enable(priv->clk);
+> +		if (ret) {
+> +			dev_err(dev, "failed to enable the clock: %d\n", ret);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	if (dev->of_node) {
+> +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+> +		if (ret)
+> +			goto clk_err;
+> +	} else {
+> +		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+> +		if (ret)
+> +			goto clk_err;
+> +	}
 
-Right. We can ww_acquire_init() and ww_mutex_lock() with that context
-before checking the flags. In the single lock case it's better to just
-grab the mutex though, without the context, to avoid the whole deadlock
-detection overhead that we don't care about.
+My suggestion:
 
->
->> +
->>         rate = __clk_get_rate(clk);
->> -       clk_prepare_unlock();
->> +
->> +       if (clk && !(clk->flags & CLK_GET_RATE_NOCACHE))
->> +               ww_mutex_unlock(&clk->lock);
->> +       else
->> +               clk_unlock(&list, &ctx);
->>  
->>         return rate;
->>  }
->> @@ -1317,9 +1579,11 @@ out:
->>         return ret;
->>  }
->>  
->> -static void clk_calc_subtree(struct clk *clk, unsigned long new_rate,
->> -                            struct clk *new_parent, u8 p_index)
->> +static int clk_calc_subtree(struct clk *clk, unsigned long new_rate,
->> +                            struct clk *new_parent, u8 p_index,
->> +                            struct list_head *list, struct ww_acquire_ctx *ctx)
->>  {
->> +       int ret;
->>         struct clk *child;
->>  
->>         clk->new_rate = new_rate;
->> @@ -1331,27 +1595,43 @@ static void clk_calc_subtree(struct clk *clk, unsigned long new_rate,
->>                 new_parent->new_child = clk;
->>  
->>         hlist_for_each_entry(child, &clk->children, child_node) {
->> +               ret = clk_lock_one(child, list, ctx);
->> +               if (ret == -EDEADLK)
->> +                       return ret;
-> Why bother with any locking here at all? Why not call clk_lock_subtree
-> from clk_calc_new_rates? I guess you avoid an extra tree walk?
+- call dma_coerce_mask_and_coherent(&dev->dev, DMA_BIT_MASK(32)) for both 
+dt and non-dt
+- Do not need function ci_hdrc_usb2_dt_probe, the phy handle should be moved
+to core driver, since your generic phy driver are still not accepted, I
+can't do it by myself. Either you or I can do it after your generic phy support
+series has been accepted.
+- Others are ok.
 
-Yes we save on the tree walk.
+Peter
 
->
->> +
->>                 child->new_rate = clk_recalc(child, new_rate);
->> -               clk_calc_subtree(child, child->new_rate, NULL, 0);
->> +               ret = clk_calc_subtree(child, child->new_rate, NULL, 0, list,
->> +                                       ctx);
->> +               if (ret)
->> +                       return ret;
->>         }
->> +
->> +       return 0;
->>  }
->>  
->>  /*
->>   * calculate the new rates returning the topmost clock that has to be
->>   * changed.
->>   */
->> -static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
->> +static struct clk *
->> +clk_calc_new_rates(struct clk *clk, unsigned long rate, struct list_head *list,
->> +                  struct ww_acquire_ctx *ctx)
->>  {
->>         struct clk *top = clk;
->>         struct clk *old_parent, *parent;
->>         unsigned long best_parent_rate = 0;
->>         unsigned long new_rate;
->>         int p_index = 0;
->> +       int ret;
->>  
->>         /* sanity */
->>         if (IS_ERR_OR_NULL(clk))
->>                 return NULL;
->>  
->> +       ret = clk_lock_one(clk, list, ctx);
->> +       if (ret == -EDEADLK)
->> +               return ERR_PTR(ret);
-> It seems to me that we should call clk_parent_lock here instead, since
-> we access the parent's rate. I know that any concurrent access to the
-> parent which would change its rate would fail, since we can't lock the
-> subtree (including *this* lock). But it still seems more correct to lock
-> the parent to me. Let me know what you think.
-
-Blocking the other user of the parent is bad. In our CPU case we have XO
--> PLLn -> CPUn for each CPU. So if we want to change the frequency of
-CPU0 we change the frequency of PLL0. If we were to always lock the
-parent, in this case XO, then we wouldn't gain anything because the two
-CPUs trying to change rates independently would both be trying to
-acquire the XO clock's lock, thus synchronizing the two things we're
-trying to parallelize.
-
->
-> It might also help the collision case fail faster since you will fail
-> trying to grab the parent lock instead of grabbing the parent lock, then
-> failing to lock the subtree.
-
-I don't follow this part. Hopefully it doesn't matter though.
-
->
-> Though in all honestly, I haven't finished thinking it through. The
-> wait/wound algorithm opens up a lot of possibilities around very
-> aggressive locking strategies to prevent contention. For example if we
-> call clk_parent_lock it will lock the subtree starting from the parent,
-> thus holding potentially a LOT more child locks, which only need to be
-> updated during the recalc rate phase.  We could avoid holding those
-> children until the moment that we need to lock them... I'll think about
-> it some more.
->
-> Oh wait, no we couldn't. We have to take all of our locks up front via
-> ww_acquire_done(), which happens below.
->
->> +
->>         /* save parent rate, if it exists */
->>         parent = old_parent = clk->parent;
->>         if (parent)
-> The context cuts it off, but the next line down accesses parent->rate.
-> Again I think this happens without first having locked parent?
-
-Yes.
-
->> +       ww_acquire_done(ctx);
-> ww_acquire_done() happens here. OK. Neverrmind, just thinking through
-> out loud.  This looks good.
->
-> Let me know what you think about the questions above. I've also Cc'd
-> Colin Cross who has experimented with per-clock locking before as well.
-> He may or may not have an interest in this now.
->
->
-
-Thanks for reviewing Mike. I've rebased the patches to clk-next as of
-today. I still need to update the locking documentation before I send it
-out again, hopefully by today or tomorrow. I'm also auditing clock
-drivers to find potential brokenness.
+> +
+> +	ci_pdata->name = dev_name(&pdev->dev);
+> +
+> +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
+> +					   pdev->num_resources, ci_pdata);
+> +	if (IS_ERR(priv->ci_pdev)) {
+> +		ret = PTR_ERR(priv->ci_pdev);
+> +		if (ret != -EPROBE_DEFER)
+> +			dev_err(dev,
+> +				"failed to register ci_hdrc platform device: %d\n",
+> +				ret);
+> +		goto clk_err;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, priv);
+> +
+> +	pm_runtime_no_callbacks(dev);
+> +	pm_runtime_enable(dev);
+> +
+> +	return 0;
+> +
+> +clk_err:
+> +	if (!IS_ERR(priv->clk))
+> +		clk_disable_unprepare(priv->clk);
+> +	return ret;
+> +}
+> +
+> +static int ci_hdrc_usb2_remove(struct platform_device *pdev)
+> +{
+> +	struct ci_hdrc_usb2_priv *priv = platform_get_drvdata(pdev);
+> +
+> +	pm_runtime_disable(&pdev->dev);
+> +	ci_hdrc_remove_device(priv->ci_pdev);
+> +	clk_disable_unprepare(priv->clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id ci_hdrc_usb2_of_match[] = {
+> +	{ .compatible = "chipidea,usb2" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, ci_hdrc_usb2_of_match);
+> +
+> +static struct platform_driver ci_hdrc_usb2_driver = {
+> +	.probe	= ci_hdrc_usb2_probe,
+> +	.remove	= ci_hdrc_usb2_remove,
+> +	.driver	= {
+> +		.name		= "chipidea-usb2",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= of_match_ptr(ci_hdrc_usb2_of_match),
+> +	},
+> +};
+> +module_platform_driver(ci_hdrc_usb2_driver);
+> +
+> +MODULE_DESCRIPTION("ChipIdea HDRC USB2 binding for ci13xxx");
+> +MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.9.1
+> 
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Best Regards,
+Peter Chen
