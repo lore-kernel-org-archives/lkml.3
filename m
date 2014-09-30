@@ -1,163 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaI3UAz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 16:00:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968AbaI3UAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 16:00:52 -0400
-Date: Tue, 30 Sep 2014 15:59:47 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com, oleg@redhat.com, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2] sched, time: fix build error with 64 bit cputime_t on 32
- bit systems
-Message-ID: <20140930155947.070cdb1f@annuminas.surriel.com>
-In-Reply-To: <20140930133749.GD4241@worktop.programming.kicks-ass.net>
-References: <2547036.UshV4pXvhf@wuerfel>
-	<542AA33E.2050008@redhat.com>
-	<20140930133749.GD4241@worktop.programming.kicks-ass.net>
-Organization: Red Hat, Inc.
+	id S1753534AbaI3UB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 16:01:28 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:64131 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaI3UBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 16:01:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
+Date: Tue, 30 Sep 2014 22:01:14 +0200
+Message-ID: <2430078.s4snyh5OoF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <3079787.54pZijGjZM@wuerfel>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <20140930174821.GX841@e106497-lin.cambridge.arm.com> <3079787.54pZijGjZM@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:OCoMSV8AzRQ+b6nHs2P0sgd9LtGXCUcJSpU0C1/asQB
+ 6ydalVmp29uDdnOMfr3BfRaVErJ0sNARAT/BtxmeGzro5MG98M
+ aKIhBJ8yoDmYDeSDWDMlaKa7wv2J0IIZAs48TaNy9taO5B4uYv
+ MIE4c2/UoZR4/bHD4JroVDGM3I/4bh9XkDj3Q2zEVVvxZzUDsE
+ nVL1CcaLFd3UmGvprFAi974+At2AdFZYsBdTih9NFrbHDh5imi
+ mMFe+lg4HkioZOgCnemrFo6UZyyiO6D9/zzfyER0A/9hOTiV9t
+ FeH6q9aw1RE773JFQnCvvuW7rNvLcYP2j+iaaerWTySQ4+rshH
+ qzODhdhsIgnzUV0cF96s=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 30 September 2014 20:54:41 Arnd Bergmann wrote:
+> On Tuesday 30 September 2014 18:48:21 Liviu Dudau wrote:
+> > > > > > These are the functions I found that refer to pci_sys_data on arm32:
+> > > > > > 
+> > > > > > pcibios_add_bus
+> > > > > > pcibios_remove_bus
+> > 
+> > These are only needed if you want to do per HB processing of the bus
+> > 
+> > > > > > pcibios_align_resource
+> > 
+> > mvebu is the only user of this function.
+> > 
+> > > > > > pci_mmap_page_range
+> > 
+> > This is only needed when mapping a PCI resource to userspace. Is that your case here?
+> > 
+> > > > > > pci_domain_nr
+> > > > > > pci_proc_domain
+> > 
+> > We have equivalent functionality in the generic patches for those.
+> > 
+> 
+> We clearly don't need those functions for the new drivers, but that's not
+> the point. The problem is that when you build a kernel that has both
+> a traditional host bridge driver and a new one in it, you always get those
+> functions and they get called from the PCI core, with incorrect arguments.
 
-> That code is only ever used on x86 and ia64, most other archs have
-> managed to not mess up their clocks quite as bad.
+FWIW, the last time we discussed this, I think I had suggested that the
+functions that are currently architecture specific and have a generic
+__weak fallback could become function pointers in a per-host structure
+passed to pci_scan_root_bus, either a new structure or an extended
+struct pci_ops. Something along these lines:
 
-OK, lets try this again...
-
-Gcc generated an error with the previous patch, because it evaluated
-the branch that it was eliminating.  That means we cannot use a
-sizeof directed branch, and have to fall back to simply defining which
-cmpxchg to call for each cputime_t declaration.
-
----8<---
-
-Subject: sched,time: fix build error with 64 bit cputime_t on 32 bit systems
-
-On 32 bit systems cmpxchg cannot handle 64 bit values, so
-some additional magic is required to allow a 32 bit system
-with CONFIG_VIRT_CPU_ACCOUNTING_GEN enabled to build.
-
-Make sure the correct cmpxchg function is used when doing
-an atomic swap of a cputime_t.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/powerpc/include/asm/cputime.h    |  2 ++
- arch/s390/include/asm/cputime.h       |  2 ++
- include/asm-generic/cputime_jiffies.h |  2 ++
- include/asm-generic/cputime_nsecs.h   |  2 ++
- kernel/sched/cputime.c                | 29 +++++++++++++++++++----------
- 5 files changed, 27 insertions(+), 10 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
-index 607559a..6c840ce 100644
---- a/arch/powerpc/include/asm/cputime.h
-+++ b/arch/powerpc/include/asm/cputime.h
-@@ -32,6 +32,8 @@ static inline void setup_cputime_one_jiffy(void) { }
- typedef u64 __nocast cputime_t;
- typedef u64 __nocast cputime64_t;
+diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+index 7fc42784becb..3da32fc631d0 100644
+--- a/arch/arm/include/asm/mach/pci.h
++++ b/arch/arm/include/asm/mach/pci.h
+@@ -36,7 +36,6 @@ struct hw_pci {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+ 	void		(*remove_bus)(struct pci_bus *bus);
+ };
  
-+#define cmpxchg_cputime(ptr, old, new) cmpxchg(ptr, old, new)
-+
- #ifdef __KERNEL__
+@@ -65,7 +64,6 @@ struct pci_sys_data {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+ 	void		(*remove_bus)(struct pci_bus *bus);
+ 	void		*private_data;	/* platform controller private data	*/
+ };
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 17a26c17f7f5..3cbcf8dc41e4 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -360,13 +360,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
  
- /*
-diff --git a/arch/s390/include/asm/cputime.h b/arch/s390/include/asm/cputime.h
-index f65bd36..3001887 100644
---- a/arch/s390/include/asm/cputime.h
-+++ b/arch/s390/include/asm/cputime.h
-@@ -18,6 +18,8 @@
- typedef unsigned long long __nocast cputime_t;
- typedef unsigned long long __nocast cputime64_t;
- 
-+#define cmpxchg_cputime(ptr, old, new) cmpxchg64(ptr, old, new)
-+
- static inline unsigned long __div(unsigned long long n, unsigned long base)
+-void pcibios_add_bus(struct pci_bus *bus)
+-{
+-	struct pci_sys_data *sys = bus->sysdata;
+-	if (sys->add_bus)
+-		sys->add_bus(bus);
+-}
+-
+ void pcibios_remove_bus(struct pci_bus *bus)
  {
- #ifndef CONFIG_64BIT
-diff --git a/include/asm-generic/cputime_jiffies.h b/include/asm-generic/cputime_jiffies.h
-index d5cb78f5..fe386fc 100644
---- a/include/asm-generic/cputime_jiffies.h
-+++ b/include/asm-generic/cputime_jiffies.h
-@@ -3,6 +3,8 @@
+ 	struct pci_sys_data *sys = bus->sysdata;
+@@ -475,7 +468,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+ 		sys->swizzle = hw->swizzle;
+ 		sys->map_irq = hw->map_irq;
+ 		sys->align_resource = hw->align_resource;
+-		sys->add_bus = hw->add_bus;
+ 		sys->remove_bus = hw->remove_bus;
+ 		INIT_LIST_HEAD(&sys->resources);
  
- typedef unsigned long __nocast cputime_t;
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index b1315e197ffb..c9a0ee0429e8 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -716,6 +716,7 @@ static int mvebu_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
+ static struct pci_ops mvebu_pcie_ops = {
+ 	.read = mvebu_pcie_rd_conf,
+ 	.write = mvebu_pcie_wr_conf,
++	.add_bus = mvebu_pcie_add_bus,
+ };
  
-+#define cmpxchg_cputime(ptr, old, new) cmpxchg(ptr, old, new)
-+
- #define cputime_one_jiffy		jiffies_to_cputime(1)
- #define cputime_to_jiffies(__ct)	(__force unsigned long)(__ct)
- #define cputime_to_scaled(__ct)		(__ct)
-diff --git a/include/asm-generic/cputime_nsecs.h b/include/asm-generic/cputime_nsecs.h
-index 4e81760..0419485 100644
---- a/include/asm-generic/cputime_nsecs.h
-+++ b/include/asm-generic/cputime_nsecs.h
-@@ -21,6 +21,8 @@
- typedef u64 __nocast cputime_t;
- typedef u64 __nocast cputime64_t;
+ static int mvebu_pcie_setup(int nr, struct pci_sys_data *sys)
+@@ -823,7 +824,6 @@ static void mvebu_pcie_enable(struct mvebu_pcie *pcie)
+ 	hw.map_irq        = of_irq_parse_and_map_pci;
+ 	hw.ops            = &mvebu_pcie_ops;
+ 	hw.align_resource = mvebu_pcie_align_resource;
+-	hw.add_bus        = mvebu_pcie_add_bus;
  
-+#define cmpxchg_cputime(ptr, old, new) cmpxchg64(ptr, old, new)
-+
- #define cputime_one_jiffy		jiffies_to_cputime(1)
+ 	pci_common_init(&hw);
+ }
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index a63a47a70846..be6d56358320 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1885,6 +1885,8 @@ int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
  
- #define cputime_div(__ct, divisor)  div_u64((__force u64)__ct, divisor)
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 64492df..8394b1e 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -555,6 +555,23 @@ static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
+ void __weak pcibios_add_bus(struct pci_bus *bus)
+ {
++	if (bus->ops && bus->ops->add_bus)
++		bus->ops->add_bus(bus);		
  }
  
- /*
-+ * Atomically advance counter to the new value. Interrupts, vcpu
-+ * scheduling, and scaling inaccuracies can cause cputime_advance
-+ * to be occasionally called with a new value smaller than counter.
-+ * Let's enforce atomicity.
-+ *
-+ * Normally a caller will only go through this loop once, or not
-+ * at all in case a previous caller updated counter the same jiffy.
-+ */
-+static void cputime_advance(cputime_t *counter, cputime_t new)
-+{
-+	cputime_t old;
-+
-+	while (new > (old = ACCESS_ONCE(*counter)))
-+		cmpxchg_cputime(counter, old, new);
-+}
-+
-+/*
-  * Adjust tick based cputime random precision against scheduler
-  * runtime accounting.
-  */
-@@ -599,16 +616,8 @@ static void cputime_adjust(struct task_cputime *curr,
- 		utime = rtime - stime;
- 	}
- 
--	/*
--	 * If the tick based count grows faster than the scheduler one,
--	 * the result of the scaling may go backward.
--	 * Let's enforce monotonicity.
--	 * Atomic exchange protects against concurrent cputime_adjust().
--	 */
--	while (stime > (rtime = ACCESS_ONCE(prev->stime)))
--		cmpxchg(&prev->stime, rtime, stime);
--	while (utime > (rtime = ACCESS_ONCE(prev->utime)))
--		cmpxchg(&prev->utime, rtime, utime);
-+	cputime_advance(&prev->stime, stime);
-+	cputime_advance(&prev->utime, utime);
- 
- out:
- 	*ut = prev->utime;
+ void __weak pcibios_remove_bus(struct pci_bus *bus)
+
+	Arnd
