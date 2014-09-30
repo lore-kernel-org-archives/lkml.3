@@ -1,229 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaI3H1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:27:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52766 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751530AbaI3H1b convert rfc822-to-8bit (ORCPT
+	id S1752431AbaI3HaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:30:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49517 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaI3HaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:27:31 -0400
-Date: Tue, 30 Sep 2014 09:27:27 +0200
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: "'Heiko =?UTF-8?B?U3TDvGJuZXIn?=" <heiko@sntech.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, arnd@arndb.de, b29396@freescale.com,
-        lee.jones@linaro.org, tomasz.figa@gmail.com, linux@arm.linux.org.uk,
-        vikas.sajjan@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
-        kgene.kim@samsung.com, Li.Xiubo@freescale.com, geert+renesas@glider.be,
-        swarren@nvidia.com, linux-rockchip@lists.infradead.org
-Subject: Re: [PATCH v6] mfd: syscon: Decouple syscon interface from platform
- devices
-Message-ID: <20140930092727.12c34f05@bbrezillon>
-In-Reply-To: <000d01cfdc63$99576bb0$cc064310$@samsung.com>
-References: <1411980458-32329-1-git-send-email-pankaj.dubey@samsung.com>
-	<1617081.XFKIz4hM4O@phil>
-	<000d01cfdc63$99576bb0$cc064310$@samsung.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 30 Sep 2014 03:30:05 -0400
+Message-ID: <542A5BF8.3030103@codeaurora.org>
+Date: Tue, 30 Sep 2014 10:30:00 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Richard Weinberger <richard@nod.at>,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Kiran Padwal <kiran.padwal21@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] mtd: ubi: Extend UBI layer debug/messaging capabilities
+References: <1411886185-7838-1-git-send-email-tlinder@codeaurora.org> <54293975.9040402@gmail.com> <54294A01.8070505@nod.at> <54295165.4030201@smartplayin.com> <54295274.4020805@nod.at>
+In-Reply-To: <54295274.4020805@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+On 9/29/2014 3:37 PM, Richard Weinberger wrote:
+> Am 29.09.2014 14:32, schrieb Kiran Padwal:
+>> On Monday 29 September 2014 05:31 PM, Richard Weinberger wrote:
+>>> Am 29.09.2014 12:50, schrieb Kiran Padwal:
+>>>> Hi Tanya,
+>>>>
+>>>> On Sunday 28 September 2014 12:06 PM, Tanya Brokhman wrote:
+>>>>> If there is more then one UBI device mounted, there is no way to
+>>>>> distinguish between messages from different UBI devices.
+>>>>> Add device number to all ubi layer message types.
+>>>>>
+>>>>>
+>>>>> Signed-off-by: Tanya Brokhman <tlinder@codeaurora.org>
+>>>>>
+>>>>> ---
+>>>>>   drivers/mtd/ubi/attach.c  | 138 ++++++++++++++++++++----------------
+>>>>>   drivers/mtd/ubi/build.c   | 130 ++++++++++++++++++++--------------
+>>>>>   drivers/mtd/ubi/cdev.c    |  37 +++++-----
+>>>>>   drivers/mtd/ubi/debug.c   |   9 +--
+>>>>>   drivers/mtd/ubi/eba.c     |  54 +++++++-------
+>>>>>   drivers/mtd/ubi/fastmap.c | 108 ++++++++++++++++------------
+>>>>>   drivers/mtd/ubi/io.c      | 177 +++++++++++++++++++++++++++-------------------
+>>>>>   drivers/mtd/ubi/kapi.c    |   6 +-
+>>>>>   drivers/mtd/ubi/misc.c    |   6 +-
+>>>>>   drivers/mtd/ubi/ubi.h     |  13 ++--
+>>>>>   drivers/mtd/ubi/vmt.c     |  76 +++++++++++---------
+>>>>>   drivers/mtd/ubi/vtbl.c    |  54 ++++++++------
+>>>>>   drivers/mtd/ubi/wl.c      |  87 +++++++++++++++--------
+>>>>>   13 files changed, 521 insertions(+), 374 deletions(-)
+>>>>
+>>>> Compilation breaks while I try to compile with this patch.
+>>>> May be you need to update remaining ubi layer messages also.
+>>>
+>>> Please always share the errors you face.
+>>> Maybe you have a different config.
+>>
+>> Sure, I will take care of this next time.
+>>
+>> Macros have been changed but some instances of older macros still remained, which caused many errors like,
+>>
+>> drivers/mtd/ubi/build.c: In function ‘ubi_init’:
+>> drivers/mtd/ubi/build.c:1322:49: error: expected ‘)’ before ‘err’
+>>     ubi_err("block: cannot initialize, error %d", err);
+>
+> Ohh. :(
+> Tanya, did you test your patch?
+>
 
-On Tue, 30 Sep 2014 09:33:38 +0530
-Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+Of course I did. I used nandsimulator on a virtual machine to test all 
+patches. Perhaps my error was testing them all together (with 
+read-disturb) and this got lost somehow. It's very strange you got 
+compilation errors. I'm sorry for the inconvenience. Will look into this 
+today and upload a new version ASAP. (with all previous comments 
+addressed as well)
 
-> Hi,
-> 
-> On Monday, September 29, 2014 9:38 PM, Heiko StÃ¼bner wrote,
-> > Am Montag, 29. September 2014, 14:17:38 schrieb Pankaj Dubey:
-> > > Currently a syscon entity can be only registered directly through a
-> > > platform device that binds to a dedicated syscon driver. However in
-> > > certain use cases it is desirable to make a device used with another
-> > > driver a syscon interface provider.
-> > >
-> > > For example, certain SoCs (e.g. Exynos) contain system controller
-> > > blocks which perform various functions such as power domain control,
-> > > CPU power management, low power mode control, but in addition contain
-> > > certain IP integration glue, such as various signal masks, coprocessor
-> > > power control, etc. In such case, there is a need to have a dedicated
-> > > driver for such system controller but also share registers with other
-> > > drivers. The latter is where the syscon interface is helpful.
-> > >
-> > > In case of DT based platforms, this patch decouples syscon object from
-> > > syscon platform driver, and allows to create syscon objects first time
-> > > when it is required by calling of syscon_regmap_lookup_by APIs and
-> > > keep a list of such syscon objects along with syscon provider
-> > > device_nodes and regmap handles.
-> > >
-> > > For non-DT based platforms, this patch keeps syscon platform driver
-> > > structure where is can be probed and such non-DT based drivers can use
-> > > syscon_regmap_lookup_by_pdev API and get access to regmap handles.
-> > > Once all users of "syscon_regmap_lookup_by_pdev" migrated to DT based,
-> > > we can completely remove platform driver of syscon, and keep only
-> > > helper functions to get regmap handles.
-> > >
-> > > Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> > > Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
-> > > Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
-> > > Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> > > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> > > ---
-> > 
-> > On Rockchip boards during core clock init (aka before timers)
-> > Tested-by: Heiko Stuebner <heiko@sntech.de>
-> > 
-> 
-> Thanks for testing.
-> 
-> > Except one issue described inline below
-> > Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-> > 
-> > 
-> > And I'm really looking forward to having this in the kernel :-)
-
-Me too :-).
-
-> > 
-> > Thanks for working on this
-> > Heiko
-> > 
-> > 
-> 
-> [snip]
-> 
-> > >
-> > >  drivers/mfd/syscon.c |  106
-> > > +++++++++++++++++++++++++++++++++++++++----------- 1 file
-> > changed, 84
-> > > insertions(+), 22 deletions(-)
-> > >
-> > > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c index
-> > > ca15878..00a8410 100644
-> > > --- a/drivers/mfd/syscon.c
-> > > +++ b/drivers/mfd/syscon.c
-> > > @@ -15,6 +15,7 @@
-> > >  #include <linux/err.h>
-> > >  #include <linux/io.h>
-> > >  #include <linux/module.h>
-> > > +#include <linux/list.h>
-> > >  #include <linux/of.h>
-> > >  #include <linux/of_address.h>
-> > >  #include <linux/of_platform.h>
-> > > @@ -22,31 +23,104 @@
-> > >  #include <linux/platform_device.h>
-> > >  #include <linux/regmap.h>
-> > >  #include <linux/mfd/syscon.h>
-> > > +#include <linux/slab.h>
-> > >
-> > >  static struct platform_driver syscon_driver;
-> > >
-> > > +static DEFINE_SPINLOCK(syscon_list_slock);
-> > > +static LIST_HEAD(syscon_list);
-> > > +
-> > >  struct syscon {
-> > > +	struct device_node *np;
-> > >  	struct regmap *regmap;
-> > > +	struct list_head list;
-> > > +};
-> > > +
-> > > +static struct regmap_config syscon_regmap_config = {
-> > > +	.reg_bits = 32,
-> > > +	.val_bits = 32,
-> > > +	.reg_stride = 4,
-> > >  };
-> > >
-> > > -static int syscon_match_node(struct device *dev, void *data)
-> > > +static struct syscon *of_syscon_register(struct device_node *np)
-> > >  {
-> > > -	struct device_node *dn = data;
-> > > +	struct syscon *syscon;
-> > > +	struct regmap *regmap;
-> > > +	void __iomem *base;
-> > > +	int ret;
-> > > +	enum regmap_endian endian = REGMAP_ENDIAN_DEFAULT;
-> > > +
-> > > +	if (!of_device_is_compatible(np, "syscon"))
-> > > +		return ERR_PTR(-EINVAL);
-> > > +
-> > > +	syscon = kzalloc(sizeof(*syscon), GFP_KERNEL);
-> > > +	if (!syscon)
-> > > +		return ERR_PTR(-ENOMEM);
-> > > +
-> > > +	base = of_iomap(np, 0);
-> > > +	if (!base) {
-> > > +		ret = -ENOMEM;
-> > > +		goto err_map;
-> > > +	}
-> > > +
-> > > +	/* Parse the device's DT node for an endianness specification */
-> > > +	if (of_property_read_bool(np, "big-endian"))
-> > > +		endian = REGMAP_ENDIAN_BIG;
-> > > +	 else if (of_property_read_bool(np, "little-endian"))
-> > > +		endian = REGMAP_ENDIAN_LITTLE;
-> > > +
-> > > +	/* If the endianness was specified in DT, use that */
-> > > +	if (endian != REGMAP_ENDIAN_DEFAULT)
-> > > +		syscon_regmap_config.val_format_endian = endian;
-> > > +
-> > > +	regmap = regmap_init_mmio(NULL, base, &syscon_regmap_config);
-> > > +	if (IS_ERR(regmap)) {
-> > > +		pr_err("regmap init failed\n");
-> > > +		ret = PTR_ERR(regmap);
-> > > +		goto err_regmap;
-> > > +	}
-> > > +
-> > > +	syscon->regmap = regmap;
-> > > +	syscon->np = np;
-> > > +
-> > > +	spin_lock(&syscon_list_slock);
-> > > +	list_add_tail(&syscon->list, &syscon_list);
-> > > +	spin_unlock(&syscon_list_slock);
-> > >
-> > > -	return (dev->of_node == dn) ? 1 : 0;
-> > > +	/* Change back endianness of syscon_regmap_config.
-> > > +	 * As this is static config in this file and in one system we may
-> > > +	 * have more than one syscon
-> > > +	 */
-> > > +	syscon_regmap_config.val_format_endian =
-> > REGMAP_ENDIAN_DEFAULT;
-> > 
-> > This should also be done in the error case. Currently when you goto
-> err_regmap the
-> > overridden value will be left in the struct.
-> > 
-> 
-> Thanks, will handle this in error condition also.
-> 
-> > While on this, is there a concurrency issue here, aka of_syscon_register
-> could be
-> > called in parallel and what happens with
-> syscon_regmap_config.val_format_endian
-> > then?
-> 
-> I can think of two approaches to solve this.
-> 
-> 1: Updating syscon_regmap_config, under spin_lock "syscon_list_slock".
-> 2: Creation of local copy of syscon_regmap_config in "of_syscon_register"
-> and using 
-> it. In this case changing back of endianness in syscon_regmap_config, will
-> not be needed
-> and code will be a bit cleaner.
-> 
-> I would prefer second one, what is your opinion?
-
-I too prefer the second solution, but it's not my call :-).
-
-Best Regards,
-
-Boris
+> Thanks,
+> //richard
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
 
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
