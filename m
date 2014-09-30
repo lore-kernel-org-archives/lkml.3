@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911AbaI3COc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Sep 2014 22:14:32 -0400
-Received: from [65.55.169.122] ([65.55.169.122]:1736 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751165AbaI3COb convert rfc822-to-8bit (ORCPT
+	id S1755171AbaI3CPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Sep 2014 22:15:32 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:43081 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199AbaI3CPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Sep 2014 22:14:31 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] clocksource: Add BE APIs support for clocksource
- counter reading.
-Thread-Topic: [PATCH v2] clocksource: Add BE APIs support for clocksource
- counter reading.
-Thread-Index: AQHP2VI//rRu6j6sqUq5UgI9DpBFeJwTanQAgAJn5mCAAudTgIAAOzFQ
-Date: Tue, 30 Sep 2014 02:12:37 +0000
-Message-ID: <386a54119f8949c7a21e713d1cc2b99b@BY2PR0301MB0613.namprd03.prod.outlook.com>
-References: <1411712529-35293-1-git-send-email-Li.Xiubo@freescale.com>
- <alpine.DEB.2.11.1409261521340.4567@nanos>
- <f22d0c6ab97f4f45ac66f646626b8c37@BN1PR0301MB0609.namprd03.prod.outlook.com>
- <alpine.DEB.2.02.1409300027150.22082@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1409300027150.22082@ionos.tec.linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0616;
-x-forefront-prvs: 0350D7A55D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(164054003)(189002)(110136001)(85852003)(92566001)(80022003)(4396001)(76576001)(86362001)(101416001)(46102003)(10300001)(99396003)(87936001)(76482002)(2656002)(33646002)(120916001)(105586002)(106116001)(20776003)(19580395003)(19580405001)(97736003)(99286002)(93886004)(85306004)(95666004)(21056001)(31966008)(108616004)(77096002)(107046002)(66066001)(76176999)(54356999)(106356001)(64706001)(74316001)(50986999)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0616;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Sep 2014 22:15:30 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>, Andrey Wagin <avagin@gmail.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <87lhp12a2i.fsf@x220.int.ebiederm.org>
+	<CALCETrXGojRGtT1B2Aib7m54j8T+LsnCOin_GL93-BWf-eSPkA@mail.gmail.com>
+Date: Mon, 29 Sep 2014 19:15:02 -0700
+In-Reply-To: <CALCETrXGojRGtT1B2Aib7m54j8T+LsnCOin_GL93-BWf-eSPkA@mail.gmail.com>
+	(Andy Lutomirski's message of "Mon, 29 Sep 2014 18:28:00 -0700")
+Message-ID: <87oatxzwex.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18vItPRMtvq7bwvxoEGKh8h4O619IAbgdI=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4915]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 2541 ms - load_scoreonly_sql: 0.05 (0.0%),
+	signal_user_changed: 3.4 (0.1%), b_tie_ro: 2.4 (0.1%), parse: 1.23 (0.0%),
+	extract_message_metadata: 30 (1.2%), get_uri_detail_list: 2.6 (0.1%),
+	tests_pri_-1000: 14 (0.5%), tests_pri_-950: 2.1 (0.1%), tests_pri_-900: 1.64
+	(0.1%), tests_pri_-400: 29 (1.1%), check_bayes: 27 (1.1%), b_tokenize: 11
+	(0.4%), b_tok_get_all: 7 (0.3%), b_comp_prob: 3.8 (0.2%), b_tok_touch_all:
+	2.0 (0.1%), b_finish: 0.79 (0.0%), tests_pri_0: 2449 (96.4%), tests_pri_500:
+	7 (0.3%), rewrite_mail: 0.00 (0.0%)
+Subject: Re: [PATCH] umount.2: Correct the description of MNT_DETACH
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Andy Lutomirski <luto@amacapital.net> writes:
 
-> Subject: RE: [PATCH v2] clocksource: Add BE APIs support for clocksource
-> counter reading.
-> 
-> On Sun, 28 Sep 2014, Li.Xiubo@freescale.com wrote:
-> > > Subject: Re: [PATCH v2] clocksource: Add BE APIs support for clocksource
-> > > counter reading.
-> > >
-> > > On Fri, 26 Sep 2014, Xiubo Li wrote:
-> > > > For now I just added  _be() support using ioread{16,32}be.
-> > > > And i have a check of the clocksource drivers, didn't find anyone
-> > > > using LE mode on one BE SoC, so _le() APIs is not needed.
-> > >
-> > > Nonsense. The existing clocksource_mmio accessor function are
-> > > providing LE access independent of the CPU endianess. So we don't need
-> > > an _le() API simply because we have it already.
-> > >
-> > > >  cycle_t clocksource_mmio_readl_up(struct clocksource *c)
-> > > >  {
-> > > > -	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
-> > > > +	return (cycle_t)ioread32(to_mmio_clksrc(c)->reg);
-> > >
-> > > And how exactly is this change related to adding BE support?
-> > >
-> >
-> > Actually not very much, since the _be() APIs are using ioread{16,32}be(),
-> > so I think using ioread{16,32}() will be less odd to having two different
-> > accessors here.
-> >
-> > Wouldn't this be more unified somehow ?
-> 
-> Changing existing code wants to be a separate patch with a proper
-> changelog and a proper argument WHY it needs to be changed in the
-> first place.
-> 
-> So please provide that separate patch first with a VERY REASONABLE
-> explanation in the changelog WHY the existing readl_relaxed() should
-> be replaced by ioread32().
-> 
+> On Mon, Sep 29, 2014 at 6:04 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>>
+>> I recently realized that I had been reasoning improperly about what
+>> umount(MNT_DETACH) did based on an insufficient description in
+>> the umount.2 man page, that matched my intuition but not the
+>> implementation.
+>>
+>> When there are no submounts MNT_DETACH is essentially harmless to
+>> applications.  Where there are submounts MNT_DETACH changes what
+>> is visible to applications using the detach directories.
+>>
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>> ---
+>>  man2/umount.2 | 7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/man2/umount.2 b/man2/umount.2
+>> index 5ff88152c738..aea39d8306fe 100644
+>> --- a/man2/umount.2
+>> +++ b/man2/umount.2
+>> @@ -66,9 +66,10 @@ This can cause data loss.
+>>  (Only for NFS mounts.)
+>>  .TP
+>>  .BR MNT_DETACH " (since Linux 2.4.11)"
+>> -Perform a lazy unmount: make the mount point unavailable for
+>> -new accesses, and actually perform the unmount when the mount point
+>> -ceases to be busy.
+>> +Perform a lazy unmount: make the mount point unavailable for new
+>> +accesses, immediately disconnect the filesystem and all filesystems
+>> +mounted below it from each other and from the mount table, and
+>> +actually perform the unmount when the mount point ceases to be busy.
+>
+> Want to add something like:
+>
+> MNT_DETACH on a shared mount will propagate unmount events to its peer
+> group.  That means that recursively bind mounting a shared mount and
+> then unmounting that recursive bind mount will unmount all submounts
+> of the original mount.  This behavior can be avoided by remounting a
+> directory with MS_REC | MS_PRIVATE before unmounting it.
 
-Okay, I will follow your advice.
+Make that any unmount on a shared mount that will propogate unmount
+events to it's peer group.
 
-Thanks,
+Eric
 
-BRs
-Xiubo
-
-
-
-
-> Thanks,
-> 
-> 	tglx
