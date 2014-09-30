@@ -1,67 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaI3WBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 18:01:46 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59882 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250AbaI3WAt (ORCPT
+	id S1751220AbaI3WCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 18:02:03 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52053 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302AbaI3WB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 18:00:49 -0400
-From: Omar Sandoval <osandov@osandov.com>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: David Sterba <dsterba@suse.cz>, Zach Brown <zab@zabbo.net>
-Subject: [PATCH v2 2/3] btrfs: fix sparse address space warnings
-Date: Tue, 30 Sep 2014 15:01:41 -0700
-Message-Id: <49ca3ccf1c2fd2091c6fbec1d14e393b95b0fff8.1412114127.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <cover.1412114127.git.osandov@osandov.com>
-References: <cover.1412114127.git.osandov@osandov.com>
-In-Reply-To: <cover.1412114127.git.osandov@osandov.com>
-References: <cover.1412114127.git.osandov@osandov.com>
+	Tue, 30 Sep 2014 18:01:59 -0400
+Message-ID: <542B2851.2050705@gmail.com>
+Date: Wed, 01 Oct 2014 00:01:53 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+To: David Miller <davem@davemloft.net>, antoine.tenart@free-electrons.com
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 00/10] ARM: Berlin: Ethernet support
+References: <1412087296-18475-1-git-send-email-antoine.tenart@free-electrons.com> <20140930.163735.2099691931550261883.davem@davemloft.net>
+In-Reply-To: <20140930.163735.2099691931550261883.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several casts of ioctl fields from userspace are missing the __user annotation.
+On 30.09.2014 22:37, David Miller wrote:
+> From: Antoine Tenart <antoine.tenart@free-electrons.com>
+> Date: Tue, 30 Sep 2014 16:28:06 +0200
+>
+>> This series introduce support for the Ethernet controller on Berlin SoCs,
+>> using the existing pxa168 Ethernet driver. In order to do this, DT
+>> support is added to the driver alongside some other modifications and
+>> fixes.
+>>
+>> This has been tested on a Berlin BG2Q DMP board.
+>
+> Applied to net-next, thanks.
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
-Reviewed-by: David Sterba <dsterba@suse.cz>
----
- fs/btrfs/ioctl.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+David,
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 8a8e298..0f9a5a1 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2176,7 +2176,7 @@ static noinline int btrfs_ioctl_tree_search_v2(struct file *file,
- 
- 	inode = file_inode(file);
- 	ret = search_ioctl(inode, &args.key, &buf_size,
--			   (char *)(&uarg->buf[0]));
-+			   (char __user *)(&uarg->buf[0]));
- 	if (ret == 0 && copy_to_user(&uarg->key, &args.key, sizeof(args.key)))
- 		ret = -EFAULT;
- 	else if (ret == -EOVERFLOW &&
-@@ -4247,7 +4247,7 @@ static long btrfs_ioctl_ino_to_path(struct btrfs_root *root, void __user *arg)
- 		ipath->fspath->val[i] = rel_ptr;
- 	}
- 
--	ret = copy_to_user((void *)(unsigned long)ipa->fspath,
-+	ret = copy_to_user((void __user *)(unsigned long)ipa->fspath,
- 			   (void *)(unsigned long)ipath->fspath, size);
- 	if (ret) {
- 		ret = -EFAULT;
-@@ -4322,7 +4322,7 @@ static long btrfs_ioctl_logical_to_ino(struct btrfs_root *root,
- 	if (ret < 0)
- 		goto out;
- 
--	ret = copy_to_user((void *)(unsigned long)loi->inodes,
-+	ret = copy_to_user((void __user *)(unsigned long)loi->inodes,
- 			   (void *)(unsigned long)inodes, size);
- 	if (ret)
- 		ret = -EFAULT;
--- 
-2.1.1
+usually I'd prefer to take the dts patches through berlin and arm-soc
+tree, _but_ as they are touching berlin stuff only I am fine with you
+taking them, too.
 
+Just to make sure how long I have to take care of potential merge
+issues, is your current net-next meant for v3.18 or v3.19?
+
+Sebastian
