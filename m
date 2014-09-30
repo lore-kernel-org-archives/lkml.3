@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaI3Hnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 03:43:52 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:60329 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbaI3Hnu (ORCPT
+	id S1755440AbaI3HoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 03:44:20 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:65187 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479AbaI3HoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 03:43:50 -0400
+	Tue, 30 Sep 2014 03:44:18 -0400
+Message-ID: <542A5F4D.8070407@linaro.org>
+Date: Tue, 30 Sep 2014 08:44:13 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CAFboF2yhGyjk4e_CHQV5b2WvB-QhsWNyHvFiFG_OM_=3-KArLQ@mail.gmail.com>
-References: <20140925120244.540.31506.stgit@dhcp-10-30-22-200.sw.ru>
-	<CA+55aFwfTeoCJDs6RJg++0SY=SsPrn7Y_Y0Ag_TsNvd6Vsj1Eg@mail.gmail.com>
-	<CAFboF2yhGyjk4e_CHQV5b2WvB-QhsWNyHvFiFG_OM_=3-KArLQ@mail.gmail.com>
-Date: Tue, 30 Sep 2014 09:43:49 +0200
-Message-ID: <CAJfpegv=aeOyz0osw9PD0abYHbJ+RjKkY3_mos+Cz1DbgTR-ww@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: handle release synchronously (v4)
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Anand Avati <avati@gluster.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Maxim Patlasov <MPatlasov@parallels.com>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Boyd <sboyd@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org
+CC: broonie@kernel.org, lee.jones@linaro.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, linux-arm-msm@vger.kernel.org,
+        bjorn.andersson@sonymobile.com
+Subject: Re: [PATCH 1/4] ARM: DT: apq8064: add rpm support
+References: <1411982044-7873-1-git-send-email-srinivas.kandagatla@linaro.org> <1411982092-7922-1-git-send-email-srinivas.kandagatla@linaro.org> <5429DA95.80505@codeaurora.org>
+In-Reply-To: <5429DA95.80505@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 7:33 AM, Anand Avati <avati@gluster.org> wrote:
 
-> In general that sounds reasonable. The problem (as described in the original
-> thread, at http://sourceforge.net/p/fuse/mailman/message/29889055/) happens
-> in the presence of dup(). Tools like dd (and others) call dup(), and a
-> second file descriptor is created for the same filp. Every descriptor's
-> close() results in a ->flush(). The final close() of course results in
-> ->release() as well.
+
+On 29/09/14 23:17, Stephen Boyd wrote:
+> On 09/29/14 02:14, Srinivas Kandagatla wrote:
+>> @@ -246,6 +247,24 @@
+>>   			#reset-cells = <1>;
+>>   		};
+>>
+>> +		apcs: syscon@2011000 {
+>> +			compatible = "syscon";
+>> +			reg = <0x2011000 0x1000>;
+>> +		};
 >
-> Because dup() is silently handled in VFS (and a FUSE filesystem is
-> completely unaware), from a FUSE filesystem's point of view this is how
-> operations look:
+> This is actually a clock controller block that hw designers decided was
+> good place to shove the ipc bits (because there's room!). Can we call it
 >
-> - OPEN
-> - ... <I/O ops>
-> - FLUSH
-> - ... <I/O ops>
-> - FLUSH
-> - ... <many more FLUSHes and I/O>
-> - FLUSH
-> - RELEASE
+>                  l2cc: clock-controller@2011000 {
+>                          compatible = "syscon";
+>                          reg = <0x2011000 0x1000>;
+>                  };
 >
-> So, for a given open(), one release() is guaranteed. There can be one or
-> more (arbitrary number) of flush()es. If one wants to implement semantics
-> where a second concurrent open()er gets EBUSY, they have to pick between one
-> of the two evils:
+yep, I will rename this in next version.
+
+> Eventually I'll add the specific krait compatible when we merge krait
+> clock support:
+sounds good.
+
+--srini
 >
-> - Assume the first FLUSH is the last FLUSH and release internal locks/leases
-> and therefore break semantics
-> - Wait for RELEASE and asynchronously release internal locks/leases and
-> therefore result in spurious EBUSY (between last close() and ->release())
-
-As I wrote, we may identify the last FLUSH, if there aren't any more
-references to the file.  This is by far the most common case.   Most
-obvious exceptions:
-
- - mmaped file: there won't be a FLUSH after the file is closed, but
-there might well be I/O.
-
- - file is sent over UNIX domain socket.  There might or might not be
-a FLUSH depending on whether the file was received by the other end or
-not.  There's no I/O while the file is being sent.
-
- - close() racing with read()/write() in multithreaded app.  FLUSH
-might get there first before the actual I/O.
-
-In these cases the "last flush" flag will *not* be set.
-
-So we can have several cases:
-
- - "last flush" is set: this is indeed the last flush
- - "last flush" is not set and this is not the last flush
- - "last flush" is not set and this is the last flush, but there are
-still I/O coming before the release
- - "last flush" is not set and this is the last flush and no I/O
-happens before the release
-
-Would this work for you?
-
-Thanks,
-Miklos
+>                  l2cc: clock-controller@2011000 {
+>                          compatible = "qcom,kpss-gcc", "syscon";
+>                          reg = <0x2011000 0x1000>;
+>                          clock-output-names = "acpu_l2_aux";
+>                  };
+>
+>> +
+>> +		rpm@108000 {
+>> +			compatible	= "qcom,rpm-apq8064";
+>> +			reg		= <0x108000 0x1000>;
+>> +			qcom,ipc = <&apcs 0x8 2>;
+>
+> There are actually 3 ipc bits. I guess if we ever have to use the other
+> two we'll extend this binding to have the other bits specified some
+> other way?
+>
