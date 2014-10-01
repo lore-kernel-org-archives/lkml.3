@@ -1,52 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaJALRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:17:01 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26986 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaJALRA (ORCPT
+	id S1751580AbaJALR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:17:26 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:45914 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaJALRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:17:00 -0400
-Message-ID: <542BE27B.6040006@oracle.com>
-Date: Wed, 01 Oct 2014 07:16:11 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 1 Oct 2014 07:17:24 -0400
+Message-ID: <542BE2BA.1020407@linaro.org>
+Date: Wed, 01 Oct 2014 20:17:14 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Cong Wang <cwang@twopensource.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-References: <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu> <20140910083136.GP6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu> <541059C9.1040200@oracle.com> <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu> <20140910143306.GD4783@worktop.ger.corp.intel.com> <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu> <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com> <542789E5.7090805@oracle.com> <20140930172308.GI4241@worktop.programming.kicks-ass.net>
-In-Reply-To: <20140930172308.GI4241@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252
+To: Vijay Kilari <vijay.kilari@gmail.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>,
+        linux-kernel@vger.kernel.org, Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC v2] arm64: kgdb: fix single stepping
+References: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org> <CALicx6vxZOh44apx4+s5pkTnmVeXzqvxys_8QempVLbKu3h=oQ@mail.gmail.com>
+In-Reply-To: <CALicx6vxZOh44apx4+s5pkTnmVeXzqvxys_8QempVLbKu3h=oQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 01:23 PM, Peter Zijlstra wrote:
-> How about this then?
-> 
-> ---
-> Subject: perf: Fix unclone_ctx() vs locking
-> 
-> The idiot who did 4a1c0f262f88 forgot to pay attention and fix all
-> similar cases. Do so now.
-> 
-> In particular, unclone_ctx() must be called while holding ctx->lock,
-> therefore all such sites are broken for the same reason. Pull the
-> put_ctx() call out from under ctx->lock.
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Fixes: 4a1c0f262f88 ("perf: Fix lockdep warning on process exit")
-> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Vijay,
 
-Looks good! The issue didn't reproduce anymore.
+Have you verified your code in mainline on real hardware?
+
+On 09/29/2014 08:58 PM, Vijay Kilari wrote:
+> Hi Akashi,
+>
+> On Fri, Sep 26, 2014 at 5:24 PM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+>> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
+>> the single stepping with kgdb doesn't work correctly since its first
+>> appearance at v3.15.
+>>
+>> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
+>> steps forward to the next instruction, but the succeeding 'stepi' never
+>> goes beyond that.
+>> On v3.16, 'stepi' moves forward and stops at the next instruction just
+>> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
+>> behavior seems to come in with the following patch in v3.16:
+>>
+>>      commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
+>>      paths where possible")
+>>
+>> This patch
+>> (1) moves kgdb_disable_single_step() from 'c' command handling to single
+>>      step handler.
+>>      This makes sure that single stepping gets effective at every 's' command.
+>>      Please note that, under the current implementation, single step bit in
+>>      spsr, which is cleared by the first single stepping, will not be set
+>>      again for the consecutive 's' commands because single step bit in mdscr
+>>      is still kept on (that is, kernel_active_single_step() in
+>>      kgdb_arch_handle_exception() is true).
+>
+> Have you please check the functionality by running KGDB test suit
+> with multicores?
+
+I only tested my patch on fast model with multicore configuration.
+
+>> (2) removes 'enable_dbg' in el1_dbg.
+>>      Single step bit in mdscr is turned on in do_handle_exception()->
+>>      kgdb_handle_expection() before returning to debugged context, and if
+>>      debug exception is enabled in el1_dbg, we will see unexpected single-
+>>      stepping in el1_dbg.
+>> (3) masks interrupts while single-stepping one instruction.
+>>      If an interrupt is caught during processing a single-stepping, debug
+>>      exception is unintentionally enabled by el1_irq's 'enable_dbg' before
+>>      returning to debugged context.
+>>      Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+>>
+>> Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
+>>
+>> With those changes, we will see another problem if a breakpoint is set
+>> at interrupt-sensible places, like gic_handle_irq():
+>>
+>>      KGDB: re-enter error: breakpoint removed ffffffc000081258
+>>      ------------[ cut here ]------------
+>>      WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
+>>                                          kgdb_handle_exception+0x1dc/0x1f4()
+>>      Modules linked in:
+>>      CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
+>>      Call trace:
+>>      [<ffffffc000087fac>] dump_backtrace+0x0/0x130
+>>      [<ffffffc0000880ec>] show_stack+0x10/0x1c
+>>      [<ffffffc0004d683c>] dump_stack+0x74/0xb8
+>>      [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
+>>      [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
+>>      [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
+>>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>      Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
+>>      ...
+>>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>      [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
+>>      [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
+>>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>      Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
+>>      ...
+>>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>      [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
+>>      [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
+>>      [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
+>>      [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
+>>      [<ffffffc0001939b0>] SyS_write+0x40/0xa0
+>>
+>> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
+>> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
+>> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
+>> use smp_call_function().
+>> This eventually allows another interrupt to occur and likely results in
+>> hitting a breakpoint at gic_handle_irq() again since debug exception is
+>> always enabled in el1_irq.
+>>
+>> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
+>> but this will also leave other cpus be in unknown state in terms of kgdb,
+>> and may result in interfering with kgdb activity.
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/kernel/entry.S |    1 -
+>>   arch/arm64/kernel/kgdb.c  |   29 +++++++++++++++++++----------
+>>   2 files changed, 19 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+>> index fdd6eae..a935d5f 100644
+>> --- a/arch/arm64/kernel/entry.S
+>> +++ b/arch/arm64/kernel/entry.S
+>> @@ -325,7 +325,6 @@ el1_dbg:
+>>          mrs     x0, far_el1
+>>          mov     x2, sp                          // struct pt_regs
+>>          bl      do_debug_exception
+>> -       enable_dbg
+>>          kernel_exit 1
+>>   el1_inv:
+>>          // TODO: add support for undefined instructions in kernel mode
+>> diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
+>> index 75c9cf1..f1fc1d8 100644
+>> --- a/arch/arm64/kernel/kgdb.c
+>> +++ b/arch/arm64/kernel/kgdb.c
+>> @@ -22,6 +22,7 @@
+>>   #include <linux/irq.h>
+>>   #include <linux/kdebug.h>
+>>   #include <linux/kgdb.h>
+>> +#include <asm/percpu.h>
+>>   #include <asm/traps.h>
+>>
+>>   struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+>> @@ -95,6 +96,8 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+>>          { "fpcr", 4, -1 },
+>>   };
+>>
+>> +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
+>> +
+>>   char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+>>   {
+>>          if (regno >= DBG_MAX_REG_NUM || regno < 0)
+>> @@ -176,18 +179,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>>                   * over and over again.
+>>                   */
+>>                  kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+>> -               atomic_set(&kgdb_cpu_doing_single_step, -1);
+>> -               kgdb_single_step =  0;
+>> -
+>> -               /*
+>> -                * Received continue command, disable single step
+>> -                */
+>> -               if (kernel_active_single_step())
+>> -                       kernel_disable_single_step();
+>>
+>>                  err = 0;
+>>                  break;
+>>          case 's':
+>> +               /* mask interrupts while single stepping */
+>> +               __this_cpu_write(kgdb_pstate, linux_regs->pstate);
+>> +               linux_regs->pstate |= (1 << 7);
+>
+> Hard coded values.
+
+Yes, but this is a RFC.
+
+>> +
+>>                  /*
+>>                   * Update step address value with address passed
+>>                   * with step packet.
+>> @@ -198,8 +197,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>>                   */
+>>                  kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+>>                  atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
+>> -               kgdb_single_step =  1;
+>
+> why kgdb_single_step is not set?
+
+I know what you mean, but
+I never see differences at least on fast model.
+In addition, I'm wondering why other major archs, including x86, don't care this variable.
 
 
-Thanks,
-Sasha
+>> -
+>>                  /*
+>>                   * Enable single step handling
+>>                   */
+>> @@ -229,6 +226,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
+>>
+>>   static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
+>>   {
+>> +       unsigned int pstate;
+>> +
+>> +       kernel_disable_single_step();
+>> +       atomic_set(&kgdb_cpu_doing_single_step, -1);
+>> +
+>> +       /* restore interrupt mask status */
+>> +       pstate = __this_cpu_read(kgdb_pstate);
+>> +       if (pstate & (1 << 7))
+>> +               regs->pstate |= (1 << 7);
+>> +       else
+>> +               regs->pstate &= ~(1 << 7);
+>> +
+> Same as above comment
+>
+>>          kgdb_handle_exception(1, SIGTRAP, 0, regs);
+>>          return 0;
+>>   }
+>> --
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
