@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaJAU66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:58:58 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:36928 "EHLO mail.ispras.ru"
+	id S1752100AbaJAVAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:00:09 -0400
+Received: from plane.gmane.org ([80.91.229.3]:50832 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaJAU64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:58:56 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, dm-devel@redhat.com,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] dm-log-userspace: fix memory leak on failure path in dm_ulog_tfr_init()
-Date: Wed,  1 Oct 2014 22:58:35 +0200
-Message-Id: <1412197115-32593-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1751268AbaJAVAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 17:00:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Dominik Kopp <my@kabelfunk.de>
+Subject: Re: [BISECTED] (?) since 3.16: USB video cam of an HP Pavilion dv7 laptop not working
+Date: Wed, 01 Oct 2014 22:51:15 +0200
+Message-ID: <m0hpg3$5ih$1@ger.gmane.org>
+References: <540DC871.7040901@web.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8Bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: pd952759f.dip0.t-ipconnect.de
+User-Agent: KNode/4.11.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
-deallocate prealloced memory but calls cn_del_callback().
-It looks like a misprint.
+Jörg-Volker Peetz wrote:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> Since 3.16 the builtin USB video cam of an HP Pavilion dv7 laptop shows
+> only a black screen with the application guvcview although the video LED
+> is turned on. There is no hint in dmesg. Also the output of guvcview shows
+> no conspicuousness.
+> 
+> With kernel version 3.15.9 the camera works.
+> 
+> I tried to bisect between good v3.15 and bad v3.16, which identified
+> 
+> commit 9262c19d14c433a6a1ba25c3ff897cb89e412309
+...
+> 
+> Thanks for any help,
+> Jörg-Volker.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/md/dm-log-userspace-transfer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+please have a look at
+https://bugzilla.kernel.org/show_bug.cgi?id=81611
 
-diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-index b428c0ae63d5..39ad9664d397 100644
---- a/drivers/md/dm-log-userspace-transfer.c
-+++ b/drivers/md/dm-log-userspace-transfer.c
-@@ -272,7 +272,7 @@ int dm_ulog_tfr_init(void)
- 
- 	r = cn_add_callback(&ulog_cn_id, "dmlogusr", cn_ulog_callback);
- 	if (r) {
--		cn_del_callback(&ulog_cn_id);
-+		kfree(prealloced_cn_msg);
- 		return r;
- 	}
- 
--- 
-1.9.1
+Due to a change in the driver, guvcview won't work with kernel 3.16.
+You have to revert up to two kernel commits or use the latest version of 
+guvcview (git version >2.0.0)
+
+regards
+Dominik Kopp
 
