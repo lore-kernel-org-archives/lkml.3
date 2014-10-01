@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaJACci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 22:32:38 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:43296 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaJACcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 22:32:36 -0400
-Message-ID: <542B67C1.9080303@gmail.com>
-Date: Tue, 30 Sep 2014 22:32:33 -0400
-From: Daniel Micay <danielmicay@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751837AbaJACft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 22:35:49 -0400
+Received: from muin.pair.com ([209.68.1.55]:59863 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaJACfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 22:35:48 -0400
+Message-ID: <542B6882.9060801@tabi.org>
+Date: Tue, 30 Sep 2014 21:35:46 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29.1
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Evans <jasone@canonware.com>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v3] mm: add mremap flag for preserving the old mapping
-References: <1412052900-1722-1-git-send-email-danielmicay@gmail.com> <CALCETrX6D7X7zm3qCn8kaBtYHCQvdR06LAAwzBA=1GteHAaLKA@mail.gmail.com> <542A79AF.8060602@gmail.com> <CALCETrVHgvhAN3neoOpJEk94uM7QKm2izZpp+=1UA6qieaQiTQ@mail.gmail.com>
-In-Reply-To: <CALCETrVHgvhAN3neoOpJEk94uM7QKm2izZpp+=1UA6qieaQiTQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Scott Wood <scottwood@freescale.com>
+CC: "J. German Rivera" <German.Rivera@freescale.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        stuart.yoder@freescale.com, Kim Phillips <Kim.Phillips@freescale.com>,
+        Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH 3/3 v2] drivers/bus: Device driver for FSL-MC DPRC devices
+References: <1411166981-3610-1-git-send-email-German.Rivera@freescale.com>	 <1411166981-3610-4-git-send-email-German.Rivera@freescale.com>	 <CAOZdJXWqpPypHg1iw7Tg-d=2g=+qnHh-=BK_9_yJKzpooe0+YQ@mail.gmail.com> <1412130432.13320.342.camel@snotra.buserror.net>
+In-Reply-To: <1412130432.13320.342.camel@snotra.buserror.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/09/14 01:49 PM, Andy Lutomirski wrote:
-> 
-> I think it might pay to add an explicit vm_op to authorize
-> duplication, especially for non-cow mappings.  IOW this kind of
-> extension seems quite magical for anything that doesn't have the
-> normal COW semantics, including for plain old read-only mappings.
+Scott Wood wrote:
+>>> > >+       if (num_child_objects_in_mc != 0) {
+>> >
+>> >Like here.  Just do "if (num_child_objects_in_mc) {"
 
-This sounds like the best way forwards.
+> This seems to be a place that is testing for zero as a value rather than
+> as a stand-in for NULL, so I'd argue it's better style to leave it as
+> is.
 
-Setting up the op for private, anonymous mappings and having it check
-vm_flags & VM_WRITE dynamically seems like it would be enough for the
-intended use case in general purpose allocators. It can be extended to
-other mapping types later if there's a compelling use case.
+But in this case, zero means "none left", so this is a perfectly valid 
+use-case for omitting the !=.
+
+strcmp() is the only time I can think of to put an explicit != 0, 
+because this:
+
+	if (!strcmp(s1, s2))
+
+is counter-intuitive.
