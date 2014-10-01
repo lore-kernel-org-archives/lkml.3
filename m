@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaJAXHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 19:07:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49701 "EHLO mx1.redhat.com"
+	id S1753820AbaJAXHP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 19:07:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31802 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417AbaJAXHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 19:07:16 -0400
+	id S1752984AbaJAXHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 19:07:13 -0400
 From: Andy Grover <agrover@redhat.com>
 To: target-devel@vger.kernel.org
 Cc: linux-scsi@vger.kernel.org, hch@lst.de, nab@linux-iscsi.org,
         shli@kernel.org, linux-kernel@vger.kernel.org, rjones@redhat.com
-Subject: [PATCHv2 1/4] target: Remove unneeded check in sbc_parse_cdb
-Date: Wed,  1 Oct 2014 16:07:02 -0700
-Message-Id: <1412204825-13292-2-git-send-email-agrover@redhat.com>
-In-Reply-To: <1412204825-13292-1-git-send-email-agrover@redhat.com>
-References: <1412204825-13292-1-git-send-email-agrover@redhat.com>
+Subject: [PATCHv2 0/4] Userspace Passthrough backstore for LIO
+Date: Wed,  1 Oct 2014 16:07:01 -0700
+Message-Id: <1412204825-13292-1-git-send-email-agrover@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The check of SCF_SCSI_DATA_CDB seems to be a remnant from before hch's
-refactoring of this function. There are no places where that flag is set
-that cmd->execute_cmd isn't also set.
+Hi Nick and all,
 
-Signed-off-by: Andy Grover <agrover@redhat.com>
----
- drivers/target/target_core_sbc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Here's version 2, against Nick's target-pending/for-next. Note that
+since that tree is still on 3.17-rc5, in testing I ran into an issue
+fixed by:
 
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index bd78d92..ebe62af 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -948,7 +948,7 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
- 	}
- 
- 	/* reject any command that we don't have a handler for */
--	if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) && !cmd->execute_cmd)
-+	if (!cmd->execute_cmd)
- 		return TCM_UNSUPPORTED_SCSI_OPCODE;
- 
- 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) {
+genhd: fix leftover might_sleep() in blk_free_devt()
+
+which first appears in 3.17-rc7.
+
+Incorporates feedback from Nick.
+
+Doc fixes
+* add table of contents
+* add example code for the user-side
+* document specific opcodes that IO mode passes through
+
+Code fixes
+* add back support for PASS_ALL and PASS_IO pass_level option.
+* Removed retry-in-kernel mechanism
+* fix issues from kbuild test robot
+* remove kref from tcmu_dev and call kfree(udev) from tcmu_free_device
+  instead
+* set hw_block_size to 512 instead of 4096
+* Don't copy DMA_FROM_DEVICE data if there was a CHECK_CONDITION
+* use goto-style error handling in tcmu_configure_device
+* Check retval from genlmsg_multicast and ignore -ESRCH
+* properly handle if device is unconfigured in tcmu_free_device
+
+Thanks -- Andy
+
+Andy Grover (4):
+  target: Remove unneeded check in sbc_parse_cdb
+  uio: Export definition of struct uio_device
+  target: Add documentation on the target userspace pass-through driver
+  target: Add a user-passthrough backstore
+
+ Documentation/target/tcmu-design.txt   |  378 +++++++++++
+ drivers/target/Kconfig                 |    5 +
+ drivers/target/Makefile                |    1 +
+ drivers/target/target_core_sbc.c       |    2 +-
+ drivers/target/target_core_transport.c |    4 +
+ drivers/target/target_core_user.c      | 1163 ++++++++++++++++++++++++++++++++
+ drivers/uio/uio.c                      |   12 -
+ include/linux/uio_driver.h             |   12 +-
+ include/uapi/linux/Kbuild              |    1 +
+ include/uapi/linux/target_core_user.h  |  142 ++++
+ 10 files changed, 1706 insertions(+), 14 deletions(-)
+ create mode 100644 Documentation/target/tcmu-design.txt
+ create mode 100644 drivers/target/target_core_user.c
+ create mode 100644 include/uapi/linux/target_core_user.h
+
 -- 
 1.9.3
 
