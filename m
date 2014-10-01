@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaJAOZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:25:30 -0400
-Received: from mailout.micron.com ([137.201.242.129]:37222 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaJAOZ2 (ORCPT
+	id S1751825AbaJAO05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:26:57 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:37132 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaJAO04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:25:28 -0400
-From: =?utf-8?B?QmVhbiBIdW8g6ZyN5paM5paMIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: Marek Vasut <marex@denx.de>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "shijie8@gmail.com" <shijie8@gmail.com>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
-Thread-Index: AQHP3LUw1IjYD2GBJkeXO7FbBzOymJwbScBQ
-Date: Wed, 1 Oct 2014 14:24:41 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315E3D3F@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
- <201409261046.07132.marex@denx.de>
- <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
- <201409301538.40466.marex@denx.de>
-In-Reply-To: <201409301538.40466.marex@denx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20988.004
-x-tm-as-result: No--34.313800-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="utf-8"
+	Wed, 1 Oct 2014 10:26:56 -0400
 MIME-Version: 1.0
+Date: Wed, 1 Oct 2014 22:26:55 +0800
+Message-ID: <CAHkaATTho2U=cy8Ee0BD2oSp=4Vpb0GhTqUzEOCW0Jdw8u0ENw@mail.gmail.com>
+Subject: [PATCH] Use phys_addr_t type for physical address (arm64)
+From: Min-Hua Chen <orca.chen@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s91EPYr6031033
 
->> For Micron spi norflash,enables or disables quad I/O protocol ,which 
->> controled by EVCR(Enhanced Volatile Configuration Register) Quad I/O 
->> protocol bit 7.When EVCR bit 7 is reset to 0, the spi norflash will 
->> operate in quad I/O following the next WRITE ENHANCED VOLATILE 
->> CONFIGURATION command.
+Hi,
 
->You only do one WRITE ENHANCED VOLATILE CONFIGURATION command in the patch, so this text doesn't add up.
+I found that valid_phys_addr_range does not use
+phys_addr_t to describe physical address.
+Is it better to change the type from unsigned long to phys_addr_t?
 
->Try something like this:
->-->8--
->This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+Thanks,
+Min-Hua
 
->For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controled by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7. When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
->--8<--
 
->What do you think ?
-Perfect,I will modify my commit message and sumbit it again.thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Signed-off-by: Min-Hua Chen<orca.chen@gmail.com>
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index e0ecdcf..f771e8b 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -243,7 +243,7 @@ extern void __iomem *ioremap_cache(phys_addr_t
+phys_addr, size_t size);
+  * (PHYS_OFFSET and PHYS_MASK taken into account).
+  */
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+-extern int valid_phys_addr_range(unsigned long addr, size_t size);
++extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+ extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+
+ extern int devmem_is_allowed(unsigned long pfn);
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+index 8ed6cb1..1d73662 100644
+--- a/arch/arm64/mm/mmap.c
++++ b/arch/arm64/mm/mmap.c
+@@ -102,7 +102,7 @@ EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
+  * You really shouldn't be using read() or write() on /dev/mem.  This might go
+  * away in the future.
+  */
+-int valid_phys_addr_range(unsigned long addr, size_t size)
++int valid_phys_addr_range(phys_addr_t addr, size_t size)
+ {
+     if (addr < PHYS_OFFSET)
+         return 0;
+-- 
+1.7.10.4
