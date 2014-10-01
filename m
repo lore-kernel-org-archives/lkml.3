@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041AbaJAOgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:36:48 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41168 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaJAOgk (ORCPT
+	id S1752081AbaJAOgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:36:54 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:50751 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056AbaJAOgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:36:40 -0400
+	Wed, 1 Oct 2014 10:36:51 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
@@ -14,11 +14,11 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Andi Kleen <andi@firstfloor.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v2 02/11] perf tools: Refactor unit and scale function parameters
-Date: Wed,  1 Oct 2014 15:36:23 +0100
-Message-Id: <1412174192-7010-3-git-send-email-matt@console-pimps.org>
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 07/11] x86: Add support for Intel Cache QoS Monitoring (CQM) detection
+Date: Wed,  1 Oct 2014 15:36:28 +0100
+Message-Id: <1412174192-7010-8-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
 References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
@@ -26,183 +26,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 
-Passing pointers to alias modifiers 'unit' and 'scale' isn't very
-future-proof since if we add more modifiers to the list we'll end up
-passing more arguments.
+This patch adds support for the new Cache QoS Monitoring (CQM)
+feature found in future Intel Xeon processors.  It includes the
+new values to track CQM resources to the cpuinfo_x86 structure,
+plus the CPUID detection routines for CQM.
 
-Instead wrap everything up in a struct perf_pmu_info, which can easily
-be expanded when additional alias modifiers are necessary in the future.
+CQM allows a process, or set of processes, to be tracked by the CPU
+to determine the cache usage of that task group.  Using this data
+from the CPU, software can be written to extract this data and
+report cache usage and occupancy for a particular process, or
+group of processes.
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
+More information about Cache QoS Monitoring can be found in the
+Intel (R) x86 Architecture Software Developer Manual, section 17.14.
+
+Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
+ arch/x86/include/asm/cpufeature.h |  9 ++++++++-
+ arch/x86/include/asm/processor.h  |  3 +++
+ arch/x86/kernel/cpu/common.c      | 39 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+), 1 deletion(-)
 
-Changes in v2:
- - Added Jiri's ACK
-
- tools/perf/util/parse-events.c |  9 ++++-----
- tools/perf/util/pmu.c          | 38 +++++++++++++++++++++++---------------
- tools/perf/util/pmu.h          |  7 ++++++-
- 3 files changed, 33 insertions(+), 21 deletions(-)
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 61be3e695ec2..9522cf22ad81 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -634,10 +634,9 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 			 char *name, struct list_head *head_config)
- {
- 	struct perf_event_attr attr;
-+	struct perf_pmu_info info;
- 	struct perf_pmu *pmu;
- 	struct perf_evsel *evsel;
--	const char *unit;
--	double scale;
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index bb9b258d60e7..dfc795ec3320 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -8,7 +8,7 @@
+ #include <asm/required-features.h>
+ #endif
  
- 	pmu = perf_pmu__find(name);
- 	if (!pmu)
-@@ -656,7 +655,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 		return evsel ? 0 : -ENOMEM;
+-#define NCAPINTS	11	/* N 32-bit words worth of info */
++#define NCAPINTS	13	/* N 32-bit words worth of info */
+ #define NBUGINTS	1	/* N 32-bit bug flags */
+ 
+ /*
+@@ -215,6 +215,7 @@
+ #define X86_FEATURE_ERMS	( 9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+ #define X86_FEATURE_INVPCID	( 9*32+10) /* Invalidate Processor Context ID */
+ #define X86_FEATURE_RTM		( 9*32+11) /* Restricted Transactional Memory */
++#define X86_FEATURE_CQM		( 9*32+12) /* Cache QoS Monitoring */
+ #define X86_FEATURE_MPX		( 9*32+14) /* Memory Protection Extension */
+ #define X86_FEATURE_AVX512F	( 9*32+16) /* AVX-512 Foundation */
+ #define X86_FEATURE_RDSEED	( 9*32+18) /* The RDSEED instruction */
+@@ -231,6 +232,12 @@
+ #define X86_FEATURE_XGETBV1	(10*32+ 2) /* XGETBV with ECX = 1 */
+ #define X86_FEATURE_XSAVES	(10*32+ 3) /* XSAVES/XRSTORS */
+ 
++/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:0 (edx), word 11 */
++#define X86_FEATURE_CQM_LLC	(11*32+ 1) /* LLC QoS if 1 */
++
++/* Intel-defined CPU QoS Sub-leaf, CPUID level 0x0000000F:1 (edx), word 12 */
++#define X86_FEATURE_CQM_OCCUP_LLC (12*32+ 0) /* LLC occupancy monitoring if 1 */
++
+ /*
+  * BUG word(s)
+  */
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index eb71ec794732..2c3a46af3334 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -109,6 +109,9 @@ struct cpuinfo_x86 {
+ 	/* in KB - valid for CPUS which support this call: */
+ 	int			x86_cache_size;
+ 	int			x86_cache_alignment;	/* In bytes */
++	/* Cache QoS architectural values: */
++	int			x86_cache_max_rmid;	/* max index */
++	int			x86_cache_occ_scale;	/* scale to bytes */
+ 	int			x86_power;
+ 	unsigned long		loops_per_jiffy;
+ 	/* cpuid returned max cores value: */
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e4ab2b42bd6f..4e00b578ea2a 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -642,6 +642,30 @@ void get_cpu_cap(struct cpuinfo_x86 *c)
+ 		c->x86_capability[10] = eax;
  	}
  
--	if (perf_pmu__check_alias(pmu, head_config, &unit, &scale))
-+	if (perf_pmu__check_alias(pmu, head_config, &info))
- 		return -EINVAL;
- 
- 	/*
-@@ -671,8 +670,8 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	evsel = __add_event(list, idx, &attr, pmu_event_name(head_config),
- 			    pmu->cpus);
- 	if (evsel) {
--		evsel->unit = unit;
--		evsel->scale = scale;
-+		evsel->unit = info.unit;
-+		evsel->scale = info.scale;
- 	}
- 
- 	return evsel ? 0 : -ENOMEM;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 22a4ad5a927a..93a41ca96b8e 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -210,6 +210,19 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	return 0;
++	/* Additional Intel-defined flags: level 0x0000000F */
++	if (c->cpuid_level >= 0x0000000F) {
++		u32 eax, ebx, ecx, edx;
++
++		/* QoS sub-leaf, EAX=0Fh, ECX=0 */
++		cpuid_count(0x0000000F, 0, &eax, &ebx, &ecx, &edx);
++		c->x86_capability[11] = edx;
++		if (cpu_has(c, X86_FEATURE_CQM_LLC)) {
++			/* will be overridden if occupancy monitoring exists */
++			c->x86_cache_max_rmid = ebx;
++
++			/* QoS sub-leaf, EAX=0Fh, ECX=1 */
++			cpuid_count(0x0000000F, 1, &eax, &ebx, &ecx, &edx);
++			c->x86_capability[12] = edx;
++			if (cpu_has(c, X86_FEATURE_CQM_OCCUP_LLC)) {
++				c->x86_cache_max_rmid = ecx;
++				c->x86_cache_occ_scale = ebx;
++			}
++		} else {
++			c->x86_cache_max_rmid = -1;
++			c->x86_cache_occ_scale = -1;
++		}
++	}
++
+ 	/* AMD-defined flags: level 0x80000001 */
+ 	xlvl = cpuid_eax(0x80000000);
+ 	c->extended_cpuid_level = xlvl;
+@@ -830,6 +854,20 @@ static void generic_identify(struct cpuinfo_x86 *c)
+ 	detect_nopl(c);
  }
  
-+static inline bool pmu_alias_info_file(char *name)
++static void x86_init_cache_qos(struct cpuinfo_x86 *c)
 +{
-+	size_t len;
-+
-+	len = strlen(name);
-+	if (len > 5 && !strcmp(name + len - 5, ".unit"))
-+		return true;
-+	if (len > 6 && !strcmp(name + len - 6, ".scale"))
-+		return true;
-+
-+	return false;
++	/*
++	 * The heavy lifting of max_rmid and cache_occ_scale are handled
++	 * in get_cpu_cap().  Here we just set the max_rmid for the boot_cpu
++	 * in case CQM bits really aren't there in this CPU.
++	 */
++	if (c != &boot_cpu_data) {
++		boot_cpu_data.x86_cache_max_rmid =
++			min(boot_cpu_data.x86_cache_max_rmid,
++			    c->x86_cache_max_rmid);
++	}
 +}
 +
  /*
-  * Process all the sysfs attributes located under the directory
-  * specified in 'dir' parameter.
-@@ -218,7 +231,6 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- {
- 	struct dirent *evt_ent;
- 	DIR *event_dir;
--	size_t len;
- 	int ret = 0;
- 
- 	event_dir = opendir(dir);
-@@ -234,13 +246,9 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- 			continue;
- 
- 		/*
--		 * skip .unit and .scale info files
--		 * parsed in perf_pmu__new_alias()
-+		 * skip info files parsed in perf_pmu__new_alias()
- 		 */
--		len = strlen(name);
--		if (len > 5 && !strcmp(name + len - 5, ".unit"))
--			continue;
--		if (len > 6 && !strcmp(name + len - 6, ".scale"))
-+		if (pmu_alias_info_file(name))
- 			continue;
- 
- 		snprintf(path, PATH_MAX, "%s/%s", dir, name);
-@@ -645,7 +653,7 @@ static int check_unit_scale(struct perf_pmu_alias *alias,
-  * defined for the alias
+  * This does the hard work of actually picking apart the CPU stuff...
   */
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
--			  const char **unit, double *scale)
-+			  struct perf_pmu_info *info)
- {
- 	struct parse_events_term *term, *h;
- 	struct perf_pmu_alias *alias;
-@@ -655,8 +663,8 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 	 * Mark unit and scale as not set
- 	 * (different from default values, see below)
- 	 */
--	*unit   = NULL;
--	*scale  = 0.0;
-+	info->unit   = NULL;
-+	info->scale  = 0.0;
+@@ -919,6 +957,7 @@ static void identify_cpu(struct cpuinfo_x86 *c)
  
- 	list_for_each_entry_safe(term, h, head_terms, list) {
- 		alias = pmu_find_alias(pmu, term);
-@@ -666,7 +674,7 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 		if (ret)
- 			return ret;
+ 	init_hypervisor(c);
+ 	x86_init_rdrand(c);
++	x86_init_cache_qos(c);
  
--		ret = check_unit_scale(alias, unit, scale);
-+		ret = check_unit_scale(alias, &info->unit, &info->scale);
- 		if (ret)
- 			return ret;
- 
-@@ -679,11 +687,11 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 	 * set defaults as for evsel
- 	 * unit cannot left to NULL
- 	 */
--	if (*unit == NULL)
--		*unit   = "";
-+	if (info->unit == NULL)
-+		info->unit   = "";
- 
--	if (*scale == 0.0)
--		*scale  = 1.0;
-+	if (info->scale == 0.0)
-+		info->scale  = 1.0;
- 
- 	return 0;
- }
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 0f5c0a88fdc8..fe90a012c003 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -25,6 +25,11 @@ struct perf_pmu {
- 	struct list_head list;    /* ELEM */
- };
- 
-+struct perf_pmu_info {
-+	const char *unit;
-+	double scale;
-+};
-+
- struct perf_pmu *perf_pmu__find(const char *name);
- int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
- 		     struct list_head *head_terms);
-@@ -33,7 +38,7 @@ int perf_pmu__config_terms(struct list_head *formats,
- 			   struct list_head *head_terms,
- 			   bool zero);
- int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
--			  const char **unit, double *scale);
-+			  struct perf_pmu_info *info);
- struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
- 				  struct list_head *head_terms);
- int perf_pmu_wrap(void);
+ 	/*
+ 	 * Clear/Set all flags overriden by options, need do it
 -- 
 1.9.3
 
