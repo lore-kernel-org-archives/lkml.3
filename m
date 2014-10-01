@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319AbaJAHEH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 03:04:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27954 "EHLO mga09.intel.com"
+	id S1751514AbaJAHEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 03:04:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:43356 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaJAHEE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 03:04:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,630,1406617200"; 
-   d="scan'208";a="581710439"
-From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
-To: "'Bryan O'Donoghue'" <pure.logic@nexus-software.ie>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "davej@redhat.com" <davej@redhat.com>,
-        "hmh@hmh.eng.br" <hmh@hmh.eng.br>
-Subject: RE: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
-Thread-Topic: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
-Thread-Index: AQHP3Qgt8nUkJSPpX0ShwZdRTguIcJwa0EDA
-Date: Wed, 1 Oct 2014 06:59:42 +0000
-Message-ID: <AF233D1473C1364ABD51D28909A1B1B73259F8F5@pgsmsx105.gar.corp.intel.com>
-References: <1412120517-14738-1-git-send-email-pure.logic@nexus-software.ie>
- <1412120517-14738-3-git-send-email-pure.logic@nexus-software.ie>
-In-Reply-To: <1412120517-14738-3-git-send-email-pure.logic@nexus-software.ie>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750925AbaJAHET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 03:04:19 -0400
+Date: Wed, 1 Oct 2014 17:04:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20141001170403.7a319458@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/s1LlBwVLeXabUhepYtuqBvK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Bryan O'Donoghue
-> Sent: Wednesday, October 01, 2014 7:42 AM
-> To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> davej@redhat.com; hmh@hmh.eng.br
-> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Bryan O'Donoghue
-> Subject: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
-> 
-> Quark X1000 requires CR3 to be rewritten to flush TLB entries irrespective of
-> the PGE bits in CR4 or PTE.PGE
-> 
-> Add a comment to setup_arch to indicate that the code
-> 
-> load_cr3(swapper_pg_dir);
-> __flush_tlb_all();
-> 
-> Will already have flushed the TLB @ the CR3 reload allowing us to skip over a
-> potential if/else for Quark.
-> 
-> This comment clearly states the bug, the behaviour we rely on and the reason
-> why we only do it this way - one time.
-> 
-> Later on cpu_has_pge() will be false due to a fixup in
-> intel_init_early() and __flush_tlb_all() will work as expected from that point
-> onwards
+--Sig_/s1LlBwVLeXabUhepYtuqBvK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-s/intel_init_early/early_init_intel
+Hi all,
 
+After merging the net-next tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit_=
+done':
+drivers/net/ethernet/xilinx/ll_temac_main.c:633:22: warning: cast to pointe=
+r from integer of different size [-Wint-to-pointer-cast]
+    dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
+                      ^
+drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c: In function 'fm10k_set_ri=
+ngparam':
+drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:477:2: error: implicit dec=
+laration of function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
+  temp_ring =3D vmalloc(i * sizeof(struct fm10k_ring));
+  ^
+drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:477:12: warning: assignmen=
+t makes pointer from integer without a cast
+  temp_ring =3D vmalloc(i * sizeof(struct fm10k_ring));
+            ^
+drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:546:2: error: implicit dec=
+laration of function 'vfree' [-Werror=3Dimplicit-function-declaration]
+  vfree(temp_ring);
+  ^
+
+Caused by commit 82dd0f7ee9a3 ("fm10k: Add ethtool support").  See Rule
+1 in Documentation/SubmitChecklist.
+
+I have added the following fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 1 Oct 2014 17:00:49 +1000
+Subject: [PATCH] fm10k: using vmalloc requires including linux/vmalloc.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c b/drivers/net=
+/ethernet/intel/fm10k/fm10k_ethtool.c
+index a9bbe60347d8..2d04464e6aa3 100644
+--- a/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c
++++ b/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c
+@@ -18,6 +18,8 @@
+  * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-64=
+97
+  */
+=20
++#include <linux/vmalloc.h>
++
+ #include "fm10k.h"
+=20
+ struct fm10k_stats {
+--=20
+2.1.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/s1LlBwVLeXabUhepYtuqBvK
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUK6dpAAoJEMDTa8Ir7ZwVcisP/iR/xYdFkbm6DBb+jYxD/ZQW
+IDMIAT1TY7IYy7v4bcVQX3Z6kpzMwRiUQrByOHsu4x0pk7BE8Y+3JDatZIQiXd8A
+APoiG6wWdkCmsYUrzeg86p/1y/oygDJslPAFmkA7gOTV2Lny+qKui11fUxNZNMIG
+gHthDgJ1TEBZFglOiMsH3BOkjjfFn1xw5cRwAD3IN9JQu/bOwk7LwtaT9HBwOr12
+uHYXwXQSpkN04kYvcnvnEU+HgD9tg2ZzJV05U+mfQFBbq488VjXE/73mjP7FJRTQ
+UQMlYU1OXiLnEbHgJOGZ0kU9TthInV/zIscWlsy2gogLAJd4fHsL+K03WKVZSl/E
+RhqfXCNbBdxa1fRrbswdvR6cpmYn3/Gk9WHVFhJSVqzmYlXdt22xij6zdv+FqW7x
+crfAB41h3B7J/m1eqD7MCyabIpnibRAid+T7ReDUxD7xFN2Q8EALUjaQ1gj1aYIB
+89WPUTzLGoaA0u6PN5Mc4gJvGpfHv1Lm5lWuWvQRklcN2c2/7F9S47N9/RFFFao3
+yXZA4uuahu9uu8w+qQ278tcG7KSpAsLDvS49YMdL9BYWYiqcJcqwQom8NjWRuGfp
+xwp5xi49o4RXqreC3wdRa+7gDSFAaF6rB9/TCiF2vxt6j5aer+T7XQ7h3jd2UMJk
+X7yMcm7h3UaCG6NvDY3l
+=Lwfd
+-----END PGP SIGNATURE-----
+
+--Sig_/s1LlBwVLeXabUhepYtuqBvK--
