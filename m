@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaJAIFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:05:48 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:57669 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192AbaJAIFn (ORCPT
+	id S1751196AbaJAIJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:09:42 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:33220 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaJAIJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:05:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 08/15] leds: leds-gpio: Add support for GPIO descriptors
-Date: Wed, 01 Oct 2014 10:05:34 +0200
-Message-ID: <353412292.4KkPI9NZaJ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1490183.QvrzPxsV7q@vostro.rjw.lan>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1852462.V1jlbi8OPt@vostro.rjw.lan> <1490183.QvrzPxsV7q@vostro.rjw.lan>
+	Wed, 1 Oct 2014 04:09:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:mPIpv7ilTM9XwtWkDEisq8rNlH50QyDInIPc1/LbGjK
- /JT/agn29UvQeN4vfDQyC9A7lxtK9hS3EUn0AF69sg64+FIuv/
- LAQQ0+/tSM46UPgz8UpIUklKCR8etdKMXcipubn+GwfSNh1ior
- Vc9AD87boPqASwmvvBail9RqYgI3tJ5ofijIVXlKv4B78C+/P5
- siL2lNXhuGycWRt7QdrTJzHzOTr2hl6oyR3/KDKdliw7cBG8kl
- lnnOyI1BOAjWA4l8U0EZ2/taUb7UYlxA+gS9cuAh4UtHrAwvRz
- P6P67MaTh7sCe2SNzX2plN7hS2JhcybyH/3sOWJEFKQDnR2TmW
- MaoDK+akkgv21WVtoqzE=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20140930145055.GA24978@gallifrey>
+References: <CAGKO+35+H3MmkaN1m_PfHi0XhbRvtnSBqm3PDmOhs5YBmAZ1jg@mail.gmail.com>
+	<20140924201827.GA30643@gallifrey>
+	<20140930145055.GA24978@gallifrey>
+Date: Wed, 1 Oct 2014 10:09:38 +0200
+Message-ID: <CAGKO+365D9Wu2_8HUKjYugTO0+eGGv4rmmHWm4YkygZk5NqC1w@mail.gmail.com>
+Subject: Re: 3.16.1 - general protection fault
+From: Marcin Gibula <m.gibula@gmail.com>
+To: "Dr. David Alan Gilbert" <dave@treblig.org>
+Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 04:15:41 Rafael J. Wysocki wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> GPIO descriptors are the preferred way over legacy GPIO numbers
-> nowadays. Convert the driver to use GPIO descriptors internally but
-> still allow passing legacy GPIO numbers from platform data to support
-> existing platforms.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
-> Acked-by: Bryan Wu <cooloney@gmail.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
+>> Yes, I hit something similar:
+>>
+>> http://www.spinics.net/lists/linux-nfs/msg46047.html 'nfs: disallow duplicate pages in pgio page vectors'
+>> http://www.spinics.net/lists/linux-nfs/msg46048.html 'nfs: can_coalesce_requests must enforce contiguity'
+>>
+>> seem to stop the GPF's/crashes, although there's still something else
+>> going on with a corruption I'm seeing every so often.
+>
+> And that 'something else' seems to be fixed by:
+>
+> http://marc.info/?l=linux-nfs&m=141208464631105&w=2
 
-Nice!
+Thanks !
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+-- 
+mg
