@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaJAAaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 20:30:17 -0400
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:56875 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750998AbaJAAaQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 20:30:16 -0400
-Message-ID: <542B4B16.6060401@nexus-software.ie>
-Date: Wed, 01 Oct 2014 01:30:14 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Reply-To: pure.logic@nexus-software.ie
-Organization: Nexus Software
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: mingo@redhat.com, hpa@zytor.com, davej@redhat.com, hmh@hmh.eng.br,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] x86: Quark: Add legacy_cache_size and TLB comments
-References: <1412120517-14738-1-git-send-email-pure.logic@nexus-software.ie> <alpine.DEB.2.11.1410010153590.4455@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410010153590.4455@nanos>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751695AbaJAAcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 20:32:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:57464 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972AbaJAAcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 20:32:15 -0400
+In-Reply-To: <1411586681-21262-3-git-send-email-sukadev@linux.vnet.ibm.com>
+To: sukadev@linux.vnet.ibm.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        ak@linux.intel.com, Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org,
+        eranian@google.com, Paul Mackerras <paulus@samba.org>
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Michael Ellerman <michaele@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        dev@codyps.com, linuxppc-dev@lists.ozlabs.org,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: Re: [v2,2/4] Simplify catalog_read()
+Message-Id: <20141001003213.A8F78140273@ozlabs.org>
+Date: Wed,  1 Oct 2014 10:32:13 +1000 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/14 01:11, Thomas Gleixner wrote:
-> Bryan,
->
-> On Wed, 1 Oct 2014, Bryan O'Donoghue wrote:
->
-> what are you trying to achieve by sending out patches faster than
-> anyone can review?
+On Wed, 2014-24-09 at 19:24:39 UTC, sukadev@linux.vnet.ibm.com wrote:
+> catalog_read() implements the read interface for the sysfs file
+> 
+> 	/sys/bus/event_source/devices/hv_24x7/interface/catalog
+> 
+> It essentially takes a buffer, an offset and count as parameters
+> to the read() call.  It makes a hypervisor call to read a specific
+> page from the catalog and copy the required bytes into the given
+> buffer. Each call to catalog_read() returns at most one 4K page.
+> 
+> Given these requirements, we should be able to simplify the
+> catalog_read().
+> 
+> diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
+> index 2f2215c..9427ef7 100644
+> --- a/arch/powerpc/perf/hv-24x7.c
+> +++ b/arch/powerpc/perf/hv-24x7.c
+> @@ -185,6 +105,8 @@ static ssize_t catalog_read(struct file *filp, struct kobject *kobj,
+>  	ssize_t ret = 0;
+>  	size_t catalog_len = 0, catalog_page_len = 0, page_count = 0;
+>  	loff_t page_offset = 0;
+> +	loff_t offset_in_page;
+> +	size_t copy_len;
+>  	uint64_t catalog_version_num = 0;
+>  	void *page = kmem_cache_alloc(hv_page_cache, GFP_USER);
+>  	struct hv_24x7_catalog_page_0 *page_0 = page;
+> @@ -203,6 +125,7 @@ static ssize_t catalog_read(struct file *filp, struct kobject *kobj,
+>  
+>  	page_offset = offset / 4096;
+>  	page_count  = count  / 4096;
 
-Thomas.
+I don't see where page_count is used.
 
-That's not the intention at all.
+> +	offset_in_page = count % 4096;
 
-> Doing this has an obvious outcome:
->
->    1) The patches you whip up 10 seconds after the review hits your
->       inbox are likely not to be well thought out. Neither are the
->       changelogs.
->
->       Just by skimming the lot I noticed at least two issues which you
->       just mechanically fixed up without applying any thought. I'm not
->       going to tell you, simply because you are starting to abuse and
->       waste my time.
->
->    2) Keeping #1 as your modus operandi will make sure that you get on
->       the backlog list of reviewers and maintainers and in the worst
->       case on the shitlist.
+Shouldn't offset_in_page be based on offset ?
 
-1)
-OK, I take your point on the frequency.
-
-2)
-On the substance.
-I'm certainly not trying to antagonise you here - I assumed you were 
-*suggesting* to apply those comments directly ?
-Which is why I updated the sent patches with your comments - since they 
-seemed more descriptive anyway - and sent back to the list.
-
-
-Thanks,
-Bryan
+cheers
