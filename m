@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaJAGow (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 02:44:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:23286 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaJAGoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 02:44:11 -0400
-X-AuditID: cbfee68f-f791c6d000004834-ef-542ba2b646c7
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jaewon Kim <jaewon02.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH RESEND v5 2/3] mfd: max77693: add haptic of_compatible in
- mfd_cell
-Date: Wed, 01 Oct 2014 15:43:57 +0900
-Message-id: <1412145838-7563-3-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1412145838-7563-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1412145838-7563-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsWyRsSkRHfbIu0Qg+mbrS2uf3nOanF40QtG
-	ix0NR1gt7n89ymhxedccNgdWj52z7rJ73Lm2h82jb8sqRo/Pm+QCWKK4bFJSczLLUov07RK4
-	Mi5eusFY8IqtYk3bQbYGxgusXYycHBICJhKTXq9lgbDFJC7cW88GYgsJLGWU6JysC1Pzdedf
-	oBouoPh0Rok1Lw8xQzhtTBJLzu5lAqliE9CW+L5+MdBUDg4RARWJc2/MQWqYBeYxSpy/vQds
-	qrBAiMT/GxsZQWwWAVWJSW3dYL28Au4Se6+sZAHplRBQkJgzyQYkzCngIXGm+Qg7SFgIqOTL
-	8xqQkRICzewSk1r+sUKMEZD4NvkQVKusxKYDzBA3S0ocXHGDZQKj8AJGhlWMoqkFyQXFSelF
-	xnrFibnFpXnpesn5uZsYgUF8+t+z/h2Mdw9YH2IU4GBU4uFVSNAOEWJNLCuuzD3EaAq0YSKz
-	lGhyPjBW8kriDY3NjCxMTUyNjcwtzZTEeRdK/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnV
-	wCh8lb396QJlIy9tL403txwkn+Q+nfqaKyfswJ2S1qg/zPtnhEW5yjhHxRhu2GZ6LEMgImfz
-	r5jbC9XdypNndZ0VOPiM8e4O4bDE37qCQtEeC75deym34dItA32d2ddUeNfMNAiZffqDSth1
-	Hf68N9xGf/Zxi8rHP7f47X5m288e+3b7Hx+MHJVYijMSDbWYi4oTAUtjIXZdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jQd1ti7RDDH5PNbG4/uU5q8XhRS8Y
-	LXY0HGG1uP/1KKPF5V1z2BxYPXbOusvucefaHjaPvi2rGD0+b5ILYIlqYLTJSE1MSS1SSM1L
-	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAVqspFCWmFMKFApILC5W0rfD
-	NCE0xE3XAqYxQtc3JAiux8gADSSsYcy4eOkGY8Ertoo1bQfZGhgvsHYxcnJICJhIfN35lwXC
-	FpO4cG89WxcjF4eQwHRGiTUvDzFDOG1MEkvO7mUCqWIT0Jb4vn4xUDcHh4iAisS5N+YgNcwC
-	8xglzt/ewwZSIywQIvH/xkZGEJtFQFViUls3WC+vgLvE3isrWUB6JQQUJOZMsgEJcwp4SJxp
-	PsIOEhYCKvnyvGYCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFR8kxqB+PKBotD
-	jAIcjEo8vAoJ2iFCrIllxZW5hxglOJiVRHgnVgCFeFMSK6tSi/Lji0pzUosPMZoC3TSRWUo0
-	OR8YwXkl8YbGJmZGlkbmhhZGxuZK4rwHWq0DhQTSE0tSs1NTC1KLYPqYODilGhjdlc9cMBYL
-	b+mqZLpX6cj+svT4wW3qc0P0vfLObDbz2MvmwlDsOvfK16uvk3Yu7+CrEFEvzb4mO+/fz++b
-	gt3nB3Of9Z8cMtHuXkNRqbC4qiaTxp9JkVuFc2sTzX/3un7Q+TM1ScBnZY3f3i6eXWx5zq8n
-	63hmVhYkS4jPS2wP87V8dm1DgRJLcUaioRZzUXEiAO+FnkuoAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751454AbaJAGsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 02:48:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:60602 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997AbaJAGr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 02:47:59 -0400
+In-Reply-To: <1412073306-13812-3-git-send-email-mikey@neuling.org>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 02/17] powerpc/cell: Move data segment faulting code out of cell platform
+Message-Id: <20141001064757.BFF88140174@ozlabs.org>
+Date: Wed,  1 Oct 2014 16:47:57 +1000 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add haptic of_compatible in order to use the haptic
-device driver using Devicetree.
+On Tue, 2014-30-09 at 10:34:51 UTC, Michael Neuling wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> required for a particular EA and mm struct.
+> 
+> This code is generically useful for other co-processors.  This moves the code
+> of the cell platform so it can be used by other powerpc code.  It also adds 1TB
+> segment handling which Cell didn't have.
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/max77693.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+I'm not loving this.
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index fbfed56..5b516fe 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -46,7 +46,10 @@ static const struct mfd_cell max77693_devs[] = {
- 	{ .name = "max77693-charger", },
- 	{ .name = "max77693-flash", },
- 	{ .name = "max77693-muic", },
--	{ .name = "max77693-haptic", },
-+	{
-+		.name = "max77693-haptic",
-+		.of_compatible = "maxim,max77693-haptic",
-+	},
- };
- 
- static const struct regmap_config max77693_regmap_config = {
--- 
-1.7.9.5
+For starters the name "copro_data_segment()" doesn't contain any verbs, and it
+doesn't tell me what it does.
 
+If we give it a name that says what it does, we get copro_get_ea_esid_and_vsid().
+Or something equally ugly.
+
+And then in patch 10 you move the bulk of the logic into calculate_vsid().
+
+So instead can we:
+ - add a small helper that does the esid calculation, eg. calculate_esid() ?
+ - factor out the vsid logic into a helper, calculate_vsid() ?
+ - rework the spu code to use those, dropping __spu_trap_data_seg()
+ - use the helpers in the cxl code
+
+
+cheers
