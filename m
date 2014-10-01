@@ -1,121 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaJAF2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 01:28:39 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:47931 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaJAF2h (ORCPT
+	id S1751904AbaJAF3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 01:29:15 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:36350 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100AbaJAF3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 01:28:37 -0400
-Date: Wed, 1 Oct 2014 07:28:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Tuan Bui <tuan.d.bui@hp.com>
-Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
-        paulus@samba.org, acme@kernel.org, artagnon@gmail.com,
-        jolsa@redhat.com, dvhart@linux.intel.com,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
-Message-ID: <20141001052832.GA32248@gmail.com>
-References: <1412120999.2941.11.camel@u64>
+	Wed, 1 Oct 2014 01:29:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412120999.2941.11.camel@u64>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <87fvf8v7j7.fsf@x220.int.ebiederm.org>
+References: <CAGr1F2FPLCfZjMCoLM3h-8okHcJSkdE7et25_TKU-2Xtx03OTg@mail.gmail.com>
+ <87bnpwwrsz.fsf@x220.int.ebiederm.org> <CAGr1F2Ei=S=75XUOZN05V=63eGXJOPjapfKhpXn9jimFR41eHw@mail.gmail.com>
+ <87fvf8v7j7.fsf@x220.int.ebiederm.org>
+From: Aditya Kali <adityakali@google.com>
+Date: Tue, 30 Sep 2014 22:28:52 -0700
+Message-ID: <CAGr1F2HdSB64=e1fUOKtyzKJoLcdD9ioboKuyzPJX4yU3mmg+Q@mail.gmail.com>
+Subject: Re: uid=0 inside user-namespace and procfs file permissions
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 30, 2014 at 7:38 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Aditya Kali <adityakali@google.com> writes:
+>
+>> On Tue, Sep 30, 2014 at 5:35 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> Aditya Kali <adityakali@google.com> writes:
+>>>
+>>>> Hi all,
+>>>>
+>>>> I am trying to run a process with uid=0 inside userns. But in the when
+>>>> I also do capset() after setresuid(0, 0, 0), I am seeing inconsistent
+>>>> proc file permissions. Almost all the files in /proc/<pid>/ has global
+>>>> 'root' as owner and group even if the actual process uid is correctly
+>>>> changed.
+>>>>
+>>>> I wrote a simple program that demonstrate the issue:
+>>>>
+>>>> 1. parent, as global root (uid=0 in init_user_ns) fork()s a child
+>>>> 2. child:
+>>>>     a) unshare(CLONE_NEWUSER)
+>>>>     b) [wait for parent to write uid_map]
+>>>>     c) setresgid(id, id, id) ; setresuid(0, 0, 0);
+>>>>     d) conditionally call capset() to clear capabilities
+>>>>     e) execve(/bin/sleep)
+>>>> 3. parent:
+>>>>     a) populates child's uid_map and maps some uid to 0 inside userns. ex:
+>>>>     0 99 1
+>>>>     b) waitpid()
+>>>>
+>>>> (the actual program can be found at http://pastebin.com/f4P17VFn for
+>>>> your reference).
+>>>>
+>>>> When there is no capset() call after setresuid(0,0,0), everything is
+>>>> fine. But when I do a capset() to clear all capabilities, the 'owner'
+>>>> and 'group' of all the files under /proc/<child_pid>/  of the child
+>>>> process are reverted to global 'root' user.
+>>>>
+>>>> # without capset (2.d):
+>>>> root@vm1# id
+>>>> uid=0(root) gid=0(root) groups=0(root)
+>>>>
+>>>> root@vm1# ./userns_uid0
+>>>> child_pid: 24277
+>>>> proc_file: /proc/24277/uid_map
+>>>> proc_file: /proc/24277/gid_map
+>>>> child resuming
+>>>>
+>>>> ^Z
+>>>> [1]+  Stopped                 ./userns_uid0
+>>>> root@vm1# cat /proc/24277/uid_map
+>>>>          0         99          1
+>>>> root@vm1# cat /proc/24277/status | grep -e "Uid:" -e "Gid:"
+>>>> Uid: 99 99 99 99
+>>>> Gid: 99 99 99 99
+>>>> root@vm1# ls -l /proc/24277/
+>>>> total 0
+>>>> dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:31 attr
+>>>> -r-------- 1 nobody nobody 0 2014-09-30 16:31 auxv
+>>>> -r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cgroup
+>>>> --w------- 1 nobody nobody 0 2014-09-30 16:31 clear_refs
+>>>> -r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cmdline
+>>>> -rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 comm
+>>>> -rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 coredump_filter
+>>>> -r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cpuset
+>>>> ...
+>>>> [All files have owner='nobody' and group='nobody' .. same as that of
+>>>> the process]
+>>>>
+>>>> With the additional capset() call, the files under /proc/<child_pid>/
+>>>> are now owned by global root:
+>>>>
+>>>> root@vm1# ./userns_uid0 resetcaps
+>>>> child_pid: 24706
+>>>> proc_file: /proc/24706/uid_map
+>>>> proc_file: /proc/24706/gid_map
+>>>> child resuming
+>>>> resetting caps
+>>>> ^Z
+>>>> [2]+  Stopped                 ./userns_uid0 resetcaps
+>>>> root@vm1# cat /proc/24706/uid_map
+>>>>          0         99          1
+>>>> root@vm1# cat /proc/24706/status | grep -e "Uid:" -e "Gid:"
+>>>> Uid: 99 99 99 99
+>>>> Gid: 99 99 99 99
+>>>>
+>>>> [Everything as before till now]
+>>>>
+>>>> root@vm1# ls -l /proc/24706/
+>>>> total 0
+>>>> dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:47 attr
+>>>> -r-------- 1 root   root   0 2014-09-30 16:47 auxv
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 cgroup
+>>>> --w------- 1 root   root   0 2014-09-30 16:47 clear_refs
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 cmdline
+>>>> -rw-r--r-- 1 root   root   0 2014-09-30 16:47 comm
+>>>> -rw-r--r-- 1 root   root   0 2014-09-30 16:47 coredump_filter
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 cpuset
+>>>> ...
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 mountinfo
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 mounts
+>>>> -r-------- 1 root   root   0 2014-09-30 16:47 mountstats
+>>>> dr-xr-xr-x 5 nobody nobody 0 2014-09-30 16:47 net
+>>>> dr-x--x--x 2 root   root   0 2014-09-30 16:47 ns
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 numa_maps
+>>>> ...
+>>>> -r--r--r-- 1 root   root   0 2014-09-30 16:47 status
+>>>> -r-------- 1 root   root   0 2014-09-30 16:47 syscall
+>>>> dr-xr-xr-x 3 nobody nobody 0 2014-09-30 16:47 task
+>>>> ..
+>>>>
+>>>> Only the directories 'attr', 'net' and 'task' are owned by the uid=99.
+>>>> Rest all files are owned by global root.
+>>>>
+>>>> This behavior seems inconsistent. I ran this on 3.17 kernel. Can
+>>>> someone with expertise in this area explain if this is expected?
+>>>
+>>> So I am not quite certain what you are seeing.
+>>>
+>>> In general proc files are expected to be owned by the euid of a process.
+>>> However when the task_dumpable is cleared the files become owned by the
+>>> global root user.  We have considered relaxing that to the namespace
+>>> root user but so far implementing a more granular task_dumpable has not
+>>> been done.
+>>>
+>>
+>> I tried explicitly setting PR_SET_DUMPABLE before execve(), but that
+>> didn't either.
+>>
+>>> The directories are world readable so they don't matter.
+>>>
+>>> What puzzles me is that you have directories owned by nobody, and you
+>>> are talking about uid = 99 and gid = 99.  Nobody is traditionally
+>>> (u16_t)-2 and there should never actually be used by anyone.   And is
+>>> used as the default number of unmapped uids and gids.
+>>>
+>>> It looks like you are doing something weird with nobody so I don't have
+>>> a clue what is actually going on.
+>>>
+>>
+>> The issue is not specific to uid 99 or "nobody". Its just a dummy user
+>> I have for testing. The issue happens with any user with non-zero uid.
+>
+> But my issue with reading your directory listings of proc is.
+>
+> I can't tell if you are giving me a listing of proc from a process in
+> the user namespace or outside of the user namespace.
 
-* Tuan Bui <tuan.d.bui@hp.com> wrote:
+The listing is as seen from outside the user namespace.
 
-> Subject: [RFC PATCH] Perf Bench: Locking Microbenchmark
-> 
-> In response to this thread https://lkml.org/lkml/2014/2/11/93, 
-> this is a micro benchmark that stresses locking contention in 
-> the kernel with creat(2) system call by spawning multiple 
-> processes to spam this system call.  This workload generate 
-> similar results and contentions in AIM7 fserver workload but 
-> can generate outputs within seconds.
-> 
-> With the creat(2) system call the contention vary on what locks 
-> are used in the particular file system. I have ran this 
-> benchmark only on ext4 and xfs file system.
-> 
-> Running the creat workload on ext4 show contention in the mutex 
-> lock that is used by ext4_orphan_add() and ext4_orphan_del() to 
-> add or delete an inode from the list of inodes. At the same 
-> time running the creat workload on xfs show contention in the 
-> spinlock that is used by xsf_log_commit_cil() to commit a 
-> transaction to the Committed Item List.
-> 
-> Here is a comparison of this benchmark with AIM7 running 
-> fserver workload at 500-1000 users along with a perf trace 
-> running on ext4 file system.
-> 
-> Test machine is a 8-sockets 80 cores Westmere system HT-off on 
-> v3.17-rc6.
-> 
-> 	AIM7		AIM7		perf-bench	perf-bench
-> Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
-> 500	119668.25	239.34		104249		208
-> 600	126074.90	210.12		106136		176
-> 700	128662.42	183.80		106175		151
-> 800	119822.05	149.78		106290		132
-> 900	106150.25	117.94		105230		116
-> 1000	104681.29	104.68		106489		106
-> 
-> Perf trace for AIM7 fserver:
-> 14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
-> 4.98%	reaim  		reaim			[.] add_long
-> 4.98%	reaim  		reaim			[.] add_int
-> 4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
-> ...
-> 
-> Perf trace of perf bench creat
-> 22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
-> 5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
-> 5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
-> 5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
-> ...
+>
+> If the process 24706 had uid == 99 and gid == 99 (outside of the user
+> namespace).  And your are listing the files from outside of the user
+> namespace.  And uid 99 is mapped to nobody in /etc/passwd and
+> gid 99 is mapped to nobody in /etc/group.  And your ls process is
+> not running in your user namespace.
 
-Very nice!
+All of above is correct.
 
-If you compare an strace of AIM7 steady state and 'perf bench 
-lock' steady state, is it comparable, i.e. do the syscalls and 
-other behavioral patterns match up?
+>  Then this looks like proper
+> handling of dumpable.  Otherwise I don't have a clue what is going on
+> because I can't make sense of your directory listings.
+>
 
-> +'locking'::
-> +        Locking stressing benchmarks.
-> +
->  'all'::
->  	All benchmark subsystems.
->  
-> @@ -213,6 +216,11 @@ Suite for evaluating wake calls.
->  *requeue*::
->  Suite for evaluating requeue calls.
->  
-> +SUITES FOR 'locking'
-> +~~~~~~~~~~~~~~~~~~
-> +*creat*::
-> +Suite for evaluating locking contention through creat(2).
+So you are saying this is expected behavior? My experiment with
+prctl(PR_SET_DUMPABLE, 1) didn't help either. I expected the owner and
+group in the proc file listing (as seen from init_user_ns) to be
+'nobody' since the process is really running as uid=99 ("nobody") in
+the init_user_ns. What am I missing?
 
-So I'd display it in the help text prominently that it's a 
-workload similar to the AIM7 workload.
+I will try to go over the set_dumpable() call-sites tomorrow and get more info.
 
-> +static const struct option options[] = {
-> +	OPT_UINTEGER('s', "start", &start_nr_threads, "Numbers of processes to start"),
-> +	OPT_UINTEGER('e', "end", &end_nr_threads, "Numbers of process to end"),
-> +	OPT_UINTEGER('i', "increment", &increment_threads_by, "Number of threads to increment)"),
-> +	OPT_UINTEGER('r', "runtime", &bench_dur, "Specify benchmark runtime in seconds"),
-> +	OPT_END()
-> +};
 
-Is this the kind of parameters that AIM7 takes as well?
+> Eric
 
-In any case, this is a very nice benchmarking utility.
 
 Thanks,
-
-	Ingo
+-- 
+Aditya
