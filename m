@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaJAOcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:32:14 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:50710 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaJAOcM (ORCPT
+	id S1751777AbaJAOeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:34:07 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:52243 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaJAOeF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:32:12 -0400
-Date: Wed, 1 Oct 2014 09:32:08 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Sebastian Lackner <sebastian@fds-team.de>,
-        Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from
- userspace
-Message-ID: <20141001093208.79bb0891@as>
-In-Reply-To: <20141001090915.16c8b1db@as>
-References: <cover.1412138935.git.luto@amacapital.net>
-	<0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
-	<20141001090915.16c8b1db@as>
+	Wed, 1 Oct 2014 10:34:05 -0400
+X-Auth-Info: ywQu78SA5n30TVGl9tJhUrTR2IeIfAOPtzSE1expq/o=
+From: Marek Vasut <marex@denx.de>
+To: "Bean Huo =?utf-8?q?=E9=9C=8D=E6=96=8C=E6=96=8C?= (beanhuo)" 
+	<beanhuo@micron.com>
+Subject: Re: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Date: Wed, 1 Oct 2014 16:32:02 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com> <201409301538.40466.marex@denx.de> <A765B125120D1346A63912DDE6D8B6315E3D3F@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E3D3F@NTXXIAMBX02.xacn.micron.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201410011632.02321.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Oct 2014 09:09:13 -0500
-Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+On Wednesday, October 01, 2014 at 04:24:41 PM, Bean Huo 霍斌斌 (beanhuo) wrote:
+> >> For Micron spi norflash,enables or disables quad I/O protocol ,which
+> >> controled by EVCR(Enhanced Volatile Configuration Register) Quad I/O
+> >> protocol bit 7.When EVCR bit 7 is reset to 0, the spi norflash will
+> >> operate in quad I/O following the next WRITE ENHANCED VOLATILE
+> >> CONFIGURATION command.
+> >
+> >You only do one WRITE ENHANCED VOLATILE CONFIGURATION command in the
+> >patch, so this text doesn't add up.
+> >
+> >Try something like this:
+> >-->8--
+> >This patch adds code which enables Quad I/O mode on Micron SPI NOR
+> >flashes.
+> >
+> >For Micron SPI NOR flash, enabling or disabling quad I/O protocol is
+> >controled by EVCR (Enhanced Volatile Configuration Register), Quad I/O
+> >protocol bit 7. When EVCR bit 7 is reset to 0, the SPI NOR flash will
+> >operate in quad I/O mode. --8<--
+> >
+> >What do you think ?
+> 
+> Perfect,I will modify my commit message and sumbit it again.thanks.
 
-> On Tue, 30 Sep 2014 21:51:27 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
-> 
-> > The NT flag doesn't do anything in long mode other than causing IRET
-> > to #GP.  Oddly, CPL3 code can still set NT using popf.
-> > 
-> > Entry via hardware or software interrupt clears NT automatically, so
-> > the only relevant entries are fast syscalls.
-> > 
-> > If user code causes kernel code to run with NT set, then there's at
-> > least some (small) chance that it could cause trouble.  For example,
-> > user code could cause a call to EFI code with NT set, and who knows
-> > what would happen?  Apparently some games on Wine sometimes do
-> > this (!), and, if an IRET return happens, they will segfault.  That
-> > segfault cannot be handled, because signal delivery fails, too.
-> > 
-> > This patch programs the CPU to clear NT on entry via SYSCALL (both
-> > 32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
-> > in software on entry via SYSENTER.
-> > 
-> > To save a few cycles, this borrows a trick from Jan Beulich in Xen:
-> > it checks whether NT is set before trying to clear it.  As a result,
-> > it seems to have very little effect on SYSENTER performance on my
-> > machine.
-> > 
-> > Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
-> > 
-> > I haven't touched anything on 32-bit kernels.
-> > 
-> > The syscall mask change comes from a variant of this patch by Anish
-> > Bhatt.
-> > 
-> > Cc: stable@vger.kernel.org
-> > Reported-by: Anish Bhatt <anish@chelsio.com>
-> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > ---
-> >  arch/x86/ia32/ia32entry.S    | 12 ++++++++++++
-> >  arch/x86/kernel/cpu/common.c |  2 +-
-> >  2 files changed, 13 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-> > index 4299eb05023c..44d1dd371454 100644
-> > --- a/arch/x86/ia32/ia32entry.S
-> > +++ b/arch/x86/ia32/ia32entry.S
-> > @@ -151,6 +151,18 @@ ENTRY(ia32_sysenter_target)
-> >  1:	movl	(%rbp),%ebp
-> >  	_ASM_EXTABLE(1b,ia32_badarg)
-> >  	ASM_CLAC
-> > +
-> > +	/*
-> > +	 * Sysenter doesn't filter flags, so we need to clear NT
-> > +	 * ourselves.  To save a few cycles, we can check whether
-> > +	 * NT was set instead of doing an unconditional popfq.
-> > +	 */
-> > +	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
-> > +	jz 1f
-> > +	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-> > +	popfq_cfi
-> > +1:
-> > +
-> 
-> I think you've gone backwards with this version. The earlier one got
-> some of the performance loss back by not needing to do the "cld" insn.
-> 
-> You should just replace that "cld" (line 146) with
-> 
-> 	pushfq_cfi $2
-> 	popfq_cfi
-> 
-> Unfortunately I'm not set up to test that yet. But I did look at
-> the SDM and can't see a need to preserve any of the flags.
-> 
+Thank you. I didn't mean to grind you unnecessarily or be outright bitch, sorry 
+if it did sound like so.
 
-
-<sigh> that's:
-
-	pushfw_cfi $0x202
-
-IF needs to stay on because we've already enabled interrupts after
-sysenter.
+Best regards,
+Marek Vasut
