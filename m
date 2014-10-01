@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653AbaJASOW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:14:22 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58158 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019AbaJASOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:14:20 -0400
-Message-ID: <542C4462.8060704@gmail.com>
-Date: Wed, 01 Oct 2014 11:13:54 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1753709AbaJASOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:14:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42632 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753540AbaJASOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 14:14:16 -0400
+Message-ID: <542C4463.1020208@zytor.com>
+Date: Wed, 01 Oct 2014 11:13:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: dsa: Fix build warning for !PM_SLEEP
-References: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
-In-Reply-To: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Baoquan He <bhe@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] x86, kaslr: avoid setup_data when picking location
+References: <20140911161931.GA12001@www.outflux.net>	<542C4177.6060409@zytor.com> <CAGXu5jLK-k4JZO4eZSasRuSSQxeru94U9whMPcgD6iin40VVTA@mail.gmail.com>
+In-Reply-To: <CAGXu5jLK-k4JZO4eZSasRuSSQxeru94U9whMPcgD6iin40VVTA@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 04:59 AM, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
+On 10/01/2014 11:08 AM, Kees Cook wrote:
+>>
+>> The use of (u64) in the assignment to avoid.start gives a nuisance
+>> warning on 32 bits.
 > 
-> The dsa_switch_suspend() and dsa_switch_resume() functions are only used
-> when PM_SLEEP is enabled, so they need #ifdef CONFIG_PM_SLEEP protection
-> to avoid a compiler warning.
+> Ah, good catch! This should be (unsigned long), I think. Shall I send
+> a follow-up patch, or do you want to fix this directly?
 > 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+Please do.
 
-Thanks Thierry!
+In theory it is possible for a bootloader to put an object above 4G even
+for a 32-bit kernel, but that is likely to break any kind of other
+things, so I'm not worried about it.  You don't need to worry about
+avoiding such a zone, the problem is mostly that you can't follow the
+list any further without adding PAE-handling code.
 
-> ---
->  net/dsa/dsa.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-> index 6905f2d84c44..22f34cf4cb27 100644
-> --- a/net/dsa/dsa.c
-> +++ b/net/dsa/dsa.c
-> @@ -238,6 +238,7 @@ static void dsa_switch_destroy(struct dsa_switch *ds)
->  {
->  }
->  
-> +#ifdef CONFIG_PM_SLEEP
->  static int dsa_switch_suspend(struct dsa_switch *ds)
->  {
->  	int i, ret = 0;
-> @@ -280,6 +281,7 @@ static int dsa_switch_resume(struct dsa_switch *ds)
->  
->  	return 0;
->  }
-> +#endif
->  
->  
->  /* link polling *************************************************************/
-> 
+	-hpa
+
 
