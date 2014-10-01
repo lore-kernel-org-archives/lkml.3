@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaJAQLC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:11:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51741 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaJAQLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:11:00 -0400
-Date: Wed, 1 Oct 2014 18:10:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] sched: Debug nested sleeps
-Message-ID: <20141001161058.GE2843@worktop.programming.kicks-ass.net>
-References: <20140924081845.572814794@infradead.org>
- <20140924082242.591637616@infradead.org>
- <20140929221344.GB12112@redhat.com>
- <20140930134928.GF4241@worktop.programming.kicks-ass.net>
- <20140930214732.GA31384@redhat.com>
+	id S1752044AbaJAQLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:11:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33365 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751471AbaJAQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:11:41 -0400
+Date: Wed, 1 Oct 2014 18:11:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
+        dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] edac, amd64_edac: Add F15h M60h support
+Message-ID: <20141001161135.GG18271@pd.tnic>
+References: <1411070230-10298-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141001113235.GC18271@pd.tnic>
+ <542C1EAA.4050408@amd.com>
+ <20141001154523.GF18271@pd.tnic>
+ <542C2588.2040004@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140930214732.GA31384@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <542C2588.2040004@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 11:47:32PM +0200, Oleg Nesterov wrote:
+On Wed, Oct 01, 2014 at 11:02:16AM -0500, Aravind Gopalakrishnan wrote:
+> Not AFAIK, But I'll ask to make sure.
 
-> > > This is minor, but this way CONFIG_DEBUG_ATOMIC_SLEEP will not imply
-> > > a subtle behavioural change.
-> >
-> > You mean the __set_current_state() that's extra?
-> 
-> Yes, and note that it only does __set_current_state(RUNNING) if
-> CONFIG_DEBUG_ATOMIC_SLEEP. This means that disabling/enabling this
-> option can, silently hide/uncover a bug.
-> 
-> > I would actually argue
-> > to keep that since it makes the 'problem' much worse.
-> 
-> OK, I won't insist, but could you explain why the suggested change can
-> make the problem (and which problem ;) worse?
+Yes please.
 
-Sure, so the trivial problem is not actually going to sleep in the outer
-wait primitive because the inner wait primitive reset ->state to
-TASK_RUNNING.
+> If different LRDIMMs on one DCT don't exist, then sure, I'll modify the code
+> to use first DCSM.
 
-So by always setting the ->state to TASK_RUNNING it never goes to sleep
-and it'll revert to spinning, causing spikes in CPU usage that should
-hopefully be far easier to notice than the occasional funny.
+Right.
+
+> Regarding resend-
+> I'm not sure how you'll want the patches.. I just noticed a 'edac-for-3.19'
+> branch.
+
+I uploaded it for the 0day bot so that the patches can be build-tested a
+little with different configs. Don't pay attention to any other branches
+except to "for-next" which is what will go to Linus come next merge
+window. The other branches might get rebased and you shouldn't base any
+work ontop.
+
+> Would you prefer I based changes on top of this for merging purposes?
+> Or just resend the original 4 patches based off tip as usual?
+
+Nah, just resend the last one - 4/4 - the other three are fine.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
