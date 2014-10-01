@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763AbaJAIRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:17:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55339 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242AbaJAIRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:17:10 -0400
-Date: Wed, 1 Oct 2014 10:17:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <andrew-vger@gizmolabs.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special
- devices
-In-Reply-To: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751405AbaJAITA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:19:00 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:42020 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751049AbaJAIS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 04:18:57 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+Message-ID: <542BB9C7.2000600@smartplayin.com>
+Date: Wed, 01 Oct 2014 13:52:31 +0530
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andy Gross <agross@codeaurora.org>
+CC: Archit Taneja <architt@codeaurora.org>, vinod.koul@intel.com,
+        galak@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] dmaengine: qcom_bam_dma: Generalize BAM register
+ offset calculations
+References: <1411037575-13153-1-git-send-email-architt@codeaurora.org> <1411965189-24499-1-git-send-email-architt@codeaurora.org> <20140929221406.GE11142@qualcomm.com>
+In-Reply-To: <20140929221406.GE11142@qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Benjamin Tissoires wrote:
+On Tuesday 30 September 2014 03:44 AM, Andy Gross wrote:
+> On Mon, Sep 29, 2014 at 10:03:07AM +0530, Archit Taneja wrote:
+>> The BAM DMA IP comes in different versions. The register offset layout varies
+>> among these versions. The layouts depend on which generation/family of SoCs they
+>> belong to.
+>>
+>> The current SoCs(like 8084, 8074) have a layout where the Top level registers
+>> come in the beginning of the address range, followed by pipe and event
+>> registers. The BAM revision numbers fall above 1.4.0.
+>>
+>> The older SoCs (like 8064, 8960) have a layout where the pipe registers come
+>> first, and the top level come later. These have BAM revision numbers lesser than
+>> 1.4.0.
+>>
+>> It isn't suitable to have macros provide the register offsets with the layouts
+>> changed. Future BAM revisions may have different register layouts too. The
+>> register addresses are now calculated by referring a table which contains a base
+>> offset and multipliers for pipe/evnt/ee registers.
+>>
+>> We have a common function bam_addr() which computes addresses for all the
+>> registers. When computing address of top level/ee registers, we pass 0 to the
+>> pipe argument in addr() since they don't have any multiple instances.
+>>
+>> Some of the unused register definitions are removed. We can add new registers as
+>> we need them.
+> 
+> Vinod,
+> 
+> These changes replace the patch set I had that implemented support for the
+> v.1.3.0 register set.
 
-> Jiri, This patch series can be split in 2 if you would like:
-> - patches 1 to 4 can be scheduled easily for 3.18 IMO
-> - patches 5 to 13 might need some more reviews, so either 3.18 or 3.19
+Andy,
+With your change "dmaengine: qcom_bam_dma: Add v1.3.0 driver support"
+and enabling qcom_bam_dma driver i was seeing some crashes in the kernel
+on IFC6410. But after reverting you change and applying these changes
+from Vinod I see IFC6410 booting fine.
 
-Benjamin,
+Here are the crash logs in case it helps and if your changes are still
+planned by you for upstream.
 
-thanks for the summary. I'll try to review 1-4 in time for 3.18, but I 
-can't guarantee that.
+http://paste.ubuntu.com/8471405/
 
-Do you forsee any issues if the whole lot is queued for 3.19 only?
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks
+Pramod
+> 
+> 
