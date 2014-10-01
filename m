@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaJAUFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:05:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44275 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaJAUFY (ORCPT
+	id S1751873AbaJAUHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:07:50 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34561 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaJAUHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:05:24 -0400
-Date: Wed, 1 Oct 2014 13:05:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Hansen <dave.hansen@intel.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mm: generalize VM_BUG_ON() macros
-Message-Id: <20141001130523.d7cf46e735089d681194e8e6@linux-foundation.org>
-In-Reply-To: <1412163121-4295-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1412163121-4295-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 16:07:49 -0400
+Date: Wed, 1 Oct 2014 13:07:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: atull@opensource.altera.com
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v4 0/4] regulator support for pmbus and ltc2978
+Message-ID: <20141001200743.GA21388@roeck-us.net>
+References: <1412190349-16343-1-git-send-email-atull@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412190349-16343-1-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  1 Oct 2014 14:31:59 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-
-> This patch makes VM_BUG_ON() to accept one to three arguments after the
-> condition. Any of these arguments can be page, vma or mm. VM_BUG_ON()
-> will dump info about the argument using appropriate dump_* function.
+On Wed, Oct 01, 2014 at 02:05:46PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
 > 
-> It's intended to replace separate VM_BUG_ON_PAGE(), VM_BUG_ON_VMA(),
-> VM_BUG_ON_MM() and allows additional use-cases like:
+> This set of patches adds regulator support for pmbus_core.c and ltc2978.c
 > 
->   VM_BUG_ON(cond, vma, page);
->   VM_BUG_ON(cond, vma, src_page, dst_page);
->   VM_BUG_ON(cond, mm, src_vma, dst_vma);
->   ...
+> Each output has individual on/off control.
+> 
+> From PMBus_Specification_Part_II_Rev_1-3_20140318.pdf: 12.1.1. OPERATION
+> Command Bit [7] Bit [7] controls whether the PMBus device output is on or off.
+> If bit [7] is cleared (equals 0), then the output is off.  If bit [7] is set
+> (equals 1), then the output is on.
+> 
+> Fixes in v4 are not huge: Add device tree bindings documentation for ltc2978.
+> rename _pmbus_regulator_enable to _pmbus_regulator_on_off simplify
+> _pmbus_regulator_on_off code s/regulator_regulator/regulator/ fix build break
+> when !CONFIG_REGULATOR remove unused #define PB_OPERATION_CONTROL_SEQ_OFF fix
+> a #endif comment simplify probe code, remove added switch statement remove
+> BUG_ON(), add error message and fix num_regulators
+> 
+> Patch 1: document device tree bindings for ltc2978
+> 
+> Patch 2: add two helper functions for byte pmbus byte operations * byte write
+> and byte read/modify/write
+> 
+> Patch 3: regulator support added in pmbus_core.c and pmbus.h * regulator_ops
+> functions (is_enabled, enable, and disable) * gets regulator init data from
+> device tree or platform data * registers the regulators * header has a macro
+> for chip drivers to build their regulator_desc data
+> 
+> Patch 4: changes for ltc2978.c * Add Kconfig to enable/disable ltc2978
+> regulator functionality * add regulator_desc and of_regulator_match info * use
+> same structs for all parts; set num_regulators appropriately.
+> 
+Looks like this patch got lost. I did not get it, and I don't see it on lkml
+either.
 
-I can't say I'm a fan of this.  We don't do this sort of thing anywhere
-else in the kernel and passing different types to the same thing in
-different places is unusual and exceptional.  We gain very little from
-this so why bother?
-
-Adding new printk(%p) thingies for vmas and pages would be more
-consistent but still of dubious value.
+Guenter
