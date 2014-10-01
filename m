@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaJAUQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:16:37 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:33563 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaJAUQg (ORCPT
+	id S1751845AbaJAUSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:18:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37653 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750901AbaJAUSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:16:36 -0400
-Date: Wed, 1 Oct 2014 13:16:33 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Xiubo Li <Li.Xiubo@freescale.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH] mm, compaction: using uninitialized_var insteads setting
- 'flags' to 0 directly.
-In-Reply-To: <542A5B5B.7060207@suse.cz>
-Message-ID: <alpine.DEB.2.02.1410011314180.21593@chino.kir.corp.google.com>
-References: <1411961425-8045-1-git-send-email-Li.Xiubo@freescale.com> <542A5B5B.7060207@suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 1 Oct 2014 16:18:02 -0400
+Message-ID: <542C6177.4030506@free-electrons.com>
+Date: Wed, 01 Oct 2014 22:17:59 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>, dougthompson@xmission.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] EDAC: remove deprecated IRQF_DISABLED
+References: <1381641477-7373-1-git-send-email-michael.opdenacker@free-electrons.com> <20131014095602.GA14274@jtlinux> <5316B065.7070104@free-electrons.com> <20140305064915.GA28317@pd.tnic> <542BD4DC.40900@free-electrons.com> <20141001102701.GB18271@pd.tnic>
+In-Reply-To: <20141001102701.GB18271@pd.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Vlastimil Babka wrote:
+Hi Borislav,
 
-> On 09/29/2014 05:30 AM, Xiubo Li wrote:
-> > Setting 'flags' to zero will be certainly a misleading way to avoid
-> > warning of 'flags' may be used uninitialized. uninitialized_var is
-> > a correct way because the warning is a false possitive.
-> 
-> Agree.
-> 
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> 
-> Acked-by: Vlastimil Babka <vbabka@suse.cz>
-> 
+On 10/01/2014 12:27 PM, Borislav Petkov wrote:
+> On Wed, Oct 01, 2014 at 12:18:04PM +0200, Michael Opdenacker wrote:
+>>> https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?id=e245e3b25f9ef33b166f0f01d19d6418f52ae726
+>>>
+>>> ?
+>>>
+>>> Its on its way upstream.
+>> It didn't get merged indeed.
+> Did you actually check?
+>
+> $ git describe e245e3b25f9ef33b166f0f01d19d6418f52ae726
+> v3.14-rc1-4-ge245e3b25f9e
 
-I thought we just discussed this when 
-mm-compaction-fix-warning-of-flags-may-be-used-uninitialized.patch was 
-merged and, although I liked it, it was stated that we shouldn't add any 
-new users of uninitialized_var().
+Oops, you're right. What's left of my patch touches other files.
+
+Thank you for your time.
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
