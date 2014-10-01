@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaJAOBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:01:25 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:64045 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaJAOBY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:01:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Pinski <apinski@cavium.com>,
-        "pinskia@gmail.com" <pinskia@gmail.com>
-Subject: Re: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit ABI syscalls to avoid confusion of not splitting the registers
-Date: Wed, 01 Oct 2014 16:00:54 +0200
-Message-ID: <3372851.lJtjj0EtDO@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141001124226.GI12702@e104818-lin.cambridge.arm.com>
-References: <1409779158-30963-1-git-send-email-apinski@cavium.com> <3318813.yqP9pCQtAB@wuerfel> <20141001124226.GI12702@e104818-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:qnm7Rzkc9hWM/+48gTceCV+fO10aSvRvY5sp54vVD11
- ExYoDlpUNjrkxqWcp0P4kVKXQnR7qRc9Y7qBluwom/erXE8TGk
- IE88cb5phnoG/zm09hNbEmg9T+Uv3SQ4nqNEJbiTyMJO3TJb04
- i9aKXTj6tYI5e7XJ44I8zYNsFWsVgOCEvFUH1Zj3nlbn8s36sd
- OtEtewBmTR0vlxMtUwag6VWR8uSuHGkBCZwTeo16mZWVOyYczu
- 8uN3vAuV7ojAYTboTRRUzvk6BhQMxCIu9P7/oTUWFeNqIZGwcr
- 9hoprhwRafb/AHUvrYtNCE4OSyq+e6kv+9tluZGPAg1vFzigTD
- 7Q6F53Gk1Lcoj3FVTN08=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751526AbaJAOD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:03:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaJAOD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 10:03:58 -0400
+Message-ID: <1412172233.7360.203.camel@ul30vt.home>
+Subject: Re: [PATCH 1/1] vfio-pci: Add SR-IOV VF configuration via sysfs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Andre Richter <andre.o.richter@gmail.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 01 Oct 2014 08:03:53 -0600
+In-Reply-To: <1412170733-7187-1-git-send-email-andre.o.richter@gmail.com>
+References: <1412170733-7187-1-git-send-email-andre.o.richter@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 13:42:27 Catalin Marinas wrote:
-> On Thu, Sep 04, 2014 at 11:11:04AM +0100, Arnd Bergmann wrote:
-> > On Wednesday 03 September 2014 14:19:02 Andrew Pinski wrote:
-> > > + * For 32bit abis where 64bit can be passed via one
-> > > + * register, use the same naming as the 64bit ones
-> > > + * as they will only have a 64 bit off_t.
-> > >   */
-> > > -#if __BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)
-> > > +#if (__BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)) || \
-> > > +       defined(__ARCH_WANT_64BIT_SYSCALLS)
-> > 
-> > I'm not sure if __ARCH_WANT_64BIT_SYSCALLS is the best name for
-> > this, since it's really only about off_t. It took me a while
-> > to understand what you are doing here.
+On Wed, 2014-10-01 at 15:38 +0200, Andre Richter wrote:
+> If a PCIe device bound to vfio-pci happens to be SR-IOV capabale,
+> there is no possibility to bring up/shutdown the device's VFs.
 > 
-> I'm not sure I fully get it yet. So with this change, we avoid using
-> syscall numbers like __NR_ftruncate64 in favour of __NR_ftruncate. Why?
-> (maybe there's a valid reason, just not getting it).
+> This patch adds a generic callback for the sysfs sriov_numvfs attribute.
+> The attribute will only show up for SR-IOV devices. Additionally,
+> each utilized pci_* function checks if the device is a PF.
+> 
+> Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
+> ---
+>  drivers/vfio/pci/vfio_pci.c | 25 ++++++++++++++++++++-----
+>  1 file changed, 20 insertions(+), 5 deletions(-)
 
-glibc depends on the name to decide which calling conventions it
-uses. I assume this is the same on IPL32 ARM.
+I don't understand why you'd want to do this.  The PF is typically
+managed by a host driver.  By allowing vfio-pci to manage SR-IOV, don't
+we potentially have assign-able PFs managing assign-able VFs?  That
+seems like a bad idea.  What use case do you have in mind?  Thanks,
 
-The general rule is that on a 32-bit architecture, __NR_ftruncate refers
-to the system call that takes a 32-bit off_t argument, while __NR_ftruncate64
-refers to the syscall that takes a 64-bit loff_t.
+Alex
 
-I would assume that the new ABI does not actually allow using 32-bit off_t
-in applications (that would be silly) and defaults to using 64-bit offsets,
-but it still needs to generate the right system calls.
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index f782533..2f6dfb3 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -919,12 +919,27 @@ static struct pci_error_handlers vfio_err_handlers = {
+>  	.error_detected = vfio_pci_aer_err_detected,
+>  };
+>  
+> +static int vfio_pci_sriov_configure(struct pci_dev *pdev, int num_vfs)
+> +{
+> +	int ret = 0;
+> +
+> +	if (num_vfs > 0) {
+> +		ret = pci_enable_sriov(pdev, num_vfs);
+> +		if (!ret)
+> +			ret = pci_num_vf(pdev);
+> +	} else
+> +		pci_disable_sriov(pdev);
+> +
+> +	return ret;
+> +}
+> +
+>  static struct pci_driver vfio_pci_driver = {
+> -	.name		= "vfio-pci",
+> -	.id_table	= NULL, /* only dynamic ids */
+> -	.probe		= vfio_pci_probe,
+> -	.remove		= vfio_pci_remove,
+> -	.err_handler	= &vfio_err_handlers,
+> +	.name			= "vfio-pci",
+> +	.id_table		= NULL, /* only dynamic ids */
+> +	.probe			= vfio_pci_probe,
+> +	.remove			= vfio_pci_remove,
+> +	.sriov_configure	= vfio_pci_sriov_configure,
+> +	.err_handler		= &vfio_err_handlers,
+>  };
+>  
+>  /*
 
-> Either way, ILP32 would still end up calling sys_ftruncate64() (rather
-> than the native sys_ftruncate()).
 
-sys_ftruncate64 does not exist in 64-bit kernels, it can either call
-compat_sys_ftruncate64_wrapper or sys_ftruncate. I'd assume it would
-call the latter and pass a single 64-bit register, but that is another
-matter.
 
-	Arnd
