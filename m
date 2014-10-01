@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaJAL3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:29:11 -0400
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:34400 "EHLO
-	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750768AbaJAL3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:29:08 -0400
-Message-ID: <542BE580.2000807@nexus-software.ie>
-Date: Wed, 01 Oct 2014 12:29:04 +0100
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "'David Miller'" <davem@davemloft.net>
-CC: "'peppe.cavallaro@st.com'" <peppe.cavallaro@st.com>,
-        "'rayagond@vayavyalabs.com'" <rayagond@vayavyalabs.com>,
-        "'vbridgers2013@gmail.com'" <vbridgers2013@gmail.com>,
-        "'srinivas.kandagatla@st.com'" <srinivas.kandagatla@st.com>,
-        "'wens@csie.org'" <wens@csie.org>,
-        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: Re: [PATCH 4/4] net: stmmac: add MSI support for Intel Quark X1000
-References: <F54AEECA5E2B9541821D670476DAE19C2B7F65A6@PGSMSX102.gar.corp.intel.com>
-In-Reply-To: <F54AEECA5E2B9541821D670476DAE19C2B7F65A6@PGSMSX102.gar.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	id S1751428AbaJALbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:31:39 -0400
+Received: from mga03.intel.com ([134.134.136.65]:1140 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaJALbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 07:31:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,631,1406617200"; 
+   d="scan'208";a="581813583"
+Message-ID: <1412163094.3126.0.camel@linux.intel.com>
+Subject: Re: [PATCH] MM: dmapool: Fixed a brace coding style issue
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Paul McQuade <paulmcquad@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Krzysztof =?UTF-8?Q?Ha=C5=82asa?= <khalasa@piap.pl>,
+        jiri Kosina <jkosina@suse.cz>, Hiroshige Sato <sato.vintage@gmail.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 01 Oct 2014 14:31:34 +0300
+In-Reply-To: <542B176E.6000007@gmail.com>
+References: <542B176E.6000007@gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Guys,
->
-> Just gently ping for the discussion to carry on before forgetting the context.
-> Anyone have any better idea or comments or concern to this topic?
-> Hope the above explanation clear out your doubt.
->
->
-> Regards,
-> Wilson
+On Tue, 2014-09-30 at 21:49 +0100, Paul McQuade wrote:
+> From 33890970bfffc2bd64b307c41e5c1c92aaba8a2e Mon Sep 17 00:00:00 2001
+> From: Paul McQuade <paulmcquad@gmail.com>
+> Date: Tue, 30 Sep 2014 21:39:37 +0100
+> Subject: [PATCH] MM: dmapool: Fixed a brace coding style issue
+> 
+> Removed 3 brace coding style for any arm of this statement
+> 
+> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+> ---
+>  mm/dmapool.c | 17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/dmapool.c b/mm/dmapool.c
+> index ba8019b..8b3b050 100644
+> --- a/mm/dmapool.c
+> +++ b/mm/dmapool.c
+> @@ -133,28 +133,27 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+>      struct dma_pool *retval;
+>      size_t allocation;
+>  
+> -    if (align == 0) {
+> +    if (align == 0)
+>          align = 1;
+> -    } else if (align & (align - 1)) {
+> +    else if (align & (align - 1))
+>          return NULL;
+> -    }
+>  
+> -    if (size == 0) {
+> +
 
-Hi Wilson.
+Extra empty line?
 
-Seeing you post now on the PCI emumeration suggestion from Dave Miller I see
 
-I wasn't copied on this https://lkml.org/lkml/2014/8/27/190 thread so 
-can only respond now....
+> +    if (size == 0)
+>          return NULL;
+> -    } else if (size < 4) {
+> +    else if (size < 4)
 
-What's missing from your MSI enabling code is the PVM mask/unmask 
-required on the Quark X1000 bridge - for *all* downstream devices using MSI.
+>          size = 4;
+> -    }
+> +
+>  
+>      if ((size % align) != 0)
+>          size = ALIGN(size, align);
+>  
+>      allocation = max_t(size_t, size, PAGE_SIZE);
+>  
+> -    if (!boundary) {
+> +    if (!boundary)
+>          boundary = allocation;
+> -    } else if ((boundary < size) || (boundary & (boundary - 1))) {
+> +    else if ((boundary < size) || (boundary & (boundary - 1)))
+>          return NULL;
+> -    }
+>  
+>      retval = kmalloc_node(sizeof(*retval), GFP_KERNEL, dev_to_node(dev));
+>      if (!retval)
 
-I realise it's not an upstreaming friendly piece of code - however - 
-without the PVM mask operation all MSIs on Quark should be considered 
-unreliable.
 
-Maybe you guys have submitted patches to the PCI layer on this already ? 
-If so feel free to ignore.
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
-If not then please re-evaluate all MSI enabling code.
-
- From the original
-
-http://downloadmirror.intel.com/23171/eng/Board_Support_Package_Sources_for_Intel_Quark_v1.0.0.7z
-
-+#if defined(CONFIG_INTEL_QUARK_X1000_SOC)
-+	#define mask_pvm(x) qrk_pci_pvm_mask(x)
-+	#define unmask_pvm(x) qrk_pci_pvm_unmask(x)
-+#else
-+	#define mask_pvm(x)
-+	#define unmask_pvm(x)
-+#endif
-+
-  static irqreturn_t stmmac_interrupt(int irq, void *dev_id)
-  {
-  	struct net_device *dev = (struct net_device *)dev_id;
-@@ -1601,10 +1686,12 @@ static irqreturn_t stmmac_interrupt(int irq, 
-void *dev_id)
-  		return IRQ_NONE;
-  	}
-
-+	mask_pvm(priv->pdev);
-+
-  	/* To handle GMAC own interrupts */
-  	if (priv->plat->has_gmac) {
--		int status = priv->hw->mac->host_irq_status((void __iomem *)
--							    dev->base_addr);
-+		int status = priv->hw->mac->host_irq_status(priv);
-+
-  		if (unlikely(status)) {
-  			if (status & core_mmc_tx_irq)
-  				priv->xstats.mmc_tx_irq_n++;
-@@ -1634,6 +1721,8 @@ static irqreturn_t stmmac_interrupt(int irq, void 
-*dev_id)
-  	/* To handle DMA interrupts */
-  	stmmac_dma_interrupt(priv);
-
-+	unmask_pvm(priv->pdev);
-+
-  	return IRQ_HANDLED;
-  }
