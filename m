@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaJALg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:36:26 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:38039 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaJALgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:36:24 -0400
-Message-ID: <1412163388.26751.39.camel@iivanov-dev>
-Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Kiran Padwal <kiran.padwal@smartplayin.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Date: Wed, 01 Oct 2014 14:36:28 +0300
-In-Reply-To: <542B088A.1050601@codeaurora.org>
-References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
-		  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>
-		 <542A31DF.7020402@smartplayin.com> <1412062606.5395.10.camel@iivanov-dev>
-	 <542B088A.1050601@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751554AbaJALic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:38:32 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56389 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413AbaJALia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 07:38:30 -0400
+Date: Wed, 1 Oct 2014 12:38:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-gpio@vger.kernel.org
+Message-ID: <20141001113809.GT4273@sirena.org.uk>
+References: <1412142466-14932-1-git-send-email-pramod.gurav@smartplayin.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ia6OAXuaU8F3AWLD"
+Content-Disposition: inline
+In-Reply-To: <1412142466-14932-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Cookie: So you're back... about time...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: remove use of gpiochip_remove() retval
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 12:46 -0700, Stephen Boyd wrote:
-> On 09/30/14 00:36, Ivan T. Ivanov wrote:
-> > On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
-> >>
-> >> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
-> > Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
-> > arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
-> > indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
-> >
-> > I will say that this is false positive :-). Please update your tool-chain.
-> 
-> Hopefully you're joking. Once this merges someone will find the warning
-> and complain. Telling them to upgrade their compiler isn't going to work.
 
-If it is known to be buggy why not?
+--Ia6OAXuaU8F3AWLD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> I wonder if checking for rc != 0 instead of rc < 0 would silence the
-> warning? 
+On Wed, Oct 01, 2014 at 11:17:46AM +0530, Pramod Gurav wrote:
+> Get rid of using return value from gpiochip_remove() as it returns
+> void with a new change in kernel.
 
-No. Anyway, will find some way to silence this warning.
+Applied, I'm assuming that the API change is going to be introduced in a
+future kernel version since obviously it'll break the build otherwise.
 
-Thanks,
-Ivan
+--Ia6OAXuaU8F3AWLD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUK+egAAoJECTWi3JdVIfQVBEH/0Ndu/7QPL4a04KoTt2tQ/3j
+kAFA2UYyA07bvFUdnFlYm+nAm+hle8dMvChm3zgTGNnvzYCPfGOpwwL+cuY8GaZb
+Iz7d5Ly2kPS5SY0obDngc1Vh/6TQWTx3sYg5W5mVdPynw9PcNi44Eq3ulNFuhaE9
+XviJe72jbt440BMQQSHrTLlY8+Tmtl8XiU69gNXxVLd+lguV9DmAHwwZ9ficXP0R
+TXYkN+bb7mtEXuGHKJVEodYNuu1RCH0Un72ve9Mya8Ce0eqf7euMJUPcVtDyEYvH
+UTq3nXc8iB4/OaJSGWFMq8k9R8CYGtkSo8DbmQ3ttFZbFVNbocI0j7kA6YHOm1g=
+=nkg+
+-----END PGP SIGNATURE-----
+
+--Ia6OAXuaU8F3AWLD--
