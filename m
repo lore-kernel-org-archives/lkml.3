@@ -1,141 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaJAVgU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:36:20 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:64358 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaJAVgS (ORCPT
+	id S1753541AbaJAVhL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:37:11 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36818 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaJAVhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:36:18 -0400
-Date: Wed, 1 Oct 2014 14:36:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: atull@opensource.altera.com
-Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
-        broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v4 4/4] pmbus: ltc2978: add regulator support
-Message-ID: <20141001213613.GA29312@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 1 Oct 2014 17:37:09 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, xiakaixu <xiakaixu@huawei.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jacob Shin <jacob.w.shin@gmail.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [GIT PULL] hw_breakpoints: Support AMD range breakpoints
+Date: Wed,  1 Oct 2014 23:37:00 +0200
+Message-Id: <1412199424-15059-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 03:18:20PM -0500, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Add simple on/off regulator support for ltc2978 and
-> other pmbus parts supported by ltc2978.c
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> 
-> v2: Remove '#include <linux/regulator/machine.h>'
->     Only one regulator per pmbus device
->     Get regulator_init_data from pdata or device tree
-> 
-> v3: Support multiple regulators for each chip
->     Move most code to pmbus_core.c
->     fixed values for on/off
-> 
-> v4: fix a #endif comment
->     simplify probe code, remove added switch statement
->     remove BUG_ON(), add error message and fix num_regulators
-> ---
->  drivers/hwmon/pmbus/Kconfig   |    7 +++++++
->  drivers/hwmon/pmbus/ltc2978.c |   37 +++++++++++++++++++++++++++++++++++++
->  2 files changed, 44 insertions(+)
-> 
-> diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-> index 6e1e493..79117b7 100644
-> --- a/drivers/hwmon/pmbus/Kconfig
-> +++ b/drivers/hwmon/pmbus/Kconfig
-> @@ -56,6 +56,13 @@ config SENSORS_LTC2978
->  	  This driver can also be built as a module. If so, the module will
->  	  be called ltc2978.
->  
-> +config SENSORS_LTC2978_REGULATOR
-> +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
+Ingo,
 
-We will need to update this and SENSORS_LTC2978 and add LTC2977 as well as
-LTM4646 to the list of supported chips.
+Please pull the perf/core-v2 branch that can be found at:
 
-Guenter
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	perf/core-v2
 
-> +	depends on SENSORS_LTC2978 && REGULATOR
-> +	help
-> +	  If you say yes here you get regulator support for Linear
-> +	  Technology LTC2974, LTC2978, LTC3880, and LTC3883.
-> +
->  config SENSORS_MAX16064
->  	tristate "Maxim MAX16064"
->  	default n
-> diff --git a/drivers/hwmon/pmbus/ltc2978.c b/drivers/hwmon/pmbus/ltc2978.c
-> index e24ed52..422712e 100644
-> --- a/drivers/hwmon/pmbus/ltc2978.c
-> +++ b/drivers/hwmon/pmbus/ltc2978.c
-> @@ -22,6 +22,8 @@
->  #include <linux/err.h>
->  #include <linux/slab.h>
->  #include <linux/i2c.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/of_regulator.h>
->  #include "pmbus.h"
->  
->  enum chips { ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676 };
-> @@ -374,6 +376,30 @@ static const struct i2c_device_id ltc2978_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, ltc2978_id);
->  
-> +#if IS_ENABLED(CONFIG_SENSORS_LTC2978_REGULATOR)
-> +static const struct regulator_desc ltc2978_reg_desc[] = {
-> +	PMBUS_REGULATOR("vout_en", 0),
-> +	PMBUS_REGULATOR("vout_en", 1),
-> +	PMBUS_REGULATOR("vout_en", 2),
-> +	PMBUS_REGULATOR("vout_en", 3),
-> +	PMBUS_REGULATOR("vout_en", 4),
-> +	PMBUS_REGULATOR("vout_en", 5),
-> +	PMBUS_REGULATOR("vout_en", 6),
-> +	PMBUS_REGULATOR("vout_en", 7),
-> +};
-> +
-> +static struct of_regulator_match ltc2978_reg_matches[] = {
-> +	{ .name = "vout_en0" },
-> +	{ .name = "vout_en1" },
-> +	{ .name = "vout_en2" },
-> +	{ .name = "vout_en3" },
-> +	{ .name = "vout_en4" },
-> +	{ .name = "vout_en5" },
-> +	{ .name = "vout_en6" },
-> +	{ .name = "vout_en7" },
-> +};
-> +#endif /* CONFIG_SENSORS_LTC2978_REGULATOR */
-> +
->  static int ltc2978_probe(struct i2c_client *client,
->  			 const struct i2c_device_id *id)
->  {
-> @@ -487,6 +513,17 @@ static int ltc2978_probe(struct i2c_client *client,
->  	default:
->  		return -ENODEV;
->  	}
-> +
-> +#if IS_ENABLED(CONFIG_SENSORS_LTC2978_REGULATOR)
-> +	info->num_regulators = info->pages;
-> +	info->reg_desc = ltc2978_reg_desc;
-> +	info->reg_matches = ltc2978_reg_matches;
-> +	if (info->num_regulators > ARRAY_SIZE(ltc2978_reg_desc)) {
-> +		dev_err(&client->dev, "num_regulators too large!");
-> +		info->num_regulators = ARRAY_SIZE(ltc2978_reg_desc);
-> +	}
-> +#endif
-> +
->  	return pmbus_do_probe(client, id, info);
->  }
->  
-> -- 
-> 1.7.9.5
-> 
+HEAD: 33252c1bb36dd7405f412a9ef8fc05dec995064a
+
+It has been acked by Jiri and Oleg.
+---
+Summary:
+
+* Extend breakpoint tools and core to support address range through perf
+  event with initial backend support for AMD extended breakpoints.
+  Syntax is:
+
+	perf record -e mem:addr/len:type
+
+  For example set write breakpoint from 0x1000 to 0x1200 (0x1000 + 512)
+
+	perf record -e mem:0x1000/512:w
+
+* Clean up a bit breakpoint code validation
+---
+
+Thanks,
+	Frederic
+---
+
+Jacob Shin (4):
+      perf/x86/amd: AMD support for bp_len > HW_BREAKPOINT_LEN_8
+      perf tools: allow user to specify hardware breakpoint bp_len
+      perf tools: add hardware breakpoint bp_len test cases
+      perf/x86: Remove get_hbp_len and replace with bp_len
+
+
+ arch/x86/include/asm/cpufeature.h        |  2 ++
+ arch/x86/include/asm/debugreg.h          |  5 +++
+ arch/x86/include/asm/hw_breakpoint.h     |  1 +
+ arch/x86/include/uapi/asm/msr-index.h    |  4 +++
+ arch/x86/kernel/cpu/amd.c                | 19 +++++++++++
+ arch/x86/kernel/hw_breakpoint.c          | 45 ++++++++++---------------
+ tools/perf/Documentation/perf-record.txt |  7 ++--
+ tools/perf/tests/parse-events.c          | 58 ++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.c           | 21 ++++++------
+ tools/perf/util/parse-events.h           |  2 +-
+ tools/perf/util/parse-events.l           |  1 +
+ tools/perf/util/parse-events.y           | 26 ++++++++++++--
+ 12 files changed, 148 insertions(+), 43 deletions(-)
