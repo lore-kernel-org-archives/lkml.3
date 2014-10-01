@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaJAUpe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:45:34 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:23738 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751005AbaJAUpc (ORCPT
+	id S1751956AbaJAUrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:47:06 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36552 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaJAUrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:45:32 -0400
-Message-ID: <542C67E6.90507@fb.com>
-Date: Wed, 1 Oct 2014 14:45:26 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <axboe@kernel.dk>
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.18
-References: <20141001203632.GA26119@laptop.dumpdata.com>
-In-Reply-To: <20141001203632.GA26119@laptop.dumpdata.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+	Wed, 1 Oct 2014 16:47:03 -0400
+Date: Wed, 01 Oct 2014 16:47:01 -0400 (EDT)
+Message-Id: <20141001.164701.150693070220358210.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net 0/2] r8152: patches about firmware
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-51-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-51-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-01_06:2014-10-01,2014-10-01,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1410010205
-X-FB-Internal: deliver
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 01 Oct 2014 13:47:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-01 14:36, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
->
-> Please pull the following branch:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.18
->
-> which is based on your for-3.18/drivers branch (last commit is
-> e9f05b4 drbd: use RB_DECLARE_CALLBACKS() to define augment callbacks).
->
-> This pull has two fixes and one cleanup. Nothing earthshattering.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Wed, 1 Oct 2014 13:25:09 +0800
 
-Pulled, thanks.
+> The patches fix the issues when the firmware exists.
+> 
+> For the multiple OS, the firmware may be loaded by the
+> driver of the other OS. And the Linux driver has influences
+> on it.
 
--- 
-Jens Axboe
-
+Series applied, thanks.
