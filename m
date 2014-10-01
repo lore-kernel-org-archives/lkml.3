@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaJAREm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:04:42 -0400
-Received: from fieldses.org ([174.143.236.118]:38642 "EHLO fieldses.org"
+	id S1752145AbaJARG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:06:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9972 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236AbaJAREk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:04:40 -0400
-Date: Wed, 1 Oct 2014 13:04:40 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] nfsd bugfix for 3.17
-Message-ID: <20141001170440.GB28623@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1751411AbaJARG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:06:27 -0400
+Message-ID: <1412183174.7360.218.camel@ul30vt.home>
+Subject: Re: linux-next: manual merge of the vfio tree with the pci tree
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Date: Wed, 01 Oct 2014 11:06:14 -0600
+In-Reply-To: <20141001131421.64cab8d7@canb.auug.org.au>
+References: <20141001131421.64cab8d7@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following change from:
+On Wed, 2014-10-01 at 13:14 +1000, Stephen Rothwell wrote:
+> Hi Alex,
+> 
+> Today's linux-next merge of the vfio tree got a conflict in
+> drivers/pci/msi.c between commits a160fe94cb53 ("PCI/MSI: Remove unused
+> get_cached_msi_msg()") and 18ef822c59f6 ("PCI/MSI: Rename
+> __get_cached_msi_msg() to get_cached_msi_msg()") from the pci tree and
+> commit 3b307ffe3faa ("PCI: Export MSI message relevant functions") from
+> the vfio tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).  And then I added this merge fix patch (I should probably
+> also have added an include of linux/irq.h):
 
-  git://linux-nfs.org/~bfields/linux.git for-3.17
+Hi Stephen,
 
-This fixes a data corruption bug introduced by the v3.16 xdr encoding
-rewrite.  I haven't managed to reproduce it myself yet, but it's
-apparently not hard to hit given the right workload.
+Thanks for the heads-up and manual merge.  I've reviewed the changes to
+the MSI API that got us into this conflict and I disagree with them.
+I've posted a series to revert a selection of changes currently coming
+in through pci/next that should make for a clean merge should Bjorn come
+to the same conclusion.  If you need to re-apply the fix in the
+meantime, please do include <linux/irq.h> since it generated a build
+failure on arm without it.  Thanks!
 
---b.
+Alex
 
-commit 15b23ef5d348
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Wed Sep 24 16:32:34 2014 -0400
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 1 Oct 2014 13:09:58 +1000
+> Subject: [PATCH] vfio: update for get_cached_msi_msg API change
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/vfio/pci/vfio_pci_intrs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+> index 553212f037c3..a068bb0d69e5 100644
+> --- a/drivers/vfio/pci/vfio_pci_intrs.c
+> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
+> @@ -559,7 +559,7 @@ static int vfio_msi_set_vector_signal(struct vfio_pci_device *vdev,
+>  	if (msix) {
+>  		struct msi_msg msg;
+>  
+> -		get_cached_msi_msg(irq, &msg);
+> +		get_cached_msi_msg(irq_get_msi_desc(irq), &msg);
+>  		write_msi_msg(irq, &msg);
+>  	}
+>  
+> -- 
+> 2.1.1
+> 
+> 
+> Someone needs to remember to send this fix to Linus when these 2 trees
+> are merged into his tree ...
 
-    nfsd4: fix corruption of NFSv4 read data
-    
-    The calculation of page_ptr here is wrong in the case the read doesn't
-    start at an offset that is a multiple of a page.
-    
-    The result is that nfs4svc_encode_compoundres sets rq_next_page to a
-    value one too small, and then the loop in svc_free_res_pages may
-    incorrectly fail to clear a page pointer in rq_respages[].
-    
-    Pages left in rq_respages[] are available for the next rpc request to
-    use, so xdr data may be written to that page, which may hold data still
-    waiting to be transmitted to the client or data in the page cache.
-    
-    The observed result was silent data corruption seen on an NFSv4 client.
-    
-    We tag this as "fixing" 05638dc73af2 because that commit exposed this
-    bug, though the incorrect calculation predates it.
-    
-    Particular thanks to Andrea Arcangeli and David Gilbert for analysis and
-    testing.
-    
-    Fixes: 05638dc73af2 "nfsd4: simplify server xdr->next_page use"
-    Cc: stable@vger.kernel.org
-    Reported-by: Andrea Arcangeli <aarcange@redhat.com>
-    Tested-by: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index e94457c33ad6..b01f6e100ee8 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -3104,7 +3104,8 @@ static __be32 nfsd4_encode_splice_read(
- 
- 	buf->page_len = maxcount;
- 	buf->len += maxcount;
--	xdr->page_ptr += (maxcount + PAGE_SIZE - 1) / PAGE_SIZE;
-+	xdr->page_ptr += (buf->page_base + maxcount + PAGE_SIZE - 1)
-+							/ PAGE_SIZE;
- 
- 	/* Use rest of head for padding and remaining ops: */
- 	buf->tail[0].iov_base = xdr->p;
+
