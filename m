@@ -1,132 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaJADO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 23:14:56 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:50111 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaJADOy (ORCPT
+	id S1752033AbaJADQM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 23:16:12 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:60656 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaJADQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 23:14:54 -0400
-X-IronPort-AV: E=Sophos;i="5.04,630,1406617200"; 
-   d="scan'208";a="46981455"
-Message-ID: <542B71B1.4020103@broadcom.com>
-Date: Tue, 30 Sep 2014 20:14:57 -0700
-From: Prashant <prashant@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 30 Sep 2014 23:16:11 -0400
+Message-ID: <542B7200.6030902@landley.net>
+Date: Tue, 30 Sep 2014 22:16:16 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>
-CC: <bpoirier@suse.de>, <mchan@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
-References: <1409960135.18724.33.camel@prashant>	<1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>	<20140905.171306.1460013939580748402.davem@davemloft.net> <20140905.213902.1124686922505260665.davem@davemloft.net>
-In-Reply-To: <20140905.213902.1124686922505260665.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: frowand.list@gmail.com
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v5] init: Disable defaults if init= fails
+References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net> <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net> <542B5E44.40303@gmail.com>
+In-Reply-To: <542B5E44.40303@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/30/14 20:52, Frank Rowand wrote:
+> On 9/30/2014 5:58 PM, Rob Landley wrote:
+>> If you're going to argue that it should "default y", that's a defensible
+>> choice. But please don't argue for kernel config symbols with a negative
+>> meaning or we'll start having allyesconfig_n brain damage too...
+> 
+> Yes, "default y" is a valid answer to my request.
 
+Works for me.
 
-On 9/5/2014 9:39 PM, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Fri, 05 Sep 2014 17:13:06 -0700 (PDT)
->
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Fri, 05 Sep 2014 17:03:30 -0700
+>>> Instead of using a config option, would adding another kernel
+>>> command line option, such as 'init_fail_is_fatal', work for
+>>> your needs?
 >>
->>> Instead of this private helper (and pretty limited one btw), we could
->>> add a core function, that would build skbs with order-0 fragments.
->>>
->>> Instead of skb_linearize(), I guess many call sites could instead use
->>> this new helper.
->>>
->>> Because as you said, skb_linearize() of one 64KB GSO packet can ask
->>> order-5 allocations, and this generally does not work reliably.
+>> That was the previous series of patches you ignored, which added code so
+>> you can provide _extra_ kernel commands to tell it _not_ to do stuff.
+>> The patches did not generate noticeable enthusiasm.
+> 
+> But there also was not a strong push back either.  Just Chuck's suggestion
+> of an alternate syntax, and your suggestion of instead using a config
+> option (and possibly immediately deprecating the config option).
+> 
+> You could as easily frame the argument that the added code was to
+> tell the kernel to "_do_ stuff" (panic) instead of "_not_ do stuff".
+> But that is just semantics on my part; whatever.
+> 
+> I thought the general trend was to try to avoid adding config options.
+> The strictinit method seems fine to me.
+
+Embedded guys care:
+
+http://elinux.org/Linux_Tiny
+
+http://lkml.iu.edu//hypermail/linux/kernel/1409.2/03763.html
+
+>>> I have a feeling this has already been proposed,
+>>> as the 'strictinit' option mentioned in the changes from v3
+>>> below might be the same concept?
 >>
->> xen-netback could make use of this helper too.
->
-> I was curious what it might look like so I cobbled the following
-> completely untested patch together :-)
->
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index da1378a..eba0ad6 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -955,6 +955,67 @@ struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
->   EXPORT_SYMBOL(skb_copy);
->
->   /**
-> + *	skb_copy_pskb	-	copy sk_buff into a paged skb
-> + *	@oskb: buffer to copy
-> + *	@gfp_mask: allocation priority
-> + *
-> + *	Normalize a paged skb into one that maximally uses order
-> + *	zero pages in it's fragment array.  This is used to canonicalize
-> + *	spaghetti SKBs that use the page array inefficiently (f.e. only
-> + *	one byte per page frag).
-> + */
-> +
-> +struct sk_buff *skb_copy_pskb(const struct sk_buff *oskb, gfp_t gfp_mask)
-> +{
-> +	unsigned int data_len = oskb->data_len;
-> +	int offset, npages, i;
-> +	struct sk_buff *skb;
-> +
-> +	npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
-> +	if (npages > MAX_SKB_FRAGS)
-> +		return NULL;
-> +
-> +	skb = __alloc_skb(skb_end_offset(oskb), gfp_mask,
-> +			  skb_alloc_rx_flag(oskb), NUMA_NO_NODE);
-> +	if (!skb)
-> +		return NULL;
-> +
-> +	skb_reserve(skb, skb_headroom(oskb));
-> +	skb_put(skb, skb_headlen(oskb));
-> +	skb_copy_from_linear_data(oskb, skb->data, skb->len);
-> +
-> +	copy_skb_header(skb, oskb);
-> +
-> +	skb->truesize += data_len;
-> +	offset = skb_headlen(oskb);
-> +	for (i = 0; i < npages; i++) {
-> +		struct page *page = alloc_page(gfp_mask);
-> +		unsigned int chunk;
-> +		u8 *vaddr;
-> +
-> +		if (!page) {
-> +			kfree(skb);
-> +			skb = NULL;
-> +			break;
-> +		}
-> +
-> +		chunk = min_t(unsigned int, data_len, PAGE_SIZE);
-> +		skb_fill_page_desc(skb, i, page, 0, chunk);
-> +
-> +		vaddr = kmap_atomic(page);
-> +		skb_copy_bits(oskb, offset, vaddr, chunk);
-> +		kunmap_atomic(vaddr);
-> +
-> +		offset += chunk;
-> +		data_len -= chunk;
-> +		skb->data_len += chunk;
-> +	}
-> +
-> +	return skb;
-> +}
-> +EXPORT_SYMBOL(skb_copy_pskb);
-> +
-> +/**
->    *	__pskb_copy_fclone	-  create copy of an sk_buff with private head.
->    *	@skb: buffer to copy
->    *	@headroom: headroom of new skb
->
-Sorry about the late reply, out of all the HW bug conditions checked in 
-tg3_tx_frag_set() the most frequently hit condition is the short 8 byte 
-dma bug, where the chip cannot handle TX descriptors whose data buffer 
-is 8 bytes or less. Most of the LSO skb's given to the driver has their 
-fragments filled upto PAGE_SIZE (expect the last fragment depending on 
-skb->len). And if such a LSO skb's last fragment meets the 8 bytes HW 
-bug condition the above routine will not help workaround this particular 
-case.
+>> That was it, yes.
+>>
+>> Having to get your kernel config right (and your kernel command line
+>> right) in order for your system to boot is not really a new concept, is
+>> it? You can still specify "init=/bin/sh" if you want that. (I do it all
+>> the time when I need to edit a system I haven't bothered to look up the
+>> root password to.)
+> 
+> Yes, of course I can.  So it falls back to personal preference (as I said,
+> I like that some failed boots will drop into a shell without having to
+> change the kernel command line).
+
+The config option lets it do that. Default Y preserves the old behavior.
+
+*shrug*
+
+Rob
