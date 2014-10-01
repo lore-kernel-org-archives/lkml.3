@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaJARIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:08:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39683 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461AbaJARIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:08:34 -0400
-Date: Wed, 1 Oct 2014 14:08:29 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 01/11] perf stat: Fix AGGR_CORE segfault on multi-socket
- system
-Message-ID: <20141001170829.GD2799@kernel.org>
-References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
- <1412174192-7010-2-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412174192-7010-2-git-send-email-matt@console-pimps.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752913AbaJARJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:09:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45391 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaJARJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:09:01 -0400
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Add KPSS watchdog driver to relevant device trees
+Date: Wed,  1 Oct 2014 12:03:13 -0500
+Message-Id: <cover.1412182773.git.joshc@codeaurora.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 01, 2014 at 03:36:22PM +0100, Matt Fleming escreveu:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> When printing the stats associated with a counter in AGGR_MODE mode, the
-> 'cpu' argument represents an encoded socket and core_id, not a 'cpu'.
-> Using it as an index into the any of the *_stats[MAX_NR_CPUS] arrays
-> generates a SIGSEGV if the encoded socket id is non-zero.
-> 
-> Follow the AGGR_GLOBAL case and reset the cpu index to 0.
+Now that the Krait Processor Sub-system (KPSS) Watchdog driver has been pulled
+into Wim's tree destined for 3.18, add descriptions of the WDT in the relevant
+device trees, and include the driver in qcom_defconfig.
 
-So, is this still needed after applying Andi's patch:
+Josh Cartwright (4):
+  ARM: qcom: add QCOM_WDT driver to qcom_defconfig
+  ARM: qcom: add description of KPSS WDT for IPQ8064
+  ARM: qcom: add description of KPSS WDT for APQ8064
+  ARM: qcom: add description of KPSS WDT for MSM8960
 
-  perf stat: Fix --per-core on multi socket systems
+ arch/arm/boot/dts/qcom-apq8064.dtsi | 15 +++++++++++++++
+ arch/arm/boot/dts/qcom-ipq8064.dtsi | 15 +++++++++++++++
+ arch/arm/boot/dts/qcom-msm8960.dtsi | 15 +++++++++++++++
+ arch/arm/configs/qcom_defconfig     |  2 ++
+ 4 files changed, 47 insertions(+)
 
-  https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/commit/?h=perf/core&id=da88c7f78d842a6938d9adde6af87a2ce262051d
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-Or should this be applied on top of that one, after fixing up the
-conflicts?
-
-- Arnaldo
- 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  tools/perf/builtin-stat.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-> index b22c62f80078..53bd6b729498 100644
-> --- a/tools/perf/builtin-stat.c
-> +++ b/tools/perf/builtin-stat.c
-> @@ -965,7 +965,7 @@ static void abs_printout(int id, int nr, struct perf_evsel *evsel, double avg)
->  
->  	aggr_printout(evsel, id, nr);
->  
-> -	if (aggr_mode == AGGR_GLOBAL)
-> +	if (aggr_mode == AGGR_GLOBAL || aggr_mode == AGGR_CORE)
->  		cpu = 0;
->  
->  	fprintf(output, fmt, avg, csv_sep);
-> -- 
-> 1.9.3
