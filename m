@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaJAS2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:28:41 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55637 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358AbaJAS2j (ORCPT
+	id S1753852AbaJAS3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:29:47 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:43926 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaJAS3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:28:39 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v3 2/2] x86_64: Don't save flags on context switch
-Date: Wed,  1 Oct 2014 11:28:25 -0700
-Message-Id: <bf6fb790787eb95b922157838f52712c25dda157.1412187233.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1412187233.git.luto@amacapital.net>
-References: <cover.1412187233.git.luto@amacapital.net>
-In-Reply-To: <cover.1412187233.git.luto@amacapital.net>
-References: <cover.1412187233.git.luto@amacapital.net>
+	Wed, 1 Oct 2014 14:29:45 -0400
+X-IronPort-AV: E=Sophos;i="5.04,633,1406617200"; 
+   d="scan'208";a="47052285"
+Message-ID: <542C4817.60301@broadcom.com>
+Date: Wed, 1 Oct 2014 11:29:43 -0700
+From: Prashant <prashant@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Miller <davem@davemloft.net>, <bpoirier@suse.de>,
+        <mchan@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
+References: <1409960135.18724.33.camel@prashant>		<1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>		<20140905.171306.1460013939580748402.davem@davemloft.net>	 <20140905.213902.1124686922505260665.davem@davemloft.net>	 <542B71B1.4020103@broadcom.com> <1412137489.16704.26.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1412137489.16704.26.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the kernel always runs with clean flags (in particular, NT
-is clear), there is no need to save and restore flags on every
-context switch.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/include/asm/switch_to.h | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
-index d7f3b3b78ac3..751bf4b7bf11 100644
---- a/arch/x86/include/asm/switch_to.h
-+++ b/arch/x86/include/asm/switch_to.h
-@@ -79,12 +79,12 @@ do {									\
- #else /* CONFIG_X86_32 */
- 
- /* frame pointer must be last for get_wchan */
--#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
--#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
-+#define SAVE_CONTEXT    "pushq %%rbp ; movq %%rsi,%%rbp\n\t"
-+#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp\t"
- 
- #define __EXTRA_CLOBBER  \
- 	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
--	  "r12", "r13", "r14", "r15"
-+	  "r12", "r13", "r14", "r15", "flags"
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
- #define __switch_canary							  \
-@@ -100,7 +100,11 @@ do {									\
- #define __switch_canary_iparam
- #endif	/* CC_STACKPROTECTOR */
- 
--/* Save restore flags to clear handle leaking NT */
-+/*
-+ * There is no need to save or restore flags, because flags are always
-+ * clean in kernel mode, with the possible exception of IOPL.  Kernel IOPL
-+ * has no effect.
-+ */
- #define switch_to(prev, next, last) \
- 	asm volatile(SAVE_CONTEXT					  \
- 	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
--- 
-1.9.3
+On 9/30/2014 9:24 PM, Eric Dumazet wrote:
+> On Tue, 2014-09-30 at 20:14 -0700, Prashant wrote:
+>
+>> Sorry about the late reply, out of all the HW bug conditions checked in
+>> tg3_tx_frag_set() the most frequently hit condition is the short 8 byte
+>> dma bug, where the chip cannot handle TX descriptors whose data buffer
+>> is 8 bytes or less. Most of the LSO skb's given to the driver has their
+>> fragments filled upto PAGE_SIZE (expect the last fragment depending on
+>> skb->len). And if such a LSO skb's last fragment meets the 8 bytes HW
+>> bug condition the above routine will not help workaround this particular
+>> case.
+>
+> Thats pretty easy to work around.
+>
+> Say rebuilt skb has N frags (N > 1 given your description)
+>
+> They are numbered 0, ... N-2, N-1
+>
+> Instead of filling N-2 completely, fill it to PAGE_SIZE-8, so that last
+> frag has at least 8 bytes in it.
 
+definitely it can be tweaked to match what is needed with additional 
+workarounds.
+
+>
+> Also take a look at commit 2e4e44107176d552f8bb1bb76053e850e3809841
+> ("net: add alloc_skb_with_frags() helper")
+>
+>
+This helper is much modular/flexible than the initial proposed one. Thanks.
+>
