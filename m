@@ -1,67 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaJAUWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:22:40 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:50694 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbaJAUWj (ORCPT
+	id S1751996AbaJAUY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:24:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37146 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaJAUYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:22:39 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/2] wd719x: Introduce Western Digital WD7193/7197/7296 PCI SCSI card driver
-Date: Wed, 1 Oct 2014 22:22:13 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: linux-scsi@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <1411757808-12530-1-git-send-email-linux@rainbow-software.org> <20141001181907.GA668@infradead.org>
-In-Reply-To: <20141001181907.GA668@infradead.org>
-X-KMail-QuotePrefix: > 
+	Wed, 1 Oct 2014 16:24:25 -0400
+Date: Wed, 1 Oct 2014 16:23:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Arianna Avanzini <avanzini.arianna@gmail.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, bob.liu@oracle.com, felipe.franciosi@citrix.com,
+        axboe@fb.com
+Subject: Re: [PATCH RFC v2 5/5] xen, blkback: negotiate of the number of
+ block rings with the frontend
+Message-ID: <20141001202353.GE12581@laptop.dumpdata.com>
+References: <1410479844-2864-1-git-send-email-avanzini.arianna@gmail.com>
+ <1410479844-2864-6-git-send-email-avanzini.arianna@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201410012222.14159.linux@rainbow-software.org>
+In-Reply-To: <1410479844-2864-6-git-send-email-avanzini.arianna@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 20:19:07 Christoph Hellwig wrote:
-> On Fri, Sep 26, 2014 at 08:56:46PM +0200, Ondrej Zary wrote:
-> > The card requires firmware that can be cut out of the Windows NT driver
-> > that can be downloaded from WD at:
-> > http://support.wdc.com/product/download.asp?groupid=801&sid=27&lang=en
-> > There is no license anywhere in the file or on the page - so I guess that
-> > the firmware cannot be added to linux-firmware.
-> >
-> > This script downloads and extracts the firmware:
-> >
-> > #!/bin/sh
-> > wget http://support.wdc.com/download/archive/pciscsi.exe
-> > lha xi pciscsi.exe pci-scsi.exe
-> > lha xi pci-scsi.exe nt/wd7296a.sys
-> > rm pci-scsi.exe
-> > dd if=wd7296a.sys of=wd719x-risc.bin bs=1 skip=5760 count=14336
-> > dd if=wd7296a.sys of=wd719x-wcs.bin bs=1 skip=20096 count=514
-> > rm wd7296a.sys
->
-> Might be worth to add this script to the tree somewhere.
+On Fri, Sep 12, 2014 at 01:57:24AM +0200, Arianna Avanzini wrote:
+> This commit lets the backend driver advertise the number of available
+> hardware queues; it also implements gathering from the frontend driver
+> the number of rings actually available for mapping.
+> 
+> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+> ---
+>  drivers/block/xen-blkback/xenbus.c | 44 +++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 43 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> index a4f13cc..9ff6ced 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -477,6 +477,34 @@ static void xen_vbd_free(struct xen_vbd *vbd)
+>  	vbd->bdev = NULL;
+>  }
+>  
+> +static int xen_advertise_hw_queues(struct xen_blkif *blkif,
+> +				   struct request_queue *q)
+> +{
+> +	struct xen_vbd *vbd = &blkif->vbd;
+> +	struct xenbus_transaction xbt;
+> +	int err;
+> +
+> +	if (q && q->mq_ops)
+> +		vbd->nr_supported_hw_queues = q->nr_hw_queues;
+> +
+> +	err = xenbus_transaction_start(&xbt);
+> +	if (err) {
+> +		BUG_ON(!blkif->be);
+> +		xenbus_dev_fatal(blkif->be->dev, err, "starting transaction (hw queues)");
+> +		return err;
+> +	}
+> +
+> +	err = xenbus_printf(xbt, blkif->be->dev->nodename, "nr_supported_hw_queues", "%u",
+> +			    blkif->vbd.nr_supported_hw_queues);
 
-Maybe somewhere in Documentation?
+I would (as David had mentioned) use the same keys that netfront is using for negotiating
+this.
 
-Unfortunately, there is no single place to collect scripts like this.
-DVB has nice script at Documentation/dvb/get_dvb_firmware.
-But e.g. b43 requires an extrnal tool called b43-fwcutter.
+Plus that means you can copy-n-paste the text from netif.h to blkif.h instead of having
+to write it :-)
 
-> I'd be happy to merge the driver, but I'd love to get a second review
-> for it first.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +	if (err)
+> +		xenbus_dev_error(blkif->be->dev, err, "writing %s/nr_supported_hw_queues",
+> +				 blkif->be->dev->nodename);
+> +
+> +	xenbus_transaction_end(xbt, 0);
+> +
+> +	return err;
+> +}
+> +
+>  static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+>  			  unsigned major, unsigned minor, int readonly,
+>  			  int cdrom)
+> @@ -484,6 +512,7 @@ static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+>  	struct xen_vbd *vbd;
+>  	struct block_device *bdev;
+>  	struct request_queue *q;
+> +	int err;
+>  
+>  	vbd = &blkif->vbd;
+>  	vbd->handle   = handle;
+> @@ -522,6 +551,10 @@ static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
+>  	if (q && blk_queue_secdiscard(q))
+>  		vbd->discard_secure = true;
+>  
+> +	err = xen_advertise_hw_queues(blkif, q);
+> +	if (err)
+> +		return -ENOENT;
+> +
+>  	DPRINTK("Successful creation of handle=%04x (dom=%u)\n",
+>  		handle, blkif->domid);
+>  	return 0;
+> @@ -935,7 +968,16 @@ static int connect_ring(struct backend_info *be)
+>  
+>  	DPRINTK("%s", dev->otherend);
+>  
+> -	blkif->nr_rings = 1;
+> +	err = xenbus_gather(XBT_NIL, dev->otherend, "nr_blk_rings",
+> +			    "%u", &blkif->nr_rings, NULL);
+> +	if (err) {
+> +		/*
+> +		 * Frontend does not support multiqueue; force compatibility
+> +		 * mode of the driver.
+> +		 */
+> +		blkif->vbd.nr_supported_hw_queues = 0;
+> +		blkif->nr_rings = 1;
+I would add also:
 
+	pr_debug("Advertised %u queues, fronted deaf - using one ring.\n");
 
--- 
-Ondrej Zary
+To make it easier during debugging/testing to figure out why the frontend
+does not seem to use it (and having an easy way to figure out why).
+
+> +	}
+>  
+>  	ring_ref = kzalloc(sizeof(unsigned long) * blkif->nr_rings, GFP_KERNEL);
+>  	if (!ring_ref)
+> -- 
+> 2.1.0
+> 
