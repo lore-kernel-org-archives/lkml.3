@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387AbaJAKvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 06:51:45 -0400
-Received: from ozlabs.org ([103.22.144.67]:40148 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992AbaJAKvo convert rfc822-to-8bit (ORCPT
+	id S1751442AbaJAK5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 06:57:16 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39986 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaJAK5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 06:51:44 -0400
-Message-ID: <1412160702.19209.59.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 03/17] powerpc/cell: Make spu_flush_all_slbs() generic
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Wed, 01 Oct 2014 20:51:42 +1000
-In-Reply-To: <20141001071330.E4262140174@ozlabs.org>
-References: <20141001071330.E4262140174@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 1 Oct 2014 06:57:15 -0400
+Date: Wed, 1 Oct 2014 11:56:59 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Sean Paul <seanpaul@chromium.org>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "ritesh.harjani@gmail.com" <ritesh.harjani@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH] arm64: Use and error-check DMA_ERROR_CODE
+Message-ID: <20141001105659.GF12702@e104818-lin.cambridge.arm.com>
+References: <1412108121-19262-1-git-send-email-seanpaul@chromium.org>
+ <20141001101323.GB2587@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001101323.GB2587@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 17:13 +1000, Michael Ellerman wrote:
-> On Tue, 2014-30-09 at 10:34:52 UTC, Michael Neuling wrote:
-> > diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-> > index 2858108..f3d338f 100644
-> > --- a/arch/powerpc/include/asm/copro.h
-> > +++ b/arch/powerpc/include/asm/copro.h
-> > @@ -15,4 +15,10 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+On Wed, Oct 01, 2014 at 11:13:23AM +0100, Will Deacon wrote:
+> On Tue, Sep 30, 2014 at 09:15:21PM +0100, Sean Paul wrote:
+> > This patch replaces the static assignment of ~0 to dma_handle with
+> > DMA_ERROR_CODE to be consistent with other platforms.
+> > 
+> > In addition to that, it also adds a check for DMA_ERROR_CODE before
+> > calling __dma_free_coherent with an invalid dma_handle.
+> > 
+> > Signed-off-by: Sean Paul <seanpaul@chromium.org>
+> > ---
+> >  arch/arm64/mm/dma-mapping.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+> > index 4164c5a..69fd2c4 100644
+> > --- a/arch/arm64/mm/dma-mapping.c
+> > +++ b/arch/arm64/mm/dma-mapping.c
+> > @@ -125,7 +125,7 @@ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
+> >  no_map:
+> >  	__dma_free_coherent(dev, size, ptr, *dma_handle, attrs);
+> >  no_mem:
+> > -	*dma_handle = ~0;
+> > +	*dma_handle = DMA_ERROR_CODE;
+> >  	return NULL;
+> >  }
 > >  
-> >  int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid);
+> > @@ -136,7 +136,9 @@ static void __dma_free_noncoherent(struct device *dev, size_t size,
+> >  	void *swiotlb_addr = phys_to_virt(dma_to_phys(dev, dma_handle));
 > >  
+> >  	vunmap(vaddr);
+> > -	__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
 > > +
-> > +#ifdef CONFIG_PPC_COPRO_BASE
-> > +void copro_flush_all_slbs(struct mm_struct *mm);
-> > +#else
-> > +#define copro_flush_all_slbs(mm) do {} while(0)
+> > +	if (dma_handle != DMA_ERROR_CODE)
+> > +		__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
 > 
-> This can be a static inline, so it should be. That way you get type checking on
-> the argument for CONFIG_PPC_COPRO_BASE=n.
+> Is it legal to try and free a DMA buffer after a failed allocation? If so, I
+> think we need something similar for arch/arm/.
 
-OK, I'll update.
+If the allocation failed, we don't even have a vaddr to unmap, so I
+don't see the reason for the additional check.
 
-Mikey
+-- 
+Catalin
