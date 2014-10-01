@@ -1,135 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751192AbaJAAWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 20:22:55 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:61048 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJAAWw (ORCPT
+	id S1751452AbaJAAZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 20:25:11 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36944 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbaJAAZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 20:22:52 -0400
+	Tue, 30 Sep 2014 20:25:09 -0400
+Date: Wed, 1 Oct 2014 02:25:01 +0200
+From: Alexander Aring <alex.aring@gmail.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-wpan@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1 linux-next] ieee802154: add __init to
+ lowpan_frags_sysctl_register
+Message-ID: <20141001002459.GA1007@omega>
+References: <1412109249-7432-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
-From: Aditya Kali <adityakali@google.com>
-Date: Tue, 30 Sep 2014 17:22:32 -0700
-Message-ID: <CAGr1F2FPLCfZjMCoLM3h-8okHcJSkdE7et25_TKU-2Xtx03OTg@mail.gmail.com>
-Subject: uid=0 inside user-namespace and procfs file permissions
-To: Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1412109249-7432-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi,
 
-I am trying to run a process with uid=0 inside userns. But in the when
-I also do capset() after setresuid(0, 0, 0), I am seeing inconsistent
-proc file permissions. Almost all the files in /proc/<pid>/ has global
-'root' as owner and group even if the actual process uid is correctly
-changed.
+On Tue, Sep 30, 2014 at 10:34:08PM +0200, Fabian Frederick wrote:
+> lowpan_frags_sysctl_register is only called by __init lowpan_net_frag_init
+> (part of the lowpan module).
+> 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> This is untested.
+> 
+>  net/ieee802154/reassembly.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/ieee802154/reassembly.c b/net/ieee802154/reassembly.c
+> index 32755cb..30ec608 100644
+> --- a/net/ieee802154/reassembly.c
+> +++ b/net/ieee802154/reassembly.c
+> @@ -485,7 +485,7 @@ static void __net_exit lowpan_frags_ns_sysctl_unregister(struct net *net)
+>  
+>  static struct ctl_table_header *lowpan_ctl_header;
+>  
+> -static int lowpan_frags_sysctl_register(void)
+> +static int __init lowpan_frags_sysctl_register(void)
 
-I wrote a simple program that demonstrate the issue:
+yes right, but there is more lacks of missing "__init". See below.
 
-1. parent, as global root (uid=0 in init_user_ns) fork()s a child
-2. child:
-    a) unshare(CLONE_NEWUSER)
-    b) [wait for parent to write uid_map]
-    c) setresgid(id, id, id) ; setresuid(0, 0, 0);
-    d) conditionally call capset() to clear capabilities
-    e) execve(/bin/sleep)
-3. parent:
-    a) populates child's uid_map and maps some uid to 0 inside userns. ex:
-    0 99 1
-    b) waitpid()
+>  {
+>  	lowpan_ctl_header = register_net_sysctl(&init_net,
+>  						"net/ieee802154/6lowpan",
+> @@ -498,7 +498,7 @@ static void lowpan_frags_sysctl_unregister(void)
+>  	unregister_net_sysctl_table(lowpan_ctl_header);
+>  }
+>  #else
+> -static inline int lowpan_frags_ns_sysctl_register(struct net *net)
+> +static inline int __init lowpan_frags_ns_sysctl_register(struct net *net)
 
-(the actual program can be found at http://pastebin.com/f4P17VFn for
-your reference).
+This is wrong, it's callback from "struct pernet_operations lowpan_frags_ops".
 
-When there is no capset() call after setresuid(0,0,0), everything is
-fine. But when I do a capset() to clear all capabilities, the 'owner'
-and 'group' of all the files under /proc/<child_pid>/  of the child
-process are reverted to global 'root' user.
+>  {
+>  	return 0;
+>  }
 
-# without capset (2.d):
-root@vm1# id
-uid=0(root) gid=0(root) groups=0(root)
 
-root@vm1# ./userns_uid0
-child_pid: 24277
-proc_file: /proc/24277/uid_map
-proc_file: /proc/24277/gid_map
-child resuming
+Your patch adds "__init" now for two different functions and we have
+two different declarations for these functions, depends if CONFIG_SYSCTL is
+enabled.
 
-^Z
-[1]+  Stopped                 ./userns_uid0
-root@vm1# cat /proc/24277/uid_map
-         0         99          1
-root@vm1# cat /proc/24277/status | grep -e "Uid:" -e "Gid:"
-Uid: 99 99 99 99
-Gid: 99 99 99 99
-root@vm1# ls -l /proc/24277/
-total 0
-dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:31 attr
--r-------- 1 nobody nobody 0 2014-09-30 16:31 auxv
--r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cgroup
---w------- 1 nobody nobody 0 2014-09-30 16:31 clear_refs
--r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cmdline
--rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 comm
--rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 coredump_filter
--r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cpuset
-...
-[All files have owner='nobody' and group='nobody' .. same as that of
-the process]
+Now if CONFIG_SYSCTL select we have as lowpan_frags_sysctl_register declaration:
 
-With the additional capset() call, the files under /proc/<child_pid>/
-are now owned by global root:
+static int __init lowpan_frags_sysctl_register(void)
 
-root@vm1# ./userns_uid0 resetcaps
-child_pid: 24706
-proc_file: /proc/24706/uid_map
-proc_file: /proc/24706/gid_map
-child resuming
-resetting caps
-^Z
-[2]+  Stopped                 ./userns_uid0 resetcaps
-root@vm1# cat /proc/24706/uid_map
-         0         99          1
-root@vm1# cat /proc/24706/status | grep -e "Uid:" -e "Gid:"
-Uid: 99 99 99 99
-Gid: 99 99 99 99
+if not:
 
-[Everything as before till now]
+static inline int lowpan_frags_sysctl_register(void)
 
-root@vm1# ls -l /proc/24706/
-total 0
-dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:47 attr
--r-------- 1 root   root   0 2014-09-30 16:47 auxv
--r--r--r-- 1 root   root   0 2014-09-30 16:47 cgroup
---w------- 1 root   root   0 2014-09-30 16:47 clear_refs
--r--r--r-- 1 root   root   0 2014-09-30 16:47 cmdline
--rw-r--r-- 1 root   root   0 2014-09-30 16:47 comm
--rw-r--r-- 1 root   root   0 2014-09-30 16:47 coredump_filter
--r--r--r-- 1 root   root   0 2014-09-30 16:47 cpuset
-...
--r--r--r-- 1 root   root   0 2014-09-30 16:47 mountinfo
--r--r--r-- 1 root   root   0 2014-09-30 16:47 mounts
--r-------- 1 root   root   0 2014-09-30 16:47 mountstats
-dr-xr-xr-x 5 nobody nobody 0 2014-09-30 16:47 net
-dr-x--x--x 2 root   root   0 2014-09-30 16:47 ns
--r--r--r-- 1 root   root   0 2014-09-30 16:47 numa_maps
-...
--r--r--r-- 1 root   root   0 2014-09-30 16:47 status
--r-------- 1 root   root   0 2014-09-30 16:47 syscall
-dr-xr-xr-x 3 nobody nobody 0 2014-09-30 16:47 task
-..
+Same for lowpan_frags_ns_sysctl_register and vice versa for CONFIG_SYSCTL.
 
-Only the directories 'attr', 'net' and 'task' are owned by the uid=99.
-Rest all files are owned by global root.
+Your changes are for two different functions (Don't know if you realized that):
 
-This behavior seems inconsistent. I ran this on 3.17 kernel. Can
-someone with expertise in this area explain if this is expected?
+"lowpan_frags_sysctl_register" and "lowpan_frags_ns_sysctl_register",
+which makes no sense. Also lowpan_frags_ns_sysctl_register isn't called
+by module init which is wrong.
 
-Thanks,
--- 
-Aditya
+
+To make "correct" cleanup for this "__init" should be add to the functions, for
+both declarations if CONFIG_SYSCTL is set or not:
+
+ - lowpan_net_frag_init
+ - lowpan_frags_sysctl_register
+
+
+I see now it's already applied, David please revert this change. Are you
+fine to apply a correct version of this to wpan-next tree, next time?
+
+- Alex
