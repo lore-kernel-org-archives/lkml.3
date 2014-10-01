@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaJAWwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 18:52:44 -0400
-Received: from ozlabs.org ([103.22.144.67]:33962 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612AbaJAWwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 18:52:41 -0400
-Date: Thu, 2 Oct 2014 08:52:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: Re: linux-next: manual merge of the vfio tree with the pci tree
-Message-ID: <20141002085233.286f6f22@canb.auug.org.au>
-In-Reply-To: <1412183174.7360.218.camel@ul30vt.home>
-References: <20141001131421.64cab8d7@canb.auug.org.au>
-	<1412183174.7360.218.camel@ul30vt.home>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/koEWQpYk3jxHyRKlaw8rv6B"; protocol="application/pgp-signature"
+	id S1752969AbaJAW4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 18:56:47 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:45071 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaJAW4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 18:56:46 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>
+Cc: frowand.list@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>, josh@joshtriplett.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v5] init: Allow CONFIG_INIT_FALLBACK=n to disable defaults if init= fails
+Date: Wed,  1 Oct 2014 15:56:41 -0700
+Message-Id: <3c2331ea2aaffcde808995cdd93aa48f6455dd93.1412204084.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/koEWQpYk3jxHyRKlaw8rv6B
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+If a user puts init=/whatever on the command line and /whatever
+can't be run, then the kernel will try a few default options before
+giving up.  If init=/whatever came from a bootloader prompt, then
+this is unexpected but probably harmless.  On the other hand, if it
+comes from a script (e.g. a tool like virtme or perhaps a future
+kselftest script), then the fallbacks are likely to exist, but
+they'll do the wrong thing.  For example, they might unexpectedly
+invoke systemd.
 
-Hi Alex,
+This adds a config option CONFIG_INIT_FALLBACK.  If unset,
+then a failure to run the specified init= process be fatal.
 
-On Wed, 01 Oct 2014 11:06:14 -0600 Alex Williamson <alex.williamson@redhat.=
-com> wrote:
->
-> On Wed, 2014-10-01 at 13:14 +1000, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the vfio tree got a conflict in
-> > drivers/pci/msi.c between commits a160fe94cb53 ("PCI/MSI: Remove unused
-> > get_cached_msi_msg()") and 18ef822c59f6 ("PCI/MSI: Rename
-> > __get_cached_msi_msg() to get_cached_msi_msg()") from the pci tree and
-> > commit 3b307ffe3faa ("PCI: Export MSI message relevant functions") from
-> > the vfio tree.
-> >=20
-> > I fixed it up (see below) and can carry the fix as necessary (no action
-> > is required).  And then I added this merge fix patch (I should probably
-> > also have added an include of linux/irq.h):
->=20
-> Thanks for the heads-up and manual merge.  I've reviewed the changes to
-> the MSI API that got us into this conflict and I disagree with them.
-> I've posted a series to revert a selection of changes currently coming
-> in through pci/next that should make for a clean merge should Bjorn come
-> to the same conclusion.  If you need to re-apply the fix in the
-> meantime, please do include <linux/irq.h> since it generated a build
-> failure on arm without it.  Thanks!
+The intent is to switch the default to N after a while and to
+possibly even remove the option entirely
 
-Seems Bjorn has removed the conflicting commits from the pci tree.
-Thanks.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Changes from v4:
+ - Switch the default to y
 
---Sig_/koEWQpYk3jxHyRKlaw8rv6B
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Changes from v3:
+ - Get rid of the strictinit option.  Now the new behavior is the default
+   unless CONFIG_INIT_FALLBACK=y (Rob Landley)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Changes from v2:
+ - Improve docs further, to leave the door open to giving strictinit
+   some sensible semantics if init= is not set.
+ - Improve error output in the failure case (Shuah Khan).
 
-iQIcBAEBCAAGBQJULIW2AAoJEMDTa8Ir7ZwVRQsP/i82deFQM2mp11Gsw66sKzs1
-Akus/Sk/NTyuBRprodWRm64XwtJJmb3gSHFsEZqK1C4ZNSRMxIgB6XV7GboRN5ux
-EGPj/mmCOWaLy3yceZHAOgKYZdIVBChuORiWxn9SsR/UyPgEm03zsDAx+A8LSZk8
-9L1HHv4Q9+sNG1FRMScUe84a5TzVQn/95eG+ZgeGeLkSuuMBsvjhyx055wXAKsGc
-P1bVhNbO3qyyEWyVJA9TlN3LoCiOwabEjWqECnsBq+P5b/P5wepwzS9cGXL1gQ6r
-4NSVwK6uvv5expk9kWPDWLKWl4oCWJBn4KcwHKUBO7SNV0Pc+0M0iGCkEU3p3YWw
-2620mEzF1bR0dnVHKrpzIQEL1dJrtWjEK8EsAirUSI4k7Ih5lj/TgOGl8l4brGLQ
-n5zwFDgmo/7dmizVXzTk8++419i/bnNLbewgXieT0WXo3a84PF0QmO4SLRpcf0LD
-tKlXhf7x0R4z9RgEDW740tW7TlqGAl6bxzTgLFsjYi9hig32kGeewgKdH9hRUMBW
-JD4HPvJkJuZm59pWllrivAsmI4pFBXyPMFAdXs67FMxHCwqgfT3bElevuMaJXbZM
-7yr4XY6t92Av1EjR/aRUSbe9njP2eIhQBn7yxSTgj38CMC48hRZtapnUvTaBciAC
-zm3UxAUb3Ihhj0IYWEiq
-=4Y1N
------END PGP SIGNATURE-----
+Changes from v1:
+ - Add missing "if" to the docs (Randy Dunlap)
 
---Sig_/koEWQpYk3jxHyRKlaw8rv6B--
+ init/Kconfig | 16 ++++++++++++++++
+ init/main.c  |  7 ++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index e84c6423a2e5..ebbd5846478e 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1299,6 +1299,22 @@ source "usr/Kconfig"
+ 
+ endif
+ 
++config INIT_FALLBACK
++	bool "Fall back to defaults if init= parameter is bad"
++	default y
++	help
++	  If enabled, the kernel will try the default init binaries if an
++	  explicit request from the init= parameter fails.
++
++	  This can have unexpected effects.  For example, booting
++	  with init=/sbin/kiosk_app will run /sbin/init or even /bin/sh
++	  if /sbin/kiosk_app cannot be executed.
++
++	  The default value of Y is consistent with historical behavior.
++	  Selecting N is likely to be more appropriate for most uses,
++	  especially on kiosks and on kernels that are indended to be
++	  run under the control of a script.
++
+ config CC_OPTIMIZE_FOR_SIZE
+ 	bool "Optimize for size"
+ 	help
+diff --git a/init/main.c b/init/main.c
+index bb1aed928f21..2bd6105e5dc5 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -960,8 +960,13 @@ static int __ref kernel_init(void *unused)
+ 		ret = run_init_process(execute_command);
+ 		if (!ret)
+ 			return 0;
++#ifndef CONFIG_INIT_FALLBACK
++		panic("Requested init %s failed (error %d).",
++		      execute_command, ret);
++#else
+ 		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+-			execute_command, ret);
++		       execute_command, ret);
++#endif
+ 	}
+ 	if (!try_to_run_init_process("/sbin/init") ||
+ 	    !try_to_run_init_process("/etc/init") ||
+-- 
+1.9.3
+
