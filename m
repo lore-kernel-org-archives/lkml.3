@@ -1,523 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaJAPT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:19:58 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:48791 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaJAPRt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:17:49 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s91FHkaW004280, This message is accepted by code: ctloc85258
-From: Chun-Hao Lin <hau@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Chun-Hao Lin <hau@realtek.com>
-Subject: [PATCH v2 net-next 06/10] r8169:for function "rtl_w1w0_phy" change its name and behavior
-Date: Wed, 1 Oct 2014 23:17:17 +0800
-Message-ID: <1412176641-24393-6-git-send-email-hau@realtek.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412176641-24393-1-git-send-email-hau@realtek.com>
-References: <1412176641-24393-1-git-send-email-hau@realtek.com>
+	id S1752848AbaJAPUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:20:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40980 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752790AbaJAPU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 11:20:26 -0400
+Message-ID: <542C1B9A.4050704@zytor.com>
+Date: Wed, 01 Oct 2014 08:19:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.94]
+To: Andy Lutomirski <luto@amacapital.net>,
+        Sebastian Lackner <sebastian@fds-team.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+References: <cover.1412138935.git.luto@amacapital.net> <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net> <542B8C7F.70108@fds-team.de> <CALCETrVNMhvn6z_5=+6UavkR1m8cABrkSWsLpP_dLdG_3OipBA@mail.gmail.com>
+In-Reply-To: <CALCETrVNMhvn6z_5=+6UavkR1m8cABrkSWsLpP_dLdG_3OipBA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change function name from "rtl_w1w0_phy" to "rtl_w0w1_phy".
-And its behavior from "write ones then write zeros" to
-"write zeros then write ones".
+On 09/30/2014 10:24 PM, Andy Lutomirski wrote:
+> On Tue, Sep 30, 2014 at 10:09 PM, Sebastian Lackner
+> <sebastian@fds-team.de> wrote:
+>>> +     testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
+>>> +     jz 1f
+>>> +     pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
+>>> +     popfq_cfi
+>>> +1:
+>>> +
+>>
+>> Do you think it makes sense to change the order here, so that no jump happens if
+>> NT is not set (which happens a bit more often, than the other way round)? Just a
+>> guess though, haven't measured if pipeline effects have such a big influence in this
+>> case. ;)
+>>
+> 
+> It should be immeasurable in a tight loop, since it will predict
+> correctly almost every time.  And, unless cfi state works across
+> .pushsection (does it?), getting the cfi annotations right will be
+> more complicated.
+> 
 
-In Realtek internal driver, bitwise operations are almost "write zeros then
-write ones". For easy to port hardware parameters from Realtek internal driver
-to Linux kernal driver "r8169", we would like to change this function's
-behavior and its name.
+It does, actually... otherwise it would be almost impossible to use in a
+lot of cases.
 
-Signed-off-by: Chun-Hao Lin <hau@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 176 +++++++++++++++++------------------
- 1 file changed, 88 insertions(+), 88 deletions(-)
+	-hpa
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 070724c..cdfad35 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1246,12 +1246,12 @@ static void rtl_patchphy(struct rtl8169_private *tp, int reg_addr, int value)
- 	rtl_writephy(tp, reg_addr, rtl_readphy(tp, reg_addr) | value);
- }
- 
--static void rtl_w1w0_phy(struct rtl8169_private *tp, int reg_addr, int p, int m)
-+static void rtl_w0w1_phy(struct rtl8169_private *tp, int reg_addr, int p, int m)
- {
- 	int val;
- 
- 	val = rtl_readphy(tp, reg_addr);
--	rtl_writephy(tp, reg_addr, (val | p) & ~m);
-+	rtl_writephy(tp, reg_addr, (val & ~m) | p);
- }
- 
- static void rtl_mdio_write(struct net_device *dev, int phy_id, int location,
-@@ -2901,8 +2901,8 @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
- 	 * Fine Tune Switching regulator parameter
- 	 */
- 	rtl_writephy(tp, 0x1f, 0x0002);
--	rtl_w1w0_phy(tp, 0x0b, 0x0010, 0x00ef);
--	rtl_w1w0_phy(tp, 0x0c, 0xa200, 0x5d00);
-+	rtl_w0w1_phy(tp, 0x0b, 0x0010, 0x00ef);
-+	rtl_w0w1_phy(tp, 0x0c, 0xa200, 0x5d00);
- 
- 	if (rtl8168d_efuse_read(tp, 0x01) == 0xb1) {
- 		static const struct phy_reg phy_reg_init[] = {
-@@ -2951,8 +2951,8 @@ static void rtl8168d_1_hw_phy_config(struct rtl8169_private *tp)
- 
- 	/* Fine tune PLL performance */
- 	rtl_writephy(tp, 0x1f, 0x0002);
--	rtl_w1w0_phy(tp, 0x02, 0x0100, 0x0600);
--	rtl_w1w0_phy(tp, 0x03, 0x0000, 0xe000);
-+	rtl_w0w1_phy(tp, 0x02, 0x0100, 0x0600);
-+	rtl_w0w1_phy(tp, 0x03, 0x0000, 0xe000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x001b);
-@@ -3049,8 +3049,8 @@ static void rtl8168d_2_hw_phy_config(struct rtl8169_private *tp)
- 
- 	/* Fine tune PLL performance */
- 	rtl_writephy(tp, 0x1f, 0x0002);
--	rtl_w1w0_phy(tp, 0x02, 0x0100, 0x0600);
--	rtl_w1w0_phy(tp, 0x03, 0x0000, 0xe000);
-+	rtl_w0w1_phy(tp, 0x02, 0x0100, 0x0600);
-+	rtl_w0w1_phy(tp, 0x03, 0x0000, 0xe000);
- 
- 	/* Switching regulator Slew rate */
- 	rtl_writephy(tp, 0x1f, 0x0002);
-@@ -3178,32 +3178,32 @@ static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
- 	/* DCO enable for 10M IDLE Power */
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x0023);
--	rtl_w1w0_phy(tp, 0x17, 0x0006, 0x0000);
-+	rtl_w0w1_phy(tp, 0x17, 0x0006, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* For impedance matching */
- 	rtl_writephy(tp, 0x1f, 0x0002);
--	rtl_w1w0_phy(tp, 0x08, 0x8000, 0x7f00);
-+	rtl_w0w1_phy(tp, 0x08, 0x8000, 0x7f00);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* PHY auto speed down */
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x002d);
--	rtl_w1w0_phy(tp, 0x18, 0x0050, 0x0000);
-+	rtl_w0w1_phy(tp, 0x18, 0x0050, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b86);
--	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0001, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x2000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x2000);
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x0020);
--	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x1100);
-+	rtl_w0w1_phy(tp, 0x15, 0x0000, 0x1100);
- 	rtl_writephy(tp, 0x1f, 0x0006);
- 	rtl_writephy(tp, 0x00, 0x5a00);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-@@ -3267,39 +3267,39 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	/* For 4-corner performance improve */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b80);
--	rtl_w1w0_phy(tp, 0x17, 0x0006, 0x0000);
-+	rtl_w0w1_phy(tp, 0x17, 0x0006, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* PHY auto speed down */
- 	rtl_writephy(tp, 0x1f, 0x0004);
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x002d);
--	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_w0w1_phy(tp, 0x18, 0x0010, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0002);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
- 
- 	/* improve 10M EEE waveform */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b86);
--	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0001, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* Improve 2-pair detection performance */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x4000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* EEE setting */
- 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_1111, 0x0000, 0x0003, ERIAR_EXGMAC);
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x2000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x2000);
- 	rtl_writephy(tp, 0x1f, 0x0004);
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x0020);
--	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x15, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x1f, 0x0002);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 	rtl_writephy(tp, 0x0d, 0x0007);
-@@ -3310,8 +3310,8 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 
- 	/* Green feature */
- 	rtl_writephy(tp, 0x1f, 0x0003);
--	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
--	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
-+	rtl_w0w1_phy(tp, 0x19, 0x0000, 0x0001);
-+	rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* Broken BIOS workaround: feed GigaMAC registers with MAC address. */
-@@ -3323,20 +3323,20 @@ static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
- 	/* For 4-corner performance improve */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b80);
--	rtl_w1w0_phy(tp, 0x06, 0x0006, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0006, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* PHY auto speed down */
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x002d);
--	rtl_w1w0_phy(tp, 0x18, 0x0010, 0x0000);
-+	rtl_w0w1_phy(tp, 0x18, 0x0010, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
- 
- 	/* Improve 10M EEE waveform */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b86);
--	rtl_w1w0_phy(tp, 0x06, 0x0001, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0001, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-@@ -3386,7 +3386,7 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
- 	/* Improve 2-pair detection performance */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x4000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-@@ -3442,7 +3442,7 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 	/* Improve 2-pair detection performance */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x4000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
-@@ -3450,36 +3450,36 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 	/* Modify green table for giga */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b54);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0800);
- 	rtl_writephy(tp, 0x05, 0x8b5d);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0800);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0800);
- 	rtl_writephy(tp, 0x05, 0x8a7c);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x05, 0x8a7f);
--	rtl_w1w0_phy(tp, 0x06, 0x0100, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0100, 0x0000);
- 	rtl_writephy(tp, 0x05, 0x8a82);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x05, 0x8a85);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x05, 0x8a88);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* uc same-seed solution */
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x8000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x06, 0x8000, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* eee setting */
- 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x00, 0x03, ERIAR_EXGMAC);
- 	rtl_writephy(tp, 0x1f, 0x0005);
- 	rtl_writephy(tp, 0x05, 0x8b85);
--	rtl_w1w0_phy(tp, 0x06, 0x0000, 0x2000);
-+	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x2000);
- 	rtl_writephy(tp, 0x1f, 0x0004);
- 	rtl_writephy(tp, 0x1f, 0x0007);
- 	rtl_writephy(tp, 0x1e, 0x0020);
--	rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0100);
-+	rtl_w0w1_phy(tp, 0x15, 0x0000, 0x0100);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 	rtl_writephy(tp, 0x0d, 0x0007);
- 	rtl_writephy(tp, 0x0e, 0x003c);
-@@ -3489,8 +3489,8 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
- 
- 	/* Green feature */
- 	rtl_writephy(tp, 0x1f, 0x0003);
--	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
--	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
-+	rtl_w0w1_phy(tp, 0x19, 0x0000, 0x0001);
-+	rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
-@@ -3501,45 +3501,45 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x1f, 0x0a46);
- 	if (rtl_readphy(tp, 0x10) & 0x0100) {
- 		rtl_writephy(tp, 0x1f, 0x0bcc);
--		rtl_w1w0_phy(tp, 0x12, 0x0000, 0x8000);
-+		rtl_w0w1_phy(tp, 0x12, 0x0000, 0x8000);
- 	} else {
- 		rtl_writephy(tp, 0x1f, 0x0bcc);
--		rtl_w1w0_phy(tp, 0x12, 0x8000, 0x0000);
-+		rtl_w0w1_phy(tp, 0x12, 0x8000, 0x0000);
- 	}
- 
- 	rtl_writephy(tp, 0x1f, 0x0a46);
- 	if (rtl_readphy(tp, 0x13) & 0x0100) {
- 		rtl_writephy(tp, 0x1f, 0x0c41);
--		rtl_w1w0_phy(tp, 0x15, 0x0002, 0x0000);
-+		rtl_w0w1_phy(tp, 0x15, 0x0002, 0x0000);
- 	} else {
- 		rtl_writephy(tp, 0x1f, 0x0c41);
--		rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0002);
-+		rtl_w0w1_phy(tp, 0x15, 0x0000, 0x0002);
- 	}
- 
- 	/* Enable PHY auto speed down */
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x11, 0x000c, 0x0000);
-+	rtl_w0w1_phy(tp, 0x11, 0x000c, 0x0000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0bcc);
--	rtl_w1w0_phy(tp, 0x14, 0x0100, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0100, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
-+	rtl_w0w1_phy(tp, 0x11, 0x00c0, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x8084);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
--	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x6000);
-+	rtl_w0w1_phy(tp, 0x10, 0x1003, 0x0000);
- 
- 	/* EEE auto-fallback function */
- 	rtl_writephy(tp, 0x1f, 0x0a4b);
--	rtl_w1w0_phy(tp, 0x11, 0x0004, 0x0000);
-+	rtl_w0w1_phy(tp, 0x11, 0x0004, 0x0000);
- 
- 	/* Enable UC LPF tune function */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x8012);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0c42);
--	rtl_w1w0_phy(tp, 0x11, 0x4000, 0x2000);
-+	rtl_w0w1_phy(tp, 0x11, 0x4000, 0x2000);
- 
- 	/* Improve SWR Efficiency */
- 	rtl_writephy(tp, 0x1f, 0x0bcd);
-@@ -3555,7 +3555,7 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- 	/* Check ALDPS bit, disable it if enabled */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	if (rtl_readphy(tp, 0x10) & 0x0004)
--		rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0004);
-+		rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0004);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -3575,33 +3575,33 @@ static void rtl8168h_1_hw_phy_config(struct rtl8169_private *tp)
- 	/* CHN EST parameters adjust - giga master */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x809b);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0xf800);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0xf800);
- 	rtl_writephy(tp, 0x13, 0x80a2);
--	rtl_w1w0_phy(tp, 0x14, 0x8000, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x8000, 0xff00);
- 	rtl_writephy(tp, 0x13, 0x80a4);
--	rtl_w1w0_phy(tp, 0x14, 0x8500, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x8500, 0xff00);
- 	rtl_writephy(tp, 0x13, 0x809c);
--	rtl_w1w0_phy(tp, 0x14, 0xbd00, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0xbd00, 0xff00);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* CHN EST parameters adjust - giga slave */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x80ad);
--	rtl_w1w0_phy(tp, 0x14, 0x7000, 0xf800);
-+	rtl_w0w1_phy(tp, 0x14, 0x7000, 0xf800);
- 	rtl_writephy(tp, 0x13, 0x80b4);
--	rtl_w1w0_phy(tp, 0x14, 0x5000, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x5000, 0xff00);
- 	rtl_writephy(tp, 0x13, 0x80ac);
--	rtl_w1w0_phy(tp, 0x14, 0x4000, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x4000, 0xff00);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* CHN EST parameters adjust - fnet */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x808e);
--	rtl_w1w0_phy(tp, 0x14, 0x1200, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x1200, 0xff00);
- 	rtl_writephy(tp, 0x13, 0x8090);
--	rtl_w1w0_phy(tp, 0x14, 0xe500, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0xe500, 0xff00);
- 	rtl_writephy(tp, 0x13, 0x8092);
--	rtl_w1w0_phy(tp, 0x14, 0x9f00, 0xff00);
-+	rtl_w0w1_phy(tp, 0x14, 0x9f00, 0xff00);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* enable R-tune & PGA-retune function */
-@@ -3620,57 +3620,57 @@ static void rtl8168h_1_hw_phy_config(struct rtl8169_private *tp)
- 	dout_tapbin &= 0xf000;
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x827a);
--	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
-+	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
- 	rtl_writephy(tp, 0x13, 0x827b);
--	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
-+	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
- 	rtl_writephy(tp, 0x13, 0x827c);
--	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
-+	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
- 	rtl_writephy(tp, 0x13, 0x827d);
--	rtl_w1w0_phy(tp, 0x14, dout_tapbin, 0xf000);
-+	rtl_w0w1_phy(tp, 0x14, dout_tapbin, 0xf000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x0811);
--	rtl_w1w0_phy(tp, 0x14, 0x0800, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0800, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0a42);
--	rtl_w1w0_phy(tp, 0x16, 0x0002, 0x0000);
-+	rtl_w0w1_phy(tp, 0x16, 0x0002, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* enable GPHY 10M */
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x11, 0x0800, 0x0000);
-+	rtl_w0w1_phy(tp, 0x11, 0x0800, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* SAR ADC performance */
- 	rtl_writephy(tp, 0x1f, 0x0bca);
--	rtl_w1w0_phy(tp, 0x17, 0x4000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x17, 0x4000, 0x3000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x803f);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x8047);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x804f);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x8057);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x805f);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x8067);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x13, 0x806f);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x3000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x3000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* disable phy pfm mode */
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x0080);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x0080);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* Check ALDPS bit, disable it if enabled */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	if (rtl_readphy(tp, 0x10) & 0x0004)
--		rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0004);
-+		rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0004);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
-@@ -3686,20 +3686,20 @@ static void rtl8168h_2_hw_phy_config(struct rtl8169_private *tp)
- 	/* CHIN EST parameter update */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x808a);
--	rtl_w1w0_phy(tp, 0x14, 0x000a, 0x003f);
-+	rtl_w0w1_phy(tp, 0x14, 0x000a, 0x003f);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* enable R-tune & PGA-retune function */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	rtl_writephy(tp, 0x13, 0x0811);
--	rtl_w1w0_phy(tp, 0x14, 0x0800, 0x0000);
-+	rtl_w0w1_phy(tp, 0x14, 0x0800, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0a42);
--	rtl_w1w0_phy(tp, 0x16, 0x0002, 0x0000);
-+	rtl_w0w1_phy(tp, 0x16, 0x0002, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* enable GPHY 10M */
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x11, 0x0800, 0x0000);
-+	rtl_w0w1_phy(tp, 0x11, 0x0800, 0x0000);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	r8168_mac_ocp_write(tp, 0xdd02, 0x807d);
-@@ -3737,13 +3737,13 @@ static void rtl8168h_2_hw_phy_config(struct rtl8169_private *tp)
- 
- 	/* disable phy pfm mode */
- 	rtl_writephy(tp, 0x1f, 0x0a44);
--	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x0080);
-+	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x0080);
- 	rtl_writephy(tp, 0x1f, 0x0000);
- 
- 	/* Check ALDPS bit, disable it if enabled */
- 	rtl_writephy(tp, 0x1f, 0x0a43);
- 	if (rtl_readphy(tp, 0x10) & 0x0004)
--		rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0004);
-+		rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0004);
- 
- 	rtl_writephy(tp, 0x1f, 0x0000);
- }
--- 
-1.8.3.2
 
