@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaJAKNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 06:13:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58877 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750782AbaJAKNv (ORCPT
+	id S1751500AbaJAKPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 06:15:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33370 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751136AbaJAKPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 06:13:51 -0400
-Date: Wed, 1 Oct 2014 11:13:23 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sean Paul <seanpaul@chromium.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        "ritesh.harjani@gmail.com" <ritesh.harjani@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>
-Subject: Re: [PATCH] arm64: Use and error-check DMA_ERROR_CODE
-Message-ID: <20141001101323.GB2587@arm.com>
-References: <1412108121-19262-1-git-send-email-seanpaul@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412108121-19262-1-git-send-email-seanpaul@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 1 Oct 2014 06:15:14 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: nm@ti.com, peter.ujfalusi@ti.com, santosh.shilimkar@ti.com,
+        tony@atomide.com, rnayak@ti.com, r.sricharan@ti.com, afzal@ti.com,
+        akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] [RESEND] drivers: bus: omap_l3: remove deprecated IRQF_DISABLED
+Date: Wed,  1 Oct 2014 12:15:07 +0200
+Message-Id: <1412158507-7229-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com>
+References: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sean,
+This patch removes the use of the IRQF_DISABLED flag
+from drivers/bus/omap_l3_*
 
-On Tue, Sep 30, 2014 at 09:15:21PM +0100, Sean Paul wrote:
-> This patch replaces the static assignment of ~0 to dma_handle with
-> DMA_ERROR_CODE to be consistent with other platforms.
-> 
-> In addition to that, it also adds a check for DMA_ERROR_CODE before
-> calling __dma_free_coherent with an invalid dma_handle.
-> 
-> Signed-off-by: Sean Paul <seanpaul@chromium.org>
-> ---
->  arch/arm64/mm/dma-mapping.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-> index 4164c5a..69fd2c4 100644
-> --- a/arch/arm64/mm/dma-mapping.c
-> +++ b/arch/arm64/mm/dma-mapping.c
-> @@ -125,7 +125,7 @@ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
->  no_map:
->  	__dma_free_coherent(dev, size, ptr, *dma_handle, attrs);
->  no_mem:
-> -	*dma_handle = ~0;
-> +	*dma_handle = DMA_ERROR_CODE;
->  	return NULL;
->  }
->  
-> @@ -136,7 +136,9 @@ static void __dma_free_noncoherent(struct device *dev, size_t size,
->  	void *swiotlb_addr = phys_to_virt(dma_to_phys(dev, dma_handle));
->  
->  	vunmap(vaddr);
-> -	__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
-> +
-> +	if (dma_handle != DMA_ERROR_CODE)
-> +		__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-Is it legal to try and free a DMA buffer after a failed allocation? If so, I
-think we need something similar for arch/arm/.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/bus/omap_l3_noc.c | 4 ++--
+ drivers/bus/omap_l3_smx.c | 6 ++----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
-Will
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 531ae591783b..547a0fdba583 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -280,7 +280,7 @@ static int omap_l3_probe(struct platform_device *pdev)
+ 	 */
+ 	l3->debug_irq = platform_get_irq(pdev, 0);
+ 	ret = devm_request_irq(l3->dev, l3->debug_irq, l3_interrupt_handler,
+-			       IRQF_DISABLED, "l3-dbg-irq", l3);
++			       0, "l3-dbg-irq", l3);
+ 	if (ret) {
+ 		dev_err(l3->dev, "request_irq failed for %d\n",
+ 			l3->debug_irq);
+@@ -289,7 +289,7 @@ static int omap_l3_probe(struct platform_device *pdev)
+ 
+ 	l3->app_irq = platform_get_irq(pdev, 1);
+ 	ret = devm_request_irq(l3->dev, l3->app_irq, l3_interrupt_handler,
+-			       IRQF_DISABLED, "l3-app-irq", l3);
++			       0, "l3-app-irq", l3);
+ 	if (ret)
+ 		dev_err(l3->dev, "request_irq failed for %d\n", l3->app_irq);
+ 
+diff --git a/drivers/bus/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
+index acc216491b8a..769d64c0b0fe 100644
+--- a/drivers/bus/omap_l3_smx.c
++++ b/drivers/bus/omap_l3_smx.c
+@@ -238,8 +238,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
+ 
+ 	l3->debug_irq = platform_get_irq(pdev, 0);
+ 	ret = request_irq(l3->debug_irq, omap3_l3_app_irq,
+-		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+-		"l3-debug-irq", l3);
++		IRQF_TRIGGER_RISING, "l3-debug-irq", l3);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "couldn't request debug irq\n");
+ 		goto err1;
+@@ -247,8 +246,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
+ 
+ 	l3->app_irq = platform_get_irq(pdev, 1);
+ 	ret = request_irq(l3->app_irq, omap3_l3_app_irq,
+-		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+-		"l3-app-irq", l3);
++		IRQF_TRIGGER_RISING, "l3-app-irq", l3);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "couldn't request app irq\n");
+ 		goto err2;
+-- 
+1.9.1
+
