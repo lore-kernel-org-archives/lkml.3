@@ -1,101 +1,545 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaJAOFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:05:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19589 "EHLO mga02.intel.com"
+	id S1751721AbaJAOF7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:05:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57218 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaJAOFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:05:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,632,1406617200"; 
-   d="scan'208";a="481262173"
-Date: Wed, 1 Oct 2014 17:04:41 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 10/15] leds: leds-gpio: Add ACPI probing support
-Message-ID: <20141001140441.GF1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <5364565.aEcZqpzdLW@wuerfel>
- <20141001115901.GD1786@lahna.fi.intel.com>
- <2043842.LxdgdYRbIF@wuerfel>
+	id S1751208AbaJAOF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 10:05:57 -0400
+Message-ID: <542C0A2C.6010802@ti.com>
+Date: Wed, 1 Oct 2014 17:05:32 +0300
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2043842.LxdgdYRbIF@wuerfel>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        <alsa-devel@alsa-project.org>, <devicetree@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/2] drm/i2c:tda998x: Use the HDMI audio CODEC
+References: <cover.1411547014.git.moinejf@free.fr> <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr>
+In-Reply-To: <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 03:52:42PM +0200, Arnd Bergmann wrote:
-> On Wednesday 01 October 2014 14:59:01 Mika Westerberg wrote:
-> > On Wed, Oct 01, 2014 at 12:01:34PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 01 October 2014 12:13:09 Mika Westerberg wrote:
-> > > > 
-> > > > > Regarding the MODULE_DEVICE_TABLE, I suspect the above won't work the
-> > > > > way you are hoping for, because once you get to dozens or hundreds of
-> > > > > drivers doing this, each device will show up with the same string,
-> > > > > so udev will try to load all the modules that list "PRP0001". That
-> > > > > doesn't look right. With the code from patch 3, you can probably drop
-> > > > > the acpi MODULE_DEVICE_TABLE() entirely and get the correct behavior.
-> > > > 
-> > > > It actually works like this now:
-> > > > 
-> > > >  # cd /sys/bus/platform/devices/PRP0001\:00/
-> > > >  DRIVER=leds-gpio
-> > > >  MODALIAS=of:Nprp0001TacpiCgpio-leds
-> > > > 
-> > > >  # cat modalias 
-> > > >  of:Nprp0001TacpiCgpio-leds
-> > > > 
-> > > > In other words the modalias changes to be of:Nprp0001Tacpi, e.g
-> > > > name=prp0001, type=acpi and then list of compatible values.
-> > > > 
-> > > > Udev then loads only module that matches the modalias so it should not
-> > > > load everything listing PRP0001 in their MODULE_DEVICE_TABLE().
-> > > 
-> > > I'm not completely following yet. I can see how this works now, but
-> > > how is this better than just using the existing modalias for OF?
-> > 
-> > You mean using just what of_device_get_modalias() would create? In that
-> > case, what do we put to name and type fields?
-> 
-> Sorry, I think we're still both misunderstanding one another. You were
-> talking about the modalias created by the device scanning above, while
-> I meant the one in the MODULE_DEVICE_TABLE. 
+On 09/24/2014 11:11 AM, Jean-Francois Moine wrote:
+ > This patch interfaces the HDMI transmitter with the audio system.
+ >
+ > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+ > ---
+ >   .../devicetree/bindings/drm/i2c/tda998x.txt        |  18 ++
+ >   drivers/gpu/drm/i2c/Kconfig                        |   1 +
+ >   drivers/gpu/drm/i2c/tda998x_drv.c                  | 299 
++++++++++++++++++++--
+ >   3 files changed, 300 insertions(+), 18 deletions(-)
+ >
+ > diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt 
+b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+ > index e9e4bce..e50e7cd 100644
+ > --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+ > +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+ > @@ -17,6 +17,20 @@ Optional properties:
+ >     - video-ports: 24 bits value which defines how the video controller
+ >   	output is wired to the TDA998x input - default: <0x230145>
+ >
+ > +  - audio-ports: must contain one or two values selecting the source
+ > +	in the audio port.
+ > +	The source type is given by the corresponding entry in
+ > +	the audio-port-names property.
+ > +
+ > +  - audio-port-names: must contain entries matching the entries in
+ > +	the audio-ports property.
+ > +	Each value may be "i2s" or "spdif", giving the type of
+ > +	the audio source.
+ > +
+ > +  - #sound-dai-cells: must be set to <1> for use with the simple-card.
+ > +	The TDA998x audio CODEC always defines two DAIs.
+ > +	The DAI 0 is the S/PDIF input and the DAI 1 is the I2S input.
+ > +
+ >   Example:
+ >
+ >   	tda998x: hdmi-encoder {
+ > @@ -26,4 +40,8 @@ Example:
+ >   		interrupts = <27 2>;		/* falling edge */
+ >   		pinctrl-0 = <&pmx_camera>;
+ >   		pinctrl-names = "default";
+ > +
+ > +		audio-ports = <0x04>, <0x03>;
+ > +		audio-port-names = "spdif", "i2s";
+ > +		#sound-dai-cells = <1>;
+ >   	};
+ > diff --git a/drivers/gpu/drm/i2c/Kconfig b/drivers/gpu/drm/i2c/Kconfig
+ > index 4d341db..42ca744 100644
+ > --- a/drivers/gpu/drm/i2c/Kconfig
+ > +++ b/drivers/gpu/drm/i2c/Kconfig
+ > @@ -22,6 +22,7 @@ config DRM_I2C_SIL164
+ >   config DRM_I2C_NXP_TDA998X
+ >   	tristate "NXP Semiconductors TDA998X HDMI encoder"
+ >   	default m if DRM_TILCDC
+ > +	select SND_SOC_HDMI_CODEC
+ >   	help
+ >   	  Support for NXP Semiconductors TDA998X HDMI encoders.
+ >
+ > diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c 
+b/drivers/gpu/drm/i2c/tda998x_drv.c
+ > index d476279..66c41c0 100644
+ > --- a/drivers/gpu/drm/i2c/tda998x_drv.c
+ > +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+ > @@ -20,12 +20,14 @@
+ >   #include <linux/module.h>
+ >   #include <linux/irq.h>
+ >   #include <sound/asoundef.h>
+ > +#include <linux/platform_device.h>
+ >
+ >   #include <drm/drmP.h>
+ >   #include <drm/drm_crtc_helper.h>
+ >   #include <drm/drm_encoder_slave.h>
+ >   #include <drm/drm_edid.h>
+ >   #include <drm/i2c/tda998x.h>
+ > +#include <sound/hdmi.h>
+ >
+ >   #define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
+ >
+ > @@ -44,6 +46,22 @@ struct tda998x_priv {
+ >   	wait_queue_head_t wq_edid;
+ >   	volatile int wq_edid_wait;
+ >   	struct drm_encoder *encoder;
+ > +
+ > +	/* audio variables */
+ > +	struct platform_device *pdev_codec;
+ > +	u8 audio_ports[2];
+ > +
+ > +	u8 max_channels;		/* EDID parameters */
+ > +	u8 rate_mask;
+ > +	u8 fmt;
+ > +
+ > +	int audio_sample_format;
+ > +};
+ > +
+ > +struct tda998x_priv2 {
+ > +	struct tda998x_priv base;
+ > +	struct drm_encoder encoder;
+ > +	struct drm_connector connector;
+ >   };
+ >
+ >   #define to_tda998x_priv(x)  ((struct tda998x_priv 
+*)to_encoder_slave(x)->slave_priv)
+ > @@ -624,6 +642,8 @@ tda998x_write_avi(struct tda998x_priv *priv, 
+struct drm_display_mode *mode)
+ >   			 sizeof(buf));
+ >   }
+ >
+ > +/* audio functions */
+ > +
+ >   static void tda998x_audio_mute(struct tda998x_priv *priv, bool on)
+ >   {
+ >   	if (on) {
+ > @@ -639,12 +659,11 @@ static void
+ >   tda998x_configure_audio(struct tda998x_priv *priv,
+ >   		struct drm_display_mode *mode, struct tda998x_encoder_params *p)
+ >   {
+ > -	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv;
+ > +	uint8_t buf[6], clksel_aip, clksel_fs, cts_n, adiv, aclk;
+ >   	uint32_t n;
+ >
+ >   	/* Enable audio ports */
+ >   	reg_write(priv, REG_ENA_AP, p->audio_cfg);
+ > -	reg_write(priv, REG_ENA_ACLK, p->audio_clk_cfg);
+ >
+ >   	/* Set audio input source */
+ >   	switch (p->audio_format) {
+ > @@ -653,13 +672,29 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ >   		clksel_aip = AIP_CLKSEL_AIP_SPDIF;
+ >   		clksel_fs = AIP_CLKSEL_FS_FS64SPDIF;
+ >   		cts_n = CTS_N_M(3) | CTS_N_K(3);
+ > +		aclk = 0;				/* no clock */
+ >   		break;
+ >
+ >   	case AFMT_I2S:
+ >   		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+ >   		clksel_aip = AIP_CLKSEL_AIP_I2S;
+ >   		clksel_fs = AIP_CLKSEL_FS_ACLK;
+ > -		cts_n = CTS_N_M(3) | CTS_N_K(3);
+ > +
+ > +		/* with I2S input, the CTS_N predivider depends on
+ > +		 * the sample width */
+ > +		switch (priv->audio_sample_format) {
+ > +		case SNDRV_PCM_FORMAT_S16_LE:
+ > +			cts_n = CTS_N_M(3) | CTS_N_K(1);
+ > +			break;
+ > +		case SNDRV_PCM_FORMAT_S24_LE:
+ > +			cts_n = CTS_N_M(3) | CTS_N_K(2);
+ > +			break;
+ > +		default:
 
-Right, got it now.
+Setting the default here does not really help, because
+priv->audio_sample_format is initialized to SNDRV_PCM_FORMAT_S24_LE in
+tda998x_encoder_set_config(). But I am Ok with the default being
+changed for 24 bit samples on i2s interface.
 
-> With the entry you create in create_modalias(), you will only ever
-> match against the MODULE_DEVICE_TABLE(of, of_gpio_leds_match)
-> line, not against the MODULE_DEVICE_TABLE(acpi, acpi_gpio_leds_match),
-> so I think you can just drop the latter.
+ > +		case SNDRV_PCM_FORMAT_S32_LE:
+ > +			cts_n = CTS_N_M(3) | CTS_N_K(3);
+ > +			break;
+ > +		}
+ > +		aclk = 1;				/* clock enable */
+ >   		break;
+ >
+ >   	default:
+ > @@ -671,6 +706,7 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ >   	reg_clear(priv, REG_AIP_CNTRL_0, AIP_CNTRL_0_LAYOUT |
+ >   					AIP_CNTRL_0_ACR_MAN);	/* auto CTS */
+ >   	reg_write(priv, REG_CTS_N, cts_n);
+ > +	reg_write(priv, REG_ENA_ACLK, aclk);
+ >
+ >   	/*
+ >   	 * Audio input somehow depends on HDMI line rate which is
+ > @@ -727,6 +763,144 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ >   	tda998x_write_aif(priv, p);
+ >   }
+ >
+ > +/* audio codec interface */
+ > +
+ > +/* return the audio parameters extracted from the last EDID */
+ > +static int tda998x_get_audio(struct device *dev,
+ > +			int *max_channels,
+ > +			int *rate_mask,
+ > +			int *fmt)
+ > +{
+ > +	struct tda998x_priv2 *priv2 = dev_get_drvdata(dev);
+ > +	struct tda998x_priv *priv = &priv2->base;
+ > +
+ > +	if (!priv->encoder->crtc)
+ > +		return -ENODEV;
+ > +
+ > +	*max_channels = priv->max_channels;
+ > +	*rate_mask = priv->rate_mask;
+ > +	*fmt = priv->fmt;
+ > +	return 0;
+ > +}
+ > +
+ > +/* switch the audio port and initialize the audio parameters for 
+streaming */
+ > +static void tda998x_audio_switch(struct device *dev,
+ > +				 int port_index,
+ > +				 unsigned sample_rate,
+ > +				 int sample_format)
+ > +{
+ > +	struct tda998x_priv2 *priv2 = dev_get_drvdata(dev);
+ > +	struct tda998x_priv *priv = &priv2->base;
+ > +	struct tda998x_encoder_params *p = &priv->params;
+ > +
+ > +	if (!priv->encoder->crtc)
+ > +		return;
+ > +
+ > +	/*
+ > +	 * if port_index is negative (streaming stop),
+ > +	 * disable the audio port
+ > +	 */
+ > +	if (port_index < 0) {
+ > +		reg_write(priv, REG_ENA_AP, 0);
+ > +		return;
+ > +	}
+ > +
+ > +	/* if same audio parameters, just enable the audio port */
+ > +	if (p->audio_cfg == priv->audio_ports[port_index] &&
+ > +	    p->audio_sample_rate == sample_rate &&
+ > +	    priv->audio_sample_format == sample_format) {
+ > +		reg_write(priv, REG_ENA_AP, p->audio_cfg);
+ > +		return;
+ > +	}
+ > +
+ > +	p->audio_format = port_index;
+ > +	p->audio_cfg = priv->audio_ports[port_index];
+ > +	p->audio_sample_rate = sample_rate;
+ > +	priv->audio_sample_format = sample_format;
+ > +	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
+ > +}
+ > +
+ > +#define TDA998X_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | \
+ > +			SNDRV_PCM_FMTBIT_S20_3LE | \
+ > +			SNDRV_PCM_FMTBIT_S24_LE | \
+ > +			SNDRV_PCM_FMTBIT_S32_LE)
+ > +
+ > +static struct snd_soc_dai_driver tda998x_dais[] = {
+ > +	{
+ > +		.name = "spdif-hifi",
+ > +		.id = AFMT_SPDIF,
+ > +		.playback = {
+ > +			.stream_name	= "HDMI SPDIF Playback",
+ > +			.channels_min	= 1,
+ > +			.channels_max	= 2,
+ > +			.rates		= SNDRV_PCM_RATE_CONTINUOUS,
+ > +			.rate_min	= 22050,
+ > +			.rate_max	= 192000,
+ > +			.formats	= TDA998X_FORMATS,
+ > +		},
+ > +	},
+ > +	{
+ > +		.name = "i2s-hifi",
+ > +		.id = AFMT_I2S,
+ > +		.playback = {
+ > +			.stream_name	= "HDMI I2S Playback",
+ > +			.channels_min	= 1,
+ > +			.channels_max	= 8,
+ > +			.rates		= SNDRV_PCM_RATE_CONTINUOUS,
+ > +			.rate_min	= 5512,
+ > +			.rate_max	= 192000,
+ > +			.formats	= TDA998X_FORMATS,
+ > +		},
+ > +	},
+ > +};
+ > +
+ > +static const struct snd_soc_dapm_widget tda998x_widgets[] = {
+ > +	SND_SOC_DAPM_OUTPUT("hdmi-out"),
+ > +};
+ > +static const struct snd_soc_dapm_route tda998x_routes[] = {
+ > +	{ "hdmi-out", NULL, "HDMI I2S Playback" },
+ > +	{ "hdmi-out", NULL, "HDMI SPDIF Playback" },
+ > +};
+ > +
+ > +static struct snd_soc_codec_driver tda998x_codec_driver = {
+ > +	.dapm_widgets = tda998x_widgets,
+ > +	.num_dapm_widgets = ARRAY_SIZE(tda998x_widgets),
+ > +	.dapm_routes = tda998x_routes,
+ > +	.num_dapm_routes = ARRAY_SIZE(tda998x_routes),
+ > +};
+ > +
+ > +static struct hdmi_data tda998x_hdmi_data = {
+ > +	.get_audio = tda998x_get_audio,
+ > +	.audio_switch = tda998x_audio_switch,
+ > +	.ndais = ARRAY_SIZE(tda998x_dais),
+ > +	.dais = tda998x_dais,
+ > +	.driver = &tda998x_codec_driver,
+ > +};
+ > +
+ > +static void tda998x_create_audio_codec(struct tda998x_priv *priv)
+ > +{
+ > +	struct platform_device *pdev;
+ > +	struct module *module;
+ > +
+ > +	request_module("snd-soc-hdmi-codec");
+ > +	pdev = platform_device_register_resndata(&priv->hdmi->dev,
+ > +						 "hdmi-audio-codec",
+ > +						  PLATFORM_DEVID_NONE,
+ > +						  NULL, 0,
+ > +						  &tda998x_hdmi_data,
+ > +						  sizeof tda998x_hdmi_data);
+ > +	if (IS_ERR(pdev)) {
+ > +		dev_err(&priv->hdmi->dev, "cannot create codec: %ld\n",
+ > +			PTR_ERR(pdev));
+ > +		return;
+ > +	}
+ > +
+ > +	priv->pdev_codec = pdev;
+ > +	module = pdev->dev.driver->owner;
+ > +	if (module)
+ > +		try_module_get(module);
+ > +}
+ > +
+ >   /* DRM encoder functions */
+ >
+ >   static void tda998x_encoder_set_config(struct tda998x_priv *priv,
+ > @@ -746,6 +920,8 @@ static void tda998x_encoder_set_config(struct 
+tda998x_priv *priv,
+ >   			    (p->mirr_f ? VIP_CNTRL_2_MIRR_F : 0);
+ >
+ >   	priv->params = *p;
+ > +	priv->audio_ports[p->audio_format] = p->audio_cfg;
+ > +	priv->audio_sample_format = SNDRV_PCM_FORMAT_S24_LE;
 
-Indeed.
+See the previous comment.
 
-> On the question what to put into the name and type fields, that is
-> unrelated. The type is supposed to be for the 'device_type' property
-> in DT, which we should never rely on in a driver that supports both
-> APCI and DT. In Linux we only use that for "pci", "cpu" and "memory",
-> all of which have their own way of getting probed in ACPI.
-> The "name" is normally ignored in DT as well, except for backwards
-> compatibility with old bindings, but I would argue that you should not
-> just put "prp0001" in there. Either leave it empty like type, or use
-> the name of the device as it appears in the ACPI tables, such as "DEV0"
-> or "PWM".
+ >   }
+ >
+ >   static void tda998x_encoder_dpms(struct tda998x_priv *priv, int mode)
+ > @@ -1128,6 +1304,47 @@ fail:
+ >   	return NULL;
+ >   }
+ >
+ > +static void tda998x_set_audio(struct tda998x_priv *priv,
+ > +			      struct drm_connector *connector)
+ > +{
+ > +	u8 *eld = connector->eld;
+ > +	u8 *sad;
+ > +	int sad_count;
+ > +	unsigned eld_ver, mnl, rate_mask;
+ > +	unsigned max_channels, fmt;
+ > +
+ > +	/* adjust the hw params from the ELD (EDID) */
+ > +	eld_ver = eld[0] >> 3;
+ > +	if (eld_ver != 2 && eld_ver != 31)
+ > +		return;
+ > +
+ > +	mnl = eld[4] & 0x1f;
+ > +	if (mnl > 16)
+ > +		return;
+ > +
+ > +	sad_count = eld[5] >> 4;
+ > +	sad = eld + 20 + mnl;
+ > +
+ > +	/* Start from the basic audio settings */
+ > +	max_channels = 2;
+ > +	rate_mask = 0;
+ > +	fmt = 0;
+ > +	while (sad_count--) {
+ > +		switch (sad[0] & 0x78) {
+ > +		case 0x08: /* PCM */
+ > +			max_channels = max(max_channels, (sad[0] & 7) + 1u);
+ > +			rate_mask |= sad[1];
+ > +			fmt |= sad[2] & 0x07;
+ > +			break;
+ > +		}
+ > +		sad += 3;
+ > +	}
+ > +
+ > +	priv->max_channels = max_channels;
+ > +	priv->rate_mask = rate_mask;
+ > +	priv->fmt = fmt;
+ > +}
+ > +
+ >   static int
+ >   tda998x_encoder_get_modes(struct tda998x_priv *priv,
+ >   			  struct drm_connector *connector)
+ > @@ -1139,6 +1356,12 @@ tda998x_encoder_get_modes(struct tda998x_priv 
+*priv,
+ >   		drm_mode_connector_update_edid_property(connector, edid);
+ >   		n = drm_add_edid_modes(connector, edid);
+ >   		priv->is_hdmi_sink = drm_detect_hdmi_monitor(edid);
+ > +
+ > +		/* set the audio parameters from the EDID */
+ > +		if (priv->is_hdmi_sink) {
+ > +			drm_edid_to_eld(connector, edid);
+ > +			tda998x_set_audio(priv, connector);
+ > +		}
+ >   		kfree(edid);
+ >   	}
+ >
+ > @@ -1167,12 +1390,19 @@ tda998x_encoder_set_property(struct 
+drm_encoder *encoder,
+ >
+ >   static void tda998x_destroy(struct tda998x_priv *priv)
+ >   {
+ > +	struct module *module;
+ > +
+ >   	/* disable all IRQs and free the IRQ handler */
+ >   	cec_write(priv, REG_CEC_RXSHPDINTENA, 0);
+ >   	reg_clear(priv, REG_INT_FLAGS_2, INT_FLAGS_2_EDID_BLK_RD);
+ >   	if (priv->hdmi->irq)
+ >   		free_irq(priv->hdmi->irq, priv);
+ >
+ > +	if (priv->pdev_codec) {
+ > +		module = priv->pdev_codec->dev.driver->owner;
+ > +		module_put(module);
+ > +		platform_device_del(priv->pdev_codec);
+ > +	}
+ >   	i2c_unregister_device(priv->cec);
+ >   }
+ >
+ > @@ -1254,12 +1484,16 @@ static int tda998x_create(struct i2c_client 
+*client, struct tda998x_priv *priv)
+ >   {
+ >   	struct device_node *np = client->dev.of_node;
+ >   	u32 video;
+ > -	int rev_lo, rev_hi, ret;
+ > +	int i, j, rev_lo, rev_hi, ret;
+ > +	const char *p;
+ >
+ >   	priv->vip_cntrl_0 = VIP_CNTRL_0_SWAP_A(2) | VIP_CNTRL_0_SWAP_B(3);
+ >   	priv->vip_cntrl_1 = VIP_CNTRL_1_SWAP_C(0) | VIP_CNTRL_1_SWAP_D(1);
+ >   	priv->vip_cntrl_2 = VIP_CNTRL_2_SWAP_E(4) | VIP_CNTRL_2_SWAP_F(5);
+ >
+ > +	priv->params.audio_frame[1] = 1;		/* channels - 1 */
+ > +	priv->params.audio_sample_rate = 48000;		/* 48kHz */
+ > +
+ >   	priv->current_page = 0xff;
+ >   	priv->hdmi = client;
+ >   	priv->cec = i2c_new_dummy(client->adapter, 0x34);
+ > @@ -1351,17 +1585,48 @@ static int tda998x_create(struct i2c_client 
+*client, struct tda998x_priv *priv)
+ >   	/* enable EDID read irq: */
+ >   	reg_set(priv, REG_INT_FLAGS_2, INT_FLAGS_2_EDID_BLK_RD);
+ >
+ > -	if (!np)
+ > -		return 0;		/* non-DT */
+ > +	/* get the device tree parameters */
+ > +	if (np) {
+ >
+ > -	/* get the optional video properties */
+ > -	ret = of_property_read_u32(np, "video-ports", &video);
+ > -	if (ret == 0) {
+ > -		priv->vip_cntrl_0 = video >> 16;
+ > -		priv->vip_cntrl_1 = video >> 8;
+ > -		priv->vip_cntrl_2 = video;
+ > +		/* optional video properties */
+ > +		ret = of_property_read_u32(np, "video-ports", &video);
+ > +		if (ret == 0) {
+ > +			priv->vip_cntrl_0 = video >> 16;
+ > +			priv->vip_cntrl_1 = video >> 8;
+ > +			priv->vip_cntrl_2 = video;
+ > +		}
+ > +
+ > +		/* audio properties */
+ > +		for (i = 0; i < 2; i++) {
+ > +			u32 port;
+ > +
+ > +			ret = of_property_read_u32_index(np, "audio-ports", i, &port);
+ > +			if (ret)
+ > +				break;
+ > +			ret = of_property_read_string_index(np, "audio-port-names",
+ > +							i, &p);
+ > +			if (ret) {
+ > +				dev_err(&client->dev,
+ > +					"missing audio-port-names[%d]\n", i);
+ > +				break;
+ > +			}
+ > +			if (strcmp(p, "spdif") == 0) {
+ > +				j = AFMT_SPDIF;
+ > +			} else if (strcmp(p, "i2s") == 0) {
+ > +				j = AFMT_I2S;
+ > +			} else {
+ > +				dev_err(&client->dev,
+ > +					"bad audio-port-names '%s'\n", p);
+ > +				break;
+ > +			}
+ > +			priv->audio_ports[j] = port;
+ > +		}
+ >   	}
+ >
+ > +	/* create the audio CODEC */
+ > +	if (priv->audio_ports[AFMT_SPDIF] || priv->audio_ports[AFMT_I2S])
+ > +		tda998x_create_audio_codec(priv);
+ > +
+ >   	return 0;
+ >
+ >   fail:
+ > @@ -1395,15 +1660,13 @@ static int tda998x_encoder_init(struct 
+i2c_client *client,
+ >   	encoder_slave->slave_priv = priv;
+ >   	encoder_slave->slave_funcs = &tda998x_encoder_slave_funcs;
+ >
+ > +	/* set the drvdata pointer to priv2 for CODEC calls */
+ > +	dev_set_drvdata(&client->dev,
+ > +			container_of(priv, struct tda998x_priv2, base));
+ > +
+ >   	return 0;
+ >   }
+ >
+ > -struct tda998x_priv2 {
+ > -	struct tda998x_priv base;
+ > -	struct drm_encoder encoder;
+ > -	struct drm_connector connector;
+ > -};
+ > -
+ >   #define conn_to_tda998x_priv2(x) \
+ >   	container_of(x, struct tda998x_priv2, connector);
+ >
+ >
 
-OK, I think it makes sense to leave them empty. I remember I tried that
-at some point but it didn't work without N and T fields. Is there some
-example what to put there in case of empty?
+The only audio side change in the platform data usage of tda998x_drv I
+can see is the change in the default value of CTS_N.
 
-Something like "of:N*T*Cgpio-leds" perhaps?
+Best regards,
+Jyri
