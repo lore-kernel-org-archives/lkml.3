@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaJANKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:10:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861AbaJANKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:10:17 -0400
-Date: Wed, 1 Oct 2014 09:10:08 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <andrew-vger@gizmolabs.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special
- devices
-Message-ID: <20141001131008.GB18756@mail.corp.redhat.com>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
- <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
+	id S1751469AbaJANMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:12:48 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40086 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaJANMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:12:47 -0400
+Date: Wed, 1 Oct 2014 14:12:33 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 13/24] ARM64:ILP32: Use the non compat HWCAP for ILP32
+Message-ID: <20141001131232.GK12702@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-14-git-send-email-apinski@cavium.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
+In-Reply-To: <1409779158-30963-14-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 01 2014 or thereabouts, Jiri Kosina wrote:
-> On Tue, 30 Sep 2014, Benjamin Tissoires wrote:
+On Wed, Sep 03, 2014 at 10:19:07PM +0100, Andrew Pinski wrote:
+> Signed-off-by: Andrew Pinski <apinski@cavium.com>
+> ---
+>  arch/arm64/include/asm/compat.h |   10 ++++++++++
+>  arch/arm64/include/asm/hwcap.h  |    2 --
+>  2 files changed, 10 insertions(+), 2 deletions(-)
 > 
-> > Jiri, This patch series can be split in 2 if you would like:
-> > - patches 1 to 4 can be scheduled easily for 3.18 IMO
-> > - patches 5 to 13 might need some more reviews, so either 3.18 or 3.19
-> 
-> Benjamin,
-> 
-> thanks for the summary. I'll try to review 1-4 in time for 3.18, but I 
-> can't guarantee that.
-> 
+> diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+> index eca6eec..2f84d2c 100644
+> --- a/arch/arm64/include/asm/compat.h
+> +++ b/arch/arm64/include/asm/compat.h
+> @@ -296,6 +296,16 @@ struct compat_shmid64_ds {
+>  	compat_ulong_t __unused5;
+>  };
+>  
+> +#define COMPAT_ELF_HWCAP	\
+> +	(is_a32_compat_task()	\
+> +	  ? compat_elf_hwcap	\
+> +	  : elf_hwcap)
+> +
+> +#define COMPAT_ELF_HWCAP2	\
+> +	(is_a32_compat_task()	\
+> +	  ? compat_elf_hwcap2	\
+> +	  : 0)
+> +
+>  static inline int is_compat_task(void)
+>  {
+>  	return test_thread_flag(TIF_32BIT);
+> diff --git a/arch/arm64/include/asm/hwcap.h b/arch/arm64/include/asm/hwcap.h
+> index 024c461..31e7e02 100644
+> --- a/arch/arm64/include/asm/hwcap.h
+> +++ b/arch/arm64/include/asm/hwcap.h
+> @@ -46,8 +46,6 @@
+>  #define ELF_HWCAP		(elf_hwcap)
+>  
+>  #ifdef CONFIG_COMPAT
+> -#define COMPAT_ELF_HWCAP	(compat_elf_hwcap)
+> -#define COMPAT_ELF_HWCAP2	(compat_elf_hwcap2)
+>  extern unsigned int compat_elf_hwcap, compat_elf_hwcap2;
+>  #endif
 
-Thanks
+Any reason why you are moving the definitions from here? Can you not
+include asm/compat.h in asm/hwcap.h? (or move the compat_elf_hwcap
+declaration as well).
 
-> Do you forsee any issues if the whole lot is queued for 3.19 only?
-
-Nope. It waited since 2011, so it can wait 3 more months :)
-
-Cheers,
-Benjamin
-
+-- 
+Catalin
