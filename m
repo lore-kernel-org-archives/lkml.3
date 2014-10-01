@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaJAJ71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 05:59:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33244 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750944AbaJAJ70 (ORCPT
+	id S1751451AbaJAJ7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 05:59:31 -0400
+Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:44775 "EHLO
+	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750944AbaJAJ73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 05:59:26 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: vgupta@synopsys.com
-Cc: richard@nod.at, pebolle@tiscali.nl, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] ARC: [plat-arcfpga]: remove unused Kconfig params
-Date: Wed,  1 Oct 2014 11:59:17 +0200
-Message-Id: <1412157557-6975-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 1 Oct 2014 05:59:29 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Subject: [PATCH] gpio: amd8111: unmap ioport on failure case
+Date: Wed,  1 Oct 2014 15:33:00 +0530
+Message-Id: <1412157780-32219-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the ARC_BOARD_ANGEL4 and ARC_BOARD_ML509
-Kconfig parameters which are no longer used anywhere
-in the source code and Makefiles.
+This change unmaps ioport when gpiochip_add fails
 
-This also updates a comment refering to these parameters.
-
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-gpio@vger.kernel.org
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
 ---
- arch/arc/plat-arcfpga/Kconfig | 13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/gpio/gpio-amd8111.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
-index b9f34cf55acf..3f6814aa97ac 100644
---- a/arch/arc/plat-arcfpga/Kconfig
-+++ b/arch/arc/plat-arcfpga/Kconfig
-@@ -12,23 +12,10 @@ menuconfig ARC_PLAT_FPGA_LEGACY
- 	help
- 	  Support for ARC development boards, provided by Synopsys.
- 	  These are based on FPGA or ISS. e.g.
--	  - ARCAngel4
--	  - ML509
- 	  - MetaWare ISS
- 
- if ARC_PLAT_FPGA_LEGACY
- 
--config ARC_BOARD_ANGEL4
--	bool "ARC Angel4"
--	default y
--	help
--	  ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
--
--config ARC_BOARD_ML509
--	bool "ML509"
--	help
--	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
--
- config ISS_SMP_EXTN
- 	bool "ARC SMP Extensions (ISS Models only)"
- 	default n
+diff --git a/drivers/gpio/gpio-amd8111.c b/drivers/gpio/gpio-amd8111.c
+index 3c09f1a6..d3d2d10 100644
+--- a/drivers/gpio/gpio-amd8111.c
++++ b/drivers/gpio/gpio-amd8111.c
+@@ -223,6 +223,7 @@ found:
+ 	if (err) {
+ 		printk(KERN_ERR "GPIO registering failed (%d)\n",
+ 		       err);
++		ioport_unmap(gp.pm);
+ 		release_region(gp.pmbase + PMBASE_OFFSET, PMBASE_SIZE);
+ 		goto out;
+ 	}
 -- 
-1.9.1
+1.7.9.5
 
