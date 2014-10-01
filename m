@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582AbaJAKML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 06:12:11 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64782 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751063AbaJAKMI (ORCPT
+	id S1751563AbaJAKNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 06:13:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58877 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750782AbaJAKNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 06:12:08 -0400
-Message-ID: <1412158326.15281.2.camel@x220>
-Subject: Re: [PATCH] ARC: [plat-arcfpga]: remove unused Kconfig params
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: vgupta@synopsys.com, richard@nod.at, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 01 Oct 2014 12:12:06 +0200
-In-Reply-To: <1412157557-6975-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1412157557-6975-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Oct 2014 10:12:06.0194 (UTC) FILETIME=[273CF920:01CFDD60]
-X-RcptDomain: vger.kernel.org
+	Wed, 1 Oct 2014 06:13:51 -0400
+Date: Wed, 1 Oct 2014 11:13:23 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sean Paul <seanpaul@chromium.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "ritesh.harjani@gmail.com" <ritesh.harjani@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olof@lixom.net" <olof@lixom.net>
+Subject: Re: [PATCH] arm64: Use and error-check DMA_ERROR_CODE
+Message-ID: <20141001101323.GB2587@arm.com>
+References: <1412108121-19262-1-git-send-email-seanpaul@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412108121-19262-1-git-send-email-seanpaul@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 11:59 +0200, Michael Opdenacker wrote:
-> This removes the ARC_BOARD_ANGEL4 and ARC_BOARD_ML509
-> Kconfig parameters which are no longer used anywhere
-> in the source code and Makefiles.
+Hi Sean,
+
+On Tue, Sep 30, 2014 at 09:15:21PM +0100, Sean Paul wrote:
+> This patch replaces the static assignment of ~0 to dma_handle with
+> DMA_ERROR_CODE to be consistent with other platforms.
 > 
-> This also updates a comment refering to these parameters.
+> In addition to that, it also adds a check for DMA_ERROR_CODE before
+> calling __dma_free_coherent with an invalid dma_handle.
 > 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> Signed-off-by: Sean Paul <seanpaul@chromium.org>
 > ---
-
-See commit 774b689502d4 ("ARC: [arcfpga] Get rid of ARC_BOARD_ANGEL4 and
-ARC_BOARD_ML509") in linux-next since yesterday.
-
->  arch/arc/plat-arcfpga/Kconfig | 13 -------------
->  1 file changed, 13 deletions(-)
+>  arch/arm64/mm/dma-mapping.c | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
-> index b9f34cf55acf..3f6814aa97ac 100644
-> --- a/arch/arc/plat-arcfpga/Kconfig
-> +++ b/arch/arc/plat-arcfpga/Kconfig
-> @@ -12,23 +12,10 @@ menuconfig ARC_PLAT_FPGA_LEGACY
->  	help
->  	  Support for ARC development boards, provided by Synopsys.
->  	  These are based on FPGA or ISS. e.g.
-> -	  - ARCAngel4
-> -	  - ML509
->  	  - MetaWare ISS
-
-It doesn't follow from the fact that these Kconfig symbols are unused
-that this help text is now incorrect. How did you establish that?
- 
->  if ARC_PLAT_FPGA_LEGACY
+> diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
+> index 4164c5a..69fd2c4 100644
+> --- a/arch/arm64/mm/dma-mapping.c
+> +++ b/arch/arm64/mm/dma-mapping.c
+> @@ -125,7 +125,7 @@ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
+>  no_map:
+>  	__dma_free_coherent(dev, size, ptr, *dma_handle, attrs);
+>  no_mem:
+> -	*dma_handle = ~0;
+> +	*dma_handle = DMA_ERROR_CODE;
+>  	return NULL;
+>  }
 >  
-> -config ARC_BOARD_ANGEL4
-> -	bool "ARC Angel4"
-> -	default y
-> -	help
-> -	  ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
-> -
-> -config ARC_BOARD_ML509
-> -	bool "ML509"
-> -	help
-> -	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
-> -
->  config ISS_SMP_EXTN
->  	bool "ARC SMP Extensions (ISS Models only)"
->  	default n
+> @@ -136,7 +136,9 @@ static void __dma_free_noncoherent(struct device *dev, size_t size,
+>  	void *swiotlb_addr = phys_to_virt(dma_to_phys(dev, dma_handle));
+>  
+>  	vunmap(vaddr);
+> -	__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
+> +
+> +	if (dma_handle != DMA_ERROR_CODE)
+> +		__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
 
+Is it legal to try and free a DMA buffer after a failed allocation? If so, I
+think we need something similar for arch/arm/.
 
-Paul Bolle
-
+Will
