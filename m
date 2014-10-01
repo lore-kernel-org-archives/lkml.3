@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaJAO4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:56:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35380 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751877AbaJAOxe (ORCPT
+	id S1752438AbaJAO4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:56:11 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:46189 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaJAO4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:53:34 -0400
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 06/11] drm: add DT bindings documentation for atmel-hlcdc-dc driver
-Date: Wed,  1 Oct 2014 16:53:03 +0200
-Message-Id: <1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 1 Oct 2014 10:56:08 -0400
+Date: Wed, 1 Oct 2014 09:56:03 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from
+ userspace
+Message-ID: <20141001095603.3d5103d9@as>
+In-Reply-To: <CALCETrXo-tvQOJ8Cg1d1wkQm=5095VdESq0SBUH4MivZWH8iQw@mail.gmail.com>
+References: <cover.1412138935.git.luto@amacapital.net>
+	<0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
+	<20141001090915.16c8b1db@as>
+	<20141001093208.79bb0891@as>
+	<CALCETrXo-tvQOJ8Cg1d1wkQm=5095VdESq0SBUH4MivZWH8iQw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On Wed, 1 Oct 2014 07:46:54 -0700
+Andy Lutomirski <luto@amacapital.net> wrote:
 
-The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
-at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
-controller device.
+> On Wed, Oct 1, 2014 at 7:32 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> > On Wed, 1 Oct 2014 09:09:13 -0500
+> > Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> >
+> >> On Tue, 30 Sep 2014 21:51:27 -0700
+> >> Andy Lutomirski <luto@amacapital.net> wrote:
+> >>
+> >> > The NT flag doesn't do anything in long mode other than causing IRET
+> >> > to #GP.  Oddly, CPL3 code can still set NT using popf.
+> >> >
+> >> > Entry via hardware or software interrupt clears NT automatically, so
+> >> > the only relevant entries are fast syscalls.
+> >> >
+> >> > If user code causes kernel code to run with NT set, then there's at
+> >> > least some (small) chance that it could cause trouble.  For example,
+> >> > user code could cause a call to EFI code with NT set, and who knows
+> >> > what would happen?  Apparently some games on Wine sometimes do
+> >> > this (!), and, if an IRET return happens, they will segfault.  That
+> >> > segfault cannot be handled, because signal delivery fails, too.
+> >> >
+> >> > This patch programs the CPU to clear NT on entry via SYSCALL (both
+> >> > 32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
+> >> > in software on entry via SYSENTER.
+> >> >
+> >> > To save a few cycles, this borrows a trick from Jan Beulich in Xen:
+> >> > it checks whether NT is set before trying to clear it.  As a result,
+> >> > it seems to have very little effect on SYSENTER performance on my
+> >> > machine.
+> >> >
+> >> > Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
+> >> >
+> >> > I haven't touched anything on 32-bit kernels.
+> >> >
+> >> > The syscall mask change comes from a variant of this patch by Anish
+> >> > Bhatt.
+> >> >
+> >> > Cc: stable@vger.kernel.org
+> >> > Reported-by: Anish Bhatt <anish@chelsio.com>
+> >> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> > ---
+> >> >  arch/x86/ia32/ia32entry.S    | 12 ++++++++++++
+> >> >  arch/x86/kernel/cpu/common.c |  2 +-
+> >> >  2 files changed, 13 insertions(+), 1 deletion(-)
+> >> >
+> >> > diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+> >> > index 4299eb05023c..44d1dd371454 100644
+> >> > --- a/arch/x86/ia32/ia32entry.S
+> >> > +++ b/arch/x86/ia32/ia32entry.S
+> >> > @@ -151,6 +151,18 @@ ENTRY(ia32_sysenter_target)
+> >> >  1: movl    (%rbp),%ebp
+> >> >     _ASM_EXTABLE(1b,ia32_badarg)
+> >> >     ASM_CLAC
+> >> > +
+> >> > +   /*
+> >> > +    * Sysenter doesn't filter flags, so we need to clear NT
+> >> > +    * ourselves.  To save a few cycles, we can check whether
+> >> > +    * NT was set instead of doing an unconditional popfq.
+> >> > +    */
+> >> > +   testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
+> >> > +   jz 1f
+> >> > +   pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
+> >> > +   popfq_cfi
+> >> > +1:
+> >> > +
+> >>
+> >> I think you've gone backwards with this version. The earlier one got
+> >> some of the performance loss back by not needing to do the "cld" insn.
+> >>
+> >> You should just replace that "cld" (line 146) with
+> >>
+> >>       pushfq_cfi $2
+> >>       popfq_cfi
+> >>
+> >> Unfortunately I'm not set up to test that yet. But I did look at
+> >> the SDM and can't see a need to preserve any of the flags.
+> >>
+> >
+> >
+> > <sigh> that's:
+> >
+> >         pushfw_cfi $0x202
+> >
+> > IF needs to stay on because we've already enabled interrupts after
+> > sysenter.
+> 
+> I tried exactly this.  It was much slower than the version I sent.
+> 
 
-The HLCDC block provides a single RGB output port, and only supports LCD
-panels connection to LCD panels for now.
-
-The atmel,panel property link the HLCDC RGB output with the LCD panel
-connected on this port (note that the HLCDC RGB connector implementation
-makes use of the DRM panel framework).
-
-Connection to other external devices (DRM bridges) might be added later by
-mean of a new atmel,xxx (atmel,bridge) property.
-
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     | 53 ++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-
-diff --git a/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-new file mode 100644
-index 0000000..ebc1a91
---- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-@@ -0,0 +1,53 @@
-+Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
-+
-+The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
-+See ../mfd/atmel-hlcdc.txt for more details.
-+
-+Required properties:
-+ - compatible: value should be "atmel,hlcdc-display-controller"
-+ - pinctrl-names: the pin control state names. Should contain "default".
-+ - pinctrl-0: should contain the default pinctrl states.
-+ - #address-cells: should be set to 1.
-+ - #size-cells: should be set to 0.
-+
-+Required children nodes:
-+ Children nodes are encoding available output ports and their connections
-+ to external devices using the OF graph reprensentation (see ../graph.txt).
-+ At least one port node is required.
-+
-+Example:
-+
-+	hlcdc: hlcdc@f0030000 {
-+		compatible = "atmel,sama5d3-hlcdc";
-+		reg = <0xf0030000 0x2000>;
-+		interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
-+		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
-+		clock-names = "periph_clk","sys_clk", "slow_clk";
-+		status = "disabled";
-+
-+		hlcdc-display-controller {
-+			compatible = "atmel,hlcdc-display-controller";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			port@0 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				reg = <0>;
-+
-+				hlcdc_panel_output: endpoint@0 {
-+					reg = <0>;
-+					remote-endpoint = <&panel_input>;
-+				};
-+			};
-+		};
-+
-+		hlcdc_pwm: hlcdc-pwm {
-+			compatible = "atmel,hlcdc-pwm";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_pwm>;
-+			#pwm-cells = <3>;
-+		};
-+	};
--- 
-1.9.1
-
+Yeah, it looks like a new paravirt op that enables interrupts and
+clears all the other flags would be the only way to do this without at
+least some impact on performance.
