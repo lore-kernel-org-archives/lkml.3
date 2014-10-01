@@ -1,261 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaJAWFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 18:05:12 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:65278 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751612AbaJAWFK (ORCPT
+	id S1752999AbaJAWIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 18:08:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46497 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbaJAWIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 18:05:10 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "dbasehore ." <dbasehore@chromium.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, Laxman Dewangan <ldewangan@nvidia.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Biederman <ebiederm@xmission.com>
-Subject: Re: [Xen-devel] [PATCH v1 1/2] genirq: Fix error path for resuming irqs
-Date: Thu, 02 Oct 2014 00:25:08 +0200
-Message-ID: <2820251.cyKiTY1p5v@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGAzgsqEwVFHh2+Xtmraxb6Xwt_Rz2iTsOz+R+P-wmc4Vq9-mg@mail.gmail.com>
-References: <1403913865-31614-1-git-send-email-dbasehore@chromium.org> <20140707153353.GA29197@laptop.dumpdata.com> <CAGAzgsqEwVFHh2+Xtmraxb6Xwt_Rz2iTsOz+R+P-wmc4Vq9-mg@mail.gmail.com>
+	Wed, 1 Oct 2014 18:08:47 -0400
+Message-ID: <542C7B5E.2020000@oracle.com>
+Date: Wed, 01 Oct 2014 18:08:30 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: pipe/page fault oddness.
+References: <20140930033327.GA14558@redhat.com>	<CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>	<20140930043309.GA16196@redhat.com>	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>	<20140930160510.GA15903@redhat.com>	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>	<20140930162201.GC15903@redhat.com>	<20140930164047.GA18354@redhat.com>	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>	<20140930182059.GA24431@redhat.com>	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com> <CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
+In-Reply-To: <CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 01, 2014 01:48:39 PM dbasehore . wrote:
-> Adding maintainers for affected systems to this CL for review.
-> 
-> On Mon, Jul 7, 2014 at 8:33 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Fri, Jun 27, 2014 at 05:04:24PM -0700, Derek Basehore wrote:
-> >> In the case of a late abort to suspend/hibernate, irqs marked with
-> >> IRQF_EARLY_RESUME will not be enabled. This is due to syscore_resume not getting
-> >> called on these paths.
-> >>
-> >> This can happen with a pm test for platform, a late wakeup irq, and other
-> >> instances. This change removes the function from syscore and calls it explicitly
-> >> in suspend, hibernate, etc.
-> >>
-> >> This regression was introduced in 9bab0b7f "genirq: Add IRQF_RESUME_EARLY"
-> >>
-> >> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> >
-> > Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >
-> > on the Xen side.
-> >> ---
-> >>  drivers/base/power/main.c |  5 ++++-
-> >>  drivers/xen/manage.c      |  5 ++++-
-> >>  include/linux/interrupt.h |  1 +
-> >>  include/linux/pm.h        |  2 +-
-> >>  kernel/irq/pm.c           | 17 +++--------------
-> >>  kernel/kexec.c            |  2 +-
-> >>  kernel/power/hibernate.c  |  6 +++---
-> >>  kernel/power/suspend.c    |  2 +-
-> >>  8 files changed, 18 insertions(+), 22 deletions(-)
-> >>
-> >> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> >> index bf41296..a087473 100644
-> >> --- a/drivers/base/power/main.c
-> >> +++ b/drivers/base/power/main.c
-> >> @@ -712,8 +712,10 @@ static void dpm_resume_early(pm_message_t state)
-> >>   * dpm_resume_start - Execute "noirq" and "early" device callbacks.
-> >>   * @state: PM transition of the system being carried out.
-> >>   */
-> >> -void dpm_resume_start(pm_message_t state)
-> >> +void dpm_resume_start(pm_message_t state, bool enable_early_irqs)
-> >>  {
-> >> +     if (enable_early_irqs)
-> >> +             early_resume_device_irqs();
+On 10/01/2014 04:20 PM, Linus Torvalds wrote:
+> So I'm really sending this patch out in the hope that it will get
+> comments, fixup and possibly even testing by people who actually know
+> the NUMA balancing code. Rik?  Anybody?
 
-This conflicts with some changes I've already queued up for merging.
+Hi Linus,
 
-Why don't you do that in dpm_resume_noirq() directly?  Also why do we need
-the extra argument here?  The only case when we pass 'false' apprears to be
-the Xen one, so perhaps we can use a special PM_EVENT_XEN flag or something
-similar to indicate that?  Honestly, I don't want to litter the regular suspend
-code with Xen-specific stuff like this.
+I've tried this patch on the same configuration that was triggering
+the VM_BUG_ON that Hugh mentioned previously. Surprisingly enough it
+ran fine for ~20 minutes before exploding with:
 
-> >>       dpm_resume_noirq(state);
-> >>       dpm_resume_early(state);
-> >>  }
-> >> @@ -1132,6 +1134,7 @@ static int dpm_suspend_noirq(pm_message_t state)
-> >>       if (error) {
-> >>               suspend_stats.failed_suspend_noirq++;
-> >>               dpm_save_failed_step(SUSPEND_SUSPEND_NOIRQ);
-> >> +             early_resume_device_irqs();
-> >>               dpm_resume_noirq(resume_event(state));
-> >>       } else {
-> >>               dpm_show_time(starttime, state, "noirq");
-> >> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-> >> index c3667b2..d387cdf 100644
-> >> --- a/drivers/xen/manage.c
-> >> +++ b/drivers/xen/manage.c
-> >> @@ -68,6 +68,7 @@ static int xen_suspend(void *data)
-> >>       err = syscore_suspend();
-> >>       if (err) {
-> >>               pr_err("%s: system core suspend failed: %d\n", __func__, err);
-> >> +             early_resume_device_irqs();
-> >>               return err;
-> >>       }
-> >>
-> >> @@ -92,6 +93,8 @@ static int xen_suspend(void *data)
-> >>               xen_timer_resume();
-> >>       }
-> >>
-> >> +     early_resume_device_irqs();
-> >> +
-> >>       syscore_resume();
-> >>
-> >>       return 0;
-> >> @@ -137,7 +140,7 @@ static void do_suspend(void)
-> >>
-> >>       raw_notifier_call_chain(&xen_resume_notifier, 0, NULL);
-> >>
-> >> -     dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
-> >> +     dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE, false);
-> >>
-> >>       if (err) {
-> >>               pr_err("failed to start xen_suspend: %d\n", err);
-> >> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-> >> index 698ad05..7f390e3 100644
-> >> --- a/include/linux/interrupt.h
-> >> +++ b/include/linux/interrupt.h
-> >> @@ -193,6 +193,7 @@ extern void irq_wake_thread(unsigned int irq, void *dev_id);
-> >>  /* The following three functions are for the core kernel use only. */
-> >>  extern void suspend_device_irqs(void);
-> >>  extern void resume_device_irqs(void);
-> >> +extern void early_resume_device_irqs(void);
-> >>  #ifdef CONFIG_PM_SLEEP
-> >>  extern int check_wakeup_irqs(void);
-> >>  #else
-> >> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> >> index 72c0fe0..ae5b26a 100644
-> >> --- a/include/linux/pm.h
-> >> +++ b/include/linux/pm.h
-> >> @@ -677,7 +677,7 @@ struct dev_pm_domain {
-> >>
-> >>  #ifdef CONFIG_PM_SLEEP
-> >>  extern void device_pm_lock(void);
-> >> -extern void dpm_resume_start(pm_message_t state);
-> >> +extern void dpm_resume_start(pm_message_t state, bool enable_early_irqs);
-> >>  extern void dpm_resume_end(pm_message_t state);
-> >>  extern void dpm_resume(pm_message_t state);
-> >>  extern void dpm_complete(pm_message_t state);
-> >> diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-> >> index abcd6ca..b07dc9c 100644
-> >> --- a/kernel/irq/pm.c
-> >> +++ b/kernel/irq/pm.c
-> >> @@ -60,26 +60,15 @@ static void resume_irqs(bool want_early)
-> >>  }
-> >>
-> >>  /**
-> >> - * irq_pm_syscore_ops - enable interrupt lines early
-> >> + * early_resume_device_irqs - enable interrupt lines early
-> >>   *
-> >>   * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
-> >>   */
-> >> -static void irq_pm_syscore_resume(void)
-> >> +void early_resume_device_irqs(void)
-> >>  {
-> >>       resume_irqs(true);
-> >>  }
-> >> -
-> >> -static struct syscore_ops irq_pm_syscore_ops = {
-> >> -     .resume         = irq_pm_syscore_resume,
-> >> -};
-> >> -
-> >> -static int __init irq_pm_init_ops(void)
-> >> -{
-> >> -     register_syscore_ops(&irq_pm_syscore_ops);
-> >> -     return 0;
-> >> -}
-> >> -
-> >> -device_initcall(irq_pm_init_ops);
-> >> +EXPORT_SYMBOL_GPL(early_resume_device_irqs);
-> >>
-> >>  /**
-> >>   * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-> >> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> >> index 369f41a..272853b 100644
-> >> --- a/kernel/kexec.c
-> >> +++ b/kernel/kexec.c
-> >> @@ -1700,7 +1700,7 @@ int kernel_kexec(void)
-> >>               local_irq_enable();
-> >>   Enable_cpus:
-> >>               enable_nonboot_cpus();
-> >> -             dpm_resume_start(PMSG_RESTORE);
-> >> +             dpm_resume_start(PMSG_RESTORE, true);
-> >>   Resume_devices:
-> >>               dpm_resume_end(PMSG_RESTORE);
-> >>   Resume_console:
-> >> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> >> index fcc2611..1d6dd56 100644
-> >> --- a/kernel/power/hibernate.c
-> >> +++ b/kernel/power/hibernate.c
-> >> @@ -325,7 +325,7 @@ static int create_image(int platform_mode)
-> >>       platform_finish(platform_mode);
-> >>
-> >>       dpm_resume_start(in_suspend ?
-> >> -             (error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE);
-> >> +             (error ? PMSG_RECOVER : PMSG_THAW) : PMSG_RESTORE, true);
-> >>
-> >>       return error;
-> >>  }
-> >> @@ -482,7 +482,7 @@ static int resume_target_kernel(bool platform_mode)
-> >>   Cleanup:
-> >>       platform_restore_cleanup(platform_mode);
-> >>
-> >> -     dpm_resume_start(PMSG_RECOVER);
-> >> +     dpm_resume_start(PMSG_RECOVER, true);
-> >>
-> >>       return error;
-> >>  }
-> >> @@ -574,7 +574,7 @@ int hibernation_platform_enter(void)
-> >>   Platform_finish:
-> >>       hibernation_ops->finish();
-> >>
-> >> -     dpm_resume_start(PMSG_RESTORE);
-> >> +     dpm_resume_start(PMSG_RESTORE, true);
-> >>
-> >>   Resume_devices:
-> >>       entering_platform_hibernation = false;
-> >> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> >> index 4dd8822..3597c72 100644
-> >> --- a/kernel/power/suspend.c
-> >> +++ b/kernel/power/suspend.c
-> >> @@ -281,7 +281,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
-> >>       if (need_suspend_ops(state) && suspend_ops->wake)
-> >>               suspend_ops->wake();
-> >>
-> >> -     dpm_resume_start(PMSG_RESUME);
-> >> +     dpm_resume_start(PMSG_RESUME, true);
-> >>
-> >>   Platform_finish:
-> >>       if (need_suspend_ops(state) && suspend_ops->finish)
-> >> --
-> >> 2.0.0.526.g5318336
-> >>
-> >>
-> >> _______________________________________________
-> >> Xen-devel mailing list
-> >> Xen-devel@lists.xen.org
-> >> http://lists.xen.org/xen-devel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+[ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
+[ 2781.566953] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2781.568054] Dumping ftrace buffer:
+[ 2781.568826]    (ftrace buffer empty)
+[ 2781.569392] Modules linked in:
+[ 2781.569909] CPU: 61 PID: 13111 Comm: trinity-c61 Not tainted 3.17.0-rc7-sasha-00040-g65e1cb2 #1259
+[ 2781.571077] task: ffff88050ba80000 ti: ffff880418ecc000 task.ti: ffff880418ecc000
+[ 2781.571077] RIP: do_huge_pmd_numa_page (mm/huge_memory.c:1293 (discriminator 1))
+[ 2781.571077] RSP: 0000:ffff880418ecfc60  EFLAGS: 00010246
+[ 2781.571077] RAX: ffffea0074c60000 RBX: ffffea0074c60000 RCX: 0000001d318009e0
+[ 2781.571077] RDX: ffffea0000000000 RSI: ffffffffb5706ef3 RDI: 0000001d318009e0
+[ 2781.571077] RBP: ffff880418ecfcc8 R08: 0000000000000038 R09: 0000000000000001
+[ 2781.571077] R10: 0000000000000038 R11: 0000000000000001 R12: ffff8804f9b52000
+[ 2781.571077] R13: 0000001d318009e0 R14: ffff880508a1f840 R15: 0000000000000028
+[ 2781.571077] FS:  00007f5502fc9700(0000) GS:ffff881d77e00000(0000) knlGS:0000000000000000
+[ 2781.571077] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2781.571077] CR2: 0000000000000000 CR3: 00000004bfac4000 CR4: 00000000000006a0
+[ 2781.571077] Stack:
+[ 2781.571077]  ffff880418ecfc98 0000000000000282 ffff88050ba80000 000000000000000b
+[ 2781.571077]  ffff88060d2ab000 ffff88060000001d 0000000000000000 ffff881d30b3ec00
+[ 2781.571077]  0000000000000000 ffff881d30b3ec00 ffff88060d2ab000 0000000000000100
+[ 2781.571077] Call Trace:
+[ 2781.571077] handle_mm_fault (mm/memory.c:3304 mm/memory.c:3368)
+[ 2781.571077] __do_page_fault (arch/x86/mm/fault.c:1231)
+[ 2781.571077] ? kvm_clock_read (./arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[ 2781.571077] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:304)
+[ 2781.571077] ? sched_clock_local (kernel/sched/clock.c:214)
+[ 2781.571077] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[ 2781.571077] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 2781.571077] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
+[ 2781.571077] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+[ 2781.571077] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+[ 2781.571077] async_page_fault (arch/x86/kernel/entry_64.S:1314)
+[ 2781.571077] ? copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:166)
+[ 2781.571077] ? sys32_mmap (arch/x86/ia32/sys_ia32.c:159)
+[ 2781.571077] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
+[ 2781.571077] Code: b4 eb e0 0f 1f 84 00 00 00 00 00 4c 89 f7 e8 88 2f 0c 03 48 8b 45 d0 4c 89 e6 48 8b b8 88 00 00 00 e8 85 c7 ff ff e9 90 fe ff ff <0f> 0b 66 0f 1f 44 00 00 48 89 df e8 90 e9 f9 ff 84 c0 0f 85 be
+All code
+========
+   0:	b4 eb                	mov    $0xeb,%ah
+   2:	e0 0f                	loopne 0x13
+   4:	1f                   	(bad)
+   5:	84 00                	test   %al,(%rax)
+   7:	00 00                	add    %al,(%rax)
+   9:	00 00                	add    %al,(%rax)
+   b:	4c 89 f7             	mov    %r14,%rdi
+   e:	e8 88 2f 0c 03       	callq  0x30c2f9b
+  13:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
+  17:	4c 89 e6             	mov    %r12,%rsi
+  1a:	48 8b b8 88 00 00 00 	mov    0x88(%rax),%rdi
+  21:	e8 85 c7 ff ff       	callq  0xffffffffffffc7ab
+  26:	e9 90 fe ff ff       	jmpq   0xfffffffffffffebb
+  2b:*	0f 0b                	ud2    		<-- trapping instruction
+  2d:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+  33:	48 89 df             	mov    %rbx,%rdi
+  36:	e8 90 e9 f9 ff       	callq  0xfffffffffff9e9cb
+  3b:	84 c0                	test   %al,%al
+  3d:	0f                   	.byte 0xf
+  3e:	85                   	.byte 0x85
+  3f:	be                   	.byte 0xbe
+	...
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Code starting with the faulting instruction
+===========================================
+   0:	0f 0b                	ud2
+   2:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+   8:	48 89 df             	mov    %rbx,%rdi
+   b:	e8 90 e9 f9 ff       	callq  0xfffffffffff9e9a0
+  10:	84 c0                	test   %al,%al
+  12:	0f                   	.byte 0xf
+  13:	85                   	.byte 0x85
+  14:	be                   	.byte 0xbe
+	...
+[ 2781.571077] RIP do_huge_pmd_numa_page (mm/huge_memory.c:1293 (discriminator 1))
+[ 2781.571077]  RSP <ffff880418ecfc60>
+
+
+Thanks,
+Sasha
