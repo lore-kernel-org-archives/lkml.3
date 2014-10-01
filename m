@@ -1,99 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaJAXQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 19:16:49 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39765 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaJAXQs (ORCPT
+	id S1753724AbaJAXTb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 19:19:31 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:51926 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaJAXTa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 19:16:48 -0400
-Date: Thu, 2 Oct 2014 01:16:46 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Dinh Nguyen <dinguyen@opensource.altera.com>
-Cc: atull <atull@opensource.altera.com>, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH 1/2] socfpga: hotplug: put cpu1 in wfi
-Message-ID: <20141001231646.GB1529@amd>
-References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com>
- <1411590449-9794-2-git-send-email-atull@opensource.altera.com>
- <20141001133527.GA12750@amd>
- <alpine.DEB.2.10.1410010915440.2332@shineypoop>
- <20141001150418.GA14609@amd>
- <542C26B6.7010302@opensource.altera.com>
+	Wed, 1 Oct 2014 19:19:30 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Chris Kohn <ckohn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>, Jason Wu <huanyu@xilinx.com>,
+        Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH v2] staging: Add Xilinx Clocking Wizard driver
+Date: Thu, 02 Oct 2014 02:19:29 +0300
+Message-ID: <2588006.v8XFKnzbpr@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1412197352-21746-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <20141001185835.GE23154@mwanda> <1412197352-21746-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542C26B6.7010302@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-10-01 11:07:18, Dinh Nguyen wrote:
+Hi Sören,
+
+Thank you for the patch.
+
+On Wednesday 01 October 2014 14:02:32 Soren Brinkmann wrote:
+> Add a driver for the Xilinx Clocking Wizard soft IP. The clocking wizard
+> provides an AXI interface to dynamically reconfigure the clocking
+> resources of Xilinx FPGAs.
 > 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> Hi Greg, Dan,
 > 
-> On 10/1/14, 10:04 AM, Pavel Machek wrote:
-> > Hi!
-> > 
-> >>>> +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
-> >>>> +			     rst_manager_base_addr + 0x10);
-> >>>
-> >>> Would it be possible to copy reset manager description struct from
-> >>> u-boot and use it here, instead of raw offset?
-> >>
-> >> I will replace this 0x10 with a macro that reflects how the register is 
-> >> named in the register map.
-> > 
-> > That would be better than 0x10, but even better would be just copying
-> > 
-> > struct socfpga_reset_manager {
-> >         u32     status;
-> >         u32     ctrl;
-> >         u32     counts;
-> >         u32     padding1;
-> >         u32     mpu_mod_reset;
-> >         u32     per_mod_reset;
-> >         u32     per2_mod_reset;
-> >         u32     brg_mod_reset;
-> > };
-> > 
-> > from u-boot. Unlike macros, structs have advantages that typos lead to
-> > easier-to-see failure modes... (And they are easier to read/parse,
-> > too).
-> > 
+> I fixed the things Dan pointed out, please take this v2 instead of the
+> original patch.
 > 
-> Copying from uboot sounds good, but I already know that the CPU reset
-> offset is different for our next SOC, Arria 10. The Arria 10 SOC should
-> still be able to use the same MSL as Cyclone5 and Arria5, but with a few
-> differences. One of them being, the CPU1 reset offset is at 0x20 instead
-> of 0x10. So I think having a macro for this one register is a bit
-> cleaner than having to define a whole new struct for Arria10.
+> Also, don't get caught up too much with style issues around the code that
+> registers the clocks. To support set_rate() opeartions this will have to
+> change anyway. It doesn't make a lot of sense to spend much time on those
+> parts.
+> 
+> 	Thanks,
+> 	Sören
+> 
+> v2:
+>  - implement dev_pm_ops
+>  - don't use array for clock inputs
+>  - add more information in error output
+>  - fix style issues
+>  - fix error path
+> ---
+>  drivers/staging/Kconfig                            |   2 +
+>  drivers/staging/Makefile                           |   1 +
+>  drivers/staging/clocking-wizard/Kconfig            |   9 +
+>  drivers/staging/clocking-wizard/Makefile           |   1 +
+>  drivers/staging/clocking-wizard/TODO               |  12 +
+>  .../clocking-wizard/clk-xlnx-clock-wizard.c        | 336 ++++++++++++++++++
+>  drivers/staging/clocking-wizard/dt-binding.txt     |  30 ++
+>  7 files changed, 391 insertions(+)
+>  create mode 100644 drivers/staging/clocking-wizard/Kconfig
+>  create mode 100644 drivers/staging/clocking-wizard/Makefile
+>  create mode 100644 drivers/staging/clocking-wizard/TODO
+>  create mode 100644 drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+>  create mode 100644 drivers/staging/clocking-wizard/dt-binding.txt
 
-I don't think "whole new struct" is a problem. At least it will be
-plain to see what changed (which will get easily lost in ifdefs.
+[snip]
 
-struct cyclone5_reset_manager {
-	struct socfpga_reset_manager common;
-	u32 brg_mod_reset;
-}
+> diff --git a/drivers/staging/clocking-wizard/dt-binding.txt
+> b/drivers/staging/clocking-wizard/dt-binding.txt new file mode 100644
+> index 000000000000..cc3cc5e91440
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/dt-binding.txt
+> @@ -0,0 +1,30 @@
+> +Binding for Xilinx Clocking Wizard IP Core
+> +
+> +This binding uses the common clock binding[1]. Details about the devices
+> can be +found in the product guide[2].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +[2] Clocking Wizard Product Guide
+> +http://www.xilinx.com/support/documentation/ip_documentation/clk_wiz/v5_1/p
+> g065-clk-wiz.pdf +
+> +Required properties:
+> + - compatible: Must be 'xlnx,clocking-wizard'
+> + - reg: Base and size of the cores register space
+> + - clocks: Handle to input clock
+> + - clock-names: Tuple containing 'clk_in1' and 's_axi_aclk'
+> + - clock-output-names: Names for the output clocks
+> +
+> +Optional properties:
+> + - speed-grade: Speed grade of the device
 
-struct aria10_reset_manager {
-	struct socfpga_reset_manager common;
-	char filler[0x10];
-	u32 brg_mod_reset;
-}
+You should document what values are allowed.
 
-if (of_machine_is_compatible("altr,socfpga-arria10"))
-	__raw_writel(0, (struct cyclone5_reset_manager *) rst_manager_base_addr->brg_mod_reset));
-else
-	__raw_writel(0, (struct aria10_reset_manager *) rst_manager_base_addr->brg_mod_reset));
+> +
+> +Example:
+> +	clock-generator@40040000 {
+> +		reg = <0x40040000 0x1000>;
+> +		compatible = "xlnx,clocking-wizard";
+> +		speed-grade = <(-1)>;
 
-...does not sound that bad. (And you'll need some nice solution for
-u-boot, anyway...)
+Can't we make the speed grade positive ? It looks to me that the - is nowadays 
+a dash and not a minus sign, given that higher absolute values of the speed 
+grade mean faster devices. The days when the speed grate represented the 
+propagation time of signals in ns is long gone I suppose.
 
-Best regards,
-									Pavel
+> +		clock-names = "clk_in1", "s_axi_aclk";
+> +		clocks = <&clkc 15>, <&clkc 15>;
+> +		clock-output-names = "clk_out0", "clk_out1", "clk_out2",
+> +				     "clk_out3", "clk_out4", "clk_out5",
+> +				     "clk_out6", "clk_out7";
+> +	};
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards,
+
+Laurent Pinchart
+
