@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaJANnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:43:52 -0400
-Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:35459 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750992AbaJANnv (ORCPT
+	id S1751479AbaJANpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:45:52 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:64714 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaJANpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:43:51 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3867:3870:3871:3872:4321:5007:7514:7652:7903:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hate31_42b00774a60a
-X-Filterd-Recvd-Size: 1594
-Message-ID: <1412171027.3247.6.camel@joe-AO725>
-Subject: Re: [PATCH net-next] et131x: Add PCIe gigabit ethernet driver
- et131x to drivers/net
-From: Joe Perches <joe@perches.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Mark Einon <mark.einon@gmail.com>, davem@davemloft.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Wed, 01 Oct 2014 06:43:47 -0700
-In-Reply-To: <20141001124500.GH3279@distanz.ch>
-References: <1412112586-2194-1-git-send-email-mark.einon@gmail.com>
-	 <20141001124500.GH3279@distanz.ch>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 09:45:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <542C0441.5080508@sam-solutions.com>
+References: <1410537872-17274-1-git-send-email-d.lavnikevich@sam-solutions.com>
+	<1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
+	<1410854903-26419-3-git-send-email-d.lavnikevich@sam-solutions.com>
+	<CAOMZO5CgrQ6Wf6kStga40TUKx9dARygCNB4OYSUoG3c8eUYbrA@mail.gmail.com>
+	<542C0441.5080508@sam-solutions.com>
+Date: Wed, 1 Oct 2014 10:45:48 -0300
+Message-ID: <CAOMZO5BS6X2NTY4q7RKoKdhJNbEANSa2wXur3_Hyxp8nQn5Avw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] ARM: dts: pbab01: enable I2S audio on
+ phyFLEX-i.MX6 boards
+From: Fabio Estevam <festevam@gmail.com>
+To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, perex@perex.cz,
+        Takashi Iwai <tiwai@suse.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 14:45 +0200, Tobias Klauser wrote:
-> On 2014-09-30 at 23:29:46 +0200, Mark Einon <mark.einon@gmail.com> wrote:
-> > This adds the ethernet driver for Agere et131x devices to
-> > drivers/net/ethernet.
-[]
-> > diff --git a/drivers/net/ethernet/agere/et131x.c b/drivers/net/ethernet/agere/et131x.c
-[]
-> > +	rc = pci_enable_device(pdev);
-> > +	if (rc < 0) {
-> > +		dev_err(&pdev->dev, "pci_enable_device() failed\n");
-> > +		goto out;
-> 
-> Nit: Just return rc here.
+On Wed, Oct 1, 2014 at 10:40 AM, Dmitry Lavnikevich
+<d.lavnikevich@sam-solutions.com> wrote:
 
-I don't think it matters at all.
+>> No need to have this 'regulator-always-on'
+>>
+>
+> why is there no need for 'regulator-alweys-on'? I see it in
 
-It's a predictable style to use common exit blocks.
+For a regulator that is not GPIO controlled you don't need to pass
+'regulator-always-on'.
 
-It's a maintainer's right to do it in whatever
-fashion is desired.
+>
+>>> +&ssi2 {
+>>> +       fsl,mode = "i2s-slave";
+>>
+>>
+>> Please remove this 'fsl,mode' property. It is ignored by the fsl_ssi
+>> driver.
+>
+>
+> yes, thanks. It is present in Documentation but now I see that it
+> was actually removed not that long ago. I will remove this
+> property with next patchset.
 
-
+Correct, I recently sent a patch removing it and it is in Mark's tree now:
+https://git.kernel.org/cgit/linux/kernel/git/broonie/sound.git/commit/?h=topic/fsl-ssi&id=b93427b1c057841602e0fe2005153a6e82f2e658
