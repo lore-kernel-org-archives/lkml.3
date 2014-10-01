@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaJAOSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:18:49 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:43601 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaJAOSq (ORCPT
+	id S1751478AbaJAOX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:23:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50160 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751382AbaJAOX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:18:46 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-27-542c0d4432b0
-Message-id: <542C0BA3.7000504@samsung.com>
-Date: Wed, 01 Oct 2014 18:11:47 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.8.0
-MIME-version: 1.0
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH v3 11/13] kmemleak: disable kasan instrumentation for
- kmemleak
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-12-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+aJ9htaruQ1Nn7+MSGwtNzRb_hfytQo98J1wq5N6oh1BA@mail.gmail.com>
- <CAPAsAGxLxCxOayqcu=PbgFG6J7JEuL8J3+ouz94p_k0v0Hy=wA@mail.gmail.com>
- <CACT4Y+Z4N5hpz_ZXFOCCbv7sbz2kzrF6gYHMbasDFNwpdOK30Q@mail.gmail.com>
- <20141001103930.GG20364@e104818-lin.cambridge.arm.com>
- <542BE977.3040807@samsung.com>
- <CACT4Y+ZXcZ=BLGjXamfpV+5R-5pahKGTeMcRoLkcxY7PQGatjw@mail.gmail.com>
-In-reply-to: <CACT4Y+ZXcZ=BLGjXamfpV+5R-5pahKGTeMcRoLkcxY7PQGatjw@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Ra0hTYRiA+c59q8lxTv0wKB2kodOU/PGlFRFBJyIQWhckyOWGF5zKTjMt
-	CG8pmyKiabrUJFOaDVzLvKFFw1RISEoTvOHQjKnTvFTGatVxf/z3wPu87/PjZXCpmQhi0jJv
-	aXSZqgw5JSbee4YnIs9KFMpoa+U+5B6oJ1FDh4VCg59/0mi9rRygyR+rAG065wHqnCzE0FeH
-	g0aVjhIa1b4IROayIgp1L7kwZDbMk+hTXwOF5ix/STT8qhNHLYPTOFpbqsbRRPtbGu1YF8jT
-	Ms7SZAHc494NwPWaZmmu2abnWvqdGGdrN1CcbbOK5oyucYwbqXMT3OL4Q4zb+DJFcOuvJyhu
-	y3aQGyneJhN8EsUn1JqMtByN7uipJHGqs2Yby3aIc4cbu4h8MMMYgYiBbCx852zDvBwAx+Y6
-	KIGlbCuAZdVHjED8n4swOLPkJIyAYSRsOCz4dVtwCPYwLH5uJwSm2CjoMXXv7vqz1+CDN62k
-	wBLWF+5Uz+06MjYUFqyUU8JNnF0jYV3vfVwY+LFKWGGuIbyxLgJ2PNrBhZiIvQSHGhSCg7Nh
-	sKrpCe7lQ/ClxYVXAta0p2Hao5n2aM0Abwf+Gn1yNn8zRRsTxau0vD4zJSo5S2sD3vdu94CW
-	oTg7YBkg3y8JTopQSklVDp+ntQPI4HKZhBYplFKJWpV3R6PLuqHTZ2h4O8AYUVA+aN7Kky1M
-	/U4s+9Z38qmhBx/wiV9ThDj8noWlKHwN/L2I2O4DqVj0ZQ8bemH1TE5SLTrn0h1Pb/n4odjd
-	eGXUqi4dKB3zBLiXEyNDNg4HB6bXu1fpu9LkXP2IMiRO/d02e2waXV0+PxoXP/9HVSHpS1+x
-	+iyWjLLXLxam9SeMywk+VRUTjut41T8F3XtXvAIAAA==
+	Wed, 1 Oct 2014 10:23:56 -0400
+Date: Wed, 1 Oct 2014 15:23:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/2] drm/i2c:tda998x: Use the HDMI audio CODEC
+Message-ID: <20141001142340.GR5182@n2100.arm.linux.org.uk>
+References: <cover.1411547014.git.moinejf@free.fr> <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 05:27 PM, Dmitry Vyukov wrote:
-> On Wed, Oct 1, 2014 at 3:45 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
->> On 10/01/2014 02:39 PM, Catalin Marinas wrote:
->>> On Mon, Sep 29, 2014 at 03:10:01PM +0100, Dmitry Vyukov wrote:
->>>> On Fri, Sep 26, 2014 at 9:36 PM, Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
->>>>> 2014-09-26 21:10 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
->>>>>> Looks good to me.
->>>>>>
->>>>>> We can disable kasan instrumentation of this file as well.
->>>>>
->>>>> Yes, but why? I don't think we need that.
->>>>
->>>> Just gut feeling. Such tools usually don't play well together. For
->>>> example, due to asan quarantine lots of leaks will be missed (if we
->>>> pretend that tools work together, end users will use them together and
->>>> miss bugs). I won't be surprised if leak detector touches freed
->>>> objects under some circumstances as well.
->>>> We can do this if/when discover actual compatibility issues, of course.
->>>
->>> I think it's worth testing them together first.
->>>
->>
->> I did test them together. With this patch applied both tools works without problems.
-> 
-> What do you mean "works without problems"? Are you sure that kmemleak
-> still detects all leaks it is intended to detect?
-> 
+On Wed, Sep 24, 2014 at 10:11:21AM +0200, Jean-Francois Moine wrote:
+> This patch interfaces the HDMI transmitter with the audio system.
+...
 
-Yes I'm sure about that. And how kasan could affect on kmemleak's capability to detect leaks?
+> +struct tda998x_priv2 {
+> +	struct tda998x_priv base;
+> +	struct drm_encoder encoder;
+> +	struct drm_connector connector;
+>  };
 
+NAK on moving this up here.  It was specifically placed below the core
+and below the older drm_slave_encoder code because nothing but the new
+component based interfaces to TDA998x have any business knowing that
+these are packaged up in this way.
+
+> +static void tda998x_create_audio_codec(struct tda998x_priv *priv)
+> +{
+> +	struct platform_device *pdev;
+> +	struct module *module;
+> +
+> +	request_module("snd-soc-hdmi-codec");
+> +	pdev = platform_device_register_resndata(&priv->hdmi->dev,
+> +						 "hdmi-audio-codec",
+> +						  PLATFORM_DEVID_NONE,
+> +						  NULL, 0,
+> +						  &tda998x_hdmi_data,
+> +						  sizeof tda998x_hdmi_data);
+> +	if (IS_ERR(pdev)) {
+> +		dev_err(&priv->hdmi->dev, "cannot create codec: %ld\n",
+> +			PTR_ERR(pdev));
+> +		return;
+> +	}
+> +
+> +	priv->pdev_codec = pdev;
+> +	module = pdev->dev.driver->owner;
+> +	if (module)
+> +		try_module_get(module);
+
+This is really not on.  Firstly, registering a platform device has no
+guarantee that it will bind to a driver.  So, pdev->dev.driver may be
+NULL here -> kernel oops.
+
+Secondly, what's the purpose of the unchecked try_module_get() there?
+You can't stop the device being unbound from its driver, so all you're
+doing is possibly locking the module into module space for no other
+benefit.
+
+> @@ -1167,12 +1390,19 @@ tda998x_encoder_set_property(struct drm_encoder *encoder,
+>  
+>  static void tda998x_destroy(struct tda998x_priv *priv)
+>  {
+> +	struct module *module;
+> +
+>  	/* disable all IRQs and free the IRQ handler */
+>  	cec_write(priv, REG_CEC_RXSHPDINTENA, 0);
+>  	reg_clear(priv, REG_INT_FLAGS_2, INT_FLAGS_2_EDID_BLK_RD);
+>  	if (priv->hdmi->irq)
+>  		free_irq(priv->hdmi->irq, priv);
+>  
+> +	if (priv->pdev_codec) {
+> +		module = priv->pdev_codec->dev.driver->owner;
+> +		module_put(module);
+
+This is wrong for all the reasons the other part above is wrong.
+Userspace can decide to unbind the platform device from the associated
+platform driver whenever it wishes.  At that point,
+priv->pdev_codec->dev.driver becomes NULL.
+
+So, please get rid of this.
+
+> +		platform_device_del(priv->pdev_codec);
+
+This leaks the memory associated with the platform device.
+
+> @@ -1395,15 +1660,13 @@ static int tda998x_encoder_init(struct i2c_client *client,
+>  	encoder_slave->slave_priv = priv;
+>  	encoder_slave->slave_funcs = &tda998x_encoder_slave_funcs;
+>  
+> +	/* set the drvdata pointer to priv2 for CODEC calls */
+> +	dev_set_drvdata(&client->dev,
+> +			container_of(priv, struct tda998x_priv2, base));
+> +
+>  	return 0;
+>  }
+>  
+> -struct tda998x_priv2 {
+> -	struct tda998x_priv base;
+> -	struct drm_encoder encoder;
+> -	struct drm_connector connector;
+> -};
+> -
+
+I would prefer this structure to stay here, as code above this point should
+have no business knowing how these are packaged together.  I would suggest
+either:
+
+- moving the audio codec code below this point, or
+- storing struct tda998x_priv in the device private pointer, and
+  converting it to struct tda998x_priv2 via container_of() where
+  necessary below this point.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
