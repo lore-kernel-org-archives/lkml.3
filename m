@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaJAMuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 08:50:07 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35131 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaJAMuE (ORCPT
+	id S1751648AbaJAMuV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 08:50:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37487 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaJAMuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 08:50:04 -0400
-Date: Wed, 1 Oct 2014 14:50:01 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: dsa: Fix build warning for !PM_SLEEP
-Message-ID: <20141001125000.GC21733@ulmo>
-References: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
- <CAOMZO5DJrvO=mpUEqk+GWFGGU_eNEfn=+XkoL6cqYv+c4GSyZw@mail.gmail.com>
+	Wed, 1 Oct 2014 08:50:19 -0400
+Date: Wed, 1 Oct 2014 14:49:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: x86-ml <x86@kernel.org>, bhelgaas@google.com, linux-pci@vger.kernel.org,
+        hpa@zytor.com, bp@suse.de, dan.carpenter@oracle.com,
+        dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: Re: [PATCH 2/4] x86, amd_nb: Add device IDs to NB tables for F15h
+ M60h
+In-Reply-To: <20141001113245.GD18271@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1410011449400.5001@nanos>
+References: <1411070205-10217-1-git-send-email-Aravind.Gopalakrishnan@amd.com> <20141001113245.GD18271@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+nBD6E3TurpgldQp"
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5DJrvO=mpUEqk+GWFGGU_eNEfn=+XkoL6cqYv+c4GSyZw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+nBD6E3TurpgldQp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 01, 2014 at 09:19:24AM -0300, Fabio Estevam wrote:
-> On Wed, Oct 1, 2014 at 8:59 AM, Thierry Reding <thierry.reding@gmail.com>=
- wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >
-> > The dsa_switch_suspend() and dsa_switch_resume() functions are only used
-> > when PM_SLEEP is enabled, so they need #ifdef CONFIG_PM_SLEEP protection
-> > to avoid a compiler warning.
-> >
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+On Wed, 1 Oct 2014, Borislav Petkov wrote:
+
+> tip guys,
+> 
+> can I get an ACK for this one so that I can route it through the EDAC
+> tree for 3.19?
+
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+
+ 
+> Thanks.
+> 
+> On Thu, Sep 18, 2014 at 02:56:45PM -0500, Aravind Gopalakrishnan wrote:
+> > Add F3 and F4 PCI device IDs to amd_nb_misc_ids[] and
+> > amd_nb_link_ids[] respectively. We need this to cache the
+> > Northbridges.
+> > 
+> > Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 > > ---
-> >  net/dsa/dsa.c | 2 ++
+> >  arch/x86/kernel/amd_nb.c | 2 ++
 > >  1 file changed, 2 insertions(+)
-> >
-> > diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-> > index 6905f2d84c44..22f34cf4cb27 100644
-> > --- a/net/dsa/dsa.c
-> > +++ b/net/dsa/dsa.c
-> > @@ -238,6 +238,7 @@ static void dsa_switch_destroy(struct dsa_switch *d=
-s)
-> >  {
-> >  }
-> >
-> > +#ifdef CONFIG_PM_SLEEP
-> >  static int dsa_switch_suspend(struct dsa_switch *ds)
-> >  {
-> >         int i, ret =3D 0;
-> > @@ -280,6 +281,7 @@ static int dsa_switch_resume(struct dsa_switch *ds)
-> >
-> >         return 0;
-> >  }
-> > +#endif
->=20
-> You could also mark them as __maybe_unused and avoid the ifdef.
-
-The users of these functions, dsa_suspend() and dsa_resume(), also use
-the CONFIG_PM_SLEEP protection, so this way is more consistent.
-
-Thierry
-
---+nBD6E3TurpgldQp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUK/h4AAoJEN0jrNd/PrOhz24P/jVk3HRnOv40zVn1yld/GXcb
-+xib+tP2JkkvmIr77pJsVthNh6k4yvMf8ezfLiTi2yZhAK49QqHEtQGA2ErnFgEx
-sCncBfO2X71J6V40T+/eyWalIlOXtPkNw9Zxg+1WsRc6keOw8gMnDxAiTaOun07C
-xmY8u23o0a5N5JjrGZxkM8UWevognKDZdLi0DK4qGfCGiMgphXHZfORZqGtqsNcq
-LM4nsE7Us1Np4JQPYzYD1NGu6PV4BTEY7jwu3t3W74xAhcN1bIXqabR6Snxmp7q3
-eC7/jkvmLn5q8nudejrBCfb/bmpcoemVZL0arbUjWg9orcZXT6sBFz2jj3oLwF+/
-ipjDns2PJ3y8HCxOe0BeT63hsFqVJIhoXdAWp01mNUF7ZP2yPVPjZq5nViN7IaKW
-J9slfyNhc8KnJSrUNVBgL+YUV1j3ip8bI+WRstdH/jD1xcBEnegRuUR9L9QSxsQ7
-LMUWRiWevh+IO0k4SI311z+bfaqhdDqoeNbw6Vf26OW4o0HSsnf61btgpCkyaaye
-hZci72T7BueZN28iKlDV1cQItNu7cqEWDsonnzAZwN7KjKXEE2q0WSwhF91g601P
-KeLopicur3C7FOM8wV5n9IvBDSRFRN/RdpsGh/KVc5cgNgULiJ0FEWwD0572BAy7
-x5LJTze2rGKw+V5W0bwY
-=kdd1
------END PGP SIGNATURE-----
-
---+nBD6E3TurpgldQp--
+> > 
+> > diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+> > index f04dbb3..5caed1d 100644
+> > --- a/arch/x86/kernel/amd_nb.c
+> > +++ b/arch/x86/kernel/amd_nb.c
+> > @@ -21,6 +21,7 @@ const struct pci_device_id amd_nb_misc_ids[] = {
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F3) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F3) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
+> >  	{}
+> > @@ -30,6 +31,7 @@ EXPORT_SYMBOL(amd_nb_misc_ids);
+> >  static const struct pci_device_id amd_nb_link_ids[] = {
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F4) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F4) },
+> >  	{}
+> > -- 
+> > 2.0.2
+> > 
+> > 
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
