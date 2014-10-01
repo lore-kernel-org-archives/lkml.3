@@ -1,49 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaJASiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:38:13 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:33948 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752889AbaJASiM (ORCPT
+	id S1753970AbaJASik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:38:40 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:56262 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988AbaJASii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:38:12 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
-Subject: [PATCH] gpio: grgpio: remove irq_domain resources on failure
-Date: Thu,  2 Oct 2014 00:08:04 +0530
-Message-Id: <1412188684-20820-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 1 Oct 2014 14:38:38 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] PM / clock_ops: Fix crash in clocks management code if !CONFIG_PM_RUNTIME
+Date: Wed,  1 Oct 2014 20:38:17 +0200
+Message-Id: <1412188697-15317-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call irq_domain_remove when gpiochip_add fails to release irq_domain
-resources.
+Unlike the clocks management code for runtime PM, the code used for
+system suspend does not check the pm_clock_entry.status field.
+If pm_clk_acquire() failed, ce->status will be PCE_STATUS_ERROR, and
+ce->clk will be a negative error code (e.g. 0xfffffffe = -2 = -ENOENT).
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-gpio@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Depending on the clock implementation, suspend or resume may crash with:
+
+    Unable to handle kernel NULL pointer dereference at virtual address 00000026
+
+(CCF clk_disable() has an IS_ERR_OR_NULL() check, while CCF clk_enable()
+ only has a NULL check; pre-CCF implementations may behave differently)
+
+While just checking for PCE_STATUS_ERROR would be sufficient, it doesn't
+hurt to use the same state machine as is done for runtime PM, as this
+makes the two versions more similar, and eligible for a future
+consolidation.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- drivers/gpio/gpio-grgpio.c | 1 +
- 1 file changed, 1 insertion(+)
+This crash started to happen on armadillo-legacy during s2ram if
+CONFIG_PM_RUNTIME is not set after applying "[PATCH v2 07/11] ARM:
+shmobile: r8a7740/armadillo legacy: Add A4MP pm domain support"
+(http://www.spinics.net/linux/lists/arm-kernel/msg365438.html), as
+there's no NULL clock for the HDMI device.
 
-diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
-index 66ad3df..38acdce 100644
---- a/drivers/gpio/gpio-grgpio.c
-+++ b/drivers/gpio/gpio-grgpio.c
-@@ -441,6 +441,7 @@ static int grgpio_probe(struct platform_device *ofdev)
- 	err = gpiochip_add(gc);
- 	if (err) {
- 		dev_err(&ofdev->dev, "Could not add gpiochip\n");
-+		irq_domain_remove(priv->domain);
- 		return err;
- 	}
+Most existing code calling pm_clk_suspend()/pm_clk_resume() is protected
+by a check for CONFIG_PM_RUNTIME (davinci, keystone, omap1,
+drivers/sh/pm_runtime.c), so it was not affected by this bug.
+
+Exceptions are:
+  - arch/arm/mach-shmobile/pm-r8a7779.c (marzen),
+  - arch/arm/mach-shmobile/pm-rmobile.c (r8a7740/armadillo and
+    sh7372/mackerel),
+but it's difficult to assess from the code whether the bug is really
+triggered on these platforms.
+
+Grygorii Strashko's "[PATCH v1 2/4] ARM: keystone: pm: switch to use
+generic pm domains" is not affected, as pm_clk_add_clk() is only called
+for existing clocks.
+
+If it crashes on marzen or mackerel, I think this fix needs to be
+applied to stable, too. I don't have access to marzen or mackerel boards,
+though.
+
+How to test:
+  - Build a kernel with CONFIG_PM_SLEEP/CONFIG_SUSPEND enabled, but
+    CONFIG_PM_RUNTIME disabled,
+  - echo 0 > /sys/module/printk/parameters/console_suspend,
+  - echo mem > /sys/power/state,
+  - wake up using e.g. gpio-keys or serial console activity.
+---
+ drivers/base/power/clock_ops.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+index b99e6c06ee678ecb..78369305e0698109 100644
+--- a/drivers/base/power/clock_ops.c
++++ b/drivers/base/power/clock_ops.c
+@@ -368,8 +368,13 @@ int pm_clk_suspend(struct device *dev)
+ 
+ 	spin_lock_irqsave(&psd->lock, flags);
+ 
+-	list_for_each_entry_reverse(ce, &psd->clock_list, node)
+-		clk_disable(ce->clk);
++	list_for_each_entry_reverse(ce, &psd->clock_list, node) {
++		if (ce->status < PCE_STATUS_ERROR) {
++			if (ce->status == PCE_STATUS_ENABLED)
++				clk_disable(ce->clk);
++			ce->status = PCE_STATUS_ACQUIRED;
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&psd->lock, flags);
+ 
+@@ -385,6 +390,7 @@ int pm_clk_resume(struct device *dev)
+ 	struct pm_subsys_data *psd = dev_to_psd(dev);
+ 	struct pm_clock_entry *ce;
+ 	unsigned long flags;
++	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -394,8 +400,13 @@ int pm_clk_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&psd->lock, flags);
+ 
+-	list_for_each_entry(ce, &psd->clock_list, node)
+-		__pm_clk_enable(dev, ce->clk);
++	list_for_each_entry(ce, &psd->clock_list, node) {
++		if (ce->status < PCE_STATUS_ERROR) {
++			ret = __pm_clk_enable(dev, ce->clk);
++			if (!ret)
++				ce->status = PCE_STATUS_ENABLED;
++		}
++	}
+ 
+ 	spin_unlock_irqrestore(&psd->lock, flags);
  
 -- 
-1.8.3.2
+1.9.1
 
