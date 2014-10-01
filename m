@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaJAWpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 18:45:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929AbaJAWo7 (ORCPT
+	id S1753892AbaJAWrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 18:47:11 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:56657 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaJAWrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 18:44:59 -0400
-Date: Wed, 1 Oct 2014 15:44:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Sylvain 'ythier' Hitier" <sylvain.hitier@gmail.com>,
-        linux-kernel@vger.kernel.org, Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: [PATCH] fork.c: copy_process(): fix cleanup WRT
- perf_event_free_task()
-Message-Id: <20141001154458.a3c4bfa7ef000ecc1fc7c5de@linux-foundation.org>
-In-Reply-To: <20140929140048.GK5430@worktop>
-References: <20140926210652.GA27199@erable>
-	<20140927180725.GA15594@redhat.com>
-	<20140929101201.GE5430@worktop>
-	<20140929120722.GA11943@gmail.com>
-	<20140929140048.GK5430@worktop>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 18:47:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412185241-24950-1-git-send-email-amstan@chromium.org>
+References: <1412185241-24950-1-git-send-email-amstan@chromium.org>
+Date: Wed, 1 Oct 2014 15:47:06 -0700
+X-Google-Sender-Auth: gboDIbfzrLKDqpnlRuqTDfuHdkI
+Message-ID: <CAD=FV=VV1U2o41iz_NANvk=EZcMcrurvhN31s--_srU=4yuWcA@mail.gmail.com>
+Subject: Re: [PATCH] i2c: rk3x: fix 0 length write transfers
+From: Doug Anderson <dianders@chromium.org>
+To: Alexandru M Stan <amstan@chromium.org>
+Cc: Max Schwarz <max.schwarz@online.de>, Wolfram Sang <wsa@the-dreams.de>,
+        Sonny Rao <sonnyrao@chromium.org>, addy ke <addy.ke@rock-chips.com>,
+        Jeffy Chen <jeffy.chen@rock-chips.com>,
+        ZhengShunQian <zhengsq@rock-chips.com>,
+        linux-rockchip@lists.infradead.org,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Sep 2014 16:00:48 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+Alex,
 
-> On Mon, Sep 29, 2014 at 02:07:22PM +0200, Ingo Molnar wrote:
-> > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > Subject: perf: Fix perf bug in fork()
-> > > 
-> > > Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
-> > > calling perf_event_free_task() when failing sched_fork() we will not yet
-> > > have done the memset() on ->perf_event_ctxp[] and will therefore try and
-> > > 'free' the inherited contexts, which are still in use by the parent
-> > > process. This is bad..
-> > > 
-> > > Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> > > Reported-by: Oleg Nesterov <oleg@redhat.com>
-> > > Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-> > > Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-> > 
-> > Could this fix a couple of fuzzer triggered perf crashes perhaps?
-> 
-> It could indeed I suppose.. you never know what paths those fuzzers
-> manage to hit.
+On Wed, Oct 1, 2014 at 10:40 AM, Alexandru M Stan <amstan@chromium.org> wrote:
+> i2cdetect -q was broken (everything was a false positive, and no transfers were
+> actually being sent over i2c). The way it works is by sending a 0 length write
+> request and checking for NACK. This patch fixes the 0 length writes and actually
+> sends them.
+>
+> Reported-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Alexandru M Stan <amstan@chromium.org>
+> ---
+>  drivers/i2c/busses/i2c-rk3x.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+> index b41d979..f486d0e 100644
+> --- a/drivers/i2c/busses/i2c-rk3x.c
+> +++ b/drivers/i2c/busses/i2c-rk3x.c
+> @@ -238,7 +238,7 @@ static void rk3x_i2c_fill_transmit_buf(struct rk3x_i2c *i2c)
+>         for (i = 0; i < 8; ++i) {
+>                 val = 0;
+>                 for (j = 0; j < 4; ++j) {
+> -                       if (i2c->processed == i2c->msg->len)
+> +                       if ((i2c->processed == i2c->msg->len) && (cnt != 0))
 
-The patch isn't in linux-next and didn't cc stable.  I think I'll
-squirt it Linuswards later this week unless someone stops me..
+This looks good to me.  Basically we still need to write the address
+of the device onto the bus even if there's no data.
 
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
+
+-Doug
