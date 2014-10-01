@@ -1,104 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaJAOrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:47:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31549 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaJAOrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:47:08 -0400
-Message-ID: <1412174826.7360.207.camel@ul30vt.home>
-Subject: Re: [PATCH 1/1] vfio-pci: Add SR-IOV VF configuration via sysfs
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Andre Richter <andre.o.richter@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 01 Oct 2014 08:47:06 -0600
-In-Reply-To: <CAKqeN2-_Sb=f6Q1CGz2VPfuO2YmsQeCbM-mieoykYwRYDv=+GQ@mail.gmail.com>
-References: <1412170733-7187-1-git-send-email-andre.o.richter@gmail.com>
-	 <1412172233.7360.203.camel@ul30vt.home>
-	 <CAKqeN2-_Sb=f6Q1CGz2VPfuO2YmsQeCbM-mieoykYwRYDv=+GQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752006AbaJAOrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:47:20 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:46225 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbaJAOrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 10:47:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141001093208.79bb0891@as>
+References: <cover.1412138935.git.luto@amacapital.net> <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
+ <20141001090915.16c8b1db@as> <20141001093208.79bb0891@as>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 1 Oct 2014 07:46:54 -0700
+Message-ID: <CALCETrXo-tvQOJ8Cg1d1wkQm=5095VdESq0SBUH4MivZWH8iQw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sebastian Lackner <sebastian@fds-team.de>,
+        Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 16:28 +0200, Andre Richter wrote:
-> I currently use it for early development/debugging work (SR-IOV
-> capable FPGA boards) where I test both PFs and VFs from userspace.
-> But I see your point that this may not be relevant for anything you
-> can buy off the shelf.
+On Wed, Oct 1, 2014 at 7:32 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> On Wed, 1 Oct 2014 09:09:13 -0500
+> Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+>
+>> On Tue, 30 Sep 2014 21:51:27 -0700
+>> Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> > The NT flag doesn't do anything in long mode other than causing IRET
+>> > to #GP.  Oddly, CPL3 code can still set NT using popf.
+>> >
+>> > Entry via hardware or software interrupt clears NT automatically, so
+>> > the only relevant entries are fast syscalls.
+>> >
+>> > If user code causes kernel code to run with NT set, then there's at
+>> > least some (small) chance that it could cause trouble.  For example,
+>> > user code could cause a call to EFI code with NT set, and who knows
+>> > what would happen?  Apparently some games on Wine sometimes do
+>> > this (!), and, if an IRET return happens, they will segfault.  That
+>> > segfault cannot be handled, because signal delivery fails, too.
+>> >
+>> > This patch programs the CPU to clear NT on entry via SYSCALL (both
+>> > 32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
+>> > in software on entry via SYSENTER.
+>> >
+>> > To save a few cycles, this borrows a trick from Jan Beulich in Xen:
+>> > it checks whether NT is set before trying to clear it.  As a result,
+>> > it seems to have very little effect on SYSENTER performance on my
+>> > machine.
+>> >
+>> > Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
+>> >
+>> > I haven't touched anything on 32-bit kernels.
+>> >
+>> > The syscall mask change comes from a variant of this patch by Anish
+>> > Bhatt.
+>> >
+>> > Cc: stable@vger.kernel.org
+>> > Reported-by: Anish Bhatt <anish@chelsio.com>
+>> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+>> > ---
+>> >  arch/x86/ia32/ia32entry.S    | 12 ++++++++++++
+>> >  arch/x86/kernel/cpu/common.c |  2 +-
+>> >  2 files changed, 13 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+>> > index 4299eb05023c..44d1dd371454 100644
+>> > --- a/arch/x86/ia32/ia32entry.S
+>> > +++ b/arch/x86/ia32/ia32entry.S
+>> > @@ -151,6 +151,18 @@ ENTRY(ia32_sysenter_target)
+>> >  1: movl    (%rbp),%ebp
+>> >     _ASM_EXTABLE(1b,ia32_badarg)
+>> >     ASM_CLAC
+>> > +
+>> > +   /*
+>> > +    * Sysenter doesn't filter flags, so we need to clear NT
+>> > +    * ourselves.  To save a few cycles, we can check whether
+>> > +    * NT was set instead of doing an unconditional popfq.
+>> > +    */
+>> > +   testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
+>> > +   jz 1f
+>> > +   pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
+>> > +   popfq_cfi
+>> > +1:
+>> > +
+>>
+>> I think you've gone backwards with this version. The earlier one got
+>> some of the performance loss back by not needing to do the "cld" insn.
+>>
+>> You should just replace that "cld" (line 146) with
+>>
+>>       pushfq_cfi $2
+>>       popfq_cfi
+>>
+>> Unfortunately I'm not set up to test that yet. But I did look at
+>> the SDM and can't see a need to preserve any of the flags.
+>>
+>
+>
+> <sigh> that's:
+>
+>         pushfw_cfi $0x202
+>
+> IF needs to stay on because we've already enabled interrupts after
+> sysenter.
 
-What about adding the same to pci-stub?  At least that way the PF can't
-actually be assigned to a guest via vfio.  Legacy KVM assignment would
-still allow it, but then legacy KVM assignment will attempt to assign a
-device regardless of the host driver.  BTW, I'd expect there also needs
-to be a call to pci_disable_sriov() in the driver release function.
-Thanks,
+I tried exactly this.  It was much slower than the version I sent.
 
-Alex
+--Andy
 
-> 2014-10-01 16:03 GMT+02:00 Alex Williamson <alex.williamson@redhat.com>:
-> > On Wed, 2014-10-01 at 15:38 +0200, Andre Richter wrote:
-> >> If a PCIe device bound to vfio-pci happens to be SR-IOV capabale,
-> >> there is no possibility to bring up/shutdown the device's VFs.
-> >>
-> >> This patch adds a generic callback for the sysfs sriov_numvfs attribute.
-> >> The attribute will only show up for SR-IOV devices. Additionally,
-> >> each utilized pci_* function checks if the device is a PF.
-> >>
-> >> Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
-> >> ---
-> >>  drivers/vfio/pci/vfio_pci.c | 25 ++++++++++++++++++++-----
-> >>  1 file changed, 20 insertions(+), 5 deletions(-)
-> >
-> > I don't understand why you'd want to do this.  The PF is typically
-> > managed by a host driver.  By allowing vfio-pci to manage SR-IOV, don't
-> > we potentially have assign-able PFs managing assign-able VFs?  That
-> > seems like a bad idea.  What use case do you have in mind?  Thanks,
-> >
-> > Alex
-> >
-> >> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> >> index f782533..2f6dfb3 100644
-> >> --- a/drivers/vfio/pci/vfio_pci.c
-> >> +++ b/drivers/vfio/pci/vfio_pci.c
-> >> @@ -919,12 +919,27 @@ static struct pci_error_handlers vfio_err_handlers = {
-> >>       .error_detected = vfio_pci_aer_err_detected,
-> >>  };
-> >>
-> >> +static int vfio_pci_sriov_configure(struct pci_dev *pdev, int num_vfs)
-> >> +{
-> >> +     int ret = 0;
-> >> +
-> >> +     if (num_vfs > 0) {
-> >> +             ret = pci_enable_sriov(pdev, num_vfs);
-> >> +             if (!ret)
-> >> +                     ret = pci_num_vf(pdev);
-> >> +     } else
-> >> +             pci_disable_sriov(pdev);
-> >> +
-> >> +     return ret;
-> >> +}
-> >> +
-> >>  static struct pci_driver vfio_pci_driver = {
-> >> -     .name           = "vfio-pci",
-> >> -     .id_table       = NULL, /* only dynamic ids */
-> >> -     .probe          = vfio_pci_probe,
-> >> -     .remove         = vfio_pci_remove,
-> >> -     .err_handler    = &vfio_err_handlers,
-> >> +     .name                   = "vfio-pci",
-> >> +     .id_table               = NULL, /* only dynamic ids */
-> >> +     .probe                  = vfio_pci_probe,
-> >> +     .remove                 = vfio_pci_remove,
-> >> +     .sriov_configure        = vfio_pci_sriov_configure,
-> >> +     .err_handler            = &vfio_err_handlers,
-> >>  };
-> >>
-> >>  /*
-> >
-> >
-> >
-
-
-
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
