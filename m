@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaJARRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:17:36 -0400
-Received: from omr2.cc.vt.edu ([198.82.141.100]:40759 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065AbaJARRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:17:32 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, Matthew Wilcox <willy@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 00/21] Add support for NV-DIMMs to ext4
-In-Reply-To: Your message of "Wed, 01 Oct 2014 11:45:47 -0400."
-             <x49r3yrn68k.fsf@segfault.boston.devel.redhat.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1411677218-29146-1-git-send-email-matthew.r.wilcox@intel.com> <15705.1412070301@turing-police.cc.vt.edu> <20140930144854.GA5098@wil.cx> <123795.1412088827@turing-police.cc.vt.edu> <20140930160841.GB5098@wil.cx> <15704.1412109476@turing-police.cc.vt.edu> <A8F88370-512D-45D0-8414-C478D64E46E5@dilger.ca> <62749.1412113956@turing-police.cc.vt.edu>
-            <x49r3yrn68k.fsf@segfault.boston.devel.redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1412183841_2347P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 01 Oct 2014 13:17:21 -0400
-Message-ID: <9487.1412183841@turing-police.cc.vt.edu>
+	id S1752757AbaJARTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:19:17 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:11050 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751575AbaJARTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:19:16 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AukNABY3LFRbsmCr/2dsb2JhbABggw6BLLY3BQFyAZpZgQ4XAXuEYCOBGjeIQgGvJ49vhhWKER2ENQWdM4xJiSqDZTsvgkoBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] inet: frags: add __init to ip4_frags_ctl_register
+Date: Wed,  1 Oct 2014 19:18:57 +0200
+Message-Id: <1412183937-16055-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1412183841_2347P
-Content-Type: text/plain; charset=us-ascii
+ip4_frags_ctl_register is only called by __init ipfrag_init
 
-On Wed, 01 Oct 2014 11:45:47 -0400, Jeff Moyer said:
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/ipv4/ip_fragment.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> This sounds an awful lot like posix_fadvise' POSIX_FADV_NOREUSE flag.
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index 15f0e2b..2811cc1 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -790,7 +790,7 @@ static void __net_exit ip4_frags_ns_ctl_unregister(struct net *net)
+ 	kfree(table);
+ }
+ 
+-static void ip4_frags_ctl_register(void)
++static void __init ip4_frags_ctl_register(void)
+ {
+ 	register_net_sysctl(&init_net, "net/ipv4", ip4_frags_ctl_table);
+ }
+@@ -804,7 +804,7 @@ static inline void ip4_frags_ns_ctl_unregister(struct net *net)
+ {
+ }
+ 
+-static inline void ip4_frags_ctl_register(void)
++static inline void __init ip4_frags_ctl_register(void)
+ {
+ }
+ #endif
+-- 
+1.9.3
 
-Gaah. Premature click.  man posix_fadvise says this:
-
-       In kernels before 2.6.18, POSIX_FADV_NOREUSE had the same semantics  as
-       POSIX_FADV_WILLNEED.   This  was  probably  a bug; since kernel 2.6.18,
-       this flag is a no-op.
-
-and mm/fadvise.c says this:
-        switch (advice) {
-        case POSIX_FADV_NORMAL:
-                f.file->f_ra.ra_pages = bdi->ra_pages;
-                spin_lock(&f.file->f_lock);
-                f.file->f_mode &= ~FMODE_RANDOM;
-                spin_unlock(&f.file->f_lock);
-...
-	                 */
-                force_page_cache_readahead(mapping, f.file, start_index,
-                                           nrpages);
-                break;
-        case POSIX_FADV_NOREUSE:
-                break;
-        case POSIX_FADV_DONTNEED:
-                if (!bdi_write_congested(mapping->backing_dev_info))
-                        __filemap_fdatawrite_range(mapping, offset, endbyte,
-                                                   WB_SYNC_NONE);
-
-                /* First and last FULL page! */
-
-So... not much interface there, actually.  One wonders if removing the 'break;'
-and allowing a fall-through would actually be an improvement....
-
---==_Exmh_1412183841_2347P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVCw3IQdmEQWDXROgAQIZaw/+NXbC9mR/tCaZSx+zdxrhOArKos2TcUu3
-jqJTFEeK7794NGIlYb/OaELCoSyQcYNoffo76/Si4d2Pxf5limmQJOmaNiuNzdse
-ZpaxBxp44yg+urLP0KY/flSdxd7gCq47I1kwCxwdw6Sbx2YJF1nX51m1PTjVw3dy
-4xijAyMVgMpCahFlbC2Ita5HO0+++eqDEYq7qLvztPWS9J+cq0gMGZKWWaiuvDq0
-tTxzh3pi+G/aCppZnrIEM+tnAaEga+wyluZZ4TOQz4IbHBIEIt988PA+SLB8unTU
-1gUWrla3upVenlAv8kWhSdZTRVkQcnlgY+HE1UY1DXfeBCTGIYXueF9d81sQhuvf
-fCmOftbJna3eNf1QlMc6oSm4XMmczQ1SysFi2B0yqe6DoxGoQuoTV/QbPAIKmO6s
-u/DuRxzsHuZOhGPob32cMcMT0ALXUvh5OfPFHs5wbd1N9qwx2im4lYPRh25BIqR/
-ZNuGzXJ/tHDC5s55drYKtpQNgE1yFDu/hSlAEAtV4IqYXDdfRwWhQxFJKFrpe6E9
-D/cTIb25nXWISQ8io5EJahNyeboiPac5X82OMs7uYHDTChIWtoce3+Q1U97Gz2/C
-+S3rh2MroSF6x+zQ4xbhBwjhQ8x7BtniUdGGsIObTArZJZVS7bY636ksev2j/FcY
-0d/neydDOU4=
-=BMzR
------END PGP SIGNATURE-----
-
---==_Exmh_1412183841_2347P--
