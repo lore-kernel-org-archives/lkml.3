@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaJANw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:52:59 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:54325 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaJANw4 (ORCPT
+	id S1751665AbaJANxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:53:05 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50016 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751610AbaJANxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:52:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 10/15] leds: leds-gpio: Add ACPI probing support
-Date: Wed, 01 Oct 2014 15:52:42 +0200
-Message-ID: <2043842.LxdgdYRbIF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141001115901.GD1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <5364565.aEcZqpzdLW@wuerfel> <20141001115901.GD1786@lahna.fi.intel.com>
+	Wed, 1 Oct 2014 09:53:00 -0400
+Date: Wed, 1 Oct 2014 14:52:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Sean Paul <seanpaul@chromium.org>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ritesh.harjani@gmail.com" <ritesh.harjani@gmail.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: Use and error-check DMA_ERROR_CODE
+Message-ID: <20141001135248.GQ5182@n2100.arm.linux.org.uk>
+References: <1412108121-19262-1-git-send-email-seanpaul@chromium.org> <20141001101323.GB2587@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:zid/FtvKOFq0AnU3aHPjVO3QQZxHDj34LNZYQG/SGGY
- N+k1gfpTwka8tAuAfu1kYCVJottpkFl4GDa3BrzVNFzF8uPHLC
- PkVlP+z1ELDP2Rr40ANfQARQ1AqRXAhNY0pGP43+aGDW5BeOKE
- /vT9dU3ChxV4YEeTBEJFUAfWlN/Zx3zaW1yOBAbs3hSf4vb7k9
- ucCCUgYAeL6ADdKcSKC+//fW9duscEXkpINfuqzg5yfie/w8Uu
- wu74eiDRMmze4+8/CT5HaizL93aekyytIbS4rW4F4rgYvz5YX9
- ZhMyKLlk2TvhsmLHJs6xVGdWjfn9Je9jT4PSTOtcaVQza9Sbmp
- bNGOJ0QOcLNZ5FLbUWTM=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001101323.GB2587@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 14:59:01 Mika Westerberg wrote:
-> On Wed, Oct 01, 2014 at 12:01:34PM +0200, Arnd Bergmann wrote:
-> > On Wednesday 01 October 2014 12:13:09 Mika Westerberg wrote:
-> > > 
-> > > > Regarding the MODULE_DEVICE_TABLE, I suspect the above won't work the
-> > > > way you are hoping for, because once you get to dozens or hundreds of
-> > > > drivers doing this, each device will show up with the same string,
-> > > > so udev will try to load all the modules that list "PRP0001". That
-> > > > doesn't look right. With the code from patch 3, you can probably drop
-> > > > the acpi MODULE_DEVICE_TABLE() entirely and get the correct behavior.
-> > > 
-> > > It actually works like this now:
-> > > 
-> > >  # cd /sys/bus/platform/devices/PRP0001\:00/
-> > >  DRIVER=leds-gpio
-> > >  MODALIAS=of:Nprp0001TacpiCgpio-leds
-> > > 
-> > >  # cat modalias 
-> > >  of:Nprp0001TacpiCgpio-leds
-> > > 
-> > > In other words the modalias changes to be of:Nprp0001Tacpi, e.g
-> > > name=prp0001, type=acpi and then list of compatible values.
-> > > 
-> > > Udev then loads only module that matches the modalias so it should not
-> > > load everything listing PRP0001 in their MODULE_DEVICE_TABLE().
-> > 
-> > I'm not completely following yet. I can see how this works now, but
-> > how is this better than just using the existing modalias for OF?
+On Wed, Oct 01, 2014 at 11:13:23AM +0100, Will Deacon wrote:
+> Hi Sean,
 > 
-> You mean using just what of_device_get_modalias() would create? In that
-> case, what do we put to name and type fields?
+> On Tue, Sep 30, 2014 at 09:15:21PM +0100, Sean Paul wrote:
+> > +
+> > +	if (dma_handle != DMA_ERROR_CODE)
+> > +		__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
+> 
+> Is it legal to try and free a DMA buffer after a failed allocation? If so, I
+> think we need something similar for arch/arm/.
 
-Sorry, I think we're still both misunderstanding one another. You were
-talking about the modalias created by the device scanning above, while
-I meant the one in the MODULE_DEVICE_TABLE. 
+No.
 
-With the entry you create in create_modalias(), you will only ever
-match against the MODULE_DEVICE_TABLE(of, of_gpio_leds_match)
-line, not against the MODULE_DEVICE_TABLE(acpi, acpi_gpio_leds_match),
-so I think you can just drop the latter.
+	void
+	dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
+	                           dma_addr_t dma_handle)
 
-On the question what to put into the name and type fields, that is
-unrelated. The type is supposed to be for the 'device_type' property
-in DT, which we should never rely on in a driver that supports both
-APCI and DT. In Linux we only use that for "pci", "cpu" and "memory",
-all of which have their own way of getting probed in ACPI.
-The "name" is normally ignored in DT as well, except for backwards
-compatibility with old bindings, but I would argue that you should not
-just put "prp0001" in there. Either leave it empty like type, or use
-the name of the device as it appears in the ACPI tables, such as "DEV0"
-or "PWM".
+	Free a region of consistent memory you previously allocated.  dev,
+	                                       ^^^^^^^^^^^^^^^^^^^^^
+This implies that the allocation was successful.
 
-	Arnd
+	size and dma_handle must all be the same as those passed into
+	dma_alloc_coherent().  cpu_addr must be the virtual address returned by
+	                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want this behaviour, the proper way to do it would be to check
+for a NULL cpu_addr, just like kfree() etc.
+
+	the dma_alloc_coherent().
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
