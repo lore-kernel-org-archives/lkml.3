@@ -1,653 +1,624 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaJAPxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:53:38 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:57404 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501AbaJAPxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:53:36 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	id S1751999AbaJAPyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:54:35 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:56896 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbaJAPyc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 11:54:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOw6vbJy6oy7cibH4f332UM=kS56KUMcnYdUTG0pEYXyQkFDoQ@mail.gmail.com>
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
+ <1403815790-8548-10-git-send-email-thierry.reding@gmail.com> <CAOw6vbJy6oy7cibH4f332UM=kS56KUMcnYdUTG0pEYXyQkFDoQ@mail.gmail.com>
+From: Sean Paul <seanpaul@google.com>
+Date: Wed, 1 Oct 2014 11:54:11 -0400
+Message-ID: <CAOw6vbLFLrqWYB-4N50G7oucgMD+xd+QtdcMSzX4z7xRiU-vPQ@mail.gmail.com>
+Subject: Re: [RFC 09/10] drm/tegra: Add IOMMU support
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Subject: [PATCH v3] thermal: Add QPNP PMIC temperature alarm driver
-Date: Wed,  1 Oct 2014 18:53:37 +0300
-Message-Id: <1412178817-20371-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>, Allen Martin <amartin@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the temperature alarm peripheral found inside
-Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
-peripheral outputs a pulse on an interrupt line whenever the
-thermal over temperature stage value changes.  Implement an ISR
-to manage this interrupt.
+On Tue, Sep 30, 2014 at 2:48 PM, Sean Paul <seanpaul@google.com> wrote:
+> On Thu, Jun 26, 2014 at 4:49 PM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+>> From: Thierry Reding <treding@nvidia.com>
+>>
+>> When an IOMMU device is available on the platform bus, allocate an IOMMU
+>> domain and attach the display controllers to it. The display controllers
+>> can then scan out non-contiguous buffers by mapping them through the
+>> IOMMU.
+>>
+>
+> Hi Thierry,
+> A few comments from Stéphane and myself that came up while we were
+> reviewing this for our tree.
+>
+>> Signed-off-by: Thierry Reding <treding@nvidia.com>
+>> ---
+>>  drivers/gpu/drm/tegra/dc.c  |  21 ++++
+>>  drivers/gpu/drm/tegra/drm.c |  17 ++++
+>>  drivers/gpu/drm/tegra/drm.h |   3 +
+>>  drivers/gpu/drm/tegra/fb.c  |  16 ++-
+>>  drivers/gpu/drm/tegra/gem.c | 236 +++++++++++++++++++++++++++++++++++++++-----
+>>  drivers/gpu/drm/tegra/gem.h |   4 +
+>>  6 files changed, 273 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+>> index afcca04f5367..0f7452d04811 100644
+>> --- a/drivers/gpu/drm/tegra/dc.c
+>> +++ b/drivers/gpu/drm/tegra/dc.c
+>> @@ -9,6 +9,7 @@
+>>
+>>  #include <linux/clk.h>
+>>  #include <linux/debugfs.h>
+>> +#include <linux/iommu.h>
+>>  #include <linux/reset.h>
+>>
+>>  #include "dc.h"
+>> @@ -1283,8 +1284,18 @@ static int tegra_dc_init(struct host1x_client *client)
+>>  {
+>>         struct drm_device *drm = dev_get_drvdata(client->parent);
+>>         struct tegra_dc *dc = host1x_client_to_dc(client);
+>> +       struct tegra_drm *tegra = drm->dev_private;
+>>         int err;
+>>
+>> +       if (tegra->domain) {
+>> +               err = iommu_attach_device(tegra->domain, dc->dev);
+>> +               if (err < 0) {
+>> +                       dev_err(dc->dev, "failed to attach to IOMMU: %d\n",
+>> +                               err);
+>> +                       return err;
+>> +               }
+>
+> [from Stéphane]
+>
+> shouldn't we call detach in the error paths below?
+>
+>
+>> +       }
+>> +
+>>         drm_crtc_init(drm, &dc->base, &tegra_crtc_funcs);
+>>         drm_mode_crtc_set_gamma_size(&dc->base, 256);
+>>         drm_crtc_helper_add(&dc->base, &tegra_crtc_helper_funcs);
+>> @@ -1318,7 +1329,9 @@ static int tegra_dc_init(struct host1x_client *client)
+>>
+>>  static int tegra_dc_exit(struct host1x_client *client)
+>>  {
+>> +       struct drm_device *drm = dev_get_drvdata(client->parent);
+>>         struct tegra_dc *dc = host1x_client_to_dc(client);
+>> +       struct tegra_drm *tegra = drm->dev_private;
+>>         int err;
+>>
+>>         devm_free_irq(dc->dev, dc->irq, dc);
+>> @@ -1335,6 +1348,8 @@ static int tegra_dc_exit(struct host1x_client *client)
+>>                 return err;
+>>         }
+>>
+>> +       iommu_detach_device(tegra->domain, dc->dev);
+>> +
+>>         return 0;
+>>  }
+>>
+>> @@ -1462,6 +1477,12 @@ static int tegra_dc_probe(struct platform_device *pdev)
+>>                 return -ENXIO;
+>>         }
+>>
+>> +       err = iommu_attach(&pdev->dev);
+>> +       if (err < 0) {
+>> +               dev_err(&pdev->dev, "failed to attach to IOMMU: %d\n", err);
+>> +               return err;
+>> +       }
+>> +
+>>         INIT_LIST_HEAD(&dc->client.list);
+>>         dc->client.ops = &dc_client_ops;
+>>         dc->client.dev = &pdev->dev;
+>> diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
+>> index 59736bb810cd..1d2bbafad982 100644
+>> --- a/drivers/gpu/drm/tegra/drm.c
+>> +++ b/drivers/gpu/drm/tegra/drm.c
+>> @@ -8,6 +8,7 @@
+>>   */
+>>
+>>  #include <linux/host1x.h>
+>> +#include <linux/iommu.h>
+>>
+>>  #include "drm.h"
+>>  #include "gem.h"
+>> @@ -33,6 +34,16 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+>>         if (!tegra)
+>>                 return -ENOMEM;
+>>
+>> +       if (iommu_present(&platform_bus_type)) {
+>> +               tegra->domain = iommu_domain_alloc(&platform_bus_type);
+>> +               if (IS_ERR(tegra->domain)) {
+>> +                       kfree(tegra);
+>> +                       return PTR_ERR(tegra->domain);
+>> +               }
+>> +
+>> +               drm_mm_init(&tegra->mm, 0, SZ_2G);
+>
+>
+> [from Stéphane]:
+>
+> none of these are freed in the error path below (iommu_domain_free and
+> drm_mm_takedown)
+>
+> also |tegra| isn't freed either?
+>
+>
+>
+>> +       }
+>> +
+>>         mutex_init(&tegra->clients_lock);
+>>         INIT_LIST_HEAD(&tegra->clients);
+>>         drm->dev_private = tegra;
+>> @@ -71,6 +82,7 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
+>>  static int tegra_drm_unload(struct drm_device *drm)
+>>  {
+>>         struct host1x_device *device = to_host1x_device(drm->dev);
+>> +       struct tegra_drm *tegra = drm->dev_private;
+>>         int err;
+>>
+>>         drm_kms_helper_poll_fini(drm);
+>> @@ -82,6 +94,11 @@ static int tegra_drm_unload(struct drm_device *drm)
+>>         if (err < 0)
+>>                 return err;
+>>
+>> +       if (tegra->domain) {
+>> +               iommu_domain_free(tegra->domain);
+>> +               drm_mm_takedown(&tegra->mm);
+>> +       }
+>> +
+>>         return 0;
+>>  }
+>>
+>> diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
+>> index 96d754e7b3eb..a07c796b7edc 100644
+>> --- a/drivers/gpu/drm/tegra/drm.h
+>> +++ b/drivers/gpu/drm/tegra/drm.h
+>> @@ -39,6 +39,9 @@ struct tegra_fbdev {
+>>  struct tegra_drm {
+>>         struct drm_device *drm;
+>>
+>> +       struct iommu_domain *domain;
+>> +       struct drm_mm mm;
+>> +
+>>         struct mutex clients_lock;
+>>         struct list_head clients;
+>>
+>> diff --git a/drivers/gpu/drm/tegra/fb.c b/drivers/gpu/drm/tegra/fb.c
+>> index 7790d43ad082..21c65dd817c3 100644
+>> --- a/drivers/gpu/drm/tegra/fb.c
+>> +++ b/drivers/gpu/drm/tegra/fb.c
+>> @@ -65,8 +65,12 @@ static void tegra_fb_destroy(struct drm_framebuffer *framebuffer)
+>>         for (i = 0; i < fb->num_planes; i++) {
+>>                 struct tegra_bo *bo = fb->planes[i];
+>>
+>> -               if (bo)
+>> +               if (bo) {
+>> +                       if (bo->pages && bo->virt)
+>> +                               vunmap(bo->virt);
+>> +
+>>                         drm_gem_object_unreference_unlocked(&bo->gem);
+>> +               }
+>>         }
+>>
+>>         drm_framebuffer_cleanup(framebuffer);
+>> @@ -252,6 +256,16 @@ static int tegra_fbdev_probe(struct drm_fb_helper *helper,
+>>         offset = info->var.xoffset * bytes_per_pixel +
+>>                  info->var.yoffset * fb->pitches[0];
+>>
+>> +       if (bo->pages) {
+>> +               bo->vaddr = vmap(bo->pages, bo->num_pages, VM_MAP,
+>> +                                pgprot_writecombine(PAGE_KERNEL));
+>> +               if (!bo->vaddr) {
+>> +                       dev_err(drm->dev, "failed to vmap() framebuffer\n");
+>> +                       err = -ENOMEM;
+>> +                       goto destroy;
+>> +               }
+>> +       }
+>> +
+>>         drm->mode_config.fb_base = (resource_size_t)bo->paddr;
+>>         info->screen_base = (void __iomem *)bo->vaddr + offset;
+>>         info->screen_size = size;
+>> diff --git a/drivers/gpu/drm/tegra/gem.c b/drivers/gpu/drm/tegra/gem.c
+>> index c1e4e8b6e5ca..2912e61a2599 100644
+>> --- a/drivers/gpu/drm/tegra/gem.c
+>> +++ b/drivers/gpu/drm/tegra/gem.c
+>> @@ -14,8 +14,10 @@
+>>   */
+>>
+>>  #include <linux/dma-buf.h>
+>> +#include <linux/iommu.h>
+>>  #include <drm/tegra_drm.h>
+>>
+>> +#include "drm.h"
+>>  #include "gem.h"
+>>
+>>  static inline struct tegra_bo *host1x_to_tegra_bo(struct host1x_bo *bo)
+>> @@ -90,14 +92,144 @@ static const struct host1x_bo_ops tegra_bo_ops = {
+>>         .kunmap = tegra_bo_kunmap,
+>>  };
+>>
+>> +static int iommu_map_sg(struct iommu_domain *domain, struct sg_table *sgt,
+>> +                       dma_addr_t iova, int prot)
+>> +{
+>> +       unsigned long offset = 0;
+>> +       struct scatterlist *sg;
+>> +       unsigned int i, j;
+>> +       int err;
+>> +
+>> +       for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+>> +               dma_addr_t phys = sg_phys(sg);
+>> +               size_t length = sg->offset;
+>> +
+>> +               phys = sg_phys(sg) - sg->offset;
+>> +               length = sg->length + sg->offset;
+>> +
+>> +               err = iommu_map(domain, iova + offset, phys, length, prot);
+>> +               if (err < 0)
+>> +                       goto unmap;
+>> +
+>> +               offset += length;
+>> +       }
+>> +
+>> +       return 0;
+>> +
+>> +unmap:
+>> +       offset = 0;
+>> +
+>> +       for_each_sg(sgt->sgl, sg, i, j) {
+>> +               size_t length = sg->length + sg->offset;
+>> +               iommu_unmap(domain, iova + offset, length);
+>> +               offset += length;
+>> +       }
+>> +
+>> +       return err;
+>> +}
+>> +
+>> +static int iommu_unmap_sg(struct iommu_domain *domain, struct sg_table *sgt,
+>> +                         dma_addr_t iova)
+>> +{
+>> +       unsigned long offset = 0;
+>> +       struct scatterlist *sg;
+>> +       unsigned int i;
+>> +
+>> +       for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+>> +               dma_addr_t phys = sg_phys(sg);
+>> +               size_t length = sg->offset;
+>> +
+>> +               phys = sg_phys(sg) - sg->offset;
+>> +               length = sg->length + sg->offset;
+>> +
+>> +               iommu_unmap(domain, iova + offset, length);
+>> +               offset += length;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_bo_iommu_map(struct tegra_drm *tegra, struct tegra_bo *bo)
+>> +{
+>> +       int prot = IOMMU_READ | IOMMU_WRITE;
+>> +       int err;
+>> +
+>> +       if (bo->mm)
+>> +               return -EBUSY;
+>> +
+>> +       bo->mm = kzalloc(sizeof(*bo->mm), GFP_KERNEL);
+>> +       if (!bo->mm)
+>> +               return -ENOMEM;
+>> +
+>> +       err = drm_mm_insert_node_generic(&tegra->mm, bo->mm, bo->gem.size,
+>> +                                        PAGE_SIZE, 0, 0, 0);
+>> +       if (err < 0) {
+>> +               dev_err(tegra->drm->dev, "out of virtual memory: %d\n", err);
+>> +               return err;
+>> +       }
+>> +
+>> +       bo->paddr = bo->mm->start;
+>> +
+>> +       err = iommu_map_sg(tegra->domain, bo->sgt, bo->paddr, prot);
+>> +       if (err < 0) {
+>> +               dev_err(tegra->drm->dev, "failed to map buffer: %d\n", err);
+>> +               return err;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_bo_iommu_unmap(struct tegra_drm *tegra, struct tegra_bo *bo)
+>> +{
+>> +       if (!bo->mm)
+>> +               return 0;
+>> +
+>> +       iommu_unmap_sg(tegra->domain, bo->sgt, bo->paddr);
+>> +       drm_mm_remove_node(bo->mm);
+>> +
+>> +       kfree(bo->mm);
+>> +       return 0;
+>> +}
+>> +
+>>  static void tegra_bo_destroy(struct drm_device *drm, struct tegra_bo *bo)
+>>  {
+>> -       dma_free_writecombine(drm->dev, bo->gem.size, bo->vaddr, bo->paddr);
+>> +       if (!bo->pages)
+>> +               dma_free_writecombine(drm->dev, bo->gem.size, bo->vaddr,
+>> +                                     bo->paddr);
 
-Register a thermal zone device in sysfs with multiple trip points
-corresponding to the physical threshold temperatures between over
-temperature stages.  The temperature reported by this thermal
-zone device should reflect the actual PMIC die temperature if an
-ADC is present on the given PMIC.  If no ADC is present, then the
-reported temperature should be estimated from the over
-temperature stage value.
+One more thing. If tegra_bo_alloc fails, we'll have bo->vaddr == NULL
+and bo->paddr == ~0 here, which causes a crash.
 
-Send a notification to userspace via sysfs_notify() whenever the
-over temperature stage value changes.
+I posted https://lkml.org/lkml/2014/9/30/659 to check for the error
+condition in the mm code, but it seems like reviewer consensus is to
+check for this before calling free.
 
-Cc: David Collins <collinsd@codeaurora.org>
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
+As such, we'll need to make sure bo->vaddr != NULL before calling
+dma_free_writecombine to avoid this situation.
 
-Changes since v2:
+Would you prefer I send a patch up to fix this separately, or would
+you like to roll this into your next version?
 
-- Fixed review comments from Kiran Padwal
-- Files renamed from qpnp-* to qcom-spmi-* to be inline with
-  other PMIC sub-function drivers like qcom-spmi-iadc and
-  qcom-spmi-vadc.
+Sean
 
-v2: http://www.gossamer-threads.com/lists/linux/kernel/2017366
 
- .../bindings/thermal/qcom-spmi-temp-alarm.txt      |  26 ++
- drivers/thermal/Kconfig                            |  13 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/qcom-spmi-temp-alarm.c             | 517 +++++++++++++++++++++
- 4 files changed, 557 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt
- create mode 100644 drivers/thermal/qcom-spmi-temp-alarm.c
 
-diff --git a/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt b/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt
-new file mode 100644
-index 0000000..afa908c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt
-@@ -0,0 +1,26 @@
-+Qualcomm QPNP PMIC Temperature Alarm
-+
-+QPNP temperature alarm peripherals are found inside of Qualcomm PMIC chips
-+that utilize the Qualcomm SPMI implementation. These peripherals provide an
-+interrupt signal and status register to identify high PMIC die temperature.
-+
-+Required properties:
-+- compatible:      Should contain "qcom,spmi-temp-alarm".
-+- reg:             Specifies the SPMI address and length of the controller's
-+                   registers.
-+- interrupts:      PMIC temperature alarm interrupt
-+
-+Optional properties:
-+- io-channels:     Should contain IIO channel specifier for the ADC channel,
-+                   which report chip die temperature.
-+- io-channel-names: Should contain "thermal".
-+
-+Example:
-+
-+	thermal-alarm@2400 {
-+		compatible = "qcom,spmi-temp-alarm";
-+		reg = <0x2400 0x100>;
-+		interrupts = <0 0x24 0 IRQ_TYPE_EDGE_RISING>;
-+		io-channels = <&pm8941_vadc VADC_DIE_TEMP>;
-+		io-channel-names = "thermal";
-+	};
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 693208e..6adb661 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -248,4 +248,17 @@ depends on ARCH_STI && OF
- source "drivers/thermal/st/Kconfig"
- endmenu
- 
-+config QCOM_SPMI_TEMP_ALARM
-+	tristate "Qualcomm SPMI PMIC Temperature Alarm"
-+	depends on OF && SPMI && IIO
-+	select REGMAP_SPMI
-+	help
-+	  This enables a thermal sysfs driver for Qualcomm plug-and-play (QPNP)
-+	  PMIC devices. It shows up in sysfs as a thermal zone with multiple
-+	  trip points. The temperature reported by the thermal zone reflects the
-+	  real time die temperature if an ADC is present or an estimate of the
-+	  temperature based upon the over temperature stage value. Enabling the
-+	  thermal zone device via the mode file results in shifting PMIC over
-+	  temperature shutdown control from hardware to software.
-+
- endif
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 31e232f..55f6c23 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_SOC_DTS_THERMAL)	+= intel_soc_dts_thermal.o
- obj-$(CONFIG_TI_SOC_THERMAL)	+= ti-soc-thermal/
- obj-$(CONFIG_ACPI_INT3403_THERMAL)	+= int3403_thermal.o
- obj-$(CONFIG_ST_THERMAL)	+= st/
-+obj-$(CONFIG_QCOM_SPMI_TEMP_ALARM)	+= qcom-spmi-temp-alarm.o
-diff --git a/drivers/thermal/qcom-spmi-temp-alarm.c b/drivers/thermal/qcom-spmi-temp-alarm.c
-new file mode 100644
-index 0000000..5ce0fef
---- /dev/null
-+++ b/drivers/thermal/qcom-spmi-temp-alarm.c
-@@ -0,0 +1,517 @@
-+/*
-+ * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/iio/consumer.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/thermal.h>
-+
-+#define QPNP_TM_REG_TYPE		0x04
-+#define QPNP_TM_REG_SUBTYPE		0x05
-+#define QPNP_TM_REG_STATUS		0x08
-+#define QPNP_TM_REG_SHUTDOWN_CTRL1	0x40
-+#define QPNP_TM_REG_SHUTDOWN_CTRL2	0x42
-+#define QPNP_TM_REG_ALARM_CTRL		0x46
-+
-+#define QPNP_TM_TYPE			0x09
-+#define QPNP_TM_SUBTYPE			0x08
-+
-+#define STATUS_STAGE_MASK		0x03
-+
-+#define SHUTDOWN_CTRL1_OVERRIDE_STAGE3	0x80
-+#define SHUTDOWN_CTRL1_OVERRIDE_STAGE2	0x40
-+#define SHUTDOWN_CTRL1_THRESHOLD_MASK	0x03
-+
-+#define SHUTDOWN_CTRL2_CLEAR_STAGE3	0x80
-+#define SHUTDOWN_CTRL2_CLEAR_STAGE2	0x40
-+
-+#define ALARM_CTRL_FORCE_ENABLE		0x80
-+#define ALARM_CTRL_FOLLOW_HW_ENABLE	0x01
-+
-+/*
-+ * Trip point values based on threshold control
-+ * 0 = {105 C, 125 C, 145 C}
-+ * 1 = {110 C, 130 C, 150 C}
-+ * 2 = {115 C, 135 C, 155 C}
-+ * 3 = {120 C, 140 C, 160 C}
-+*/
-+#define TEMP_STAGE_STEP			20000	/* Stage step: 20.000 C */
-+#define TEMP_STAGE_HYSTERESIS		2000
-+
-+#define TEMP_THRESH_MIN			105000	/* Threshold Min: 105 C */
-+#define TEMP_THRESH_STEP		5000	/* Threshold step: 5 C */
-+
-+#define THRESH_MIN			0
-+#define THRESH_MAX			3
-+
-+/* Trip points from most critical to least critical */
-+#define TRIP_STAGE3			0
-+#define TRIP_STAGE2			1
-+#define TRIP_STAGE1			2
-+#define TRIP_NUM			3
-+
-+/* Delay between TEMP_STAT IRQ going high and status value changing in ms */
-+#define READ_DELAY_MS			40
-+
-+/* Temperature in Milli Celsius reported during stage 0 if no ADC is present */
-+#define DEFAULT_TEMP			37000
-+
-+struct qpnp_tm_chip {
-+	struct delayed_work		work;
-+	struct regmap			*map;
-+	struct device			*dev;
-+	struct thermal_zone_device	*tz_dev;
-+	enum thermal_device_mode	mode;
-+	long				temp;
-+	unsigned int			thresh;
-+	unsigned int			stage;
-+	unsigned int			prev_stage;
-+	unsigned int			base;
-+	struct iio_channel		*adc;
-+};
-+
-+static int qpnp_tm_read(struct qpnp_tm_chip *chip, u16 addr, u8 *data)
-+{
-+	unsigned int val;
-+	int ret;
-+
-+	ret = regmap_read(chip->map, chip->base + addr, &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	*data = val;
-+	return 0;
-+}
-+
-+static int qpnp_tm_write(struct qpnp_tm_chip *chip, u16 addr, u8 data)
-+{
-+	return regmap_write(chip->map, chip->base + addr, data);
-+}
-+
-+static int qpnp_tm_shutdown_override(struct qpnp_tm_chip *chip, bool enable)
-+{
-+	u8 reg;
-+
-+	reg = chip->thresh & SHUTDOWN_CTRL1_THRESHOLD_MASK;
-+
-+	if (enable) {
-+		reg |= SHUTDOWN_CTRL1_OVERRIDE_STAGE2;
-+		reg |= SHUTDOWN_CTRL1_OVERRIDE_STAGE3;
-+	}
-+
-+	return qpnp_tm_write(chip, QPNP_TM_REG_SHUTDOWN_CTRL1, reg);
-+}
-+
-+/*
-+ * This function updates the internal temp value based on the
-+ * current thermal stage and threshold as well as the previous stage
-+ */
-+static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
-+{
-+	unsigned int stage;
-+	int ret;
-+	u8 reg = 0;
-+
-+	ret = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	stage = reg & STATUS_STAGE_MASK;
-+
-+	if (stage > chip->stage) {
-+		/* increasing stage, use lower bound */
-+		chip->temp = (stage - 1) * TEMP_STAGE_STEP +
-+			     chip->thresh * TEMP_THRESH_STEP +
-+			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
-+	} else if (stage < chip->stage) {
-+		/* decreasing stage, use upper bound */
-+		chip->temp = stage * TEMP_STAGE_STEP +
-+			     chip->thresh * TEMP_THRESH_STEP -
-+			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
-+	}
-+
-+	chip->stage = stage;
-+
-+	return 0;
-+}
-+
-+static int qpnp_tz_get_temp(struct thermal_zone_device *thermal,
-+			   unsigned long *temp)
-+{
-+	struct qpnp_tm_chip *chip = thermal->devdata;
-+	int ret, mili_celsius;
-+
-+	if (!temp)
-+		return -EINVAL;
-+
-+	if (IS_ERR(chip->adc)) {
-+		ret = qpnp_tm_update_temp_no_adc(chip);
-+		if (ret < 0)
-+			return ret;
-+	} else {
-+		ret = iio_read_channel_processed(chip->adc, &mili_celsius);
-+		if (ret < 0)
-+			return ret;
-+
-+		chip->temp = mili_celsius;
-+	}
-+
-+	*temp = chip->temp < 0 ? 0 : chip->temp;
-+
-+	return 0;
-+}
-+
-+static int qpnp_tz_get_mode(struct thermal_zone_device *thermal,
-+			    enum thermal_device_mode *mode)
-+{
-+	struct qpnp_tm_chip *chip = thermal->devdata;
-+
-+	if (!mode)
-+		return -EINVAL;
-+
-+	*mode = chip->mode;
-+
-+	return 0;
-+}
-+
-+static int qpnp_tz_set_mode(struct thermal_zone_device *thermal,
-+			    enum thermal_device_mode mode)
-+{
-+	struct qpnp_tm_chip *chip = thermal->devdata;
-+	int ret;
-+
-+	if (mode == chip->mode)
-+		return 0;
-+
-+	if (mode == THERMAL_DEVICE_ENABLED)
-+		ret = qpnp_tm_shutdown_override(chip, true);
-+	else
-+		ret = qpnp_tm_shutdown_override(chip, false);
-+
-+	chip->mode = mode;
-+
-+	return ret;
-+}
-+
-+static int qpnp_tz_get_trip_type(struct thermal_zone_device *thermal, int trip,
-+			       enum thermal_trip_type *type)
-+{
-+	if (trip < 0 || !type)
-+		return -EINVAL;
-+
-+	switch (trip) {
-+	case TRIP_STAGE3:
-+		*type = THERMAL_TRIP_CRITICAL;
-+		break;
-+	case TRIP_STAGE2:
-+		*type = THERMAL_TRIP_HOT;
-+		break;
-+	case TRIP_STAGE1:
-+		*type = THERMAL_TRIP_HOT;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int qpnp_tz_get_trip_temp(struct thermal_zone_device *thermal, int trip,
-+				unsigned long *temp)
-+{
-+	struct qpnp_tm_chip *chip = thermal->devdata;
-+	int thresh_temp;
-+
-+	if (trip < 0 || !temp)
-+		return -EINVAL;
-+
-+	thresh_temp = chip->thresh * TEMP_THRESH_STEP + TEMP_THRESH_MIN;
-+
-+	switch (trip) {
-+	case TRIP_STAGE3:
-+		thresh_temp += 2 * TEMP_STAGE_STEP;
-+		break;
-+	case TRIP_STAGE2:
-+		thresh_temp += TEMP_STAGE_STEP;
-+		break;
-+	case TRIP_STAGE1:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	*temp = thresh_temp;
-+
-+	return 0;
-+}
-+
-+static int qpnp_tz_get_crit_temp(struct thermal_zone_device *thermal,
-+				 unsigned long *temp)
-+{
-+	struct qpnp_tm_chip *chip = thermal->devdata;
-+
-+	if (!temp)
-+		return -EINVAL;
-+
-+	*temp = chip->thresh * TEMP_THRESH_STEP + TEMP_THRESH_MIN +
-+		2 * TEMP_STAGE_STEP;
-+
-+	return 0;
-+}
-+
-+static irqreturn_t qpnp_tm_isr(int irq, void *data)
-+{
-+	struct qpnp_tm_chip *chip = data;
-+
-+	schedule_delayed_work(&chip->work, msecs_to_jiffies(READ_DELAY_MS) + 1);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void qpnp_tm_work(struct work_struct *work)
-+{
-+	struct delayed_work *dwork;
-+	struct qpnp_tm_chip *chip;
-+	int ret, mili_celsius;
-+	u8 reg;
-+
-+	dwork = container_of(work, struct delayed_work, work);
-+	chip = container_of(dwork, struct qpnp_tm_chip, work);
-+
-+	if (IS_ERR(chip->adc)) {
-+		ret = qpnp_tm_update_temp_no_adc(chip);
-+		if (ret < 0)
-+			return;
-+	} else {
-+		ret = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
-+		if (ret < 0)
-+			return;
-+
-+		chip->stage = reg & STATUS_STAGE_MASK;
-+
-+		ret = iio_read_channel_processed(chip->adc, &mili_celsius);
-+		if (ret < 0)
-+			return;
-+
-+		chip->temp = mili_celsius;
-+	}
-+
-+	if (chip->stage != chip->prev_stage) {
-+		chip->prev_stage = chip->stage;
-+
-+		dev_warn(chip->dev, "Thermal alarm stage %u, threshold %u, temp %ld mC\n",
-+			 chip->stage, chip->thresh, chip->temp);
-+
-+		thermal_zone_device_update(chip->tz_dev);
-+
-+		/* Notify user space */
-+		sysfs_notify(&chip->tz_dev->device.kobj, NULL, "type");
-+	}
-+}
-+
-+/*
-+ * This function initializes the internal temp value based on only the
-+ * current thermal stage and threshold. Setup threshold control and
-+ * disable shutdown override.
-+ */
-+static int qpnp_tm_init(struct qpnp_tm_chip *chip)
-+{
-+	int ret;
-+	u8 reg;
-+
-+	chip->thresh = THRESH_MIN;
-+	chip->temp = DEFAULT_TEMP;
-+
-+	ret = qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	chip->stage = reg & STATUS_STAGE_MASK;
-+
-+	if (chip->stage)
-+		chip->temp = chip->thresh * TEMP_THRESH_STEP +
-+			     (chip->stage - 1) * TEMP_STAGE_STEP +
-+			     TEMP_THRESH_MIN;
-+
-+	/*
-+	 * Set threshold and disable software override of stage 2 and 3
-+	 * shutdowns.
-+	 */
-+	reg = chip->thresh & SHUTDOWN_CTRL1_THRESHOLD_MASK;
-+	ret = qpnp_tm_write(chip, QPNP_TM_REG_SHUTDOWN_CTRL1, reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Enable the thermal alarm PMIC module in always-on mode. */
-+	reg = ALARM_CTRL_FORCE_ENABLE;
-+	ret = qpnp_tm_write(chip, QPNP_TM_REG_ALARM_CTRL, reg);
-+
-+	return ret;
-+}
-+
-+static struct thermal_zone_device_ops qpnp_tz_ops = {
-+	.get_temp	= qpnp_tz_get_temp,
-+	.get_mode	= qpnp_tz_get_mode,
-+	.set_mode	= qpnp_tz_set_mode,
-+	.get_trip_type	= qpnp_tz_get_trip_type,
-+	.get_trip_temp	= qpnp_tz_get_trip_temp,
-+	.get_crit_temp	= qpnp_tz_get_crit_temp,
-+};
-+
-+static int qpnp_tm_probe(struct platform_device *pdev)
-+{
-+	struct qpnp_tm_chip *chip;
-+	struct device_node *node;
-+	u8 type, subtype;
-+	int ret, irq, res[2];
-+
-+	node = pdev->dev.of_node;
-+
-+	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(&pdev->dev, chip);
-+
-+	chip->dev = &pdev->dev;
-+	INIT_DELAYED_WORK(&chip->work, qpnp_tm_work);
-+
-+	chip->map = dev_get_regmap(chip->dev->parent, NULL);
-+	if (!chip->map)
-+		return -ENXIO;
-+
-+	ret = of_property_read_u32_array(node, "reg", res, 2);
-+	if (ret < 0)
-+		return ret;
-+
-+	chip->base = res[0];
-+
-+	ret = qpnp_tm_read(chip, QPNP_TM_REG_TYPE, &type);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "could not read type\n");
-+		return ret;
-+	}
-+
-+	ret = qpnp_tm_read(chip, QPNP_TM_REG_SUBTYPE, &subtype);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "could not read subtype\n");
-+		return ret;
-+	}
-+
-+	if (type != QPNP_TM_TYPE || subtype != QPNP_TM_SUBTYPE) {
-+		dev_err(&pdev->dev, "invalid type 0x%02x or subtype 0x%02x\n",
-+			type, subtype);
-+		return -ENODEV;
-+	}
-+
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0)
-+		return irq;
-+
-+	chip->adc = iio_channel_get(chip->dev, "thermal");
-+	if (PTR_ERR(chip->adc) == -EPROBE_DEFER)
-+		return PTR_ERR(chip->adc);
-+
-+	ret = qpnp_tm_init(chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "init failed\n");
-+		return ret;
-+	}
-+
-+	/* Start in HW control. Switch to SW control when user changes mode. */
-+	chip->mode = THERMAL_DEVICE_DISABLED;
-+
-+	chip->tz_dev = thermal_zone_device_register(node->name, TRIP_NUM, 0,
-+						    chip, &qpnp_tz_ops, NULL,
-+						    0, 0);
-+	if (IS_ERR(chip->tz_dev)) {
-+		dev_err(&pdev->dev, "TZ registration failed\n");
-+		return PTR_ERR(chip->tz_dev);
-+	}
-+
-+	ret = devm_request_irq(chip->dev, irq, qpnp_tm_isr, 0, node->name,
-+			      chip);
-+	if (ret < 0)
-+		thermal_zone_device_unregister(chip->tz_dev);
-+
-+	return ret;
-+}
-+
-+static int qpnp_tm_remove(struct platform_device *pdev)
-+{
-+	struct qpnp_tm_chip *chip = dev_get_drvdata(&pdev->dev);
-+
-+	cancel_delayed_work_sync(&chip->work);
-+	thermal_zone_device_unregister(chip->tz_dev);
-+	qpnp_tm_shutdown_override(chip, false);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int qpnp_tm_suspend(struct device *dev)
-+{
-+	struct qpnp_tm_chip *chip = dev_get_drvdata(dev);
-+
-+	/* Clear override bits in suspend to allow hardware control */
-+	qpnp_tm_shutdown_override(chip, false);
-+
-+	return 0;
-+}
-+
-+static int qpnp_tm_resume(struct device *dev)
-+{
-+	struct qpnp_tm_chip *chip = dev_get_drvdata(dev);
-+
-+	/* Override hardware actions so software can control */
-+	if (chip->mode == THERMAL_DEVICE_ENABLED)
-+		qpnp_tm_shutdown_override(chip, true);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops qpnp_tm_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(qpnp_tm_suspend, qpnp_tm_resume)
-+};
-+
-+#define QPNP_TM_PM_OPS	(&qpnp_tm_pm_ops)
-+#else
-+#define QPNP_TM_PM_OPS	NULL
-+#endif
-+
-+static const struct of_device_id qpnp_tm_match_table[] = {
-+	{ .compatible = "qcom,spmi-temp-alarm" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, qpnp_tm_match_table);
-+
-+static struct platform_driver qpnp_tm_driver = {
-+	.driver = {
-+		.name = "spmi-temp-alarm",
-+		.of_match_table = qpnp_tm_match_table,
-+		.pm = QPNP_TM_PM_OPS,
-+	},
-+	.probe  = qpnp_tm_probe,
-+	.remove = qpnp_tm_remove,
-+};
-+module_platform_driver(qpnp_tm_driver);
-+
-+MODULE_ALIAS("platform:spmi-temp-alarm");
-+MODULE_DESCRIPTION("QPNP PMIC Temperature Alarm driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
 
+>> +       else
+>> +               drm_gem_put_pages(&bo->gem, bo->pages, true, true);
+>> +}
+>> +
+>> +static int tegra_bo_get_pages(struct drm_device *drm, struct tegra_bo *bo,
+>> +                             size_t size)
+>> +{
+>> +       bo->pages = drm_gem_get_pages(&bo->gem, GFP_KERNEL);
+>> +       if (!bo->pages)
+>> +               return -ENOMEM;
+>> +
+>> +       bo->num_pages = size >> PAGE_SHIFT;
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int tegra_bo_alloc(struct drm_device *drm, struct tegra_bo *bo,
+>> +                         size_t size)
+>> +{
+>> +       bo->vaddr = dma_alloc_writecombine(drm->dev, size, &bo->paddr,
+>> +                                          GFP_KERNEL | __GFP_NOWARN);
+>> +       if (!bo->vaddr) {
+>> +               dev_err(drm->dev, "failed to allocate buffer of size %zu\n",
+>> +                       size);
+>> +               return -ENOMEM;
+>> +       }
+>> +
+>> +       return 0;
+>>  }
+>>
+>>  struct tegra_bo *tegra_bo_create(struct drm_device *drm, unsigned int size,
+>>                                  unsigned long flags)
+>>  {
+>> +       struct tegra_drm *tegra = drm->dev_private;
+>>         struct tegra_bo *bo;
+>>         int err;
+>>
+>> @@ -108,22 +240,33 @@ struct tegra_bo *tegra_bo_create(struct drm_device *drm, unsigned int size,
+>>         host1x_bo_init(&bo->base, &tegra_bo_ops);
+>>         size = round_up(size, PAGE_SIZE);
+>>
+>> -       bo->vaddr = dma_alloc_writecombine(drm->dev, size, &bo->paddr,
+>> -                                          GFP_KERNEL | __GFP_NOWARN);
+>> -       if (!bo->vaddr) {
+>> -               dev_err(drm->dev, "failed to allocate buffer with size %u\n",
+>> -                       size);
+>> -               err = -ENOMEM;
+>> -               goto err_dma;
+>> -       }
+>> -
+>>         err = drm_gem_object_init(drm, &bo->gem, size);
+>>         if (err)
+>> -               goto err_init;
+>> +               goto free;
+>>
+>>         err = drm_gem_create_mmap_offset(&bo->gem);
+>
+> We need to call drm_gem_free_mmap_offset if one of the calls below
+> fails, otherwise we'll try to free the mmap_offset on an already
+> destroyed bo.
+>
+>
+> Sean
+>
+>
+>
+>>         if (err)
+>> -               goto err_mmap;
+>> +               goto release;
+>> +
+>> +       if (tegra->domain) {
+>> +               err = tegra_bo_get_pages(drm, bo, size);
+>> +               if (err < 0)
+>> +                       goto release;
+>> +
+>> +               bo->sgt = drm_prime_pages_to_sg(bo->pages, bo->num_pages);
+>> +               if (IS_ERR(bo->sgt)) {
+>> +                       err = PTR_ERR(bo->sgt);
+>> +                       goto release;
+>> +               }
+>> +
+>> +               err = tegra_bo_iommu_map(tegra, bo);
+>> +               if (err < 0)
+>> +                       goto release;
+>> +       } else {
+>> +               err = tegra_bo_alloc(drm, bo, size);
+>> +               if (err < 0)
+>> +                       goto release;
+>> +       }
+>>
+>>         if (flags & DRM_TEGRA_GEM_CREATE_TILED)
+>>                 bo->tiling.mode = TEGRA_BO_TILING_MODE_TILED;
+>> @@ -133,11 +276,10 @@ struct tegra_bo *tegra_bo_create(struct drm_device *drm, unsigned int size,
+>>
+>>         return bo;
+>>
+>> -err_mmap:
+>> +release:
+>>         drm_gem_object_release(&bo->gem);
+>> -err_init:
+>>         tegra_bo_destroy(drm, bo);
+>> -err_dma:
+>> +free:
+>>         kfree(bo);
+>>
+>>         return ERR_PTR(err);
+>> @@ -172,6 +314,7 @@ err:
+>>  static struct tegra_bo *tegra_bo_import(struct drm_device *drm,
+>>                                         struct dma_buf *buf)
+>>  {
+>> +       struct tegra_drm *tegra = drm->dev_private;
+>>         struct dma_buf_attachment *attach;
+>>         struct tegra_bo *bo;
+>>         ssize_t size;
+>> @@ -211,12 +354,19 @@ static struct tegra_bo *tegra_bo_import(struct drm_device *drm,
+>>                 goto detach;
+>>         }
+>>
+>> -       if (bo->sgt->nents > 1) {
+>> -               err = -EINVAL;
+>> -               goto detach;
+>> +       if (tegra->domain) {
+>> +               err = tegra_bo_iommu_map(tegra, bo);
+>> +               if (err < 0)
+>> +                       goto detach;
+>> +       } else {
+>> +               if (bo->sgt->nents > 1) {
+>> +                       err = -EINVAL;
+>> +                       goto detach;
+>> +               }
+>> +
+>> +               bo->paddr = sg_dma_address(bo->sgt->sgl);
+>>         }
+>>
+>> -       bo->paddr = sg_dma_address(bo->sgt->sgl);
+>>         bo->gem.import_attach = attach;
+>>
+>>         return bo;
+>> @@ -239,8 +389,12 @@ free:
+>>
+>>  void tegra_bo_free_object(struct drm_gem_object *gem)
+>>  {
+>> +       struct tegra_drm *tegra = gem->dev->dev_private;
+>>         struct tegra_bo *bo = to_tegra_bo(gem);
+>>
+>> +       if (tegra->domain)
+>> +               tegra_bo_iommu_unmap(tegra, bo);
+>> +
+>>         if (gem->import_attach) {
+>>                 dma_buf_unmap_attachment(gem->import_attach, bo->sgt,
+>>                                          DMA_TO_DEVICE);
+>> @@ -301,7 +455,38 @@ int tegra_bo_dumb_map_offset(struct drm_file *file, struct drm_device *drm,
+>>         return 0;
+>>  }
+>>
+>> +static int tegra_bo_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>> +{
+>> +       struct drm_gem_object *gem = vma->vm_private_data;
+>> +       struct tegra_bo *bo = to_tegra_bo(gem);
+>> +       struct page *page;
+>> +       pgoff_t offset;
+>> +       int err;
+>> +
+>> +       if (!bo->pages)
+>> +               return VM_FAULT_SIGBUS;
+>> +
+>> +       offset = ((unsigned long)vmf->virtual_address - vma->vm_start) >> PAGE_SHIFT;
+>> +       page = bo->pages[offset];
+>> +
+>> +       err = vm_insert_page(vma, (unsigned long)vmf->virtual_address, page);
+>> +       switch (err) {
+>> +       case -EAGAIN:
+>> +       case 0:
+>> +       case -ERESTARTSYS:
+>> +       case -EINTR:
+>> +       case -EBUSY:
+>> +               return VM_FAULT_NOPAGE;
+>> +
+>> +       case -ENOMEM:
+>> +               return VM_FAULT_OOM;
+>> +       }
+>> +
+>> +       return VM_FAULT_SIGBUS;
+>> +}
+>> +
+>>  const struct vm_operations_struct tegra_bo_vm_ops = {
+>> +       .fault = tegra_bo_fault,
+>>         .open = drm_gem_vm_open,
+>>         .close = drm_gem_vm_close,
+>>  };
+>> @@ -316,13 +501,18 @@ int tegra_drm_mmap(struct file *file, struct vm_area_struct *vma)
+>>         if (ret)
+>>                 return ret;
+>>
+>> +       vma->vm_flags |= VM_MIXEDMAP;
+>> +       vma->vm_flags &= ~VM_PFNMAP;
+>> +
+>>         gem = vma->vm_private_data;
+>>         bo = to_tegra_bo(gem);
+>>
+>> -       ret = remap_pfn_range(vma, vma->vm_start, bo->paddr >> PAGE_SHIFT,
+>> -                             vma->vm_end - vma->vm_start, vma->vm_page_prot);
+>> -       if (ret)
+>> -               drm_gem_vm_close(vma);
+>> +       if (!bo->pages) {
+>> +               ret = remap_pfn_range(vma, vma->vm_start, bo->paddr >> PAGE_SHIFT,
+>> +                                     vma->vm_end - vma->vm_start, vma->vm_page_prot);
+>> +               if (ret)
+>> +                       drm_gem_vm_close(vma);
+>> +       }
+>>
+>>         return ret;
+>>  }
+>> diff --git a/drivers/gpu/drm/tegra/gem.h b/drivers/gpu/drm/tegra/gem.h
+>> index 43a25c853357..c2e3f43e4b3f 100644
+>> --- a/drivers/gpu/drm/tegra/gem.h
+>> +++ b/drivers/gpu/drm/tegra/gem.h
+>> @@ -37,6 +37,10 @@ struct tegra_bo {
+>>         dma_addr_t paddr;
+>>         void *vaddr;
+>>
+>> +       struct drm_mm_node *mm;
+>> +       unsigned long num_pages;
+>> +       struct page **pages;
+>> +
+>>         struct tegra_bo_tiling tiling;
+>>  };
+>>
+>> --
+>> 2.0.0
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
