@@ -1,127 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaJABwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 21:52:10 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:51829 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJABwI (ORCPT
+	id S1751782AbaJACDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 22:03:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49196 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750972AbaJACDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 21:52:08 -0400
-Message-ID: <542B5E44.40303@gmail.com>
-Date: Tue, 30 Sep 2014 18:52:04 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 30 Sep 2014 22:03:12 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: linux-kernel@vger.kernel.org
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH v3 14/15] misc: at25: Make use of device property API
+Date: Wed, 01 Oct 2014 04:21:18 +0200
+Message-ID: <2074642.sV7QBxD3Ne@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1852462.V1jlbi8OPt@vostro.rjw.lan>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1852462.V1jlbi8OPt@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net> <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net>
-In-Reply-To: <542B519B.6010001@landley.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/30/2014 5:58 PM, Rob Landley wrote:
-> On 09/30/14 19:41, Frank Rowand wrote:
->> The earliest mention I find of this on lkml is v4.  Was there earlier
->> discussion of this elsewhere?  (Just so I have a clue as to the full
->> context and don't repeat previous discussion.)  The mention of names
->> in the change logs tells me I should be able to find the discussion
->> somewhere.
-> 
-> The previous ones had a different topic sentence (add strictinit). So
-> they added code to do less.
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Thanks!  That gives me the context I was looking for.
+Make use of device property API in this driver so that both DT and ACPI
+based systems can use this driver.
 
-For posterity and anyone searching in the future, the previous
-threads were:
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/misc/eeprom/at25.c | 34 +++++++++++++---------------------
+ 1 file changed, 13 insertions(+), 21 deletions(-)
 
-   [PATCH ...] init: Add strictinit to disable init= fallbacks
+diff --git a/drivers/misc/eeprom/at25.c b/drivers/misc/eeprom/at25.c
+index 634f72929e12..58f6cdd2551c 100644
+--- a/drivers/misc/eeprom/at25.c
++++ b/drivers/misc/eeprom/at25.c
+@@ -18,7 +18,7 @@
+ 
+ #include <linux/spi/spi.h>
+ #include <linux/spi/eeprom.h>
+-#include <linux/of.h>
++#include <linux/property.h>
+ 
+ /*
+  * NOTE: this is an *EEPROM* driver.  The vagaries of product naming
+@@ -301,35 +301,33 @@ static ssize_t at25_mem_write(struct memory_accessor *mem, const char *buf,
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-static int at25_np_to_chip(struct device *dev,
+-			   struct device_node *np,
+-			   struct spi_eeprom *chip)
++static int at25_fw_to_chip(struct device *dev, struct spi_eeprom *chip)
+ {
+ 	u32 val;
+ 
+ 	memset(chip, 0, sizeof(*chip));
+-	strncpy(chip->name, np->name, sizeof(chip->name));
++	strncpy(chip->name, "at25", sizeof(chip->name));
+ 
+-	if (of_property_read_u32(np, "size", &val) == 0 ||
+-	    of_property_read_u32(np, "at25,byte-len", &val) == 0) {
++	if (device_property_read_u32(dev, "size", &val) == 0 ||
++	    device_property_read_u32(dev, "at25,byte-len", &val) == 0) {
+ 		chip->byte_len = val;
+ 	} else {
+ 		dev_err(dev, "Error: missing \"size\" property\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	if (of_property_read_u32(np, "pagesize", &val) == 0 ||
+-	    of_property_read_u32(np, "at25,page-size", &val) == 0) {
++	if (device_property_read_u32(dev, "pagesize", &val) == 0 ||
++	    device_property_read_u32(dev, "at25,page-size", &val) == 0) {
+ 		chip->page_size = (u16)val;
+ 	} else {
+ 		dev_err(dev, "Error: missing \"pagesize\" property\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	if (of_property_read_u32(np, "at25,addr-mode", &val) == 0) {
++	if (device_property_read_u32(dev, "at25,addr-mode", &val) == 0) {
+ 		chip->flags = (u16)val;
+ 	} else {
+-		if (of_property_read_u32(np, "address-width", &val)) {
++		if (device_property_read_u32(dev, "address-width", &val)) {
+ 			dev_err(dev,
+ 				"Error: missing \"address-width\" property\n");
+ 			return -ENODEV;
+@@ -350,7 +348,7 @@ static int at25_np_to_chip(struct device *dev,
+ 				val);
+ 			return -ENODEV;
+ 		}
+-		if (of_find_property(np, "read-only", NULL))
++		if (!device_get_property(dev, "read-only", NULL))
+ 			chip->flags |= EE_READONLY;
+ 	}
+ 	return 0;
+@@ -360,21 +358,15 @@ static int at25_probe(struct spi_device *spi)
+ {
+ 	struct at25_data	*at25 = NULL;
+ 	struct spi_eeprom	chip;
+-	struct device_node	*np = spi->dev.of_node;
+ 	int			err;
+ 	int			sr;
+ 	int			addrlen;
+ 
+ 	/* Chip description */
+ 	if (!spi->dev.platform_data) {
+-		if (np) {
+-			err = at25_np_to_chip(&spi->dev, np, &chip);
+-			if (err)
+-				return err;
+-		} else {
+-			dev_err(&spi->dev, "Error: no chip description\n");
+-			return -ENODEV;
+-		}
++		err = at25_fw_to_chip(&spi->dev, &chip);
++		if (err)
++			return err;
+ 	} else
+ 		chip = *(struct spi_eeprom *)spi->dev.platform_data;
+ 
+-- 
+1.8.4.5
 
-> 
->> On 9/28/2014 7:40 PM, Andy Lutomirski wrote:
->>> If a user puts init=/whatever on the command line and /whatever
->>> can't be run, then the kernel will try a few default options before
->>> giving up.  If init=/whatever came from a bootloader prompt, then
->>> this is unexpected but probably harmless.  On the other hand, if it
->>> comes from a script (e.g. a tool like virtme or perhaps a future
->>> kselftest script), then the fallbacks are likely to exist, but
->>> they'll do the wrong thing.  For example, they might unexpectedly
->>> invoke systemd.
->>>
->>> This makes a failure to run the specified init= process be fatal.
->>>
->>> As a temporary measure, users can set CONFIG_INIT_FALLBACK=y to
->>> preserve the old behavior.  If no one speaks up, we can remove that
->>> option entirely after a release or two.
->>
->> I'm speaking up already, no need to wait two releases.  I like the
->> current behavior where I can fall back into a shell without
->> recompiling the kernel and/or changing the boot command line to
->> debug an init failure.
->>
->> I would suggest that the current behavior remain the
->> default and the choice to make a failure of the specified
->> init= process fatal should be an explicit choice.
-> 
-> Oh please no. Having to switch kernel configuration entries _on_ in
-> order to switch behavior _off_ is how you get nonsense like
-> allnoconfig_y which breaks miniconfig, why is why I patch it back out
-> locally:
-> 
-> http://landley.net/hg/aboriginal/file/1672/sources/patches/linux-deeplystupid.patch
-> 
-> If you're going to argue that it should "default y", that's a defensible
-> choice. But please don't argue for kernel config symbols with a negative
-> meaning or we'll start having allyesconfig_n brain damage too...
-
-Yes, "default y" is a valid answer to my request.
-
-> 
->> Instead of using a config option, would adding another kernel
->> command line option, such as 'init_fail_is_fatal', work for
->> your needs?
-> 
-> That was the previous series of patches you ignored, which added code so
-> you can provide _extra_ kernel commands to tell it _not_ to do stuff.
-> The patches did not generate noticeable enthusiasm.
-
-But there also was not a strong push back either.  Just Chuck's suggestion
-of an alternate syntax, and your suggestion of instead using a config
-option (and possibly immediately deprecating the config option).
-
-You could as easily frame the argument that the added code was to
-tell the kernel to "_do_ stuff" (panic) instead of "_not_ do stuff".
-But that is just semantics on my part; whatever.
-
-I thought the general trend was to try to avoid adding config options.
-The strictinit method seems fine to me.
-
-
->> I have a feeling this has already been proposed,
->> as the 'strictinit' option mentioned in the changes from v3
->> below might be the same concept?
-> 
-> That was it, yes.
-> 
-> Having to get your kernel config right (and your kernel command line
-> right) in order for your system to boot is not really a new concept, is
-> it? You can still specify "init=/bin/sh" if you want that. (I do it all
-> the time when I need to edit a system I haven't bothered to look up the
-> root password to.)
-
-Yes, of course I can.  So it falls back to personal preference (as I said,
-I like that some failed boots will drop into a shell without having to
-change the kernel command line).
-
--Frank
 
