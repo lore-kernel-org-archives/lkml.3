@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaJAPb7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:31:59 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:59840 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaJAPb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:31:58 -0400
-From: Sean Paul <seanpaul@chromium.org>
-To: catalin.marinas@arm.com, will.deacon@arm.com, lauraa@codeaurora.org,
-        ritesh.harjani@gmail.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: olof@lixom.net, seanpaul@chromium.org
-Subject: [PATCH v2] arm64: Use DMA_ERROR_CODE to denote failed allocation
-Date: Wed,  1 Oct 2014 11:31:50 -0400
-Message-Id: <1412177510-26310-1-git-send-email-seanpaul@chromium.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <20141001135248.GQ5182@n2100.arm.linux.org.uk>
-References: <20141001135248.GQ5182@n2100.arm.linux.org.uk>
+	id S1752079AbaJAPc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:32:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41129 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751365AbaJAPcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 11:32:25 -0400
+Message-ID: <542C1E5A.4000202@zytor.com>
+Date: Wed, 01 Oct 2014 08:31:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>, x86@kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com> <54111E99.7080309@zytor.com> <5411339E.8080007@samsung.com>
+In-Reply-To: <5411339E.8080007@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces the static assignment of ~0 to dma_handle with
-DMA_ERROR_CODE to be consistent with other platforms.
+On 09/10/2014 10:31 PM, Andrey Ryabinin wrote:
+> On 09/11/2014 08:01 AM, H. Peter Anvin wrote:
+>> On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
+>>> This patch add arch specific code for kernel address sanitizer.
+>>>
+>>> 16TB of virtual addressed used for shadow memory.
+>>> It's located in range [0xffff800000000000 - 0xffff900000000000]
+>>> Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
+>>> to 0xffff900000000000.
+>>
+>> NAK on this.
+>>
+>> 0xffff880000000000 is the lowest usable address because we have agreed
+>> to leave 0xffff800000000000-0xffff880000000000 for the hypervisor or
+>> other non-OS uses.
+>>
+>> Bumping PAGE_OFFSET seems needlessly messy, why not just designate a
+>> zone higher up in memory?
+>>
+> 
+> I already answered to Dave why I choose to place shadow bellow PAGE_OFFSET (answer copied bellow).
+> In short - yes, shadow could be higher. But for some sort of kernel bugs we could have confusing oopses in kasan kernel.
+> 
 
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
----
+Confusing how?  I presume you are talking about something trying to
+touch a non-canonical address, which is usually a very blatant type of bug.
 
-Changes in v2:
-	- Removed the check for DMA_ERROR_CODE in __dma_free_noncoherent
-	  the function shouldn't be called after failed allocation
+	-hpa
 
- arch/arm64/mm/dma-mapping.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-index 4164c5a..5687dd4 100644
---- a/arch/arm64/mm/dma-mapping.c
-+++ b/arch/arm64/mm/dma-mapping.c
-@@ -125,7 +125,7 @@ static void *__dma_alloc_noncoherent(struct device *dev, size_t size,
- no_map:
- 	__dma_free_coherent(dev, size, ptr, *dma_handle, attrs);
- no_mem:
--	*dma_handle = ~0;
-+	*dma_handle = DMA_ERROR_CODE;
- 	return NULL;
- }
- 
--- 
-2.1.1
 
