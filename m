@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaJAP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:58:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57012 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaJAP6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:58:13 -0400
-Date: Wed, 1 Oct 2014 16:57:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Cc: kernel@pengutronix.de, pawel.moll@arm.com, lgirdwood@gmail.com,
-        robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org, festevam@gmail.com, mark.rutland@arm.com,
-        devicetree@vger.kernel.org
-Message-ID: <20141001155733.GA4273@sirena.org.uk>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com>
- <1411779588-22031-3-git-send-email-stefan.wahren@i2se.com>
- <20140928101650.GL27755@sirena.org.uk>
- <5428FE7B.8060700@i2se.com>
- <20140929171314.GW16977@sirena.org.uk>
- <2002781663.91096.1412169824110.JavaMail.open-xchange@oxbaltgw04.schlund.de>
+	id S1752438AbaJAP64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:58:56 -0400
+Received: from mout.gmx.com ([74.208.4.200]:65262 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751612AbaJAP6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 11:58:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dwbdSPijtzn/UKh9"
-Content-Disposition: inline
-In-Reply-To: <2002781663.91096.1412169824110.JavaMail.open-xchange@oxbaltgw04.schlund.de>
-X-Cookie: So you're back... about time...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: add mxs regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Message-ID: <trinity-19e786f0-ce0c-4afb-b75b-d7b988002443-1412179133781@3capp-mailcom-lxa09>
+From: "John Garret" <johngarret2014@mail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Oppose needless forced change. Fuck systemd(ick). Support
+ systemv(agina) or anything else
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 1 Oct 2014 17:58:54 +0200
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:dQJEb5It45TuKwYDsHmBBVHm+3WBjWo//9h/WOeFXI3
+ NamH23HLRHjIvrwHKfUIZMxyofTXYir5TVUKDv4ZtL4wMi7fpY
+ beHA1g36SoMLMZ9wvqocqDkAZoQFSmYcqiHplTEgfOMwo0fwDS
+ gdYltBb18nQvX21y8ryXL9j16gxfO3RvwKK16C1FkTa1AIusKI
+ DHHohAu3wJiYpbhIDwNoIA6UHulfkkPDLGq0c2ZbeOxpzitET5
+ mO1+LZAwM1DPRT0oeBukrtM+UZqgOjst2Sm20iqzR8bnqjBd6d
+ dJ5QDk0ZSP0Mq+v1/zz/izANZyr
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+You were in control of systemv (and it's sisters).
+SystemD is in control of you. SystemD makes the rules on things
+ranging from how /usr is to be handled to how you 
+strictly write fstab.
 
---dwbdSPijtzn/UKh9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+SystemD is about lennart poettering being a control freak
+fucking faggot. He needs a girl to control but he 
+doesn't "swing that way" so he fucks with us guys using
+the one thing he can poke us with.
 
-On Wed, Oct 01, 2014 at 03:23:44PM +0200, Stefan Wahren wrote:
+I wonder who's the bottom and who's the top in the 
+lennart-sievers partnership (pretty sure it's lennart)
 
-> Is it better to let the core handles the ramp delay instead of set_voltage_sel
-> with a busy wait?
-
-> I've found that polling DC_OK is only reliable for increasing voltages. So i
-> think about defining ramp delay in the regulator description.
-
-It's better to use the notification from the device if it is reliable;
-dead reckoning isn't going to work well either for voltage reduction
-since the time taken to implement a drop in voltage is more a function
-of the loading than anything else, the regulator can't really control
-it.  For most DC-DC loads it'll be quick enough though.
-
---dwbdSPijtzn/UKh9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJULCRtAAoJECTWi3JdVIfQoNQH/2zjMc4KZ/IoWBJAU9JUY7LJ
-SEkoSMJGhSFr8rZD1nvOc9c0AuKCYUREn51tciLLpBvjUNRstacxcw49VcFwPRUc
-suzc0KBefJZ5a4V+/SSEU1xmrTGGUQg9qQBHENqsLu4IRwVhIZKj6lyb0j5mZTqt
-SkQSpgTLPW8F7gKBG4QwQmwGQl4K9UJg9fw3NCWn88ACCzdJph1Y+OOxezn9kVlg
-L1HDQs256pju0kybGW9SlQ/0b2BqT3e2JQKRkCcwRvdPymIRyg3BmTVRGOYJF27M
-MtHIFsPDYHSanq320oiDTU1bWZpqGcJf4RHNExBJTPuVTaZ3SDnU3SLy576i9N0=
-=Gkbl
------END PGP SIGNATURE-----
-
---dwbdSPijtzn/UKh9--
+youtu.be/dH0NkW_7968
