@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaJAMLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 08:11:17 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:64765 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaJAMLP (ORCPT
+	id S1751332AbaJAMT2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 08:19:28 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:38691 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaJAMT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 08:11:15 -0400
+	Wed, 1 Oct 2014 08:19:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410854903-26419-3-git-send-email-d.lavnikevich@sam-solutions.com>
-References: <1410537872-17274-1-git-send-email-d.lavnikevich@sam-solutions.com>
-	<1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
-	<1410854903-26419-3-git-send-email-d.lavnikevich@sam-solutions.com>
-Date: Wed, 1 Oct 2014 09:11:13 -0300
-Message-ID: <CAOMZO5CgrQ6Wf6kStga40TUKx9dARygCNB4OYSUoG3c8eUYbrA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] ARM: dts: pbab01: enable I2S audio on
- phyFLEX-i.MX6 boards
+In-Reply-To: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
+References: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
+Date: Wed, 1 Oct 2014 09:19:24 -0300
+Message-ID: <CAOMZO5DJrvO=mpUEqk+GWFGGU_eNEfn=+XkoL6cqYv+c4GSyZw@mail.gmail.com>
+Subject: Re: [PATCH] net: dsa: Fix build warning for !PM_SLEEP
 From: Fabio Estevam <festevam@gmail.com>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, perex@perex.cz,
-        Takashi Iwai <tiwai@suse.de>, =devicetree@vger.kernel.org,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 5:08 AM, Dmitry Lavnikevich
-<d.lavnikevich@sam-solutions.com> wrote:
+On Wed, Oct 1, 2014 at 8:59 AM, Thierry Reding <thierry.reding@gmail.com> wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>
+> The dsa_switch_suspend() and dsa_switch_resume() functions are only used
+> when PM_SLEEP is enabled, so they need #ifdef CONFIG_PM_SLEEP protection
+> to avoid a compiler warning.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  net/dsa/dsa.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+> index 6905f2d84c44..22f34cf4cb27 100644
+> --- a/net/dsa/dsa.c
+> +++ b/net/dsa/dsa.c
+> @@ -238,6 +238,7 @@ static void dsa_switch_destroy(struct dsa_switch *ds)
+>  {
+>  }
+>
+> +#ifdef CONFIG_PM_SLEEP
+>  static int dsa_switch_suspend(struct dsa_switch *ds)
+>  {
+>         int i, ret = 0;
+> @@ -280,6 +281,7 @@ static int dsa_switch_resume(struct dsa_switch *ds)
+>
+>         return 0;
+>  }
+> +#endif
 
-> +       regulators {
-> +               sound_1v8: regulator@2 {
-
-We usually start counting from @0.
-
-> +                       compatible = "regulator-fixed";
-> +                       reg = <2>;
-> +                       regulator-name = "i2s-audio-1v8";
-> +                       regulator-min-microvolt = <1800000>;
-> +                       regulator-max-microvolt = <1800000>;
-> +                       regulator-always-on;
-
-No need to have this 'regulator-always-on'
-
-> +               };
-> +
-> +               sound_3v3: regulator@3 {
-
-,so this one should be @1.
-
-> +                       compatible = "regulator-fixed";
-> +                       reg = <3>;
-> +                       regulator-name = "i2s-audio-3v3";
-> +                       regulator-min-microvolt = <3300000>;
-> +                       regulator-max-microvolt = <3300000>;
-> +                       regulator-always-on;
-
-No need to have this 'regulator-always-on'
-
-> +&ssi2 {
-> +       fsl,mode = "i2s-slave";
-
-Please remove this 'fsl,mode' property. It is ignored by the fsl_ssi driver.
+You could also mark them as __maybe_unused and avoid the ifdef.
