@@ -1,124 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaJAH3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 03:29:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14211 "EHLO mga11.intel.com"
+	id S1751479AbaJAH3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 03:29:24 -0400
+Received: from sauhun.de ([89.238.76.85]:46757 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266AbaJAH3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 03:29:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,630,1406617200"; 
-   d="asc'?scan'208";a="608001117"
-Message-ID: <1412148552.8414.0.camel@jtkirshe-mobl>
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Date: Wed, 01 Oct 2014 00:29:12 -0700
-In-Reply-To: <20141001170403.7a319458@canb.auug.org.au>
-References: <20141001170403.7a319458@canb.auug.org.au>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-r3SlTKgkLArCl1iymItz"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751266AbaJAH3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 03:29:21 -0400
+Date: Wed, 1 Oct 2014 09:29:50 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Rajat Jain <rajatxjain@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over
+ I2C
+Message-ID: <20141001072949.GA1322@katana>
+References: <542A3593.4020108@gmail.com>
+ <CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
+ <20140930211339.GA1264@katana>
+ <CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-r3SlTKgkLArCl1iymItz
-Content-Type: text/plain; charset="UTF-8"
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2014-10-01 at 17:04 +1000, Stephen Rothwell wrote:
-> Hi all,
->=20
-> After merging the net-next tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->=20
-> drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmi=
-t_done':
-> drivers/net/ethernet/xilinx/ll_temac_main.c:633:22: warning: cast to poin=
-ter from integer of different size [-Wint-to-pointer-cast]
->     dev_kfree_skb_irq((struct sk_buff *)cur_p->app4);
->                       ^
-> drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c: In function 'fm10k_set_=
-ringparam':
-> drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:477:2: error: implicit d=
-eclaration of function 'vmalloc' [-Werror=3Dimplicit-function-declaration]
->   temp_ring =3D vmalloc(i * sizeof(struct fm10k_ring));
->   ^
-> drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:477:12: warning: assignm=
-ent makes pointer from integer without a cast
->   temp_ring =3D vmalloc(i * sizeof(struct fm10k_ring));
->             ^
-> drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c:546:2: error: implicit d=
-eclaration of function 'vfree' [-Werror=3Dimplicit-function-declaration]
->   vfree(temp_ring);
->   ^
->=20
-> Caused by commit 82dd0f7ee9a3 ("fm10k: Add ethtool support").  See Rule
-> 1 in Documentation/SubmitChecklist.
->=20
-> I have added the following fix patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 1 Oct 2014 17:00:49 +1000
-> Subject: [PATCH] fm10k: using vmalloc requires including linux/vmalloc.h
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-
-> ---
->  drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c | 2 ++
->  1 file changed, 2 insertions(+)
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> ...<snip>...
 >=20
-> diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c b/drivers/n=
-et/ethernet/intel/fm10k/fm10k_ethtool.c
-> index a9bbe60347d8..2d04464e6aa3 100644
-> --- a/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c
-> +++ b/drivers/net/ethernet/intel/fm10k/fm10k_ethtool.c
-> @@ -18,6 +18,8 @@
->   * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-=
-6497
->   */
-> =20
-> +#include <linux/vmalloc.h>
+> +0. Why have an I2C interface to a PCIe switch?
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> +Other than the regular PCI express interface, most modern PCIe switches =
+(e.g.
+> +from IDT and PLX) have an I2C based secondary interface. This interface =
+allows
+> +access to all the registers of the switch. Some of these registers may n=
+ot even
+> +be accessible over the regular PCI interface. Also, there are certain re=
+gisters
+> +that can be written to, using only the I2C interface and may only be rea=
+d-only
+> +using the PCI interface.
 > +
->  #include "fm10k.h"
-> =20
->  struct fm10k_stats {
-> --=20
-> 2.1.1
+> +This I2C interface is often used in designs involving these switches, an=
+d can
+> +be used for a variety of use cases where the switch needs to be configur=
+ed
+> +independent of the PCI subsystem (and likely before PCI enumeration). So=
+me
+> +examples:
+> +
+> +* Dividing a PCIe switch into multiple "virtual" switches. Using this fe=
+ature,
+> +  a switch could be connected to 2 root ports for instance, each managin=
+g its
+> +  own PCI hierarchy, and the traffic from one virtual switch does not le=
+ak into
+> +  another.
+> +
+> +* Managing Transparent / Non-transparent bridging, and changing them
+> on-the-fly.
+> +  There are ports that can be converted into "Non-transparent" bridge po=
+rts.
+> +  Essentially this is used to create different domains (not visible to
+> +  software). In a dynamic distributed system, it may be desirable to cha=
+nge a
+> +  transparent bridge to non-transparent or vice versa, for example, to h=
+andle a
+> +  failover situation.
+> +
+> +* Buggy hardware / Bad EEPROM configuration. There may be cases where an=
+ errata
+> +  involving register writes need to be applied before enumerating over P=
+CI.
+> +  Also these switches are typically attached to an EEPROM that is suppos=
+ed to
+> +  initialize the switch. If that EEPROM is not present, or contains bad
+> +  initialization data, this I2C interface can be used to fix that.
+> +
+> +* Changing switch configuration on the fly. In a multi-homed or complex
+> +  distributed systemsystem, there may be a need to change the switch
+> +  configuration (eg. change the upstream port, or the port or lane
+> +  configuration etc) to address run time scenarios (CPU plug out etc).
+> +
 >=20
+> ...<snip>...
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>=20
+> I am myself leaning towards drivers/pci/switch/. And am wanting to
+> hear what other think.
 
+I had a closer look and my first question is now if we really need a
+kernel driver for this?
 
+The sysfs interface is basically to PEEK/POKE registers of the switch.
+How registers get accessed is part of userspace. Well, then it might
+even be easier to construct the proper i2c messages in userspace, too,
+and send them via i2c-dev (instead of writing to various files in
+sysfs).
 
---=-r3SlTKgkLArCl1iymItz
+The Kernel API is also PEEK/POKE register. I am not an PCI expert, but I
+can't see a user in this form. What I'd expect would be more like
+
+pci_switch_set_mode(some_device, PCI_BRIDGE_MODE_TRANSPARENT);
+
+and then a shim layer would make sure the proper driver for the switch
+sends the proper commands. Again, I don't know if the decision of
+setting a mode/creating virtual switches... is even desirable in kernel
+space. If so, then this is probably a sub-subsystem
+drivers/pci/switches, but needs way more abstraction. Otherwise,
+userspace will currently do IMO.
+
+--fdj2RfSjLxBAspz7
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAABCgAGBQJUK61IAAoJEOVv75VaS+3Or9QQAJ+ypn2wASgbRjqxnFtuIqX+
-LkoYZNAmjopjPK4+/tADH7jwYMg1Le6AtkyqbXRbmC2KeVU8ZkGvgI2Twp8mC4lJ
-qB5A8kga+gJ89mXi5S2Kp9hzLLBFBWsTfQO+9m/DLg3giZswUSHagCZPBjVxagh6
-oFZauTeAxmgFFmBN0i+l1OR+1yxqUN1KEHgos0WfwpaBrLPsfn2vY8Ul1yDZehYP
-7xPHYjX4TZRkqTVcihDTho3Y8obySClHAA6fEAGfwMZJN/FbSK6KnyajefYVvsaM
-yWt77jjv2zZYKUMxnxBcAHXFtsckHYt2kopoL1dnilUWp5OK4sYP2gfexNdlTXpV
-eHmG4nRUt9KaLn9FDFOOkzI++SWW0zXp7U3DGFZtQ2CAVpJcX0aKPAOriFZTlkEy
-K/bxRn/bdHjSFJ+nGPY8q7j8LqxOd98wdoD0TP0DUh5URI+5uXO3WF3w0hMWqr0c
-TtFcZm+hf4aiXNOtPGlWE3XWHHXQt62G0hYyJd7GiSoaHtK5KFzQUwZe+exG95EH
-EqnERdKGRhwtlNSRnppkxj2bj46r7Fw3sdbprrfjke//FqasD1/nqFlZr5hibdnE
-cCYE4ZyUdxmukhTisPYrlYrnGnSSQNbTnxW8uYaM6ngvHe3+KBG0VyR3ZPRjLLx2
-+qGYpMViQyHnoR9rDZAx
-=xPeF
+iQIcBAEBAgAGBQJUK61tAAoJEBQN5MwUoCm2Bl0QAIS02sG+hqwNieDAPGGCEahc
+YeBTdv4lgeICqm+ejlYq3pSck66BM7i60pOGq1OXtT5VFPlpR28yw45VvBSecduM
+DagLz4OvmWdzUtNCL4jJc5piuOMPdLjQ5c9VO9UQ40bRc/RJy3EJcIBHa/fKLC8d
+mvueNlxU3WNtKojEdD0avCfHHz+9ZAo0fQMfXW658h/GH+w6gDi6GpcEmpKUrTQf
+GrlWkqDuFmlVvxb7p7ltPuyVC4R853iLzMNFa92IaRnouWcWOde63RPdYRrbQcsv
+qNkpTWGudHmMpft6MmmxNCetvnKOyDkwx2JR98UnQX67Rt95yN+kDJyNV9v2X2H3
+ln5aU8a/ERxiI2FOmWCikKN4K8RA34owDpvxPS8G5fHPJikwVUZVzasmDxDRukyM
+POSRvC38jGgheMkJ+4IHcz+ApZkLaIHSjhvA2gga5SfT4m9D5QoLVxe2hw6KFbwX
+XUeiSYBqestWpIJRqxYLYTsRggBft5xIbOb5tFQ5zp/9U3aUoGMRruJNNFRf9jez
+hGWJ/4Gp+RaXDqb2LsbICLHZoUpOhxOywtyEPee5NRlL12k2BQTXyrddkISdoJRY
+H+zhv5+Jb2DuIkOCUOAc2lXoGi1sItRKBUCG2KzpPUyizuO9JbYkvrRMiOsbry8Q
+fDF5WSqu+m920YQLwbUN
+=KEHo
 -----END PGP SIGNATURE-----
 
---=-r3SlTKgkLArCl1iymItz--
-
+--fdj2RfSjLxBAspz7--
