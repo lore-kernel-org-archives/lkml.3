@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456AbaJALKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:10:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:58976 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaJALKt convert rfc822-to-8bit (ORCPT
+	id S1751481AbaJALPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:15:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56335 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaJALPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:10:49 -0400
-Message-ID: <1412161847.19209.62.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 02/17] powerpc/cell: Move data segment faulting code
- out of cell platform
-From: Michael Neuling <mikey@neuling.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au1.ibm.com, cbe-oss-dev@lists.ozlabs.org
-Date: Wed, 01 Oct 2014 21:10:47 +1000
-In-Reply-To: <8738b8nmwr.fsf@linux.vnet.ibm.com>
-References: <1412073306-13812-1-git-send-email-mikey@neuling.org>
-	 <1412073306-13812-3-git-send-email-mikey@neuling.org>
-	 <8738b8nmwr.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 1 Oct 2014 07:15:15 -0400
+Date: Wed, 1 Oct 2014 12:15:04 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Dan Murphy <dmurphy@ti.com>, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Message-ID: <20141001111504.GR4273@sirena.org.uk>
+References: <1412093220-24690-1-git-send-email-dmurphy@ti.com>
+ <542B1ABE.5000900@metafoo.de>
+ <542B1E38.4020702@ti.com>
+ <542B20BE.3060200@metafoo.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nHJAUhyIZkPvF01C"
+Content-Disposition: inline
+In-Reply-To: <542B20BE.3060200@metafoo.de>
+X-Cookie: So you're back... about time...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: Allow read_reg_mask to be 0
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 15:15 +0530, Aneesh Kumar K.V wrote:
-> Michael Neuling <mikey@neuling.org> writes:
-> 
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> >
-> > __spu_trap_data_seg() currently contains code to determine the VSID and ESID
-> > required for a particular EA and mm struct.
-> >
-> > This code is generically useful for other co-processors.  This moves the code
-> > of the cell platform so it can be used by other powerpc code.  It also adds 1TB
-> > segment handling which Cell didn't have.
-> >
-> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> > Signed-off-by: Michael Neuling <mikey@neuling.org>
-> > ---
-> >  arch/powerpc/include/asm/mmu-hash64.h  |  7 ++++-
-> >  arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
-> >  arch/powerpc/mm/slb.c                  |  3 ---
-> >  arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
-> >  4 files changed, 58 insertions(+), 41 deletions(-)
-> >
-> > diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> > index d765144..6d0b7a2 100644
-> > --- a/arch/powerpc/include/asm/mmu-hash64.h
-> > +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> > @@ -189,7 +189,12 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
-> >  #define LP_MASK(i)	((0xFF >> (i)) << LP_SHIFT)
-> >  
-> >  #ifndef __ASSEMBLY__
-> > -
-> > +static inline int slb_vsid_shift(int ssize)
-> > +{
-> > +	if (ssize == MMU_SEGSIZE_256M)
-> > +		return SLB_VSID_SHIFT;
-> > +	return SLB_VSID_SHIFT_1T;
-> > +}
-> >  static inline int segment_shift(int ssize)
-> >  {
-> >  	if (ssize == MMU_SEGSIZE_256M)
-> > diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-> > index ba7df14..b865697 100644
-> > --- a/arch/powerpc/mm/copro_fault.c
-> > +++ b/arch/powerpc/mm/copro_fault.c
-> > @@ -90,3 +90,51 @@ out_unlock:
-> >  	return ret;
-> >  }
-> >  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-> > +
-> > +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
-> > +{
-> > +	int psize, ssize;
-> > +
-> > +	*esid = (ea & ESID_MASK) | SLB_ESID_V;
-> > +
-> > +	switch (REGION_ID(ea)) {
-> > +	case USER_REGION_ID:
-> > +		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
-> > +#ifdef CONFIG_PPC_MM_SLICES
-> > +		psize = get_slice_psize(mm, ea);
-> > +#else
-> > +		psize = mm->context.user_psize;
-> > +#endif
-> 
-> We don't really need that as explained in last review.
 
-That cleanup is in patch 10. I avoided changing it here so it's clearer
-that what is being removed is the same as what is being added.
+--nHJAUhyIZkPvF01C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Mikey
+On Tue, Sep 30, 2014 at 11:29:34PM +0200, Lars-Peter Clausen wrote:
+> On 09/30/2014 11:18 PM, Dan Murphy wrote:
 
+Dan, please fix your mail client to word wrap within paragraphs.
+
+> >The device, which is already in production, has a specific control register that sets either the reading or writing of the rest of the registers.
+
+> >Here is the data sheet
+
+> >http://www.ti.com/lit/ds/symlink/afe4403.pdf
+
+> >See page 61 control0.
+
+> >Driver is written for this part just want to get this lead patch in or maybe an alternate solution.
+
+> Looking at this the generic SPI regmap implementation might not necessarily
+> be the best thing to use here and you are probably better of implementing
+> either your own regmap bus or reg_read/reg_write callbacks that
+> automatically set/clear the SPI_READ bit in the control register depending
+> on the operation.
+
+It definitely needs more than just this change at any rate - any generic
+infrastructure that tries to work with the regmap is not going to know
+about this read/write register.
+
+--nHJAUhyIZkPvF01C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUK+I3AAoJECTWi3JdVIfQ8bIH/0OQ1/OtzBU0/Abq0QR1IxhN
+GXYaL87cfOB52sCjyczfq1pO3sW7l/zRzyCI8IRzT0Q2l6LgzFFanhK/MKQdTiE1
+DiQ3uxX1/GMNAcfp7PfIlxr+ohec3RKo549nXOED4SWZ9TOJgJhabCgzLjD7O6z/
+yvUKqtpFHhh5Vj1iTq/2eMi4VjyE14AET3ww6Eb9TrrtCjMJLAbNDUfiWyQRpuxV
+r7meSaUzjO+WOKM+3CF2W3VkXyYrkbWxL97e4Q5e7A09SI3MDuZRUKpT0zXUXIQr
+zoASwba1MyEaa4q4Jz5kdoJTqz9Xqn4dvirQ3ET3RxZaFwRMVf3PJ5Zi7xpXS+I=
+=+Avc
+-----END PGP SIGNATURE-----
+
+--nHJAUhyIZkPvF01C--
