@@ -1,93 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaJAO25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:28:57 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:42441 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaJAO2z (ORCPT
+	id S1751903AbaJAO3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:29:04 -0400
+Received: from mailout.micron.com ([137.201.242.129]:37962 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855AbaJAO3C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:28:55 -0400
+	Wed, 1 Oct 2014 10:29:02 -0400
+From: bpqw <bpqw@micron.com>
+To: Marek Vasut <marex@denx.de>, "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Index: AQHP2KkjagwG2in0R7+6ioZ2PHnYSpwTG1RugAKuPPCAAgpzkIADfZeA
+Date: Wed, 1 Oct 2014 14:28:17 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E3D45@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409251211.57183.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315DCDF1@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de>  
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20988.004
+x-tm-as-result: No--31.554800-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1412172233.7360.203.camel@ul30vt.home>
-References: <1412170733-7187-1-git-send-email-andre.o.richter@gmail.com>
-	<1412172233.7360.203.camel@ul30vt.home>
-Date: Wed, 1 Oct 2014 16:28:54 +0200
-Message-ID: <CAKqeN2-_Sb=f6Q1CGz2VPfuO2YmsQeCbM-mieoykYwRYDv=+GQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] vfio-pci: Add SR-IOV VF configuration via sysfs
-From: Andre Richter <andre.o.richter@gmail.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I currently use it for early development/debugging work (SR-IOV
-capable FPGA boards) where I test both PFs and VFs from userspace.
-But I see your point that this may not be relevant for anything you
-can buy off the shelf.
+This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
 
-Cheers,
-Andre
+For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controlled 
+by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7. 
+When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
 
-2014-10-01 16:03 GMT+02:00 Alex Williamson <alex.williamson@redhat.com>:
-> On Wed, 2014-10-01 at 15:38 +0200, Andre Richter wrote:
->> If a PCIe device bound to vfio-pci happens to be SR-IOV capabale,
->> there is no possibility to bring up/shutdown the device's VFs.
->>
->> This patch adds a generic callback for the sysfs sriov_numvfs attribute.
->> The attribute will only show up for SR-IOV devices. Additionally,
->> each utilized pci_* function checks if the device is a PF.
->>
->> Signed-off-by: Andre Richter <andre.o.richter@gmail.com>
->> ---
->>  drivers/vfio/pci/vfio_pci.c | 25 ++++++++++++++++++++-----
->>  1 file changed, 20 insertions(+), 5 deletions(-)
->
-> I don't understand why you'd want to do this.  The PF is typically
-> managed by a host driver.  By allowing vfio-pci to manage SR-IOV, don't
-> we potentially have assign-able PFs managing assign-able VFs?  That
-> seems like a bad idea.  What use case do you have in mind?  Thanks,
->
-> Alex
->
->> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
->> index f782533..2f6dfb3 100644
->> --- a/drivers/vfio/pci/vfio_pci.c
->> +++ b/drivers/vfio/pci/vfio_pci.c
->> @@ -919,12 +919,27 @@ static struct pci_error_handlers vfio_err_handlers = {
->>       .error_detected = vfio_pci_aer_err_detected,
->>  };
->>
->> +static int vfio_pci_sriov_configure(struct pci_dev *pdev, int num_vfs)
->> +{
->> +     int ret = 0;
->> +
->> +     if (num_vfs > 0) {
->> +             ret = pci_enable_sriov(pdev, num_vfs);
->> +             if (!ret)
->> +                     ret = pci_num_vf(pdev);
->> +     } else
->> +             pci_disable_sriov(pdev);
->> +
->> +     return ret;
->> +}
->> +
->>  static struct pci_driver vfio_pci_driver = {
->> -     .name           = "vfio-pci",
->> -     .id_table       = NULL, /* only dynamic ids */
->> -     .probe          = vfio_pci_probe,
->> -     .remove         = vfio_pci_remove,
->> -     .err_handler    = &vfio_err_handlers,
->> +     .name                   = "vfio-pci",
->> +     .id_table               = NULL, /* only dynamic ids */
->> +     .probe                  = vfio_pci_probe,
->> +     .remove                 = vfio_pci_remove,
->> +     .sriov_configure        = vfio_pci_sriov_configure,
->> +     .err_handler            = &vfio_err_handlers,
->>  };
->>
->>  /*
->
->
->
+Signed-off-by: bean huo <beanhuo@micron.com>
+---
+ v1-v2:modified to that capture wait_till_ready()
+	 return value,if error,directly return its
+	 the value.
+ v2-v3:directly use the reurning error value of
+	 read_reg and write_reg,instead of -EINVAL.
+
+ drivers/mtd/spi-nor/spi-nor.c |   46 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/spi-nor.h   |    6 ++++++
+ 2 files changed, 52 insertions(+)
+
+diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c index b5ad6be..486b167 100644
+--- a/drivers/mtd/spi-nor/spi-nor.c
++++ b/drivers/mtd/spi-nor/spi-nor.c
+@@ -878,6 +878,45 @@ static int spansion_quad_enable(struct spi_nor *nor)
+ 	return 0;
+ }
+ 
++static int micron_quad_enable(struct spi_nor *nor) {
++	int ret, val;
++
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++
++	write_enable(nor);
++
++	/* set EVCR ,enable quad I/O */
++	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
++	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
++	if (ret < 0) {
++		dev_err(nor->dev,
++			"error while writing EVCR register\n");
++		return ret;
++	}
++
++	ret = wait_till_ready(nor);
++	if (ret)
++		return ret;
++
++	/* read EVCR and check it */
++	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
++	if (ret < 0) {
++		dev_err(nor->dev, "error %d reading EVCR\n", ret);
++		return ret;
++	}
++	if (val & EVCR_QUAD_EN_MICRON) {
++		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)  {
+ 	int status;
+@@ -890,6 +929,13 @@ static int set_quad_mode(struct spi_nor *nor, u32 jedec_id)
+ 			return -EINVAL;
+ 		}
+ 		return status;
++	case CFI_MFR_ST:
++		status = micron_quad_enable(nor);
++		if (status) {
++			dev_err(nor->dev, "Micron quad-read not enabled\n");
++			return -EINVAL;
++		}
++		return status;
+ 	default:
+ 		status = spansion_quad_enable(nor);
+ 		if (status) {
+diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h index 9e6294f..d71b659 100644
+--- a/include/linux/mtd/spi-nor.h
++++ b/include/linux/mtd/spi-nor.h
+@@ -56,6 +56,10 @@
+ /* Used for Spansion flashes only. */
+ #define SPINOR_OP_BRWR		0x17	/* Bank register write */
+ 
++/* Used for Micron flashes only. */
++#define SPINOR_OP_RD_EVCR	0x65	/* Read EVCR register */
++#define SPINOR_OP_WD_EVCR	0x61	/* Write EVCR register */
++
+ /* Status Register bits. */
+ #define SR_WIP			1	/* Write in progress */
+ #define SR_WEL			2	/* Write enable latch */
+@@ -67,6 +71,8 @@
+ 
+ #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
+ 
++#define EVCR_QUAD_EN_MICRON	0x80	/* Micron Quad I/O */
++
+ /* Flag Status Register bits */
+ #define FSR_READY		0x80
+ 
+--
+1.7.9.5
