@@ -1,71 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaJAX0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 19:26:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53543 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbaJAX0W (ORCPT
+	id S1752230AbaJAXdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 19:33:12 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:55158 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690AbaJAXdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 19:26:22 -0400
-Message-ID: <542C8D93.8090008@infradead.org>
-Date: Wed, 01 Oct 2014 16:26:11 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 1 Oct 2014 19:33:11 -0400
+Date: Wed, 1 Oct 2014 16:33:05 -0700
+From: josh@joshtriplett.org
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        frowand.list@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v5] init: Allow CONFIG_INIT_FALLBACK=n to disable
+ defaults if init= fails
+Message-ID: <20141001233305.GC30343@cloud>
+References: <3c2331ea2aaffcde808995cdd93aa48f6455dd93.1412204084.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, wsa@the-dreams.de,
-        khali@linux-fr.org, Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-i2c@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-can@vger.kernel.org, linux-media <linux-media@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: randconfig build error with next-20141001, in drivers/i2c/algos/i2c-algo-bit.c
-References: <CA+r1ZhiL1y9aeLeJjpd_1DtzOG_oyoPg7XsTPJ9G-XY5G2DfCQ@mail.gmail.com>
-In-Reply-To: <CA+r1ZhiL1y9aeLeJjpd_1DtzOG_oyoPg7XsTPJ9G-XY5G2DfCQ@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3c2331ea2aaffcde808995cdd93aa48f6455dd93.1412204084.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/14 14:37, Jim Davis wrote:
-> Building with the attached random configuration file,
+On Wed, Oct 01, 2014 at 03:56:41PM -0700, Andy Lutomirski wrote:
+> If a user puts init=/whatever on the command line and /whatever
+> can't be run, then the kernel will try a few default options before
+> giving up.  If init=/whatever came from a bootloader prompt, then
+> this is unexpected but probably harmless.  On the other hand, if it
+> comes from a script (e.g. a tool like virtme or perhaps a future
+> kselftest script), then the fallbacks are likely to exist, but
+> they'll do the wrong thing.  For example, they might unexpectedly
+> invoke systemd.
+> 
+> This adds a config option CONFIG_INIT_FALLBACK.  If unset,
+> then a failure to run the specified init= process be fatal.
+> 
+> The intent is to switch the default to N after a while and to
+> possibly even remove the option entirely
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Also:
-warning: (CAN_PEAK_PCIEC && SFC && IGB && VIDEO_TW68 && DRM && FB_DDC && FB_VIA) selects I2C_ALGOBIT which has unmet direct dependencies (I2C)
+Nit: why does this patch gratuitously change the indentation of the
+second line of pr_err?
 
-> drivers/i2c/algos/i2c-algo-bit.c: In function ‘i2c_bit_add_bus’:
-> drivers/i2c/algos/i2c-algo-bit.c:658:33: error: ‘i2c_add_adapter’
-> undeclared (first use in this function)
->   return __i2c_bit_add_bus(adap, i2c_add_adapter);
->                                  ^
-> drivers/i2c/algos/i2c-algo-bit.c:658:33: note: each undeclared
-> identifier is reported only once for each function it appears in
-> drivers/i2c/algos/i2c-algo-bit.c: In function ‘i2c_bit_add_numbered_bus’:
-> drivers/i2c/algos/i2c-algo-bit.c:664:33: error:
-> ‘i2c_add_numbered_adapter’ undeclared (first use in this function)
->   return __i2c_bit_add_bus(adap, i2c_add_numbered_adapter);
->                                  ^
->   CC      net/openvswitch/actions.o
-> drivers/i2c/algos/i2c-algo-bit.c: In function ‘i2c_bit_add_bus’:
-> drivers/i2c/algos/i2c-algo-bit.c:659:1: warning: control reaches end of non-void
->  function [-Wreturn-type]
->  }
->  ^
-> drivers/i2c/algos/i2c-algo-bit.c: In function ‘i2c_bit_add_numbered_bus’:
-> drivers/i2c/algos/i2c-algo-bit.c:665:1: warning: control reaches end of non-void
->  function [-Wreturn-type]
->  }
->  ^
-> make[3]: *** [drivers/i2c/algos/i2c-algo-bit.o] Error 1
+That aside:
 
-In drivers/media/pci/tw68/Kconfig, VIDEO_TW68 should depend on I2C in order
-to make it safe to select I2C_ALGOBIT.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-In drivers/net/can/sja1000/Kconfig, CAN_PEAK_PCIEC should depend on I2C
-instead of selecting I2C (and change the help text).
-
-
--- 
-~Randy
+> 
+> Changes from v4:
+>  - Switch the default to y
+> 
+> Changes from v3:
+>  - Get rid of the strictinit option.  Now the new behavior is the default
+>    unless CONFIG_INIT_FALLBACK=y (Rob Landley)
+> 
+> Changes from v2:
+>  - Improve docs further, to leave the door open to giving strictinit
+>    some sensible semantics if init= is not set.
+>  - Improve error output in the failure case (Shuah Khan).
+> 
+> Changes from v1:
+>  - Add missing "if" to the docs (Randy Dunlap)
+> 
+>  init/Kconfig | 16 ++++++++++++++++
+>  init/main.c  |  7 ++++++-
+>  2 files changed, 22 insertions(+), 1 deletion(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index e84c6423a2e5..ebbd5846478e 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1299,6 +1299,22 @@ source "usr/Kconfig"
+>  
+>  endif
+>  
+> +config INIT_FALLBACK
+> +	bool "Fall back to defaults if init= parameter is bad"
+> +	default y
+> +	help
+> +	  If enabled, the kernel will try the default init binaries if an
+> +	  explicit request from the init= parameter fails.
+> +
+> +	  This can have unexpected effects.  For example, booting
+> +	  with init=/sbin/kiosk_app will run /sbin/init or even /bin/sh
+> +	  if /sbin/kiosk_app cannot be executed.
+> +
+> +	  The default value of Y is consistent with historical behavior.
+> +	  Selecting N is likely to be more appropriate for most uses,
+> +	  especially on kiosks and on kernels that are indended to be
+> +	  run under the control of a script.
+> +
+>  config CC_OPTIMIZE_FOR_SIZE
+>  	bool "Optimize for size"
+>  	help
+> diff --git a/init/main.c b/init/main.c
+> index bb1aed928f21..2bd6105e5dc5 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -960,8 +960,13 @@ static int __ref kernel_init(void *unused)
+>  		ret = run_init_process(execute_command);
+>  		if (!ret)
+>  			return 0;
+> +#ifndef CONFIG_INIT_FALLBACK
+> +		panic("Requested init %s failed (error %d).",
+> +		      execute_command, ret);
+> +#else
+>  		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+> -			execute_command, ret);
+> +		       execute_command, ret);
+> +#endif
+>  	}
+>  	if (!try_to_run_init_process("/sbin/init") ||
+>  	    !try_to_run_init_process("/etc/init") ||
+> -- 
+> 1.9.3
+> 
