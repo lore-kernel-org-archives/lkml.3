@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaJASX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:23:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52322 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745AbaJASX5 (ORCPT
+	id S1753333AbaJAS2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:28:33 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34793 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbaJAS2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:23:57 -0400
-Message-ID: <542C46B3.2020901@infradead.org>
-Date: Wed, 01 Oct 2014 11:23:47 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Jani Nikula <jani.nikula@linux.intel.com>, Jim Davis <jim.epost@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, daniel.vetter@intel.com,
-        intel-gfx@lists.freedesktop.org,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: randconfig build error with next-20141001, in drivers/gpu/drm/i915
-References: <CA+r1ZhhmT4DrWtf6MbRQo5EqXwx+LxCqh15Vsu_d9WpftLhnxw@mail.gmail.com> <87fvf73c6g.fsf@intel.com>
-In-Reply-To: <87fvf73c6g.fsf@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 14:28:32 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 0/2] x86_64,entry: Clear NT on entry and speed up switch_to
+Date: Wed,  1 Oct 2014 11:28:23 -0700
+Message-Id: <cover.1412187233.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/14 10:57, Jani Nikula wrote:
-> On Wed, 01 Oct 2014, Jim Davis <jim.epost@gmail.com> wrote:
->> Building with the attached random configuration file,
->>
->> warning: (VIDEO_TIMBERDALE) selects TIMB_DMA which has unmet direct
->> dependencies (DMADEVICES && MFD_TIMBERDALE)
->> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
->> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
->>
->> drivers/built-in.o: In function `intel_panel_setup_backlight':
->> (.text+0x11855d): undefined reference to `backlight_device_register'
->> drivers/built-in.o: In function `intel_panel_destroy_backlight':
->> (.text+0x118624): undefined reference to `backlight_device_unregister'
->> make: *** [vmlinux] Error 1
-> 
-> It's the combination:
-> 
->> CONFIG_DRM_I915=y
->> CONFIG_BACKLIGHT_CLASS_DEVICE=m
-> 
-> Not sure what the Kconfig magic spell needs to be when we don't want to
-> depend on CONFIG_BACKLIGHT_CLASS_DEVICE but we'll use it if it's enabled
-> (y or m).
+Anish Bhatt noticed that user programs can set RFLAGS.NT before
+syscall or sysenter, and the kernel entry code doesn't filter out
+NT.  This causes kernel C code and, depending on thread flags, the
+exit slow path to run with NT set.
 
-Something like:
+The former is a little bit scary (imagine calling into EFI with NT
+set), and the latter will fail with #GP and send a spurious SIGSEGV.
 
-	depends on BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=n
+One answer would be "don't do that".  But the kernel can do better
+here.
 
-is what we usually use.
+These patches filter NT on all kernel entries.  For syscall (both
+bitnesses), this is free.  For sysenter, it seems to cost very
+little (less than my ability to measure, although I didn't try that
+hard).  Patch 2, which isn't tagged for -stable, speeds up context
+switches by avoiding saving and restoring flags, so this series
+should be a decent overall performance win.
 
+See: https://bugs.winehq.org/show_bug.cgi?id=33275
+
+Note to bikeshedders: I have no desire to go crazy micro-optimizing
+the sysenter path. :) This version seems to be good enough (and
+should be a performance *increase* for most workloads).
+
+Changes from v2:
+ - Move the flag fixup out of line
+ - Fix a CFI buglet
+
+Changes from v1:
+ - Spell stable@vger.kernel.org correctly
+ - Tidy up changelog text
+ - Actually commit an asm constraint fix in patch 2 (egads!)
+ - Replace the unconditional popfq with a branch
+
+Andy Lutomirski (2):
+  x86_64,entry: Filter RFLAGS.NT on entry from userspace
+  x86_64: Don't save flags on context switch
+
+ arch/x86/ia32/ia32entry.S        | 18 +++++++++++++++++-
+ arch/x86/include/asm/switch_to.h | 12 ++++++++----
+ arch/x86/kernel/cpu/common.c     |  2 +-
+ 3 files changed, 26 insertions(+), 6 deletions(-)
 
 -- 
-~Randy
+1.9.3
+
