@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577AbaJAWMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 18:12:50 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:41533 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaJAWMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 18:12:48 -0400
-Message-ID: <542C7C53.7060609@gmail.com>
-Date: Thu, 02 Oct 2014 01:12:35 +0300
-From: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1753682AbaJAWNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 18:13:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53098 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752160AbaJAWNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 18:13:12 -0400
+Date: Wed, 1 Oct 2014 19:13:06 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com,
+        linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Adding a filter to events (instead of replacing one) was Re:
+ [PATCH 1/2] perf, tools: Add PERF_PID
+Message-ID: <20141001221306.GJ2799@kernel.org>
+References: <1411591869-325-1-git-send-email-andi@firstfloor.org>
+ <20141001180316.GI2799@kernel.org>
+ <20141001220218.GC3264@tassilo.jf.intel.com>
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: micky_ching@realsil.com.cn, fabio.falzoi84@gmail.com,
-        mahati.chamarthy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rts5208: Clean up coding style in rtsx_chip.c to
- get rid of checkpatch.pl warnings
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001220218.GC3264@tassilo.jf.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 10 occurences of coding style errors where the line exceeds 80 characters by breaking them into more lines.
-Checkpatch.pl reports these errors as: 'WARNING: line over 80 characters'
-Also, removes unnecessary returns in two void functions by removing the return statements.
-Checkpatch.pl reports these errors as: 'WARNING: void function return statements are not generally useful'
+Em Wed, Oct 01, 2014 at 03:02:18PM -0700, Andi Kleen escreveu:
+> On Wed, Oct 01, 2014 at 03:03:16PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Sep 24, 2014 at 01:51:08PM -0700, Andi Kleen escreveu:
 
-Patch is against Greg KH's staging-next tree.
+> > > It's currently difficult to filter out perf itself using a filter.
+> > > This can give cascading effects during IO tracing when the IO perf
+> > > does itself causes more trace output.
 
-Signed-off-by: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
----
- drivers/staging/rts5208/rtsx_chip.c | 40 ++++++++++++++++++++++++-------------
- 1 file changed, 26 insertions(+), 14 deletions(-)
+> > > The best way to filter is to use the pid. But it's difficult to get the pid
+> > > of perf without using hacks.
 
-diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
-index 1411471..d604341 100644
---- a/drivers/staging/rts5208/rtsx_chip.c
-+++ b/drivers/staging/rts5208/rtsx_chip.c
-@@ -291,7 +291,9 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 		if (chip->dynamic_aspm) {
- 			if (CHK_SDIO_EXIST(chip)) {
- 				if (CHECK_PID(chip, 0x5288)) {
--					retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 2,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 					if (retval != STATUS_SUCCESS)
- 						TRACE_RET(chip, STATUS_FAIL);
- 				}
-@@ -310,9 +312,13 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 			if (CHK_SDIO_EXIST(chip)) {
- 				chip->aspm_level[1] = chip->aspm_l0s_l1_en;
- 				if (CHECK_PID(chip, 0x5288))
--					retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 2,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 				else
--					retval = rtsx_write_cfg_dw(chip, 1, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 1,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 
- 				if (retval != STATUS_SUCCESS)
- 					TRACE_RET(chip, STATUS_FAIL);
-@@ -966,7 +972,8 @@ void rtsx_polling_func(struct rtsx_chip *chip)
- 					dev_dbg(rtsx_dev(chip), "SDIO enter ASPM!\n");
- 					rtsx_write_register(chip,
- 						ASPM_FORCE_CTL, 0xFC,
--						0x30 | (chip->aspm_level[1] << 2));
-+						0x30 |
-+						(chip->aspm_level[1] << 2));
- 					chip->sdio_aspm = 1;
- 				}
- 			}
-@@ -988,8 +995,10 @@ void rtsx_polling_func(struct rtsx_chip *chip)
- 
- 			turn_off_led(chip, LED_GPIO);
- 
--			if (chip->auto_power_down && !chip->card_ready && !chip->sd_io)
--				rtsx_force_power_down(chip, SSC_PDCTL | OC_PDCTL);
-+			if (chip->auto_power_down && !chip->card_ready &&
-+					!chip->sd_io)
-+				rtsx_force_power_down(chip,
-+						SSC_PDCTL | OC_PDCTL);
- 
- 		}
- 	}
-@@ -1081,7 +1090,9 @@ Delink_Stage:
- 					dev_dbg(rtsx_dev(chip), "False card inserted, do force delink\n");
- 
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
- 
- 					rtsx_write_register(chip,
- 							CHANGE_LINK_STATE, 0x0A,
-@@ -1090,14 +1101,19 @@ Delink_Stage:
- 					if (enter_L1)
- 						rtsx_enter_L1(chip);
- 
--					chip->auto_delink_cnt = delink_stage3_cnt + 1;
-+					chip->auto_delink_cnt =
-+						delink_stage3_cnt + 1;
- 				} else {
- 					dev_dbg(rtsx_dev(chip), "No card inserted, do delink\n");
- 
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
- 
--					rtsx_write_register(chip, CHANGE_LINK_STATE, 0x02, 0x02);
-+					rtsx_write_register(chip,
-+							CHANGE_LINK_STATE, 0x02,
-+							0x02);
- 
- 					if (enter_L1)
- 						rtsx_enter_L1(chip);
-@@ -1823,8 +1839,6 @@ void rtsx_enable_aspm(struct rtsx_chip *chip)
- 			}
- 		}
- 	}
--
--	return;
- }
- 
- void rtsx_disable_aspm(struct rtsx_chip *chip)
-@@ -1848,8 +1862,6 @@ void rtsx_disable_aspm(struct rtsx_chip *chip)
- 			wait_timeout(1);
- 		}
- 	}
--
--	return;
- }
- 
- int rtsx_read_ppbuf(struct rtsx_chip *chip, u8 *buf, int buf_len)
--- 
-2.1.2
+> > > Add a PERF_PID meta variable to the perf filter that contains the current pid.
+
+> > > With this patch the following works
+
+> > > % perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
+
+> > So I tried this one now and saw the other patch, that applies the
+> > --filter to all events, while trying I got:
+
+> Patch seems reasonable to me.
+
+> However adding PERF_PID and sanitizing --filter are really two
+> different things and should probably not be mixed in a patch.
+
+Yes, there are two things, but what seems to be wanted first is a way to
+exclude 'perf record' samples, for all events.
+
+Being able to specify PERF_PID on a filter so that some events can
+include 'perf record' samples and some not seems to be something not
+really needed at this point, i.e. just doing:
+
+  perf record --filter-self -e syscalls:sys_enter_write -a ...
+
+Is shorter and doesn't breaks the current --filter semantic (apply just
+to the last tracepoint informed in the cmdline, not to all tracepoints)
+like in your second patch.
+
+So probably what is best to do is to finish the patch I sent here, which
+will cover the filter-out-perf-tooling-samples usecase, and then, if
+people still think it is needed, introduce the PERF_PID meta filter
+variable.
+
+- Arnaldo
