@@ -1,45 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398AbaJARbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:31:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662AbaJARbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:31:39 -0400
-Message-ID: <542C39E0.8030609@redhat.com>
-Date: Wed, 01 Oct 2014 13:29:04 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752180AbaJARh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:37:26 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55688 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaJARhY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:37:24 -0400
+Subject: [PATCH v2 0/5] perf/sdt: SDT events listing/probing
+To: linux-kernel@vger.kernel.org
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Date: Wed, 01 Oct 2014 08:14:58 +0530
+Message-ID: <20141001023723.28985.39736.stgit@hemant-fedora>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: pipe/page fault oddness.
-References: <20140930033327.GA14558@redhat.com>	<CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>	<20140930043309.GA16196@redhat.com>	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>	<20140930160510.GA15903@redhat.com>	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>	<20140930162201.GC15903@redhat.com>	<20140930164047.GA18354@redhat.com>	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>	<20140930182059.GA24431@redhat.com>	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com> <CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
-In-Reply-To: <CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100117-5140-0000-0000-0000005A6A9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 12:18 PM, Linus Torvalds wrote:
+This patchset helps in listing dtrace style markers(SDT) present in user space
+applications through perf.
+Notes/markers are placed at important places by the
+developers. They have a negligible overhead when not enabled.
+We can enable them and probe at these places and find some important information
+like the arguments' values, etc.
 
-> Seriously, why can't we just do this, and throw away all the crap that
-> is "numa special case". This would make all the random games in
-> change_pte_range() just go away entirely, because the whole NUMA thing
-> really wouldn't be a special case for the pte AT ALL any more. All it
-> would be is that a pte could be marked PROT_NONE even if the
-> vma->vm_flags aren't.
+We have lots of applications which use SDT markers today, like:
+Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
 
-That's what I suggested quite a while back, but IIRC either
-Peter or Mel brought up a reason why this was not possible.
+To add SDT markers into user applications:
+We need to have this header sys/sdt.h present.
+sys/sdt.h used is version 3.
+If not present, install systemtap-sdt-devel package (for fedora-20).
 
-Unfortunately I do not remember what it was, just that I
-was convinced by it at the time...
+With this patchset,
+- Use perf sdt-cache --add to add SDT events to a cache.
+ # perf sdt-cache --add ./user_app
+
+ 4 SDT events added for /home/user/user_app!
+
+- Use perf sdt-cache --del to remove SDT events from the cache>
+ # perf sdt-cache --del ./user_app
+
+ 4 events removed for /home/user/user_app!
+
+- Dump the cache onto stdout using perf sdt-cache --dump:
+ # perf sdt-cache --dump
+  /home/user/user_app :
+  %user_app:foo_start
+  %user_app:fun_start
+
+- To probe and trace an SDT event :
+  # perf record -e %user_app:foo_start -aR sleep 10
+
+The support for perf to sdt events has undergone a lot of changes since it was
+introduced. After a lot of discussions (https://lkml.org/lkml/2014/7/20/284), the
+patchset is subdivided for ease of review.
+Previously, a patchset supporting "perf list sdt" was posted, but it didn't make
+much sense, since only listing SDT events for an ELF won't help.
+This patchset aims at adding a sub-command "sdt-cache" to perf to manage a cache
+for management of the SDT events.
+
+This link shows an example of marker probing with Systemtap:
+https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+
+This link provides important info regarding SDT notes:
+http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+
+- Markers in binaries :
+These SDT markers are present in the ELF in the section named
+".note.stapsdt".
+Here, the name of the marker, its provider, type, location, base
+address, semaphore address.
+We can retrieve these values using the members name_off and desc_off in
+Nhdr structure.
+
+Changes since v1:
+- Rebased it to tip/master
+
+Changes since last series :
+ - Changed the entire (linked) list structure to hash lists to manage the SDT events.
+ - Added a sub command "sdt-cache" to perf to manage SDT events in the system.
+ - Added support to add and remove SDT events onto a cache.
+ - Added support to "perf record" to probe and record the SDT events.
+
+ TODO:
+ - Add support to add most of the SDT events on a system to the cache.
+ - Recognizing arguments and support to probe on them.
+---
+
+Hemant Kumar (5):
+      perf/sdt: ELF support for SDT
+      perf/sdt: Add SDT events into a cache
+      perf/sdt: Show SDT cache contents
+      perf/sdt: Delete SDT events from cache
+      perf/sdt: Add support to perf record to trace SDT events
+
+
+ tools/perf/Makefile.perf       |    3 
+ tools/perf/builtin-record.c    |   21 +
+ tools/perf/builtin-sdt-cache.c |  109 +++++
+ tools/perf/builtin.h           |    1 
+ tools/perf/perf.c              |    1 
+ tools/perf/util/parse-events.c |    7 
+ tools/perf/util/parse-events.h |    7 
+ tools/perf/util/probe-event.c  |  120 ++++-
+ tools/perf/util/probe-event.h  |    8 
+ tools/perf/util/probe-finder.c |    3 
+ tools/perf/util/sdt.c          |  926 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sdt.h          |   30 +
+ tools/perf/util/symbol-elf.c   |  207 +++++++++
+ tools/perf/util/symbol.h       |   21 +
+ 14 files changed, 1442 insertions(+), 22 deletions(-)
+ create mode 100644 tools/perf/builtin-sdt-cache.c
+ create mode 100644 tools/perf/util/sdt.c
+ create mode 100644 tools/perf/util/sdt.h
+
+-- 
+
