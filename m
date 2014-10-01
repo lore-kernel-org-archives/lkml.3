@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaJAJFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 05:05:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36322 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaJAJFU (ORCPT
+	id S1751728AbaJAJGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 05:06:30 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:44170 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaJAJG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 05:05:20 -0400
-Date: Wed, 1 Oct 2014 11:05:13 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Hurley <peter@hurleysoftware.com>
-cc: Akinobu Mita <akinobu.mita@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
-In-Reply-To: <542B5DC2.8020806@hurleysoftware.com>
-Message-ID: <alpine.DEB.2.11.1410011057290.4455@nanos>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
- <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos> <542B5DC2.8020806@hurleysoftware.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 1 Oct 2014 05:06:27 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Cc: broonie@kernel.org, lee.jones@linaro.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, bjorn.andersson@sonymobile.com,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v3 0/4] ARM: dts: apq8064 DT patches
+Date: Wed,  1 Oct 2014 10:05:55 +0100
+Message-Id: <1412154355-2639-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412086159-20894-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1412086159-20894-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Peter Hurley wrote:
-> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
-> > Whether the proposed patchset is the correct solution to support it is
-> > a completely different question.
-> 
-> This patchset has been in mainline since 3.16 and has already caused
-> regressions, so the question of whether this is the correct solution has
-> already been answered.
+These patches adds dt nodes for RPM, USB and SATA IPs found in APQ8064.
+All the driver support for these IPs are already available in v3.17, except
+the RPM driver which is now accepted by Lee and Mark.
 
-Agreed.
- 
-> > So either you stop this right now and help Akinobu to find the proper
-> > solution 
-> 
-> If this is only a test platform for ARM parts then I don't think it
-> unreasonable to suggest forking x86 swiotlb support into a iommu=cma
-> selector that gets DMA mapping working for this test platform and doesn't
-> cause a bunch of breakage.
+These patches depend on the header file from 
+http://www.spinics.net/lists/arm-kernel/msg364310.html
+for regulators.
 
-Breakage is not acceptable in any case.
- 
-> Which is different than if the plan is to ship production units for x86;
-> then a general purpose solution will be required.
-> 
-> As to the good design of a general purpose solution for allocating and
-> mapping huge order pages, you are certainly more qualified to help Akinobu
-> than I am.
+Now that the RPM patch is accepted, should RPM patch go via arm-soc tree?
+so that we can get more functionality on IFC6410 board in v3.18 mainline.
 
-Fair enough. Still this does not make the case for outright rejecting
-the idea of supporting that kind of device even if it is a esoteric
-case. We deal with enough esoteric hardware in Linux and if done
-right, it's no harm to anyone.
+All these patches are tested on IFC6410 board.
+Am hoping to get these patches for v3.18, as these patches were sitting in
+my dev tree since last 3 merge windows.
 
-I'll have a look at the technical details.
+
+Changes since v2:
+	- Bjorn added 4 missing MVS regulators.
+	- fixed few compatible strings spotted by Bjorn.
+	- Moved the voltage specifics to dts file as discussed with Bjorn.
+
+Changes since v1:
+	- Updated with all the regulators in the rpm as suggested by Bjorn.
+	- Fixed few indentations spotted by both Bjorn, Stephen and others.
+	
 
 Thanks,
+srini
 
-	tglx
+
+Srinivas Kandagatla (4):
+  ARM: dts: apq8064: add RPM regulators support
+  ARM: dts: apq8064: Add usb host support.
+  ARM: dts: apq8064: Add USB OTG support
+  ARM: dts: apq8064: Add SATA controller support.
+
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |  77 +++++++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        | 355 +++++++++++++++++++++++++++++
+ 2 files changed, 432 insertions(+)
+
+-- 
+1.9.1
+
