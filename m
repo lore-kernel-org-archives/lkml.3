@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaJAVbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:31:42 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40475 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaJAVbj (ORCPT
+	id S1753871AbaJAVcN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:32:13 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:42677 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598AbaJAVbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Oct 2014 17:31:39 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
@@ -17,9 +17,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
         Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
         Victor Wan <victor.wan@amlogic.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 5/6] ARM: document Tronsmart compatible properties
-Date: Wed,  1 Oct 2014 23:29:45 +0200
-Message-Id: <1412198986-26534-6-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH 6/6] ARM: meson: document meson8 compatible properties
+Date: Wed,  1 Oct 2014 23:29:46 +0200
+Message-Id: <1412198986-26534-7-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
 References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
@@ -27,27 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document device tree bindings for Tronsmart devices.
+Add device tree bindings documentation for Amlogic Meson8 SoCs.
 
 Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- Documentation/devicetree/bindings/arm/tronsmart.txt | 7 +++++++
- 1 file changed, 7 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/tronsmart.txt
+ Documentation/devicetree/bindings/arm/amlogic.txt | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/tronsmart.txt b/Documentation/devicetree/bindings/arm/tronsmart.txt
-new file mode 100644
-index 0000000..bd29d60
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/tronsmart.txt
-@@ -0,0 +1,7 @@
-+Tronsmart Platforms Device Tree Bindings
-+---------------------------------------
-+
-+Vega S89 Elite TV box
-+
-+Required root node properties:
-+    - compatible = "tronsmart,vega-s89e";
+diff --git a/Documentation/devicetree/bindings/arm/amlogic.txt b/Documentation/devicetree/bindings/arm/amlogic.txt
+index 7eece72..8fe8150 100644
+--- a/Documentation/devicetree/bindings/arm/amlogic.txt
++++ b/Documentation/devicetree/bindings/arm/amlogic.txt
+@@ -2,7 +2,9 @@ Amlogic MesonX device tree bindings
+ -------------------------------------------
+ 
+ Boards with the Amlogic Meson6 SoC shall have the following properties:
++  Required root node property:
++    compatible: "amlogic,meson6"
+ 
+-Required root node property:
+-
+-compatible = "amlogic,meson6";
++Boards with the Amlogic Meson8 SoC shall have the following properties:
++  Required root node property:
++    compatible: "amlogic,meson8";
 -- 
 1.9.1
 
