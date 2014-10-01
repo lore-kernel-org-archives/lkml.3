@@ -1,507 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaJAUTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:19:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20839 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956AbaJAUT2 (ORCPT
+	id S1752093AbaJAUU5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:20:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:44884 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaJAUUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:19:28 -0400
-Date: Wed, 1 Oct 2014 16:18:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Arianna Avanzini <avanzini.arianna@gmail.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, bob.liu@oracle.com, felipe.franciosi@citrix.com,
-        axboe@fb.com
-Subject: Re: [PATCH RFC v2 2/5] xen, blkfront: introduce support for multiple
- block rings
-Message-ID: <20141001201854.GC12581@laptop.dumpdata.com>
-References: <1410479844-2864-1-git-send-email-avanzini.arianna@gmail.com>
- <1410479844-2864-3-git-send-email-avanzini.arianna@gmail.com>
+	Wed, 1 Oct 2014 16:20:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410479844-2864-3-git-send-email-avanzini.arianna@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
+References: <20140930033327.GA14558@redhat.com>
+	<CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>
+	<20140930043309.GA16196@redhat.com>
+	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>
+	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>
+	<20140930160510.GA15903@redhat.com>
+	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
+	<20140930162201.GC15903@redhat.com>
+	<20140930164047.GA18354@redhat.com>
+	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
+	<20140930182059.GA24431@redhat.com>
+	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
+	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
+	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
+	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
+Date: Wed, 1 Oct 2014 13:20:53 -0700
+X-Google-Sender-Auth: xvM6Yf7aeH3Re8Zn_Lh0gmEuKzU
+Message-ID: <CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
+Subject: Re: pipe/page fault oddness.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Sasha Levin <sasha.levin@oracle.com>
+Content-Type: multipart/mixed; boundary=001a11c24e80a2dc410504623c03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 01:57:21AM +0200, Arianna Avanzini wrote:
-> This commit introduces in xen-blkfront actual support for multiple
-> block rings. The number of block rings to be used is still forced
-> to one.
+--001a11c24e80a2dc410504623c03
+Content-Type: text/plain; charset=UTF-8
 
-I would add:
+On Wed, Oct 1, 2014 at 9:18 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So I'd really suggest we do exactly that. Get rid of "pte_numa()"
+> entirely, get rid of "_PAGE_[BIT_]NUMA" entirely, and instead add a
+> "pte_protnone()" helper to check for the "protnone" case (which on x86
+> is testing the _PAGE_PROTNONE bit, and on most other architectures is
+> just testing that the page has no access rights).
+>
+> Then we throw away "pte_mknuma()" and "pte_mknonnuma()" entirely,
+> because they are brainless sh*t, and we just use
+>
+>     ptent = ptep_modify_prot_start(mm, addr, pte);
+>     ptent = pte_modify(ptent, newprot);
+>     ptep_modify_prot_commit(mm, addr, pte, ptent);
+>
+> reliably instead (where for the mknuma case "newprot" is PROT_NONE,
+> and for mknonnuma() it is vma->vm_page_prot. Yes, that means that you
+> have to pass in the vma to those functions, but that just makes sense
+> anyway.
+>
+> And if that means that we lose the numa flag on mprotect etc, nobody sane cares.
 
-Since this is just a patch hoisting members from 'struct blkinfo_info'
-in an 'struct blkfront_ring_info' to allow multiple rings, we do not
-introduce any new behavior to take advantage of it. The patch
-consists of:
- - Accessing members through 'info->rinfo' instead of previously
-   done via just accessing 'info' members.
- - Adding the 'init_ctx' for the MQ API to initialize properly
-   the multiple ring support
- - The 'fill_grant_buffer' moved to a different function to deal
-   with the filling of that per ring instead of done in the function
-   that gathers the count of segments - which is only called once
-   - while we need to call 'fill_grant_buffer' per each ring.
+So here is a *COMPLETELY UNTESTED* and probably seriously buggy first
+version of such a patch. It doesn't do the powerpc conversion, so
+somebody would need to check that eventually, but aside from that
+obvious issue, can people fix this up? Or comment on why it doesn't
+work.
 
-That said, some comments:
+Now, I like this because it gets rid of the horrible PAGE_NUMA special
+cases, but it really seems to simplify things in general. Lookie here:
 
-> +static void blkif_free(struct blkfront_info *info, int suspend)
-> +{
-> +	struct grant *persistent_gnt;
-> +	struct grant *n;
-> +	int i;
->  
-> -	/* Free resources associated with old device channel. */
-> -	if (info->ring_ref != GRANT_INVALID_REF) {
-> -		gnttab_end_foreign_access(info->ring_ref, 0,
-> -					  (unsigned long)info->ring.sring);
-> -		info->ring_ref = GRANT_INVALID_REF;
-> -		info->ring.sring = NULL;
-> -	}
-> -	if (info->irq)
-> -		unbind_from_irqhandler(info->irq, info);
-> -	info->evtchn = info->irq = 0;
-> +	info->connected = suspend ?
-> +		BLKIF_STATE_SUSPENDED : BLKIF_STATE_DISCONNECTED;
-> +
-> +	/*
-> +	 * Prevent new requests being issued until we fix things up:
-> +	 * no more blkif_request() and no more gnttab callback work.
-> +	 */
-> +	if (info->rq) {
+     13 files changed, 74 insertions(+), 268 deletions(-)
 
-I would have done it the other way to make it easier to read the code.
+that's really mainly just the removal of odd and broken numa pte/pmd
+helper functions from <asm-generic/pgtable.h> that aren't needed any
+more because the normal "change protections" functions just DTRT
+automatically. Although there are actually a few other cases that got
+simpler too, so it's not *just* removal of those _PAGE_NUMA-specific
+helpers.
 
-That is do:
+One thing this does *not* remove is the special pte locking rule in
+the "change_*_range()" functions: they still take that broken
+"prot_numa" argument. HOWEVER, it isn't actually used for any page
+table modifications, the only reason for it existing is the hacky
+locking issue (see lock_pte_protection(), and the comment about races
+with the transhuge accesses).
 
-	if (!info->rq)
-		return;
+Now, I'll be honest: this patch *migth* just work, but I expect it to
+have some stupid problem. It compiles. I haven't even dared boot it,
+much less try any numa benchmarks that woudln't show anything sane on
+my machine anyway.
 
-And then you can continue with the code without having to worry about
-hitting the StyleGuide issues (the 80 or 120 lines limit or such)
+So I'm really sending this patch out in the hope that it will get
+comments, fixup and possibly even testing by people who actually know
+the NUMA balancing code. Rik?  Anybody?
 
-> +		blk_mq_stop_hw_queues(info->rq);
-> +
-> +		for (i = 0 ; i < info->nr_rings ; i++) {
-> +			struct blkfront_ring_info *rinfo = &info->rinfo[i];
-> +
-> +			spin_lock_irq(&info->rinfo[i].io_lock);
-> +			/* Remove all persistent grants */
-> +			if (!list_empty(&rinfo->grants)) {
-> +				list_for_each_entry_safe(persistent_gnt, n,
-> +				                         &rinfo->grants, node) {
-> +					list_del(&persistent_gnt->node);
-> +					if (persistent_gnt->gref != GRANT_INVALID_REF) {
-> +						gnttab_end_foreign_access(persistent_gnt->gref,
-> +						                          0, 0UL);
-> +						rinfo->persistent_gnts_c--;
-> +					}
-> +					if (info->feature_persistent)
-> +						__free_page(pfn_to_page(persistent_gnt->pfn));
-> +					kfree(persistent_gnt);
-> +				}
-> +			}
-> +			BUG_ON(rinfo->persistent_gnts_c != 0);
-> +
-> +			/*
-> +			 * Remove indirect pages, this only happens when using indirect
-> +			 * descriptors but not persistent grants
-> +			 */
-> +			if (!list_empty(&rinfo->indirect_pages)) {
-> +				struct page *indirect_page, *n;
-> +
-> +				BUG_ON(info->feature_persistent);
-> +				list_for_each_entry_safe(indirect_page, n, &rinfo->indirect_pages, lru) {
-> +					list_del(&indirect_page->lru);
-> +					__free_page(indirect_page);
-> +				}
-> +			}
->  
-> +			blkif_free_ring(rinfo, info->feature_persistent);
-> +
-> +			gnttab_cancel_free_callback(&rinfo->callback);
-> +			spin_unlock_irq(&rinfo->io_lock);
-> +
-> +			/* Flush gnttab callback work. Must be done with no locks held. */
-> +			flush_work(&info->rinfo[i].work);
-> +
-> +			/* Free resources associated with old device channel. */
-> +			if (rinfo->ring_ref != GRANT_INVALID_REF) {
-> +				gnttab_end_foreign_access(rinfo->ring_ref, 0,
-> +							  (unsigned long)rinfo->ring.sring);
-> +				rinfo->ring_ref = GRANT_INVALID_REF;
-> +				rinfo->ring.sring = NULL;
-> +			}
-> +			if (rinfo->irq)
-> +				unbind_from_irqhandler(rinfo->irq, rinfo);
-> +			rinfo->evtchn = rinfo->irq = 0;
-> +		}
-> +	}
->  }
->  
+                Linus
 
-.. snip..
-> @@ -1274,13 +1333,16 @@ static int talk_to_blkback(struct xenbus_device *dev,
->  			   struct blkfront_info *info)
->  {
->  	const char *message = NULL;
-> +	char ring_ref_s[64] = "", evtchn_s[64] = "";
+--001a11c24e80a2dc410504623c03
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i0r4axpa0
 
-Why the usage of these, since:
->  	struct xenbus_transaction xbt;
-> -	int err;
-> +	int i, err;
->  
-> -	/* Create shared ring, alloc event channel. */
-> -	err = setup_blkring(dev, info);
-> -	if (err)
-> -		goto out;
-> +	for (i = 0 ; i < info->nr_rings ; i++) {
-> +		/* Create shared ring, alloc event channel. */
-> +		err = setup_blkring(dev, &info->rinfo[i]);
-> +		if (err)
-> +			goto out;
-> +	}
->  
->  again:
->  	err = xenbus_transaction_start(&xbt);
-> @@ -1289,18 +1351,24 @@ again:
->  		goto destroy_blkring;
->  	}
->  
-> -	err = xenbus_printf(xbt, dev->nodename,
-> -			    "ring-ref", "%u", info->ring_ref);
-> -	if (err) {
-> -		message = "writing ring-ref";
-> -		goto abort_transaction;
-> -	}
-> -	err = xenbus_printf(xbt, dev->nodename,
-> -			    "event-channel", "%u", info->evtchn);
-> -	if (err) {
-> -		message = "writing event-channel";
-> -		goto abort_transaction;
-> +	for (i = 0 ; i < info->nr_rings ; i++) {
-> +		BUG_ON(i > 0);
-> +		snprintf(ring_ref_s, 64, "ring-ref");
-> +		snprintf(evtchn_s, 64, "event-channel");
-
-You seem to just writting it with the same value on each iteration? Is that
-to prepare when we would use it? I would rather ditch this and keep
-it in the patch that would use it.
-
-Also the 64 needs a #define.
-> +		err = xenbus_printf(xbt, dev->nodename,
-> +				    ring_ref_s, "%u", info->rinfo[i].ring_ref);
-> +		if (err) {
-> +			message = "writing ring-ref";
-> +			goto abort_transaction;
-> +		}
-> +		err = xenbus_printf(xbt, dev->nodename,
-> +				    evtchn_s, "%u", info->rinfo[i].evtchn);
-> +		if (err) {
-> +			message = "writing event-channel";
-> +			goto abort_transaction;
-> +		}
->  	}
-> +
->  	err = xenbus_printf(xbt, dev->nodename, "protocol", "%s",
->  			    XEN_IO_PROTO_ABI_NATIVE);
->  	if (err) {
-> @@ -1344,7 +1412,7 @@ again:
->  static int blkfront_probe(struct xenbus_device *dev,
->  			  const struct xenbus_device_id *id)
->  {
-> -	int err, vdevice, i;
-> +	int err, vdevice, i, r;
->  	struct blkfront_info *info;
->  
->  	/* FIXME: Use dynamic device id if this is not set. */
-> @@ -1396,23 +1464,36 @@ static int blkfront_probe(struct xenbus_device *dev,
->  	}
->  
->  	mutex_init(&info->mutex);
-> -	spin_lock_init(&info->io_lock);
->  	info->xbdev = dev;
->  	info->vdevice = vdevice;
-> -	INIT_LIST_HEAD(&info->grants);
-> -	INIT_LIST_HEAD(&info->indirect_pages);
-> -	info->persistent_gnts_c = 0;
->  	info->connected = BLKIF_STATE_DISCONNECTED;
-> -	INIT_WORK(&info->work, blkif_restart_queue);
-> -
-> -	for (i = 0; i < BLK_RING_SIZE; i++)
-> -		info->shadow[i].req.u.rw.id = i+1;
-> -	info->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
->  
->  	/* Front end dir is a number, which is used as the id. */
->  	info->handle = simple_strtoul(strrchr(dev->nodename, '/')+1, NULL, 0);
->  	dev_set_drvdata(&dev->dev, info);
->  
-> +	/* Allocate the correct number of rings. */
-> +	info->nr_rings = 1;
-> +	pr_info("blkfront: %s: %d rings\n",
-> +		info->gd->disk_name, info->nr_rings);
-
-pr_debug.
-
-
-> +
-> +	info->rinfo = kzalloc(info->nr_rings *
-> +				sizeof(struct blkfront_ring_info),
-> +			      GFP_KERNEL);
-
-Something is off with the tabs/spaces.
-
-And please do check if we allocated it in the first place. As in
-
-if (!info->rinfo) {
-	err = -ENOMEM;
-	goto out;
-}
-
-And add the label 'out' ..
-
-> +	for (r = 0 ; r < info->nr_rings ; r++) {
-> +		struct blkfront_ring_info *rinfo = &info->rinfo[r];
-> +
-> +		rinfo->info = info;
-> +		rinfo->persistent_gnts_c = 0;
-> +		INIT_LIST_HEAD(&rinfo->grants);
-> +		INIT_LIST_HEAD(&rinfo->indirect_pages);
-> +		INIT_WORK(&rinfo->work, blkif_restart_queue);
-> +		spin_lock_init(&rinfo->io_lock);
-> +		for (i = 0; i < BLK_RING_SIZE; i++)
-> +			rinfo->shadow[i].req.u.rw.id = i+1;
-> +		rinfo->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
-> +	}
-> +
-
-==> Right here, 'out:' label :-)
-
->  	err = talk_to_blkback(dev, info);
->  	if (err) {
->  		kfree(info);
-> @@ -1438,88 +1519,100 @@ static void split_bio_end(struct bio *bio, int error)
->  	bio_put(bio);
->  }
->  
-> -static int blkif_recover(struct blkfront_info *info)
-> +static int blkif_setup_shadow(struct blkfront_ring_info *rinfo,
-> +			      struct blk_shadow **copy)
->  {
->  	int i;
-> +
-> +	/* Stage 1: Make a safe copy of the shadow state. */
-> +	*copy = kmemdup(rinfo->shadow, sizeof(rinfo->shadow),
-> +		       GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
-> +	if (!*copy)
-> +		return -ENOMEM;
-> +
-> +	/* Stage 2: Set up free list. */
-> +	memset(&rinfo->shadow, 0, sizeof(rinfo->shadow));
-> +	for (i = 0; i < BLK_RING_SIZE; i++)
-> +		rinfo->shadow[i].req.u.rw.id = i+1;
-> +	rinfo->shadow_free = rinfo->ring.req_prod_pvt;
-> +	rinfo->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
-> +
-> +	return 0;
-> +}
-> +
-> +static int blkif_recover(struct blkfront_info *info)
-> +{
-> +	int i, r;
->  	struct request *req, *n;
->  	struct blk_shadow *copy;
-> -	int rc;
-> +	int rc = 0;
->  	struct bio *bio, *cloned_bio;
-> -	struct bio_list bio_list, merge_bio;
-> +	struct bio_list uninitialized_var(bio_list), merge_bio;
->  	unsigned int segs, offset;
->  	unsigned long flags;
->  	int pending, size;
->  	struct split_bio *split_bio;
->  	struct list_head requests;
->  
-> -	/* Stage 1: Make a safe copy of the shadow state. */
-> -	copy = kmemdup(info->shadow, sizeof(info->shadow),
-> -		       GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
-> -	if (!copy)
-> -		return -ENOMEM;
-> -
-> -	/* Stage 2: Set up free list. */
-> -	memset(&info->shadow, 0, sizeof(info->shadow));
-> -	for (i = 0; i < BLK_RING_SIZE; i++)
-> -		info->shadow[i].req.u.rw.id = i+1;
-> -	info->shadow_free = info->ring.req_prod_pvt;
-> -	info->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
-> +	segs = blkfront_gather_indirect(info);
->  
-> -	rc = blkfront_setup_indirect(info);
-> -	if (rc) {
-> -		kfree(copy);
-> -		return rc;
-> -	}
-> +	for (r = 0 ; r < info->nr_rings ; r++) {
-> +		rc |= blkif_setup_shadow(&info->rinfo[r], &copy);
-> +		rc |= blkfront_setup_indirect(&info->rinfo[r], segs);
-
-Could you add an comment why it is OK to continue working if the
-'blkif_setup_shadow' fails (say with -ENOMEM)?
-> +		if (rc) {
-> +			kfree(copy);
-> +			return rc;
-> +		}
->  
-> -	segs = info->max_indirect_segments ? : BLKIF_MAX_SEGMENTS_PER_REQUEST;
-> -	blk_queue_max_segments(info->rq, segs);
-> -	bio_list_init(&bio_list);
-> -	INIT_LIST_HEAD(&requests);
-> -	for (i = 0; i < BLK_RING_SIZE; i++) {
-> -		/* Not in use? */
-> -		if (!copy[i].request)
-> -			continue;
-> +		segs = info->max_indirect_segments ? : BLKIF_MAX_SEGMENTS_PER_REQUEST;
-> +		blk_queue_max_segments(info->rq, segs);
-> +		bio_list_init(&bio_list);
-> +		INIT_LIST_HEAD(&requests);
-> +		for (i = 0; i < BLK_RING_SIZE; i++) {
-> +			/* Not in use? */
-> +			if (!copy[i].request)
-> +				continue;
->  
-> -		/*
-> -		 * Get the bios in the request so we can re-queue them.
-> -		 */
-> -		if (copy[i].request->cmd_flags &
-> -		    (REQ_FLUSH | REQ_FUA | REQ_DISCARD | REQ_SECURE)) {
->  			/*
-> -			 * Flush operations don't contain bios, so
-> -			 * we need to requeue the whole request
-> +			 * Get the bios in the request so we can re-queue them.
->  			 */
-> -			list_add(&copy[i].request->queuelist, &requests);
-> -			continue;
-> +			if (copy[i].request->cmd_flags &
-> +			    (REQ_FLUSH | REQ_FUA | REQ_DISCARD | REQ_SECURE)) {
-> +				/*
-> +				 * Flush operations don't contain bios, so
-> +				 * we need to requeue the whole request
-> +				 */
-> +				list_add(&copy[i].request->queuelist, &requests);
-> +				continue;
-> +			}
-> +			merge_bio.head = copy[i].request->bio;
-> +			merge_bio.tail = copy[i].request->biotail;
-> +			bio_list_merge(&bio_list, &merge_bio);
-> +			copy[i].request->bio = NULL;
-> +			blk_put_request(copy[i].request);
->  		}
-> -		merge_bio.head = copy[i].request->bio;
-> -		merge_bio.tail = copy[i].request->biotail;
-> -		bio_list_merge(&bio_list, &merge_bio);
-> -		copy[i].request->bio = NULL;
-> -		blk_put_request(copy[i].request);
-> +		kfree(copy);
->  	}
->  
-> -	kfree(copy);
-> -
->  	xenbus_switch_state(info->xbdev, XenbusStateConnected);
->  
-> -	spin_lock_irqsave(&info->io_lock, flags);
-> -
->  	/* Now safe for us to use the shared ring */
->  	info->connected = BLKIF_STATE_CONNECTED;
->  
-> -	/* Kick any other new requests queued since we resumed */
-> -	kick_pending_request_queues(info, &flags);
-> +	for (i = 0 ; i < info->nr_rings ; i++) {
-> +		spin_lock_irqsave(&info->rinfo[i].io_lock, flags);
-> +		/* Kick any other new requests queued since we resumed */
-> +		kick_pending_request_queues(&info->rinfo[i], &flags);
->  
-> -	list_for_each_entry_safe(req, n, &requests, queuelist) {
-> -		/* Requeue pending requests (flush or discard) */
-> -		list_del_init(&req->queuelist);
-> -		BUG_ON(req->nr_phys_segments > segs);
-> -		blk_mq_requeue_request(req);
-> +		list_for_each_entry_safe(req, n, &requests, queuelist) {
-> +			/* Requeue pending requests (flush or discard) */
-> +			list_del_init(&req->queuelist);
-> +			BUG_ON(req->nr_phys_segments > segs);
-> +			blk_mq_requeue_request(req);
-> +		}
-> +		spin_unlock_irqrestore(&info->rinfo[i].io_lock, flags);
->  	}
->  
-> -	spin_unlock_irqrestore(&info->io_lock, flags);
-> -
->  	while ((bio = bio_list_pop(&bio_list)) != NULL) {
->  		/* Traverse the list of pending bios and re-queue them */
->  		if (bio_segments(bio) > segs) {
-> @@ -1643,14 +1736,15 @@ static void blkfront_setup_discard(struct blkfront_info *info)
->  		info->feature_secdiscard = !!discard_secure;
->  }
->  
-> -static int blkfront_setup_indirect(struct blkfront_info *info)
-> +
-> +static int blkfront_gather_indirect(struct blkfront_info *info)
->  {
->  	unsigned int indirect_segments, segs;
-> -	int err, i;
-> +	int err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> +				"feature-max-indirect-segments", "%u",
-> +				&indirect_segments,
-> +				NULL);
->  
-> -	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
-> -			    "feature-max-indirect-segments", "%u", &indirect_segments,
-> -			    NULL);
-
-
-That looks like an unrellated patch. Could you leave it as it please?
-
->  	if (err) {
->  		info->max_indirect_segments = 0;
->  		segs = BLKIF_MAX_SEGMENTS_PER_REQUEST;
-> @@ -1660,7 +1754,16 @@ static int blkfront_setup_indirect(struct blkfront_info *info)
->  		segs = info->max_indirect_segments;
->  	}
->  
-> -	err = fill_grant_buffer(info, (segs + INDIRECT_GREFS(segs)) * BLK_RING_SIZE);
-> +	return segs;
-> +}
-> +
-> +static int blkfront_setup_indirect(struct blkfront_ring_info *rinfo,
-> +				   unsigned int segs)
-> +{
-> +	struct blkfront_info *info = rinfo->info;
-> +	int err, i;
-> +
-> +	err = fill_grant_buffer(rinfo, (segs + INDIRECT_GREFS(segs)) * BLK_RING_SIZE);
-
-
-Can you say a bit about why you are moving it from 'blkfront_gather_indirect' to
-'blkfront_setup_indirect'  - preferrably in the commit description.
-
-I presume it would be because in the past we did it in blkfront_gather_indirect
-and since it does not iterate over the number of rings (but just gives you the
-segment value), we need to move it to the function that will be called for
-each ring?
-
-It actually seems that this sort of patch could be done earlier (as an standalone one)
-as I think the fill_grant_buffer in blkfront_gather_indirect seems rather ill placed
-(it is about gathering data, not setting it up!).
-
-Anyhow, it is OK to have it in this patch - but just please mention that in the commit
-description.
->  	if (err)
->  		goto out_of_memory;
->  
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaCAgICAgICB8ICAzMSArKysrKy0tCiBhcmNo
+L3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlX3R5cGVzLmggfCAgMjcgKy0tLS0tCiBhcmNoL3g4Ni9t
+bS9ndXAuYyAgICAgICAgICAgICAgICAgICAgfCAgIDQgKy0KIGluY2x1ZGUvYXNtLWdlbmVyaWMv
+cGd0YWJsZS5oICAgICAgICB8IDE1OSArKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LQogaW5jbHVkZS9saW51eC9odWdlX21tLmggICAgICAgICAgICAgIHwgICAzICstCiBpbml0L0tj
+b25maWcgICAgICAgICAgICAgICAgICAgICAgICAgfCAgMTEgLS0tCiBtbS9ndXAuYyAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgfCAgIDQgKy0KIG1tL2h1Z2VfbWVtb3J5LmMgICAgICAgICAg
+ICAgICAgICAgICB8ICA0MiArKystLS0tLS0KIG1tL21lbW9yeS5jICAgICAgICAgICAgICAgICAg
+ICAgICAgICB8ICAxNiArKy0tCiBtbS9tZW1wb2xpY3kuYyAgICAgICAgICAgICAgICAgICAgICAg
+fCAgIDIgKy0KIG1tL21pZ3JhdGUuYyAgICAgICAgICAgICAgICAgICAgICAgICB8ICAgMSAtCiBt
+bS9tcHJvdGVjdC5jICAgICAgICAgICAgICAgICAgICAgICAgfCAgNDAgKysrLS0tLS0tCiBtbS9w
+Z3RhYmxlLWdlbmVyaWMuYyAgICAgICAgICAgICAgICAgfCAgIDIgLQogMTMgZmlsZXMgY2hhbmdl
+ZCwgNzQgaW5zZXJ0aW9ucygrKSwgMjY4IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gv
+eDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUu
+aAppbmRleCBhYTk3YTA3MGYwOWYuLjBkNGVjM2E2MmZlZCAxMDA2NDQKLS0tIGEvYXJjaC94ODYv
+aW5jbHVkZS9hc20vcGd0YWJsZS5oCisrKyBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUu
+aApAQCAtMjk5LDcgKzI5OSw3IEBAIHN0YXRpYyBpbmxpbmUgcG1kX3QgcG1kX21rd3JpdGUocG1k
+X3QgcG1kKQogCiBzdGF0aWMgaW5saW5lIHBtZF90IHBtZF9ta25vdHByZXNlbnQocG1kX3QgcG1k
+KQogewotCXJldHVybiBwbWRfY2xlYXJfZmxhZ3MocG1kLCBfUEFHRV9QUkVTRU5UKTsKKwlyZXR1
+cm4gcG1kX2NsZWFyX2ZsYWdzKHBtZCwgX1BBR0VfUFJFU0VOVCB8IF9QQUdFX1BST1ROT05FKTsK
+IH0KIAogI2lmZGVmIENPTkZJR19IQVZFX0FSQ0hfU09GVF9ESVJUWQpAQCAtNDU3LDggKzQ1Nyw3
+IEBAIHN0YXRpYyBpbmxpbmUgaW50IHB0ZV9zYW1lKHB0ZV90IGEsIHB0ZV90IGIpCiAKIHN0YXRp
+YyBpbmxpbmUgaW50IHB0ZV9wcmVzZW50KHB0ZV90IGEpCiB7Ci0JcmV0dXJuIHB0ZV9mbGFncyhh
+KSAmIChfUEFHRV9QUkVTRU5UIHwgX1BBR0VfUFJPVE5PTkUgfAotCQkJICAgICAgIF9QQUdFX05V
+TUEpOworCXJldHVybiBwdGVfZmxhZ3MoYSkgJiAoX1BBR0VfUFJFU0VOVCB8IF9QQUdFX1BST1RO
+T05FKTsKIH0KIAogI2RlZmluZSBwdGVfcHJlc2VudF9ub251bWEgcHRlX3ByZXNlbnRfbm9udW1h
+CkBAIC00NzMsNyArNDcyLDcgQEAgc3RhdGljIGlubGluZSBib29sIHB0ZV9hY2Nlc3NpYmxlKHN0
+cnVjdCBtbV9zdHJ1Y3QgKm1tLCBwdGVfdCBhKQogCWlmIChwdGVfZmxhZ3MoYSkgJiBfUEFHRV9Q
+UkVTRU5UKQogCQlyZXR1cm4gdHJ1ZTsKIAotCWlmICgocHRlX2ZsYWdzKGEpICYgKF9QQUdFX1BS
+T1ROT05FIHwgX1BBR0VfTlVNQSkpICYmCisJaWYgKChwdGVfZmxhZ3MoYSkgJiBfUEFHRV9QUk9U
+Tk9ORSkgJiYKIAkJCW1tX3RsYl9mbHVzaF9wZW5kaW5nKG1tKSkKIAkJcmV0dXJuIHRydWU7CiAK
+QEAgLTQ5MywxMCArNDkyLDI2IEBAIHN0YXRpYyBpbmxpbmUgaW50IHBtZF9wcmVzZW50KHBtZF90
+IHBtZCkKIAkgKiB0aGUgX1BBR0VfUFNFIGZsYWcgd2lsbCByZW1haW4gc2V0IGF0IGFsbCB0aW1l
+cyB3aGlsZSB0aGUKIAkgKiBfUEFHRV9QUkVTRU5UIGJpdCBpcyBjbGVhcikuCiAJICovCi0JcmV0
+dXJuIHBtZF9mbGFncyhwbWQpICYgKF9QQUdFX1BSRVNFTlQgfCBfUEFHRV9QUk9UTk9ORSB8IF9Q
+QUdFX1BTRSB8Ci0JCQkJIF9QQUdFX05VTUEpOworCXJldHVybiBwbWRfZmxhZ3MocG1kKSAmIChf
+UEFHRV9QUkVTRU5UIHwgX1BBR0VfUFJPVE5PTkUgfCBfUEFHRV9QU0UpOwogfQogCisjaWZkZWYg
+Q09ORklHX05VTUFfQkFMQU5DSU5HCisvKgorICogVGVjaG5pY2FsbHkgdGhlc2Ugd29yayBldmVu
+IHdoZW4gbm90IGRvaW5nIE5VTUEKKyAqIGJhbGFuY2luZywgYnV0IHdlIGRvbid0IGNhcmUgYW5k
+IGhhdmUgc2ltcGxlcgorICogImFsd2F5cyBmYWxzZSIgdmVyc2lvbnMgZm9yIHRoYXQgY2FzZQor
+ICovCitzdGF0aWMgaW5saW5lIGludCBwdGVfcHJvdG5vbmUocHRlX3QgcHRlKQoreworCXJldHVy
+biBwdGVfZmxhZ3MocHRlKSAmIF9QQUdFX1BST1ROT05FOworfQorCitzdGF0aWMgaW5saW5lIGlu
+dCBwbWRfcHJvdG5vbmUocG1kX3QgcG1kKQoreworCXJldHVybiBwbWRfZmxhZ3MocG1kKSAmIF9Q
+QUdFX1BST1ROT05FOworfQorI2VuZGlmCisKIHN0YXRpYyBpbmxpbmUgaW50IHBtZF9ub25lKHBt
+ZF90IHBtZCkKIHsKIAkvKiBPbmx5IGNoZWNrIGxvdyB3b3JkIG9uIDMyLWJpdCBwbGF0Zm9ybXMs
+IHNpbmNlIGl0IG1pZ2h0IGJlCkBAIC01NTQsOCArNTY5LDggQEAgc3RhdGljIGlubGluZSBwdGVf
+dCAqcHRlX29mZnNldF9rZXJuZWwocG1kX3QgKnBtZCwgdW5zaWduZWQgbG9uZyBhZGRyZXNzKQog
+c3RhdGljIGlubGluZSBpbnQgcG1kX2JhZChwbWRfdCBwbWQpCiB7CiAjaWZkZWYgQ09ORklHX05V
+TUFfQkFMQU5DSU5HCi0JLyogcG1kX251bWEgY2hlY2sgKi8KLQlpZiAoKHBtZF9mbGFncyhwbWQp
+ICYgKF9QQUdFX05VTUF8X1BBR0VfUFJFU0VOVCkpID09IF9QQUdFX05VTUEpCisJLyogcG1kX251
+bWEgY2hlY2suIFJlYWxseT8gKi8KKwlpZiAoKHBtZF9mbGFncyhwbWQpICYgKF9QQUdFX1BST1RO
+T05FfF9QQUdFX1BSRVNFTlQpKSA9PSBfUEFHRV9QUk9UTk9ORSkKIAkJcmV0dXJuIDA7CiAjZW5k
+aWYKIAlyZXR1cm4gKHBtZF9mbGFncyhwbWQpICYgfl9QQUdFX1VTRVIpICE9IF9LRVJOUEdfVEFC
+TEU7CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlX3R5cGVzLmggYi9h
+cmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlX3R5cGVzLmgKaW5kZXggZjIxNjk2Mzc2MGU1Li41
+NDM4ZTk2YjI5MTUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGVfdHlw
+ZXMuaAorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3RhYmxlX3R5cGVzLmgKQEAgLTI4LDE0
+ICsyOCw2IEBACiAjZGVmaW5lIF9QQUdFX0JJVF9TT0ZUX0RJUlRZCV9QQUdFX0JJVF9TT0ZUVzMg
+Lyogc29mdHdhcmUgZGlydHkgdHJhY2tpbmcgKi8KICNkZWZpbmUgX1BBR0VfQklUX05YICAgICAg
+ICAgICA2MyAgICAgICAvKiBObyBleGVjdXRlOiBvbmx5IHZhbGlkIGFmdGVyIGNwdWlkIGNoZWNr
+ICovCiAKLS8qCi0gKiBTd2FwIG9mZnNldHMgb24gY29uZmlndXJhdGlvbnMgdGhhdCBhbGxvdyBh
+dXRvbWF0aWMgTlVNQSBiYWxhbmNpbmcgdXNlIHRoZQotICogYml0cyBhZnRlciBfUEFHRV9CSVRf
+R0xPQkFMLiBUbyB1bmlxdWVseSBkaXN0aW5ndWlzaCBOVU1BIGhpbnRpbmcgUFRFcyBmcm9tCi0g
+KiBzd2FwIGVudHJpZXMsIHdlIHVzZSB0aGUgZmlyc3QgYml0IGFmdGVyIF9QQUdFX0JJVF9HTE9C
+QUwgYW5kIHNocmluayB0aGUKLSAqIG1heGltdW0gcG9zc2libGUgc3dhcCBzcGFjZSBmcm9tIDE2
+VEIgdG8gOFRCLgotICovCi0jZGVmaW5lIF9QQUdFX0JJVF9OVU1BCQkoX1BBR0VfQklUX0dMT0JB
+TCsxKQotCiAvKiBJZiBfUEFHRV9CSVRfUFJFU0VOVCBpcyBjbGVhciwgd2UgdXNlIHRoZXNlOiAq
+LwogLyogLSBpZiB0aGUgdXNlciBtYXBwZWQgaXQgd2l0aCBQUk9UX05PTkU7IHB0ZV9wcmVzZW50
+IGdpdmVzIHRydWUgKi8KICNkZWZpbmUgX1BBR0VfQklUX1BST1ROT05FCV9QQUdFX0JJVF9HTE9C
+QUwKQEAgLTc5LDIxICs3MSw2IEBACiAjZW5kaWYKIAogLyoKLSAqIF9QQUdFX05VTUEgZGlzdGlu
+Z3Vpc2hlcyBiZXR3ZWVuIGEgbnVtYSBoaW50aW5nIG1pbm9yIGZhdWx0IGFuZCBhIHBhZ2UKLSAq
+IHRoYXQgaXMgbm90IHByZXNlbnQuIFRoZSBoaW50aW5nIGZhdWx0IGdhdGhlcnMgbnVtYSBwbGFj
+ZW1lbnQgc3RhdGlzdGljcwotICogKHNlZSBwdGVfbnVtYSgpKS4gVGhlIGJpdCBpcyBhbHdheXMg
+emVybyB3aGVuIHRoZSBQVEUgaXMgbm90IHByZXNlbnQuCi0gKgotICogVGhlIGJpdCBwaWNrZWQg
+bXVzdCBiZSBhbHdheXMgemVybyB3aGVuIHRoZSBwbWQgaXMgcHJlc2VudCBhbmQgbm90Ci0gKiBw
+cmVzZW50LCBzbyB0aGF0IHdlIGRvbid0IGxvc2UgaW5mb3JtYXRpb24gd2hlbiB3ZSBzZXQgaXQg
+d2hpbGUKLSAqIGF0b21pY2FsbHkgY2xlYXJpbmcgdGhlIHByZXNlbnQgYml0LgotICovCi0jaWZk
+ZWYgQ09ORklHX05VTUFfQkFMQU5DSU5HCi0jZGVmaW5lIF9QQUdFX05VTUEJKF9BVChwdGV2YWxf
+dCwgMSkgPDwgX1BBR0VfQklUX05VTUEpCi0jZWxzZQotI2RlZmluZSBfUEFHRV9OVU1BCShfQVQo
+cHRldmFsX3QsIDApKQotI2VuZGlmCi0KLS8qCiAgKiBUcmFja2luZyBzb2Z0IGRpcnR5IGJpdCB3
+aGVuIGEgcGFnZSBnb2VzIHRvIGEgc3dhcCBpcyB0cmlja3kuCiAgKiBXZSBuZWVkIGEgYml0IHdo
+aWNoIGNhbiBiZSBzdG9yZWQgaW4gcHRlIF9hbmRfIG5vdCBjb25mbGljdAogICogd2l0aCBzd2Fw
+IGVudHJ5IGZvcm1hdC4gT24geDg2IGJpdHMgNiBhbmQgNyBhcmUgKm5vdCogaW52b2x2ZWQKQEAg
+LTEyNiw4ICsxMDMsOCBAQAogLyogU2V0IG9mIGJpdHMgbm90IGNoYW5nZWQgaW4gcHRlX21vZGlm
+eSAqLwogI2RlZmluZSBfUEFHRV9DSEdfTUFTSwkoUFRFX1BGTl9NQVNLIHwgX1BBR0VfUENEIHwg
+X1BBR0VfUFdUIHwJCVwKIAkJCSBfUEFHRV9TUEVDSUFMIHwgX1BBR0VfQUNDRVNTRUQgfCBfUEFH
+RV9ESVJUWSB8CVwKLQkJCSBfUEFHRV9TT0ZUX0RJUlRZIHwgX1BBR0VfTlVNQSkKLSNkZWZpbmUg
+X0hQQUdFX0NIR19NQVNLIChfUEFHRV9DSEdfTUFTSyB8IF9QQUdFX1BTRSB8IF9QQUdFX05VTUEp
+CisJCQkgX1BBR0VfU09GVF9ESVJUWSkKKyNkZWZpbmUgX0hQQUdFX0NIR19NQVNLIChfUEFHRV9D
+SEdfTUFTSyB8IF9QQUdFX1BTRSkKIAogI2RlZmluZSBfUEFHRV9DQUNIRV9NQVNLCShfUEFHRV9Q
+Q0QgfCBfUEFHRV9QV1QpCiAjZGVmaW5lIF9QQUdFX0NBQ0hFX1dCCQkoMCkKZGlmZiAtLWdpdCBh
+L2FyY2gveDg2L21tL2d1cC5jIGIvYXJjaC94ODYvbW0vZ3VwLmMKaW5kZXggMjA3ZDlhZWY2NjJk
+Li5mMzJlMTJjNDRiMjMgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L21tL2d1cC5jCisrKyBiL2FyY2gv
+eDg2L21tL2d1cC5jCkBAIC04NCw3ICs4NCw3IEBAIHN0YXRpYyBub2lubGluZSBpbnQgZ3VwX3B0
+ZV9yYW5nZShwbWRfdCBwbWQsIHVuc2lnbmVkIGxvbmcgYWRkciwKIAkJc3RydWN0IHBhZ2UgKnBh
+Z2U7CiAKIAkJLyogU2ltaWxhciB0byB0aGUgUE1EIGNhc2UsIE5VTUEgaGludGluZyBtdXN0IHRh
+a2Ugc2xvdyBwYXRoICovCi0JCWlmIChwdGVfbnVtYShwdGUpKSB7CisJCWlmIChwdGVfcHJvdG5v
+bmUocHRlKSkgewogCQkJcHRlX3VubWFwKHB0ZXApOwogCQkJcmV0dXJuIDA7CiAJCX0KQEAgLTE3
+OCw3ICsxNzgsNyBAQCBzdGF0aWMgaW50IGd1cF9wbWRfcmFuZ2UocHVkX3QgcHVkLCB1bnNpZ25l
+ZCBsb25nIGFkZHIsIHVuc2lnbmVkIGxvbmcgZW5kLAogCQkJICogc2xvd3BhdGggZm9yIGFjY291
+bnRpbmcgcHVycG9zZXMgYW5kIHNvIHRoYXQgdGhleQogCQkJICogY2FuIGJlIHNlcmlhbGlzZWQg
+YWdhaW5zdCBUSFAgbWlncmF0aW9uLgogCQkJICovCi0JCQlpZiAocG1kX251bWEocG1kKSkKKwkJ
+CWlmIChwbWRfcHJvdG5vbmUocG1kKSkKIAkJCQlyZXR1cm4gMDsKIAkJCWlmICghZ3VwX2h1Z2Vf
+cG1kKHBtZCwgYWRkciwgbmV4dCwgd3JpdGUsIHBhZ2VzLCBucikpCiAJCQkJcmV0dXJuIDA7CmRp
+ZmYgLS1naXQgYS9pbmNsdWRlL2FzbS1nZW5lcmljL3BndGFibGUuaCBiL2luY2x1ZGUvYXNtLWdl
+bmVyaWMvcGd0YWJsZS5oCmluZGV4IDUzYjJhY2MzODIxMy4uYTdjMDhkOWRkZWRhIDEwMDY0NAot
+LS0gYS9pbmNsdWRlL2FzbS1nZW5lcmljL3BndGFibGUuaAorKysgYi9pbmNsdWRlL2FzbS1nZW5l
+cmljL3BndGFibGUuaApAQCAtNjU5LDE2NSArNjU5LDI0IEBAIHN0YXRpYyBpbmxpbmUgaW50IHBt
+ZF90cmFuc191bnN0YWJsZShwbWRfdCAqcG1kKQogI2VuZGlmCiB9CiAKLSNpZmRlZiBDT05GSUdf
+TlVNQV9CQUxBTkNJTkcKLSNpZmRlZiBDT05GSUdfQVJDSF9VU0VTX05VTUFfUFJPVF9OT05FCisj
+aWZuZGVmIENPTkZJR19OVU1BX0JBTEFOQ0lORwogLyoKLSAqIF9QQUdFX05VTUEgd29ya3MgaWRl
+bnRpY2FsIHRvIF9QQUdFX1BST1ROT05FIChpdCdzIGFjdHVhbGx5IHRoZQotICogc2FtZSBiaXQg
+dG9vKS4gSXQncyBzZXQgb25seSB3aGVuIF9QQUdFX1BSRVNFVCBpcyBub3Qgc2V0IGFuZCBpdCdz
+Ci0gKiBuZXZlciBzZXQgaWYgX1BBR0VfUFJFU0VOVCBpcyBzZXQuCi0gKgotICogcHRlL3BtZF9w
+cmVzZW50KCkgcmV0dXJucyB0cnVlIGlmIHB0ZS9wbWRfbnVtYSByZXR1cm5zIHRydWUuIFBhZ2UK
+LSAqIGZhdWx0IHRyaWdnZXJzIG9uIHRob3NlIHJlZ2lvbnMgaWYgcHRlL3BtZF9udW1hIHJldHVy
+bnMgdHJ1ZQotICogKGJlY2F1c2UgX1BBR0VfUFJFU0VOVCBpcyBub3Qgc2V0KS4KLSAqLwotI2lm
+bmRlZiBwdGVfbnVtYQotc3RhdGljIGlubGluZSBpbnQgcHRlX251bWEocHRlX3QgcHRlKQotewot
+CXJldHVybiAocHRlX2ZsYWdzKHB0ZSkgJgotCQkoX1BBR0VfTlVNQXxfUEFHRV9QUk9UTk9ORXxf
+UEFHRV9QUkVTRU5UKSkgPT0gX1BBR0VfTlVNQTsKLX0KLSNlbmRpZgotCi0jaWZuZGVmIHBtZF9u
+dW1hCi1zdGF0aWMgaW5saW5lIGludCBwbWRfbnVtYShwbWRfdCBwbWQpCi17Ci0JcmV0dXJuIChw
+bWRfZmxhZ3MocG1kKSAmCi0JCShfUEFHRV9OVU1BfF9QQUdFX1BST1ROT05FfF9QQUdFX1BSRVNF
+TlQpKSA9PSBfUEFHRV9OVU1BOwotfQotI2VuZGlmCi0KLS8qCi0gKiBwdGUvcG1kX21rbnVtYSBz
+ZXRzIHRoZSBfUEFHRV9BQ0NFU1NFRCBiaXRmbGFnIGF1dG9tYXRpY2FsbHkKLSAqIGJlY2F1c2Ug
+dGhleSdyZSBjYWxsZWQgYnkgdGhlIE5VTUEgaGludGluZyBtaW5vciBwYWdlIGZhdWx0LiBJZiB3
+ZQotICogd291bGRuJ3Qgc2V0IHRoZSBfUEFHRV9BQ0NFU1NFRCBiaXRmbGFnIGhlcmUsIHRoZSBU
+TEIgbWlzcyBoYW5kbGVyCi0gKiB3b3VsZCBiZSBmb3JjZWQgdG8gc2V0IGl0IGxhdGVyIHdoaWxl
+IGZpbGxpbmcgdGhlIFRMQiBhZnRlciB3ZQotICogcmV0dXJuIHRvIHVzZXJsYW5kLiBUaGF0IHdv
+dWxkIHRyaWdnZXIgYSBzZWNvbmQgd3JpdGUgdG8gbWVtb3J5Ci0gKiB0aGF0IHdlIG9wdGltaXpl
+IGF3YXkgYnkgc2V0dGluZyBfUEFHRV9BQ0NFU1NFRCBoZXJlLgorICogVGVjaG5pY2FsbHkgYSBw
+dGUgY2FuIGJlIFBST1ROT05FIGV2ZW4gd2hlbiBub3QKKyAqIGRvaW5nIE5VTUEgYmFsYW5jaW5n
+LCBidXQgdGhlIG9ubHkgY2FzZSB3aGVyZSB0aGUKKyAqIGtlcm5lbCBhY3R1YWxseSBfY2FyZXNf
+IGlzIGZvciB0aGUgbnVtYSBiYWxhbmNpbmcKKyAqIGNhc2UsIHNvIGJ5IGRlZmF1bHQgd2UganVz
+dCBpbXBsZW1lbnQgdGhlIHNpbXBsZXIKKyAqICJhbHdheXMgbm8iIGhlbHBlciBmdW5jdGlvbi4K
+ICAqLwotI2lmbmRlZiBwdGVfbWtub25udW1hCi1zdGF0aWMgaW5saW5lIHB0ZV90IHB0ZV9ta25v
+bm51bWEocHRlX3QgcHRlKQotewotCXB0ZXZhbF90IHZhbCA9IHB0ZV92YWwocHRlKTsKLQotCXZh
+bCAmPSB+X1BBR0VfTlVNQTsKLQl2YWwgfD0gKF9QQUdFX1BSRVNFTlR8X1BBR0VfQUNDRVNTRUQp
+OwotCXJldHVybiBfX3B0ZSh2YWwpOwotfQotI2VuZGlmCi0KLSNpZm5kZWYgcG1kX21rbm9ubnVt
+YQotc3RhdGljIGlubGluZSBwbWRfdCBwbWRfbWtub25udW1hKHBtZF90IHBtZCkKLXsKLQlwbWR2
+YWxfdCB2YWwgPSBwbWRfdmFsKHBtZCk7Ci0KLQl2YWwgJj0gfl9QQUdFX05VTUE7Ci0JdmFsIHw9
+IChfUEFHRV9QUkVTRU5UfF9QQUdFX0FDQ0VTU0VEKTsKLQotCXJldHVybiBfX3BtZCh2YWwpOwot
+fQotI2VuZGlmCi0KLSNpZm5kZWYgcHRlX21rbnVtYQotc3RhdGljIGlubGluZSBwdGVfdCBwdGVf
+bWtudW1hKHB0ZV90IHB0ZSkKLXsKLQlwdGV2YWxfdCB2YWwgPSBwdGVfdmFsKHB0ZSk7Ci0KLQl2
+YWwgJj0gfl9QQUdFX1BSRVNFTlQ7Ci0JdmFsIHw9IF9QQUdFX05VTUE7Ci0KLQlyZXR1cm4gX19w
+dGUodmFsKTsKLX0KLSNlbmRpZgotCi0jaWZuZGVmIHB0ZXBfc2V0X251bWEKLXN0YXRpYyBpbmxp
+bmUgdm9pZCBwdGVwX3NldF9udW1hKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCB1bnNpZ25lZCBsb25n
+IGFkZHIsCi0JCQkJIHB0ZV90ICpwdGVwKQotewotCXB0ZV90IHB0ZW50ID0gKnB0ZXA7Ci0KLQlw
+dGVudCA9IHB0ZV9ta251bWEocHRlbnQpOwotCXNldF9wdGVfYXQobW0sIGFkZHIsIHB0ZXAsIHB0
+ZW50KTsKLQlyZXR1cm47Ci19Ci0jZW5kaWYKLQotI2lmbmRlZiBwbWRfbWtudW1hCi1zdGF0aWMg
+aW5saW5lIHBtZF90IHBtZF9ta251bWEocG1kX3QgcG1kKQotewotCXBtZHZhbF90IHZhbCA9IHBt
+ZF92YWwocG1kKTsKLQotCXZhbCAmPSB+X1BBR0VfUFJFU0VOVDsKLQl2YWwgfD0gX1BBR0VfTlVN
+QTsKLQotCXJldHVybiBfX3BtZCh2YWwpOwotfQotI2VuZGlmCi0KLSNpZm5kZWYgcG1kcF9zZXRf
+bnVtYQotc3RhdGljIGlubGluZSB2b2lkIHBtZHBfc2V0X251bWEoc3RydWN0IG1tX3N0cnVjdCAq
+bW0sIHVuc2lnbmVkIGxvbmcgYWRkciwKLQkJCQkgcG1kX3QgKnBtZHApCi17Ci0JcG1kX3QgcG1k
+ID0gKnBtZHA7Ci0KLQlwbWQgPSBwbWRfbWtudW1hKHBtZCk7Ci0Jc2V0X3BtZF9hdChtbSwgYWRk
+ciwgcG1kcCwgcG1kKTsKLQlyZXR1cm47Ci19Ci0jZW5kaWYKLSNlbHNlCi1leHRlcm4gaW50IHB0
+ZV9udW1hKHB0ZV90IHB0ZSk7Ci1leHRlcm4gaW50IHBtZF9udW1hKHBtZF90IHBtZCk7Ci1leHRl
+cm4gcHRlX3QgcHRlX21rbm9ubnVtYShwdGVfdCBwdGUpOwotZXh0ZXJuIHBtZF90IHBtZF9ta25v
+bm51bWEocG1kX3QgcG1kKTsKLWV4dGVybiBwdGVfdCBwdGVfbWtudW1hKHB0ZV90IHB0ZSk7Ci1l
+eHRlcm4gcG1kX3QgcG1kX21rbnVtYShwbWRfdCBwbWQpOwotZXh0ZXJuIHZvaWQgcHRlcF9zZXRf
+bnVtYShzdHJ1Y3QgbW1fc3RydWN0ICptbSwgdW5zaWduZWQgbG9uZyBhZGRyLCBwdGVfdCAqcHRl
+cCk7Ci1leHRlcm4gdm9pZCBwbWRwX3NldF9udW1hKHN0cnVjdCBtbV9zdHJ1Y3QgKm1tLCB1bnNp
+Z25lZCBsb25nIGFkZHIsIHBtZF90ICpwbWRwKTsKLSNlbmRpZiAvKiBDT05GSUdfQVJDSF9VU0VT
+X05VTUFfUFJPVF9OT05FICovCi0jZWxzZQotc3RhdGljIGlubGluZSBpbnQgcG1kX251bWEocG1k
+X3QgcG1kKQorc3RhdGljIGlubGluZSBpbnQgcHRlX3Byb3Rub25lKHB0ZV90IHB0ZSkKIHsKIAly
+ZXR1cm4gMDsKIH0KIAotc3RhdGljIGlubGluZSBpbnQgcHRlX251bWEocHRlX3QgcHRlKQorc3Rh
+dGljIGlubGluZSBpbnQgcG1kX3Byb3Rub25lKHBtZF90IHBtZCkKIHsKIAlyZXR1cm4gMDsKIH0K
+LQotc3RhdGljIGlubGluZSBwdGVfdCBwdGVfbWtub25udW1hKHB0ZV90IHB0ZSkKLXsKLQlyZXR1
+cm4gcHRlOwotfQotCi1zdGF0aWMgaW5saW5lIHBtZF90IHBtZF9ta25vbm51bWEocG1kX3QgcG1k
+KQotewotCXJldHVybiBwbWQ7Ci19Ci0KLXN0YXRpYyBpbmxpbmUgcHRlX3QgcHRlX21rbnVtYShw
+dGVfdCBwdGUpCi17Ci0JcmV0dXJuIHB0ZTsKLX0KLQotc3RhdGljIGlubGluZSB2b2lkIHB0ZXBf
+c2V0X251bWEoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHVuc2lnbmVkIGxvbmcgYWRkciwKLQkJCQkg
+cHRlX3QgKnB0ZXApCi17Ci0JcmV0dXJuOwotfQotCi0KLXN0YXRpYyBpbmxpbmUgcG1kX3QgcG1k
+X21rbnVtYShwbWRfdCBwbWQpCi17Ci0JcmV0dXJuIHBtZDsKLX0KLQotc3RhdGljIGlubGluZSB2
+b2lkIHBtZHBfc2V0X251bWEoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHVuc2lnbmVkIGxvbmcgYWRk
+ciwKLQkJCQkgcG1kX3QgKnBtZHApCi17Ci0JcmV0dXJuIDsKLX0KLSNlbmRpZiAvKiBDT05GSUdf
+TlVNQV9CQUxBTkNJTkcgKi8KKyNlbmRpZgogCiAjZW5kaWYgLyogQ09ORklHX01NVSAqLwogCmRp
+ZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2h1Z2VfbW0uaCBiL2luY2x1ZGUvbGludXgvaHVnZV9t
+bS5oCmluZGV4IDYzNTc5Y2I4ZDNkYy4uMmEyYWM5MWVhZmRlIDEwMDY0NAotLS0gYS9pbmNsdWRl
+L2xpbnV4L2h1Z2VfbW0uaAorKysgYi9pbmNsdWRlL2xpbnV4L2h1Z2VfbW0uaApAQCAtMzEsOCAr
+MzEsNyBAQCBleHRlcm4gaW50IG1vdmVfaHVnZV9wbWQoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2
+bWEsCiAJCQkgdW5zaWduZWQgbG9uZyBuZXdfYWRkciwgdW5zaWduZWQgbG9uZyBvbGRfZW5kLAog
+CQkJIHBtZF90ICpvbGRfcG1kLCBwbWRfdCAqbmV3X3BtZCk7CiBleHRlcm4gaW50IGNoYW5nZV9o
+dWdlX3BtZChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgcG1kX3QgKnBtZCwKLQkJCXVuc2ln
+bmVkIGxvbmcgYWRkciwgcGdwcm90X3QgbmV3cHJvdCwKLQkJCWludCBwcm90X251bWEpOworCQkJ
+dW5zaWduZWQgbG9uZyBhZGRyLCBwZ3Byb3RfdCBuZXdwcm90KTsKIAogZW51bSB0cmFuc3BhcmVu
+dF9odWdlcGFnZV9mbGFnIHsKIAlUUkFOU1BBUkVOVF9IVUdFUEFHRV9GTEFHLApkaWZmIC0tZ2l0
+IGEvaW5pdC9LY29uZmlnIGIvaW5pdC9LY29uZmlnCmluZGV4IGU4NGM2NDIzYTJlNS4uZjVjNmJi
+NTY2MTdhIDEwMDY0NAotLS0gYS9pbml0L0tjb25maWcKKysrIGIvaW5pdC9LY29uZmlnCkBAIC04
+ODcsMTcgKzg4Nyw2IEBAIGNvbmZpZyBBUkNIX1NVUFBPUlRTX0lOVDEyOAogY29uZmlnIEFSQ0hf
+V0FOVF9OVU1BX1ZBUklBQkxFX0xPQ0FMSVRZCiAJYm9vbAogCi0jCi0jIEZvciBhcmNoaXRlY3R1
+cmVzIHRoYXQgYXJlIHdpbGxpbmcgdG8gZGVmaW5lIF9QQUdFX05VTUEgYXMgX1BBR0VfUFJPVE5P
+TkUKLWNvbmZpZyBBUkNIX1dBTlRTX1BST1RfTlVNQV9QUk9UX05PTkUKLQlib29sCi0KLWNvbmZp
+ZyBBUkNIX1VTRVNfTlVNQV9QUk9UX05PTkUKLQlib29sCi0JZGVmYXVsdCB5Ci0JZGVwZW5kcyBv
+biBBUkNIX1dBTlRTX1BST1RfTlVNQV9QUk9UX05PTkUKLQlkZXBlbmRzIG9uIE5VTUFfQkFMQU5D
+SU5HCi0KIGNvbmZpZyBOVU1BX0JBTEFOQ0lOR19ERUZBVUxUX0VOQUJMRUQKIAlib29sICJBdXRv
+bWF0aWNhbGx5IGVuYWJsZSBOVU1BIGF3YXJlIG1lbW9yeS90YXNrIHBsYWNlbWVudCIKIAlkZWZh
+dWx0IHkKZGlmZiAtLWdpdCBhL21tL2d1cC5jIGIvbW0vZ3VwLmMKaW5kZXggOTFkMDQ0YjE2MDBk
+Li43YTc0MTlkYTJkYTkgMTAwNjQ0Ci0tLSBhL21tL2d1cC5jCisrKyBiL21tL2d1cC5jCkBAIC02
+MCw3ICs2MCw3IEBAIHJldHJ5OgogCQltaWdyYXRpb25fZW50cnlfd2FpdChtbSwgcG1kLCBhZGRy
+ZXNzKTsKIAkJZ290byByZXRyeTsKIAl9Ci0JaWYgKChmbGFncyAmIEZPTExfTlVNQSkgJiYgcHRl
+X251bWEocHRlKSkKKwlpZiAoKGZsYWdzICYgRk9MTF9OVU1BKSAmJiBwdGVfcHJvdG5vbmUocHRl
+KSkKIAkJZ290byBub19wYWdlOwogCWlmICgoZmxhZ3MgJiBGT0xMX1dSSVRFKSAmJiAhcHRlX3dy
+aXRlKHB0ZSkpIHsKIAkJcHRlX3VubWFwX3VubG9jayhwdGVwLCBwdGwpOwpAQCAtMTg5LDcgKzE4
+OSw3IEBAIHN0cnVjdCBwYWdlICpmb2xsb3dfcGFnZV9tYXNrKHN0cnVjdCB2bV9hcmVhX3N0cnVj
+dCAqdm1hLAogCQl9CiAJCXJldHVybiBwYWdlOwogCX0KLQlpZiAoKGZsYWdzICYgRk9MTF9OVU1B
+KSAmJiBwbWRfbnVtYSgqcG1kKSkKKwlpZiAoKGZsYWdzICYgRk9MTF9OVU1BKSAmJiBwbWRfcHJv
+dG5vbmUoKnBtZCkpCiAJCXJldHVybiBub19wYWdlX3RhYmxlKHZtYSwgZmxhZ3MpOwogCWlmIChw
+bWRfdHJhbnNfaHVnZSgqcG1kKSkgewogCQlpZiAoZmxhZ3MgJiBGT0xMX1NQTElUKSB7CmRpZmYg
+LS1naXQgYS9tbS9odWdlX21lbW9yeS5jIGIvbW0vaHVnZV9tZW1vcnkuYwppbmRleCBkOWEyMWQw
+NmI4NjIuLjE0ZGU1NGFmNmMzOCAxMDA2NDQKLS0tIGEvbW0vaHVnZV9tZW1vcnkuYworKysgYi9t
+bS9odWdlX21lbW9yeS5jCkBAIC0xMjIzLDcgKzEyMjMsNyBAQCBzdHJ1Y3QgcGFnZSAqZm9sbG93
+X3RyYW5zX2h1Z2VfcG1kKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCQlyZXR1cm4gRVJS
+X1BUUigtRUZBVUxUKTsKIAogCS8qIEZ1bGwgTlVNQSBoaW50aW5nIGZhdWx0cyB0byBzZXJpYWxp
+c2UgbWlncmF0aW9uIGluIGZhdWx0IHBhdGhzICovCi0JaWYgKChmbGFncyAmIEZPTExfTlVNQSkg
+JiYgcG1kX251bWEoKnBtZCkpCisJaWYgKChmbGFncyAmIEZPTExfTlVNQSkgJiYgcG1kX3Byb3Ru
+b25lKCpwbWQpKQogCQlnb3RvIG91dDsKIAogCXBhZ2UgPSBwbWRfcGFnZSgqcG1kKTsKQEAgLTEz
+NjYsOSArMTM2Niw4IEBAIGludCBkb19odWdlX3BtZF9udW1hX3BhZ2Uoc3RydWN0IG1tX3N0cnVj
+dCAqbW0sIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAogCWdvdG8gb3V0OwogY2xlYXJfcG1k
+bnVtYToKIAlCVUdfT04oIVBhZ2VMb2NrZWQocGFnZSkpOwotCXBtZCA9IHBtZF9ta25vbm51bWEo
+cG1kKTsKKwlwbWQgPSBwbWRfbW9kaWZ5KHBtZCwgdm1hLT52bV9wYWdlX3Byb3QpOwogCXNldF9w
+bWRfYXQobW0sIGhhZGRyLCBwbWRwLCBwbWQpOwotCVZNX0JVR19PTihwbWRfbnVtYSgqcG1kcCkp
+OwogCXVwZGF0ZV9tbXVfY2FjaGVfcG1kKHZtYSwgYWRkciwgcG1kcCk7CiAJdW5sb2NrX3BhZ2Uo
+cGFnZSk7CiBvdXRfdW5sb2NrOgpAQCAtMTUwMiw3ICsxNTAxLDcgQEAgb3V0OgogICogIC0gSFBB
+R0VfUE1EX05SIGlzIHByb3RlY3Rpb25zIGNoYW5nZWQgYW5kIFRMQiBmbHVzaCBuZWNlc3NhcnkK
+ICAqLwogaW50IGNoYW5nZV9odWdlX3BtZChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwgcG1k
+X3QgKnBtZCwKLQkJdW5zaWduZWQgbG9uZyBhZGRyLCBwZ3Byb3RfdCBuZXdwcm90LCBpbnQgcHJv
+dF9udW1hKQorCQl1bnNpZ25lZCBsb25nIGFkZHIsIHBncHJvdF90IG5ld3Byb3QpCiB7CiAJc3Ry
+dWN0IG1tX3N0cnVjdCAqbW0gPSB2bWEtPnZtX21tOwogCXNwaW5sb2NrX3QgKnB0bDsKQEAgLTE1
+MTEsMjkgKzE1MTAsMTIgQEAgaW50IGNoYW5nZV9odWdlX3BtZChzdHJ1Y3Qgdm1fYXJlYV9zdHJ1
+Y3QgKnZtYSwgcG1kX3QgKnBtZCwKIAlpZiAoX19wbWRfdHJhbnNfaHVnZV9sb2NrKHBtZCwgdm1h
+LCAmcHRsKSA9PSAxKSB7CiAJCXBtZF90IGVudHJ5OwogCQlyZXQgPSAxOwotCQlpZiAoIXByb3Rf
+bnVtYSkgewotCQkJZW50cnkgPSBwbWRwX2dldF9hbmRfY2xlYXIobW0sIGFkZHIsIHBtZCk7Ci0J
+CQlpZiAocG1kX251bWEoZW50cnkpKQotCQkJCWVudHJ5ID0gcG1kX21rbm9ubnVtYShlbnRyeSk7
+Ci0JCQllbnRyeSA9IHBtZF9tb2RpZnkoZW50cnksIG5ld3Byb3QpOwotCQkJcmV0ID0gSFBBR0Vf
+UE1EX05SOwotCQkJc2V0X3BtZF9hdChtbSwgYWRkciwgcG1kLCBlbnRyeSk7Ci0JCQlCVUdfT04o
+cG1kX3dyaXRlKGVudHJ5KSk7Ci0JCX0gZWxzZSB7Ci0JCQlzdHJ1Y3QgcGFnZSAqcGFnZSA9IHBt
+ZF9wYWdlKCpwbWQpOwogCi0JCQkvKgotCQkJICogRG8gbm90IHRyYXAgZmF1bHRzIGFnYWluc3Qg
+dGhlIHplcm8gcGFnZS4gVGhlCi0JCQkgKiByZWFkLW9ubHkgZGF0YSBpcyBsaWtlbHkgdG8gYmUg
+cmVhZC1jYWNoZWQgb24gdGhlCi0JCQkgKiBsb2NhbCBDUFUgY2FjaGUgYW5kIGl0IGlzIGxlc3Mg
+dXNlZnVsIHRvIGtub3cgYWJvdXQKLQkJCSAqIGxvY2FsIHZzIHJlbW90ZSBoaXRzIG9uIHRoZSB6
+ZXJvIHBhZ2UuCi0JCQkgKi8KLQkJCWlmICghaXNfaHVnZV96ZXJvX3BhZ2UocGFnZSkgJiYKLQkJ
+CSAgICAhcG1kX251bWEoKnBtZCkpIHsKLQkJCQlwbWRwX3NldF9udW1hKG1tLCBhZGRyLCBwbWQp
+OwotCQkJCXJldCA9IEhQQUdFX1BNRF9OUjsKLQkJCX0KLQkJfQorCQllbnRyeSA9IHBtZHBfZ2V0
+X2FuZF9jbGVhcihtbSwgYWRkciwgcG1kKTsKKwkJZW50cnkgPSBwbWRfbW9kaWZ5KGVudHJ5LCBu
+ZXdwcm90KTsKKwkJcmV0ID0gSFBBR0VfUE1EX05SOworCQlzZXRfcG1kX2F0KG1tLCBhZGRyLCBw
+bWQsIGVudHJ5KTsKKwkJQlVHX09OKHBtZF93cml0ZShlbnRyeSkpOwogCQlzcGluX3VubG9jayhw
+dGwpOwogCX0KIApAQCAtMTc5NCwxNSArMTc3NiwxNyBAQCBzdGF0aWMgaW50IF9fc3BsaXRfaHVn
+ZV9wYWdlX21hcChzdHJ1Y3QgcGFnZSAqcGFnZSwKIAkJaGFkZHIgPSBhZGRyZXNzOwogCQlmb3Ig
+KGkgPSAwOyBpIDwgSFBBR0VfUE1EX05SOyBpKyssIGhhZGRyICs9IFBBR0VfU0laRSkgewogCQkJ
+cHRlX3QgKnB0ZSwgZW50cnk7CisJCQlwZ3Byb3RfdCBuZXdwcm90ID0gdm1hLT52bV9wYWdlX3By
+b3Q7CisKIAkJCUJVR19PTihQYWdlQ29tcG91bmQocGFnZStpKSk7Ci0JCQllbnRyeSA9IG1rX3B0
+ZShwYWdlICsgaSwgdm1hLT52bV9wYWdlX3Byb3QpOworCQkJaWYgKHBtZF9wcm90bm9uZSgqcG1k
+KSkKKwkJCQluZXdwcm90ID0gUEFHRV9OT05FOworCQkJZW50cnkgPSBta19wdGUocGFnZSArIGks
+IG5ld3Byb3QpOwogCQkJZW50cnkgPSBtYXliZV9ta3dyaXRlKHB0ZV9ta2RpcnR5KGVudHJ5KSwg
+dm1hKTsKIAkJCWlmICghcG1kX3dyaXRlKCpwbWQpKQogCQkJCWVudHJ5ID0gcHRlX3dycHJvdGVj
+dChlbnRyeSk7CiAJCQlpZiAoIXBtZF95b3VuZygqcG1kKSkKIAkJCQllbnRyeSA9IHB0ZV9ta29s
+ZChlbnRyeSk7Ci0JCQlpZiAocG1kX251bWEoKnBtZCkpCi0JCQkJZW50cnkgPSBwdGVfbWtudW1h
+KGVudHJ5KTsKIAkJCXB0ZSA9IHB0ZV9vZmZzZXRfbWFwKCZfcG1kLCBoYWRkcik7CiAJCQlCVUdf
+T04oIXB0ZV9ub25lKCpwdGUpKTsKIAkJCXNldF9wdGVfYXQobW0sIGhhZGRyLCBwdGUsIGVudHJ5
+KTsKZGlmZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5kZXggZTIyOTk3MGU0
+MjIzLi42MmYxYjdiODJhZWYgMTAwNjQ0Ci0tLSBhL21tL21lbW9yeS5jCisrKyBiL21tL21lbW9y
+eS5jCkBAIC0zMTE4LDkgKzMxMTgsOSBAQCBzdGF0aWMgaW50IGRvX251bWFfcGFnZShzdHJ1Y3Qg
+bW1fc3RydWN0ICptbSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsCiAJKiB2YWxpZGF0aW9u
+IHRocm91Z2ggcHRlX3VubWFwX3NhbWUoKS4gSXQncyBvZiBOVU1BIHR5cGUgYnV0CiAJKiB0aGUg
+cGZuIG1heSBiZSBzY3Jld2VkIGlmIHRoZSByZWFkIGlzIG5vbiBhdG9taWMuCiAJKgotCSogcHRl
+cF9tb2RpZnlfcHJvdF9zdGFydCBpcyBub3QgY2FsbGVkIGFzIHRoaXMgaXMgY2xlYXJpbmcKLQkq
+IHRoZSBfUEFHRV9OVU1BIGJpdCBhbmQgaXQgaXMgbm90IHJlYWxseSBleHBlY3RlZCB0aGF0IHRo
+ZXJlCi0JKiB3b3VsZCBiZSBjb25jdXJyZW50IGhhcmR3YXJlIG1vZGlmaWNhdGlvbnMgdG8gdGhl
+IFBURS4KKwkqIFdlIGNhbiBzYWZlbHkganVzdCBkbyBhICJzZXRfcHRlX2F0KCkiLCBiZWNhdXNl
+IHRoZSBvbGQKKwkqIHBhZ2UgdGFibGUgZW50cnkgaXMgbm90IGFjY2Vzc2libGUsIHNvIHRoZXJl
+IHdvdWxkIGJlIG5vCisJKiBjb25jdXJyZW50IGhhcmR3YXJlIG1vZGlmaWNhdGlvbnMgdG8gdGhl
+IFBURS4KIAkqLwogCXB0bCA9IHB0ZV9sb2NrcHRyKG1tLCBwbWQpOwogCXNwaW5fbG9jayhwdGwp
+OwpAQCAtMzEyOSw3ICszMTI5LDExIEBAIHN0YXRpYyBpbnQgZG9fbnVtYV9wYWdlKHN0cnVjdCBt
+bV9zdHJ1Y3QgKm1tLCBzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3QgKnZtYSwKIAkJZ290byBvdXQ7CiAJ
+fQogCi0JcHRlID0gcHRlX21rbm9ubnVtYShwdGUpOworCS8qIE1ha2UgaXQgcHJlc2VudCBhZ2Fp
+biAqLworCS8qIFNob3VsZCB3ZSBtYWtlIGl0IHdyaXRhYmxlPyAgV2UgZG9uJ3QgaGF2ZSB0aGUg
+ZmF1bHQgZmxhZ3MgKi8KKwlwdGUgPSBwdGVfbW9kaWZ5KHB0ZSwgdm1hLT52bV9wYWdlX3Byb3Qp
+OworCXB0ZSA9IHB0ZV9ta3lvdW5nKHB0ZSk7CisKIAlzZXRfcHRlX2F0KG1tLCBhZGRyLCBwdGVw
+LCBwdGUpOwogCXVwZGF0ZV9tbXVfY2FjaGUodm1hLCBhZGRyLCBwdGVwKTsKIApAQCAtMzIxOCw3
+ICszMjIyLDcgQEAgc3RhdGljIGludCBoYW5kbGVfcHRlX2ZhdWx0KHN0cnVjdCBtbV9zdHJ1Y3Qg
+Km1tLAogCQkJCQlwdGUsIHBtZCwgZmxhZ3MsIGVudHJ5KTsKIAl9CiAKLQlpZiAocHRlX251bWEo
+ZW50cnkpKQorCWlmIChwdGVfcHJvdG5vbmUoZW50cnkpKQogCQlyZXR1cm4gZG9fbnVtYV9wYWdl
+KG1tLCB2bWEsIGFkZHJlc3MsIGVudHJ5LCBwdGUsIHBtZCk7CiAKIAlwdGwgPSBwdGVfbG9ja3B0
+cihtbSwgcG1kKTsKQEAgLTMyOTYsNyArMzMwMCw3IEBAIHN0YXRpYyBpbnQgX19oYW5kbGVfbW1f
+ZmF1bHQoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hLAog
+CQkJaWYgKHBtZF90cmFuc19zcGxpdHRpbmcob3JpZ19wbWQpKQogCQkJCXJldHVybiAwOwogCi0J
+CQlpZiAocG1kX251bWEob3JpZ19wbWQpKQorCQkJaWYgKHBtZF9wcm90bm9uZShvcmlnX3BtZCkp
+CiAJCQkJcmV0dXJuIGRvX2h1Z2VfcG1kX251bWFfcGFnZShtbSwgdm1hLCBhZGRyZXNzLAogCQkJ
+CQkJCSAgICAgb3JpZ19wbWQsIHBtZCk7CiAKZGlmZiAtLWdpdCBhL21tL21lbXBvbGljeS5jIGIv
+bW0vbWVtcG9saWN5LmMKaW5kZXggOGY1MzMwZDc0ZjQ3Li41ZTIyZjFmZjRlMzMgMTAwNjQ0Ci0t
+LSBhL21tL21lbXBvbGljeS5jCisrKyBiL21tL21lbXBvbGljeS5jCkBAIC02MzUsNyArNjM1LDcg
+QEAgdW5zaWduZWQgbG9uZyBjaGFuZ2VfcHJvdF9udW1hKHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAq
+dm1hLAogewogCWludCBucl91cGRhdGVkOwogCi0JbnJfdXBkYXRlZCA9IGNoYW5nZV9wcm90ZWN0
+aW9uKHZtYSwgYWRkciwgZW5kLCB2bWEtPnZtX3BhZ2VfcHJvdCwgMCwgMSk7CisJbnJfdXBkYXRl
+ZCA9IGNoYW5nZV9wcm90ZWN0aW9uKHZtYSwgYWRkciwgZW5kLCBQQUdFX05PTkUsIDAsIDEpOwog
+CWlmIChucl91cGRhdGVkKQogCQljb3VudF92bV9udW1hX2V2ZW50cyhOVU1BX1BURV9VUERBVEVT
+LCBucl91cGRhdGVkKTsKIApkaWZmIC0tZ2l0IGEvbW0vbWlncmF0ZS5jIGIvbW0vbWlncmF0ZS5j
+CmluZGV4IGY3OGVjOWJkNDU0ZC4uMjYwMGYzMzQxNmIxIDEwMDY0NAotLS0gYS9tbS9taWdyYXRl
+LmMKKysrIGIvbW0vbWlncmF0ZS5jCkBAIC0xOTAxLDcgKzE5MDEsNiBAQCBvdXRfZmFpbDoKIG91
+dF9kcm9wcmVmOgogCXB0bCA9IHBtZF9sb2NrKG1tLCBwbWQpOwogCWlmIChwbWRfc2FtZSgqcG1k
+LCBlbnRyeSkpIHsKLQkJZW50cnkgPSBwbWRfbWtub25udW1hKGVudHJ5KTsKIAkJc2V0X3BtZF9h
+dChtbSwgbW11bl9zdGFydCwgcG1kLCBlbnRyeSk7CiAJCXVwZGF0ZV9tbXVfY2FjaGVfcG1kKHZt
+YSwgYWRkcmVzcywgJmVudHJ5KTsKIAl9CmRpZmYgLS1naXQgYS9tbS9tcHJvdGVjdC5jIGIvbW0v
+bXByb3RlY3QuYwppbmRleCBjNDNkNTU3OTQxZjguLmFlZjZmZTZhYmEzNiAxMDA2NDQKLS0tIGEv
+bW0vbXByb3RlY3QuYworKysgYi9tbS9tcHJvdGVjdC5jCkBAIC04MiwzNCArODIsMTcgQEAgc3Rh
+dGljIHVuc2lnbmVkIGxvbmcgY2hhbmdlX3B0ZV9yYW5nZShzdHJ1Y3Qgdm1fYXJlYV9zdHJ1Y3Qg
+KnZtYSwgcG1kX3QgKnBtZCwKIAkJb2xkcHRlID0gKnB0ZTsKIAkJaWYgKHB0ZV9wcmVzZW50KG9s
+ZHB0ZSkpIHsKIAkJCXB0ZV90IHB0ZW50OwotCQkJYm9vbCB1cGRhdGVkID0gZmFsc2U7CiAKLQkJ
+CWlmICghcHJvdF9udW1hKSB7Ci0JCQkJcHRlbnQgPSBwdGVwX21vZGlmeV9wcm90X3N0YXJ0KG1t
+LCBhZGRyLCBwdGUpOwotCQkJCWlmIChwdGVfbnVtYShwdGVudCkpCi0JCQkJCXB0ZW50ID0gcHRl
+X21rbm9ubnVtYShwdGVudCk7Ci0JCQkJcHRlbnQgPSBwdGVfbW9kaWZ5KHB0ZW50LCBuZXdwcm90
+KTsKLQkJCQkvKgotCQkJCSAqIEF2b2lkIHRha2luZyB3cml0ZSBmYXVsdHMgZm9yIHBhZ2VzIHdl
+Ci0JCQkJICoga25vdyB0byBiZSBkaXJ0eS4KLQkJCQkgKi8KLQkJCQlpZiAoZGlydHlfYWNjb3Vu
+dGFibGUgJiYgcHRlX2RpcnR5KHB0ZW50KSkKLQkJCQkJcHRlbnQgPSBwdGVfbWt3cml0ZShwdGVu
+dCk7Ci0JCQkJcHRlcF9tb2RpZnlfcHJvdF9jb21taXQobW0sIGFkZHIsIHB0ZSwgcHRlbnQpOwot
+CQkJCXVwZGF0ZWQgPSB0cnVlOwotCQkJfSBlbHNlIHsKLQkJCQlzdHJ1Y3QgcGFnZSAqcGFnZTsK
+LQotCQkJCXBhZ2UgPSB2bV9ub3JtYWxfcGFnZSh2bWEsIGFkZHIsIG9sZHB0ZSk7Ci0JCQkJaWYg
+KHBhZ2UgJiYgIVBhZ2VLc20ocGFnZSkpIHsKLQkJCQkJaWYgKCFwdGVfbnVtYShvbGRwdGUpKSB7
+Ci0JCQkJCQlwdGVwX3NldF9udW1hKG1tLCBhZGRyLCBwdGUpOwotCQkJCQkJdXBkYXRlZCA9IHRy
+dWU7Ci0JCQkJCX0KLQkJCQl9Ci0JCQl9Ci0JCQlpZiAodXBkYXRlZCkKLQkJCQlwYWdlcysrOwor
+CQkJcHRlbnQgPSBwdGVwX21vZGlmeV9wcm90X3N0YXJ0KG1tLCBhZGRyLCBwdGUpOworCQkJcHRl
+bnQgPSBwdGVfbW9kaWZ5KHB0ZW50LCBuZXdwcm90KTsKKwkJCS8qCisJCQkgKiBBdm9pZCB0YWtp
+bmcgd3JpdGUgZmF1bHRzIGZvciBwYWdlcyB3ZQorCQkJICoga25vdyB0byBiZSBkaXJ0eS4KKwkJ
+CSAqLworCQkJaWYgKGRpcnR5X2FjY291bnRhYmxlICYmIHB0ZV9kaXJ0eShwdGVudCkpCisJCQkJ
+cHRlbnQgPSBwdGVfbWt3cml0ZShwdGVudCk7CisJCQlwdGVwX21vZGlmeV9wcm90X2NvbW1pdCht
+bSwgYWRkciwgcHRlLCBwdGVudCk7CisJCQlwYWdlcysrOwogCQl9IGVsc2UgaWYgKElTX0VOQUJM
+RUQoQ09ORklHX01JR1JBVElPTikgJiYgIXB0ZV9maWxlKG9sZHB0ZSkpIHsKIAkJCXN3cF9lbnRy
+eV90IGVudHJ5ID0gcHRlX3RvX3N3cF9lbnRyeShvbGRwdGUpOwogCkBAIC0xNjQsOCArMTQ3LDcg
+QEAgc3RhdGljIGlubGluZSB1bnNpZ25lZCBsb25nIGNoYW5nZV9wbWRfcmFuZ2Uoc3RydWN0IHZt
+X2FyZWFfc3RydWN0ICp2bWEsCiAJCQlpZiAobmV4dCAtIGFkZHIgIT0gSFBBR0VfUE1EX1NJWkUp
+CiAJCQkJc3BsaXRfaHVnZV9wYWdlX3BtZCh2bWEsIGFkZHIsIHBtZCk7CiAJCQllbHNlIHsKLQkJ
+CQlpbnQgbnJfcHRlcyA9IGNoYW5nZV9odWdlX3BtZCh2bWEsIHBtZCwgYWRkciwKLQkJCQkJCW5l
+d3Byb3QsIHByb3RfbnVtYSk7CisJCQkJaW50IG5yX3B0ZXMgPSBjaGFuZ2VfaHVnZV9wbWQodm1h
+LCBwbWQsIGFkZHIsIG5ld3Byb3QpOwogCiAJCQkJaWYgKG5yX3B0ZXMpIHsKIAkJCQkJaWYgKG5y
+X3B0ZXMgPT0gSFBBR0VfUE1EX05SKSB7CmRpZmYgLS1naXQgYS9tbS9wZ3RhYmxlLWdlbmVyaWMu
+YyBiL21tL3BndGFibGUtZ2VuZXJpYy5jCmluZGV4IGRmYjc5ZTAyOGVjYi4uYzI1Zjk0YjMzODEx
+IDEwMDY0NAotLS0gYS9tbS9wZ3RhYmxlLWdlbmVyaWMuYworKysgYi9tbS9wZ3RhYmxlLWdlbmVy
+aWMuYwpAQCAtMTkzLDggKzE5Myw2IEBAIHZvaWQgcG1kcF9pbnZhbGlkYXRlKHN0cnVjdCB2bV9h
+cmVhX3N0cnVjdCAqdm1hLCB1bnNpZ25lZCBsb25nIGFkZHJlc3MsCiAJCSAgICAgcG1kX3QgKnBt
+ZHApCiB7CiAJcG1kX3QgZW50cnkgPSAqcG1kcDsKLQlpZiAocG1kX251bWEoZW50cnkpKQotCQll
+bnRyeSA9IHBtZF9ta25vbm51bWEoZW50cnkpOwogCXNldF9wbWRfYXQodm1hLT52bV9tbSwgYWRk
+cmVzcywgcG1kcCwgcG1kX21rbm90cHJlc2VudChlbnRyeSkpOwogCWZsdXNoX3RsYl9yYW5nZSh2
+bWEsIGFkZHJlc3MsIGFkZHJlc3MgKyBIUEFHRV9QTURfU0laRSk7CiB9Cg==
+--001a11c24e80a2dc410504623c03--
