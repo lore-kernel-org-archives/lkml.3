@@ -1,119 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaJADOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 23:14:33 -0400
-Received: from ozlabs.org ([103.22.144.67]:53449 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120AbaJADOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 23:14:32 -0400
-Date: Wed, 1 Oct 2014 13:14:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: linux-next: manual merge of the vfio tree with the pci tree
-Message-ID: <20141001131421.64cab8d7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752006AbaJADO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 23:14:56 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:50111 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaJADOy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 23:14:54 -0400
+X-IronPort-AV: E=Sophos;i="5.04,630,1406617200"; 
+   d="scan'208";a="46981455"
+Message-ID: <542B71B1.4020103@broadcom.com>
+Date: Tue, 30 Sep 2014 20:14:57 -0700
+From: Prashant <prashant@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/R6xja8/XDl+3OX_S3xS3fFJ"; protocol="application/pgp-signature"
+To: David Miller <davem@davemloft.net>, <eric.dumazet@gmail.com>
+CC: <bpoirier@suse.de>, <mchan@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net v6 4/4] tg3: Fix tx_pending checks for tg3_tso_bug
+References: <1409960135.18724.33.camel@prashant>	<1409961810.26422.149.camel@edumazet-glaptop2.roam.corp.google.com>	<20140905.171306.1460013939580748402.davem@davemloft.net> <20140905.213902.1124686922505260665.davem@davemloft.net>
+In-Reply-To: <20140905.213902.1124686922505260665.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/R6xja8/XDl+3OX_S3xS3fFJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Alex,
-
-Today's linux-next merge of the vfio tree got a conflict in
-drivers/pci/msi.c between commits a160fe94cb53 ("PCI/MSI: Remove unused
-get_cached_msi_msg()") and 18ef822c59f6 ("PCI/MSI: Rename
-__get_cached_msi_msg() to get_cached_msi_msg()") from the pci tree and
-commit 3b307ffe3faa ("PCI: Export MSI message relevant functions") from
-the vfio tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).  And then I added this merge fix patch (I should probably
-also have added an include of linux/irq.h):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 1 Oct 2014 13:09:58 +1000
-Subject: [PATCH] vfio: update for get_cached_msi_msg API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/vfio/pci/vfio_pci_intrs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_=
-intrs.c
-index 553212f037c3..a068bb0d69e5 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -559,7 +559,7 @@ static int vfio_msi_set_vector_signal(struct vfio_pci_d=
-evice *vdev,
- 	if (msix) {
- 		struct msi_msg msg;
-=20
--		get_cached_msi_msg(irq, &msg);
-+		get_cached_msi_msg(irq_get_msi_desc(irq), &msg);
- 		write_msi_msg(irq, &msg);
- 	}
-=20
---=20
-2.1.1
 
 
-Someone needs to remember to send this fix to Linus when these 2 trees
-are merged into his tree ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/pci/msi.c
-index d077749df25b,e468d65eb238..000000000000
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@@ -288,6 -305,14 +288,7 @@@ void get_cached_msi_msg(struct msi_des
- =20
-  	*msg =3D entry->msg;
-  }
- -
- -void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
- -{
- -	struct msi_desc *entry =3D irq_get_msi_desc(irq);
- -
- -	__get_cached_msi_msg(entry, msg);
- -}
-+ EXPORT_SYMBOL_GPL(get_cached_msi_msg);
- =20
-  void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
-  {
-
---Sig_/R6xja8/XDl+3OX_S3xS3fFJ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUK3GVAAoJEMDTa8Ir7ZwV7b8QAI9ZgnIv/X9KNo8RGn5CONJu
-qWMAuGbfXtXdXM8QymrtjELB9Qx5+Hk7sgUg2aOEIeN/r/AB4/2Mb762pzyiWybD
-1igGzwgTGZjNwT3s7hycj8wGFRdcsvI1dfzkYvIdpx1vhG5N9po7Nm05mFln1AeM
-MSTvCOdEiEnYAVPa020xgLZuaQgijv5F69H7iJHrn38x9DWU8RguKvCs7l7J0KmO
-MgM86Ut8qEWsBPuMoEklTIX3NYmH5hsaG2fK/flu7Yd7NIiO6j7unoDWOqnL/NH6
-LM8taEJ0rZecfL+M0zpWQb07roITTfaSyZbX0nIsJL9KOXPSA69u89u+TUYVcOmb
-a+rF836xmltOYQkJY7lIz2iL3VnGBVB+yOTdDa9vfFBM1zrjBZ5J902yKiemRkkz
-miFCN4Y6PusJe/behoQWMID508NnPaG8e3eONe8rWQ4wi/7+ZZzO/lW+KNo4ivZE
-a3rC8aFWFGW66b6uPdMeL99QNapwHdRJJWcMth6vZe2i/BtwFvytrOw1oUYSD2hn
-UZrd7I2Tmyi5Hy2RupYs5J3NGKhtevEgIT4P9BRQ6CLtNcf3laC0zJxhWKFtZFrv
-FcSVUOD+hIx+rx/NbNkoj8MTCXOnmRjps0KTQPcSwbDAg4Jz/YvS/IjtNYLM6yqp
-8uqYnjLjbEa+z2jNrR0C
-=6koS
------END PGP SIGNATURE-----
-
---Sig_/R6xja8/XDl+3OX_S3xS3fFJ--
+On 9/5/2014 9:39 PM, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Fri, 05 Sep 2014 17:13:06 -0700 (PDT)
+>
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Fri, 05 Sep 2014 17:03:30 -0700
+>>
+>>> Instead of this private helper (and pretty limited one btw), we could
+>>> add a core function, that would build skbs with order-0 fragments.
+>>>
+>>> Instead of skb_linearize(), I guess many call sites could instead use
+>>> this new helper.
+>>>
+>>> Because as you said, skb_linearize() of one 64KB GSO packet can ask
+>>> order-5 allocations, and this generally does not work reliably.
+>>
+>> xen-netback could make use of this helper too.
+>
+> I was curious what it might look like so I cobbled the following
+> completely untested patch together :-)
+>
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index da1378a..eba0ad6 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -955,6 +955,67 @@ struct sk_buff *skb_copy(const struct sk_buff *skb, gfp_t gfp_mask)
+>   EXPORT_SYMBOL(skb_copy);
+>
+>   /**
+> + *	skb_copy_pskb	-	copy sk_buff into a paged skb
+> + *	@oskb: buffer to copy
+> + *	@gfp_mask: allocation priority
+> + *
+> + *	Normalize a paged skb into one that maximally uses order
+> + *	zero pages in it's fragment array.  This is used to canonicalize
+> + *	spaghetti SKBs that use the page array inefficiently (f.e. only
+> + *	one byte per page frag).
+> + */
+> +
+> +struct sk_buff *skb_copy_pskb(const struct sk_buff *oskb, gfp_t gfp_mask)
+> +{
+> +	unsigned int data_len = oskb->data_len;
+> +	int offset, npages, i;
+> +	struct sk_buff *skb;
+> +
+> +	npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+> +	if (npages > MAX_SKB_FRAGS)
+> +		return NULL;
+> +
+> +	skb = __alloc_skb(skb_end_offset(oskb), gfp_mask,
+> +			  skb_alloc_rx_flag(oskb), NUMA_NO_NODE);
+> +	if (!skb)
+> +		return NULL;
+> +
+> +	skb_reserve(skb, skb_headroom(oskb));
+> +	skb_put(skb, skb_headlen(oskb));
+> +	skb_copy_from_linear_data(oskb, skb->data, skb->len);
+> +
+> +	copy_skb_header(skb, oskb);
+> +
+> +	skb->truesize += data_len;
+> +	offset = skb_headlen(oskb);
+> +	for (i = 0; i < npages; i++) {
+> +		struct page *page = alloc_page(gfp_mask);
+> +		unsigned int chunk;
+> +		u8 *vaddr;
+> +
+> +		if (!page) {
+> +			kfree(skb);
+> +			skb = NULL;
+> +			break;
+> +		}
+> +
+> +		chunk = min_t(unsigned int, data_len, PAGE_SIZE);
+> +		skb_fill_page_desc(skb, i, page, 0, chunk);
+> +
+> +		vaddr = kmap_atomic(page);
+> +		skb_copy_bits(oskb, offset, vaddr, chunk);
+> +		kunmap_atomic(vaddr);
+> +
+> +		offset += chunk;
+> +		data_len -= chunk;
+> +		skb->data_len += chunk;
+> +	}
+> +
+> +	return skb;
+> +}
+> +EXPORT_SYMBOL(skb_copy_pskb);
+> +
+> +/**
+>    *	__pskb_copy_fclone	-  create copy of an sk_buff with private head.
+>    *	@skb: buffer to copy
+>    *	@headroom: headroom of new skb
+>
+Sorry about the late reply, out of all the HW bug conditions checked in 
+tg3_tx_frag_set() the most frequently hit condition is the short 8 byte 
+dma bug, where the chip cannot handle TX descriptors whose data buffer 
+is 8 bytes or less. Most of the LSO skb's given to the driver has their 
+fragments filled upto PAGE_SIZE (expect the last fragment depending on 
+skb->len). And if such a LSO skb's last fragment meets the 8 bytes HW 
+bug condition the above routine will not help workaround this particular 
+case.
