@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaJALc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:32:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33178 "EHLO mail.skyhub.de"
+	id S1751429AbaJALg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:36:26 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:38039 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751674AbaJALcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:32:55 -0400
-Date: Wed, 1 Oct 2014 13:32:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
-        dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] edac: Add DDR3 LRDIMM support, entries in
- edac_mem_types[]
-Message-ID: <20141001113250.GE18271@pd.tnic>
-References: <1411070218-10258-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1411070218-10258-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750768AbaJALgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 07:36:24 -0400
+Message-ID: <1412163388.26751.39.camel@iivanov-dev>
+Subject: Re: [PATCH v2] thermal: Add QPNP PMIC temperature alarm driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Kiran Padwal <kiran.padwal@smartplayin.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Date: Wed, 01 Oct 2014 14:36:28 +0300
+In-Reply-To: <542B088A.1050601@codeaurora.org>
+References: <1411651825-14240-1-git-send-email-iivanov@mm-sol.com>
+		  <54254C4E.3070807@smartplayin.com> <1411998865.5395.5.camel@iivanov-dev>
+		 <542A31DF.7020402@smartplayin.com> <1412062606.5395.10.camel@iivanov-dev>
+	 <542B088A.1050601@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 02:56:58PM -0500, Aravind Gopalakrishnan wrote:
-> F15hM60h adds support for DDR4 and DDR3 LRDIMMS. Adding them here.
+On Tue, 2014-09-30 at 12:46 -0700, Stephen Boyd wrote:
+> On 09/30/14 00:36, Ivan T. Ivanov wrote:
+> > On Tue, 2014-09-30 at 10:00 +0530, Kiran Padwal wrote:
+> >>
+> >> I have Linaro cross tool chain with version-4.8.3 and I am simply doing "make zImage" without any option.
+> > Hm, no warnings with arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3 and
+> > arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.9-2014.09, but
+> > indeed arm-linux-gnueabihf-gcc (crosstool-NG linaro-1.13.1-4.8-2014.03.
+> >
+> > I will say that this is false positive :-). Please update your tool-chain.
 > 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
->  drivers/edac/edac_mc.c | 3 +++
->  include/linux/edac.h   | 2 ++
->  2 files changed, 5 insertions(+)
+> Hopefully you're joking. Once this merges someone will find the warning
+> and complain. Telling them to upgrade their compiler isn't going to work.
+
+If it is known to be buggy why not?
+
 > 
-> diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-> index 9f134823..71fd9fb 100644
-> --- a/drivers/edac/edac_mc.c
-> +++ b/drivers/edac/edac_mc.c
-> @@ -146,6 +146,9 @@ const char *edac_mem_types[] = {
->  	"Rambus XDR",
->  	"Unbuffered DDR3 RAM",
->  	"Registered DDR3 RAM",
-> +	"Load-Reduce DDR3 RAM",
+> I wonder if checking for rc != 0 instead of rc < 0 would silence the
+> warning? 
 
-Renamed it to "Load-Reduced DDR3 RAM" while applying.
+No. Anyway, will find some way to silence this warning.
 
-Also, applied the following cleanup ontop:
+Thanks,
+Ivan
 
----
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH] EDAC: Sync memory types and names
-
-Make keeping the sync between the mem_types enum and the actual string
-names simpler by using designated initializers.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/edac/edac_mc.c | 43 ++++++++++++++++++++-----------------------
- 1 file changed, 20 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 129ff9c36a78..1747906f10ce 100644
---- a/drivers/edac/edac_mc.c
-+++ b/drivers/edac/edac_mc.c
-@@ -125,30 +125,27 @@ static void edac_mc_dump_mci(struct mem_ctl_info *mci)
- 
- #endif				/* CONFIG_EDAC_DEBUG */
- 
--/*
-- * keep those in sync with the enum mem_type
-- */
- const char * const edac_mem_types[] = {
--	"Empty csrow",
--	"Reserved csrow type",
--	"Unknown csrow type",
--	"Fast page mode RAM",
--	"Extended data out RAM",
--	"Burst Extended data out RAM",
--	"Single data rate SDRAM",
--	"Registered single data rate SDRAM",
--	"Double data rate SDRAM",
--	"Registered Double data rate SDRAM",
--	"Rambus DRAM",
--	"Unbuffered DDR2 RAM",
--	"Fully buffered DDR2",
--	"Registered DDR2 RAM",
--	"Rambus XDR",
--	"Unbuffered DDR3 RAM",
--	"Registered DDR3 RAM",
--	"Load-Reduced DDR3 RAM",
--	"Unbuffered DDR4 RAM",
--	"Registered DDR4 RAM",
-+	[MEM_EMPTY]	= "Empty csrow",
-+	[MEM_RESERVED]	= "Reserved csrow type",
-+	[MEM_UNKNOWN]	= "Unknown csrow type",
-+	[MEM_FPM]	= "Fast page mode RAM",
-+	[MEM_EDO]	= "Extended data out RAM",
-+	[MEM_BEDO]	= "Burst Extended data out RAM",
-+	[MEM_SDR]	= "Single data rate SDRAM",
-+	[MEM_RDR]	= "Registered single data rate SDRAM",
-+	[MEM_DDR]	= "Double data rate SDRAM",
-+	[MEM_RDDR]	= "Registered Double data rate SDRAM",
-+	[MEM_RMBS]	= "Rambus DRAM",
-+	[MEM_DDR2]	= "Unbuffered DDR2 RAM",
-+	[MEM_FB_DDR2]	= "Fully buffered DDR2",
-+	[MEM_RDDR2]	= "Registered DDR2 RAM",
-+	[MEM_XDR]	= "Rambus XDR",
-+	[MEM_DDR3]	= "Unbuffered DDR3 RAM",
-+	[MEM_RDDR3]	= "Registered DDR3 RAM",
-+	[MEM_LRDDR3]	= "Load-Reduced DDR3 RAM",
-+	[MEM_DDR4]	= "Unbuffered DDR4 RAM",
-+	[MEM_RDDR4]	= "Registered DDR4 RAM",
- };
- EXPORT_SYMBOL_GPL(edac_mem_types);
- 
--- 
-2.0.0
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
