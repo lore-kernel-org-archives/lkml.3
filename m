@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaJAMjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 08:39:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34291 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751053AbaJAMjT (ORCPT
+	id S1751413AbaJAMmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 08:42:43 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40061 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaJAMmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 08:39:19 -0400
-Date: Wed, 1 Oct 2014 14:39:14 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de, arnd@arndb.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141001123914.GA25307@kwain>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140929150837.GD8912@kwain>
+	Wed, 1 Oct 2014 08:42:42 -0400
+Date: Wed, 1 Oct 2014 13:42:27 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>,
+        Andrew Pinski <apinski@cavium.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit
+ ABI syscalls to avoid confusion of not splitting the registers
+Message-ID: <20141001124226.GI12702@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-9-git-send-email-apinski@cavium.com>
+ <3318813.yqP9pCQtAB@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140929150837.GD8912@kwain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3318813.yqP9pCQtAB@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, Arnd, Felipe,
-
-On Mon, Sep 29, 2014 at 05:08:37PM +0200, Antoine Tenart wrote:
-> On Tue, Sep 23, 2014 at 12:28:03PM +0200, Antoine Tenart wrote:
-> > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> > and DMA mask, to support USB2 ChipIdea controllers that don't need
-> > specific functions.
+On Thu, Sep 04, 2014 at 11:11:04AM +0100, Arnd Bergmann wrote:
+> On Wednesday 03 September 2014 14:19:02 Andrew Pinski wrote:
+> > + * For 32bit abis where 64bit can be passed via one
+> > + * register, use the same naming as the 64bit ones
+> > + * as they will only have a 64 bit off_t.
+> >   */
+> > -#if __BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)
+> > +#if (__BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)) || \
+> > +       defined(__ARCH_WANT_64BIT_SYSCALLS)
 > 
-> Did we agree on the modifications needed to get this accepted? If so,
-> can one of you sum up what's need to be done, I got a bit lost reading
-> all the discussions on this thread.
-> 
-> Anyway, that would be good to get this series accepted as the Berlin USB
-> support depends on it. This series has been out since the beginning of
-> June and non-critical changes can be added by future series.
+> I'm not sure if __ARCH_WANT_64BIT_SYSCALLS is the best name for
+> this, since it's really only about off_t. It took me a while
+> to understand what you are doing here.
 
-I'm seriously considering sending a new version with dt-only support as I
-don't need the other case. There are still many discussions between the
-three of you regarding DMA support, which is not a problem for my use
-case. As this is not a modification of an existing driver, future
-additions can be done to support more cases later and we do not need
-this driver to handle all possible cases right now as this won't be a
-regression.
+I'm not sure I fully get it yet. So with this change, we avoid using
+syscall numbers like __NR_ftruncate64 in favour of __NR_ftruncate. Why?
+(maybe there's a valid reason, just not getting it).
 
-Please, can one of you sum up the modifications needed to get this
-accepted, if any. If the dt part is fine for you, I'll resend this
-series with dt-only support. The platform compatibility can surely be
-added later, when needed by someone, and when an agreement on how to do
-it is reached.
-
-I'm afraid this series is currently blocked by implementation related
-discussions not linked with the USB Berlin support, while this could be
-done as a follow up series.
-
-Thanks,
-
-Antoine
+Either way, ILP32 would still end up calling sys_ftruncate64() (rather
+than the native sys_ftruncate()).
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Catalin
