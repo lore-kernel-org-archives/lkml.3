@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479AbaJANpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:45:52 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:64714 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaJANpu (ORCPT
+	id S1751538AbaJANrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:47:51 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49902 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750992AbaJANrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:45:50 -0400
+	Wed, 1 Oct 2014 09:47:49 -0400
+Date: Wed, 1 Oct 2014 14:47:30 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/2] drm/i2c:tda998x: Use the HDMI audio CODEC
+Message-ID: <20141001134729.GP5182@n2100.arm.linux.org.uk>
+References: <cover.1411547014.git.moinejf@free.fr> <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr> <20140930192540.GL4273@sirena.org.uk> <20141001112846.0dbc80ae@armhf>
 MIME-Version: 1.0
-In-Reply-To: <542C0441.5080508@sam-solutions.com>
-References: <1410537872-17274-1-git-send-email-d.lavnikevich@sam-solutions.com>
-	<1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
-	<1410854903-26419-3-git-send-email-d.lavnikevich@sam-solutions.com>
-	<CAOMZO5CgrQ6Wf6kStga40TUKx9dARygCNB4OYSUoG3c8eUYbrA@mail.gmail.com>
-	<542C0441.5080508@sam-solutions.com>
-Date: Wed, 1 Oct 2014 10:45:48 -0300
-Message-ID: <CAOMZO5BS6X2NTY4q7RKoKdhJNbEANSa2wXur3_Hyxp8nQn5Avw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] ARM: dts: pbab01: enable I2S audio on
- phyFLEX-i.MX6 boards
-From: Fabio Estevam <festevam@gmail.com>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Cc: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, perex@perex.cz,
-        Takashi Iwai <tiwai@suse.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001112846.0dbc80ae@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 10:40 AM, Dmitry Lavnikevich
-<d.lavnikevich@sam-solutions.com> wrote:
+On Wed, Oct 01, 2014 at 11:28:46AM +0200, Jean-Francois Moine wrote:
+> On Tue, 30 Sep 2014 20:25:40 +0100
+> Mark Brown <broonie@kernel.org> wrote:
+> 
+> > > +	request_module("snd-soc-hdmi-codec");
+> > > +	pdev = platform_device_register_resndata(&priv->hdmi->dev,
+> > > +						 "hdmi-audio-codec",
+> > > +						  PLATFORM_DEVID_NONE,
+> > > +						  NULL, 0,
+> > > +						  &tda998x_hdmi_data,
+> > > +						  sizeof tda998x_hdmi_data);  
+> > 
+> > Why is this request_module() needed?  If there is a good reason for it
+> > we should have some documentation.
+> 
+> The reason is simple: as the HDMI CODEC is not declared in the DT, the
+> associated module must be loaded in memory.
 
->> No need to have this 'regulator-always-on'
->>
->
-> why is there no need for 'regulator-alweys-on'? I see it in
+Module auto-loading works in non-DT environments too.  Unlike the
+direction that the arm port is going, the core kernel features, such
+as driver autoloading, are coded *not* to require DT (or indeed any
+particular firmware.)
 
-For a regulator that is not GPIO controlled you don't need to pass
-'regulator-always-on'.
+There are circumstances where this has been lost sight of (such as
+the gpiod stuff), but as a general rule, features do not rely on DT.
 
->
->>> +&ssi2 {
->>> +       fsl,mode = "i2s-slave";
->>
->>
->> Please remove this 'fsl,mode' property. It is ignored by the fsl_ssi
->> driver.
->
->
-> yes, thanks. It is present in Documentation but now I see that it
-> was actually removed not that long ago. I will remove this
-> property with next patchset.
+Platform drivers will be auto-loaded if they have:
 
-Correct, I recently sent a patch removing it and it is in Mark's tree now:
-https://git.kernel.org/cgit/linux/kernel/git/broonie/sound.git/commit/?h=topic/fsl-ssi&id=b93427b1c057841602e0fe2005153a6e82f2e658
+MODULE_ALIAS(PLATFORM_MODULE_PREFIX DRIVER_NAME);
+
+and DRIVER_NAME matches the non-id part of the platform device name.
+In the case of platform driver ID tables:
+
+MODULE_DEVICE_TABLE(platform, id-table);
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
