@@ -1,148 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaJAVck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:32:40 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:34611 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaJAVci (ORCPT
+	id S1753949AbaJAVdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:33:00 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:33520 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412AbaJAVbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:32:38 -0400
-MIME-Version: 1.0
-Reply-To: rajatxjain@gmail.com
-In-Reply-To: <20141001072949.GA1322@katana>
-References: <542A3593.4020108@gmail.com>
-	<CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
-	<20140930211339.GA1264@katana>
-	<CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
-	<20141001072949.GA1322@katana>
-Date: Wed, 1 Oct 2014 14:32:37 -0700
-Message-ID: <CAA93t1qjzAWQqkZQcJYFZxvuhy6o1N2gJ+j=AKgcqE=zup=BJw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over I2C
-From: Rajat Jain <rajatxjain@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Oct 2014 17:31:33 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH 3/6] ARM: dts: add dts for Tronsmart S89 Elite TV box
+Date: Wed,  1 Oct 2014 23:29:43 +0200
+Message-Id: <1412198986-26534-4-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
+References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This adds a dts for the Tronsmart S89 Elite, a set-top box based on
+the Amlogic S802 SoC with a 8GiB NAND flash, USB ports, 10/100 Mbps
+Ethernet adapter, WiFi, HDMI and a micro SD slot.
 
-On Wed, Oct 1, 2014 at 12:29 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> ===========================================================
->> ...<snip>...
->>
->> +0. Why have an I2C interface to a PCIe switch?
->> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->> +Other than the regular PCI express interface, most modern PCIe switches (e.g.
->> +from IDT and PLX) have an I2C based secondary interface. This interface allows
->> +access to all the registers of the switch. Some of these registers may not even
->> +be accessible over the regular PCI interface. Also, there are certain registers
->> +that can be written to, using only the I2C interface and may only be read-only
->> +using the PCI interface.
->> +
->> +This I2C interface is often used in designs involving these switches, and can
->> +be used for a variety of use cases where the switch needs to be configured
->> +independent of the PCI subsystem (and likely before PCI enumeration). Some
->> +examples:
->> +
->> +* Dividing a PCIe switch into multiple "virtual" switches. Using this feature,
->> +  a switch could be connected to 2 root ports for instance, each managing its
->> +  own PCI hierarchy, and the traffic from one virtual switch does not leak into
->> +  another.
->> +
->> +* Managing Transparent / Non-transparent bridging, and changing them
->> on-the-fly.
->> +  There are ports that can be converted into "Non-transparent" bridge ports.
->> +  Essentially this is used to create different domains (not visible to
->> +  software). In a dynamic distributed system, it may be desirable to change a
->> +  transparent bridge to non-transparent or vice versa, for example, to handle a
->> +  failover situation.
->> +
->> +* Buggy hardware / Bad EEPROM configuration. There may be cases where an errata
->> +  involving register writes need to be applied before enumerating over PCI.
->> +  Also these switches are typically attached to an EEPROM that is supposed to
->> +  initialize the switch. If that EEPROM is not present, or contains bad
->> +  initialization data, this I2C interface can be used to fix that.
->> +
->> +* Changing switch configuration on the fly. In a multi-homed or complex
->> +  distributed systemsystem, there may be a need to change the switch
->> +  configuration (eg. change the upstream port, or the port or lane
->> +  configuration etc) to address run time scenarios (CPU plug out etc).
->> +
->>
->> ...<snip>...
->> ===========================================================
->>
->> I am myself leaning towards drivers/pci/switch/. And am wanting to
->> hear what other think.
->
-> I had a closer look and my first question is now if we really need a
-> kernel driver for this?
->
-> The sysfs interface is basically to PEEK/POKE registers of the switch.
-> How registers get accessed is part of userspace. Well, then it might
-> even be easier to construct the proper i2c messages in userspace, too,
-> and send them via i2c-dev (instead of writing to various files in
-> sysfs).
->
-> The Kernel API is also PEEK/POKE register. I am not an PCI expert, but I
-> can't see a user in this form. What I'd expect would be more like
->
-> pci_switch_set_mode(some_device, PCI_BRIDGE_MODE_TRANSPARENT);
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
+ arch/arm/boot/dts/meson8-vega-s89e.dts | 65 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 arch/arm/boot/dts/meson8-vega-s89e.dts
 
-I understand and agree. In fact in the internal version of this driver
-(that I have not yet sent out for review), we do have APIs added
-similar to what you mention above. Currently I have APIs that:
-- Enable / Disable PCIe links.
-- Change the upstream port.
-- Enable / Disable Non-transparent mode etc.
+diff --git a/arch/arm/boot/dts/meson8-vega-s89e.dts b/arch/arm/boot/dts/meson8-vega-s89e.dts
+new file mode 100644
+index 0000000..93c3dfd
+--- /dev/null
++++ b/arch/arm/boot/dts/meson8-vega-s89e.dts
+@@ -0,0 +1,65 @@
++/*
++ * Copyright 2014 Beniamino Galvani <b.galvani@gmail.com>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ *     You should have received a copy of the GNU General Public License
++ *     along with this program. If not, see <http://www.gnu.org/licenses/>.   
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++
++/dts-v1/;
++/include/ "meson8.dtsi"
++
++/ {
++	model = "Tronsmart Vega S89 Elite";
++	compatible = "tronsmart,vega-s89e", "amlogic,meson8";
++
++	aliases {
++		serial0 = &uart_AO;
++	};
++
++	memory {
++		reg = <0x40000000 0x80000000>;
++	};
++};
++
++&uart_AO {
++	status = "okay";
++};
+-- 
+1.9.1
 
-However, I did not send them all out for review because I don't have
-the hardware to try and test them out on ALL the supported devices
-(also would require considerable amount of time). I have tested those
-APIs on PEX8713 only, because for e.g.I only have PEX8713 in a HW that
-connects to 2 CPUs at the same time.
-
->
-> and then a shim layer would make sure the proper driver for the switch
-> sends the proper commands. Again, I don't know if the decision of
-> setting a mode/creating virtual switches... is even desirable in kernel
-> space. If so, then this is probably a sub-subsystem
-> drivers/pci/switches, but needs way more abstraction. Otherwise,
-> userspace will currently do IMO.
-
-You are right, what this basic driver abstracts is the I2C interface
-(i.e. the command format and response format etc) of the PCIe switch,
-and not really the PCIe switch itself (Hence I was calling it PEX8xxx
-I2C driver. I think that is still a useful abstraction to have,
-because that can be used to build the actual logic code that program
-the switch. Yes, I agree that we can have another layer of abstraction
-so that we have:
-
-- The Core logic code (that knows "How do we want the switch to behave")
-- A PEX8xxx driver (that knows "which registers to program")
-- A PEX8xxx I2C driver ("How to program those registers") - this driver.
-
-I do understand that your suggestion is to include and bundle the
-latter two into this same driver. However since the possibilities
-(about which APIs to provide) are too much and not enough hardware to
-test it, would it be acceptable if I include those APIs, but support
-them for only 1 device (and return error for others)? Note that even
-with those APIs, I feel exposing the Read/Write APIs will be useful -
-because what core logic wants to achieve can be highly device and
-platform specific. Also, a sysfs interface for this switch is proving
-to be a very helpful development aid :-) (personal experience :-))
-
-Thanks & Best Regards,
-
-Rajat Jain
