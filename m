@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaJALIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:08:16 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:38000 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaJALIP (ORCPT
+	id S1751456AbaJALKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:10:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:58976 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053AbaJALKt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:08:15 -0400
-Message-ID: <542BE095.3010107@linaro.org>
-Date: Wed, 01 Oct 2014 20:08:05 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Kees Cook <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Deepak Saxena <dsaxena@linaro.org>, "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system call
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com>
-In-Reply-To: <20140826175128.GD23445@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 07:10:49 -0400
+Message-ID: <1412161847.19209.62.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH v2 02/17] powerpc/cell: Move data segment faulting code
+ out of cell platform
+From: Michael Neuling <mikey@neuling.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, anton@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
+        imunsie@au1.ibm.com, cbe-oss-dev@lists.ozlabs.org
+Date: Wed, 01 Oct 2014 21:10:47 +1000
+In-Reply-To: <8738b8nmwr.fsf@linux.vnet.ibm.com>
+References: <1412073306-13812-1-git-send-email-mikey@neuling.org>
+	 <1412073306-13812-3-git-send-email-mikey@neuling.org>
+	 <8738b8nmwr.fsf@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will,
+On Wed, 2014-10-01 at 15:15 +0530, Aneesh Kumar K.V wrote:
+> Michael Neuling <mikey@neuling.org> writes:
+> 
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> >
+> > __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> > required for a particular EA and mm struct.
+> >
+> > This code is generically useful for other co-processors.  This moves the code
+> > of the cell platform so it can be used by other powerpc code.  It also adds 1TB
+> > segment handling which Cell didn't have.
+> >
+> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> >  arch/powerpc/include/asm/mmu-hash64.h  |  7 ++++-
+> >  arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
+> >  arch/powerpc/mm/slb.c                  |  3 ---
+> >  arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
+> >  4 files changed, 58 insertions(+), 41 deletions(-)
+> >
+> > diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+> > index d765144..6d0b7a2 100644
+> > --- a/arch/powerpc/include/asm/mmu-hash64.h
+> > +++ b/arch/powerpc/include/asm/mmu-hash64.h
+> > @@ -189,7 +189,12 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
+> >  #define LP_MASK(i)	((0xFF >> (i)) << LP_SHIFT)
+> >  
+> >  #ifndef __ASSEMBLY__
+> > -
+> > +static inline int slb_vsid_shift(int ssize)
+> > +{
+> > +	if (ssize == MMU_SEGSIZE_256M)
+> > +		return SLB_VSID_SHIFT;
+> > +	return SLB_VSID_SHIFT_1T;
+> > +}
+> >  static inline int segment_shift(int ssize)
+> >  {
+> >  	if (ssize == MMU_SEGSIZE_256M)
+> > diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> > index ba7df14..b865697 100644
+> > --- a/arch/powerpc/mm/copro_fault.c
+> > +++ b/arch/powerpc/mm/copro_fault.c
+> > @@ -90,3 +90,51 @@ out_unlock:
+> >  	return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> > +
+> > +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
+> > +{
+> > +	int psize, ssize;
+> > +
+> > +	*esid = (ea & ESID_MASK) | SLB_ESID_V;
+> > +
+> > +	switch (REGION_ID(ea)) {
+> > +	case USER_REGION_ID:
+> > +		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
+> > +#ifdef CONFIG_PPC_MM_SLICES
+> > +		psize = get_slice_psize(mm, ea);
+> > +#else
+> > +		psize = mm->context.user_psize;
+> > +#endif
+> 
+> We don't really need that as explained in last review.
 
-When I was looking into syscall_trace_exit() more closely, I found
-another (big) problem.
-There are two system calls, execve() and rt_sigreturn(), which change
-'syscallno' in pt_regs to -1 in start_thread() and restore_sigframe(),
-respectively.
+That cleanup is in patch 10. I avoided changing it here so it's clearer
+that what is being removed is the same as what is being added.
 
-Since syscallno is not valid anymore in syscall_trace_exit() for these
-system calls, we cannot create a correct syscall exit record for tracepoint
-in trace_sys_exit() (=> ftrace_syscall_exit()) and for audit in audit_syscall_exit().
+Mikey
 
-This does not happen on arm because syscall numbers are kept in
-thread_info on arm.
-
-How can we deal with this issue?
-
--Takahiro AKASHI
-
-
-On 08/27/2014 02:51 AM, Will Deacon wrote:
-> On Fri, Aug 22, 2014 at 01:35:17AM +0100, AKASHI Takahiro wrote:
->> On 08/22/2014 02:08 AM, Kees Cook wrote:
->>> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
->>> <takahiro.akashi@linaro.org> wrote:
->>>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->>>> index 8876049..c54dbcc 100644
->>>> --- a/arch/arm64/kernel/ptrace.c
->>>> +++ b/arch/arm64/kernel/ptrace.c
->>>> @@ -1121,9 +1121,29 @@ static void tracehook_report_syscall(struct pt_regs *regs,
->>>>
->>>>    asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->>>>    {
->>>> +       unsigned int saved_syscallno = regs->syscallno;
->>>> +
->>>>           if (test_thread_flag(TIF_SYSCALL_TRACE))
->>>>                   tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
->>>>
->>>> +       if (IS_SKIP_SYSCALL(regs->syscallno)) {
->>>> +               /*
->>>> +                * RESTRICTION: we can't modify a return value of user
->>>> +                * issued syscall(-1) here. In order to ease this flavor,
->>>> +                * we need to treat whatever value in x0 as a return value,
->>>> +                * but this might result in a bogus value being returned.
->>>> +                */
->>>> +               /*
->>>> +                * NOTE: syscallno may also be set to -1 if fatal signal is
->>>> +                * detected in tracehook_report_syscall_entry(), but since
->>>> +                * a value set to x0 here is not used in this case, we may
->>>> +                * neglect the case.
->>>> +                */
->>>> +               if (!test_thread_flag(TIF_SYSCALL_TRACE) ||
->>>> +                               (IS_SKIP_SYSCALL(saved_syscallno)))
->>>> +                       regs->regs[0] = -ENOSYS;
->>>> +       }
->>>> +
->>>
->>> I don't have a runtime environment yet for arm64, so I can't test this
->>> directly myself, so I'm just trying to eyeball this. :)
->>>
->>> Once the seccomp logic is added here, I don't think using -2 as a
->>> special value will work. Doesn't this mean the Oops is possible by the
->>> user issuing a "-2" syscall? As in, if TIF_SYSCALL_WORK is set, and
->>> the user passed -2 as the syscall, audit will be called only on entry,
->>> and then skipped on exit?
->>
->> Oops, you're absolutely right. I didn't think of this case.
->> syscall_trace_enter() should not return a syscallno directly, but always
->> return -1 if syscallno < 0. (except when secure_computing() returns with -1)
->> This also implies that tracehook_report_syscall() should also have a return value.
->>
->> Will, is this fine with you?
->
-> Well, the first thing that jumps out at me is why this is being done
-> completely differently for arm64 and arm. I thought adding the new ptrace
-> requests would reconcile the differences?
->
-> Will
->
