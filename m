@@ -1,74 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230AbaJARJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:09:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45424 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721AbaJARJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:09:03 -0400
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] ARM: qcom: add description of KPSS WDT for IPQ8064
-Date: Wed,  1 Oct 2014 12:03:15 -0500
-Message-Id: <50c0ec1514173ce07641a95839e939dcda41b110.1412182773.git.joshc@codeaurora.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1412182773.git.joshc@codeaurora.org>
-References: <cover.1412182773.git.joshc@codeaurora.org>
-In-Reply-To: <cover.1412182773.git.joshc@codeaurora.org>
-References: <cover.1412182773.git.joshc@codeaurora.org>
+	id S1753290AbaJARJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:09:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39884 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575AbaJARJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:09:48 -0400
+Date: Wed, 1 Oct 2014 14:09:45 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v2 02/11] perf tools: Refactor unit and scale function
+ parameters
+Message-ID: <20141001170945.GE2799@kernel.org>
+References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
+ <1412174192-7010-3-git-send-email-matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412174192-7010-3-git-send-email-matt@console-pimps.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Describe the Krait Processor Sub-system (KPSS) Watchdog timer in the
-IPQ8064 device tree.  Also, add a fixed-clock description of SLEEP_CLK,
-which will do for now.
+Em Wed, Oct 01, 2014 at 03:36:23PM +0100, Matt Fleming escreveu:
+> From: Matt Fleming <matt.fleming@intel.com>
+> 
+> Passing pointers to alias modifiers 'unit' and 'scale' isn't very
+> future-proof since if we add more modifiers to the list we'll end up
+> passing more arguments.
+> 
+> Instead wrap everything up in a struct perf_pmu_info, which can easily
+> be expanded when additional alias modifiers are necessary in the future.
+> 
+> Acked-by: Jiri Olsa <jolsa@kernel.org>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+> 
+> Changes in v2:
+>  - Added Jiri's ACK
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
----
- arch/arm/boot/dts/qcom-ipq8064.dtsi | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+This one was applied already, with Jiri's ack.
 
-diff --git a/arch/arm/boot/dts/qcom-ipq8064.dtsi b/arch/arm/boot/dts/qcom-ipq8064.dtsi
-index 244f857..3372b49 100644
---- a/arch/arm/boot/dts/qcom-ipq8064.dtsi
-+++ b/arch/arm/boot/dts/qcom-ipq8064.dtsi
-@@ -60,6 +60,14 @@
- 		};
- 	};
+Its in
+https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=perf/core
+
+Will be sent to Ingo in the next pull req I'll make.
+
+- Arnaldo
  
-+	clocks {
-+		sleep_clk: sleep_clk {
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+			#clock-cells = <0>;
-+		};
-+	};
-+
- 	soc: soc {
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-@@ -96,6 +104,13 @@
- 			cpu-offset = <0x80000>;
- 		};
- 
-+		watchdog@208a038 {
-+			compatible = "qcom,kpss-wdt-ipq8064";
-+			reg = <0x0208a038 0x40>;
-+			clocks = <&sleep_clk>;
-+			timeout-sec = <10>;
-+		};
-+
- 		acc0: clock-controller@2088000 {
- 			compatible = "qcom,kpss-acc-v1";
- 			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+>  tools/perf/util/parse-events.c |  9 ++++-----
+>  tools/perf/util/pmu.c          | 38 +++++++++++++++++++++++---------------
+>  tools/perf/util/pmu.h          |  7 ++++++-
+>  3 files changed, 33 insertions(+), 21 deletions(-)
+> 
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 61be3e695ec2..9522cf22ad81 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -634,10 +634,9 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+>  			 char *name, struct list_head *head_config)
+>  {
+>  	struct perf_event_attr attr;
+> +	struct perf_pmu_info info;
+>  	struct perf_pmu *pmu;
+>  	struct perf_evsel *evsel;
+> -	const char *unit;
+> -	double scale;
+>  
+>  	pmu = perf_pmu__find(name);
+>  	if (!pmu)
+> @@ -656,7 +655,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+>  		return evsel ? 0 : -ENOMEM;
+>  	}
+>  
+> -	if (perf_pmu__check_alias(pmu, head_config, &unit, &scale))
+> +	if (perf_pmu__check_alias(pmu, head_config, &info))
+>  		return -EINVAL;
+>  
+>  	/*
+> @@ -671,8 +670,8 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+>  	evsel = __add_event(list, idx, &attr, pmu_event_name(head_config),
+>  			    pmu->cpus);
+>  	if (evsel) {
+> -		evsel->unit = unit;
+> -		evsel->scale = scale;
+> +		evsel->unit = info.unit;
+> +		evsel->scale = info.scale;
+>  	}
+>  
+>  	return evsel ? 0 : -ENOMEM;
+> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> index 22a4ad5a927a..93a41ca96b8e 100644
+> --- a/tools/perf/util/pmu.c
+> +++ b/tools/perf/util/pmu.c
+> @@ -210,6 +210,19 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
+>  	return 0;
+>  }
+>  
+> +static inline bool pmu_alias_info_file(char *name)
+> +{
+> +	size_t len;
+> +
+> +	len = strlen(name);
+> +	if (len > 5 && !strcmp(name + len - 5, ".unit"))
+> +		return true;
+> +	if (len > 6 && !strcmp(name + len - 6, ".scale"))
+> +		return true;
+> +
+> +	return false;
+> +}
+> +
+>  /*
+>   * Process all the sysfs attributes located under the directory
+>   * specified in 'dir' parameter.
+> @@ -218,7 +231,6 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+>  {
+>  	struct dirent *evt_ent;
+>  	DIR *event_dir;
+> -	size_t len;
+>  	int ret = 0;
+>  
+>  	event_dir = opendir(dir);
+> @@ -234,13 +246,9 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+>  			continue;
+>  
+>  		/*
+> -		 * skip .unit and .scale info files
+> -		 * parsed in perf_pmu__new_alias()
+> +		 * skip info files parsed in perf_pmu__new_alias()
+>  		 */
+> -		len = strlen(name);
+> -		if (len > 5 && !strcmp(name + len - 5, ".unit"))
+> -			continue;
+> -		if (len > 6 && !strcmp(name + len - 6, ".scale"))
+> +		if (pmu_alias_info_file(name))
+>  			continue;
+>  
+>  		snprintf(path, PATH_MAX, "%s/%s", dir, name);
+> @@ -645,7 +653,7 @@ static int check_unit_scale(struct perf_pmu_alias *alias,
+>   * defined for the alias
+>   */
+>  int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+> -			  const char **unit, double *scale)
+> +			  struct perf_pmu_info *info)
+>  {
+>  	struct parse_events_term *term, *h;
+>  	struct perf_pmu_alias *alias;
+> @@ -655,8 +663,8 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+>  	 * Mark unit and scale as not set
+>  	 * (different from default values, see below)
+>  	 */
+> -	*unit   = NULL;
+> -	*scale  = 0.0;
+> +	info->unit   = NULL;
+> +	info->scale  = 0.0;
+>  
+>  	list_for_each_entry_safe(term, h, head_terms, list) {
+>  		alias = pmu_find_alias(pmu, term);
+> @@ -666,7 +674,7 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+>  		if (ret)
+>  			return ret;
+>  
+> -		ret = check_unit_scale(alias, unit, scale);
+> +		ret = check_unit_scale(alias, &info->unit, &info->scale);
+>  		if (ret)
+>  			return ret;
+>  
+> @@ -679,11 +687,11 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+>  	 * set defaults as for evsel
+>  	 * unit cannot left to NULL
+>  	 */
+> -	if (*unit == NULL)
+> -		*unit   = "";
+> +	if (info->unit == NULL)
+> +		info->unit   = "";
+>  
+> -	if (*scale == 0.0)
+> -		*scale  = 1.0;
+> +	if (info->scale == 0.0)
+> +		info->scale  = 1.0;
+>  
+>  	return 0;
+>  }
+> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+> index 0f5c0a88fdc8..fe90a012c003 100644
+> --- a/tools/perf/util/pmu.h
+> +++ b/tools/perf/util/pmu.h
+> @@ -25,6 +25,11 @@ struct perf_pmu {
+>  	struct list_head list;    /* ELEM */
+>  };
+>  
+> +struct perf_pmu_info {
+> +	const char *unit;
+> +	double scale;
+> +};
+> +
+>  struct perf_pmu *perf_pmu__find(const char *name);
+>  int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+>  		     struct list_head *head_terms);
+> @@ -33,7 +38,7 @@ int perf_pmu__config_terms(struct list_head *formats,
+>  			   struct list_head *head_terms,
+>  			   bool zero);
+>  int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
+> -			  const char **unit, double *scale);
+> +			  struct perf_pmu_info *info);
+>  struct list_head *perf_pmu__alias(struct perf_pmu *pmu,
+>  				  struct list_head *head_terms);
+>  int perf_pmu_wrap(void);
+> -- 
+> 1.9.3
