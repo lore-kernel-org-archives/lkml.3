@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaJAVUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:20:04 -0400
-Received: from mail-bl2on0102.outbound.protection.outlook.com ([65.55.169.102]:60672
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751208AbaJAVUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:20:01 -0400
-X-WSS-ID: 0NCSB92-08-ZFF-02
-X-M-MSG: 
-Message-ID: <542C6FE9.10903@amd.com>
-Date: Wed, 1 Oct 2014 16:19:37 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752973AbaJAVVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:21:15 -0400
+Received: from sauhun.de ([89.238.76.85]:52259 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaJAVVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 17:21:13 -0400
+Date: Wed, 1 Oct 2014 23:21:46 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Guenter Roeck <groeck@juniper.net>
+Cc: Danielle Costantino <danielle.costantino@gmail.com>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>
+Subject: Re: Fwd: [Proposal] PM sleep children of inactive I2C bus segments
+ off Masters in multi-master systems
+Message-ID: <20141001212142.GB2368@katana>
+References: <CAAVjN7eUmBVcAGPbcn3qsJ9M9uu2nkFoKHqGhhKGekZSceGiMw@mail.gmail.com>
+ <20141001184304.GA6832@svl-evodev-groeck.juniper.net>
+ <CAAVjN7edpkXYMHBm+wLegA_pc0hnm_YZf_z=Ni3h=EbDTmfegQ@mail.gmail.com>
+ <20141001194115.GA6948@svl-evodev-groeck.juniper.net>
+ <CAAVjN7fGRzyu7gxavJUay+K_Mm-0t1T_0Bysk6-sdaqu5=5k5A@mail.gmail.com>
+ <20141001202058.GB6948@svl-evodev-groeck.juniper.net>
+ <CAAVjN7e4nO579TfAJ5zMNe__Q9yU_-6naq4-0vm1rimespSrsw@mail.gmail.com>
+ <20141001204302.GA7744@svl-evodev-groeck.juniper.net>
+ <20141001211046.GA2368@katana>
+ <20141001211657.GA7904@svl-evodev-groeck.juniper.net>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-acpi@vger.kernel.org>,
-        <mark.rutland@arm.com>, <arnd@arndb.de>, <graeme.gregory@linaro.org>,
-        <marc.zyngier@arm.com>, <rjw@rjwysocki.net>,
-        <linux-kernel@vger.kernel.org>, <astone@redhat.com>,
-        <grant.likely@linaro.org>, <hanjun.guo@linaro.org>,
-        <Sudeep.Holla@arm.com>, <olof@lixom.net>, <jason@lakedaemon.net>,
-        "Duran, Leo" <leo.duran@amd.com>, Jon Masters <jcm@redhat.com>
-Subject: Re: [PATCH 1/4] ata: ahci_platform: Add ACPI support for AMD Seattle
- SATA controller
-References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
- <1410828446-28502-2-git-send-email-suravee.suthikulpanit@amd.com>
- <20140917012614.GA31214@srcf.ucam.org>
-In-Reply-To: <20140917012614.GA31214@srcf.ucam.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(377454003)(199003)(51704005)(189002)(164054003)(479174003)(97736003)(101416001)(54356999)(86362001)(120886001)(50986999)(105586002)(68736004)(64126003)(23746002)(4396001)(50466002)(65816999)(76176999)(107046002)(21056001)(83506001)(120916001)(10300001)(19580395003)(19580405001)(33656002)(85852003)(31966008)(46102003)(85306004)(84676001)(110136001)(20776003)(102836001)(44976005)(36756003)(99396003)(92726001)(92566001)(76482002)(80022003)(65806001)(95666004)(64706001)(87936001)(47776003)(65956001)(106466001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-Forefront-PRVS: 0351D213B3
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lEGEL1/lMxI0MVQ2"
+Content-Disposition: inline
+In-Reply-To: <20141001211657.GA7904@svl-evodev-groeck.juniper.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/16/2014 8:26 PM, Matthew Garrett wrote:
-> On Mon, Sep 15, 2014 at 07:47:23PM -0500, suravee.suthikulpanit@amd.com wrote:
->> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->>
->> This patch adds ACPI match table in ahci_platform. The table includes
->> the acpi_device_id to match AMD Seattle SATA controller with following
->> asl structure in DSDT:
->>
->>      Device (SATA0)
->>      {
->>        Name(_HID, "AMDI0600")	// Seattle AHSATA
->
-> There really ought to be a well-defined PNPID for AHCI, so you can _HID
-> to AMD and _CID to something generic. That way we won't have:
->
->> +#ifdef CONFIG_ATA_ACPI
->> +static const struct acpi_device_id ahci_acpi_match[] = {
->> +	{ "AMDI0600", 0 }, /* AMD Seattle AHCI */
->> +	{ },
->> +};
->
-> utter sadness here. Really, please don't end up in a situation where we
-> need to add device-specific IDs to a generic driver.
->
-Matthew,
 
-Currently, there is no _CID defined for generic AHCI. We will work on 
-proposing one, and provide update patches for including the new ID.
+--lEGEL1/lMxI0MVQ2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Suravee
+On Wed, Oct 01, 2014 at 02:16:57PM -0700, Guenter Roeck wrote:
+> On Wed, Oct 01, 2014 at 11:10:47PM +0200, Wolfram Sang wrote:
+> >=20
+> > > Maybe you can find an error code which with some level of confidence
+> > > reflects "lost mastership". Then you can implement whatever makes sen=
+se
+> > > for your use case in your user space application(s).
+> >=20
+> > We have a documented fault code for ArbitrationLost and that is -EAGAIN
+> > (see Documentation/i2c/fault-codes). If a driver does use something
+> > else, patches are very welcome.
+> >=20
+> > Other than that, I find this thread very confusing. Of course can
+> > another master modify the clients, this is what multi-master is all
+> > about, no?
+> >=20
+> That is the point I was trying to make in one of my earlier replies.
 
+Yes, and I wondered why the thread continued after that, so I thought
+I'll bring it up again :) No, seriously, I did not understand the reply
+to that mail of yours, but I'll try again tomorrow after some sleep.
+
+
+--lEGEL1/lMxI0MVQ2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJULHBlAAoJEBQN5MwUoCm2K1QP/jN4YVaUcPzQpRwH1pVy/hCN
+7k+koSKRHe9IXi5yUPex0mIv54r7wO+hqV5kVKzSWh3CXSaUtqqKgPDfcIv4a1YJ
+Fwij5Tz7xuYV47fNyke3507Q5XgAaPDb1YBS6SVfezuzN53SPexT9wC34Kh0niMw
+kHhNFJmb4DLa61QIFMxvWU7kQylnLBwwnpnbFxry6NhWzNsAHGykIps77aiofeML
+Az8VQ39/6FiY3xzVY5S2ROvvKgaGbgneJk3/9qq/4u5S4v3m5BxLrXTFNWS1IJFG
+aqu3No9mhVGoWPdY7lOjqKB5mOBTRpcJVjJT4+Jpq0R9x5gCfH09r1EV/XsC+QPt
+LWPE5OYEQNev7OQU1kdDLhwuOz2xNgFmeob/MCrG+WYxbcDZnPzB/6S1RtHziYC1
+5+n1MvfXhQ1MXh8/M/6x+9B6H5SEEssRQkN09tBfDepbVVjAhvsLe8KO2u1Hzebt
+BuK6MQhd02pRMx4bn3Rn4vIaYs/YM6esPWnknrDee59Wrb3lhxb3NkWC+rYe7qrV
+wO0w7HNX6gv0k9E1LC15+BBg8W8Hj96okayOoK1WSnNIaI3p9VS2IEy0ulOdaIT/
+E6Esb3GvVatjZikfzVYwqa22x7061t+WOR0Msi4XqVHM2VrDwR4QQHwjBvPVrTPz
+YCPaC+53bil6WZrmRDy/
+=nxSz
+-----END PGP SIGNATURE-----
+
+--lEGEL1/lMxI0MVQ2--
