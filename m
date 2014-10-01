@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaJATvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 15:51:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47782 "EHLO mail.kernel.org"
+	id S1752070AbaJATvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 15:51:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47765 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078AbaJATvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 15:51:08 -0400
+	id S1751903AbaJATvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 15:51:04 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>,
-        Davidlohr Bueso <dbueso@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Chang Hyun Park <heartinpiece@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 3/8] perf bench futex: Support operations for shared futexes
-Date: Wed,  1 Oct 2014 16:50:38 -0300
-Message-Id: <1412193043-15493-4-git-send-email-acme@kernel.org>
+Subject: [PATCH 2/8] perf trace: Fix mmap return address truncation to 32-bit
+Date: Wed,  1 Oct 2014 16:50:37 -0300
+Message-Id: <1412193043-15493-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1412193043-15493-1-git-send-email-acme@kernel.org>
 References: <1412193043-15493-1-git-send-email-acme@kernel.org>
@@ -21,187 +22,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@stgolabs.net>
+From: Chang Hyun Park <heartinpiece@gmail.com>
 
-Unlike futex-hash, requeuing and wakeup benchmarks do not support shared
-futexes, limiting the usefulness of the programs. Correct this, and
-allow using the local -S parameter. The default remains using private
-futexes.
+Using 'perf trace' for mmap is truncating return values by stripping the
+top 32 bits, actually printing only the lower 32 bits.
 
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-Cc: Davidlohr Bueso <dbueso@suse.de>
-Link: http://lkml.kernel.org/r/1412008868-22328-1-git-send-email-dave@stgolabs.net
+This was because the ret value was of an 'int' type and not a 'long'
+type.
+
+  The Problem:
+
+  991258501.244 ( 0.004 ms): mmap(len: 40001536, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1) = 0x56691000
+  991258501.257 ( 0.000 ms): minfault [_int_malloc+0x1038] => //anon@0x7fa056691008 //(d.)
+
+The first line shows an mmap, which succeeds and returns 0x56691000.
+
+However the next line shows a memory access to that virtual memory area,
+specifically to 0x7fa056691008. The upper 32 bit is lost due to the
+problem mentioned above, and thus mmap's return value didn't have the
+upper 0x7fa0.
+
+Tested on 3.17-rc5 from the linus's tree, and the HEAD of tip/master
+
+Signed-off-by: Chang Hyun Park <heartinpiece@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1411736041-8017-1-git-send-email-heartinpiece@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/futex-hash.c    |  7 +++++--
- tools/perf/bench/futex-requeue.c | 24 +++++++++++++++---------
- tools/perf/bench/futex-wake.c    | 15 ++++++++++-----
- 3 files changed, 30 insertions(+), 16 deletions(-)
+ tools/perf/builtin-trace.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/bench/futex-hash.c b/tools/perf/bench/futex-hash.c
-index a84206e9c4aa..fc9bebd2cca0 100644
---- a/tools/perf/bench/futex-hash.c
-+++ b/tools/perf/bench/futex-hash.c
-@@ -26,6 +26,7 @@ static unsigned int nsecs    = 10;
- /* amount of futexes per thread */
- static unsigned int nfutexes = 1024;
- static bool fshared = false, done = false, silent = false;
-+static int futex_flag = 0;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index c70e69ea1c5d..09bcf2393910 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1695,7 +1695,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 			   union perf_event *event __maybe_unused,
+ 			   struct perf_sample *sample)
+ {
+-	int ret;
++	long ret;
+ 	u64 duration = 0;
+ 	struct thread *thread;
+ 	int id = perf_evsel__sc_tp_uint(evsel, id, sample);
+@@ -1748,7 +1748,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
  
- struct timeval start, end, runtime;
- static pthread_mutex_t thread_lock;
-@@ -75,8 +76,7 @@ static void *workerfn(void *arg)
- 			 * such as internal waitqueue handling, thus enlarging
- 			 * the critical region protected by hb->lock.
- 			 */
--			ret = futex_wait(&w->futex[i], 1234, NULL,
--					 fshared ? 0 : FUTEX_PRIVATE_FLAG);
-+			ret = futex_wait(&w->futex[i], 1234, NULL, futex_flag);
- 			if (!silent &&
- 			    (!ret || errno != EAGAIN || errno != EWOULDBLOCK))
- 				warn("Non-expected futex return call");
-@@ -135,6 +135,9 @@ int bench_futex_hash(int argc, const char **argv,
- 	if (!worker)
- 		goto errmem;
- 
-+	if (!fshared)
-+		futex_flag = FUTEX_PRIVATE_FLAG;
-+
- 	printf("Run summary [PID %d]: %d threads, each operating on %d [%s] futexes for %d secs.\n\n",
- 	       getpid(), nthreads, nfutexes, fshared ? "shared":"private", nsecs);
- 
-diff --git a/tools/perf/bench/futex-requeue.c b/tools/perf/bench/futex-requeue.c
-index 732403bfd31a..9837a8831406 100644
---- a/tools/perf/bench/futex-requeue.c
-+++ b/tools/perf/bench/futex-requeue.c
-@@ -30,16 +30,18 @@ static u_int32_t futex1 = 0, futex2 = 0;
- static unsigned int nrequeue = 1;
- 
- static pthread_t *worker;
--static bool done = 0, silent = 0;
-+static bool done = false, silent = false, fshared = false;
- static pthread_mutex_t thread_lock;
- static pthread_cond_t thread_parent, thread_worker;
- static struct stats requeuetime_stats, requeued_stats;
- static unsigned int ncpus, threads_starting, nthreads = 0;
-+static int futex_flag = 0;
- 
- static const struct option options[] = {
- 	OPT_UINTEGER('t', "threads",  &nthreads, "Specify amount of threads"),
- 	OPT_UINTEGER('q', "nrequeue", &nrequeue, "Specify amount of threads to requeue at once"),
- 	OPT_BOOLEAN( 's', "silent",   &silent,   "Silent mode: do not display data/details"),
-+	OPT_BOOLEAN( 'S', "shared",   &fshared,  "Use shared futexes instead of private ones"),
- 	OPT_END()
- };
- 
-@@ -70,7 +72,7 @@ static void *workerfn(void *arg __maybe_unused)
- 	pthread_cond_wait(&thread_worker, &thread_lock);
- 	pthread_mutex_unlock(&thread_lock);
- 
--	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
-+	futex_wait(&futex1, 0, NULL, futex_flag);
- 	return NULL;
- }
- 
-@@ -127,9 +129,12 @@ int bench_futex_requeue(int argc, const char **argv,
- 	if (!worker)
- 		err(EXIT_FAILURE, "calloc");
- 
--	printf("Run summary [PID %d]: Requeuing %d threads (from %p to %p), "
--	       "%d at a time.\n\n",
--	       getpid(), nthreads, &futex1, &futex2, nrequeue);
-+	if (!fshared)
-+		futex_flag = FUTEX_PRIVATE_FLAG;
-+
-+	printf("Run summary [PID %d]: Requeuing %d threads (from [%s] %p to %p), "
-+	       "%d at a time.\n\n",  getpid(), nthreads,
-+	       fshared ? "shared":"private", &futex1, &futex2, nrequeue);
- 
- 	init_stats(&requeued_stats);
- 	init_stats(&requeuetime_stats);
-@@ -156,13 +161,14 @@ int bench_futex_requeue(int argc, const char **argv,
- 
- 		/* Ok, all threads are patiently blocked, start requeueing */
- 		gettimeofday(&start, NULL);
--		for (nrequeued = 0; nrequeued < nthreads; nrequeued += nrequeue)
-+		for (nrequeued = 0; nrequeued < nthreads; nrequeued += nrequeue) {
- 			/*
- 			 * Do not wakeup any tasks blocked on futex1, allowing
- 			 * us to really measure futex_wait functionality.
- 			 */
--			futex_cmp_requeue(&futex1, 0, &futex2, 0, nrequeue,
--					  FUTEX_PRIVATE_FLAG);
-+			futex_cmp_requeue(&futex1, 0, &futex2, 0,
-+					  nrequeue, futex_flag);
-+		}
- 		gettimeofday(&end, NULL);
- 		timersub(&end, &start, &runtime);
- 
-@@ -175,7 +181,7 @@ int bench_futex_requeue(int argc, const char **argv,
- 		}
- 
- 		/* everybody should be blocked on futex2, wake'em up */
--		nrequeued = futex_wake(&futex2, nthreads, FUTEX_PRIVATE_FLAG);
-+		nrequeued = futex_wake(&futex2, nthreads, futex_flag);
- 		if (nthreads != nrequeued)
- 			warnx("couldn't wakeup all tasks (%d/%d)", nrequeued, nthreads);
- 
-diff --git a/tools/perf/bench/futex-wake.c b/tools/perf/bench/futex-wake.c
-index 50022cbce87e..929f762be47e 100644
---- a/tools/perf/bench/futex-wake.c
-+++ b/tools/perf/bench/futex-wake.c
-@@ -31,16 +31,18 @@ static u_int32_t futex1 = 0;
- static unsigned int nwakes = 1;
- 
- pthread_t *worker;
--static bool done = false, silent = false;
-+static bool done = false, silent = false, fshared = false;
- static pthread_mutex_t thread_lock;
- static pthread_cond_t thread_parent, thread_worker;
- static struct stats waketime_stats, wakeup_stats;
- static unsigned int ncpus, threads_starting, nthreads = 0;
-+static int futex_flag = 0;
- 
- static const struct option options[] = {
- 	OPT_UINTEGER('t', "threads", &nthreads, "Specify amount of threads"),
- 	OPT_UINTEGER('w', "nwakes",  &nwakes,   "Specify amount of threads to wake at once"),
- 	OPT_BOOLEAN( 's', "silent",  &silent,   "Silent mode: do not display data/details"),
-+	OPT_BOOLEAN( 'S', "shared",  &fshared,  "Use shared futexes instead of private ones"),
- 	OPT_END()
- };
- 
-@@ -58,7 +60,7 @@ static void *workerfn(void *arg __maybe_unused)
- 	pthread_cond_wait(&thread_worker, &thread_lock);
- 	pthread_mutex_unlock(&thread_lock);
- 
--	futex_wait(&futex1, 0, NULL, FUTEX_PRIVATE_FLAG);
-+	futex_wait(&futex1, 0, NULL, futex_flag);
- 	return NULL;
- }
- 
-@@ -130,9 +132,12 @@ int bench_futex_wake(int argc, const char **argv,
- 	if (!worker)
- 		err(EXIT_FAILURE, "calloc");
- 
--	printf("Run summary [PID %d]: blocking on %d threads (at futex %p), "
-+	if (!fshared)
-+		futex_flag = FUTEX_PRIVATE_FLAG;
-+
-+	printf("Run summary [PID %d]: blocking on %d threads (at [%s] futex %p), "
- 	       "waking up %d at a time.\n\n",
--	       getpid(), nthreads, &futex1, nwakes);
-+	       getpid(), nthreads, fshared ? "shared":"private",  &futex1, nwakes);
- 
- 	init_stats(&wakeup_stats);
- 	init_stats(&waketime_stats);
-@@ -160,7 +165,7 @@ int bench_futex_wake(int argc, const char **argv,
- 		/* Ok, all threads are patiently blocked, start waking folks up */
- 		gettimeofday(&start, NULL);
- 		while (nwoken != nthreads)
--			nwoken += futex_wake(&futex1, nwakes, FUTEX_PRIVATE_FLAG);
-+			nwoken += futex_wake(&futex1, nwakes, futex_flag);
- 		gettimeofday(&end, NULL);
- 		timersub(&end, &start, &runtime);
+ 	if (sc->fmt == NULL) {
+ signed_print:
+-		fprintf(trace->output, ") = %d", ret);
++		fprintf(trace->output, ") = %ld", ret);
+ 	} else if (ret < 0 && sc->fmt->errmsg) {
+ 		char bf[STRERR_BUFSIZE];
+ 		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
+@@ -1758,7 +1758,7 @@ signed_print:
+ 	} else if (ret == 0 && sc->fmt->timeout)
+ 		fprintf(trace->output, ") = 0 Timeout");
+ 	else if (sc->fmt->hexret)
+-		fprintf(trace->output, ") = %#x", ret);
++		fprintf(trace->output, ") = %#lx", ret);
+ 	else
+ 		goto signed_print;
  
 -- 
 1.9.3
