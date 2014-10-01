@@ -1,74 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaJAPSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:18:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33550 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215AbaJAPSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:18:52 -0400
-Date: Wed, 1 Oct 2014 17:18:47 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Feng Kan <fkan@apm.com>
-Cc: linux@roeck-us.net, dbaryshkov@gmail.com, catalin.marinas@arm.com,
-        dwmw2@infradead.org, arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com, linux-pm@vger.kernel.org, will.deacon@arm.com
-Subject: Re: [PATCH RESEND V9 1/6] power: reset: Add generic SYSCON register
- mapped reset
-Message-ID: <20141001151847.GC969@earth.universe>
-References: <1412119508-22864-1-git-send-email-fkan@apm.com>
- <1412119508-22864-2-git-send-email-fkan@apm.com>
+	id S1752629AbaJAPTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:19:35 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48793 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaJAPRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 11:17:50 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s91FHlJ9004290, This message is accepted by code: ctloc85258
+From: Chun-Hao Lin <hau@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Chun-Hao Lin <hau@realtek.com>
+Subject: [PATCH v2 net-next 07/10] r8169:change the name of function"rtl_w1w0_eri"
+Date: Wed, 1 Oct 2014 23:17:18 +0800
+Message-ID: <1412176641-24393-7-git-send-email-hau@realtek.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1412176641-24393-1-git-send-email-hau@realtek.com>
+References: <1412176641-24393-1-git-send-email-hau@realtek.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="f+W+jCU1fRNres8c"
-Content-Disposition: inline
-In-Reply-To: <1412119508-22864-2-git-send-email-fkan@apm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Change the name of function "rtl_w1w0_eri" to "rtl_w0w1_eri".
 
---f+W+jCU1fRNres8c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In this function, the local variable "val" is "write zeros then write ones".
+Please see below code.
 
-Hi,
+(val & ~m) | p
 
-On Tue, Sep 30, 2014 at 04:25:03PM -0700, Feng Kan wrote:
-> Add a generic SYSCON register mapped reset mechanism.
->=20
-> Signed-off-by: Feng Kan <fkan@apm.com>
+In this patch, change the function name from "xx_w1w0_xx" to "xx_w0w1_xx".
+The changed function name is more suitable for it's behavior.
 
-I have merged the driver and its documentation to battery-2.6.git.
-This should make it possible for the changes in arch/arm to be
-merged via ARM maintainers in 3.19.
+Signed-off-by: Chun-Hao Lin <hau@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 58 ++++++++++++++++++------------------
+ 1 file changed, 29 insertions(+), 29 deletions(-)
 
-Please fix Guenter's comments in an incremental patch.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index cdfad35..5884b6d 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1320,7 +1320,7 @@ static u32 rtl_eri_read(struct rtl8169_private *tp, int addr, int type)
+ 		RTL_R32(ERIDR) : ~0;
+ }
+ 
+-static void rtl_w1w0_eri(struct rtl8169_private *tp, int addr, u32 mask, u32 p,
++static void rtl_w0w1_eri(struct rtl8169_private *tp, int addr, u32 mask, u32 p,
+ 			 u32 m, int type)
+ {
+ 	u32 val;
+@@ -1473,9 +1473,9 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
+ 				      ERIAR_EXGMAC);
+ 		}
+ 		/* Reset packet filter */
+-		rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01,
++		rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01,
+ 			     ERIAR_EXGMAC);
+-		rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00,
++		rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00,
+ 			     ERIAR_EXGMAC);
+ 	} else if (tp->mac_version == RTL_GIGA_MAC_VER_35 ||
+ 		   tp->mac_version == RTL_GIGA_MAC_VER_36) {
+@@ -1629,14 +1629,14 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
+ 	case RTL_GIGA_MAC_VER_48:
+ 		tmp = ARRAY_SIZE(cfg) - 1;
+ 		if (wolopts & WAKE_MAGIC)
+-			rtl_w1w0_eri(tp,
++			rtl_w0w1_eri(tp,
+ 				     0x0dc,
+ 				     ERIAR_MASK_0100,
+ 				     MagicPacket_v2,
+ 				     0x0000,
+ 				     ERIAR_EXGMAC);
+ 		else
+-			rtl_w1w0_eri(tp,
++			rtl_w0w1_eri(tp,
+ 				     0x0dc,
+ 				     ERIAR_MASK_0100,
+ 				     0x0000,
+@@ -3292,7 +3292,7 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ 
+ 	/* EEE setting */
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_1111, 0x0000, 0x0003, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_1111, 0x0000, 0x0003, ERIAR_EXGMAC);
+ 	rtl_writephy(tp, 0x1f, 0x0005);
+ 	rtl_writephy(tp, 0x05, 0x8b85);
+ 	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x2000);
+@@ -3472,7 +3472,7 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ 
+ 	/* eee setting */
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x00, 0x03, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x00, 0x03, ERIAR_EXGMAC);
+ 	rtl_writephy(tp, 0x1f, 0x0005);
+ 	rtl_writephy(tp, 0x05, 0x8b85);
+ 	rtl_w0w1_phy(tp, 0x06, 0x0000, 0x2000);
+@@ -4398,7 +4398,7 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+-		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0x00000000,
++		rtl_w0w1_eri(tp, 0x1a8, ERIAR_MASK_1111, 0x00000000,
+ 			     0xfc000000, ERIAR_EXGMAC);
+ 		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
+ 		break;
+@@ -4427,7 +4427,7 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
+-		rtl_w1w0_eri(tp, 0x1a8, ERIAR_MASK_1111, 0xfc000000,
++		rtl_w0w1_eri(tp, 0x1a8, ERIAR_MASK_1111, 0xfc000000,
+ 			     0x00000000, ERIAR_EXGMAC);
+ 		break;
+ 	}
+@@ -5501,8 +5501,8 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
+ 	rtl_eri_write(tp, 0xe8, ERIAR_MASK_1111, 0x00100006, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xd0, ERIAR_MASK_1111, 0x07ff0060, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
+ 
+ 	RTL_W8(MaxTxPacketSize, EarlySize);
+ 
+@@ -5532,10 +5532,10 @@ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xc8, ERIAR_MASK_1111, 0x00100002, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xe8, ERIAR_MASK_1111, 0x00100006, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1d0, ERIAR_MASK_0001, 0x10, 0x00, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xcc, ERIAR_MASK_1111, 0x00000050, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xd0, ERIAR_MASK_1111, 0x00000060, ERIAR_EXGMAC);
+ 
+@@ -5564,7 +5564,7 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
+ 
+ 	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
+ 
+-	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0xff00, ERIAR_EXGMAC);
+ 
+ 	/* Adjust EEE LED frequency */
+ 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
+@@ -5584,7 +5584,7 @@ static void rtl_hw_start_8411(struct rtl8169_private *tp)
+ 
+ 	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
+ 
+-	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0c00, 0x0000, ERIAR_EXGMAC);
+ }
+ 
+ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+@@ -5603,8 +5603,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 
+ 	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0x2f8, ERIAR_MASK_0011, 0x1d8f, ERIAR_EXGMAC);
+ 
+ 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+@@ -5617,8 +5617,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 	/* Adjust EEE LED frequency */
+ 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
+ 
+-	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
+ 
+ 	rtl_pcie_state_l2l3_enable(tp, false);
+ }
+@@ -5691,12 +5691,12 @@ static void rtl_hw_start_8168h_1(struct rtl8169_private *tp)
+ 
+ 	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
+ 
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
+ 
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_1111, 0x0010, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_1111, 0x0010, 0x00, ERIAR_EXGMAC);
+ 
+-	rtl_w1w0_eri(tp, 0xd4, ERIAR_MASK_1111, 0x1f00, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xd4, ERIAR_MASK_1111, 0x1f00, 0x00, ERIAR_EXGMAC);
+ 
+ 	rtl_eri_write(tp, 0x5f0, ERIAR_MASK_0011, 0x4f87, ERIAR_EXGMAC);
+ 
+@@ -5715,7 +5715,7 @@ static void rtl_hw_start_8168h_1(struct rtl8169_private *tp)
+ 
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~TX_10M_PS_EN);
+ 
+-	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
+ 
+ 	rtl_pcie_state_l2l3_enable(tp, false);
+ 
+@@ -6009,11 +6009,11 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 
+ 	rtl_eri_write(tp, 0xc8, ERIAR_MASK_1111, 0x00000002, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xe8, ERIAR_MASK_1111, 0x00000006, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+-	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0e00, 0xff00, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0e00, 0xff00, ERIAR_EXGMAC);
+ 
+ 	rtl_pcie_state_l2l3_enable(tp, false);
+ }
+-- 
+1.8.3.2
 
--- Sebastian
-
---f+W+jCU1fRNres8c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJULBtXAAoJENju1/PIO/qaXt0QAKfkOi4VdkhHh1accK88okd2
-+p+kTrPg59ThLxj/Idk3Ag/nq1F8YDWnTr81PPgjrErWFslBp0G0hVdr5WECIzNL
-DIcpn3vzUgHD24Es1//PIDZ9Jw+HErJL2X3fsnKSOYkKr+UlLI01AJd7Kcu4Ht5g
-hoTeVj9T316KlcTh/fSkQCN6k01+XcOCN83mUshi0hbsVdE7H+6k/anot+W7aqDG
-4EwmmqFdfj1hA87T8eQD0wrRRhItueK12/XSuPdClNRJmNUrK4rDV1B7IXK/S7Lk
-Z17AlZvL6LGM58+LPXDl7zuYcc60xdUwtZgaIBT1N8ptXYqRZn9sMaumo9gLMAmU
-xVHw4QsBJ4KSa/2Nx9FbmJ99gWOgElfz+ex5j0upBckYTBglWb4T82H/yseUPD2O
-BAO16C7rbluODx6N4T6rI3V5T3XgoRdvH8D7xcEYa/avE2Nj6LpC2tF91cJ8myBo
-Ev8FgISgsN7Snsqg6fD91zDyj8XhEgF7nuHSRTfZgtcLC8BwLsgvbJP2WFtPE2V6
-EUKvnfi0JIXD+K0w1v7X68ZZUkgnseww4Xmp1U7OK7JpgOWiB3kRPb7dK49DAhIe
-Z4QF4QoUkKDUAzZe3IXkztobknYjLUHpqAdDwLO0J2onpAioncQfCFyhFt4s+Qwt
-M3aGjXZ6f81rUDSAo/zH
-=OrXN
------END PGP SIGNATURE-----
-
---f+W+jCU1fRNres8c--
