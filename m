@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaJAQUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:20:45 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64871 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaJAQUn (ORCPT
+	id S1751774AbaJAQXj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:23:39 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40320 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399AbaJAQXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:20:43 -0400
-Date: Wed, 1 Oct 2014 11:20:39 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Dave Hansen <dave.hansen@intel.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [LKP] [net] 4ed2d765dfa:  ltp.recv01.4.TFAIL
-Message-ID: <20141001112039.375338a0@as>
-In-Reply-To: <542C2460.8020208@redhat.com>
-References: <20141001152910.GA4440@wfg-t540p.sh.intel.com>
-	<542C2460.8020208@redhat.com>
+	Wed, 1 Oct 2014 12:23:37 -0400
+Date: Wed, 1 Oct 2014 09:23:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 00/96] 3.12.30-stable review
+Message-ID: <20141001162332.GB11708@roeck-us.net>
+References: <cover.1412147522.git.jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1412147522.git.jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Oct 2014 17:57:20 +0200
-Daniel Borkmann <dborkman@redhat.com> wrote:
-
-> On 10/01/2014 05:29 PM, Fengguang Wu wrote:
-> > Hi Willem,
-> >
-> > FYI, we noticed the below LTP failures on commit
-> >
-> > 4ed2d765dfaccff5ebdac68e2064b59125033a3b ("net-timestamp: TCP timestamping")
+On Wed, Oct 01, 2014 at 10:57:39AM +0200, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.30 release.
+> There are 96 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> I think it already was discussed here:
+> This one is special. First, it is rounded (30). Second, most of the
+> patches are performance improvements. They are coming from SUSE
+> Enterprise Linux and all are backed by proper testing and performance
+> measurements. All this patchset was prepared and sent by Mel Gorman
+> with a support of other patchers from SUSE. Thanks to all of them.
 > 
->    http://www.spinics.net/lists/netdev/msg297822.html
+> As this is special, I am gicing a whole week for responses. So
+> responses should be made by Wed Oct  8 09:12:02 CEST 2014.  Anything
+> received after that time might be too late.
+> 
+Build results:
+	total: 135 pass: 135 fail: 0
+Qemu test results:
+	total: 23 pass: 23 fail: 0
 
-
-I've fixed one of those in LTP.
-
-My proposed patch for how to fix the other three didn't get any replies
-on the LTP list:
-
-http://sourceforge.net/p/ltp/mailman/message/32866727/
+Guenter
