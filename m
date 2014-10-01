@@ -1,156 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaJAIZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:25:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60983 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750944AbaJAIZF (ORCPT
+	id S1751432AbaJAIZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:25:45 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:49027 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaJAIZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:25:05 -0400
-Date: Wed, 1 Oct 2014 10:21:57 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
-        lars@metafoo.de, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>
-Subject: Re: [PATCH 6/9] dmaengine: Create a generic dma_slave_caps callback
-Message-ID: <20141001082157.GE6884@lukather>
-References: <1411808085-27792-1-git-send-email-maxime.ripard@free-electrons.com>
- <1411808085-27792-7-git-send-email-maxime.ripard@free-electrons.com>
- <20140927092536.GZ5182@n2100.arm.linux.org.uk>
+	Wed, 1 Oct 2014 04:25:42 -0400
+Message-ID: <542BBA81.2000406@monstr.eu>
+Date: Wed, 01 Oct 2014 10:25:37 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
+CC: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Anirudha Sarangi <anirudh@xilinx.com>,
+        John Linn <John.Linn@xilinx.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        =?windows-1252?Q?Manuel_Sch=F6lling?= <manuel.schoelling@gmx.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Joe Perches <joe@perches.com>,
+        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] net: xilinx: Remove unnecessary ether_setup after alloc_etherdev
+References: <d43b465eca3e2a53c930f6e02dc4ac8b3c084693.1412143216.git.michal.simek@xilinx.com>
+In-Reply-To: <d43b465eca3e2a53c930f6e02dc4ac8b3c084693.1412143216.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
-Content-Disposition: inline
-In-Reply-To: <20140927092536.GZ5182@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ protocol="application/pgp-signature";
+ boundary="2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---hUH5gZbnpyIv7Mn4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: quoted-printable
 
-Hi Russell,
+On 10/01/2014 08:00 AM, Michal Simek wrote:
+> From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
+>=20
+> Calling ether_setup is redundant since alloc_etherdev calls it.
+>=20
+> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>=20
+>  drivers/net/ethernet/xilinx/ll_temac_main.c       | 1 -
+>  drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 1 -
+>  2 files changed, 2 deletions(-)
+>=20
+> diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/=
+ethernet/xilinx/ll_temac_main.c
+> index fda5891835d4..629077050fce 100644
+> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
+> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+> @@ -1012,7 +1012,6 @@ static int temac_of_probe(struct platform_device =
+*op)
+>  	if (!ndev)
+>  		return -ENOMEM;
+>=20
+> -	ether_setup(ndev);
+>  	platform_set_drvdata(op, ndev);
+>  	SET_NETDEV_DEV(ndev, &op->dev);
+>  	ndev->flags &=3D ~IFF_MULTICAST;  /* clear multicast */
+> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/driver=
+s/net/ethernet/xilinx/xilinx_axienet_main.c
+> index c8fd94133ecd..4ea2d4e6f1d1 100644
+> --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+> +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
+> @@ -1485,7 +1485,6 @@ static int axienet_of_probe(struct platform_devic=
+e *op)
+>  	if (!ndev)
+>  		return -ENOMEM;
+>=20
+> -	ether_setup(ndev);
+>  	platform_set_drvdata(op, ndev);
+>=20
+>  	SET_NETDEV_DEV(ndev, &op->dev);
+> --
+> 1.8.2.3
+>=20
 
-On Sat, Sep 27, 2014 at 10:25:36AM +0100, Russell King - ARM Linux wrote:
-> On Sat, Sep 27, 2014 at 10:54:42AM +0200, Maxime Ripard wrote:
-> > dma_slave_caps is very important to the generic layers that might inter=
-act with
-> > dmaengine, such as ASoC. Unfortunately, it has been added as yet another
-> > dma_device callback, and most of the existing drivers haven't implement=
-ed it,
-> > reducing its reliability.
->=20
-> Many haven't implemented it probably because either (a) they don't get us=
-ed
-> with ASoC, or (b) they aren't aware of the new interface, or (c) can't be
-> bothered with the churn.
+Please ignore this one it is already applied for axienet.
+Will send v2 just for ll_temac.
 
-For a), I really see this as a chicken-egg issue. ASoC is the only
-user of it because it's the only framework that has a generic layer on
-top, and it's the only framework that has a generic layer because most
-drivers don't implement it.
-
-Now, there seems to be a trend to actually use a generic DMA layer in
-other frameworks. SPI gained one recently, I think I saw something
-about some discussions for IIO and I2C too. And in order for this to
-work, we have to make it reliable, and as such, implemented on most
-drivers.
-
-> However, trying to return something introduces a bug:
->=20
-> >  static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma=
-_slave_caps *caps)
-> >  {
-> > +	struct dma_device *device;
-> > +
-> >  	if (!chan || !caps)
-> >  		return -EINVAL;
-> > =20
-> > +	device =3D chan->device;
-> > +
-> >  	/* check if the channel supports slave transactions */
-> > -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
-> > +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
-> >  		return -ENXIO;
-> > =20
-> > -	if (chan->device->device_slave_caps)
-> > -		return chan->device->device_slave_caps(chan, caps);
-> > +	caps->cmd_pause =3D !!device->device_pause;
-> > +	caps->cmd_terminate =3D !!device->device_terminate_all;
-> > +
-> > +	if (device->device_slave_caps)
-> > +		return device->device_slave_caps(chan, caps);
-> > =20
-> > -	return -ENXIO;
-> > +	return 0;
->=20
-> So this now returns success if the driver doesn't implement device_slave_=
-caps(),
-> but with most of the structure zero.
->=20
-> Now, consider what effect this has with:
->=20
->=20
->         ret =3D dma_get_slave_caps(chan, &dma_caps);
->         if (ret =3D=3D 0) {
->                 if (dma_caps.cmd_pause)
->                         hw.info |=3D SNDRV_PCM_INFO_PAUSE | SNDRV_PCM_INF=
-O_RESUME;
->                 if (dma_caps.residue_granularity <=3D DMA_RESIDUE_GRANULA=
-RITY_SEGMENT)
->                         hw.info |=3D SNDRV_PCM_INFO_BATCH;
->=20
->                 if (substream->stream =3D=3D SNDRV_PCM_STREAM_PLAYBACK)
->                         addr_widths =3D dma_caps.dstn_addr_widths;
->                 else
->                         addr_widths =3D dma_caps.src_addr_widths;
->         }
->=20
-> addr_widths becomes zero, and we also get SNDRV_PCM_INFO_BATCH turned
-> on for _all_ DMA engine drivers.  The first renders ASoC useless with
-> DMA engine.
->=20
-> It may be a good way to get people to implement it, but this will cause
-> regressions.
-
-Hmmm, nasty indeed. Maybe we could add a test to see if any of the
-field we're going to use are filled, and if not, return an error?
-
-Thanks!
-Maxime
+Thanks,
+Michal
 
 --=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
---hUH5gZbnpyIv7Mn4
+
+
+--2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAEBAgAGBQJUK7mlAAoJEBx+YmzsjxAgquMP/R4V3vCKSO7E0cKbaj0TTVIf
-IKypHAKyq4KIdH9ieu0OTD6TDJ/9Ax+BB7Ml4Jz+gMA6OM1F1jeEvOL4lDxMXPek
-nkCvKBet6ookwEVJIECxfBVHrTD/Ka+plk+PkiVIDcA5A6SwNOIk7cL2geLMPS8q
-+vPw2++3x+UdEjZVK5LaRaKl9sTC2t1fMCk8Pwlc+cAMcid0mD6mT2xTZdrp/Lp2
-X3LZWu1dh99II4RuJrvDIjuEP7dAWhcv59pHQ9mDU92NawtB6sq8SaqmyT0AeifV
-kWwiUnKfZ3v9Lx+Br+eaE40hTnchRBQsmKzkv01Zu2ZQZg90p/U/FhDLptkIm397
-puv59R03ZkAMt7CZ6D1tkuOrsoyb9bUecszoktfBiHCkWgvcD1nKpFkVV1VDfMQL
-q2HNonSVQqUEjmCUTixxx4z6v1PDoRK6t/J7Q07EBStiPDFTszDRNzaSXxgfmU2G
-MzhWKt5TKlLz+2E5nM66+UZkO5huAPCe/2yI2NgKbNCq5NG+27N0ToFPWX+grcwP
-rsi7jvugUigFE8mTOix1UP07gVdWUCwSDysjkfIr5itH5bYBOTuh57eTSVQ9YYHx
-BLaN4lk4bYb+Sy8Y8BV+qWTkJ46mtjqQdizaD5te90bW1NGD9yA15mcgl1sEmm0j
-8QcX9BHM0G4Je/830RQu
-=ZuFl
+iEYEARECAAYFAlQruoEACgkQykllyylKDCEBhgCeKHPc4szkECMN7UaTpzIfaagJ
+bBoAoIIJo7dEEsMYXwWY+rPFWah4YB9X
+=N+Nd
 -----END PGP SIGNATURE-----
 
---hUH5gZbnpyIv7Mn4--
+--2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T--
