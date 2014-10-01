@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaJAMA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 08:00:27 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58205 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaJAMAY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 08:00:24 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vfio/pci: Add missing linux/irq.h include
-Date: Wed,  1 Oct 2014 14:00:18 +0200
-Message-Id: <1412164818-18211-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	id S1751445AbaJAMAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 08:00:13 -0400
+Received: from ozlabs.org ([103.22.144.67]:54709 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997AbaJAMAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 08:00:12 -0400
+In-Reply-To: <1412073306-13812-8-git-send-email-mikey@neuling.org>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 07/17] cxl: Add new header for call backs and structs
+Message-Id: <20141001120010.4813614016A@ozlabs.org>
+Date: Wed,  1 Oct 2014 22:00:10 +1000 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Tue, 2014-30-09 at 10:34:56 UTC, Michael Neuling wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> This new header add defines for callbacks and structs needed by the rest of the
+                  adds
+> kernel to hook into the cxl infrastructure.
+> 
+> Empty functions are provided when CONFIG CXL_BASE is not enabled.
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  include/misc/cxl.h | 34 ++++++++++++++++++++++++++++++++++
 
-This code uses the irq_get_msi_desc() function whose prototype is in
-linux/irq.h. Include this header to fix a build failure.
+include/misc is kind of weird. I guess it's a misc device.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/vfio/pci/vfio_pci_intrs.c | 1 +
- 1 file changed, 1 insertion(+)
+Any reason not to have it in arch/powerpc/include ?
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index a068bb0d69e5..d6f097b0e0e3 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -15,6 +15,7 @@
- 
- #include <linux/device.h>
- #include <linux/interrupt.h>
-+#include <linux/irq.h>
- #include <linux/eventfd.h>
- #include <linux/msi.h>
- #include <linux/pci.h>
--- 
-2.1.0
+> diff --git a/include/misc/cxl.h b/include/misc/cxl.h
+> new file mode 100644
+> index 0000000..bde46a3
+> --- /dev/null
+> +++ b/include/misc/cxl.h
+> @@ -0,0 +1,34 @@
+> +/*
+> + * Copyright 2014 IBM Corp.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#ifndef _MISC_ASM_CXL_H
 
+No ASM.
+
+> +#define _MISC_ASM_CXL_H
+> +
+> +#define CXL_IRQ_RANGES 4
+> +
+> +struct cxl_irq_ranges {
+> +	irq_hw_number_t offset[CXL_IRQ_RANGES];
+> +	irq_hw_number_t range[CXL_IRQ_RANGES];
+> +};
+> +
+> +#ifdef CONFIG_CXL_BASE
+> +
+> +void cxl_slbia(struct mm_struct *mm);
+> +void cxl_ctx_get(void);
+> +void cxl_ctx_put(void);
+> +bool cxl_ctx_in_use(void);
+> +
+> +#else /* CONFIG_CXL_BASE */
+> +
+> +#define cxl_slbia(...) do { } while (0)
+> +#define cxl_ctx_in_use(...) false
+
+Any reason these shouldn't be static inlines?
+
+cheers
