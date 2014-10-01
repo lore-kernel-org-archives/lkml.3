@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145AbaJARG3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752248AbaJARGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:06:35 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:61939 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995AbaJARG3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 1 Oct 2014 13:06:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411AbaJARG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:06:27 -0400
-Message-ID: <1412183174.7360.218.camel@ul30vt.home>
-Subject: Re: linux-next: manual merge of the vfio tree with the pci tree
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Date: Wed, 01 Oct 2014 11:06:14 -0600
-In-Reply-To: <20141001131421.64cab8d7@canb.auug.org.au>
-References: <20141001131421.64cab8d7@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+In-Reply-To: <20141001155159.GA7019@google.com>
+References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
+	<1412153797-6667-3-git-send-email-aarcange@redhat.com>
+	<20141001155159.GA7019@google.com>
+Date: Wed, 1 Oct 2014 10:06:27 -0700
+Message-ID: <CAJu=L58vaT7BXfR+RHZ397zJJYL9KwozN0qzCQRadm-=wVYcUw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] mm: gup: add get_user_pages_locked and get_user_pages_unlocked
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Peter Feiner <pfeiner@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 13:14 +1000, Stephen Rothwell wrote:
-> Hi Alex,
-> 
-> Today's linux-next merge of the vfio tree got a conflict in
-> drivers/pci/msi.c between commits a160fe94cb53 ("PCI/MSI: Remove unused
-> get_cached_msi_msg()") and 18ef822c59f6 ("PCI/MSI: Rename
-> __get_cached_msi_msg() to get_cached_msi_msg()") from the pci tree and
-> commit 3b307ffe3faa ("PCI: Export MSI message relevant functions") from
-> the vfio tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).  And then I added this merge fix patch (I should probably
-> also have added an include of linux/irq.h):
+On Wed, Oct 1, 2014 at 8:51 AM, Peter Feiner <pfeiner@google.com> wrote:
+> On Wed, Oct 01, 2014 at 10:56:35AM +0200, Andrea Arcangeli wrote:
+>> +static inline long __get_user_pages_locked(struct task_struct *tsk,
+>> +                                        struct mm_struct *mm,
+>> +                                        unsigned long start,
+>> +                                        unsigned long nr_pages,
+>> +                                        int write, int force,
+>> +                                        struct page **pages,
+>> +                                        struct vm_area_struct **vmas,
+>> +                                        int *locked,
+>> +                                        bool notify_drop)
+>> +{
+>> +     int flags = FOLL_TOUCH;
+>> +     long ret, pages_done;
+>> +     bool lock_dropped;
+>> +
+>> +     if (locked) {
+>> +             /* if VM_FAULT_RETRY can be returned, vmas become invalid */
+>> +             BUG_ON(vmas);
+>> +             /* check caller initialized locked */
+>> +             BUG_ON(*locked != 1);
+>> +     }
+>> +
+>> +     if (pages)
+>> +             flags |= FOLL_GET;
+>> +     if (write)
+>> +             flags |= FOLL_WRITE;
+>> +     if (force)
+>> +             flags |= FOLL_FORCE;
+>> +
+>> +     pages_done = 0;
+>> +     lock_dropped = false;
+>> +     for (;;) {
+>> +             ret = __get_user_pages(tsk, mm, start, nr_pages, flags, pages,
+>> +                                    vmas, locked);
+>> +             if (!locked)
+>> +                     /* VM_FAULT_RETRY couldn't trigger, bypass */
+>> +                     return ret;
+>> +
+>> +             /* VM_FAULT_RETRY cannot return errors */
+>> +             if (!*locked) {
+>> +                     BUG_ON(ret < 0);
+>> +                     BUG_ON(nr_pages == 1 && ret);
+>
+> If I understand correctly, this second BUG_ON is asserting that when
+> __get_user_pages is asked for a single page and it is successfully gets the
+> page, then it shouldn't have dropped the mmap_sem. If that's the case, then
+> you could generalize this assertion to
+>
+>                         BUG_ON(nr_pages == ret);
 
-Hi Stephen,
+Even more strict:
+     BUG_ON(ret >= nr_pages);
 
-Thanks for the heads-up and manual merge.  I've reviewed the changes to
-the MSI API that got us into this conflict and I disagree with them.
-I've posted a series to revert a selection of changes currently coming
-in through pci/next that should make for a clean merge should Bjorn come
-to the same conclusion.  If you need to re-apply the fix in the
-meantime, please do include <linux/irq.h> since it generated a build
-failure on arm without it.  Thanks!
+Reviewed-by: Andres Lagar-Cavilla <andreslc@google.com>
 
-Alex
-
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 1 Oct 2014 13:09:58 +1000
-> Subject: [PATCH] vfio: update for get_cached_msi_msg API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/vfio/pci/vfio_pci_intrs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-> index 553212f037c3..a068bb0d69e5 100644
-> --- a/drivers/vfio/pci/vfio_pci_intrs.c
-> +++ b/drivers/vfio/pci/vfio_pci_intrs.c
-> @@ -559,7 +559,7 @@ static int vfio_msi_set_vector_signal(struct vfio_pci_device *vdev,
->  	if (msix) {
->  		struct msi_msg msg;
->  
-> -		get_cached_msi_msg(irq, &msg);
-> +		get_cached_msi_msg(irq_get_msi_desc(irq), &msg);
->  		write_msi_msg(irq, &msg);
->  	}
->  
-> -- 
-> 2.1.1
-> 
-> 
-> Someone needs to remember to send this fix to Linus when these 2 trees
-> are merged into his tree ...
+>
+> Otherwise, looks good!
+>
+> Peter
 
 
 
+-- 
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
