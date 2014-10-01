@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaJAR1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:27:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40889 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaJAR1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:27:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
-References: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
-Date: Wed, 1 Oct 2014 10:27:20 -0700
-Message-ID: <CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
-Subject: Re: [PATCH] serial/core: Initialize the console pm state
-From: Kevin Hilman <khilman@kernel.org>
-To: Sudhir Sreedharan <ssreedharan@mvista.com>
-Cc: linux-serial@vger.kernel.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
-        lkml <linux-kernel@vger.kernel.org>, olof@lixom.net,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753179AbaJAR2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:28:11 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:35058 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751763AbaJAR2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:28:10 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, Michael Buesch <m@bues.ch>,
+        netdev@vger.kernel.org
+Subject: [PATCH v2] ssb: Fix Sparse error in main
+Date: Wed,  1 Oct 2014 22:58:02 +0530
+Message-Id: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 21, 2014 at 11:30 PM, Sudhir Sreedharan
-<ssreedharan@mvista.com> wrote:
-> For console devices having UART_CAP_SLEEP capability, the uart_pm_state has
-> to be initialized to UART_PM_STATE_ON. Otherwise the LCR regiser values
-> are reinitialized when uart_change_pm is called from uart_configure_port.
->
-> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
+This change fixes below sparse error:
+drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
+was not declared. Should it be static?
 
-Multiple boot failures on ARM[1] were bisected down to this patch.
+Cc: Michael Buesch <m@bues.ch>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+Changes since v1:
+Removed the function as it is not called anywhere in the kernel
+as per suggestion from Michael Buesch.
 
-How was this patch tested, and on which platforms?
+ drivers/ssb/main.c | 19 -------------------
+ 1 file changed, 19 deletions(-)
 
-Also, the changelog states that this should be done only for
-UART_CAP_SLEEP, but the patch does it for every UART.
+diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
+index 2fead38..1e180c4 100644
+--- a/drivers/ssb/main.c
++++ b/drivers/ssb/main.c
+@@ -90,25 +90,6 @@ found:
+ }
+ #endif /* CONFIG_SSB_PCMCIAHOST */
+ 
+-#ifdef CONFIG_SSB_SDIOHOST
+-struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
+-{
+-	struct ssb_bus *bus;
+-
+-	ssb_buses_lock();
+-	list_for_each_entry(bus, &buses, list) {
+-		if (bus->bustype == SSB_BUSTYPE_SDIO &&
+-		    bus->host_sdio == func)
+-			goto found;
+-	}
+-	bus = NULL;
+-found:
+-	ssb_buses_unlock();
+-
+-	return bus;
+-}
+-#endif /* CONFIG_SSB_SDIOHOST */
+-
+ int ssb_for_each_bus_call(unsigned long data,
+ 			  int (*func)(struct ssb_bus *bus, unsigned long data))
+ {
+-- 
+1.8.3.2
 
-Greg, I suggest this patch be dropped from tty-next until it has been
-better described and tested.
-
-Kevin
-
-[1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-October/005550.html
