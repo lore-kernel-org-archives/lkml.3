@@ -1,89 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaJAAiv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 20:38:51 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:39408 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaJAAiu (ORCPT
+	id S1751527AbaJAAlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 20:41:18 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44163 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaJAAlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 20:38:50 -0400
+	Tue, 30 Sep 2014 20:41:17 -0400
+Message-ID: <542B4DA3.5080105@gmail.com>
+Date: Tue, 30 Sep 2014 17:41:07 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140930192741.73144817@as>
-References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net>
- <20140930192741.73144817@as>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Sep 2014 17:38:27 -0700
-Message-ID: <CALCETrWSG7p_t9WLnbWUjKNzr9bP77NpE7qpqMWzhV1BBYCZeg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Sebastian Lackner <sebastian@fds-team.de>,
-        Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Rob Landley <rob@landley.net>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH v5] init: Disable defaults if init= fails
+References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
+In-Reply-To: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 5:27 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> On Tue, 30 Sep 2014 12:40:35 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
->
->> The NT flag doesn't do anything in long mode other than causing IRET
->> to #GP.  Oddly, CPL3 code can still net NT using popf.
->>
->> Entry via hardware or software interrupt clears NT automatically, so
->> the only relevant entries are fast syscalls.
->>
->> This patch programs the CPU to clear NT on entry via SYSCALL (both
->> 32-bit and 64-bit, by my reading of the AMD APM).  It also clears NT
->> (and some other flags) in software on SYSENTER.
->>
->> I haven't touched anything on 32-bit kernels.
->>
->> If user code causes kernel code to run with NT set, then there's at
->> least some (small) chance that it could cause trouble.  For example,
->> user code could cause a call to EFI code with NT set, and who knows
->> what would happen.  Apparently Wine sometimes does this (!), and, if
->> an IRET return happens, Wine will segfault.
->>
->> I think that Wine should be fixed to stop setting NT when a syscall
->> happens, but handling NT more gracefully is still nice.
->>
->> The syscall mask change comes from a variant of this patch by Anish
->> Bhatt.
->>
->> Cc: stable@kernel.org
->> Reported-by: Anish Bhatt <anish@chelsio.com>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  arch/x86/ia32/ia32entry.S    | 10 +++++++++-
->>  arch/x86/kernel/cpu/common.c |  2 +-
->>  2 files changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
->> index 4299eb05023c..079f42a7ad58 100644
->> --- a/arch/x86/ia32/ia32entry.S
->> +++ b/arch/x86/ia32/ia32entry.S
->> @@ -143,7 +143,15 @@ ENTRY(ia32_sysenter_target)
->>       pushq_cfi %r10
->>       CFI_REL_OFFSET rip,0
->>       pushq_cfi %rax
->> -     cld
->> +
->> +     /*
->> +      * Sysenter doesn't filter flags, so we should filter them
->> +      * ourselves.
->> +      */
->> +     pushfq_cfi
->> +     andl $~(X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_NT|X86_EFLAGS_IOPL),(%rsp)
->> +     popfq_cfi
->
-> Can't you just push a constant and pop that onto flags instead? It's
-> not like we care what's in there on entry to the kernel.
+The earliest mention I find of this on lkml is v4.  Was there earlier
+discussion of this elsewhere?  (Just so I have a clue as to the full
+context and don't repeat previous discussion.)  The mention of names
+in the change logs tells me I should be able to find the discussion
+somewhere.
 
-I don't see why not.  I'll test on Xen just to be sure.
 
---Andy
+On 9/28/2014 7:40 PM, Andy Lutomirski wrote:
+> If a user puts init=/whatever on the command line and /whatever
+> can't be run, then the kernel will try a few default options before
+> giving up.  If init=/whatever came from a bootloader prompt, then
+> this is unexpected but probably harmless.  On the other hand, if it
+> comes from a script (e.g. a tool like virtme or perhaps a future
+> kselftest script), then the fallbacks are likely to exist, but
+> they'll do the wrong thing.  For example, they might unexpectedly
+> invoke systemd.
+> 
+> This makes a failure to run the specified init= process be fatal.
+> 
+> As a temporary measure, users can set CONFIG_INIT_FALLBACK=y to
+> preserve the old behavior.  If no one speaks up, we can remove that
+> option entirely after a release or two.
+
+I'm speaking up already, no need to wait two releases.  I like the
+current behavior where I can fall back into a shell without
+recompiling the kernel and/or changing the boot command line to
+debug an init failure.
+
+I would suggest that the current behavior remain the
+default and the choice to make a failure of the specified
+init= process fatal should be an explicit choice.
+
+Instead of using a config option, would adding another kernel
+command line option, such as 'init_fail_is_fatal', work for
+your needs?  I have a feeling this has already been proposed,
+as the 'strictinit' option mentioned in the changes from v3
+below might be the same concept?
+
+Thanks,
+
+Frank
+
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+> 
+> Changes from v4:
+>  - Update the panic message (sorry for the noise)
+> 
+> Changes from v3:
+>  - Get rid of the strictinit option.  Now the new behavior is the default
+>    unless CONFIG_INIT_FALLBACK=y (Rob Landley)
+> 
+> Changes from v2:
+>  - Improve docs further, to leave the door open to giving strictinit
+>    some sensible semantics if init= is not set.
+>  - Improve error output in the failure case (Shuah Khan).
+> 
+> Changes from v1:
+>  - Add missing "if" to the docs (Randy Dunlap)
+> 
+>  init/Kconfig | 11 +++++++++++
+>  init/main.c  |  7 ++++++-
+>  2 files changed, 17 insertions(+), 1 deletion(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index e84c6423a2e5..063029a1556f 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1299,6 +1299,17 @@ source "usr/Kconfig"
+>  
+>  endif
+>  
+> +config INIT_FALLBACK
+> +	bool "Fall back to defaults if init= parameter is bad"
+> +	help
+> +	  If enabled, the kernel will try the default init binaries if an
+> +	  explicit request from the init= parameter fails.
+> +
+> +	  This is a temporary measure to allow broken configurations
+> +	  to continue to boot.
+> +
+> +	  If unsure, say N.
+> +
+>  config CC_OPTIMIZE_FOR_SIZE
+>  	bool "Optimize for size"
+>  	help
+> diff --git a/init/main.c b/init/main.c
+> index bb1aed928f21..2bd6105e5dc5 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -960,8 +960,13 @@ static int __ref kernel_init(void *unused)
+>  		ret = run_init_process(execute_command);
+>  		if (!ret)
+>  			return 0;
+> +#ifndef CONFIG_INIT_FALLBACK
+> +		panic("Requested init %s failed (error %d).",
+> +		      execute_command, ret);
+> +#else
+>  		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
+> -			execute_command, ret);
+> +		       execute_command, ret);
+> +#endif
+>  	}
+>  	if (!try_to_run_init_process("/sbin/init") ||
+>  	    !try_to_run_init_process("/etc/init") ||
+> 
+
