@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbaJANxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:53:05 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50016 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751610AbaJANxA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:53:00 -0400
-Date: Wed, 1 Oct 2014 14:52:48 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Sean Paul <seanpaul@chromium.org>,
-        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ritesh.harjani@gmail.com" <ritesh.harjani@gmail.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: Use and error-check DMA_ERROR_CODE
-Message-ID: <20141001135248.GQ5182@n2100.arm.linux.org.uk>
-References: <1412108121-19262-1-git-send-email-seanpaul@chromium.org> <20141001101323.GB2587@arm.com>
+	id S1751732AbaJANxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:53:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54634 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751680AbaJANxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:53:20 -0400
+Date: Wed, 1 Oct 2014 09:52:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        keescook@chromium.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141001135237.GA13689@redhat.com>
+References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
+ <542B1EC1.8090502@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141001101323.GB2587@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <542B1EC1.8090502@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 11:13:23AM +0100, Will Deacon wrote:
-> Hi Sean,
+On Tue, Sep 30, 2014 at 02:21:05PM -0700, H. Peter Anvin wrote:
+> On 09/30/2014 12:08 AM, Baoquan He wrote:
+> > Function handle_relocations() is used to do the relocations handling
+> > for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+> > mandotary to perform. For x86_64 only when kaslr is enabled and a
+> > random kernel location is chosen successfully the relocation handling
+> > shound be done. However previous implementation only compared the
+> > kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+> > compiled to run at. This would casue system to be exceptional in
+> > few conditions like when delta between load address and compiled
+> > address is bigger than what 32bit signed relocations can handle.
+> > Also there will be limitations that delta can't be too big otherwise
+> > kernel text virtual addresses will overflow in module address space.
+> > 
+> > So in this patch check if kernel location is changed after
+> > choose_kernel_location() when x86_64. If and only if in x86_64
+> > and kernel location is changed, we say a kaslr random kernel
+> > location is chosen, then the relocation handling is needed.
+> > 
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> > Acked-by: Kees Cook <keescook@chromium.org>
+> > Tested-by: Thomas D. <whissi@whissi.de>
+> > Cc: stable@vger.kernel.org
 > 
-> On Tue, Sep 30, 2014 at 09:15:21PM +0100, Sean Paul wrote:
-> > +
-> > +	if (dma_handle != DMA_ERROR_CODE)
-> > +		__dma_free_coherent(dev, size, swiotlb_addr, dma_handle, attrs);
-> 
-> Is it legal to try and free a DMA buffer after a failed allocation? If so, I
-> think we need something similar for arch/arm/.
+> Could you clarify under what conditions we may end up with 32-bit signed
+> overflow, and yet have a functional kernel?
 
-No.
 
-	void
-	dma_free_coherent(struct device *dev, size_t size, void *cpu_addr,
-	                           dma_addr_t dma_handle)
+Hi Peter,
 
-	Free a region of consistent memory you previously allocated.  dev,
-	                                       ^^^^^^^^^^^^^^^^^^^^^
-This implies that the allocation was successful.
+I think there is some confusion. I will try to clarify.
 
-	size and dma_handle must all be the same as those passed into
-	dma_alloc_coherent().  cpu_addr must be the virtual address returned by
-	                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If we have 32bit signed overflow, we will not have a functional kernel.
+And that's the message we get when we try to kexec with
+CONFIG_RANDOMIZE_BASE=y.
 
-If you want this behaviour, the proper way to do it would be to check
-for a NULL cpu_addr, just like kfree() etc.
+**********************************************************************
+[  340.709078] kexec: Starting new kernel
+early console in decompress_kernel
+KASLR disabled by default...
 
-	the dma_alloc_coherent().
+Decompressing Linux... Parsing ELF...
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Performing relocations...
+32-bit relocation outside of kernel!
+
+
+ -- System halted
+*****************************************************************
+
+We realized that kexec tries to load kernel at higher physical addresses
+and that can lead to problmes.
+
+Currently for x86_64, handle_relocations() will perform relocations if
+kernel is not loaded at LOAD_PHYSICAL_ADDR. I think this does not work for
+all the cases and kerenl can not be loaded anywhere in the physical address
+space. And that's why we run into issues with kexec.
+
+My understanding is that we introduce handle_relcoations() i386 style
+because of RANDOMIZE_BASE. If that's the case, one possible solution
+is that perform relocations only if ranodmize base logic has chosen
+a different load location for kernel than where boot loader loaded
+it. Otherwise don't do anything.
+
+In case of kexec/kdump, we will pass "nokaslr" to second kernel forcing
+it to do nothing and let the kernel run where it was loaded by bootloader.
+And in that case handle_relocations() should not do any relocations and
+that should allow kernel to be loaded anywhere in physical memory on
+x86_64.
+
+Thanks
+Vivek
