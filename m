@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaJARxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:53:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42449 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236AbaJARxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:53:38 -0400
-Message-ID: <542C3F92.9090409@zytor.com>
-Date: Wed, 01 Oct 2014 10:53:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753486AbaJARyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:54:21 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48748 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaJARyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:54:19 -0400
+Message-ID: <542C3FCA.2010006@codeaurora.org>
+Date: Wed, 01 Oct 2014 10:54:18 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: Sebastian Lackner <sebastian@fds-team.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>
-Subject: Re: [PATCH 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-References: <cover.1412105369.git.luto@amacapital.net> <c4b7904ef2ddd3dec27400d18bcd00badb4dcedf.1412105369.git.luto@amacapital.net> <542B2305.9060805@fds-team.de> <CALCETrX86zeONHsf74yKseddXUc1BMHHAFaGKgU82HuU9+_PjQ@mail.gmail.com> <alpine.DEB.2.11.1410010025050.4455@nanos> <CALCETrWTVPjkgfU3sWyKgtfidccXkO=H7y+9XiX20AfeQsAf2w@mail.gmail.com> <alpine.DEB.2.11.1410010119320.4455@nanos> <542C3EEB.8050903@zytor.com>
-In-Reply-To: <542C3EEB.8050903@zytor.com>
-Content-Type: text/plain; charset=utf-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-msm@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/3] ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp
+ implementations
+References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org> <1411076592-6157-3-git-send-email-sboyd@codeaurora.org> <20140918224625.GF5182@n2100.arm.linux.org.uk> <541C74C1.9060504@codeaurora.org>
+In-Reply-To: <541C74C1.9060504@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 10:50 AM, H. Peter Anvin wrote:
-> On 09/30/2014 04:21 PM, Thomas Gleixner wrote:
->>>
->>> If we ever want those cycles back, I bet that the compat sysenter path
->>> could be trimmed down a lot.  For example, I think that all of the
->>> zero-extension stuff is unnecessary now that we have the magic syscall
->>> wrappers for all (?) syscalls.
+On 09/19/14 11:24, Stephen Boyd wrote:
+> On 09/18/14 15:46, Russell King - ARM Linux wrote:
+>> On Thu, Sep 18, 2014 at 02:43:11PM -0700, Stephen Boyd wrote:
+>>> diff --git a/arch/arm/include/asm/vfp.h b/arch/arm/include/asm/vfp.h
+>>> index f4ab34fd4f72..76d3f6907cce 100644
+>>> --- a/arch/arm/include/asm/vfp.h
+>>> +++ b/arch/arm/include/asm/vfp.h
+>>> @@ -21,7 +21,7 @@
+>>>  #define FPSID_FORMAT_MASK	(0x3  << FPSID_FORMAT_BIT)
+>>>  #define FPSID_NODOUBLE		(1<<20)
+>>>  #define FPSID_ARCH_BIT		(16)
+>>> -#define FPSID_ARCH_MASK		(0xF  << FPSID_ARCH_BIT)
+>>> +#define FPSID_ARCH_MASK		(0x7F  << FPSID_ARCH_BIT)
+>> This is incorrect.  On VFPv2, the architecture field is four bits long.
+>> As you can see from the above, bit 20 indicates that there are no
+>> double operations provided, and the next two bits indicate the FSTMX/
+>> FLDMX format.
 >>
->> Emphasis on "(?)". So yes, once we verified that ....
+>> I know that you're changing this to conform with the ARM ARM, but we
+>> have to consider that before VFP was subsumed into the ARM ARM, this
+>> register had the format described as per this file, and these other
+>> bits may be set for an ARM part.  Including these bits in the mask
+>> means that we will mis-identify these older parts as VFPv3.
 >>
-> 
-> I don't think that's true.  Many system calls use exactly the same entry
-> point for compat and noncompat calls.  I don't see any value in
-> replicating that code in every system call.
-> 
-> The only time we need to do anything horribly special is when we have an
-> argument which is a signed long, which fortunately is not at all common.
-> 
+>> Welcome to the lack of standardisation!
+>>
+> Thank you for the warm welcome! I looked at the TRMs for ARM11 and ARM9.
+> I can't find anywhere where VFPv2 is supported and these bits are set.
+>
+> Bits 22-16 of FPSID:
+>
+> ARM1136r1p5:     0x01
+> ARM1136r1p3:     0x01
+> ARM1176:         0x01
+> ARM11MPCorer2p0: 0x01
+> ARM11MPCorer1p0: 0x01
+> ARM1156:         0x01
+> ARM9:            0x01
+>
+>
+> Do you, or anyone else, know of other implementations? I *hope* that
+> this same exercise was done by the VFP architects before they
+> re-purposed bits but who knows. If nobody is actually setting these
+> higher bits then is there any problem widening the mask (besides it
+> being slightly confusing)?
+>
 
-Also, we still need to shuffle registers around to match the x86-64
-calling convention.  Zero extension as part of that shuffle is free.
+Any thoughts?
 
-	-hpa
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
