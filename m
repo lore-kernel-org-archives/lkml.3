@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaJAPRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:17:51 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:48788 "EHLO
+	id S1752129AbaJAPR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:17:58 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48795 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaJAPRs (ORCPT
+	with ESMTP id S1751719AbaJAPRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:17:48 -0400
+	Wed, 1 Oct 2014 11:17:52 -0400
 Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s91FHj55004273, This message is accepted by code: ctloc85258
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s91FHnMJ004304, This message is accepted by code: ctloc85258
 From: Chun-Hao Lin <hau@realtek.com>
 To: <netdev@vger.kernel.org>
 CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
         Chun-Hao Lin <hau@realtek.com>
-Subject: [PATCH v2 net-next 05/10] r8169:add more chips to support magic packet v2
-Date: Wed, 1 Oct 2014 23:17:16 +0800
-Message-ID: <1412176641-24393-5-git-send-email-hau@realtek.com>
+Subject: [PATCH v2 net-next 09/10] r8169:modify the behavior of function "rtl8168_oob_notify"
+Date: Wed, 1 Oct 2014 23:17:20 +0800
+Message-ID: <1412176641-24393-9-git-send-email-hau@realtek.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412176641-24393-1-git-send-email-hau@realtek.com>
 References: <1412176641-24393-1-git-send-email-hau@realtek.com>
@@ -26,83 +26,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For RTL8168F RTL8168FB RTL8168G RTL8168GU RTL8411 RTL8411B RTL8402 RTL8107E,
-the magic packet enable bit is changed to eri 0xde bit0.
+In function "rtl8168_oob_notify", using function "rtl_eri_write" to access
+eri register 0xe8, instead of using MAC register "ERIDR" and "ERIAR" to
+access it.
 
-In this patch, change magic packet enable bit of these chips to eri 0xde bit0.
+For using function "rtl_eri_write" in function "rtl8168_oob_notify", need to
+move down "rtl8168_oob_notify" related functions under the function
+"rtl_eri_write".
 
 Signed-off-by: Chun-Hao Lin <hau@realtek.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/net/ethernet/realtek/r8169.c | 99 +++++++++++++++++-------------------
+ 1 file changed, 46 insertions(+), 53 deletions(-)
 
 diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index c1e9661..070724c 100644
+index d84605a..305f3b4 100644
 --- a/drivers/net/ethernet/realtek/r8169.c
 +++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1546,8 +1546,20 @@ static u32 __rtl8169_get_wol(struct rtl8169_private *tp)
- 	if (options & LinkUp)
- 		wolopts |= WAKE_PHY;
- 	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
-+	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_38:
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
-+	case RTL_GIGA_MAC_VER_44:
- 	case RTL_GIGA_MAC_VER_45:
- 	case RTL_GIGA_MAC_VER_46:
-+	case RTL_GIGA_MAC_VER_47:
-+	case RTL_GIGA_MAC_VER_48:
- 		if (rtl_eri_read(tp, 0xdc, ERIAR_EXGMAC) & MagicPacket_v2)
- 			wolopts |= WAKE_MAGIC;
- 		break;
-@@ -1601,8 +1613,20 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
- 	RTL_W8(Cfg9346, Cfg9346_Unlock);
+@@ -969,59 +969,6 @@ DECLARE_RTL_COND(rtl_eriar_cond)
+ 	return RTL_R32(ERIAR) & ERIAR_FLAG;
+ }
  
- 	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
-+	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_38:
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
-+	case RTL_GIGA_MAC_VER_44:
- 	case RTL_GIGA_MAC_VER_45:
- 	case RTL_GIGA_MAC_VER_46:
-+	case RTL_GIGA_MAC_VER_47:
-+	case RTL_GIGA_MAC_VER_48:
- 		tmp = ARRAY_SIZE(cfg) - 1;
- 		if (wolopts & WAKE_MAGIC)
- 			rtl_w1w0_eri(tp,
-@@ -7666,8 +7690,20 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	RTL_W8(Config1, RTL_R8(Config1) | PMEnable);
- 	RTL_W8(Config5, RTL_R8(Config5) & (BWF | MWF | UWF | LanWake | PMEStatus));
- 	switch (tp->mac_version) {
-+	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
-+	case RTL_GIGA_MAC_VER_37:
-+	case RTL_GIGA_MAC_VER_38:
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
-+	case RTL_GIGA_MAC_VER_44:
- 	case RTL_GIGA_MAC_VER_45:
- 	case RTL_GIGA_MAC_VER_46:
-+	case RTL_GIGA_MAC_VER_47:
-+	case RTL_GIGA_MAC_VER_48:
- 		if (rtl_eri_read(tp, 0xdc, ERIAR_EXGMAC) & MagicPacket_v2)
- 			tp->features |= RTL_FEATURE_WOL;
- 		if ((RTL_R8(Config3) & LinkUp) != 0)
+-static void rtl8168_oob_notify(struct rtl8169_private *tp, u8 cmd)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	RTL_W8(ERIDR, cmd);
+-	RTL_W32(ERIAR, 0x800010e8);
+-	msleep(2);
+-
+-	if (!rtl_udelay_loop_wait_low(tp, &rtl_eriar_cond, 100, 5))
+-		return;
+-
+-	ocp_write(tp, 0x1, 0x30, 0x00000001);
+-}
+-
+-#define OOB_CMD_RESET		0x00
+-#define OOB_CMD_DRIVER_START	0x05
+-#define OOB_CMD_DRIVER_STOP	0x06
+-
+-static u16 rtl8168_get_ocp_reg(struct rtl8169_private *tp)
+-{
+-	return (tp->mac_version == RTL_GIGA_MAC_VER_31) ? 0xb8 : 0x10;
+-}
+-
+-DECLARE_RTL_COND(rtl_ocp_read_cond)
+-{
+-	u16 reg;
+-
+-	reg = rtl8168_get_ocp_reg(tp);
+-
+-	return ocp_read(tp, 0x0f, reg) & 0x00000800;
+-}
+-
+-static void rtl8168_driver_start(struct rtl8169_private *tp)
+-{
+-	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
+-
+-	rtl_msleep_loop_wait_high(tp, &rtl_ocp_read_cond, 10, 10);
+-}
+-
+-static void rtl8168_driver_stop(struct rtl8169_private *tp)
+-{
+-	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_STOP);
+-
+-	rtl_msleep_loop_wait_low(tp, &rtl_ocp_read_cond, 10, 10);
+-}
+-
+-static int r8168_check_dash(struct rtl8169_private *tp)
+-{
+-	u16 reg = rtl8168_get_ocp_reg(tp);
+-
+-	return (ocp_read(tp, 0x0f, reg) & 0x00008000) ? 1 : 0;
+-}
+-
+ static bool rtl_ocp_reg_failure(struct rtl8169_private *tp, u32 reg)
+ {
+ 	if (reg & 0xffff0001) {
+@@ -1329,6 +1276,52 @@ static void rtl_w0w1_eri(struct rtl8169_private *tp, int addr, u32 mask, u32 p,
+ 	rtl_eri_write(tp, addr, mask, (val & ~m) | p, type);
+ }
+ 
++static void rtl8168_oob_notify(struct rtl8169_private *tp, u8 cmd)
++{
++	rtl_eri_write(tp, 0xe8, ERIAR_MASK_0001, cmd, ERIAR_EXGMAC);
++
++	ocp_write(tp, 0x1, 0x30, 0x00000001);
++}
++
++#define OOB_CMD_RESET		0x00
++#define OOB_CMD_DRIVER_START	0x05
++#define OOB_CMD_DRIVER_STOP	0x06
++
++static u16 rtl8168_get_ocp_reg(struct rtl8169_private *tp)
++{
++	return (tp->mac_version == RTL_GIGA_MAC_VER_31) ? 0xb8 : 0x10;
++}
++
++DECLARE_RTL_COND(rtl_ocp_read_cond)
++{
++	u16 reg;
++
++	reg = rtl8168_get_ocp_reg(tp);
++
++	return ocp_read(tp, 0x0f, reg) & 0x00000800;
++}
++
++static void rtl8168_driver_start(struct rtl8169_private *tp)
++{
++	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
++
++	rtl_msleep_loop_wait_high(tp, &rtl_ocp_read_cond, 10, 10);
++}
++
++static void rtl8168_driver_stop(struct rtl8169_private *tp)
++{
++	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_STOP);
++
++	rtl_msleep_loop_wait_low(tp, &rtl_ocp_read_cond, 10, 10);
++}
++
++static int r8168_check_dash(struct rtl8169_private *tp)
++{
++	u16 reg = rtl8168_get_ocp_reg(tp);
++
++	return (ocp_read(tp, 0x0f, reg) & 0x00008000) ? 1 : 0;
++}
++
+ struct exgmac_reg {
+ 	u16 addr;
+ 	u16 mask;
 -- 
 1.8.3.2
 
