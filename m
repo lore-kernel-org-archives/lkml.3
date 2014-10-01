@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaJANBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:01:41 -0400
-Received: from mout.web.de ([212.227.15.4]:64407 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181AbaJANBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:01:40 -0400
-Message-ID: <542BFB2C.5070609@users.sourceforge.net>
-Date: Wed, 01 Oct 2014 15:01:32 +0200
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751347AbaJANIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:08:23 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58078 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaJANIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:08:22 -0400
+Date: Wed, 1 Oct 2014 06:08:22 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] block: remove artifical max_hw_sectors cap
+Message-ID: <20141001130822.GA5362@infradead.org>
+References: <1410044885-14893-1-git-send-email-hch@lst.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Coccinelle <cocci@systeme.lip6.fr>, kernel-janitors@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, Chi Pham <chidaph@gmail.com>,
-        Fabian Frederick <fabf@skynet.be>, Joe Perches <joe@perches.com>
-Subject: Re: [PATCH with Coccinelle?] Deletion of unnecessary checks before
- specific function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:KevSVkWmkZQ/DBuwXqv4HU0+sWwY8SuqXzq43k4f11R8BVEe6cz
- uWns3jhSnirqDpP85OWMzvs8SyofsbPfC3b4A2bJrnBSVwW7I3x96ErNoB0XyyIklGvRQ6x
- SD4dr1exv7JGhteUqJ9o06ZmZt5PZYtQNgfltYLGjZRr2S/5JtlBdSr28H2x8dqGC+qpcEE
- C3B7DZDwFLbZvZIV/fCgQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410044885-14893-1-git-send-email-hch@lst.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> If you are convinced that dropping the null tests is a good idea, then you 
->> can submit the patch that makes the change to the relevant maintainers and 
->> mailing lists.
+As we still haven't made any progress on this let me explain why
+the limit does not make sense:  It only applies to _FS request,
+which basically have three use cases:
 
-Hello,
+ - metadata I/O.  Generally small enough that the limit does not
+   matter at all.
+ - buffered reads/writes.  We already have a self-tuning algorithm
+   that limits writeback size, and a readahead size tunable that
+   caps read sizes.  Imposing another confusing limit that does
+   not interact with the visible tunables here is not helpful
+ - direct I/O.  Users should get something resembling their request
+   as closely as possible on the write, and this is where our
+   stupid limitation causes the most problems.
 
-A couple of functions perform input parameter validation before their
-implementations will try further actions with side effects. Some calling
-functions perform similar safety checks.
-
-Functions which release a system resource are occasionally documented in the way
-that they tolerate the passing of a null pointer for example.
-I do not see a need because of this fact that a function caller repeats a
-corresponding check.
-
-Now I would like to propose such a change again.
-
-1. Extension of the infrastructure for the analysis tool "coccicheck"
-   Semantic patch patterns can help to identify update candidates also in the
-Linux source file hierarchy.
-
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/scripts/coccinelle?id=79f0345fefaafb7cde301a830471edd21a37989b
-
-   Would you like to reconsider an approach which was discussed with a subject
-like "scripts/coccinelle/free: Delete NULL test before freeing functions?" a
-while ago?
-   https://lkml.org/lkml/2014/8/9/36
-   https://groups.google.com/d/msg/linux.kernel/rIWfYsRRW6I/cTs6y0STf2cJ
-
-
-2. Clarification for some automated update suggestions
-   My source code search approach found 227 functions with the help of the
-software "Coccinelle 1.0.0-rc22" at least which might need another review and
-corresponding corrections for Linux 3.16.3. Further software development will
-point out even more potentially open issues.
-
-Regards,
-Markus
-
+On Sat, Sep 06, 2014 at 04:08:05PM -0700, Christoph Hellwig wrote:
+> Set max_sectors to the value the drivers provides as hardware limit by
+> default.  Linux had proper I/O throttling for a long time and doesn't
+> rely on a artifically small maximum I/O size anymore.  By not limiting
+> the I/O size by default we remove an annoying tuning step required for
+> most Linux installation.
+> 
+> Note that both the user, and if absolutely required the driver can still
+> impose a limit for FS requests below max_hw_sectors_kb.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>  block/blk-settings.c       | 4 +---
+>  drivers/block/aoe/aoeblk.c | 2 +-
+>  include/linux/blkdev.h     | 1 -
+>  3 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/blk-settings.c b/block/blk-settings.c
+> index f1a1795..f52c223 100644
+> --- a/block/blk-settings.c
+> +++ b/block/blk-settings.c
+> @@ -257,9 +257,7 @@ void blk_limits_max_hw_sectors(struct queue_limits *limits, unsigned int max_hw_
+>  		       __func__, max_hw_sectors);
+>  	}
+>  
+> -	limits->max_hw_sectors = max_hw_sectors;
+> -	limits->max_sectors = min_t(unsigned int, max_hw_sectors,
+> -				    BLK_DEF_MAX_SECTORS);
+> +	limits->max_sectors = limits->max_hw_sectors = max_hw_sectors;
+>  }
+>  EXPORT_SYMBOL(blk_limits_max_hw_sectors);
+>  
+> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+> index dd73e1f..46c282f 100644
+> --- a/drivers/block/aoe/aoeblk.c
+> +++ b/drivers/block/aoe/aoeblk.c
+> @@ -395,7 +395,7 @@ aoeblk_gdalloc(void *vp)
+>  	WARN_ON(d->flags & DEVFL_TKILL);
+>  	WARN_ON(d->gd);
+>  	WARN_ON(d->flags & DEVFL_UP);
+> -	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
+> +	blk_queue_max_hw_sectors(q, 1024);
+>  	q->backing_dev_info.name = "aoe";
+>  	q->backing_dev_info.ra_pages = READ_AHEAD / PAGE_CACHE_SIZE;
+>  	d->bufpool = mp;
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 518b465..7e3c172 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1192,7 +1192,6 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
+>  enum blk_default_limits {
+>  	BLK_MAX_SEGMENTS	= 128,
+>  	BLK_SAFE_MAX_SECTORS	= 255,
+> -	BLK_DEF_MAX_SECTORS	= 1024,
+>  	BLK_MAX_SEGMENT_SIZE	= 65536,
+>  	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
+>  };
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---end quoted text---
