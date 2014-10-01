@@ -1,638 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbaJAQ5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:57:37 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:40568 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752201AbaJAQ5e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:57:34 -0400
-X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Wed, 01 Oct 2014 12:57:34 EDT
-Subject: Re: [PATCH v7 1/9] OF: Introduce Device Tree resolve support.
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=windows-1252
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20141001124644.24E1FC40755@trevor.secretlab.ca>
-Date: Wed, 1 Oct 2014 19:51:35 +0300
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, Joel Becker <jlbec@evilplan.org>,
-        devicetree@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5113283C-6161-4EAB-B77E-47F502E54078@antoniou-consulting.com>
-References: <1404493168-8980-1-git-send-email-pantelis.antoniou@konsulko.com> <1404493168-8980-2-git-send-email-pantelis.antoniou@konsulko.com> <20141001124644.24E1FC40755@trevor.secretlab.ca>
-To: Grant Likely <grant.likely@secretlab.ca>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1751769AbaJAREm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:04:42 -0400
+Received: from fieldses.org ([174.143.236.118]:38642 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236AbaJAREk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:04:40 -0400
+Date: Wed, 1 Oct 2014 13:04:40 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] nfsd bugfix for 3.17
+Message-ID: <20141001170440.GB28623@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Please pull the following change from:
 
-On Oct 1, 2014, at 3:46 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+  git://linux-nfs.org/~bfields/linux.git for-3.17
 
-> On Fri,  4 Jul 2014 19:59:20 +0300
-> , Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> wrote:
->> Introduce support for dynamic device tree resolution.
->> Using it, it is possible to prepare a device tree that's
->> been loaded on runtime to be modified and inserted at the kernel
->> live tree.
->> 
->> Export of of_resolve and bug fix of double free by
->> 	Guenter Roeck <groeck@juniper.net>
->> 
->> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-> 
-> Hi Pantelis,
-> 
-> I suspect you've got a slightly updated version of this patch not posted
-> yet, but I do have a few comments. Overall they're pretty minor.
-> 
+This fixes a data corruption bug introduced by the v3.16 xdr encoding
+rewrite.  I haven't managed to reproduce it myself yet, but it's
+apparently not hard to hit given the right workload.
 
-Last time I checked (circa rc2), the last patch set applied. I’ll have to rebase and 
-take a look again but I don’t expect major changes.
+--b.
 
->> ---
->> .../devicetree/dynamic-resolution-notes.txt        |  25 ++
->> drivers/of/Kconfig                                 |   6 +
->> drivers/of/Makefile                                |   1 +
->> drivers/of/resolver.c                              | 403 +++++++++++++++++++++
->> include/linux/of.h                                 |  16 +
->> 5 files changed, 451 insertions(+)
->> create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
->> create mode 100644 drivers/of/resolver.c
->> 
->> diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
->> new file mode 100644
->> index 0000000..0b396c4
->> --- /dev/null
->> +++ b/Documentation/devicetree/dynamic-resolution-notes.txt
->> @@ -0,0 +1,25 @@
->> +Device Tree Dynamic Resolver Notes
->> +----------------------------------
->> +
->> +This document describes the implementation of the in-kernel
->> +Device Tree resolver, residing in drivers/of/resolver.c and is a
->> +companion document to Documentation/devicetree/dt-object-internal.txt[1]
->> +
->> +How the resolver works
->> +----------------------
->> +
->> +The resolver is given as an input an arbitrary tree compiled with the
->> +proper dtc option and having a /plugin/ tag. This generates the
->> +appropriate __fixups__ & __local_fixups__ nodes as described in [1].
->> +
->> +In sequence the resolver works by the following steps:
->> +
->> +1. Get the maximum device tree phandle value from the live tree + 1.
->> +2. Adjust all the local phandles of the tree to resolve by that amount.
->> +3. Using the __local__fixups__ node information adjust all local references
->> +   by the same amount.
->> +4. For each property in the __fixups__ node locate the node it references
->> +   in the live tree. This is the label used to tag the node.
->> +5. Retrieve the phandle of the target of the fixup.
->> +5. For each fixup in the property locate the node:property:offset location
->> +   and replace it with the phandle value.
->> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
->> index 2dcb054..0236a4e 100644
->> --- a/drivers/of/Kconfig
->> +++ b/drivers/of/Kconfig
->> @@ -78,4 +78,10 @@ config OF_RESERVED_MEM
->> 	help
->> 	  Helpers to allow for reservation of memory regions
->> 
->> +config OF_RESOLVE
->> +	bool
->> +	depends on OF && !SPARC
-> 
-> What part of this code breaks on SPARC?
-> 
+commit 15b23ef5d348
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Wed Sep 24 16:32:34 2014 -0400
 
-There are some extra properties on the SPARC device nodes, which I don’t know exactly how they work.
-I don’t have access to a SPARC box, lest I break something this conditional.
+    nfsd4: fix corruption of NFSv4 read data
+    
+    The calculation of page_ptr here is wrong in the case the read doesn't
+    start at an offset that is a multiple of a page.
+    
+    The result is that nfs4svc_encode_compoundres sets rq_next_page to a
+    value one too small, and then the loop in svc_free_res_pages may
+    incorrectly fail to clear a page pointer in rq_respages[].
+    
+    Pages left in rq_respages[] are available for the next rpc request to
+    use, so xdr data may be written to that page, which may hold data still
+    waiting to be transmitted to the client or data in the page cache.
+    
+    The observed result was silent data corruption seen on an NFSv4 client.
+    
+    We tag this as "fixing" 05638dc73af2 because that commit exposed this
+    bug, though the incorrect calculation predates it.
+    
+    Particular thanks to Andrea Arcangeli and David Gilbert for analysis and
+    testing.
+    
+    Fixes: 05638dc73af2 "nfsd4: simplify server xdr->next_page use"
+    Cc: stable@vger.kernel.org
+    Reported-by: Andrea Arcangeli <aarcange@redhat.com>
+    Tested-by: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
->> +	select OF_DYNAMIC
->> +	select OF_DEVICE
-> 
-> This code doesn't appear to depend on either OF_DYNAMIC or OF_DEVICE. You
-> should be able to drop the above 2 selects (at least it worked when I
-> tried it here)
-> 
-
-Yes, good catch. It wouldn’t work of-course since all the calls to insert nodes would
-fail.
-
->> +
->> endmenu # OF
->> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
->> index 9a68cc9..35a148a 100644
->> --- a/drivers/of/Makefile
->> +++ b/drivers/of/Makefile
->> @@ -12,6 +12,7 @@ obj-$(CONFIG_OF_PCI)	+= of_pci.o
->> obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
->> obj-$(CONFIG_OF_MTD)	+= of_mtd.o
->> obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
->> +obj-$(CONFIG_OF_RESOLVE)  += resolver.o
->> 
->> CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
->> CFLAGS_fdt_address.o = -I$(src)/../../scripts/dtc/libfdt
->> diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
->> new file mode 100644
->> index 0000000..18da5ca
->> --- /dev/null
->> +++ b/drivers/of/resolver.c
->> @@ -0,0 +1,403 @@
->> +/*
->> + * Functions for dealing with DT resolution
->> + *
->> + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
->> + * Copyright (C) 2012 Texas Instruments Inc.
->> + *
->> + * This program is free software; you can redistribute it and/or
->> + * modify it under the terms of the GNU General Public License
->> + * version 2 as published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/kernel.h>
->> +#include <linux/module.h>
->> +#include <linux/of.h>
->> +#include <linux/of_device.h>
->> +#include <linux/string.h>
->> +#include <linux/ctype.h>
->> +#include <linux/errno.h>
->> +#include <linux/string.h>
->> +#include <linux/slab.h>
->> +
->> +/**
->> + * Find a node with the give full name by recursively following any of
->> + * the child node links.
->> + */
->> +static struct device_node *__of_find_node_by_full_name(struct device_node *node,
->> +		const char *full_name)
->> +{
->> +	struct device_node *child, *found;
->> +
->> +	if (node == NULL)
->> +		return NULL;
->> +
->> +	/* check */
->> +	if (of_node_cmp(node->full_name, full_name) == 0)
->> +		return node;
->> +
->> +	for_each_child_of_node(node, child) {
->> +		found = __of_find_node_by_full_name(child, full_name);
->> +		if (found != NULL)
->> +			return found;
->> +	}
->> +
->> +	return NULL;
->> +}
->> +
->> +/*
->> + * Find live tree's maximum phandle value.
->> + */
->> +static phandle of_get_tree_max_phandle(void)
->> +{
->> +	struct device_node *node;
->> +	phandle phandle;
->> +	unsigned long flags;
->> +
->> +	/* now search recursively */
->> +	raw_spin_lock_irqsave(&devtree_lock, flags);
->> +	phandle = 0;
->> +	for_each_of_allnodes(node) {
->> +		if (node->phandle != OF_PHANDLE_ILLEGAL &&
->> +				node->phandle > phandle)
->> +			phandle = node->phandle;
->> +	}
->> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
->> +
->> +	return phandle;
->> +}
->> +
->> +/*
->> + * Adjust a subtree's phandle values by a given delta.
->> + * Makes sure not to just adjust the device node's phandle value,
->> + * but modify the phandle properties values as well.
->> + */
->> +static void __of_adjust_tree_phandles(struct device_node *node,
->> +		int phandle_delta)
->> +{
->> +	struct device_node *child;
->> +	struct property *prop;
->> +	phandle phandle;
->> +
->> +	/* first adjust the node's phandle direct value */
->> +	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
->> +		node->phandle += phandle_delta;
->> +
->> +	/* now adjust phandle & linux,phandle values */
->> +	for_each_property_of_node(node, prop) {
->> +
->> +		/* only look for these two */
->> +		if (of_prop_cmp(prop->name, "phandle") != 0 &&
->> +		    of_prop_cmp(prop->name, "linux,phandle") != 0)
->> +			continue;
->> +
->> +		/* must be big enough */
->> +		if (prop->length < 4)
->> +			continue;
->> +
->> +		/* read phandle value */
->> +		phandle = be32_to_cpup(prop->value);
->> +		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
->> +			continue;
->> +
->> +		/* adjust */
->> +		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
->> +	}
->> +
->> +	/* now do the children recursively */
->> +	for_each_child_of_node(node, child)
->> +		__of_adjust_tree_phandles(child, phandle_delta);
->> +}
->> +
->> +/*
->> + * Adjust the local phandle references by the given phandle delta.
->> + * Assumes the existances of a __local_fixups__ node at the root
->> + * of the tree. Does not take any devtree locks so make sure you
->> + * call this on a tree which is at the detached state.
->> + */
->> +static int __of_adjust_tree_phandle_references(struct device_node *node,
->> +		int phandle_delta)
->> +{
->> +	phandle phandle;
->> +	struct device_node *refnode, *child;
->> +	struct property *rprop, *sprop;
->> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
->> +	int offset, propcurlen;
->> +	int err;
->> +
->> +	/* locate the symbols & fixups nodes on resolve */
->> +	for_each_child_of_node(node, child)
->> +		if (of_node_cmp(child->name, "__local_fixups__") == 0)
->> +			break;
->> +
->> +	/* no local fixups */
->> +	if (!child)
->> +		return 0;
->> +
->> +	/* find the local fixups property */
->> +	for_each_property_of_node(child, rprop) {
->> +
->> +		/* skip properties added automatically */
->> +		if (of_prop_cmp(rprop->name, "name") == 0)
->> +			continue;
->> +
-> 
-> Everything below this line....
-> 
->> +		/* make a copy */
->> +		propval = kmalloc(rprop->length, GFP_KERNEL);
->> +		if (!propval) {
->> +			pr_err("%s: Could not copy value of '%s'\n",
->> +					__func__, rprop->name);
->> +			return -ENOMEM;
->> +		}
->> +		memcpy(propval, rprop->value, rprop->length);
->> +
->> +		propend = propval + rprop->length;
->> +		for (propcur = propval; propcur < propend;
->> +				propcur += propcurlen + 1) {
->> +
->> +			propcurlen = strlen(propcur);
->> +
->> +			nodestr = propcur;
->> +			s = strchr(propcur, ':');
->> +			if (!s) {
->> +				pr_err("%s: Illegal symbol entry '%s' (1)\n",
->> +					__func__, propcur);
->> +				err = -EINVAL;
->> +				goto err_fail;
->> +			}
->> +			*s++ = '\0';
->> +
->> +			propstr = s;
->> +			s = strchr(s, ':');
->> +			if (!s) {
->> +				pr_err("%s: Illegal symbol entry '%s' (2)\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -EINVAL;
->> +				goto err_fail;
->> +			}
->> +
->> +			*s++ = '\0';
->> +			err = kstrtoint(s, 10, &offset);
->> +			if (err != 0) {
->> +				pr_err("%s: Could get offset '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				goto err_fail;
->> +			}
->> +
->> +			/* look into the resolve node for the full path */
->> +			refnode = __of_find_node_by_full_name(node, nodestr);
->> +			if (!refnode) {
->> +				pr_warn("%s: Could not find refnode '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				continue;
->> +			}
->> +
->> +			/* now find the property */
->> +			for_each_property_of_node(refnode, sprop) {
->> +				if (of_prop_cmp(sprop->name, propstr) == 0)
->> +					break;
->> +			}
->> +
->> +			if (!sprop) {
->> +				pr_err("%s: Could not find property '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -ENOENT;
->> +				goto err_fail;
->> +			}
->> +
->> +			phandle = be32_to_cpup(sprop->value + offset);
->> +			*(__be32 *)(sprop->value + offset) =
->> +				cpu_to_be32(phandle + phandle_delta);
->> +		}
->> +
->> +		kfree(propval);
->> +		propval = NULL;
-> 
-> ... to this line is almost identical to the block in of_resolve(). Can
-> it be moved into a helper function?
-> 
-
-It appears so at first glance.
-
-
->> +	}
->> +
->> +	return 0;
->> +
->> +err_fail:
->> +	kfree(propval);
->> +	return err;
->> +}
->> +
->> +/**
->> + * of_resolve	- Resolve the given node against the live tree.
->> + *
->> + * @resolve:	Node to resolve
->> + *
->> + * Perform dynamic Device Tree resolution against the live tree
->> + * to the given node to resolve. This depends on the live tree
->> + * having a __symbols__ node, and the resolve node the __fixups__ &
->> + * __local_fixups__ nodes (if needed).
->> + * The result of the operation is a resolve node that it's contents
->> + * are fit to be inserted or operate upon the live tree.
->> + * Returns 0 on success or a negative error value on error.
->> + */
->> +int of_resolve(struct device_node *resolve)
->> +{
->> +	struct device_node *child, *refnode;
->> +	struct device_node *root_sym, *resolve_sym, *resolve_fix;
->> +	struct property *rprop, *sprop;
->> +	const char *refpath;
->> +	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
->> +	int offset, propcurlen;
->> +	phandle phandle, phandle_delta;
->> +	int err;
->> +
->> +	/* the resolve node must exist, and be detached */
->> +	if (!resolve || !of_node_check_flag(resolve, OF_DETACHED))
->> +		return -EINVAL;
->> +
->> +	/* first we need to adjust the phandles */
->> +	phandle_delta = of_get_tree_max_phandle() + 1;
->> +	__of_adjust_tree_phandles(resolve, phandle_delta);
->> +	err = __of_adjust_tree_phandle_references(resolve, phandle_delta);
->> +	if (err != 0)
->> +		return err;
->> +
->> +	root_sym = NULL;
->> +	resolve_sym = NULL;
->> +	resolve_fix = NULL;
->> +
->> +	/* this may fail (if no fixups are required) */
->> +	root_sym = of_find_node_by_path("/__symbols__");
->> +
->> +	/* locate the symbols & fixups nodes on resolve */
->> +	for_each_child_of_node(resolve, child) {
->> +
->> +		if (!resolve_sym &&
->> +				of_node_cmp(child->name, "__symbols__") == 0)
->> +			resolve_sym = child;
-> 
-> Can /aliases be used instead of __symbols__? __symbols__ requires the
-> .dtb to be compiled in a particular way and it means an overlay will
-> never work with an existing dtb.
-> 
-
-Hmm. Aliases in theory can be used as symbols sure enough.
-It is going to be very error prone (since you will need to explicitly define every symbol,
-instead of just relying on the compiler to generate an entry for each label).
-
-As a change it’s simple enough...
-
-> We also need to review how overlays match up with nodes in the base
-> tree. I can see a board with multiple identical expansion connectors,
-> but each connector wires up to different pins. If we made the symbols
-> resolution local to the expansion connector, then the same overlay could
-> be used for different ports.
-> 
-
-I have something in mind how to fix this, and some even more wonky cases.
-Think overlays applied on devices on busses that can be probed like PCI/USB etc.
-
-I think we can work the details at ELCE. Perhaps ask the organizers to setup the DT
-session we discussed.
-
->> +
->> +		if (!resolve_fix &&
->> +				of_node_cmp(child->name, "__fixups__") == 0)
->> +			resolve_fix = child;
->> +
->> +		/* both found, don't bother anymore */
->> +		if (resolve_sym && resolve_fix)
->> +			break;
->> +	}
->> +
->> +	/* we do allow for the case where no fixups are needed */
->> +	if (!resolve_fix) {
->> +		err = 0;	/* no error */
->> +		goto out;
->> +	}
->> +
->> +	/* we need to fixup, but no root symbols... */
->> +	if (!root_sym) {
->> +		err = -EINVAL;
->> +		goto out;
->> +	}
->> +
->> +	for_each_property_of_node(resolve_fix, rprop) {
->> +
->> +		/* skip properties added automatically */
->> +		if (of_prop_cmp(rprop->name, "name") == 0)
->> +			continue;
->> +
->> +		err = of_property_read_string(root_sym,
->> +				rprop->name, &refpath);
->> +		if (err != 0) {
->> +			pr_err("%s: Could not find symbol '%s'\n",
->> +					__func__, rprop->name);
->> +			goto out;
->> +		}
->> +
->> +		refnode = of_find_node_by_path(refpath);
->> +		if (!refnode) {
->> +			pr_err("%s: Could not find node by path '%s'\n",
->> +					__func__, refpath);
->> +			err = -ENOENT;
->> +			goto out;
->> +		}
->> +
->> +		phandle = refnode->phandle;
->> +		of_node_put(refnode);
->> +
->> +		pr_debug("%s: %s phandle is 0x%08x\n",
->> +				__func__, rprop->name, phandle);
->> +
->> +		/* make a copy */
->> +		propval = kmalloc(rprop->length, GFP_KERNEL);
->> +		if (!propval) {
->> +			pr_err("%s: Could not copy value of '%s'\n",
->> +					__func__, rprop->name);
->> +			err = -ENOMEM;
->> +			goto out;
->> +		}
->> +
->> +		memcpy(propval, rprop->value, rprop->length);
->> +
->> +		propend = propval + rprop->length;
->> +		for (propcur = propval; propcur < propend;
->> +				propcur += propcurlen + 1) {
->> +			propcurlen = strlen(propcur);
->> +
->> +			nodestr = propcur;
->> +			s = strchr(propcur, ':');
->> +			if (!s) {
->> +				pr_err("%s: Illegal symbol entry '%s' (1)\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -EINVAL;
->> +				goto err_fail_free;
->> +			}
->> +			*s++ = '\0';
->> +
->> +			propstr = s;
->> +			s = strchr(s, ':');
->> +			if (!s) {
->> +				pr_err("%s: Illegal symbol entry '%s' (2)\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -EINVAL;
->> +				goto err_fail_free;
->> +			}
->> +
->> +			*s++ = '\0';
->> +			err = kstrtoint(s, 10, &offset);
->> +			if (err != 0) {
->> +				pr_err("%s: Could get offset '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				goto err_fail_free;
->> +			}
->> +
->> +			/* look into the resolve node for the full path */
->> +			refnode = __of_find_node_by_full_name(resolve,
->> +					nodestr);
->> +			if (!refnode) {
->> +				pr_err("%s: Could not find refnode '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -ENOENT;
->> +				goto err_fail_free;
->> +			}
->> +
->> +			/* now find the property */
->> +			for_each_property_of_node(refnode, sprop) {
->> +				if (of_prop_cmp(sprop->name, propstr) == 0)
->> +					break;
->> +			}
->> +
->> +			if (!sprop) {
->> +				pr_err("%s: Could not find property '%s'\n",
->> +					__func__, (char *)rprop->value);
->> +				err = -ENOENT;
->> +				goto err_fail_free;
->> +			}
->> +
->> +			*(__be32 *)(sprop->value + offset) =
->> +				cpu_to_be32(phandle);
->> +		}
->> +
->> +		kfree(propval);
->> +		propval = NULL;
->> +	}
->> +
->> +err_fail_free:
->> +	kfree(propval);
->> +
->> +out:
->> +	/* NULL is handled by of_node_put as NOP */
->> +	of_node_put(root_sym);
->> +
->> +	return err;
->> +}
->> +EXPORT_SYMBOL_GPL(of_resolve);
->> diff --git a/include/linux/of.h b/include/linux/of.h
->> index fa81b42..e9be31c 100644
->> --- a/include/linux/of.h
->> +++ b/include/linux/of.h
->> @@ -903,4 +903,20 @@ static inline int of_transaction_update_property(struct of_transaction *oft,
->> }
->> #endif
->> 
->> +/* illegal phandle value (set when unresolved) */
->> +#define OF_PHANDLE_ILLEGAL	0xdeadbeef
-> 
-> fdt.c should be made to use this macro also.
-> 
-
-OK.
-
-> I've actually got a patches to makes all these changes. I've been trying
-> to get the selftest code to use the resolver. The current code passes
-> all the test cases, but while the testcase data is loaded there are
-> duplicate phandles in the tree. :-(
-> 
-
-Told you them things are tricky! :)
-
-Remember that patch we talked about a few weeks earlier? About the implicit properties?
-"of: dynamic: Handle special properties changes”. That should do the trick.
-
-Speaking of which I think it’s also time to look over the next set of changes.
-Like having a tree DT structure, phandle lists and perhaps copy based devm_* driver APIs.
-
-
-> g.
-
-Regards
-
-— Pantelis
-
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index e94457c33ad6..b01f6e100ee8 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -3104,7 +3104,8 @@ static __be32 nfsd4_encode_splice_read(
+ 
+ 	buf->page_len = maxcount;
+ 	buf->len += maxcount;
+-	xdr->page_ptr += (maxcount + PAGE_SIZE - 1) / PAGE_SIZE;
++	xdr->page_ptr += (buf->page_base + maxcount + PAGE_SIZE - 1)
++							/ PAGE_SIZE;
+ 
+ 	/* Use rest of head for padding and remaining ops: */
+ 	buf->tail[0].iov_base = xdr->p;
