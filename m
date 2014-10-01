@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaJAU06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:26:58 -0400
-Received: from mail-bn1bon0058.outbound.protection.outlook.com ([157.56.111.58]:29120
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752085AbaJAU0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:26:55 -0400
-Date: Wed, 1 Oct 2014 15:20:41 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Guenter Roeck <linux@roeck-us.net>
-CC: <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v4 0/4] regulator support for pmbus and ltc2978
-In-Reply-To: <20141001200743.GA21388@roeck-us.net>
-Message-ID: <alpine.DEB.2.02.1410011519001.2317@atx-linux-37>
-References: <1412190349-16343-1-git-send-email-atull@opensource.altera.com> <20141001200743.GA21388@roeck-us.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752950AbaJAU05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:26:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53721 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751808AbaJAU0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 16:26:54 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-pm@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, "Srivatsa S. Bhat" <srivatsa@mit.edu>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 0/3] powernv/cpuidle: Fastsleep workaround and fixes
+Date: Wed, 01 Oct 2014 22:46:53 +0200
+Message-ID: <2978842.I7Hdqv7lNe@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412149560-2953-1-git-send-email-shreyas@linux.vnet.ibm.com>
+References: <1412149560-2953-1-git-send-email-shreyas@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR05CA0061.namprd05.prod.outlook.com (10.141.20.31) To
- BLUPR03MB309.namprd03.prod.outlook.com (10.141.48.22)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB309;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0351D213B3
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(51704005)(24454002)(199003)(87976001)(106356001)(31966008)(66066001)(81156004)(105586002)(85852003)(95666004)(99396003)(46406003)(33716001)(85306004)(86152002)(107046002)(20776003)(47776003)(50466002)(23726002)(4396001)(64706001)(120916001)(110136001)(15202345003)(54356999)(86362001)(92726001)(77096002)(42186005)(92566001)(15975445006)(83506001)(101416001)(69596002)(19580405001)(19580395003)(10300001)(76482002)(76176999)(50986999)(102836001)(97736003)(53416004)(46102003)(80022003)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB309;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Oct 2014, Guenter Roeck wrote:
-
-> On Wed, Oct 01, 2014 at 02:05:46PM -0500, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > This set of patches adds regulator support for pmbus_core.c and ltc2978.c
-> > 
-> > Each output has individual on/off control.
-> > 
-> > From PMBus_Specification_Part_II_Rev_1-3_20140318.pdf: 12.1.1. OPERATION
-> > Command Bit [7] Bit [7] controls whether the PMBus device output is on or off.
-> > If bit [7] is cleared (equals 0), then the output is off.  If bit [7] is set
-> > (equals 1), then the output is on.
-> > 
-> > Fixes in v4 are not huge: Add device tree bindings documentation for ltc2978.
-> > rename _pmbus_regulator_enable to _pmbus_regulator_on_off simplify
-> > _pmbus_regulator_on_off code s/regulator_regulator/regulator/ fix build break
-> > when !CONFIG_REGULATOR remove unused #define PB_OPERATION_CONTROL_SEQ_OFF fix
-> > a #endif comment simplify probe code, remove added switch statement remove
-> > BUG_ON(), add error message and fix num_regulators
-> > 
-> > Patch 1: document device tree bindings for ltc2978
-> > 
-> > Patch 2: add two helper functions for byte pmbus byte operations * byte write
-> > and byte read/modify/write
-> > 
-> > Patch 3: regulator support added in pmbus_core.c and pmbus.h * regulator_ops
-> > functions (is_enabled, enable, and disable) * gets regulator init data from
-> > device tree or platform data * registers the regulators * header has a macro
-> > for chip drivers to build their regulator_desc data
-> > 
-> > Patch 4: changes for ltc2978.c * Add Kconfig to enable/disable ltc2978
-> > regulator functionality * add regulator_desc and of_regulator_match info * use
-> > same structs for all parts; set num_regulators appropriately.
-> > 
-> Looks like this patch got lost. I did not get it, and I don't see it on lkml
-> either.
+On Wednesday, October 01, 2014 01:15:57 PM Shreyas B. Prabhu wrote:
+> Fast sleep is an idle state, where the core and the L1 and L2
+> caches are brought down to a threshold voltage. This also means that
+> the communication between L2 and L3 caches have to be fenced. However
+> the current P8 chips have a bug wherein this fencing between L2 and
+> L3 caches get delayed by a cpu cycle. This can delay L3 response to
+> the other cpus if they request for data during this time. Thus they
+> would fetch the same data from the memory which could lead to data
+> corruption if L3 cache is not flushed. 
 > 
-> Guenter
-
-Yes I missed it.  Just sent patch 0004 out.
-
-Alan
-
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> This series overcomes above problem in kernel.
 > 
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: Srivatsa S. Bhat <srivatsa@mit.edu>
+> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+> 
+> v2:
+> Rebased on 3.17-rc7
+> Split from 'powerpc/powernv: Support for fastsleep and winkle'
+> 
+> v1:
+> https://lkml.org/lkml/2014/8/25/446
+> 
+> Preeti U Murthy (1):
+>   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
+> 
+> Shreyas B. Prabhu (1):
+>   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
+>     fast-sleep
+> 
+> Srivatsa S. Bhat (1):
+>   powerpc/powernv: Enable Offline CPUs to enter deep idle states
+> 
+>  arch/powerpc/include/asm/machdep.h             |   3 +
+>  arch/powerpc/include/asm/opal.h                |   7 ++
+>  arch/powerpc/include/asm/processor.h           |   4 +-
+>  arch/powerpc/kernel/exceptions-64s.S           |  35 ++++----
+>  arch/powerpc/kernel/idle.c                     |  19 ++++
+>  arch/powerpc/kernel/idle_power7.S              |   2 +-
+>  arch/powerpc/platforms/powernv/opal-wrappers.S |   1 +
+>  arch/powerpc/platforms/powernv/powernv.h       |   7 ++
+>  arch/powerpc/platforms/powernv/setup.c         | 118 +++++++++++++++++++++++++
+>  arch/powerpc/platforms/powernv/smp.c           |  11 ++-
+>  drivers/cpuidle/cpuidle-powernv.c              |  13 ++-
+>  11 files changed, 194 insertions(+), 26 deletions(-)
+
+[2/3] seems to be missig from the series.
+
+Also, since that mostly modifies arch/powerpc, I think it should go through
+that tree.  I'm fine with the cpuidle-powernv changes in [1/3] and [3/3].
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
