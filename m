@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaJAOxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:53:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35352 "EHLO
+	id S1752145AbaJAOxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:53:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35419 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751873AbaJAOxd (ORCPT
+	with ESMTP id S1751873AbaJAOxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:53:33 -0400
+	Wed, 1 Oct 2014 10:53:43 -0400
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -22,9 +22,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 02/11] mfd: add documentation for atmel-hlcdc DT bindings
-Date: Wed,  1 Oct 2014 16:52:59 +0200
-Message-Id: <1412175188-28278-3-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v7 10/11] ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
+Date: Wed,  1 Oct 2014 16:53:07 +0200
+Message-Id: <1412175188-28278-11-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -34,78 +34,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-The HLCDC IP available on some Atmel SoCs (i.e. at91sam9n12, at91sam9x5
-family or sama5d3 family) exposes 2 subdevices:
-- a display controller (controlled by a DRM driver)
-- a PWM chip
+Add LCD panel related nodes (backlight, regulators and panel) to sama5d3
+Display Module dtsi.
 
-This patch adds documentation for atmel-hlcdc DT bindings.
+Reference LCD pin muxing used by sama5d3xek boards.
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Tested-by: Anthony Harivel <anthony.harivel@emtrion.de>
-Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 ---
- .../devicetree/bindings/mfd/atmel-hlcdc.txt        | 51 ++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+ arch/arm/boot/dts/sama5d3xdm.dtsi | 58 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
-new file mode 100644
-index 0000000..f64de95a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
-@@ -0,0 +1,51 @@
-+Device-Tree bindings for Atmel's HLCDC (High LCD Controller) MFD driver
+diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sama5d3xdm.dtsi
+index 035ab72..91975eb 100644
+--- a/arch/arm/boot/dts/sama5d3xdm.dtsi
++++ b/arch/arm/boot/dts/sama5d3xdm.dtsi
+@@ -36,6 +36,64 @@
+ 					};
+ 				};
+ 			};
 +
-+Required properties:
-+ - compatible: value should be one of the following:
-+   "atmel,sama5d3-hlcdc"
-+ - reg: base address and size of the HLCDC device registers.
-+ - clock-names: the name of the 3 clocks requested by the HLCDC device.
-+   Should contain "periph_clk", "sys_clk" and "slow_clk".
-+ - clocks: should contain the 3 clocks requested by the HLCDC device.
-+ - interrupts: should contain the description of the HLCDC interrupt line
++			hlcdc: hlcdc@f0030000 {
++				hlcdc-display-controller {
++					pinctrl-names = "default";
++					pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888_alt>;
 +
-+The HLCDC IP exposes two subdevices:
-+ - a PWM chip: see ../pwm/atmel-hlcdc-pwm.txt
-+ - a Display Controller: see ../drm/atmel-hlcdc-dc.txt
-+
-+Example:
-+
-+	hlcdc: hlcdc@f0030000 {
-+		compatible = "atmel,sama5d3-hlcdc";
-+		reg = <0xf0030000 0x2000>;
-+		clocks = <&lcdc_clk>, <&lcdck>, <&clk32k>;
-+		clock-names = "periph_clk","sys_clk", "slow_clk";
-+		interrupts = <36 IRQ_TYPE_LEVEL_HIGH 0>;
-+		status = "disabled";
-+
-+		hlcdc-display-controller {
-+			compatible = "atmel,hlcdc-display-controller";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_base &pinctrl_lcd_rgb888>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			port@0 {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				reg = <0>;
-+
-+				hlcdc_panel_output: endpoint@0 {
-+					reg = <0>;
-+					remote-endpoint = <&panel_input>;
++					port@0 {
++						hlcdc_panel_output: endpoint@0 {
++							reg = <0>;
++							remote-endpoint = <&panel_input>;
++						};
++					};
 +				};
 +			};
 +		};
-+
-+		hlcdc_pwm: hlcdc-pwm {
-+			compatible = "atmel,hlcdc-pwm";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_lcd_pwm>;
-+			#pwm-cells = <3>;
-+		};
 +	};
++
++	bl_reg: backlight_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "backlight-power-supply";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		status = "disabled";
++	};
++
++	panel_reg: panel_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "panel-power-supply";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		status = "disabled";
++	};
++
++	backlight: backlight {
++		compatible = "pwm-backlight";
++		pwms = <&hlcdc_pwm 0 50000 0>;
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		power-supply = <&bl_reg>;
++		status = "disabled";
++	};
++
++	panel: panel {
++		compatible = "foxlink,fl500wvr00-a0t", "simple-panel";
++		backlight = <&backlight>;
++		power-supply = <&panel_reg>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++
++		port@0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			panel_input: endpoint@0 {
++				reg = <0>;
++				remote-endpoint = <&hlcdc_panel_output>;
++			};
+ 		};
+ 	};
+ };
 -- 
 1.9.1
 
