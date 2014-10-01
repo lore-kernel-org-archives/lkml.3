@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaJAFY6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 01:24:58 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:47288 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaJAFY5 (ORCPT
+	id S1751501AbaJAFZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 01:25:34 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48506 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaJAFZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 01:24:57 -0400
+	Wed, 1 Oct 2014 01:25:32 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s915PSFB001081, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net 0/2] r8152: patches about firmware
+Date: Wed, 1 Oct 2014 13:25:09 +0800
+Message-ID: <1394712342-15778-51-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-In-Reply-To: <542B8C7F.70108@fds-team.de>
-References: <cover.1412138935.git.luto@amacapital.net> <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
- <542B8C7F.70108@fds-team.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Sep 2014 22:24:35 -0700
-Message-ID: <CALCETrVNMhvn6z_5=+6UavkR1m8cABrkSWsLpP_dLdG_3OipBA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-To: Sebastian Lackner <sebastian@fds-team.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:09 PM, Sebastian Lackner
-<sebastian@fds-team.de> wrote:
->> +     testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
->> +     jz 1f
->> +     pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
->> +     popfq_cfi
->> +1:
->> +
->
-> Do you think it makes sense to change the order here, so that no jump happens if
-> NT is not set (which happens a bit more often, than the other way round)? Just a
-> guess though, haven't measured if pipeline effects have such a big influence in this
-> case. ;)
->
+The patches fix the issues when the firmware exists.
 
-It should be immeasurable in a tight loop, since it will predict
-correctly almost every time.  And, unless cfi state works across
-.pushsection (does it?), getting the cfi annotations right will be
-more complicated.
+For the multiple OS, the firmware may be loaded by the
+driver of the other OS. And the Linux driver has influences
+on it.
 
---Andy
+Hayes Wang (2):
+  r8152: remove clearing bp
+  r8152: disable power cut for RTL8153
+
+ drivers/net/usb/r8152.c | 30 ++----------------------------
+ 1 file changed, 2 insertions(+), 28 deletions(-)
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.3
+
