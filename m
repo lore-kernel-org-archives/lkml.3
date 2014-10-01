@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaJAJoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 05:44:18 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:34326 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaJAJoQ (ORCPT
+	id S1751338AbaJAJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 05:45:56 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:58590 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaJAJpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 05:44:16 -0400
+	Wed, 1 Oct 2014 05:45:54 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
         mpe@ellerman.id.au, benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 09/17] powerpc/mm: Add new hash_page_mm()
-In-Reply-To: <1412073306-13812-10-git-send-email-mikey@neuling.org>
-References: <1412073306-13812-1-git-send-email-mikey@neuling.org> <1412073306-13812-10-git-send-email-mikey@neuling.org>
+Subject: Re: [PATCH v2 02/17] powerpc/cell: Move data segment faulting code out of cell platform
+In-Reply-To: <1412073306-13812-3-git-send-email-mikey@neuling.org>
+References: <1412073306-13812-1-git-send-email-mikey@neuling.org> <1412073306-13812-3-git-send-email-mikey@neuling.org>
 User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Wed, 01 Oct 2014 15:13:05 +0530
-Message-ID: <8761g4nn12.fsf@linux.vnet.ibm.com>
+Date: Wed, 01 Oct 2014 15:15:40 +0530
+Message-ID: <8738b8nmwr.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100109-1618-0000-0000-000000F94BBE
+x-cbid: 14100109-2674-0000-0000-000002131D5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,124 +32,65 @@ Michael Neuling <mikey@neuling.org> writes:
 
 > From: Ian Munsie <imunsie@au1.ibm.com>
 >
-> This adds a new function hash_page_mm() based on the existing hash_page().
-> This version allows any struct mm to be passed in, rather than assuming
-> current.  This is useful for servicing co-processor faults which are not in the
-> context of the current running process.
+> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> required for a particular EA and mm struct.
 >
-> We need to be careful here as the current hash_page() assumes current in a few
-> places.
-
-It would be nice to document the rules here. So when we try to add a hash
-page entry, and if that result in demotion of the segment are we suppose to
-flush slbs ? Also why would one want to hash anything other
-than current->mm ? How will this get called ? 
-
-May be they are explained in later patches. But can we also explain it
-here. 
-
+> This code is generically useful for other co-processors.  This moves the code
+> of the cell platform so it can be used by other powerpc code.  It also adds 1TB
+> segment handling which Cell didn't have.
 >
 > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 > Signed-off-by: Michael Neuling <mikey@neuling.org>
 > ---
->  arch/powerpc/include/asm/mmu-hash64.h |  1 +
->  arch/powerpc/mm/hash_utils_64.c       | 22 ++++++++++++++--------
->  2 files changed, 15 insertions(+), 8 deletions(-)
+>  arch/powerpc/include/asm/mmu-hash64.h  |  7 ++++-
+>  arch/powerpc/mm/copro_fault.c          | 48 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/mm/slb.c                  |  3 ---
+>  arch/powerpc/platforms/cell/spu_base.c | 41 +++--------------------------
+>  4 files changed, 58 insertions(+), 41 deletions(-)
 >
 > diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> index 6d0b7a2..f84e5a5 100644
+> index d765144..6d0b7a2 100644
 > --- a/arch/powerpc/include/asm/mmu-hash64.h
 > +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> @@ -322,6 +322,7 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
->  			   unsigned int local, int ssize);
->  struct mm_struct;
->  unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
-> +extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
->  extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
->  int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
->  		     pte_t *ptep, unsigned long trap, int local, int ssize,
-> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index bbdb054..0a5c8c0 100644
-> --- a/arch/powerpc/mm/hash_utils_64.c
-> +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
->  		return;
->  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
->  	copro_flush_all_slbs(mm);
-> -	if (get_paca_psize(addr) != MMU_PAGE_4K) {
-> +	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
->  		get_paca()->context = mm->context;
->  		slb_flush_and_rebolt();
->  	}
-> @@ -989,26 +989,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
->   * -1 - critical hash insertion error
->   * -2 - access not permitted by subpage protection mechanism
->   */
-> -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
->  {
->  	enum ctx_state prev_state = exception_enter();
->  	pgd_t *pgdir;
->  	unsigned long vsid;
-> -	struct mm_struct *mm;
->  	pte_t *ptep;
->  	unsigned hugeshift;
->  	const struct cpumask *tmp;
->  	int rc, user_region = 0, local = 0;
->  	int psize, ssize;
+> @@ -189,7 +189,12 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
+>  #define LP_MASK(i)	((0xFF >> (i)) << LP_SHIFT)
 >  
-> -	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
-> -		ea, access, trap);
-> +	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
-> +		__func__, ea, access, trap);
->  
->  	/* Get region & vsid */
->   	switch (REGION_ID(ea)) {
->  	case USER_REGION_ID:
->  		user_region = 1;
-> -		mm = current->mm;
->  		if (! mm) {
->  			DBG_LOW(" user region with no mm !\n");
->  			rc = 1;
-> @@ -1104,7 +1102,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  			WARN_ON(1);
->  		}
->  #endif
-> -		check_paca_psize(ea, mm, psize, user_region);
-> +		if (current->mm == mm)
-> +			check_paca_psize(ea, mm, psize, user_region);
->  
->  		goto bail;
->  	}
-> @@ -1145,7 +1144,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  		}
->  	}
->  
-> -	check_paca_psize(ea, mm, psize, user_region);
-> +	if (current->mm == mm)
-> +		check_paca_psize(ea, mm, psize, user_region);
->  #endif /* CONFIG_PPC_64K_PAGES */
->  
->  #ifdef CONFIG_PPC_HAS_HASH_64K
-> @@ -1180,6 +1180,12 @@ bail:
->  	exception_exit(prev_state);
->  	return rc;
->  }
-> +EXPORT_SYMBOL_GPL(hash_page_mm);
-> +
-> +int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+>  #ifndef __ASSEMBLY__
+> -
+> +static inline int slb_vsid_shift(int ssize)
 > +{
-> +	return hash_page_mm(current->mm, ea, access, trap);
+> +	if (ssize == MMU_SEGSIZE_256M)
+> +		return SLB_VSID_SHIFT;
+> +	return SLB_VSID_SHIFT_1T;
 > +}
->  EXPORT_SYMBOL_GPL(hash_page);
->  
->  void hash_preload(struct mm_struct *mm, unsigned long ea,
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  static inline int segment_shift(int ssize)
+>  {
+>  	if (ssize == MMU_SEGSIZE_256M)
+> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> index ba7df14..b865697 100644
+> --- a/arch/powerpc/mm/copro_fault.c
+> +++ b/arch/powerpc/mm/copro_fault.c
+> @@ -90,3 +90,51 @@ out_unlock:
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> +
+> +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
+> +{
+> +	int psize, ssize;
+> +
+> +	*esid = (ea & ESID_MASK) | SLB_ESID_V;
+> +
+> +	switch (REGION_ID(ea)) {
+> +	case USER_REGION_ID:
+> +		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
+> +#ifdef CONFIG_PPC_MM_SLICES
+> +		psize = get_slice_psize(mm, ea);
+> +#else
+> +		psize = mm->context.user_psize;
+> +#endif
+
+We don't really need that as explained in last review.
+
+-aneesh
 
