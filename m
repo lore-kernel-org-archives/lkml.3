@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaJAOyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:54:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35408 "EHLO
+	id S1752040AbaJAOxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:53:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35333 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752073AbaJAOxn (ORCPT
+	with ESMTP id S1751860AbaJAOxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:53:43 -0400
+	Wed, 1 Oct 2014 10:53:33 -0400
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
@@ -22,9 +22,9 @@ Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v7 07/11] ARM: AT91/dt: split sama5d3 lcd pin definitions to match RGB mode configs
-Date: Wed,  1 Oct 2014 16:53:04 +0200
-Message-Id: <1412175188-28278-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v7 03/11] pwm: add support for atmel-hlcdc-pwm device
+Date: Wed,  1 Oct 2014 16:53:00 +0200
+Message-Id: <1412175188-28278-4-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -34,158 +34,290 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-The HLCDC (HLCD Controller) IP supports 4 different output mode (RGB444,
-RGB565, RGB666 and RGB888) and the pin muxing will depend on the chosen
-RGB mode.
+The HLCDC IP available in some Atmel SoCs (i.e. sam9x5i.e. at91sam9n12,
+at91sam9x5 family or sama5d3 family) provide a PWM device.
 
-Split pin definitions to be able to set pin config according to the
-selected mode.
+This driver add support for a PWM chip exposing a single PWM device (which
+will most likely be used to drive a backlight device).
 
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 Tested-by: Anthony Harivel <anthony.harivel@emtrion.de>
+Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 ---
- arch/arm/boot/dts/sama5d3_lcd.dtsi | 127 ++++++++++++++++++++++++++++---------
- 1 file changed, 96 insertions(+), 31 deletions(-)
+ drivers/pwm/Kconfig           |  10 ++
+ drivers/pwm/Makefile          |   1 +
+ drivers/pwm/pwm-atmel-hlcdc.c | 229 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 240 insertions(+)
+ create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
 
-diff --git a/arch/arm/boot/dts/sama5d3_lcd.dtsi b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-index 85d3027..2186b89 100644
---- a/arch/arm/boot/dts/sama5d3_lcd.dtsi
-+++ b/arch/arm/boot/dts/sama5d3_lcd.dtsi
-@@ -15,38 +15,103 @@
- 		apb {
- 			pinctrl@fffff200 {
- 				lcd {
--					pinctrl_lcd: lcd-0 {
-+					pinctrl_lcd_pwm: lcd-pwm-0 {
-+						atmel,pins = <AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDPWM */
-+					};
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index b800783..afb896b 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -50,6 +50,16 @@ config PWM_ATMEL
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-atmel.
+ 
++config PWM_ATMEL_HLCDC_PWM
++	tristate "Atmel HLCDC PWM support"
++	select MFD_ATMEL_HLCDC
++	depends on OF
++	help
++	  Generic PWM framework driver for Atmel HLCDC PWM.
 +
-+					pinctrl_lcd_base: lcd-base-0 {
-+						atmel,pins =
-+							<AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDVSYNC */
-+							 AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDHSYNC */
-+							 AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDDISP */
-+							 AT91_PIOA 29 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDDEN */
-+							 AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDPCK */
-+					};
++	  To compile this driver as a module, choose M here: the module
++	  will be called pwm-atmel.
 +
-+					pinctrl_lcd_rgb444: lcd-rgb-0 {
-+						atmel,pins =
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDD11 pin */
-+					};
+ config PWM_ATMEL_TCB
+ 	tristate "Atmel TC Block PWM support"
+ 	depends on ATMEL_TCLIB && OF
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index f8c577d..eb0aae5 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -2,6 +2,7 @@ obj-$(CONFIG_PWM)		+= core.o
+ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
+ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
+ obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
++obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
+ obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BCM_KONA)	+= pwm-bcm-kona.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
+new file mode 100644
+index 0000000..0238f7a
+--- /dev/null
++++ b/drivers/pwm/pwm-atmel-hlcdc.c
+@@ -0,0 +1,229 @@
++/*
++ * Copyright (C) 2014 Free Electrons
++ * Copyright (C) 2014 Atmel
++ *
++ * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
 +
-+					pinctrl_lcd_rgb565: lcd-rgb-1 {
-+						atmel,pins =
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD11 pin */
-+							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD12 pin */
-+							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
-+							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
-+							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* LCDD15 pin */
-+					};
++#include <linux/clk.h>
++#include <linux/mfd/atmel-hlcdc.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++#include <linux/regmap.h>
 +
-+					pinctrl_lcd_rgb666: lcd-rgb-2 {
-+						atmel,pins =
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD11 pin */
-+							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD12 pin */
-+							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
-+							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
-+							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
-+							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD16 pin */
-+							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* LCDD17 pin */
-+					};
++#define ATMEL_HLCDC_PWMCVAL_MASK	GENMASK(15, 8)
++#define ATMEL_HLCDC_PWMCVAL(x)		((x << 8) & ATMEL_HLCDC_PWMCVAL_MASK)
++#define ATMEL_HLCDC_PWMPOL		BIT(4)
++#define ATMEL_HLCDC_PWMPS_MASK		GENMASK(2, 0)
++#define ATMEL_HLCDC_PWMPS_MAX		0x6
++#define ATMEL_HLCDC_PWMPS(x)		((x) & ATMEL_HLCDC_PWMPS_MASK)
 +
-+					pinctrl_lcd_rgb888: lcd-rgb-3 {
- 						atmel,pins =
--							<AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA24 periph A LCDPWM */
--							 AT91_PIOA 26 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA26 periph A LCDVSYNC */
--							 AT91_PIOA 27 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA27 periph A LCDHSYNC */
--							 AT91_PIOA 25 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA25 periph A LCDDISP */
--							 AT91_PIOA 29 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA29 periph A LCDDEN */
--							 AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA28 periph A LCDPCK */
--							 AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA0 periph A LCDD0 pin */
--							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA1 periph A LCDD1 pin */
--							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA2 periph A LCDD2 pin */
--							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA3 periph A LCDD3 pin */
--							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA4 periph A LCDD4 pin */
--							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA5 periph A LCDD5 pin */
--							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA6 periph A LCDD6 pin */
--							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA7 periph A LCDD7 pin */
--							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA8 periph A LCDD8 pin */
--							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA9 periph A LCDD9 pin */
--							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA10 periph A LCDD10 pin */
--							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA11 periph A LCDD11 pin */
--							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA12 periph A LCDD12 pin */
--							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA13 periph A LCDD13 pin */
--							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA14 periph A LCDD14 pin */
--							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PA15 periph A LCDD15 pin */
--							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC14 periph C LCDD16 pin */
--							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC13 periph C LCDD17 pin */
--							 AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC12 periph C LCDD18 pin */
--							 AT91_PIOC 11 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC11 periph C LCDD19 pin */
--							 AT91_PIOC 10 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC10 periph C LCDD20 pin */
--							 AT91_PIOC 15 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PC15 periph C LCDD21 pin */
--							 AT91_PIOE 27 AT91_PERIPH_C AT91_PINCTRL_NONE	/* PE27 periph C LCDD22 pin */
--							 AT91_PIOE 28 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* PE28 periph C LCDD23 pin */
-+							<AT91_PIOA 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD0 pin */
-+							 AT91_PIOA 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD1 pin */
-+							 AT91_PIOA 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD2 pin */
-+							 AT91_PIOA 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD3 pin */
-+							 AT91_PIOA 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD4 pin */
-+							 AT91_PIOA 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD5 pin */
-+							 AT91_PIOA 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD6 pin */
-+							 AT91_PIOA 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD7 pin */
-+							 AT91_PIOA 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD8 pin */
-+							 AT91_PIOA 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD9 pin */
-+							 AT91_PIOA 10 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD10 pin */
-+							 AT91_PIOA 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD11 pin */
-+							 AT91_PIOA 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD12 pin */
-+							 AT91_PIOA 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD13 pin */
-+							 AT91_PIOA 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD14 pin */
-+							 AT91_PIOA 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* LCDD15 pin */
-+							 AT91_PIOC 14 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD16 pin */
-+							 AT91_PIOC 13 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD17 pin */
-+							 AT91_PIOC 12 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD18 pin */
-+							 AT91_PIOC 11 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD19 pin */
-+							 AT91_PIOC 10 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD20 pin */
-+							 AT91_PIOC 15 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD21 pin */
-+							 AT91_PIOE 27 AT91_PERIPH_C AT91_PINCTRL_NONE	/* LCDD22 pin */
-+							 AT91_PIOE 28 AT91_PERIPH_C AT91_PINCTRL_NONE>;	/* LCDD23 pin */
- 					};
- 				};
- 			};
++struct atmel_hlcdc_pwm_chip {
++	struct pwm_chip chip;
++	struct atmel_hlcdc *hlcdc;
++	struct clk *cur_clk;
++};
++
++static inline struct atmel_hlcdc_pwm_chip *
++pwm_chip_to_atmel_hlcdc_pwm_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct atmel_hlcdc_pwm_chip, chip);
++}
++
++static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
++				  struct pwm_device *pwm,
++				  int duty_ns, int period_ns)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	struct clk *new_clk = hlcdc->slow_clk;
++	u64 pwmcval = duty_ns * 256;
++	unsigned long clk_freq;
++	u64 clk_period_ns;
++	u32 pwmcfg;
++	int pres;
++
++	clk_freq = clk_get_rate(new_clk);
++	clk_period_ns = 1000000000;
++	clk_period_ns *= 256;
++	do_div(clk_period_ns, clk_freq);
++
++	if (clk_period_ns > period_ns) {
++		new_clk = hlcdc->sys_clk;
++		clk_freq = clk_get_rate(new_clk);
++		clk_period_ns = 1000000000;
++		clk_period_ns *= 256;
++		do_div(clk_period_ns, clk_freq);
++	}
++
++	for (pres = 0; pres <= ATMEL_HLCDC_PWMPS_MAX; pres++) {
++		if ((clk_period_ns << pres) >= period_ns)
++			break;
++	}
++
++	if (pres > ATMEL_HLCDC_PWMPS_MAX)
++		return -EINVAL;
++
++	pwmcfg = ATMEL_HLCDC_PWMPS(pres);
++
++	if (new_clk != chip->cur_clk) {
++		u32 gencfg = 0;
++
++		clk_prepare_enable(new_clk);
++		clk_disable_unprepare(chip->cur_clk);
++		chip->cur_clk = new_clk;
++
++		if (new_clk != hlcdc->slow_clk)
++			gencfg = ATMEL_HLCDC_CLKPWMSEL;
++		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
++				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
++	}
++
++	do_div(pwmcval, period_ns);
++	if (pwmcval > 255)
++		pwmcval = 255;
++
++	pwmcfg |= ATMEL_HLCDC_PWMCVAL(pwmcval);
++
++	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
++			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
++			   pwmcfg);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
++					struct pwm_device *pwm,
++					enum pwm_polarity polarity)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 cfg = 0;
++
++	if (polarity == PWM_POLARITY_NORMAL)
++		cfg = ATMEL_HLCDC_PWMPOL;
++
++	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
++			   ATMEL_HLCDC_PWMPOL, cfg);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_enable(struct pwm_chip *c,
++				  struct pwm_device *pwm)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 status;
++
++	regmap_write(hlcdc->regmap, ATMEL_HLCDC_EN, ATMEL_HLCDC_PWM);
++	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
++	       !(status & ATMEL_HLCDC_PWM))
++		;
++
++	return 0;
++}
++
++static void atmel_hlcdc_pwm_disable(struct pwm_chip *c,
++				    struct pwm_device *pwm)
++{
++	struct atmel_hlcdc_pwm_chip *chip =
++				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
++	struct atmel_hlcdc *hlcdc = chip->hlcdc;
++	u32 status;
++
++	regmap_write(hlcdc->regmap, ATMEL_HLCDC_DIS, ATMEL_HLCDC_PWM);
++	while (!regmap_read(hlcdc->regmap, ATMEL_HLCDC_SR, &status) &&
++	       (status & ATMEL_HLCDC_PWM))
++		;
++}
++
++static const struct pwm_ops atmel_hlcdc_pwm_ops = {
++	.config = atmel_hlcdc_pwm_config,
++	.set_polarity = atmel_hlcdc_pwm_set_polarity,
++	.enable = atmel_hlcdc_pwm_enable,
++	.disable = atmel_hlcdc_pwm_disable,
++	.owner = THIS_MODULE,
++};
++
++static int atmel_hlcdc_pwm_probe(struct platform_device *pdev)
++{
++	struct atmel_hlcdc_pwm_chip *chip;
++	struct device *dev = &pdev->dev;
++	struct atmel_hlcdc *hlcdc;
++	int ret;
++
++	hlcdc = dev_get_drvdata(dev->parent);
++	if (!hlcdc)
++		return -EINVAL;
++
++	ret = clk_prepare_enable(hlcdc->periph_clk);
++	if (ret)
++		return ret;
++
++	chip = devm_kzalloc(dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->hlcdc = hlcdc;
++	chip->chip.ops = &atmel_hlcdc_pwm_ops;
++	chip->chip.dev = dev;
++	chip->chip.base = -1;
++	chip->chip.npwm = 1;
++	chip->chip.of_xlate = of_pwm_xlate_with_flags;
++	chip->chip.of_pwm_n_cells = 3;
++	chip->chip.can_sleep = 1;
++
++	ret = pwmchip_add(&chip->chip);
++	if (ret)
++		return ret;
++
++	platform_set_drvdata(pdev, chip);
++
++	return 0;
++}
++
++static int atmel_hlcdc_pwm_remove(struct platform_device *pdev)
++{
++	struct atmel_hlcdc_pwm_chip *chip = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(chip->hlcdc->periph_clk);
++
++	return pwmchip_remove(&chip->chip);
++}
++
++static const struct of_device_id atmel_hlcdc_pwm_dt_ids[] = {
++	{ .compatible = "atmel,hlcdc-pwm" },
++	{ /* sentinel */ },
++};
++
++static struct platform_driver atmel_hlcdc_pwm_driver = {
++	.driver = {
++		.name = "atmel-hlcdc-pwm",
++		.of_match_table = atmel_hlcdc_pwm_dt_ids,
++	},
++	.probe = atmel_hlcdc_pwm_probe,
++	.remove = atmel_hlcdc_pwm_remove,
++};
++module_platform_driver(atmel_hlcdc_pwm_driver);
++
++MODULE_ALIAS("platform:atmel-hlcdc-pwm");
++MODULE_AUTHOR("Boris Brezillon <boris.brezillon@free-electrons.com>");
++MODULE_DESCRIPTION("Atmel HLCDC PWM driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.1
 
