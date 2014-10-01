@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaJAQBN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:01:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5700 "EHLO mx1.redhat.com"
+	id S1753040AbaJAQBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:01:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaJAQBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:01:08 -0400
+	id S1752973AbaJAQBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:01:19 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
@@ -16,9 +16,9 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
         Ingo Molnar <mingo@kernel.org>, Milian Wolff <mail@milianw.de>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3/5] perf kvm stat live: Fix perf_evlist__add_pollfd error handling
-Date: Wed,  1 Oct 2014 18:00:27 +0200
-Message-Id: <1412179229-19466-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 4/5] perf kvm stat live: Use perf_evlist__add_pollfd return fd position
+Date: Wed,  1 Oct 2014 18:00:28 +0200
+Message-Id: <1412179229-19466-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1412179229-19466-1-git-send-email-jolsa@kernel.org>
 References: <1412179229-19466-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,10 +27,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 With the interface changed in following commit:
   2171a9256862 tools lib fd array: Allow associating an integer cookie with each entry
-the perf_evlist__add_pollfd function now returns the fd
-position in the pollfd array.
+the perf_evlist__add_pollfd function now returns the
+fd position in the pollfd array.
 
-We need to change this function's error check condition.
+Hence we no longer need to count the fd position, because
+we get it as the return value.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -48,24 +49,22 @@ Signed-off-by: Jiri Olsa <jolsa@kernel.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index d8bf2271f4ea..663d6eda0822 100644
+index 663d6eda0822..dc7d704735bd 100644
 --- a/tools/perf/builtin-kvm.c
 +++ b/tools/perf/builtin-kvm.c
-@@ -928,12 +928,12 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
- 		goto out;
- 	}
- 
--	if (perf_evlist__add_pollfd(kvm->evlist, kvm->timerfd))
-+	if (perf_evlist__add_pollfd(kvm->evlist, kvm->timerfd) < 0)
- 		goto out;
+@@ -933,10 +933,10 @@ static int kvm_events_live_report(struct perf_kvm_stat *kvm)
  
  	nr_fds++;
  
--	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)))
-+	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)) < 0)
+-	if (perf_evlist__add_pollfd(kvm->evlist, fileno(stdin)) < 0)
++	nr_stdin = perf_evlist__add_pollfd(kvm->evlist, fileno(stdin));
++	if (nr_stdin < 0)
  		goto out;
  
- 	nr_stdin = nr_fds;
+-	nr_stdin = nr_fds;
+ 	nr_fds++;
+ 	if (fd_set_nonblock(fileno(stdin)) != 0)
+ 		goto out;
 -- 
 1.9.3
 
