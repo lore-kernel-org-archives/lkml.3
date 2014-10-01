@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbaJAQBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:01:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526AbaJAQBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:01:08 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Milian Wolff <mail@milianw.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/5] perf tools: Move callchain_param to util object in to fix python test
-Date: Wed,  1 Oct 2014 18:00:26 +0200
-Message-Id: <1412179229-19466-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1412179229-19466-1-git-send-email-jolsa@kernel.org>
-References: <1412179229-19466-1-git-send-email-jolsa@kernel.org>
+	id S1753307AbaJAQCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:02:38 -0400
+Received: from mail-bn1bon0142.outbound.protection.outlook.com ([157.56.111.142]:23632
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752161AbaJAQCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:02:35 -0400
+X-WSS-ID: 0NCRWJT-07-AUB-02
+X-M-MSG: 
+Message-ID: <542C2588.2040004@amd.com>
+Date: Wed, 1 Oct 2014 11:02:16 -0500
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>, <tglx@linutronix.de>,
+        <hpa@zytor.com>, <x86@kernel.org>, <bp@suse.de>,
+        <dan.carpenter@oracle.com>, <dougthompson@xmission.com>,
+        <m.chehab@samsung.com>, <linux-edac@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] edac, amd64_edac: Add F15h M60h support
+References: <1411070230-10298-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141001113235.GC18271@pd.tnic> <542C1EAA.4050408@amd.com>
+ <20141001154523.GF18271@pd.tnic>
+In-Reply-To: <20141001154523.GF18271@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(164054003)(199003)(479174003)(377454003)(189002)(57704003)(47776003)(44976005)(80316001)(33656002)(120886001)(101416001)(23676002)(21056001)(110136001)(20776003)(59896002)(85852003)(64126003)(97736003)(99396003)(83506001)(65806001)(65956001)(76482002)(10300001)(86362001)(120916001)(50986999)(92726001)(92566001)(84676001)(102836001)(76176999)(85306004)(65816999)(54356999)(64706001)(87266999)(4396001)(87936001)(93886004)(95666004)(50466002)(105586002)(46102003)(106466001)(68736004)(31966008)(36756003)(107046002)(80022003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
+X-Forefront-PRVS: 0351D213B3
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB120;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In following commit we changed the location of callchains data:
-  b016b5ba554b perf tools: Move callchain config from record_opts to callchain_param
+On 10/1/2014 10:45 AM, Borislav Petkov wrote:
+> On Wed, Oct 01, 2014 at 10:32:58AM -0500, Aravind Gopalakrishnan wrote:
+>>>> +			if (dcsm & 0x3) {
+>>>> +				/* LRDIMMs */
+>>>> +				edac_dbg(1, "  DIMM type: LRDIMM %dx rank multiply;"
+>>>> +					 "CS = %d; all DIMMs support ECC: %s\n",
+>>>> +					 (dcsm & 0x3), cs,
+>>>> +					 (dclr & BIT(19)) ? "yes" : "no");
+>>> Why do we need to iterate over the DRAM CS sets? Just for the rank
+>>> multiplier, apparently. We dump those normally in read_dct_base_mask(),
+>>> though.
+>> It's not just for rank multiplier.. we find that it's LRDIMM only by
+>> examining dcsm. Hence the iteration here..
+> So we can look only at the first DCSM, no? Or are there systems with
+> different types of LRDIMMs on one DCT?
+>
 
-Now all callchains stuff stays in callchain_param struct,
-which adds its dependency for evsel.c object and breaks
-python perf.so usage (unresolved callchain_param).
+Not AFAIK, But I'll ask to make sure.
+If different LRDIMMs on one DCT don't exist, then sure, I'll modify the 
+code to use first DCSM.
 
-Moving callchain_param into callchain.c and adding it into
-python-ext-sources unleash just another dependency hell,
-so I ended up adding callchain_param into util.c for now.
+Regarding resend-
+I'm not sure how you'll want the patches.. I just noticed a 
+'edac-for-3.19' branch.
+Would you prefer I based changes on top of this for merging purposes?
+Or just resend the original 4 patches based off tip as usual?
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Milian Wolff <mail@milianw.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/hist.c | 7 -------
- tools/perf/util/util.c | 8 ++++++++
- 2 files changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 86569fa3651d..b47595697140 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -14,13 +14,6 @@ static bool hists__filter_entry_by_thread(struct hists *hists,
- static bool hists__filter_entry_by_symbol(struct hists *hists,
- 					  struct hist_entry *he);
- 
--struct callchain_param	callchain_param = {
--	.mode	= CHAIN_GRAPH_REL,
--	.min_percent = 0.5,
--	.order  = ORDER_CALLEE,
--	.key	= CCKEY_FUNCTION
--};
--
- u16 hists__col_len(struct hists *hists, enum hist_column col)
- {
- 	return hists->col_len[col];
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 24e8d871b74e..d5eab3f3323f 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -14,6 +14,14 @@
- #include <byteswap.h>
- #include <linux/kernel.h>
- #include <unistd.h>
-+#include "callchain.h"
-+
-+struct callchain_param	callchain_param = {
-+	.mode	= CHAIN_GRAPH_REL,
-+	.min_percent = 0.5,
-+	.order  = ORDER_CALLEE,
-+	.key	= CCKEY_FUNCTION
-+};
- 
- /*
-  * XXX We need to find a better place for these things...
--- 
-1.9.3
-
+Thanks,
+-Aravind.
