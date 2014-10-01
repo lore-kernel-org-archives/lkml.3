@@ -1,128 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaJAO4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:56:11 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:46189 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaJAO4I (ORCPT
+	id S1751662AbaJAOx0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:53:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35288 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751330AbaJAOxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:56:08 -0400
-Date: Wed, 1 Oct 2014 09:56:03 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Sebastian Lackner <sebastian@fds-team.de>,
-        Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from
- userspace
-Message-ID: <20141001095603.3d5103d9@as>
-In-Reply-To: <CALCETrXo-tvQOJ8Cg1d1wkQm=5095VdESq0SBUH4MivZWH8iQw@mail.gmail.com>
-References: <cover.1412138935.git.luto@amacapital.net>
-	<0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
-	<20141001090915.16c8b1db@as>
-	<20141001093208.79bb0891@as>
-	<CALCETrXo-tvQOJ8Cg1d1wkQm=5095VdESq0SBUH4MivZWH8iQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 1 Oct 2014 10:53:23 -0400
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+Subject: [PATCH v7 00/11] drm: add support for Atmel HLCDC Display Controller
+Date: Wed,  1 Oct 2014 16:52:57 +0200
+Message-Id: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 1 Oct 2014 07:46:54 -0700
-Andy Lutomirski <luto@amacapital.net> wrote:
+Hello,
 
-> On Wed, Oct 1, 2014 at 7:32 AM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> > On Wed, 1 Oct 2014 09:09:13 -0500
-> > Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> >
-> >> On Tue, 30 Sep 2014 21:51:27 -0700
-> >> Andy Lutomirski <luto@amacapital.net> wrote:
-> >>
-> >> > The NT flag doesn't do anything in long mode other than causing IRET
-> >> > to #GP.  Oddly, CPL3 code can still set NT using popf.
-> >> >
-> >> > Entry via hardware or software interrupt clears NT automatically, so
-> >> > the only relevant entries are fast syscalls.
-> >> >
-> >> > If user code causes kernel code to run with NT set, then there's at
-> >> > least some (small) chance that it could cause trouble.  For example,
-> >> > user code could cause a call to EFI code with NT set, and who knows
-> >> > what would happen?  Apparently some games on Wine sometimes do
-> >> > this (!), and, if an IRET return happens, they will segfault.  That
-> >> > segfault cannot be handled, because signal delivery fails, too.
-> >> >
-> >> > This patch programs the CPU to clear NT on entry via SYSCALL (both
-> >> > 32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
-> >> > in software on entry via SYSENTER.
-> >> >
-> >> > To save a few cycles, this borrows a trick from Jan Beulich in Xen:
-> >> > it checks whether NT is set before trying to clear it.  As a result,
-> >> > it seems to have very little effect on SYSENTER performance on my
-> >> > machine.
-> >> >
-> >> > Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
-> >> >
-> >> > I haven't touched anything on 32-bit kernels.
-> >> >
-> >> > The syscall mask change comes from a variant of this patch by Anish
-> >> > Bhatt.
-> >> >
-> >> > Cc: stable@vger.kernel.org
-> >> > Reported-by: Anish Bhatt <anish@chelsio.com>
-> >> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> > ---
-> >> >  arch/x86/ia32/ia32entry.S    | 12 ++++++++++++
-> >> >  arch/x86/kernel/cpu/common.c |  2 +-
-> >> >  2 files changed, 13 insertions(+), 1 deletion(-)
-> >> >
-> >> > diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-> >> > index 4299eb05023c..44d1dd371454 100644
-> >> > --- a/arch/x86/ia32/ia32entry.S
-> >> > +++ b/arch/x86/ia32/ia32entry.S
-> >> > @@ -151,6 +151,18 @@ ENTRY(ia32_sysenter_target)
-> >> >  1: movl    (%rbp),%ebp
-> >> >     _ASM_EXTABLE(1b,ia32_badarg)
-> >> >     ASM_CLAC
-> >> > +
-> >> > +   /*
-> >> > +    * Sysenter doesn't filter flags, so we need to clear NT
-> >> > +    * ourselves.  To save a few cycles, we can check whether
-> >> > +    * NT was set instead of doing an unconditional popfq.
-> >> > +    */
-> >> > +   testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
-> >> > +   jz 1f
-> >> > +   pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-> >> > +   popfq_cfi
-> >> > +1:
-> >> > +
-> >>
-> >> I think you've gone backwards with this version. The earlier one got
-> >> some of the performance loss back by not needing to do the "cld" insn.
-> >>
-> >> You should just replace that "cld" (line 146) with
-> >>
-> >>       pushfq_cfi $2
-> >>       popfq_cfi
-> >>
-> >> Unfortunately I'm not set up to test that yet. But I did look at
-> >> the SDM and can't see a need to preserve any of the flags.
-> >>
-> >
-> >
-> > <sigh> that's:
-> >
-> >         pushfw_cfi $0x202
-> >
-> > IF needs to stay on because we've already enabled interrupts after
-> > sysenter.
-> 
-> I tried exactly this.  It was much slower than the version I sent.
-> 
+This series is being sent for several weeks now and I wonder if I shouldn't
+split it in several pieces:
+1) the MFD driver + its DT doc
+2) the PWM driver + its DT doc
+3) the DRM/KMS driver + its DT doc
+4) support for sama5d3 SoCs/boards
 
-Yeah, it looks like a new paravirt op that enables interrupts and
-clears all the other flags would be the only way to do this without at
-least some impact on performance.
+The first reason for doing this is that Lee already accepted the MFD part,
+and I'm pretty sure he'd like me to stop sending him each new version of this
+series.
+The second reason being that smaller series are more likely to be reviewed by
+subsystem maintainers :-).
+
+Lee, if you still agree with this version, could you take the MTD part (other
+drivers in this series depend on it).
+
+Here is the usal description of the patch series :-) :
+
+This patch series adds support for the Atmel HLCDC block (HLCD Controller)
+available on some Atmel SoCs (i.e. the sama5d3 family).
+
+The HLCDC actually provides a Display Controller and a PWM device, hence I
+decided to declare an MFD device exposing 2 subdevices: a display
+controller and a PWM chip.
+This also solves a circular dependency issue preventing HLCDC driver from
+unloading.
+The HLCDC request a drm_panel device, which request a backlight device
+(a PWM backlight), which depends on a PWM which is provided by the HLCDC
+driver (hlcdc -> panel -> backlight -> hlcdc (pwm part)).
+
+The current implementation only supports sama5d3 SoCs but other SoCs should
+be easily ported by defining new compatible strings and adding HLCDC
+description structures for these SoCs (Ludovic tested this driver on an
+at91sam9x5 board).
+
+The drivers supports basic CRTC functionalities, several overlays and an
+hardware cursor.
+
+At the moment, it only supports connection to LCD panels through an RGB
+connector (defined as an LVDS connector in my implementation), though
+connection to other kind of devices (like DRM bridges) could be added later.
+
+It also supports several RGB formats on all planes and some YUV formats on
+the HEO overlay plane.
+
+This series depends on those ones: [1], [2] and [3].
+
+Best Regards,
+
+Boris
+
+[1]http://lkml.iu.edu/hypermail/linux/kernel/1407.1/04171.html
+[2]https://lkml.org/lkml/2014/9/29/330
+[3]https://lkml.org/lkml/2014/9/22/575
+
+Changes since v7:
+- move interrupts property from hlcdc display controller node to its
+  parent node (the MFD device)
+- add mode_set_base implementation
+- rework page flip handling to rely on vblank events instead of DMA
+  transfer events (the end of a DMA transfer does not mean the frame
+  is actually flipped: data are first copied to an output FIFO before
+  being sent on the RGB/DPI connector)
+- few minor coding style fixes
+
+Changes since v5:
+- fix Kconfig dependency bug
+- use adjusted mode in crtc config
+- move signal config (clk, hsync, vsync) from connector to crtc mode_set
+  function
+- use standard rotation property
+- check display_mode validity in connecto mode_valid function
+- remove dma_set_coherent mask call (now done in MFD core)
+- do not use drm_platform_init
+
+Changes since v4:
+- fix a few more bugs in rotation handling (rotation was buggy on some
+  formats)
+- return connector_status_unknown until a panel is exposed by the
+  drm_panel infrastructure (prevent fbdev creation until everyting is
+  in place)
+- rework Kconfig MFD_ATMEL_HLCDC selection to simplify the configuration
+  (automatically select this option when selecting the HLCDC PMW or DRM
+  driver, instead of depending on this option)
+
+Changes since v3:
+- rework the layer code to simplify several parts (locking and layer
+  disabling)
+- make use of the drm_flip_work infrastructure
+- rely on default HW cursor implementation using on the cursor plane
+- rework the display controller DT bindings (based on OF graph
+  representation)
+- add rotation support
+- retrive RGB bus format from drm_display_info
+- drop the dynamic pinctrl state selection
+- rework HLCDC output handling (previously specialized to interface
+  with LCD panels)
+- drop ".module = THIS_MODULE" lines
+- change display controller compatible string
+
+Changes since v2:
+- fix coding style issues (macro indentation)
+- make use of GENMASK in several places
+- declare regmap config as a static structure
+- rework hlcdc plane update API
+- rework cursor handling to make use of the new plane update API
+- fix backporch config
+- do not use devm_regmap_init_mmio_clk to avoid extra clk_enable
+  clk disable calls when accessing registers
+- explicitely include regmap and clk headers instead of relying on
+  atmel-hlcdc.h inclusions
+- make the atmel-hlcdc driver depends on CONFIG_OF
+- separate DT bindings documentation from driver implementation
+- support several pin muxing for HLCDC pins on sama5d3 SoCs
+
+Changes since v1:
+- replace the backlight driver by a PWM driver
+- make use of drm_panel infrastructure
+- split driver code in several subsystem: MFD, PWM and DRM
+- add support for overlays
+- add support for hardware cursor
+
+
+Boris BREZILLON (10):
+  mfd: add documentation for atmel-hlcdc DT bindings
+  pwm: add support for atmel-hlcdc-pwm device
+  pwm: add DT bindings documentation for atmel-hlcdc-pwm driver
+  drm: add Atmel HLCDC Display Controller support
+  drm: add DT bindings documentation for atmel-hlcdc-dc driver
+  ARM: AT91/dt: split sama5d3 lcd pin definitions to match RGB mode
+    configs
+  ARM: AT91/dt: add alternative pin muxing for sama5d3 lcd pins
+  ARM: at91/dt: define the HLCDC node available on sama5d3 SoCs
+  ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
+  ARM: at91/dt: enable the LCD panel on sama5d3xek boards
+
+
+Boris BREZILLON (10):
+  mfd: add documentation for atmel-hlcdc DT bindings
+  pwm: add support for atmel-hlcdc-pwm device
+  pwm: add DT bindings documentation for atmel-hlcdc-pwm driver
+  drm: add Atmel HLCDC Display Controller support
+  drm: add DT bindings documentation for atmel-hlcdc-dc driver
+  ARM: AT91/dt: split sama5d3 lcd pin definitions to match RGB mode
+    configs
+  ARM: AT91/dt: add alternative pin muxing for sama5d3 lcd pins
+  ARM: at91/dt: define the HLCDC node available on sama5d3 SoCs
+  ARM: at91/dt: add LCD panel description to sama5d3xdm.dtsi
+  ARM: at91/dt: enable the LCD panel on sama5d3xek boards
+
+Boris Brezillon (1):
+  mfd: add atmel-hlcdc driver
+
+ .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     |  53 ++
+ .../devicetree/bindings/mfd/atmel-hlcdc.txt        |  51 ++
+ .../devicetree/bindings/pwm/atmel-hlcdc-pwm.txt    |  55 ++
+ arch/arm/boot/dts/sama5d31ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d33ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d34ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d36ek.dts                   |  20 +
+ arch/arm/boot/dts/sama5d3_lcd.dtsi                 | 205 ++++-
+ arch/arm/boot/dts/sama5d3xdm.dtsi                  |  58 ++
+ drivers/gpu/drm/Kconfig                            |   2 +
+ drivers/gpu/drm/Makefile                           |   1 +
+ drivers/gpu/drm/atmel-hlcdc/Kconfig                |  13 +
+ drivers/gpu/drm/atmel-hlcdc/Makefile               |   7 +
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c     | 390 ++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c       | 531 +++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h       | 216 ++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c    | 638 ++++++++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h    | 394 ++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c   | 443 +++++++++++
+ drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c    | 831 +++++++++++++++++++++
+ drivers/mfd/Kconfig                                |   6 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/atmel-hlcdc.c                          | 122 +++
+ drivers/pwm/Kconfig                                |  10 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-atmel-hlcdc.c                      | 229 ++++++
+ include/linux/mfd/atmel-hlcdc.h                    |  85 +++
+ 27 files changed, 4391 insertions(+), 31 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-hlcdc.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/atmel-hlcdc-pwm.txt
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Kconfig
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/Makefile
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_crtc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_dc.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_layer.h
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_output.c
+ create mode 100644 drivers/gpu/drm/atmel-hlcdc/atmel_hlcdc_plane.c
+ create mode 100644 drivers/mfd/atmel-hlcdc.c
+ create mode 100644 drivers/pwm/pwm-atmel-hlcdc.c
+ create mode 100644 include/linux/mfd/atmel-hlcdc.h
+
+-- 
+1.9.1
+
