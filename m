@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaJATMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 15:12:06 -0400
-Received: from mail-bn1bon0075.outbound.protection.outlook.com ([157.56.111.75]:38314
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751063AbaJATME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 15:12:04 -0400
-From: <atull@opensource.altera.com>
-To: <linux@roeck-us.net>, <jdelvare@suse.de>
-CC: <lm-sensors@lm-sensors.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>,
-        Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v4 0/4] regulator support for pmbus and ltc2978
-Date: Wed, 1 Oct 2014 14:05:46 -0500
-Message-ID: <1412190349-16343-1-git-send-email-atull@opensource.altera.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751877AbaJATOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 15:14:11 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:35275 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaJATOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 15:14:07 -0400
+Date: Wed, 1 Oct 2014 13:14:03 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com
+Subject: Re: [PATCH v10 0/4] APM X-Gene PCIe host controller
+Message-ID: <20141001191403.GC22713@google.com>
+References: <1411765707-28822-1-git-send-email-tinamdar@apm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR02CA0022.namprd02.prod.outlook.com (10.141.56.22) To
- DM2PR03MB318.namprd03.prod.outlook.com (10.141.54.17)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB318;
-X-Forefront-PRVS: 0351D213B3
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(4396001)(20776003)(64706001)(47776003)(88136002)(80022003)(85852003)(50466002)(50226001)(48376002)(77156001)(33646002)(229853001)(107046002)(66066001)(87976001)(87286001)(76482002)(89996001)(42186005)(105586002)(81156004)(69596002)(106356001)(102836001)(53416004)(99396003)(86362001)(120916001)(85306004)(86152002)(62966002)(92726001)(92566001)(10300001)(21056001)(93916002)(101416001)(97736003)(77096002)(50986999)(46102003)(19580405001)(95666004)(31966008)(104166001)(19580395003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB318;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411765707-28822-1-git-send-email-tinamdar@apm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Tull <atull@opensource.altera.com>
+On Fri, Sep 26, 2014 at 02:08:23PM -0700, Tanmay Inamdar wrote:
+> This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+> driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+> cards.
+> 
+> X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+> Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+> support for creating generic pcie bridge from device tree. Liviu's patches
+> are available here
+> https://lkml.org/lkml/2014/9/23/852
+> 
+> If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+> patches from Liviu must be applied before the patches in this patch set. Also
+> please use latest xgene u-boot firmware.
 
-This set of patches adds regulator support for pmbus_core.c and ltc2978.c
+I applied these on pci/host-xgene (based on pci/host-generic).  I hope to
+merge these for v3.18.  It'd be nice to have a device tree person like Arnd
+or Rob take a look at the arch/arm64/boot/dts/ bits.
 
-Each output has individual on/off control.
-
->From PMBus_Specification_Part_II_Rev_1-3_20140318.pdf:
-12.1.1. OPERATION Command Bit [7]
-  Bit [7] controls whether the PMBus device output is on or off.
-   If bit [7] is cleared (equals 0), then the output is off.
-   If bit [7] is set (equals 1), then the output is on.
-
-Fixes in v4 are not huge:
-  Add device tree bindings documentation for ltc2978.
-  rename _pmbus_regulator_enable to _pmbus_regulator_on_off
-  simplify _pmbus_regulator_on_off code
-  s/regulator_regulator/regulator/
-  fix build break when !CONFIG_REGULATOR
-  remove unused #define PB_OPERATION_CONTROL_SEQ_OFF
-  fix a #endif comment
-  simplify probe code, remove added switch statement
-  remove BUG_ON(), add error message and fix num_regulators
-
-Patch 1: document device tree bindings for ltc2978
-
-Patch 2: add two helper functions for byte pmbus byte operations
-  * byte write and byte read/modify/write
-
-Patch 3: regulator support added in pmbus_core.c and pmbus.h
-  * regulator_ops functions (is_enabled, enable, and disable)
-  * gets regulator init data from device tree or platform data
-  * registers the regulators
-  * header has a macro for chip drivers to build their
-    regulator_desc data
-
-Patch 4: changes for ltc2978.c
-  * Add Kconfig to enable/disable ltc2978 regulator functionality
-  * add regulator_desc and of_regulator_match info
-  * use same structs for all parts; set num_regulators appropriately.
-
-Alan Tull (3):
-  pmbus: core: add helpers for byte write and read modify write
-  pmbus: add regulator support
-  pmbus: ltc2978: add regulator support
-
-Alan Tull (4):
-  hwmon: ltc2978: device tree bindings documentation
-  pmbus: core: add helpers for byte write and read modify write
-  pmbus: add regulator support
-  pmbus: ltc2978: add regulator support
-
- .../devicetree/bindings/hwmon/ltc2978.txt          |   42 +++++
- drivers/hwmon/pmbus/Kconfig                        |    7 +
- drivers/hwmon/pmbus/ltc2978.c                      |   37 +++++
- drivers/hwmon/pmbus/pmbus.h                        |   26 ++++
- drivers/hwmon/pmbus/pmbus_core.c                   |  160 ++++++++++++++++++++
- include/linux/i2c/pmbus.h                          |    4 +
- 6 files changed, 276 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
-
--- 
-1.7.9.5
-
+> changes since V9:
+> 1. Remove 'xgene_pcie_fixup_bridge' and hide the bridge BAR0 and BAR1 by
+>    faking bridge's config space read and write to BAR0 and BAR1.
+> 2. Remove whitespace and fit in one line.
+> 3. Follow usual block comment.
+> 4. user '%pR' for printing out resource info
+> 5. Add device and vendor ID programming to make driver operable with older
+>    firmware.
+> 
+> changes since V8:
+> 1. Add 'dma-coherent' attribute in device node.
+> 
+> changes since V7:
+> 1. Fix outbound region mapping for IO region. Thanks Liviu for the catch.
+> 
+> changes since V6:
+> 1. Port driver to changed interface as per Liviu's v10 series.
+> 
+> changes since V5:
+> 1. Port driver to changed interface of 'of_create_pci_host_bridge'
+> 2. Fix the prefetch bit setting
+> 3. Removed bunch of register programming which is already done by firmware
+> 
+> changes since V4:
+> 1. fix section mismatch warnings
+> 2. fix the patch description
+> 3. fix indentation
+> 4. update read/write cfg functions by passing both addr and offset.
+> 5. use 'time_before' for timeout.
+> 6. remove unnecessary 'IS_ERR_OR_NULL'. Keep 'IS_ERR' for 'clk_get'
+> 7. remove BUG_ON for pci_ioremap_io.
+> 
+> changes since V3:
+> 1. remove 'struct hw_pci' and supporting ops in hw_pci
+> 2. add code to create the host bridge from dts
+> 3. add code to scan the the host bridge
+> 4. modify outbound windows setup function to get resource information from
+>    'bridge->windows'
+> 5. add compatible string in pcie dts node with current X-Gene SOC name.
+> 
+> changes since V2:
+> 1. redefined each PCI port in different PCI domain correctly.
+> 2. removed setup_lane and setup_link functions from driver.
+> 3. removed scan_bus wrapper and set_primary_bus hack.
+> 4. added pci_ioremap_io for io resources.
+> 
+> changes since V1:
+> 1. added PCI domain support
+> 2. reading cpu and pci addresses from device tree to configure regions.
+> 3. got rid of unnecessary wrappers for readl and writel.
+> 4. got rid of endpoint configuration code.
+> 5. added 'dma-ranges' property support to read inbound region configuration.
+> 6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+> 7. dropped 'clock-names' property from bindings
+> 8. added comments whereever requested.
+> 
+> Tanmay Inamdar (4):
+>   pci:host: APM X-Gene PCIe host controller driver
+>   arm64: dts: APM X-Gene PCIe device tree nodes
+>   dt-bindings: pci: xgene pcie device tree bindings
+>   MAINTAINERS: entry for APM X-Gene PCIe host driver
+> 
+>  .../devicetree/bindings/pci/xgene-pci.txt          |  57 ++
+>  MAINTAINERS                                        |   8 +
+>  arch/arm64/boot/dts/apm-mustang.dts                |   8 +
+>  arch/arm64/boot/dts/apm-storm.dtsi                 | 165 ++++++
+>  drivers/pci/host/Kconfig                           |  10 +
+>  drivers/pci/host/Makefile                          |   1 +
+>  drivers/pci/host/pci-xgene.c                       | 659 +++++++++++++++++++++
+>  7 files changed, 908 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
+>  create mode 100644 drivers/pci/host/pci-xgene.c
+> 
+> -- 
+> 1.9.1
+> 
