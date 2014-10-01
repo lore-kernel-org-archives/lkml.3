@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaJANzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:55:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136AbaJANzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:55:13 -0400
-Message-ID: <542C07BF.6030703@suse.cz>
-Date: Wed, 01 Oct 2014 15:55:11 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751782AbaJAN4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:56:04 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:54218 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaJAN4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:56:01 -0400
 MIME-Version: 1.0
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Randy Dunlap <rdunlap@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] limit _shipped to c,h and S files
-References: <20141001133659.GC5560@opentech.at>
-In-Reply-To: <20141001133659.GC5560@opentech.at>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <3038755.G9Y3LOUCHH@wuerfel>
+References: <1411992293-7729-1-git-send-email-zhang.lyra@gmail.com>
+ <1411992293-7729-6-git-send-email-zhang.lyra@gmail.com> <3038755.G9Y3LOUCHH@wuerfel>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 1 Oct 2014 08:55:39 -0500
+Message-ID: <CAL_JsqK78usBOE0UxSjyzN3VMrkP43uOuYz=yZM_wsaS2YDarA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] tty/serial: Add Spreadtrum's serial earlycon
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: zhang.lyra@gmail.com, Catalin Marinas <catalin.marinas@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, Kumar Gala <galak@codeaurora.org>,
+        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Pawel Moll <pawel.moll@arm.com>, artagnon@gmail.com,
+        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Will Deacon <will.deacon@arm.com>, orsonzhai@gmail.com,
+        geng.ren@spreadtrum.com, zhizhou.zhang@spreadtrum.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-01 15:36, Nicholas Mc Guire wrote:
-> 
-> limit _shipped to c,h and S files
-> 
-> _shipped targets are intended for generated source files which should
-> not permit .o binary blobs which is currently the case. This patch
-> simply restricts _shipped targets to .c, .h and .S files.
+On Mon, Sep 29, 2014 at 8:36 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 29 September 2014 20:04:52 zhang.lyra@gmail.com wrote:
+>> From: "chunyan.zhang" <chunyan.zhang@spreadtrum.com>
+>>
+>> Adds earlycon support for the Spreadtrum's serial.
+>>
+>> Signed-off-by: chunyan.zhang <chunyan.zhang@spreadtrum.com>
+>> ---
+>>  drivers/tty/serial/Kconfig             |   12 ++++++
+>>  drivers/tty/serial/Makefile            |    1 +
+>>  drivers/tty/serial/serial_sprd_early.c |   64 ++++++++++++++++++++++++++++++++
+>>  3 files changed, 77 insertions(+)
+>>  create mode 100644 drivers/tty/serial/serial_sprd_early.c
+>>
+>> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+>> index 26cec64..ede16e6 100644
+>> --- a/drivers/tty/serial/Kconfig
+>> +++ b/drivers/tty/serial/Kconfig
+>> @@ -85,6 +85,18 @@ config SERIAL_EARLYCON_ARM_SEMIHOST
+>>         with "earlycon=smh" on the kernel command line. The console is
+>>         enabled when early_param is processed.
+>>
+>> +config SERIAL_EARLYCON_SPRD
+>> +     bool "Early console using SPRD serial"
+>> +     depends on ARM64
+>> +     select SERIAL_CORE
+>> +     select SERIAL_CORE_CONSOLE
+>> +     select SERIAL_EARLYCON
+>> +     help
+>
+> I assume you will later want to have a proper device driver for
+> this hardware, so it would be better to make the Kconfig symbol
+> and the file name what you are going to use in the long run, but
+> for now only have the earlycon support included.
+>
+>
+>> +static int __init serial_sprd_early_console_setup(
+>> +                             struct earlycon_device *device,
+>> +                             const char *opt)
+>> +{
+>> +     if (!device->port.membase)
+>> +             return -ENODEV;
+>> +
+>> +     device->con->write = serial_sprd_early_write;
+>> +     return 0;
+>> +}
+>> +EARLYCON_DECLARE(serial_sprd, serial_sprd_early_console_setup);
+>> +OF_EARLYCON_DECLARE(serial_sprd, "sprd,serial",
+>> +                 serial_sprd_early_console_setup);
+>>
+>
+> I think you should drop the EARLYCON_DECLARE() line, using
+> OF_EARLYCON_DECLARE should be enough.
 
-Patches 1/3 and 3/3 are fine, but I'm not convinced about this one.
-Sure, binary blobs are often distributed as *.o_shipped, but they are
-not going away if you remove support for _shipped.
+No, I've been telling people to put both in. The reason is you may
+have a bootloader or boot files (e.g PXELINUX) that only allows
+changing changing the command line or you want to override/extend the
+command line in the kernel.
 
+I'm thinking the declaration should be combined into one to do both
+since I'm getting tired of making this comment.
 
-> Note that this patch breaks the handline of drivers/net/wan/wanxlfw.inc_shipped
-> which probably really should be moved to a loadable firmware and use
-> request_firmware - a short term fix could be to move it to a .h file.
-
-At a minimum, the patch series should address this before limiting
-support for *_shipped.
-
-Michal
+Rob
