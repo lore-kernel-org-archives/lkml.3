@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601AbaJAOYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:24:25 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:59531 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaJAOYX (ORCPT
+	id S1751734AbaJAOZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:25:30 -0400
+Received: from mailout.micron.com ([137.201.242.129]:37222 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaJAOZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:24:23 -0400
+	Wed, 1 Oct 2014 10:25:28 -0400
+From: =?utf-8?B?QmVhbiBIdW8g6ZyN5paM5paMIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: Marek Vasut <marex@denx.de>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Index: AQHP3LUw1IjYD2GBJkeXO7FbBzOymJwbScBQ
+Date: Wed, 1 Oct 2014 14:24:41 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E3D3F@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315E3C79@NTXXIAMBX02.xacn.micron.com>
+ <201409301538.40466.marex@denx.de>
+In-Reply-To: <201409301538.40466.marex@denx.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20988.004
+x-tm-as-result: No--34.313800-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <542C0BA3.7000504@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
- <1411562649-28231-12-git-send-email-a.ryabinin@samsung.com>
- <CACT4Y+aJ9htaruQ1Nn7+MSGwtNzRb_hfytQo98J1wq5N6oh1BA@mail.gmail.com>
- <CAPAsAGxLxCxOayqcu=PbgFG6J7JEuL8J3+ouz94p_k0v0Hy=wA@mail.gmail.com>
- <CACT4Y+Z4N5hpz_ZXFOCCbv7sbz2kzrF6gYHMbasDFNwpdOK30Q@mail.gmail.com>
- <20141001103930.GG20364@e104818-lin.cambridge.arm.com> <542BE977.3040807@samsung.com>
- <CACT4Y+ZXcZ=BLGjXamfpV+5R-5pahKGTeMcRoLkcxY7PQGatjw@mail.gmail.com> <542C0BA3.7000504@samsung.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Wed, 1 Oct 2014 18:24:02 +0400
-Message-ID: <CACT4Y+YZ-dfXO4Cd70vu8Nzgmb=98XzYuW=wVUyGEHD_V0n8SQ@mail.gmail.com>
-Subject: Re: [PATCH v3 11/13] kmemleak: disable kasan instrumentation for kmemleak
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s91EPYr6031033
 
-On Wed, Oct 1, 2014 at 6:11 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
->>>>>>>
->>>>>>> We can disable kasan instrumentation of this file as well.
->>>>>>
->>>>>> Yes, but why? I don't think we need that.
->>>>>
->>>>> Just gut feeling. Such tools usually don't play well together. For
->>>>> example, due to asan quarantine lots of leaks will be missed (if we
->>>>> pretend that tools work together, end users will use them together and
->>>>> miss bugs). I won't be surprised if leak detector touches freed
->>>>> objects under some circumstances as well.
->>>>> We can do this if/when discover actual compatibility issues, of course.
->>>>
->>>> I think it's worth testing them together first.
->>>>
->>>
->>> I did test them together. With this patch applied both tools works without problems.
->>
->> What do you mean "works without problems"? Are you sure that kmemleak
->> still detects all leaks it is intended to detect?
->>
->
-> Yes I'm sure about that. And how kasan could affect on kmemleak's capability to detect leaks?
+>> For Micron spi norflash,enables or disables quad I/O protocol ,which 
+>> controled by EVCR(Enhanced Volatile Configuration Register) Quad I/O 
+>> protocol bit 7.When EVCR bit 7 is reset to 0, the spi norflash will 
+>> operate in quad I/O following the next WRITE ENHANCED VOLATILE 
+>> CONFIGURATION command.
 
+>You only do one WRITE ENHANCED VOLATILE CONFIGURATION command in the patch, so this text doesn't add up.
 
-Ah, OK, we don't have quarantine.
-The idea is that redzones and quarantine will contain parasitical
-pointers (quarantine is exactly a linked list of freed objects).
+>Try something like this:
+>-->8--
+>This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+
+>For Micron SPI NOR flash, enabling or disabling quad I/O protocol is controled by EVCR (Enhanced Volatile Configuration Register), Quad I/O protocol bit 7. When EVCR bit 7 is reset to 0, the SPI NOR flash will operate in quad I/O mode.
+>--8<--
+
+>What do you think ?
+Perfect,I will modify my commit message and sumbit it again.thanks.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
