@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaJAJ4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 05:56:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33231 "EHLO
+	id S1751337AbaJAJ71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 05:59:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33244 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751361AbaJAJ4k (ORCPT
+	with ESMTP id S1750944AbaJAJ70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 05:56:40 -0400
+	Wed, 1 Oct 2014 05:59:26 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: dhowells@redhat.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
+To: vgupta@synopsys.com
+Cc: richard@nod.at, pebolle@tiscali.nl, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] frv: remove deprecated IRQF_DISABLED
-Date: Wed,  1 Oct 2014 11:56:36 +0200
-Message-Id: <1412157396-6918-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] ARC: [plat-arcfpga]: remove unused Kconfig params
+Date: Wed,  1 Oct 2014 11:59:17 +0200
+Message-Id: <1412157557-6975-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395121005-16791-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1395121005-16791-1-git-send-email-michael.opdenacker@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the IRQF_DISABLED flag from FRV architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+This removes the ARC_BOARD_ANGEL4 and ARC_BOARD_ML509
+Kconfig parameters which are no longer used anywhere
+in the source code and Makefiles.
+
+This also updates a comment refering to these parameters.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- arch/frv/kernel/irq-mb93091.c | 8 ++++----
- arch/frv/kernel/irq-mb93093.c | 1 -
- arch/frv/kernel/irq-mb93493.c | 4 ++--
- arch/frv/kernel/time.c        | 1 -
- 4 files changed, 6 insertions(+), 8 deletions(-)
+ arch/arc/plat-arcfpga/Kconfig | 13 -------------
+ 1 file changed, 13 deletions(-)
 
-diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
-index 2cc327a1ca44..091b2839be90 100644
---- a/arch/frv/kernel/irq-mb93091.c
-+++ b/arch/frv/kernel/irq-mb93091.c
-@@ -107,25 +107,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[4]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0028UL,
- 	},
- 	[1] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.1",
- 		.dev_id		= (void *) 0x0050UL,
- 	},
- 	[2] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.2",
- 		.dev_id		= (void *) 0x1c00UL,
- 	},
- 	[3] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "fpga.3",
- 		.dev_id		= (void *) 0x6386UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
-index 95e4eb4f1f38..1f3015cf80f5 100644
---- a/arch/frv/kernel/irq-mb93093.c
-+++ b/arch/frv/kernel/irq-mb93093.c
-@@ -105,7 +105,6 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
- static struct irqaction fpga_irq[1]  = {
- 	[0] = {
- 		.handler	= fpga_interrupt,
--		.flags		= IRQF_DISABLED,
- 		.name		= "fpga.0",
- 		.dev_id		= (void *) 0x0700UL,
- 	}
-diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
-index ba648da0932d..8ca5aa4ff595 100644
---- a/arch/frv/kernel/irq-mb93493.c
-+++ b/arch/frv/kernel/irq-mb93493.c
-@@ -118,13 +118,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
- static struct irqaction mb93493_irq[2]  = {
- 	[0] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.0",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
- 	},
- 	[1] = {
- 		.handler	= mb93493_interrupt,
--		.flags		= IRQF_DISABLED | IRQF_SHARED,
-+		.flags		= IRQF_SHARED,
- 		.name		= "mb93493.1",
- 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
- 	}
-diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
-index b457de496b70..332e00bf9d06 100644
---- a/arch/frv/kernel/time.c
-+++ b/arch/frv/kernel/time.c
-@@ -44,7 +44,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
+diff --git a/arch/arc/plat-arcfpga/Kconfig b/arch/arc/plat-arcfpga/Kconfig
+index b9f34cf55acf..3f6814aa97ac 100644
+--- a/arch/arc/plat-arcfpga/Kconfig
++++ b/arch/arc/plat-arcfpga/Kconfig
+@@ -12,23 +12,10 @@ menuconfig ARC_PLAT_FPGA_LEGACY
+ 	help
+ 	  Support for ARC development boards, provided by Synopsys.
+ 	  These are based on FPGA or ISS. e.g.
+-	  - ARCAngel4
+-	  - ML509
+ 	  - MetaWare ISS
  
- static struct irqaction timer_irq  = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED,
- 	.name = "timer",
- };
+ if ARC_PLAT_FPGA_LEGACY
  
+-config ARC_BOARD_ANGEL4
+-	bool "ARC Angel4"
+-	default y
+-	help
+-	  ARC Angel4 FPGA Ref Platform (Xilinx Virtex Based)
+-
+-config ARC_BOARD_ML509
+-	bool "ML509"
+-	help
+-	  ARC ML509 FPGA Ref Platform (Xilinx Virtex-5 Based)
+-
+ config ISS_SMP_EXTN
+ 	bool "ARC SMP Extensions (ISS Models only)"
+ 	default n
 -- 
 1.9.1
 
