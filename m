@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaJAR54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:57:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:52414 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753075AbaJAR5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:57:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,633,1406617200"; 
-   d="scan'208";a="599433520"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, daniel.vetter@intel.com,
-        intel-gfx@lists.freedesktop.org,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: randconfig build error with next-20141001, in drivers/gpu/drm/i915
-In-Reply-To: <CA+r1ZhhmT4DrWtf6MbRQo5EqXwx+LxCqh15Vsu_d9WpftLhnxw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <CA+r1ZhhmT4DrWtf6MbRQo5EqXwx+LxCqh15Vsu_d9WpftLhnxw@mail.gmail.com>
-User-Agent: Notmuch/0.18.1+110~gd9ec63c (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 01 Oct 2014 20:57:43 +0300
-Message-ID: <87fvf73c6g.fsf@intel.com>
+	id S1753576AbaJAR6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:58:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43221 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537AbaJAR6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 13:58:00 -0400
+Date: Wed, 1 Oct 2014 10:57:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Chris Kohn <ckohn@xilinx.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Michal Simek <michal.simek@xilinx.com>, Jason Wu <huanyu@xilinx.com>
+Subject: Re: [PATCH] staging: Add Xilinx Clocking Wizard driver
+Message-ID: <20141001175704.GA9625@kroah.com>
+References: <1412184108-16688-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20141001173957.GA32021@kroah.com>
+ <e6907682-8d66-4df0-9a9e-a1079933e358@BL2FFO11FD008.protection.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <e6907682-8d66-4df0-9a9e-a1079933e358@BL2FFO11FD008.protection.gbl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Oct 2014, Jim Davis <jim.epost@gmail.com> wrote:
-> Building with the attached random configuration file,
->
-> warning: (VIDEO_TIMBERDALE) selects TIMB_DMA which has unmet direct
-> dependencies (DMADEVICES && MFD_TIMBERDALE)
-> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
-> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
->
-> drivers/built-in.o: In function `intel_panel_setup_backlight':
-> (.text+0x11855d): undefined reference to `backlight_device_register'
-> drivers/built-in.o: In function `intel_panel_destroy_backlight':
-> (.text+0x118624): undefined reference to `backlight_device_unregister'
-> make: *** [vmlinux] Error 1
+On Wed, Oct 01, 2014 at 10:46:16AM -0700, Sören Brinkmann wrote:
+> On Wed, 2014-10-01 at 10:39AM -0700, Greg Kroah-Hartman wrote:
+> > On Wed, Oct 01, 2014 at 10:21:48AM -0700, Soren Brinkmann wrote:
+> > > Add a driver for the Xilinx Clocking Wizard soft IP. The clocking wizard
+> > > provides an AXI interface to dynamically reconfigure the clocking
+> > > resources of Xilinx FPGAs.
+> > 
+> > Why not just do the few things you have on the TODO list and get it
+> > merged to the "proper" part of the kernel, keeping it out of the staging
+> > tree?
+> 
+> The few things are not that easy and as I mention in the TODO file,
+> there are some patches on LKML that would greatly simplify this
+> driver/reduce the need for code duplication.
+> I thought this is a good way to wait for those parts to mature while
+> people could already use the driver as passive part in their clock tree.
 
-It's the combination:
+Ok, fair enough, as long as you keep working on the driver to get it out
+of staging, I don't have an objection to it.  I'll go queue it up later
+today.
 
-> CONFIG_DRM_I915=y
-> CONFIG_BACKLIGHT_CLASS_DEVICE=m
-
-Not sure what the Kconfig magic spell needs to be when we don't want to
-depend on CONFIG_BACKLIGHT_CLASS_DEVICE but we'll use it if it's enabled
-(y or m).
-
-BR,
-Jani.
-
-
--- 
-Jani Nikula, Intel Open Source Technology Center
+greg k-h
