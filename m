@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaJANSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:18:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65379 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451AbaJANSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:18:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,632,1406617200"; 
-   d="scan'208";a="608139501"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <542BE7F5.2000808@oracle.com>
-References: <1412163121-4295-1-git-send-email-kirill.shutemov@linux.intel.com>
- <542BE7F5.2000808@oracle.com>
-Subject: Re: [PATCH 1/3] mm: generalize VM_BUG_ON() macros
-Content-Transfer-Encoding: 7bit
-Message-Id: <20141001131812.1893BE00A3@blue.fi.intel.com>
-Date: Wed,  1 Oct 2014 16:18:12 +0300 (EEST)
+	id S1751442AbaJANWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:22:14 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40093 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195AbaJANWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:22:12 -0400
+Date: Wed, 1 Oct 2014 14:22:03 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 16/24] ARM64:ILP32: Support core dump for ILP32
+Message-ID: <20141001132202.GL12702@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-17-git-send-email-apinski@cavium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409779158-30963-17-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
-> On 10/01/2014 07:31 AM, Kirill A. Shutemov wrote:
-> > +#define _VM_DUMP(arg, cond) do {					\
-> > +	if (__builtin_types_compatible_p(typeof(*arg), struct page))	\
-> > +		dump_page((struct page *) arg,				\
-> > +				"VM_BUG_ON(" __stringify(cond)")");	\
-> > +	else if (__builtin_types_compatible_p(typeof(*arg),		\
-> > +				struct vm_area_struct))			\
-> > +		dump_vma((struct vm_area_struct *) arg);		\
-> > +	else if (__builtin_types_compatible_p(typeof(*arg),		\
-> > +				struct mm_struct))			\
-> > +		dump_mm((struct mm_struct *) arg);			\
-> > +	else								\
-> > +		BUILD_BUG();						\
-> > +} while(0)
-> 
-> __same_type() instead of __builtin_types_compatible_p() would look nicer,
-> but I don't think that all compilers support that:
-> 
-> 	include/linux/compiler-intel.h:/* Intel ECC compiler doesn't support __builtin_types_compatible_p() */
-> 
-> So it would effectively disable VM_BUG_ONs on Intel's compiler
+On Wed, Sep 03, 2014 at 10:19:10PM +0100, Andrew Pinski wrote:
+> +/*
+> + * If ILP32 is turned on, we want to define the compat_elf_greg_t to the non compat
+> + * one and define PR_REG_SIZE/PRSTATUS_SIZE/SET_PR_FPVALID so we pick up the correct
+> + * ones for AARCH32.
+> + */
+> +#ifdef CONFIG_ARM64_ILP32
+> +typedef elf_greg_t			compat_elf_greg_t;
+> +typedef elf_gregset_t			compat_elf_gregset_t;
+> +#define COMPAT_PR_REG_SIZE(S)		(is_a32_compat_task() ? 72 : 272)
+> +#define COMPAT_PRSTATUS_SIZE(S)		(is_a32_compat_task() ? 124 : 352)
 
-We can make _VM_DUMP nop, but I don't think ICC can build kernel anyway:
-we already use __builtin_types_compatible_p() in i915 driver and other
-places. Nobody cares.
-
-Any other comments?
+Could you not use some sizeof() here instead of these magic numbers?
 
 -- 
- Kirill A. Shutemov
+Catalin
