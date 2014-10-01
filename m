@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaJAQLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:11:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33365 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751471AbaJAQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:11:41 -0400
-Date: Wed, 1 Oct 2014 18:11:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
-        dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] edac, amd64_edac: Add F15h M60h support
-Message-ID: <20141001161135.GG18271@pd.tnic>
-References: <1411070230-10298-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20141001113235.GC18271@pd.tnic>
- <542C1EAA.4050408@amd.com>
- <20141001154523.GF18271@pd.tnic>
- <542C2588.2040004@amd.com>
+	id S1752117AbaJAQMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:12:00 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:38699 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaJAQL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:11:59 -0400
+Date: Wed, 1 Oct 2014 17:11:51 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 1/2] efi: Provide a non-blocking SetVariable() operation
+Message-ID: <20141001161151.GD14343@console-pimps.org>
+References: <1412165200-32141-1-git-send-email-matt@console-pimps.org>
+ <1412165200-32141-2-git-send-email-matt@console-pimps.org>
+ <20141001152624.GB2843@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <542C2588.2040004@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141001152624.GB2843@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 11:02:16AM -0500, Aravind Gopalakrishnan wrote:
-> Not AFAIK, But I'll ask to make sure.
+On Wed, 01 Oct, at 05:26:24PM, Peter Zijlstra wrote:
+> 
+> If you want to have this usable from NMI context, you need to convert
+> efi_runtime_lock to a raw_spinlock_t.
+ 
+Hmm.. I note that none of the spinlocks in the pstore code path that we
+execute to get here are raw_spinlock_t. And that's the only code path
+that calls this function.
 
-Yes please.
+They need to be raw_spinlock_t for -rt?
 
-> If different LRDIMMs on one DCT don't exist, then sure, I'll modify the code
-> to use first DCSM.
+> Also, it would probably be a good idea to have some selftest like thing
+> that actually calls this from NMI context, right?
 
-Right.
-
-> Regarding resend-
-> I'm not sure how you'll want the patches.. I just noticed a 'edac-for-3.19'
-> branch.
-
-I uploaded it for the 0day bot so that the patches can be build-tested a
-little with different configs. Don't pay attention to any other branches
-except to "for-next" which is what will go to Linus come next merge
-window. The other branches might get rebased and you shouldn't base any
-work ontop.
-
-> Would you prefer I based changes on top of this for merging purposes?
-> Or just resend the original 4 patches based off tip as usual?
-
-Nah, just resend the last one - 4/4 - the other three are fine.
-
-Thanks.
+Yeah probably, although that'd need to be a core pstore test since
+there's nothing really interesting going on in
+virt_efi_set_variable_nonblocking(), and it would be good to test it out
+in the larger pstore context.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Matt Fleming, Intel Open Source Technology Center
