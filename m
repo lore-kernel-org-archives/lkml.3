@@ -1,127 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaJANtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:49:20 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43209 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaJANtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:49:19 -0400
-Date: Wed, 1 Oct 2014 15:49:17 +0200
-From: Pavel Machek <pavel@denx.de>
-To: atull@opensource.altera.com
-Cc: dinguyen@opensource.altera.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH 2/2] socfpga: support suspend to ram
-Message-ID: <20141001134917.GB12750@amd>
-References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com>
- <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
+	id S1751535AbaJANuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:50:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41871 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751063AbaJANuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:50:22 -0400
+Message-ID: <542C0698.5030704@ti.com>
+Date: Wed, 1 Oct 2014 09:50:16 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411590449-9794-3-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>, <nm@ti.com>,
+        <peter.ujfalusi@ti.com>, <tony@atomide.com>, <afzal@ti.com>,
+        <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RESEND] drivers: bus: omap_l3: remove deprecated IRQF_DISABLED
+References: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com> <1412158507-7229-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1412158507-7229-1-git-send-email-michael.opdenacker@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> Add code that requests that the sdr controller go into
-> self-refresh mode.  This code is run from ocram.
+On Wednesday 01 October 2014 06:15 AM, Michael Opdenacker wrote:
+> This patch removes the use of the IRQF_DISABLED flag
+> from drivers/bus/omap_l3_*
 > 
-> This patch assumes that u-boot has already configured sdr:
->   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
->   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
->   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+Should be ok I guess.
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-I'm not sure if we should make assumptions like that. u-boot is not
-the only bootloader.
-
-At the very least, it should go to comment in the code, not to changelog.
-
-> +u32 socfpga_sdram_self_refresh(u32 sdr_base, u32 scu_base);
-> +extern unsigned int socfpga_sdram_self_refresh_sz;
-
-_sz -> size.
-
-Is it ok to just copy code around?
-
-> +/* Round up a pointer address to fix aligment for fncpy() */
-> +static void *fncpy_align(void *ptr)
-> +{
-> +	u32 value = (u32)ptr;
-> +
-> +	if ((value & (FNCPY_ALIGN - 1)) != 0)
-> +		value = ((value & ~(FNCPY_ALIGN - 1)) + FNCPY_ALIGN);
-> +
-> +	return (void *)value;
-> +}
-
-Don't we have a nice macro doing aligning?
-
-I guess the if() is not neccessary.
-
-> +static int socfpga_pm_suspend(unsigned long arg)
-> +{
-> +	u32 ret;
-> +
-> +	ret = socfpga_sdram_self_refresh_in_ocram((u32)sdr_ctl_base_addr,
-> +						  (u32)socfpga_scu_base_addr);
-> +
-> +	pr_debug("%s self-refresh loops request=%d exit=%d\n", __func__,
-> +		 ret & 0xffff, (ret >> 16) & 0xffff);
-> +
-> +	return 0;
-> +}
-
-return ret?
-
-
-> +	.arch   armv7-a
-> +	.text
-> +	.align 3
-> +
-> +	/*
-> +	 * socfpga_sdram_self_refresh
-> +	 *
-> +	 *  r0 : sdr_ctl_base_addr
-> +	 *  r1 : socfpga_scu_base_addr
-> +	 *  r2 : temp storage of register values
-> +	 *  r3 : loop counter
-> +	 *  r4 : temp storage of return value
-> +	 *
-> +	 *  return value: lower 16 bits: loop count going into self refresh
-> +	 *                upper 16 bits: loop count exiting self refresh
-> +	 */
-> +ENTRY(socfpga_sdram_self_refresh)
-
-r0, r1 are the parameters?
-
-> @@ -77,6 +78,15 @@ void __init socfpga_sysmgr_init(void)
+>  drivers/bus/omap_l3_noc.c | 4 ++--
+>  drivers/bus/omap_l3_smx.c | 6 ++----
+>  2 files changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+> index 531ae591783b..547a0fdba583 100644
+> --- a/drivers/bus/omap_l3_noc.c
+> +++ b/drivers/bus/omap_l3_noc.c
+> @@ -280,7 +280,7 @@ static int omap_l3_probe(struct platform_device *pdev)
+>  	 */
+>  	l3->debug_irq = platform_get_irq(pdev, 0);
+>  	ret = devm_request_irq(l3->dev, l3->debug_irq, l3_interrupt_handler,
+> -			       IRQF_DISABLED, "l3-dbg-irq", l3);
+> +			       0, "l3-dbg-irq", l3);
+>  	if (ret) {
+>  		dev_err(l3->dev, "request_irq failed for %d\n",
+>  			l3->debug_irq);
+> @@ -289,7 +289,7 @@ static int omap_l3_probe(struct platform_device *pdev)
 >  
->  	np = of_find_compatible_node(NULL, NULL, "altr,rst-mgr");
->  	rst_manager_base_addr = of_iomap(np, 0);
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "altr,sdr-ctl");
-> +	if (!np) {
-> +		pr_err("SOCFPGA: Unable to find sdr-ctl\n");
-> +		return;
-> +	}
-> +
-> +	sdr_ctl_base_addr = of_iomap(np, 0);
-> +	WARN_ON(!sdr_ctl_base_addr);
->  }
+>  	l3->app_irq = platform_get_irq(pdev, 1);
+>  	ret = devm_request_irq(l3->dev, l3->app_irq, l3_interrupt_handler,
+> -			       IRQF_DISABLED, "l3-app-irq", l3);
+> +			       0, "l3-app-irq", l3);
+>  	if (ret)
+>  		dev_err(l3->dev, "request_irq failed for %d\n", l3->app_irq);
 >  
->  static void __init socfpga_init_irq(void)
+> diff --git a/drivers/bus/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
+> index acc216491b8a..769d64c0b0fe 100644
+> --- a/drivers/bus/omap_l3_smx.c
+> +++ b/drivers/bus/omap_l3_smx.c
+> @@ -238,8 +238,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
+>  
+>  	l3->debug_irq = platform_get_irq(pdev, 0);
+>  	ret = request_irq(l3->debug_irq, omap3_l3_app_irq,
+> -		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+> -		"l3-debug-irq", l3);
+> +		IRQF_TRIGGER_RISING, "l3-debug-irq", l3);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "couldn't request debug irq\n");
+>  		goto err1;
+> @@ -247,8 +246,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
+>  
+>  	l3->app_irq = platform_get_irq(pdev, 1);
+>  	ret = request_irq(l3->app_irq, omap3_l3_app_irq,
+> -		IRQF_DISABLED | IRQF_TRIGGER_RISING,
+> -		"l3-app-irq", l3);
+> +		IRQF_TRIGGER_RISING, "l3-app-irq", l3);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "couldn't request app irq\n");
+>  		goto err2;
+> 
 
-Actually, "sdr-ctl" is quite hard to understand. I guess it means
-"sdram-control"? Should we do something like altr,sdram-ctrl-1.0, so
-that we have way forward if hardware changes in future?
-
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
