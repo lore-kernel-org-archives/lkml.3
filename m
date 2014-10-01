@@ -1,133 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaJANkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:40:17 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52011 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaJANkP (ORCPT
+	id S1751461AbaJANki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:40:38 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:54068 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaJANkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:40:15 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, riel@redhat.com,
-        linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v2] sched: fix spurious active migration
-Date: Wed,  1 Oct 2014 15:38:55 +0200
-Message-Id: <1412170735-5356-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412066468-4340-1-git-send-email-vincent.guittot@linaro.org>
-References: <1412066468-4340-1-git-send-email-vincent.guittot@linaro.org>
+	Wed, 1 Oct 2014 09:40:36 -0400
+Message-ID: <542C0441.5080508@sam-solutions.com>
+Date: Wed, 1 Oct 2014 16:40:17 +0300
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Organization: SaM Solutions
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Fabio Estevam <festevam@gmail.com>
+CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 2/4] ARM: dts: pbab01: enable I2S audio on phyFLEX-i.MX6
+ boards
+References: <1410537872-17274-1-git-send-email-d.lavnikevich@sam-solutions.com>	<1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>	<1410854903-26419-3-git-send-email-d.lavnikevich@sam-solutions.com> <CAOMZO5CgrQ6Wf6kStga40TUKx9dARygCNB4OYSUoG3c8eUYbrA@mail.gmail.com>
+In-Reply-To: <CAOMZO5CgrQ6Wf6kStga40TUKx9dARygCNB4OYSUoG3c8eUYbrA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit caeb178c60f4 ("sched/fair: Make update_sd_pick_busiest() ...")
-sd_pick_busiest returns a group that can be neither imbalanced nor overloaded
-but is only more loaded than others. This change has been introduced to ensure
-a better load balance in system that are not overloaded but as a side effect,
-it can also generate useless active migration between groups.
+On 01/10/14 15:11, Fabio Estevam wrote:
+> On Tue, Sep 16, 2014 at 5:08 AM, Dmitry Lavnikevich
+> <d.lavnikevich@sam-solutions.com> wrote:
+>
+>> +       regulators {
+>> +               sound_1v8: regulator@2 {
+>
+> We usually start counting from @0.
+>
+...
+ >> +               };
+ >> +
+ >> +               sound_3v3: regulator@3 {
+ >
+ > ,so this one should be @1.
 
-Let take the example of 3 tasks on a quad cores system. We will always have an
-idle core so the load balance will find a busiest group (core) whenever an ILB
-is triggered and it will force an active migration (once above
-nr_balance_failed threshold) so the idle core becomes busy but another core
-will become idle. With the next ILB, the freshly idle core will try to pull the
-task of a busy CPU.
-The number of spurious active migration is not so huge in quad core system
-because the ILB is not triggered so much. But it becomes significant as soon as
-you have more than one sched_domain level like on a dual cluster of quad cores
-where the ILB is triggered every tick when you have more than 1 busy_cpu
+@0 and @1 are used for "usb_otg_vbus" and "usb_h1_vbus" regulators in 
+dts for phyFLEX module (imx6qdl-phytec-pfla02.dtsi) which gets included 
+before base board dts (imx6qdl-phytec-pbab01.dtsi)
 
-We need to ensure that the migration generate a real improveùent and will not
-only move the avg_load imbalance on another CPU.
+>> +                       compatible = "regulator-fixed";
+>> +                       reg = <2>;
+>> +                       regulator-name = "i2s-audio-1v8";
+>> +                       regulator-min-microvolt = <1800000>;
+>> +                       regulator-max-microvolt = <1800000>;
+>> +                       regulator-always-on;
+>
+> No need to have this 'regulator-always-on'
+>
+...
+>> +                       compatible = "regulator-fixed";
+>> +                       reg = <3>;
+>> +                       regulator-name = "i2s-audio-3v3";
+>> +                       regulator-min-microvolt = <3300000>;
+>> +                       regulator-max-microvolt = <3300000>;
+>> +                       regulator-always-on;
+>
+> No need to have this 'regulator-always-on'
+>
 
-Before caeb178c60f4f93f1b45c0bc056b5cf6d217b67f, the filtering of such use
-case was ensured by the following test in f_b_g
-if ((local->idle_cpus < busiest->idle_cpus) &&
-		    busiest->sum_nr_running  <= busiest->group_weight)
+why is there no need for 'regulator-alweys-on'? I see it in
+similar fixed regulator descriptions in imx6qdl-sabrelite.dtsi,
+imx6qdl-wandboard.dtsi, imx6qdl-nitrogen6x.dtsi and many other
+boards.
 
-This patch modified the condition to take into account situation where busiest
-group is not overloaded: If the diff between the number of idle cpus in 2
-groups is less than or equal to 1 and the busiest group is not overloaded,
-moving a task will not improve the load balance but just move it.
+>> +&ssi2 {
+>> +       fsl,mode = "i2s-slave";
+>
+> Please remove this 'fsl,mode' property. It is ignored by the fsl_ssi driver.
 
-A test with sysbench on a dual clusters of quad cores gives the following
-results:
-command: sysbench --test=cpu --num-threads=5 --max-time=5 run
-
-The HZ is 200 which means that 1000 ticks has fired during the test.
-
--With Mainline, perf gives the following figures
-
-Samples: 727  of event 'sched:sched_migrate_task'
-Event count (approx.): 727
-  Overhead  Command          Shared Object  Symbol
-  ........  ...............  .............  ..............
-    12.52%  migration/1      [unknown]      [.] 00000000
-    12.52%  migration/5      [unknown]      [.] 00000000
-    12.52%  migration/7      [unknown]      [.] 00000000
-    12.10%  migration/6      [unknown]      [.] 00000000
-    11.83%  migration/0      [unknown]      [.] 00000000
-    11.83%  migration/3      [unknown]      [.] 00000000
-    11.14%  migration/4      [unknown]      [.] 00000000
-    10.87%  migration/2      [unknown]      [.] 00000000
-     2.75%  sysbench         [unknown]      [.] 00000000
-     0.83%  swapper          [unknown]      [.] 00000000
-     0.55%  ktps65090charge  [unknown]      [.] 00000000
-     0.41%  mmcqd/1          [unknown]      [.] 00000000
-     0.14%  perf             [unknown]      [.] 00000000
-
--With this patch, perf gives the following figures
-
-Samples: 20  of event 'sched:sched_migrate_task'
-Event count (approx.): 20
-  Overhead  Command          Shared Object  Symbol
-  ........  ...............  .............  ..............
-    80.00%  sysbench         [unknown]      [.] 00000000
-    10.00%  swapper          [unknown]      [.] 00000000
-     5.00%  ktps65090charge  [unknown]      [.] 00000000
-     5.00%  migration/1      [unknown]      [.] 00000000
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-
----
-
-Change since v1:
-- reorder and rework the conditions
-
- kernel/sched/fair.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2a1e6ac..3bc67ba 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6425,13 +6425,14 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
- 
- 	if (env->idle == CPU_IDLE) {
- 		/*
--		 * This cpu is idle. If the busiest group load doesn't
--		 * have more tasks than the number of available cpu's and
--		 * there is no imbalance between this and busiest group
--		 * wrt to idle cpu's, it is balanced.
-+		 * This cpu is idle. If the busiest group is not overloaded
-+		 * and there is no imbalance between this and busiest group
-+		 * wrt idle cpus, it is balanced. The imbalance becomes
-+		 * significant if the diff is greater than 1 otherwise we
-+		 * might end up to just move the imbalance on another group
- 		 */
--		if ((local->idle_cpus < busiest->idle_cpus) &&
--		    busiest->sum_nr_running <= busiest->group_weight)
-+		if ((busiest->group_type != group_overloaded) &&
-+				(local->idle_cpus <= (busiest->idle_cpus + 1)))
- 			goto out_balanced;
- 	} else {
- 		/*
--- 
-1.9.1
-
+yes, thanks. It is present in Documentation but now I see that it
+was actually removed not that long ago. I will remove this
+property with next patchset.
