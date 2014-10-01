@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaJAVdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:33:00 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:33520 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412AbaJAVbd (ORCPT
+	id S1753371AbaJAVbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:31:31 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:39737 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007AbaJAVb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:31:33 -0400
+	Wed, 1 Oct 2014 17:31:28 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
@@ -17,9 +17,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
         Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
         Victor Wan <victor.wan@amlogic.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 3/6] ARM: dts: add dts for Tronsmart S89 Elite TV box
-Date: Wed,  1 Oct 2014 23:29:43 +0200
-Message-Id: <1412198986-26534-4-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH 1/6] ARM: meson: add meson8 machine definition
+Date: Wed,  1 Oct 2014 23:29:41 +0200
+Message-Id: <1412198986-26534-2-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
 References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
@@ -27,87 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a dts for the Tronsmart S89 Elite, a set-top box based on
-the Amlogic S802 SoC with a 8GiB NAND flash, USB ports, 10/100 Mbps
-Ethernet adapter, WiFi, HDMI and a micro SD slot.
+This patch adds a machine definition for Amlogic Meson8 SoCs.
 
 Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- arch/arm/boot/dts/meson8-vega-s89e.dts | 65 ++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
- create mode 100644 arch/arm/boot/dts/meson8-vega-s89e.dts
+ arch/arm/mach-meson/Kconfig | 5 +++++
+ arch/arm/mach-meson/meson.c | 8 ++++++++
+ 2 files changed, 13 insertions(+)
 
-diff --git a/arch/arm/boot/dts/meson8-vega-s89e.dts b/arch/arm/boot/dts/meson8-vega-s89e.dts
-new file mode 100644
-index 0000000..93c3dfd
---- /dev/null
-+++ b/arch/arm/boot/dts/meson8-vega-s89e.dts
-@@ -0,0 +1,65 @@
-+/*
-+ * Copyright 2014 Beniamino Galvani <b.galvani@gmail.com>
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ *     You should have received a copy of the GNU General Public License
-+ *     along with this program. If not, see <http://www.gnu.org/licenses/>.   
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
+diff --git a/arch/arm/mach-meson/Kconfig b/arch/arm/mach-meson/Kconfig
+index 2c1154e..b289e8e 100644
+--- a/arch/arm/mach-meson/Kconfig
++++ b/arch/arm/mach-meson/Kconfig
+@@ -10,4 +10,9 @@ config MACH_MESON6
+ 	default ARCH_MESON
+ 	select MESON6_TIMER
+ 
++config MACH_MESON8
++	bool "Amlogic Meson8 SoCs support"
++	default ARCH_MESON
++	select MESON6_TIMER
 +
-+
-+/dts-v1/;
-+/include/ "meson8.dtsi"
-+
-+/ {
-+	model = "Tronsmart Vega S89 Elite";
-+	compatible = "tronsmart,vega-s89e", "amlogic,meson8";
-+
-+	aliases {
-+		serial0 = &uart_AO;
-+	};
-+
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
+ endif
+diff --git a/arch/arm/mach-meson/meson.c b/arch/arm/mach-meson/meson.c
+index 5ee064f..e95d6ae 100644
+--- a/arch/arm/mach-meson/meson.c
++++ b/arch/arm/mach-meson/meson.c
+@@ -21,7 +21,15 @@ static const char * const m6_common_board_compat[] = {
+ 	NULL,
+ };
+ 
++static const char * const m8_common_board_compat[] = {
++	"amlogic,meson8",
++	NULL,
 +};
 +
-+&uart_AO {
-+	status = "okay";
-+};
+ DT_MACHINE_START(AML8726_MX, "Amlogic Meson6 platform")
+ 	.dt_compat	= m6_common_board_compat,
+ MACHINE_END
+ 
++DT_MACHINE_START(MESON8, "Amlogic Meson8 platform")
++	.dt_compat	= m8_common_board_compat,
++MACHINE_END
 -- 
 1.9.1
 
