@@ -1,333 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaJAOgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:36:47 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:56734 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968AbaJAOgn (ORCPT
+	id S1752180AbaJAOjD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:39:03 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:40439 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473AbaJAOi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:36:43 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/11] perf tools: Parse event per-package info files
-Date: Wed,  1 Oct 2014 15:36:24 +0100
-Message-Id: <1412174192-7010-4-git-send-email-matt@console-pimps.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
-References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
+	Wed, 1 Oct 2014 10:38:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdWA8zhBdT3QO9E8YinCFu3m943LenvYAO9A3F5y8RoSQQ@mail.gmail.com>
+References: <1412079987-1827-1-git-send-email-geert+renesas@glider.be>
+	<1412079987-1827-2-git-send-email-geert+renesas@glider.be>
+	<20140930160331.GN2548@arm.com>
+	<CAMuHMdWA8zhBdT3QO9E8YinCFu3m943LenvYAO9A3F5y8RoSQQ@mail.gmail.com>
+Date: Wed, 1 Oct 2014 08:38:58 -0600
+Message-ID: <CANLsYkycNPFafpet+qGv7LhCVN1qj+GfhVuNyW=1WpOc07S7ng@mail.gmail.com>
+Subject: Re: [PATCH/RFC v2 1/4] ARM: hw_breakpoint: Add arm_dbg_regs_available flag
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Russell King <linux@arm.linux.org.uk>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt.fleming@intel.com>
+On 1 October 2014 01:41, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Will,
+>
+> On Tue, Sep 30, 2014 at 6:03 PM, Will Deacon <will.deacon@arm.com> wrote:
+>> On Tue, Sep 30, 2014 at 01:26:24PM +0100, Geert Uytterhoeven wrote:
+>>> If power area D4, which contains the Coresight-ETM hardware block, is
+>>> powered down on R-Mobile A1 (r8a7740), the kernel crashes when
+>>> suspending from s2ram with:
+>>>
+>>>     Internal error: Oops - undefined instruction: 0 [#1] ARM
+>>>
+>>> This happens because dbg_cpu_pm_notify() calls reset_ctrl_regs(), which
+>>> can't access the debug registers as the debug module is powered down.
+>>>
+>>> As suggested by Russell King, track whether the ETM block is powered down
+>>> to fix this.
+>>>
+>>> The availability of the debug registers depends on the platform and its
+>>> state.  Hence provide a mechanism for platform code to indicate that the
+>>> debug registers are available or not, using a boolean flag that defaults
+>>> to true.
 
-In preparation for upcoming PMU drivers that support system-wide,
-per-package counters and hence report duplicate values, add support for
-parsing the .per-pkg file.
+I'm afraid the usage of the handle "arm,coresight-etm3x" is arbitrary
+here as what the code isn't related to an embedded trace module, but
+rather to the power domain that trace module happens to be in.  If we
+are to take that solution a handle name relate to the debug power
+domain is likely to be more appropriate.
 
-An event can export this info file to indicate that all but one value
-per socket should be discarded.
+>
+>> Whilst I guess this solves your problem, it doesn't feel like a scalable fix
+>> for something that can/will assumedly happen elsewhere in an SoC (e.g. PMU
+>> registers in perf). I'd much rather have a generic abstraction for power
+>> domains, which subsystems such as hw_breakpoint can attempt to take a
+>> reference on when they want to access registers in that domain.
+>
+> I agree this is a bit hackish, and not a long-term solution.
+>
+> As soon as the ARM debug/perf subsystem starts using devices instantiated
+> from DT, implementing PM runtime support, this will work out-of-the-box.
+> Until then, we cannot have proper support for the D4 PM domain on R-Mobile
+> SoCs, without hacks like this (or like never powering down the D4 PM domain
+> --- perhaps that's the way to go).
+>
+> I believe Mathieu is working on the former, but so far without converting
+> hw_breakpoint.c nor adding PM runtime support?
 
-The discarding is much easier to do in userspace than inside the kernel
-because the kernel cannot infer what userspace is going to do with the
-reported values, what order it will read them in, etc.
+Humm... At this time the coresight framework doesn't deal with PM
+runtime support.  It is something that's been on the list of things to
+do for a while now but I never had the time to get to it.  On the flip
+side I currently have two boards on my desk that need to interact with
+different debug domains to work properly and as such, the feature is
+bound to appear at some point.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- tools/perf/builtin-stat.c      | 79 +++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.c        |  6 +++-
- tools/perf/util/evsel.h        |  8 +++--
- tools/perf/util/parse-events.c |  1 +
- tools/perf/util/pmu.c          | 28 +++++++++++++++
- tools/perf/util/pmu.h          |  1 +
- 6 files changed, 118 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 53bd6b729498..5f1636e1f727 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -388,17 +388,89 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- }
- 
- /*
-+ * If 'evsel' is a per-socket event we may get duplicate values
-+ * reported. We need to discard all but one per-socket value.
-+ */
-+static bool counter_per_socket_skip(struct perf_evsel *evsel, int cpu, u64 val)
-+{
-+	struct cpu_map *map;
-+	int i, ncpus;
-+	int s1, s2;
-+
-+	map = perf_evsel__cpus(evsel);
-+	ncpus = map->nr;
-+
-+	s1 = cpu_map__get_socket(evsel_list->cpus, map->map[cpu]);
-+
-+	/*
-+	 * Read all CPUs for this socket and see if any already have
-+	 * value assigned.
-+	 */
-+	for (i = 0; i < ncpus; i++) {
-+		s2 = cpu_map__get_socket(evsel_list->cpus, map->map[i]);
-+		if (s1 != s2)
-+			continue;
-+
-+		if (evsel->counts->cpu[i].val)
-+			return true;
-+	}
-+
-+	/* Stash the counter value in unused ->counts */
-+	evsel->counts->cpu[cpu].val = val;
-+	return false;
-+}
-+
-+static bool aggr_per_socket_skip(struct perf_evsel *evsel, int cpu)
-+{
-+	struct cpu_map *map;
-+	int leader_cpu = -1;
-+	int i, ncpus;
-+	int s1, s2;
-+
-+	map = perf_evsel__cpus(evsel);
-+	ncpus = map->nr;
-+
-+	s1 = cpu_map__get_socket(evsel_list->cpus, map->map[cpu]);
-+
-+	/*
-+	 * Find the first enabled counter for this socket and skip
-+	 * everything else.
-+	 */
-+	for (i = 0; i < ncpus; i++) {
-+		s2 = cpu_map__get_socket(evsel_list->cpus, map->map[i]);
-+		if (s1 != s2)
-+			continue;
-+
-+		if (!evsel->counts->cpu[i].ena)
-+			continue;
-+
-+		leader_cpu = i;
-+		break;
-+	}
-+
-+	if (cpu == leader_cpu)
-+		return false;
-+
-+	return true;
-+}
-+
-+/*
-  * Read out the results of a single counter:
-  * aggregate counts across CPUs in system-wide mode
-  */
- static int read_counter_aggr(struct perf_evsel *counter)
- {
- 	struct perf_stat *ps = counter->priv;
-+	bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val) = NULL;
- 	u64 *count = counter->counts->aggr.values;
- 	int i;
- 
-+	if (counter->per_pkg)
-+		f_skip = counter_per_socket_skip;
-+
- 	if (__perf_evsel__read(counter, perf_evsel__nr_cpus(counter),
--			       thread_map__nr(evsel_list->threads), scale) < 0)
-+			       thread_map__nr(evsel_list->threads),
-+			       scale, f_skip) < 0)
- 		return -1;
- 
- 	for (i = 0; i < 3; i++)
-@@ -1129,6 +1201,11 @@ static void print_aggr(char *prefix)
- 			val = ena = run = 0;
- 			nr = 0;
- 			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
-+				if (counter->per_pkg) {
-+					if (aggr_per_socket_skip(counter, cpu))
-+						continue;
-+				}
-+
- 				cpu2 = perf_evsel__cpus(counter)->map[cpu];
- 				s2 = aggr_get_id(evsel_list->cpus, cpu2);
- 				if (s2 != id)
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e0868a901c4a..b4949956b38b 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -882,7 +882,8 @@ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- }
- 
- int __perf_evsel__read(struct perf_evsel *evsel,
--		       int ncpus, int nthreads, bool scale)
-+		       int ncpus, int nthreads, bool scale,
-+		       bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val))
- {
- 	size_t nv = scale ? 3 : 1;
- 	int cpu, thread;
-@@ -902,6 +903,9 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 				  &count, nv * sizeof(u64)) < 0)
- 				return -errno;
- 
-+			if (f_skip && f_skip(evsel, cpu, count.val))
-+				continue;
-+
- 			aggr->val += count.val;
- 			if (scale) {
- 				aggr->ena += count.ena;
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 7bc314be6a7b..c5441e547b28 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -87,6 +87,7 @@ struct perf_evsel {
- 	bool			immediate;
- 	bool			system_wide;
- 	bool			tracking;
-+	bool			per_pkg;
- 	/* parse modifier helper */
- 	int			exclude_GH;
- 	int			nr_members;
-@@ -253,7 +254,8 @@ static inline int perf_evsel__read_on_cpu_scaled(struct perf_evsel *evsel,
- }
- 
- int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
--		       bool scale);
-+		       bool scale,
-+		       bool (*f_skip)(struct perf_evsel *evsel, int cpu, u64 val));
- 
- /**
-  * perf_evsel__read - Read the aggregate results on all CPUs
-@@ -265,7 +267,7 @@ int __perf_evsel__read(struct perf_evsel *evsel, int ncpus, int nthreads,
- static inline int perf_evsel__read(struct perf_evsel *evsel,
- 				    int ncpus, int nthreads)
- {
--	return __perf_evsel__read(evsel, ncpus, nthreads, false);
-+	return __perf_evsel__read(evsel, ncpus, nthreads, false, NULL);
- }
- 
- /**
-@@ -278,7 +280,7 @@ static inline int perf_evsel__read(struct perf_evsel *evsel,
- static inline int perf_evsel__read_scaled(struct perf_evsel *evsel,
- 					  int ncpus, int nthreads)
- {
--	return __perf_evsel__read(evsel, ncpus, nthreads, true);
-+	return __perf_evsel__read(evsel, ncpus, nthreads, true, NULL);
- }
- 
- void hists__init(struct hists *hists);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 9522cf22ad81..e1d8025c46bc 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -672,6 +672,7 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	if (evsel) {
- 		evsel->unit = info.unit;
- 		evsel->scale = info.scale;
-+		evsel->per_pkg = info.per_pkg;
- 	}
- 
- 	return evsel ? 0 : -ENOMEM;
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 93a41ca96b8e..a08e8893b2e1 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -20,6 +20,7 @@ struct perf_pmu_alias {
- 	struct list_head list;  /* ELEM */
- 	char unit[UNIT_MAX_LEN+1];
- 	double scale;
-+	bool per_pkg;
- };
- 
- struct perf_pmu_format {
-@@ -173,6 +174,24 @@ error:
- 	return -1;
- }
- 
-+static int
-+perf_pmu__parse_per_pkg(struct perf_pmu_alias *alias, char *dir, char *name)
-+{
-+	char path[PATH_MAX];
-+	int fd;
-+
-+	snprintf(path, PATH_MAX, "%s/%s.per-pkg", dir, name);
-+
-+	fd = open(path, O_RDONLY);
-+	if (fd == -1)
-+		return -1;
-+
-+	close(fd);
-+
-+	alias->per_pkg = true;
-+	return 0;
-+}
-+
- static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FILE *file)
- {
- 	struct perf_pmu_alias *alias;
-@@ -191,6 +210,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	INIT_LIST_HEAD(&alias->terms);
- 	alias->scale = 1.0;
- 	alias->unit[0] = '\0';
-+	alias->per_pkg = false;
- 
- 	ret = parse_events_terms(&alias->terms, buf);
- 	if (ret) {
-@@ -204,6 +224,7 @@ static int perf_pmu__new_alias(struct list_head *list, char *dir, char *name, FI
- 	 */
- 	perf_pmu__parse_unit(alias, dir, name);
- 	perf_pmu__parse_scale(alias, dir, name);
-+	perf_pmu__parse_per_pkg(alias, dir, name);
- 
- 	list_add_tail(&alias->list, list);
- 
-@@ -219,6 +240,8 @@ static inline bool pmu_alias_info_file(char *name)
- 		return true;
- 	if (len > 6 && !strcmp(name + len - 6, ".scale"))
- 		return true;
-+	if (len > 8 && !strcmp(name + len - 8, ".per-pkg"))
-+		return true;
- 
- 	return false;
- }
-@@ -659,6 +682,8 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 	struct perf_pmu_alias *alias;
- 	int ret;
- 
-+	info->per_pkg = false;
-+
- 	/*
- 	 * Mark unit and scale as not set
- 	 * (different from default values, see below)
-@@ -678,6 +703,9 @@ int perf_pmu__check_alias(struct perf_pmu *pmu, struct list_head *head_terms,
- 		if (ret)
- 			return ret;
- 
-+		if (alias->per_pkg)
-+			info->per_pkg = true;
-+
- 		list_del(&term->list);
- 		free(term);
- 	}
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index fe90a012c003..82262eb90de8 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -28,6 +28,7 @@ struct perf_pmu {
- struct perf_pmu_info {
- 	const char *unit;
- 	double scale;
-+	bool per_pkg;
- };
- 
- struct perf_pmu *perf_pmu__find(const char *name);
--- 
-1.9.3
-
+>
+> Thanks for your understanding!
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
