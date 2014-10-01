@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870AbaJACHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 22:07:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56497 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750996AbaJACDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 22:03:13 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: linux-kernel@vger.kernel.org
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH v3 13/15] input: gpio_keys_polled - Add ACPI probing support
-Date: Wed, 01 Oct 2014 04:20:43 +0200
-Message-ID: <17237242.r7oKCjnQJM@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1852462.V1jlbi8OPt@vostro.rjw.lan>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1852462.V1jlbi8OPt@vostro.rjw.lan>
+	id S1751751AbaJACNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 22:13:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:60834 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972AbaJACNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 22:13:11 -0400
+Date: Wed, 1 Oct 2014 04:13:04 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Puthikorn Voravootivat <puthik@chromium.org>
+Cc: linux-pm@vger.kernel.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Gwendal Grignou <gwendal@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>, Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH] bq27x00_battery: Fix flag reading for bq27742
+Message-ID: <20141001021303.GB29082@earth.universe>
+References: <1412101136-26037-1-git-send-email-puthik@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="Y7xTucakfITjPcLV"
+Content-Disposition: inline
+In-Reply-To: <1412101136-26037-1-git-send-email-puthik@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Allow the driver to probe from ACPI namespace.
+--Y7xTucakfITjPcLV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/input/keyboard/gpio_keys_polled.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+Hi,
 
-Index: linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-===================================================================
---- linux-pm.orig/drivers/input/keyboard/gpio_keys_polled.c
-+++ linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-@@ -181,6 +181,12 @@ static const struct of_device_id gpio_ke
- };
- MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
- 
-+static const struct acpi_device_id gpio_keys_polled_acpi_match[] = {
-+	{ "PRP0001" }, /* Device Tree shoehorned into ACPI */
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, gpio_keys_polled_acpi_match);
-+
- static int gpio_keys_polled_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -309,6 +315,7 @@ static struct platform_driver gpio_keys_
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
- 		.of_match_table = gpio_keys_polled_of_match,
-+		.acpi_match_table = gpio_keys_polled_acpi_match,
- 	},
- };
- module_platform_driver(gpio_keys_polled_driver);
+On Tue, Sep 30, 2014 at 11:18:56AM -0700, Puthikorn Voravootivat wrote:
+> This patch fix the following issues.
+> - Flag for bq27742 is 2 bytes contracy to 1 byte for older hardware
+> - Don't read FLAG_CI as bq27742 does not have it
+> - Use Battery full capacity register as last measure discharge
+>=20
+> Signed-off-by: Puthikorn Voravootivat <puthik@chromium.org>
+> Reviewed-by: Benson Leung <bleung@chromium.org>
 
+http://git.infradead.org/battery-2.6.git/commit/a3c0c3e79066c78b890c078998c=
+8c6bd577f1d21
+
+-- Sebastian
+
+--Y7xTucakfITjPcLV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUK2MvAAoJENju1/PIO/qaSlYP+wchEhc+6swMvKhFo/fAQoSe
+rDQVaHnh1hq99+WcZ1RTzBExus9VgAvNx4FEVUvK54tAvn11hIMYjreQK0a4x9/a
+1FWTkGHDmuwV7xnBcBUhv7hxO7+pjYJHdIrrVxZLVyyXmZmAafE86N+7/gGaLl99
+YNKQtVjKEXemvD8FPuOHHVqd7eCl5nzSYVqXvBsFCeDfQN2K2L8erdfZr3+fgIes
+fukfAJq+dV8MPLnqEXNGJUetTPl1ybf9vJZ6o35zv5SdVIVoJ6MNDj1AQJgGQbP3
+gK2J8btpRwj9YeuRIs3mpR7gTgEowCZrEZ6MoL6vxmmaa30vQ1BC3Jy0qtlQtvek
+hCvBr8PSz+PmbfaL3Zf1fPtMr3PavVIZT+UCUy5c8JMg8At4upBj0pUKNdwKUv+Y
+ewKILVSHCeIBr8RkhAhtocJaG+1VYptDGLD+9gSt168o5hwb6g2X2jv3y7OXcwa3
+ZhDx+yVRgybfDEVrXpK+VjVZquNM2PVviozx7ETZx50zxbrnCG6q2ZiqctgaRiPA
+lOwzxK8cck6+KhNgIgLZ8fHHHrchogOvvnEJqaEqJWdycy8PcX/hJ01NtpZrLgq6
+4v5BMVyVjxXDLT7huLaKkYLwM3GEDiFtQNVaqxyuO5A6wMNqNeXtLEhbfT+ophKT
+y8Q3Z9GXpJI/UuDaX8tO
+=47o8
+-----END PGP SIGNATURE-----
+
+--Y7xTucakfITjPcLV--
