@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaJAQab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:30:31 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40713 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbaJAQa3 (ORCPT
+	id S1752611AbaJAQai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:30:38 -0400
+Received: from smtp-out-223.synserver.de ([212.40.185.223]:1060 "EHLO
+	smtp-out-223.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaJAQaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:30:29 -0400
-Date: Wed, 1 Oct 2014 09:30:25 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 10/15] leds: leds-gpio: Add ACPI probing support
-Message-ID: <20141001163025.GE23115@dtor-glaptop>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1852462.V1jlbi8OPt@vostro.rjw.lan>
- <4835699.XutTNxriDg@vostro.rjw.lan>
- <2780318.hxubhI9Rvq@wuerfel>
+	Wed, 1 Oct 2014 12:30:35 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 1636
+Message-ID: <542C2C34.6080408@metafoo.de>
+Date: Wed, 01 Oct 2014 18:30:44 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2780318.hxubhI9Rvq@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Murphy <dmurphy@ti.com>, broonie@kernel.org,
+        gregkh@linuxfoundation.org
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] regmap: Allow read_reg_mask to be 0
+References: <1412093220-24690-1-git-send-email-dmurphy@ti.com> <542B1ABE.5000900@metafoo.de> <542B1E38.4020702@ti.com> <542B20BE.3060200@metafoo.de> <542BE804.5010007@ti.com>
+In-Reply-To: <542BE804.5010007@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 10:13:04AM +0200, Arnd Bergmann wrote:
-> On Wednesday 01 October 2014 04:17:02 Rafael J. Wysocki wrote:
-> > Index: linux-pm/drivers/leds/leds-gpio.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/leds/leds-gpio.c
-> > +++ linux-pm/drivers/leds/leds-gpio.c
-> > @@ -231,6 +231,13 @@ static const struct of_device_id of_gpio
-> >  
-> >  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
-> >  
-> > +static const struct acpi_device_id acpi_gpio_leds_match[] = {
-> > +       { "PRP0001" }, /* Device Tree shoehorned into ACPI */
-> > +       {},
-> > +};
-> > +
-> > +MODULE_DEVICE_TABLE(acpi, acpi_gpio_leds_match);
-> > +
-> >  static int gpio_led_probe(struct platform_device *pdev)
-> >  {
-> >         struct gpio_led_platform_data *pdata = dev_get_platdata(&pdev->dev);
-> > @@ -286,6 +293,7 @@ static struct platform_driver gpio_led_d
-> >                 .name   = "leds-gpio",
-> >                 .owner  = THIS_MODULE,
-> >                 .of_match_table = of_gpio_leds_match,
-> > +               .acpi_match_table = acpi_gpio_leds_match,
-> >         },
-> >  };
-> 
-> Is this something you'd have to do in every driver you want to support
-> _PRP based probing? For the ".acpi_match_table =" reference, I think
-> you could actually provide a generic acpi_device_id table exported from
-> core code that you refer to, so each driver just does
-> 
-> 	.acpi_match_table = acpi_match_by_of_compatible,
+On 10/01/2014 01:39 PM, Dan Murphy wrote:
+> Lars
+>
+> On 09/30/2014 04:29 PM, Lars-Peter Clausen wrote:
+>> On 09/30/2014 11:18 PM, Dan Murphy wrote:
+>>> Lars
+>>>
+>>> On 09/30/2014 04:03 PM, Lars-Peter Clausen wrote:
+>>>> On 09/30/2014 06:07 PM, Dan Murphy wrote:
+>>>>> There may be spi devices that do not require a
+>>>>> register read mask to read the registers.
+>>>>>
+>>>>> Currently the code sets the read mask based on
+>>>>> a non-zero value passed in from the driver or if that
+>>>>> value is 0 sets the read mask to 0x80.
+>>>>
+>>>> It only sets it to the bus default if both read_flag_mask and write_flag_mask are 0. The assumption is that both of them being zero is a invalid configuration and either of them (or both) have to be non-zero for proper operation, since otherwise the device can't tell the difference between a read and a write.
+>>>>
+>>>> Do you have a device where both the read and the write mask is 0?
+>>>>
+>>>> - Lars
+>>>
+>>> Yes I do have a device that the read/write mask are both 0.
+>>>
+>>> The device, which is already in production, has a specific control register that sets either the reading or writing of the rest of the registers.
+>>>
+>>> Here is the data sheet
+>>>
+>>> http://www.ti.com/lit/ds/symlink/afe4403.pdf
+>>>
+>>> See page 61 control0.
+>>>
+>>> Driver is written for this part just want to get this lead patch in or maybe an alternate solution.
+>>
+>> Looking at this the generic SPI regmap implementation might not necessarily be the best thing to use here and you are probably better of implementing either your own regmap bus or reg_read/reg_write callbacks that automatically set/clear the SPI_READ bit in the control register depending on the operation.
+>>
+>> - Lars
+>
+> I am not sure implementing a different SPI regmap implementation is really the best thing.
+> I am handling this control bit toggling in the peripheral driver.
 
-No, I think in absence of drv->acpi_match_table ACPI core should just go and
-use drv->of_match_table to do the matching and be done with it.
+This is the very thing that regmap is supposed to hide, the specifics of how 
+the read or write access happens. regmap_read() is supposed to do a read, 
+regmap_write() is supposed to do a write. If regmap_read() only does a write 
+if you previously did a regmap_write(regmap, CTRL0, SPI_READ); then the 
+semantics of the interface are broken. This means you can't use generic 
+infrastructure and it will confuse people who read and review your code.
 
-Thanks.
-
--- 
-Dmitry
+- Lars
