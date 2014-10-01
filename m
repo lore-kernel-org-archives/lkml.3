@@ -1,213 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaJADMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 23:12:22 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49131 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042AbaJADMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 23:12:20 -0400
-Message-ID: <542B70D4.8040001@roeck-us.net>
-Date: Tue, 30 Sep 2014 20:11:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751959AbaJADOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 23:14:33 -0400
+Received: from ozlabs.org ([103.22.144.67]:53449 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751120AbaJADOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 23:14:32 -0400
+Date: Wed, 1 Oct 2014 13:14:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: linux-next: manual merge of the vfio tree with the pci tree
+Message-ID: <20141001131421.64cab8d7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Feng Kan <fkan@apm.com>, dbaryshkov@gmail.com, catalin.marinas@arm.com,
-        dwmw2@infradead.org, arnd@arndb.de, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@apm.com, linux-pm@vger.kernel.org, will.deacon@arm.com
-Subject: Re: [PATCH RESEND V9 1/6] power: reset: Add generic SYSCON register
- mapped reset
-References: <1412119508-22864-1-git-send-email-fkan@apm.com> <1412119508-22864-2-git-send-email-fkan@apm.com>
-In-Reply-To: <1412119508-22864-2-git-send-email-fkan@apm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.542B7114.0077,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/R6xja8/XDl+3OX_S3xS3fFJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2014 04:25 PM, Feng Kan wrote:
-> Add a generic SYSCON register mapped reset mechanism.
->
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->   drivers/power/reset/Kconfig         |  5 ++
->   drivers/power/reset/Makefile        |  1 +
->   drivers/power/reset/syscon-reboot.c | 96 +++++++++++++++++++++++++++++++++++++
->   3 files changed, 102 insertions(+)
->   create mode 100644 drivers/power/reset/syscon-reboot.c
->
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index 1915dde..a863fa1 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -143,4 +143,9 @@ config POWER_RESET_KEYSTONE
->   	help
->   	  Reboot support for the KEYSTONE SoCs.
->
-> +config POWER_RESET_SYSCON
-> +	bool "Generic SYSCON regmap reset driver"
-> +	depends on POWER_RESET && MFD_SYSCON && OF
+--Sig_/R6xja8/XDl+3OX_S3xS3fFJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Other drivers have
-	select MFD_SYSCON
+Hi Alex,
 
-> +	help
-> +	  Reboot support for generic SYSCON mapped register reset.
->   endif
-> diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-> index 01e401d..76ce1c5 100644
-> --- a/drivers/power/reset/Makefile
-> +++ b/drivers/power/reset/Makefile
-> @@ -16,3 +16,4 @@ obj-$(CONFIG_POWER_RESET_VERSATILE) += arm-versatile-reboot.o
->   obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
->   obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
->   obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
-> +obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
-> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
-> new file mode 100644
-> index 0000000..948e0ee
-> --- /dev/null
-> +++ b/drivers/power/reset/syscon-reboot.c
-> @@ -0,0 +1,96 @@
-> +/*
-> + * Generic Syscon Reboot Driver
-> + *
-> + * Copyright (c) 2013, Applied Micro Circuits Corporation
-> + * Author: Feng Kan <fkan@apm.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation; either version 2 of
-> + * the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +#include <linux/io.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_address.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/notifier.h>
+Today's linux-next merge of the vfio tree got a conflict in
+drivers/pci/msi.c between commits a160fe94cb53 ("PCI/MSI: Remove unused
+get_cached_msi_msg()") and 18ef822c59f6 ("PCI/MSI: Rename
+__get_cached_msi_msg() to get_cached_msi_msg()") from the pci tree and
+commit 3b307ffe3faa ("PCI: Export MSI message relevant functions") from
+the vfio tree.
 
-alphabetic order of include files ?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).  And then I added this merge fix patch (I should probably
+also have added an include of linux/irq.h):
 
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
-> +#include <linux/reboot.h>
-> +
-> +struct syscon_reboot_context {
-> +	struct regmap *map;
-> +	u32 offset;
-> +	u32 mask;
-> +	struct notifier_block restart_handler;
-> +};
-> +
-> +static struct syscon_reboot_context *syscon_reboot_ctx;
-> +
-> +static int syscon_restart_handle(struct notifier_block *this,
-> +					unsigned long mode, void *cmd)
-> +{
-> +	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 1 Oct 2014 13:09:58 +1000
+Subject: [PATCH] vfio: update for get_cached_msi_msg API change
 
-Since restart_handler is part of syscon_reboot_context, you
-do not need a static variable. You can use
-	struct syscon_reboot_context *ctx = container_of(ctx, struct syscon_reboot_context, restart_handler);
-instead.
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/vfio/pci/vfio_pci_intrs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +	unsigned long timeout;
-> +
-> +	/* Issue the reboot */
-> +	if (ctx->map)
-> +		regmap_write(ctx->map, ctx->offset, ctx->mask);
-> +
-The check for ctx->map is not needed. If the restart handler is installed,
-it will always be valid.
+diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_=
+intrs.c
+index 553212f037c3..a068bb0d69e5 100644
+--- a/drivers/vfio/pci/vfio_pci_intrs.c
++++ b/drivers/vfio/pci/vfio_pci_intrs.c
+@@ -559,7 +559,7 @@ static int vfio_msi_set_vector_signal(struct vfio_pci_d=
+evice *vdev,
+ 	if (msix) {
+ 		struct msi_msg msg;
+=20
+-		get_cached_msi_msg(irq, &msg);
++		get_cached_msi_msg(irq_get_msi_desc(irq), &msg);
+ 		write_msi_msg(irq, &msg);
+ 	}
+=20
+--=20
+2.1.1
 
-> +	timeout = jiffies + HZ;
-> +	while (time_before(jiffies, timeout))
-> +		cpu_relax();
-> +
-jiffies won't work here, and nothing else is expected to happen.
-Just use mdelay(1000);
 
-> +	pr_emerg("Unable to restart system\n");
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static int syscon_reboot_probe(struct platform_device *pdev)
-> +{
-> +	struct syscon_reboot_context *ctx;
-> +	struct device *dev = &pdev->dev;
-> +	int err;
-> +
-> +	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-> +	if (!ctx)
-> +		return -ENOMEM;
-> +
-> +	ctx->map = syscon_regmap_lookup_by_phandle(dev->of_node, "regmap");
-> +	if (IS_ERR(ctx->map))
-> +		return PTR_ERR(ctx->map);
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "offset", &ctx->offset))
-> +		return -EINVAL;
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "mask", &ctx->mask))
-> +		return -EINVAL;
-> +
-> +	ctx->restart_handler.notifier_call = syscon_restart_handle;
-> +	ctx->restart_handler.priority = 128;
-> +	err = register_restart_handler(&ctx->restart_handler);
-> +	if (err)
-> +		dev_err(dev, "can't register restart notifier (err=%d)\n", err);
-> +
-> +	syscon_reboot_ctx = ctx;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id syscon_reboot_of_match[] = {
-> +	{ .compatible = "syscon-reboot" },
-> +	{}
-> +};
-> +
-> +static struct platform_driver syscon_reboot_driver = {
-> +	.probe = syscon_reboot_probe,
-> +	.driver = {
-> +		.name = "syscon-reboot",
-> +		.of_match_table = syscon_reboot_of_match,
-> +	},
-> +};
-> +module_platform_driver(syscon_reboot_driver);
->
+Someone needs to remember to send this fix to Linus when these 2 trees
+are merged into his tree ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/pci/msi.c
+index d077749df25b,e468d65eb238..000000000000
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@@ -288,6 -305,14 +288,7 @@@ void get_cached_msi_msg(struct msi_des
+ =20
+  	*msg =3D entry->msg;
+  }
+ -
+ -void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg)
+ -{
+ -	struct msi_desc *entry =3D irq_get_msi_desc(irq);
+ -
+ -	__get_cached_msi_msg(entry, msg);
+ -}
++ EXPORT_SYMBOL_GPL(get_cached_msi_msg);
+ =20
+  void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
+  {
+
+--Sig_/R6xja8/XDl+3OX_S3xS3fFJ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUK3GVAAoJEMDTa8Ir7ZwV7b8QAI9ZgnIv/X9KNo8RGn5CONJu
+qWMAuGbfXtXdXM8QymrtjELB9Qx5+Hk7sgUg2aOEIeN/r/AB4/2Mb762pzyiWybD
+1igGzwgTGZjNwT3s7hycj8wGFRdcsvI1dfzkYvIdpx1vhG5N9po7Nm05mFln1AeM
+MSTvCOdEiEnYAVPa020xgLZuaQgijv5F69H7iJHrn38x9DWU8RguKvCs7l7J0KmO
+MgM86Ut8qEWsBPuMoEklTIX3NYmH5hsaG2fK/flu7Yd7NIiO6j7unoDWOqnL/NH6
+LM8taEJ0rZecfL+M0zpWQb07roITTfaSyZbX0nIsJL9KOXPSA69u89u+TUYVcOmb
+a+rF836xmltOYQkJY7lIz2iL3VnGBVB+yOTdDa9vfFBM1zrjBZ5J902yKiemRkkz
+miFCN4Y6PusJe/behoQWMID508NnPaG8e3eONe8rWQ4wi/7+ZZzO/lW+KNo4ivZE
+a3rC8aFWFGW66b6uPdMeL99QNapwHdRJJWcMth6vZe2i/BtwFvytrOw1oUYSD2hn
+UZrd7I2Tmyi5Hy2RupYs5J3NGKhtevEgIT4P9BRQ6CLtNcf3laC0zJxhWKFtZFrv
+FcSVUOD+hIx+rx/NbNkoj8MTCXOnmRjps0KTQPcSwbDAg4Jz/YvS/IjtNYLM6yqp
+8uqYnjLjbEa+z2jNrR0C
+=6koS
+-----END PGP SIGNATURE-----
+
+--Sig_/R6xja8/XDl+3OX_S3xS3fFJ--
