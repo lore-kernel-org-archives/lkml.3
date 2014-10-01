@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbaJASFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:05:19 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:44093 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780AbaJASFS (ORCPT
+	id S1752357AbaJASII (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:08:08 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57253 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaJASIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:05:18 -0400
-Date: Wed, 1 Oct 2014 11:05:10 -0700
-From: josh@joshtriplett.org
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Rob Landley <rob@landley.net>, frowand.list@gmail.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-Message-ID: <20141001180510.GA28540@cloud>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
- <542B4DA3.5080105@gmail.com>
- <542B519B.6010001@landley.net>
- <542B5E44.40303@gmail.com>
- <542B7200.6030902@landley.net>
- <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
+	Wed, 1 Oct 2014 14:08:07 -0400
+Date: Wed, 1 Oct 2014 19:07:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Romain Perier <romain.perier@gmail.com>
+Cc: devicetree@vger.kernel.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, heiko@sntech.de
+Message-ID: <20141001180759.GH4273@sirena.org.uk>
+References: <1412098186-5042-1-git-send-email-romain.perier@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="F/Utwcm1z9NLCQJH"
 Content-Disposition: inline
-In-Reply-To: <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1412098186-5042-1-git-send-email-romain.perier@gmail.com>
+X-Cookie: So you're back... about time...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC][PATCH 1/4] regulator: Add helper function to get
+ "poweroff-source" property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 09:53:56PM -0700, Andy Lutomirski wrote:
-> I significantly prefer default N.  Scripts that play with init= really
-> don't want the fallback, and I can imagine contexts in which it could
-> be a security problem.
 
-While I certainly would prefer the non-fallback behavior for init as
-well, standard kernel practice has typically been to use "default y" for
-previously built-in features that become configurable.  And I'd
-certainly prefer a compile-time configuration option like this (even
-with default y) over a "strictinit" kernel command-line option.
+--F/Utwcm1z9NLCQJH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- Josh Triplett
+On Tue, Sep 30, 2014 at 05:29:43PM +0000, Romain Perier wrote:
+
+> +/**
+> + * of_get_regulator_poweroff_source - Get poweroff-source for given device_node
+> + * @np: Pointer to the given device_node
+> + *
+> + * return true if present false otherwise
+> + */
+> +bool of_get_regulator_poweroff_source(const struct device_node *np)
+> +{
+> +	return of_property_read_bool(np, "poweroff-source");
+> +}
+> +EXPORT_SYMBOL_GPL(of_get_regulator_poweroff_source);
+
+This isn't really a regulator specific thing - it's common for the
+actual implementation to be to simply cut power but it could be
+something that doesn't look like a regulator doing it like a system
+monitor.  I'd rename this to something like is_system_poweroff_source().
+
+You probably also want to CC the DT maintainers on this and add some
+documentation of this as a standard property, not entirely sure where
+exactly but I'm sure the DT people could advise.
+
+--F/Utwcm1z9NLCQJH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJULEL+AAoJECTWi3JdVIfQuUoH/3OwQcmOJqD1LIk0cl0vDcO4
+99Lu87MH012JMB/WImwSCMAAYbSvjv46SrljzL1rqb6nSAQqj03ITOT/VfZPldFE
+v86CXC4ENUqXCdjCtC0KyHtfDSkj0v10NTTFhzUz4eKwESadOZFVeADv9CE4yfbz
+vqt59Ja/Zfhq4meMvFj9svEWm8xs3DD0VSL4Rip/oUCXeeMZIlUJzQRwnTwMj174
+mbsPyswowvuRuyigYnxDSw7P/3iq2ILyHwvzh8blAyeey5E7trpq3KDfBdDmf3ou
+D9QPTuY7aA7r4QMpLHqixviutucIqaFQs0YH0YqSYDWRDMwY6sA2bG6ymVykoxo=
+=emsi
+-----END PGP SIGNATURE-----
+
+--F/Utwcm1z9NLCQJH--
