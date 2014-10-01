@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaJAVux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:50:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517AbaJAVuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:50:02 -0400
-From: "Herton R. Krzesinski" <herton@redhat.com>
-To: Chien Yen <chien.yen@oracle.com>
-Cc: rds-devel@oss.oracle.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        rmanes@redhat.com, dledford@redhat.com
-Subject: [PATCH 2/3] net/rds: do proper house keeping if connection fails in rds_tcp_conn_connect
-Date: Wed,  1 Oct 2014 18:49:53 -0300
-Message-Id: <1412200194-28902-3-git-send-email-herton@redhat.com>
-In-Reply-To: <1412200194-28902-1-git-send-email-herton@redhat.com>
-References: <1412200194-28902-1-git-send-email-herton@redhat.com>
+	id S1753995AbaJAVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:50:56 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50709 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753517AbaJAVuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 17:50:54 -0400
+Date: Wed, 1 Oct 2014 22:50:43 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp
+	implementations
+Message-ID: <20141001215043.GS5182@n2100.arm.linux.org.uk>
+References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org> <1411076592-6157-3-git-send-email-sboyd@codeaurora.org> <20140918224625.GF5182@n2100.arm.linux.org.uk> <541C74C1.9060504@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <541C74C1.9060504@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see two problems if we consider the sock->ops->connect attempt to fail in
-rds_tcp_conn_connect. The first issue is that for example we don't remove the
-previously added rds_tcp_connection item to rds_tcp_tc_list at
-rds_tcp_set_callbacks, which means that on a next reconnect attempt for the
-same rds_connection, when rds_tcp_conn_connect is called we can again call
-rds_tcp_set_callbacks, resulting in duplicated items on rds_tcp_tc_list,
-leading to list corruption: to avoid this just make sure we call
-properly rds_tcp_restore_callbacks before we exit. The second issue
-is that we should also release the sock properly, by setting sock = NULL
-only if we are returning without error.
+On Fri, Sep 19, 2014 at 11:24:01AM -0700, Stephen Boyd wrote:
+> Thank you for the warm welcome! I looked at the TRMs for ARM11 and ARM9.
+> I can't find anywhere where VFPv2 is supported and these bits are set.
+> 
+> Bits 22-16 of FPSID:
+> 
+> ARM1136r1p5:     0x01
+> ARM1136r1p3:     0x01
+> ARM1176:         0x01
+> ARM11MPCorer2p0: 0x01
+> ARM11MPCorer1p0: 0x01
+> ARM1156:         0x01
+> ARM9:            0x01
+> 
+> 
+> Do you, or anyone else, know of other implementations? I *hope* that
+> this same exercise was done by the VFP architects before they
+> re-purposed bits but who knows. If nobody is actually setting these
+> higher bits then is there any problem widening the mask (besides it
+> being slightly confusing)?
 
-Signed-off-by: Herton R. Krzesinski <herton@redhat.com>
----
- net/rds/tcp_connect.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+There are certainly non-ARM implementations around, eg:
 
-diff --git a/net/rds/tcp_connect.c b/net/rds/tcp_connect.c
-index a65ee78..f9f564a 100644
---- a/net/rds/tcp_connect.c
-+++ b/net/rds/tcp_connect.c
-@@ -106,11 +106,14 @@ int rds_tcp_conn_connect(struct rds_connection *conn)
- 	rds_tcp_set_callbacks(sock, conn);
- 	ret = sock->ops->connect(sock, (struct sockaddr *)&dest, sizeof(dest),
- 				 O_NONBLOCK);
--	sock = NULL;
- 
- 	rdsdebug("connect to address %pI4 returned %d\n", &conn->c_faddr, ret);
- 	if (ret == -EINPROGRESS)
- 		ret = 0;
-+	if (ret == 0)
-+		sock = NULL;
-+	else
-+		rds_tcp_restore_callbacks(sock, conn->c_transport_data);
- 
- out:
- 	if (sock)
+VFP support v0.3: implementor 56 architecture 2 part 20 variant 9 rev 5
+
+which is from Marvell Dove.  I don't know how the other Marvell offerings
+identify.  I wouldn't be surprised if there were other implementations
+from other vendors too.
+
+However, if we do have any implementation which indicates that it does
+not support both single and double precision ops (bit 20), then today
+the VFP support code refuses to initialise, and the system will behave
+as if there is no VFP present.
+
+So, the problem case is whether we do have non-ARM produced implementations
+where the VFP code refuses to init, which would then be misidentified as
+some insane architecture version.
+
 -- 
-1.9.3
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
