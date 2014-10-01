@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaJARkK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:40:10 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38309 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414AbaJARkA (ORCPT
+	id S1753518AbaJARkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:40:20 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57375 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505AbaJARkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:40:00 -0400
-Subject: [PATCH v2 2/5] perf/sdt: Add SDT events into a cache
+	Wed, 1 Oct 2014 13:40:15 -0400
+Subject: [PATCH v2 5/5] perf/sdt: Add support to perf record to trace SDT
+ events
 To: linux-kernel@vger.kernel.org
 From: Hemant Kumar <hemant@linux.vnet.ibm.com>
 Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
@@ -15,8 +16,8 @@ Cc: srikar@linux.vnet.ibm.com, peterz@infradead.org, oleg@redhat.com,
         systemtap@sourceware.org, namhyung@kernel.org,
         masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
         penberg@iki.fi
-Date: Wed, 01 Oct 2014 08:17:48 +0530
-Message-ID: <20141001024734.28985.15086.stgit@hemant-fedora>
+Date: Wed, 01 Oct 2014 08:18:58 +0530
+Message-ID: <20141001024847.28985.62580.stgit@hemant-fedora>
 In-Reply-To: <20141001023723.28985.39736.stgit@hemant-fedora>
 References: <20141001023723.28985.39736.stgit@hemant-fedora>
 User-Agent: StGit/0.16
@@ -25,913 +26,756 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100117-0005-0000-0000-000000C686EB
+x-cbid: 14100117-0017-0000-0000-00000176950F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new sub-command to perf : sdt-cache.
-sdt-cache command can be used to add, remove and dump SDT events.
-This patch adds support to only "add" the SDT events. The rest of the
-patches add support to rest of them.
+The SDT events are already stored in a cache file
+(/var/cache/perf/perf-sdt-file.cache).
+Although the file_hash table helps in addition or deletion of SDT events from the
+cache, its not of much use when it comes to probing the actual SDT event, because the
+key to this hash list is a file name and not the SDT event name (which is given as
+an argument to perf record). So, we won't be able to hash into it.
 
-When user invokes "perf sdt-cache add <file-name>", two hash tables are
-created: file_hash list and event_hash list. A typical entry in a file_hash
-table looks like:
-            file hash      file_sdt_ent     file_sdt_ent
-            |---------|   ---------------   -------------
-            | list  ==|===|=>file_list =|===|=>file_list=|==..
-key = 644 =>|         |   | sbuild_id   |   | sbuild_id  |
-            |---------|   | name        |   | name       |
-            |	      |   | sdt_list    |   | sdt_list   |
-key = 645 =>| list    |   |   ||        |   |    ||      |
-            |---------|   ---------------   --------------
-	        ||            ||                 || Connected to SDT notes
-	                  ---------------
-			  |  note_list  |
-		  sdt_note|  name       |
-			  |  provider	|
-         		  -----||--------
-		  connected to other SDT notes
+To avoid this problem, we can create another hash list
+"event_hash" list which will be maintained along with the file_hash list.
+Whenever a user invokes 'perf record -e %provider:event, perf should initialize
+the event_hash list and the file_hash list.
+The key to event_hash list is calculated from the event name and its
+provider name.
+
+            event_hash       sdt_note
+            |---------|   ----------------
+            |         |   |   file_ptr   |==> to file_sdt_ent containing this note
+key = 129 =>| list  ==|===|=> event_list=|==> to other sdt notes hashed to same entry
+	    |         |   |   name       |
+            |---------|   |   provider   |
+            |	      |   |   note_list==|==> to other notes in the same file
+key = 130 =>| list    |   ---------------
+            |---------|
+
+The entry at that key in event_hash contains a list of SDT notes hashed to the
+same entry. It compares the name and provider to see if that is the SDT note we
+are looking for. If yes, find out the file that contains this SDT note. There is
+a file_ptr pointer embedded in this note which points to the struct file_sdt_ent
+contained in the file_hash. From "file_sdt_ent" we will find out the file name.
+Convert this sdt note into a perf event and then write this into uprobe_events
+file to be able to record the event.
+Then, corresponding entries are added to uprobe_events file for
+the SDT events.
+After recording is done, these events are silently deleted from uprobe_events
+file. The uprobe_events file is present in debugfs/tracing directory.
+
+To support the addition and deletion of SDT events to/from uprobe_events
+file, a record_sdt struct is maintained which has the event data.
+
+An example usage:
+
+# ./perf record -e %user_app:fun_start -aR /home/user_app
+
+In main
+This is foo
+This is fun
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.265 MB perf.data (~11581 samples) ]
+
+# ./perf report --stdio
+...
+# To display the perf.data header info, please use --header/--header-only options.
+#
+# Samples: 1  of event 'user_app:fun_start'
+# Event count (approx.): 1
+#
+# Overhead   Command  Shared Object   Symbol
+# ........  ........  .............  .......
+#
+   100.00%  user_app  user_app       [.] fun
 
 
-Each entry of the file_hash table is a list which connects to file_list in
-file_sdt_ent. file_sdt_ent is allocated per file whenever a file is mapped
-to file_hash list. File name serves as the key to this hash table.
-If a file is added to this hash list, a file_sdt_ent is allocated and a
-list of SDT events in that file is created and assigned to sdt_list of
-file_sdt_ent.
-
-Example usage :
-# ./perf sdt-cache --add /home/user_app
-
-4 events added for /home/user_app!
-
-# ./perf sdt-cache --add /lib64/libc.so.6
-
-8 events added for /usr/lib64/libc-2.16.so!
+Multiple events can also be recorded simultaneously.
 
 Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
 ---
- tools/perf/Makefile.perf       |    3 
- tools/perf/builtin-sdt-cache.c |   59 ++++
- tools/perf/builtin.h           |    1 
- tools/perf/perf.c              |    1 
- tools/perf/util/parse-events.h |    2 
- tools/perf/util/probe-event.h  |    1 
- tools/perf/util/sdt.c          |  666 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/sdt.h          |   30 ++
- 8 files changed, 763 insertions(+)
- create mode 100644 tools/perf/builtin-sdt-cache.c
- create mode 100644 tools/perf/util/sdt.c
- create mode 100644 tools/perf/util/sdt.h
+ tools/perf/builtin-record.c    |   21 ++++
+ tools/perf/util/parse-events.c |    7 +
+ tools/perf/util/parse-events.h |    3 +
+ tools/perf/util/probe-event.c  |  120 ++++++++++++++++++++-----
+ tools/perf/util/probe-event.h  |    7 +
+ tools/perf/util/probe-finder.c |    3 +
+ tools/perf/util/sdt.c          |  194 ++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/symbol.h       |    2 
+ 8 files changed, 327 insertions(+), 30 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 262916f..09b3325 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -274,6 +274,7 @@ LIB_H += util/run-command.h
- LIB_H += util/sigchain.h
- LIB_H += util/dso.h
- LIB_H += util/symbol.h
-+LIB_H += util/sdt.h
- LIB_H += util/color.h
- LIB_H += util/values.h
- LIB_H += util/sort.h
-@@ -339,6 +340,7 @@ LIB_OBJS += $(OUTPUT)util/sigchain.o
- LIB_OBJS += $(OUTPUT)util/dso.o
- LIB_OBJS += $(OUTPUT)util/symbol.o
- LIB_OBJS += $(OUTPUT)util/symbol-elf.o
-+LIB_OBJS += $(OUTPUT)util/sdt.o
- LIB_OBJS += $(OUTPUT)util/color.o
- LIB_OBJS += $(OUTPUT)util/pager.o
- LIB_OBJS += $(OUTPUT)util/header.o
-@@ -458,6 +460,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-timechart.o
- BUILTIN_OBJS += $(OUTPUT)builtin-top.o
- BUILTIN_OBJS += $(OUTPUT)builtin-script.o
- BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-sdt-cache.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
- BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
-diff --git a/tools/perf/builtin-sdt-cache.c b/tools/perf/builtin-sdt-cache.c
-new file mode 100644
-index 0000000..3754896
---- /dev/null
-+++ b/tools/perf/builtin-sdt-cache.c
-@@ -0,0 +1,59 @@
-+/*
-+ * builtin-sdt-cache.c
-+ *
-+ * Builtin sdt command: Add/remove/show SDT events
-+ */
-+#include "builtin.h"
-+
-+#include "perf.h"
-+
-+#include "util/parse-events.h"
-+#include "util/cache.h"
-+#include "util/parse-options.h"
-+#include "symbol.h"
-+#include "debug.h"
-+
-+/* Session management structure */
-+static struct {
-+	bool add;
-+	const char *target;
-+} params;
-+
-+static int opt_add_sdt_events(const struct option *opt __maybe_unused,
-+			      const char *str, int unset __maybe_unused)
-+{
-+	params.add = true;
-+	params.target = str;
-+
-+	return 0;
-+}
-+
-+int cmd_sdt_cache(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	int ret;
-+	const struct option sdt_cache_options[] = {
-+		OPT_CALLBACK('a', "add", NULL, "filename",
-+			     "add SDT events from a file.",
-+			     opt_add_sdt_events),
-+		OPT_END()
-+	};
-+	const char * const sdt_cache_usage[] = {
-+		"perf sdt_cache --add filename",
-+		NULL
-+	};
-+
-+	argc = parse_options(argc, argv, sdt_cache_options,
-+			     sdt_cache_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+	setup_pager();
-+
-+	symbol__elf_init();
-+	if (params.add) {
-+		ret = add_sdt_events(params.target);
-+		if (ret < 0)
-+			pr_err("Cannot add SDT events to cache!\n");
-+	} else
-+		usage_with_options(sdt_cache_usage, sdt_cache_options);
-+	return 0;
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b210d62..2746358 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -37,6 +37,7 @@ extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
- extern int cmd_mem(int argc, const char **argv, const char *prefix);
-+extern int cmd_sdt_cache(int argc, const char **argv, const char *prefix);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 44c6f3d..43200b9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -45,6 +45,25 @@ struct record {
+ 	long			samples;
+ };
  
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
++/* Session specific to SDT tracing */
++struct record_sdt {
++	bool	sdt;	/* is this SDT event tracing? */
++	char	*str;	/* hold the event name */
++} rec_sdt;
++
++int trace_sdt_event(const char *str)
++{
++	int ret = 0;
++
++	rec_sdt.sdt = true;
++	rec_sdt.str = strdup(str);
++	if (!rec_sdt.str)
++		return -ENOMEM;
++	ret = event_hash_list__lookup(str);
++
++	return ret;
++}
++
+ static int record__write(struct record *rec, void *bf, size_t size)
+ {
+ 	if (perf_data_file__write(rec->session->file, bf, size) < 0) {
+@@ -874,6 +893,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	}
+ 
+ 	err = __cmd_record(&record, argc, argv);
++	if (rec_sdt.sdt)
++		err = remove_perf_sdt_events(rec_sdt.str);
+ out_symbol_exit:
+ 	perf_evlist__delete(rec->evlist);
+ 	symbol__exit();
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 61be3e6..d0731d4 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -902,6 +902,13 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
+ 
+ 	buffer = parse_events__scan_string(str, scanner);
+ 
++	/* '%' means it can be an SDT event */
++	if (*str == '%')
++		if (strchr(str, ':')) {
++			ret = event_hash_list__lookup(str);
++			str++;
++		}
++
+ #ifdef PARSER_DEBUG
+ 	parse_events_debug = 1;
  #endif
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 452a847..8db763d 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -52,6 +52,7 @@ static struct cmd_struct commands[] = {
- 	{ "sched",	cmd_sched,	0 },
- #ifdef HAVE_LIBELF_SUPPORT
- 	{ "probe",	cmd_probe,	0 },
-+	{ "sdt-cache",  cmd_sdt_cache,  0 },
- #endif
- 	{ "kmem",	cmd_kmem,	0 },
- 	{ "lock",	cmd_lock,	0 },
 diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index df094b4..e6efe2c 100644
+index 2297af7..52a163a 100644
 --- a/tools/perf/util/parse-events.h
 +++ b/tools/perf/util/parse-events.h
-@@ -109,4 +109,6 @@ extern int is_valid_tracepoint(const char *event_string);
+@@ -112,5 +112,8 @@ extern int valid_debugfs_mount(const char *debugfs);
+ int add_sdt_events(const char *file);
+ int dump_sdt_events(void);
+ int remove_sdt_events(const char *str);
++int event_hash_list__lookup(const char *str);
++int remove_perf_sdt_events(const char *str);
++int trace_sdt_event(const char *str);
  
- extern int valid_debugfs_mount(const char *debugfs);
- 
-+int add_sdt_events(const char *file);
-+
  #endif /* __PERF_PARSE_EVENTS_H */
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index be37b5a..5ac6069 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -363,7 +363,8 @@ error:
+ }
+ 
+ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+-					  int ntevs, const char *exec)
++					  int ntevs, const char *exec,
++					  struct perf_probe_event *pev)
+ {
+ 	int i, ret = 0;
+ 	unsigned long stext = 0;
+@@ -377,7 +378,10 @@ static int add_exec_to_probe_trace_events(struct probe_trace_event *tevs,
+ 
+ 	for (i = 0; i < ntevs && ret >= 0; i++) {
+ 		/* point.address is the addres of point.symbol + point.offset */
+-		tevs[i].point.address -= stext;
++		if (pev->sdt)
++			tevs[i].point.address = pev->point.offset;
++		else
++			tevs[i].point.address -= stext;
+ 		tevs[i].point.module = strdup(exec);
+ 		if (!tevs[i].point.module) {
+ 			ret = -ENOMEM;
+@@ -425,14 +429,14 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ /* Post processing the probe events */
+ static int post_process_probe_trace_events(struct probe_trace_event *tevs,
+ 					   int ntevs, const char *module,
+-					   bool uprobe)
++					   struct perf_probe_event *pev)
+ {
+ 	struct ref_reloc_sym *reloc_sym;
+ 	char *tmp;
+ 	int i;
+ 
+-	if (uprobe)
+-		return add_exec_to_probe_trace_events(tevs, ntevs, module);
++	if (pev->uprobes)
++		return add_exec_to_probe_trace_events(tevs, ntevs, module, pev);
+ 
+ 	/* Note that currently ref_reloc_sym based probe is not for drivers */
+ 	if (module)
+@@ -485,7 +489,7 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("Found %d probe_trace_events.\n", ntevs);
+ 		ret = post_process_probe_trace_events(*tevs, ntevs,
+-							target, pev->uprobes);
++							target, pev);
+ 		if (ret < 0) {
+ 			clear_probe_trace_events(*tevs, ntevs);
+ 			zfree(tevs);
+@@ -1116,6 +1120,43 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
+ 	return 0;
+ }
+ 
++/* Parse an SDT event */
++static int parse_perf_sdt_event(struct perf_sdt_event *sev,
++				struct perf_probe_event *pev)
++{
++	struct perf_probe_point *pp = &pev->point;
++
++	pev->uprobes = true;
++	pev->sdt = true;
++	pev->event = strdup(sev->note->name);
++	if (pev->event == NULL)
++		return -ENOMEM;
++	pev->group = strdup(sev->note->provider);
++	if (pev->event == NULL)
++		return -ENOMEM;
++
++	pp->file = strdup(sev->file_name);
++	if (pp->file == NULL)
++		return -ENOMEM;
++
++	pp->function = strdup(sev->note->name);
++	pp->offset = sev->note->addr.a64[0];
++	return 0;
++}
++
++int add_perf_sdt_event(struct perf_sdt_event *sev)
++{
++	struct perf_probe_event pev;
++	int ret;
++
++	ret = parse_perf_sdt_event(sev, &pev);
++	if (!ret)
++		add_perf_probe_events(&pev, 1, MAX_PROBES,
++				      sev->file_name, true);
++
++	return ret;
++}
++
+ /* Parse perf-probe event argument */
+ static int parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
+ {
+@@ -1909,9 +1950,12 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	printf("  %-20s (on %s", buf, place);
+-	if (module)
+-		printf(" in %s", module);
++	/* Do not display anything for SDTs */
++	if (!pev->sdt) {
++		printf("  %-20s (on %s", buf, place);
++		if (module)
++			printf(" in %s", module);
++	}
+ 
+ 	if (pev->nargs > 0) {
+ 		printf(" with");
+@@ -1923,7 +1967,9 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
+ 			printf(" %s", buf);
+ 		}
+ 	}
+-	printf(")\n");
++	/* Not for SDT events */
++	if (!pev->sdt)
++		printf(")\n");
+ 	free(place);
+ 	return ret;
+ }
+@@ -2123,7 +2169,9 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	}
+ 
+ 	ret = 0;
+-	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
++	/* If SDT event, do not print anything */
++	if (!pev->sdt)
++		printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
+ 	for (i = 0; i < ntevs; i++) {
+ 		tev = &tevs[i];
+ 		if (pev->event)
+@@ -2162,6 +2210,12 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 		group = pev->group;
+ 		pev->event = tev->event;
+ 		pev->group = tev->group;
++
++		/* Arguments currently not supported with SDT events */
++		if (pev->sdt) {
++			pev->nargs = 0;
++			tev->nargs = 0;
++		}
+ 		show_perf_probe_event(pev, tev->point.module);
+ 		/* Trick here - restore current event/group */
+ 		pev->event = (char *)event;
+@@ -2176,8 +2230,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 		allow_suffix = true;
+ 	}
+ 
+-	if (ret >= 0) {
+-		/* Show how to use the event. */
++	if (ret >= 0 && !pev->sdt) {
++		/* Show how to use the event except for SDT events */
+ 		printf("\nYou can now use it in all perf tools, such as:\n\n");
+ 		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
+ 			 tev->event);
+@@ -2370,6 +2424,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ {
+ 	int i, j, ret;
+ 	struct __event_package *pkgs;
++	bool sdt = pevs->sdt;
+ 
+ 	ret = 0;
+ 	pkgs = zalloc(sizeof(struct __event_package) * npevs);
+@@ -2411,12 +2466,13 @@ end:
+ 		zfree(&pkgs[i].tevs);
+ 	}
+ 	free(pkgs);
+-	exit_symbol_maps();
++	if (!sdt)     /* We didn't initialize symbol maps for SDT events */
++		exit_symbol_maps();
+ 
+ 	return ret;
+ }
+ 
+-static int __del_trace_probe_event(int fd, struct str_node *ent)
++static int __del_trace_probe_event(int fd, struct str_node *ent, bool sdt)
+ {
+ 	char *p;
+ 	char buf[128];
+@@ -2443,7 +2499,8 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
+ 		goto error;
+ 	}
+ 
+-	printf("Removed event: %s\n", ent->s);
++	if (!sdt)
++		printf("Removed event: %s\n", ent->s);
+ 	return 0;
+ error:
+ 	pr_warning("Failed to delete event: %s\n",
+@@ -2452,7 +2509,8 @@ error:
+ }
+ 
+ static int del_trace_probe_event(int fd, const char *buf,
+-						  struct strlist *namelist)
++				 struct strlist *namelist,
++				 bool sdt)
+ {
+ 	struct str_node *ent, *n;
+ 	int ret = -1;
+@@ -2460,7 +2518,7 @@ static int del_trace_probe_event(int fd, const char *buf,
+ 	if (strpbrk(buf, "*?")) { /* Glob-exp */
+ 		strlist__for_each_safe(ent, n, namelist)
+ 			if (strglobmatch(ent->s, buf)) {
+-				ret = __del_trace_probe_event(fd, ent);
++				ret = __del_trace_probe_event(fd, ent, sdt);
+ 				if (ret < 0)
+ 					break;
+ 				strlist__remove(namelist, ent);
+@@ -2468,7 +2526,7 @@ static int del_trace_probe_event(int fd, const char *buf,
+ 	} else {
+ 		ent = strlist__find(namelist, buf);
+ 		if (ent) {
+-			ret = __del_trace_probe_event(fd, ent);
++			ret = __del_trace_probe_event(fd, ent, sdt);
+ 			if (ret >= 0)
+ 				strlist__remove(namelist, ent);
+ 		}
+@@ -2477,7 +2535,7 @@ static int del_trace_probe_event(int fd, const char *buf,
+ 	return ret;
+ }
+ 
+-int del_perf_probe_events(struct strlist *dellist)
++static int __del_perf_probe_events(struct strlist *dellist, bool sdt)
+ {
+ 	int ret = -1, ufd = -1, kfd = -1;
+ 	char buf[128];
+@@ -2530,10 +2588,10 @@ int del_perf_probe_events(struct strlist *dellist)
+ 		pr_debug("Group: %s, Event: %s\n", group, event);
+ 
+ 		if (namelist)
+-			ret = del_trace_probe_event(kfd, buf, namelist);
++			ret = del_trace_probe_event(kfd, buf, namelist, sdt);
+ 
+ 		if (unamelist && ret != 0)
+-			ret = del_trace_probe_event(ufd, buf, unamelist);
++			ret = del_trace_probe_event(ufd, buf, unamelist, sdt);
+ 
+ 		if (ret != 0)
+ 			pr_info("Info: Event \"%s\" does not exist.\n", buf);
+@@ -2555,6 +2613,24 @@ error:
+ 	return ret;
+ }
+ 
++int del_perf_probe_events(struct strlist *dellist)
++{
++	return __del_perf_probe_events(dellist, false);
++}
++
++int remove_perf_sdt_events(const char *str)
++{
++	struct strlist *dellist;
++	int ret = 0;
++
++	dellist = strlist__new(true, NULL);
++	strlist__add(dellist, str + 1);
++	if (dellist)
++		ret = __del_perf_probe_events(dellist, true);
++
++	return ret;
++}
++
+ /* TODO: don't use a global variable for filter ... */
+ static struct strfilter *available_func_filter;
+ 
 diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index e01e994..f1ddca6 100644
+index f1ddca6..6111128 100644
 --- a/tools/perf/util/probe-event.h
 +++ b/tools/perf/util/probe-event.h
-@@ -5,6 +5,7 @@
- #include "intlist.h"
- #include "strlist.h"
- #include "strfilter.h"
-+#include "sdt.h"
+@@ -75,9 +75,15 @@ struct perf_probe_event {
+ 	struct perf_probe_point	point;	/* Probe point */
+ 	int			nargs;	/* Number of arguments */
+ 	bool			uprobes;
++	bool			sdt;	/* An SDT event? */
+ 	struct perf_probe_arg	*args;	/* Arguments */
+ };
  
- extern bool probe_event_dry_run;
- 
-diff --git a/tools/perf/util/sdt.c b/tools/perf/util/sdt.c
-new file mode 100644
-index 0000000..9a39d36
---- /dev/null
-+++ b/tools/perf/util/sdt.c
-@@ -0,0 +1,666 @@
-+/*
-+ * util/sdt.c
-+ * This contains the relevant functions needed to find the SDT events
-+ * in a binary and adding them to a cache.
-+ *
-+ * TODOS:
-+ * - Listing SDT events in most of the binaries present in the system.
-+ * - Looking into directories provided by the user for binaries with SDTs,
-+ * etc.
-+ * - Support SDT event arguments.
-+ * - Support SDT event semaphores.
-+ */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <limits.h>
-+#include <sys/mman.h>
-+#include <fcntl.h>
-+
-+#include "parse-events.h"
-+#include "probe-event.h"
-+#include "linux/list.h"
-+#include "symbol.h"
-+#include "build-id.h"
-+#include "debug.h"
-+
-+struct file_info {
-+	char *name;                             /* File name */
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];  /* Build id of the file */
++struct perf_sdt_event {
++	struct sdt_note		*note;		/* SDT note info */
++	char			*file_name;	/* File name */
 +};
 +
-+/**
-+ * get_hash_key: calculates the key to hash tables
-+ * @str: input string
+ /* Line range */
+ struct line_range {
+ 	char			*file;		/* File name */
+@@ -136,6 +142,7 @@ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			       struct strfilter *filter, bool externs);
+ extern int show_available_funcs(const char *module, struct strfilter *filter,
+ 				bool user);
++extern int add_perf_sdt_event(struct perf_sdt_event *sev);
+ 
+ /* Maximum index number of event-name postfix */
+ #define MAX_EVENT_INDEX	1024
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c7918f8..1dd89db8 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -1197,6 +1197,9 @@ int debuginfo__find_trace_events(struct debuginfo *dbg,
+ 	tf.tevs = *tevs;
+ 	tf.ntevs = 0;
+ 
++	/* Number of trace events for SDT event is 1 */
++	if (pev->sdt)
++		return 1;
+ 	ret = debuginfo__find_probes(dbg, &tf.pf);
+ 	if (ret < 0) {
+ 		zfree(tevs);
+diff --git a/tools/perf/util/sdt.c b/tools/perf/util/sdt.c
+index e8eea48..492556c 100644
+--- a/tools/perf/util/sdt.c
++++ b/tools/perf/util/sdt.c
+@@ -329,6 +329,50 @@ static void sdt_note__read(char **ptr, struct list_head *sdt_list, char *end)
+ }
+ 
+ /**
++ * event_hash_list__add : add SDT events to event hash table
++ * @fse: obtained from the file_hash
++ * @event_hash: event hash list
 + *
-+ * adds the ascii values for all the chars in @str, multiplies with a prime
-+ * and finds the modulo with HASH_TABLE_SIZE.
-+ *
-+ * Return : An integer key
++ * Iterate through the SDT notes list one by one and add them
++ * to event hash table.
 + */
-+static unsigned get_hash_key(const char *str)
++static int event_hash_list__add(struct file_sdt_ent *fse,
++				 struct hash_list *event_hash)
 +{
-+	unsigned value = 0, key;
-+	unsigned c;
-+
-+	for (c = 0; str[c] != '\0'; c++)
-+		value += str[c];
-+
-+	key = (value * 37) % HASH_TABLE_SIZE;
-+
-+	return key;
-+}
-+
-+/**
-+ * sdt_err: print SDT related error
-+ * @val: error code
-+ * @target: input file
-+ *
-+ * Display error corresponding to @val for file @target
-+ */
-+static int sdt_err(int val, const char *target)
-+{
-+	switch (-val) {
-+	case 0:
-+		break;
-+	case ENOENT:
-+		/* Absence of SDT markers */
-+		pr_err("%s: No SDT events found\n", target);
-+		break;
-+	case EBADF:
-+		pr_err("%s: Bad file name\n", target);
-+		break;
-+	default:
-+		pr_err("%s\n", strerror(val));
-+	}
-+
-+	return val;
-+}
-+
-+/**
-+ * cleanup_sdt_note_list : free the sdt notes' list
-+ * @sdt_notes: sdt notes' list
-+ *
-+ * Free up the SDT notes in @sdt_notes.
-+ */
-+static void cleanup_sdt_note_list(struct list_head *sdt_notes)
-+{
-+	struct sdt_note *tmp, *pos;
-+
-+	if (list_empty(sdt_notes))
-+		return;
-+
-+	list_for_each_entry_safe(pos, tmp, sdt_notes, note_list) {
-+		list_del(&pos->note_list);
-+		free(pos->name);
-+		free(pos->provider);
-+		free(pos);
-+	}
-+}
-+
-+/**
-+ * file_list_entry__init: Initialize a file_list_entry
-+ * @fse: file_list_entry
-+ * @file: file information
-+ *
-+ * Initializes @fse with the build id of a @file.
-+ */
-+static void file_list_entry__init(struct file_sdt_ent *fse,
-+				 struct file_info *file)
-+{
-+	strcpy(fse->sbuild_id, file->sbuild_id);
-+	INIT_LIST_HEAD(&fse->file_list);
-+	INIT_LIST_HEAD(&fse->sdt_list);
-+}
-+
-+/**
-+ * sdt_events__get_count: Counts the number of sdt events
-+ * @start: list_head to sdt_notes list
-+ *
-+ * Returns the number of SDT notes in a list
-+ */
-+static int sdt_events__get_count(struct list_head *start)
-+{
-+	struct sdt_note *sdt_ptr;
-+	int count = 0;
-+
-+	list_for_each_entry(sdt_ptr, start, note_list) {
-+		count++;
-+	}
-+	return count;
-+}
-+
-+/**
-+ * file_hash_list__add: add an entry to file_hash_list
-+ * @sdt_notes: list of sdt_notes
-+ * @file: file name and build id
-+ * @file_hash: hash table for file and sdt notes
-+ *
-+ * Get the key corresponding to @file->name. Fetch the entry
-+ * for that key. Build a file_list_entry fse, assign the SDT notes
-+ * to it and then assign fse to the fetched entry into the hash.
-+ */
-+static int file_hash_list__add(struct list_head *sdt_notes,
-+				struct file_info *file,
-+				struct hash_list *file_hash)
-+{
-+	struct file_sdt_ent *fse;
 +	struct list_head *ent_head;
-+	int key, nr_evs;
++	struct sdt_note *sn;
++	int event_key, nr_add = 0, len;
++	char *str;
 +
-+	key = get_hash_key(file->name);
-+	ent_head = &file_hash->ent[key].list;
++	/* Iterate through the sdt notes and add them to the event hash */
++	list_for_each_entry(sn, &fse->sdt_list, note_list) {
++		/*
++		 * Assign the file_ptr so that we can always find its containing
++		 * file
++		 */
++		sn->file_ptr = fse;
 +
-+	/* Initialize the file entry */
-+	fse = (struct file_sdt_ent *)malloc(sizeof(struct file_sdt_ent));
-+	if (!fse)
-+		return -ENOMEM;
-+	file_list_entry__init(fse, file);
-+	nr_evs = sdt_events__get_count(sdt_notes);
-+	list_splice(sdt_notes, &fse->sdt_list);
++		len = strlen(sn->provider) + strlen(sn->name);
++		str = (char *)malloc(len + 1);
++		if (!str)
++			return -ENOMEM;
 +
-+	printf("%d events added for %s\n", nr_evs, file->name);
-+	strcpy(fse->name, file->name);
-+
-+	/* Add the file to the file hash entry */
-+	list_add(&fse->file_list, ent_head);
-+
-+	return MOD;
-+}
-+
-+/**
-+ * file_hash_list__remove: Remove a file entry from the file_hash table
-+ * @file_hash: file_hash_table
-+ * @target: file name
-+ *
-+ * Removes the entries from file_hash table corresponding to @target.
-+ * Gets the key from @target. Also frees up the SDT events for that
-+ * file.
-+ */
-+static int file_hash_list__remove(struct hash_list *file_hash,
-+				   const char *target)
-+{
-+	struct file_sdt_ent *fse, *tmp1;
-+	struct list_head *sdt_head, *ent_head;
-+	struct sdt_note *sdt_ptr, *tmp2;
-+
-+	char *res_path;
-+	int key, nr_del = 0;
-+
-+	key = get_hash_key(target);
-+	ent_head = &file_hash->ent[key].list;
-+
-+	res_path = realpath(target, NULL);
-+	if (!res_path)
-+		return -ENOMEM;
-+
-+	if (list_empty(ent_head))
-+		return 0;
-+
-+	/* Got the file hash entry */
-+	list_for_each_entry_safe(fse, tmp1, ent_head, file_list) {
-+		sdt_head = &fse->sdt_list;
-+		if (strcmp(res_path, fse->name))
-+			continue;
-+
-+		/* Got the file list entry, now start removing */
-+		list_for_each_entry_safe(sdt_ptr, tmp2, sdt_head, note_list) {
-+			list_del(&sdt_ptr->note_list);
-+			free(sdt_ptr->name);
-+			free(sdt_ptr->provider);
-+			free(sdt_ptr);
-+			nr_del++;
-+		}
-+		list_del(&fse->file_list);
-+		list_del(&fse->sdt_list);
-+		free(fse);
++		memset(str, '\0', len + 1);
++		/* Concatenate SDT name and provider and find out the key */
++		strcat(str, sn->provider);
++		strcat(str, sn->name);
++		event_key = get_hash_key(str);
++		free(str);
++		/* List adding */
++		ent_head = &event_hash->ent[event_key].list;
++		list_add(&sn->event_list, ent_head);
++		nr_add++;
 +	}
 +
-+	return nr_del;
-+}
-+/**
-+ * file_hash_list__entry_exists: Checks if a file is already present
-+ * @file_hash: file_hash table
-+ * @file: file name and build id to check
-+ *
-+ * Obtains the key from @file->name, fetches the correct entry,
-+ * and goes through the chain to find out the correct file list entry.
-+ * Compares the build id, if they match, return true, else, false.
-+ */
-+static bool file_hash_list__entry_exists(struct hash_list *file_hash,
-+					  struct file_info *file)
-+{
-+	struct file_sdt_ent *fse;
-+	struct list_head *ent_head;
-+	int key;
-+
-+	key = get_hash_key(file->name);
-+	ent_head = &file_hash->ent[key].list;
-+	if (list_empty(ent_head))
-+		return false;
-+
-+	list_for_each_entry(fse, ent_head, file_list) {
-+		if (!strcmp(file->name, fse->name)) {
-+			if (!strcmp(file->sbuild_id, fse->sbuild_id))
-+				return true;
-+		}
-+	}
-+
-+	return false;
++	return nr_add;
 +}
 +
 +/**
-+ * copy_delim: copy till a character
-+ * @src: source string
-+ * @target: dest string
-+ * @delim: till this character
-+ * @len: length of @target
-+ * @end: end of @src
-+ *
-+ * Returns the number of chars copied.
-+ * NOTE: We need @end as @src may or may not be terminated by NULL
+  * file_hash_list__populate: Fill up the file hash table
+  * @file_hash: empty file hash table
+  * @data: raw cache data
+@@ -340,14 +384,15 @@ static void sdt_note__read(char **ptr, struct list_head *sdt_list, char *end)
+  * read the SDT notes. Multiple entries for the same key are delimited
+  * by "::". Then, it assigns the file name, build id and SDT notes to the
+  * list entry corresponding to 'key'.
++ * Checks if we need to add to the event_hash list.
+  */
+ static void file_hash_list__populate(struct hash_list *file_hash, char *data,
+-				     off_t size)
++				     off_t size, struct hash_list *event_hash)
+ {
+ 	struct list_head *ent_head;
+ 	struct file_sdt_ent *fse;
+ 	char *end, tmp[PATH_MAX], *ptr;
+-	int key, len = 0;
++	int key, len = 0, ret;
+ 
+ 	end = data + size - 1;
+ 	ptr = data;
+@@ -379,6 +424,12 @@ static void file_hash_list__populate(struct hash_list *file_hash, char *data,
+ 
+ 			list_add(&fse->file_list, ent_head);
+ 
++			/* See if we need to add to the event_hash */
++			if (event_hash) {
++				ret = event_hash_list__add(fse, event_hash);
++				if (ret < 0)
++					break;
++			}
+ 			/* Check for another file entry */
+ 			if ((*ptr++ == DELIM) && (*ptr == '-'))
+ 				break;
+@@ -397,8 +448,10 @@ static void file_hash_list__populate(struct hash_list *file_hash, char *data,
+  *
+  * Opens the cache file, reads the data into 'data' and calls
+  * file_hash_list__populate() to populate the above hash list.
++ * Updates the event_hash if needed.
+  */
+-static void file_hash_list__init(struct hash_list *file_hash)
++static void file_hash_list__init(struct hash_list *file_hash,
++				 struct hash_list *event_hash)
+ {
+ 	struct stat sb;
+ 	char *data;
+@@ -441,14 +494,26 @@ static void file_hash_list__init(struct hash_list *file_hash)
+ 		return;
+ 	}
+ 
+-	/* Populate the hash list */
+-	file_hash_list__populate(file_hash, data, sb.st_size);
++	/* Populate the hash list(s) */
++	file_hash_list__populate(file_hash, data, sb.st_size, event_hash);
+ 	ret = munmap(data, sb.st_size);
+ 	if (ret == -1)
+ 		pr_err("Error in munmap\n");
+ }
+ 
+ /**
++ * event_hash_list__init: Initialize the event_hash list
++ * @event_hash: event_hash ptr
 + */
-+static int copy_delim(char *src, char *target, char delim, size_t len,
-+		      char *end)
++static void event_hash_list__init(struct hash_list *event_hash)
 +{
 +	int i;
-+
-+	memset(target, '\0', len);
-+	for (i = 0; (src[i] != delim) && !(src + i > end) ; i++)
-+		target[i] = src[i];
-+
-+	return i + 1;
-+}
-+
-+/**
-+ * sdt_note__read: Parse SDT note info
-+ * @ptr: raw data
-+ * @sdt_list: empty list
-+ * @end: end of the raw data
-+ *
-+ * Parse @ptr to find out SDT note name, provider, location and semaphore.
-+ * All these data are separated by DELIM.
-+ */
-+static void sdt_note__read(char **ptr, struct list_head *sdt_list, char *end)
-+{
-+	struct sdt_note *sn;
-+	char addr[MAX_ADDR];
-+	int len = 0;
-+
-+	while (1) {
-+		sn = (struct sdt_note *)malloc(sizeof(struct sdt_note));
-+		if (!sn)
-+			return;
-+		INIT_LIST_HEAD(&sn->note_list);
-+		sn->name = (char *)malloc(PATH_MAX);
-+		if (!sn->name)
-+			return;
-+		sn->provider = (char *)malloc(PATH_MAX);
-+		if (!sn->provider)
-+			return;
-+		/* Extract the provider name */
-+		len = copy_delim(*ptr, sn->provider, DELIM, PATH_MAX, end);
-+		*ptr += len;
-+
-+		/* Extract the note name */
-+		len = copy_delim(*ptr, sn->name, DELIM, PATH_MAX, end);
-+		*ptr += len;
-+
-+		/* Extract the note's location */
-+		len = copy_delim(*ptr, addr , DELIM, MAX_ADDR, end);
-+		*ptr += len;
-+		sscanf(addr, "%lx", &sn->addr.a64[0]);
-+
-+		/* Extract the sem location */
-+		len = copy_delim(*ptr, addr , DELIM, MAX_ADDR, end);
-+		*ptr += len;
-+		sscanf(addr, "%lx", &sn->addr.a64[2]);
-+		list_add(&sn->note_list, sdt_list);
-+
-+		/* If the entries for this file are finished */
-+		if (**ptr == DELIM)
-+			break;
-+	}
-+}
-+
-+/**
-+ * file_hash_list__populate: Fill up the file hash table
-+ * @file_hash: empty file hash table
-+ * @data: raw cache data
-+ * @size: size of data
-+ *
-+ * Find out the end of data with help of @size. Start parsing @data.
-+ * In the outer loop, it reads the 'key' delimited by "::-". In the inner
-+ * loop, it reads the file name, build id and calls sdt_note__read() to
-+ * read the SDT notes. Multiple entries for the same key are delimited
-+ * by "::". Then, it assigns the file name, build id and SDT notes to the
-+ * list entry corresponding to 'key'.
-+ */
-+static void file_hash_list__populate(struct hash_list *file_hash, char *data,
-+				     off_t size)
-+{
-+	struct list_head *ent_head;
-+	struct file_sdt_ent *fse;
-+	char *end, tmp[PATH_MAX], *ptr;
-+	int key, len = 0;
-+
-+	end = data + size - 1;
-+	ptr = data;
-+	if (ptr == end)
-+		return;
-+	do {
-+		/* Obtain the key */
-+		len = copy_delim(ptr, tmp, DELIM, PATH_MAX, end);
-+		ptr += len;
-+		key = atoi(tmp);
-+		/* Obtain the file_hash list entry */
-+		ent_head = &file_hash->ent[key].list;
-+		while (1) {
-+			fse = (struct file_sdt_ent *)
-+				malloc(sizeof(struct file_sdt_ent));
-+			if (!fse)
-+				return;
-+			INIT_LIST_HEAD(&fse->file_list);
-+			INIT_LIST_HEAD(&fse->sdt_list);
-+			/* Obtain the file name */
-+			len = copy_delim(ptr, fse->name, DELIM,
-+					 sizeof(fse->name), end);
-+			ptr += len;
-+			/* Obtain the build id */
-+			len = copy_delim(ptr, fse->sbuild_id, DELIM,
-+					 sizeof(fse->sbuild_id), end);
-+			ptr += len;
-+			sdt_note__read(&ptr, &fse->sdt_list, end);
-+
-+			list_add(&fse->file_list, ent_head);
-+
-+			/* Check for another file entry */
-+			if ((*ptr++ == DELIM) && (*ptr == '-'))
-+				break;
-+		}
-+		if (ptr == end)
-+			break;
-+		else
-+			ptr++;
-+
-+	} while (1);
-+}
-+
-+/**
-+ * file_hash_list__init: Initializes the file hash list
-+ * @file_hash: empty file_hash
-+ *
-+ * Opens the cache file, reads the data into 'data' and calls
-+ * file_hash_list__populate() to populate the above hash list.
-+ */
-+static void file_hash_list__init(struct hash_list *file_hash)
-+{
-+	struct stat sb;
-+	char *data;
-+	int fd, i, ret;
 +
 +	for (i = 0; i < HASH_TABLE_SIZE; i++)
-+		INIT_LIST_HEAD(&file_hash->ent[i].list);
-+
-+	fd = open(SDT_CACHE_DIR SDT_FILE_CACHE, O_RDONLY);
-+	if (fd == -1)
-+		return;
-+
-+	ret = fstat(fd, &sb);
-+	if (ret == -1) {
-+		pr_err("fstat : error\n");
-+		return;
-+	}
-+
-+	if (!S_ISREG(sb.st_mode)) {
-+		pr_err("%s is not a regular file\n", SDT_CACHE_DIR
-+		       SDT_FILE_CACHE);
-+		return;
-+	}
-+	/* Is size of the cache zero ?*/
-+	if (!sb.st_size)
-+		return;
-+	/* Read the data */
-+	data = mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
-+	if (data == MAP_FAILED) {
-+		pr_err("Error in mmap\n");
-+		return;
-+	}
-+
-+	ret = madvise(data, sb.st_size, MADV_SEQUENTIAL);
-+	if (ret == -1)
-+		pr_debug("Error in madvise\n");
-+	ret = close(fd);
-+	if (ret == -1) {
-+		pr_err("Error in close\n");
-+		return;
-+	}
-+
-+	/* Populate the hash list */
-+	file_hash_list__populate(file_hash, data, sb.st_size);
-+	ret = munmap(data, sb.st_size);
-+	if (ret == -1)
-+		pr_err("Error in munmap\n");
++		INIT_LIST_HEAD(&event_hash->ent[i].list);
 +}
 +
 +/**
-+ * file_hash_list__cleanup: Free up all the space for file_hash list
-+ * @file_hash: file_hash table
-+ */
-+static void file_hash_list__cleanup(struct hash_list *file_hash)
-+{
-+	struct file_sdt_ent *file_pos, *tmp;
-+	struct list_head *ent_head, *sdt_head;
-+	int i;
-+
-+	/* Go through all the entries */
-+	for (i = 0; i < HASH_TABLE_SIZE; i++) {
-+		ent_head = &file_hash->ent[i].list;
-+		if (list_empty(ent_head))
-+			continue;
-+
-+		list_for_each_entry_safe(file_pos, tmp, ent_head, file_list) {
-+			sdt_head = &file_pos->sdt_list;
-+			/* Cleanup the corresponding SDT notes' list */
-+			cleanup_sdt_note_list(sdt_head);
-+			list_del(&file_pos->file_list);
-+			list_del(&file_pos->sdt_list);
-+			free(file_pos);
-+		}
-+	}
-+}
-+
-+/**
-+ * add_to_hash_list: add an entry to file_hash_list
-+ * @file_hash: file hash table
-+ * @target: file name
+  * file_hash_list__cleanup: Free up all the space for file_hash list
+  * @file_hash: file_hash table
+  */
+@@ -476,6 +541,23 @@ static void file_hash_list__cleanup(struct hash_list *file_hash)
+ }
+ 
+ /**
++ * init_hash_lists: Initialize the hash_lists
++ * @file_hash: file_hash ptr
++ * @event_hash: event_hash ptr
 + *
-+ * Does a sanity check for the @target, finds out its build id,
-+ * checks if @target is already present in file hash list. If not present,
-+ * delete any stale entries with this file name (i.e., entries matching this
-+ * file name but having older build ids). And then, adds the file entry to
-+ * file hash list and also updates the SDT events in the event hash list.
++ * Wrapper function to initialize both the hash lists.
 + */
-+static int add_to_hash_list(struct hash_list *file_hash, const char *target)
++static void init_hash_lists(struct hash_list *file_hash,
++			    struct hash_list *event_hash)
 +{
-+	struct file_info *file;
-+	int ret = 0;
-+	u8 build_id[BUILD_ID_SIZE];
++	if (event_hash)
++		event_hash_list__init(event_hash);
 +
-+	LIST_HEAD(sdt_notes);
++	/* event_hash gets updated in file_hash too */
++	file_hash_list__init(file_hash, event_hash);
++}
 +
-+	file = (struct file_info *)malloc(sizeof(struct file_info));
-+	if (!file)
++/**
+  * add_to_hash_list: add an entry to file_hash_list
+  * @file_hash: file hash table
+  * @target: file name
+@@ -646,7 +728,7 @@ int add_sdt_events(const char *arg)
+ 		return -1;
+ 	}
+ 	/* Initialize the file hash_list */
+-	file_hash_list__init(&file_hash);
++	init_hash_lists(&file_hash, NULL);
+ 
+ 	/* Try to add the events to the file hash_list */
+ 	ret = add_to_hash_list(&file_hash, arg);
+@@ -707,7 +789,7 @@ int dump_sdt_events(void)
+ {
+ 	struct hash_list file_hash;
+ 
+-	file_hash_list__init(&file_hash);
++	init_hash_lists(&file_hash, NULL);
+ 	file_hash_list__display(&file_hash);
+ 	return 0;
+ }
+@@ -726,7 +808,7 @@ int remove_sdt_events(const char *str)
+ 	int nr_del;
+ 
+ 	/* Initialize the hash_lists */
+-	file_hash_list__init(&file_hash);
++	init_hash_lists(&file_hash, NULL);
+ 	res_path = realpath(str, NULL);
+ 	if (!res_path)
+ 		return -ENOMEM;
+@@ -746,3 +828,99 @@ out:
+ 	file_hash_list__cleanup(&file_hash);
+ 	return nr_del;
+ }
++
++/**
++ * convert_to_sdt_event : Converts a SDT note into a perf consumable event
++ * @sn: sdt note
++ * @sdt_event: converted sdt_event
++ *
++ * Copies the file name and assigns a reference to @sn to @sdt_event->note
++ */
++static int convert_to_sdt_event(struct sdt_note *sn,
++				struct perf_sdt_event *sdt_event)
++{
++	sdt_event->file_name = strdup(sn->file_ptr->name);
++	if (!sdt_event->file_name) {
++		pr_err("Error: Not enough memory!");
 +		return -ENOMEM;
++	}
++	sdt_event->note = sn;
 +
-+	file->name = realpath(target, NULL);
-+	if (!file->name) {
-+		ret = -EBADF;
-+		pr_err("%s: Bad file name!\n", target);
++	return 0;
++}
++
++/**
++ * event_hash_list__lookup: Function to lookup an SDT event
++ * @str: provider:name
++ *
++ * file_hash list is not designed to lookup for an SDT event. To do that, we
++ * need another structure : "event_hash". This hash list is built up along
++ * with file_hash list but is based on SDT event names as keys as opposed to
++ * the file names (who serve as keys in file_hash list).
++ * To lookup for the SDT event name, initialize file_hash list first along
++ * with the event_hash. init_hash_lists() will do that for us. Now, obtain
++ * the key for event_hash using @str (provider:name). Go to that entry,
++ * obtain the list_head for that entry, start traversing the list of events.
++ * Once, we get the SDT note we were looking for, change the SDT note to a
++ * perf consumable event.
++ */
++int event_hash_list__lookup(const char *str)
++{
++	struct hash_list file_hash, event_hash;
++	struct sdt_note *sn;
++	struct perf_sdt_event *sdt_event = NULL;
++	struct list_head *ent_head;
++	int  event_key, ret = 0, len;
++	char group[PATH_MAX], event[PATH_MAX], *ptr;
++
++	/* Initialize the hash_lists */
++	init_hash_lists(&file_hash, &event_hash);
++
++	ptr = strdup(str);
++	if (!ptr) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	/* Get the SDT provider name */
++	len = copy_delim(ptr + 1, group, DELIM, strlen(str),
++			 strchr(str, ':'));
++	/* Get the SDT event name */
++	strcpy(event, str + len + 1);
++	/* str + 1 to get rid of leading % */
++	memset(ptr, '\0', strlen(ptr));
++	strcat(ptr, group);
++	strcat(ptr, event);
++	/* Calculate the event hash key */
++	event_key = get_hash_key(ptr);
++	ent_head = &event_hash.ent[event_key].list;
++	if (list_empty(ent_head)) {
++		/* No events at this entry, get out */
++		ret = -1;
 +		goto out;
 +	}
 +
-+	symbol__elf_init();
-+	if (filename__read_build_id(file->name, &build_id,
-+				    sizeof(build_id)) < 0) {
-+		pr_err("Couldn't read build-id in %s\n", file->name);
-+		ret = -EBADF;
-+		sdt_err(ret, file->name);
-+		goto out;
-+	}
-+	build_id__sprintf(build_id, sizeof(build_id), file->sbuild_id);
-+	/* File entry already exists ?*/
-+	if (file_hash_list__entry_exists(file_hash, file)) {
-+		pr_err("Error: SDT events for %s already exist!",
-+		       file->name);
-+		ret = NO_MOD;
-+		goto out;
-+	}
-+
-+	/*
-+	 * This will also remove any stale entries (if any) from the event hash.
-+	 * Stale entries will have the same file name but older build ids.
-+	 */
-+	file_hash_list__remove(file_hash, file->name);
-+	ret = get_sdt_note_list(&sdt_notes, file->name);
-+	if (!ret) {
-+		/* Add the entry to file hash list */
-+		ret = file_hash_list__add(&sdt_notes, file, file_hash);
-+	} else {
-+		sdt_err(ret, target);
++	/* Found event(s) */
++	list_for_each_entry(sn, ent_head, event_list) {
++		if (!strcmp(sn->name, event) && !strcmp(sn->provider, group)) {
++			sdt_event = (struct perf_sdt_event *)malloc
++				(sizeof(struct perf_sdt_event));
++			if (!sdt_event) {
++				pr_err("Error: Not enough memory!");
++				ret = -ENOMEM;
++				goto out;
++			}
++			ret = convert_to_sdt_event(sn, sdt_event);
++			if (!ret)
++				/* Add the SDT event to uprobes */
++				ret = add_perf_sdt_event(sdt_event);
++		}
 +	}
 +
 +out:
-+	free(file->name);
-+	free(file);
++	file_hash_list__cleanup(&file_hash);
++	if (sdt_event->file_name)
++		free(sdt_event->file_name);
++
 +	return ret;
-+}
-+
-+/**
-+ * file_hash_list__flush: Flush the file_hash list to cache
-+ * @file_hash: file_hash list
-+ * @fcache: opened SDT events cache
-+ *
-+ * Iterate through all the entries of @file_hash and flush them
-+ * onto fcache.
-+ * The complete file hash list is flushed into the cache. First
-+ * write the key for non-empty entry and then file entries for that
-+ * key, and then the SDT notes. The delimiter used is ':'.
-+ */
-+static void file_hash_list__flush(struct hash_list *file_hash,
-+				  FILE *fcache)
-+{
-+	struct file_sdt_ent *file_pos;
-+	struct list_head *ent_head, *sdt_head;
-+	struct sdt_note *sdt_ptr;
-+	int i;
-+
-+	/* Go through all entries */
-+	for (i = 0; i < HASH_TABLE_SIZE; i++) {
-+		/* Obtain the list head */
-+		ent_head = &file_hash->ent[i].list;
-+		/* Empty ? */
-+		if (list_empty(ent_head))
-+			continue;
-+		/* ':' are used here as delimiters */
-+		fprintf(fcache, "%d:", i);
-+		list_for_each_entry(file_pos, ent_head, file_list) {
-+			fprintf(fcache, "%s:", file_pos->name);
-+			fprintf(fcache, "%s:", file_pos->sbuild_id);
-+			sdt_head = &file_pos->sdt_list;
-+			list_for_each_entry(sdt_ptr, sdt_head, note_list) {
-+				fprintf(fcache, "%s:%s:%lx:%lx:",
-+					sdt_ptr->provider, sdt_ptr->name,
-+					sdt_ptr->addr.a64[0],
-+					sdt_ptr->addr.a64[2]);
-+			}
-+			fprintf(fcache, ":");
-+		}
-+		/* '-' marks the end of entries for that key */
-+		fprintf(fcache, "-");
-+	}
 +
 +}
-+
-+/**
-+ * flush_hash_list_to_cache: Flush everything from file_hash to disk
-+ * @file_hash: file_hash list
-+ *
-+ * Opens a cache and calls file_hash_list__flush() to dump everything
-+ * on to the cache.
-+ */
-+static void flush_hash_list_to_cache(struct hash_list *file_hash)
-+{
-+	FILE *cache;
-+	int ret;
-+	struct stat buf;
-+
-+	ret = stat(SDT_CACHE_DIR, &buf);
-+	if (ret) {
-+		ret = mkdir(SDT_CACHE_DIR, buf.st_mode);
-+		if (ret) {
-+			pr_err("%s : %s\n", SDT_CACHE_DIR, strerror(errno));
-+			return;
-+		}
-+	}
-+
-+	cache = fopen(SDT_CACHE_DIR SDT_FILE_CACHE, "w");
-+	if (!cache) {
-+		pr_err("Error in creating %s file!\n",
-+		       SDT_CACHE_DIR SDT_FILE_CACHE);
-+		return;
-+	}
-+
-+	file_hash_list__flush(file_hash, cache);
-+	fclose(cache);
-+}
-+
-+/**
-+ * add_sdt_events: Add SDT events
-+ * @arg: filename
-+ *
-+ * Initializes a hash table 'file_hash', calls add_to_hash_list() to add SDT
-+ * events of @arg to the cache and then cleans them up.
-+ * 'file_hash' list is a hash table which maintains all the information
-+ * related to the files with the SDT events in them. The file name serves as the
-+ * key to this hash list. Each entry of the file_hash table is a list head
-+ * which contains a chain of 'file_list' entries. Each 'file_list' entry contains
-+ * the list of SDT events found in that file. This hash serves as a mapping
-+ * from file name to the SDT events. 'file_hash' is used to add/del SDT events
-+ * to the SDT cache.
-+ */
-+int add_sdt_events(const char *arg)
-+{
-+	struct hash_list file_hash;
-+	int ret;
-+
-+	if (!arg) {
-+		pr_err("Error : File Name must be specified with \"--add\""
-+		       "option!\n"
-+	       "Usage :\n  perf sdt-cache --add <file-name>\n");
-+		return -1;
-+	}
-+	/* Initialize the file hash_list */
-+	file_hash_list__init(&file_hash);
-+
-+	/* Try to add the events to the file hash_list */
-+	ret = add_to_hash_list(&file_hash, arg);
-+	switch (ret) {
-+	case MOD:
-+		/* file hash table is dirty, flush it */
-+		flush_hash_list_to_cache(&file_hash);
-+	case NO_MOD:
-+		/* file hash isn't dirty, do not flush */
-+		file_hash_list__cleanup(&file_hash);
-+		ret = 0;
-+		break;
-+	default:
-+		file_hash_list__cleanup(&file_hash);
-+	}
-+	return ret;
-+}
-diff --git a/tools/perf/util/sdt.h b/tools/perf/util/sdt.h
-new file mode 100644
-index 0000000..4ed27d7
---- /dev/null
-+++ b/tools/perf/util/sdt.h
-@@ -0,0 +1,30 @@
-+#include "build-id.h"
-+
-+#define HASH_TABLE_SIZE 2063
-+#define SDT_CACHE_DIR "/var/cache/perf/"
-+#define SDT_FILE_CACHE "perf-sdt-file.cache"
-+#define SDT_EVENT_CACHE "perf-sdt-event.cache"
-+
-+#define DELIM ':'
-+#define MAX_ADDR 17
-+
-+#define MOD 1
-+#define NO_MOD 2
-+
-+struct file_sdt_ent {
-+	char name[PATH_MAX];                    /* file name */
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];  /* Build id of the file */
-+	struct list_head file_list;
-+	struct list_head sdt_list;              /* SDT notes in this file */
-+
-+};
-+
-+/* hash table entry */
-+struct hash_ent {
-+	struct list_head list;
-+};
-+
-+/* Hash table struct */
-+struct hash_list {
-+	struct hash_ent ent[HASH_TABLE_SIZE];
-+};
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index e09cec4..8f7b34d 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -323,6 +323,8 @@ struct sdt_note {
+ 		Elf32_Addr a32[3];
+ 	} addr;
+ 	struct list_head note_list;	/* SDT notes' list */
++	struct list_head event_list;    /* Link to event_hash_list entry */
++	struct file_sdt_ent *file_ptr;  /* ptr to the containing file_sdt_ent */
+ };
+ 
+ int get_sdt_note_list(struct list_head *head, const char *target);
 
