@@ -1,235 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaJAJBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 05:01:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaJAI5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:57:22 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@kernel.org>,
-        Radim Krcmar <rkrcmar@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+	id S1751580AbaJAJFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 05:05:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36322 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaJAJFU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 05:05:20 -0400
+Date: Wed, 1 Oct 2014 11:05:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Hurley <peter@hurleysoftware.com>
+cc: Akinobu Mita <akinobu.mita@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>
-Subject: [PATCH 3/4] mm: gup: use get_user_pages_fast and get_user_pages_unlocked
-Date: Wed,  1 Oct 2014 10:56:36 +0200
-Message-Id: <1412153797-6667-4-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
-References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+In-Reply-To: <542B5DC2.8020806@hurleysoftware.com>
+Message-ID: <alpine.DEB.2.11.1410011057290.4455@nanos>
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
+ <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos> <542B5DC2.8020806@hurleysoftware.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just an optimization.
+On Tue, 30 Sep 2014, Peter Hurley wrote:
+> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+> > Whether the proposed patchset is the correct solution to support it is
+> > a completely different question.
+> 
+> This patchset has been in mainline since 3.16 and has already caused
+> regressions, so the question of whether this is the correct solution has
+> already been answered.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- drivers/dma/iovlock.c              | 10 ++--------
- drivers/iommu/amd_iommu_v2.c       |  6 ++----
- drivers/media/pci/ivtv/ivtv-udma.c |  6 ++----
- drivers/misc/sgi-gru/grufault.c    |  3 +--
- drivers/scsi/st.c                  | 10 ++--------
- drivers/video/fbdev/pvr2fb.c       |  5 +----
- mm/mempolicy.c                     |  2 +-
- mm/process_vm_access.c             |  7 ++-----
- mm/util.c                          | 10 ++--------
- net/ceph/pagevec.c                 |  9 ++++-----
- 10 files changed, 19 insertions(+), 49 deletions(-)
+Agreed.
+ 
+> > So either you stop this right now and help Akinobu to find the proper
+> > solution 
+> 
+> If this is only a test platform for ARM parts then I don't think it
+> unreasonable to suggest forking x86 swiotlb support into a iommu=cma
+> selector that gets DMA mapping working for this test platform and doesn't
+> cause a bunch of breakage.
 
-diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
-index bb48a57..12ea7c3 100644
---- a/drivers/dma/iovlock.c
-+++ b/drivers/dma/iovlock.c
-@@ -95,17 +95,11 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
- 		pages += page_list->nr_pages;
+Breakage is not acceptable in any case.
  
- 		/* pin pages down */
--		down_read(&current->mm->mmap_sem);
--		ret = get_user_pages(
--			current,
--			current->mm,
-+		ret = get_user_pages_fast(
- 			(unsigned long) iov[i].iov_base,
- 			page_list->nr_pages,
- 			1,	/* write */
--			0,	/* force */
--			page_list->pages,
--			NULL);
--		up_read(&current->mm->mmap_sem);
-+			page_list->pages);
- 
- 		if (ret != page_list->nr_pages)
- 			goto unpin;
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index 5f578e8..6963b73 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -519,10 +519,8 @@ static void do_fault(struct work_struct *work)
- 
- 	write = !!(fault->flags & PPR_FAULT_WRITE);
- 
--	down_read(&fault->state->mm->mmap_sem);
--	npages = get_user_pages(NULL, fault->state->mm,
--				fault->address, 1, write, 0, &page, NULL);
--	up_read(&fault->state->mm->mmap_sem);
-+	npages = get_user_pages_unlocked(NULL, fault->state->mm,
-+					 fault->address, 1, write, 0, &page);
- 
- 	if (npages == 1) {
- 		put_page(page);
-diff --git a/drivers/media/pci/ivtv/ivtv-udma.c b/drivers/media/pci/ivtv/ivtv-udma.c
-index 7338cb2..96d866b 100644
---- a/drivers/media/pci/ivtv/ivtv-udma.c
-+++ b/drivers/media/pci/ivtv/ivtv-udma.c
-@@ -124,10 +124,8 @@ int ivtv_udma_setup(struct ivtv *itv, unsigned long ivtv_dest_addr,
- 	}
- 
- 	/* Get user pages for DMA Xfer */
--	down_read(&current->mm->mmap_sem);
--	err = get_user_pages(current, current->mm,
--			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map, NULL);
--	up_read(&current->mm->mmap_sem);
-+	err = get_user_pages_unlocked(current, current->mm,
-+			user_dma.uaddr, user_dma.page_count, 0, 1, dma->map);
- 
- 	if (user_dma.page_count != err) {
- 		IVTV_DEBUG_WARN("failed to map user pages, returned %d instead of %d\n",
-diff --git a/drivers/misc/sgi-gru/grufault.c b/drivers/misc/sgi-gru/grufault.c
-index f74fc0c..cd20669 100644
---- a/drivers/misc/sgi-gru/grufault.c
-+++ b/drivers/misc/sgi-gru/grufault.c
-@@ -198,8 +198,7 @@ static int non_atomic_pte_lookup(struct vm_area_struct *vma,
- #else
- 	*pageshift = PAGE_SHIFT;
- #endif
--	if (get_user_pages
--	    (current, current->mm, vaddr, 1, write, 0, &page, NULL) <= 0)
-+	if (get_user_pages_fast(vaddr, 1, write, &page) <= 0)
- 		return -EFAULT;
- 	*paddr = page_to_phys(page);
- 	put_page(page);
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index aff9689..c89dcfa 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4536,18 +4536,12 @@ static int sgl_map_user_pages(struct st_buffer *STbp,
- 		return -ENOMEM;
- 
-         /* Try to fault in all of the necessary pages */
--	down_read(&current->mm->mmap_sem);
-         /* rw==READ means read from drive, write into memory area */
--	res = get_user_pages(
--		current,
--		current->mm,
-+	res = get_user_pages_fast(
- 		uaddr,
- 		nr_pages,
- 		rw == READ,
--		0, /* don't force */
--		pages,
--		NULL);
--	up_read(&current->mm->mmap_sem);
-+		pages);
- 
- 	/* Errors and no page mapped should return here */
- 	if (res < nr_pages)
-diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
-index 167cfff..ff81f65 100644
---- a/drivers/video/fbdev/pvr2fb.c
-+++ b/drivers/video/fbdev/pvr2fb.c
-@@ -686,10 +686,7 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char *buf,
- 	if (!pages)
- 		return -ENOMEM;
- 
--	down_read(&current->mm->mmap_sem);
--	ret = get_user_pages(current, current->mm, (unsigned long)buf,
--			     nr_pages, WRITE, 0, pages, NULL);
--	up_read(&current->mm->mmap_sem);
-+	ret = get_user_pages_fast((unsigned long)buf, nr_pages, WRITE, pages);
- 
- 	if (ret < nr_pages) {
- 		nr_pages = ret;
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 8f5330d..6606c10 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -881,7 +881,7 @@ static int lookup_node(struct mm_struct *mm, unsigned long addr)
- 	struct page *p;
- 	int err;
- 
--	err = get_user_pages(current, mm, addr & PAGE_MASK, 1, 0, 0, &p, NULL);
-+	err = get_user_pages_fast(addr & PAGE_MASK, 1, 0, &p);
- 	if (err >= 0) {
- 		err = page_to_nid(p);
- 		put_page(p);
-diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
-index 5077afc..b159769 100644
---- a/mm/process_vm_access.c
-+++ b/mm/process_vm_access.c
-@@ -99,11 +99,8 @@ static int process_vm_rw_single_vec(unsigned long addr,
- 		size_t bytes;
- 
- 		/* Get the pages we're interested in */
--		down_read(&mm->mmap_sem);
--		pages = get_user_pages(task, mm, pa, pages,
--				      vm_write, 0, process_pages, NULL);
--		up_read(&mm->mmap_sem);
--
-+		pages = get_user_pages_unlocked(task, mm, pa, pages,
-+						vm_write, 0, process_pages);
- 		if (pages <= 0)
- 			return -EFAULT;
- 
-diff --git a/mm/util.c b/mm/util.c
-index 093c973..1b93f2d 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -247,14 +247,8 @@ int __weak get_user_pages_fast(unsigned long start,
- 				int nr_pages, int write, struct page **pages)
- {
- 	struct mm_struct *mm = current->mm;
--	int ret;
--
--	down_read(&mm->mmap_sem);
--	ret = get_user_pages(current, mm, start, nr_pages,
--					write, 0, pages, NULL);
--	up_read(&mm->mmap_sem);
--
--	return ret;
-+	return get_user_pages_unlocked(current, mm, start, nr_pages,
-+				       write, 0, pages);
- }
- EXPORT_SYMBOL_GPL(get_user_pages_fast);
- 
-diff --git a/net/ceph/pagevec.c b/net/ceph/pagevec.c
-index 5550130..5504783 100644
---- a/net/ceph/pagevec.c
-+++ b/net/ceph/pagevec.c
-@@ -23,17 +23,16 @@ struct page **ceph_get_direct_page_vector(const void __user *data,
- 	if (!pages)
- 		return ERR_PTR(-ENOMEM);
- 
--	down_read(&current->mm->mmap_sem);
- 	while (got < num_pages) {
--		rc = get_user_pages(current, current->mm,
--		    (unsigned long)data + ((unsigned long)got * PAGE_SIZE),
--		    num_pages - got, write_page, 0, pages + got, NULL);
-+		rc = get_user_pages_fast((unsigned long)data +
-+					 ((unsigned long)got * PAGE_SIZE),
-+					 num_pages - got,
-+					 write_page, pages + got);
- 		if (rc < 0)
- 			break;
- 		BUG_ON(rc == 0);
- 		got += rc;
- 	}
--	up_read(&current->mm->mmap_sem);
- 	if (rc < 0)
- 		goto fail;
- 	return pages;
+> Which is different than if the plan is to ship production units for x86;
+> then a general purpose solution will be required.
+> 
+> As to the good design of a general purpose solution for allocating and
+> mapping huge order pages, you are certainly more qualified to help Akinobu
+> than I am.
+
+Fair enough. Still this does not make the case for outright rejecting
+the idea of supporting that kind of device even if it is a esoteric
+case. We deal with enough esoteric hardware in Linux and if done
+right, it's no harm to anyone.
+
+I'll have a look at the technical details.
+
+Thanks,
+
+	tglx
