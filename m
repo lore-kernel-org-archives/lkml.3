@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaJAEyT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 00:54:19 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:36249 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaJAEyS (ORCPT
+	id S1751334AbaJAFJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 01:09:25 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:62783 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaJAFJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 00:54:18 -0400
+	Wed, 1 Oct 2014 01:09:23 -0400
+Message-ID: <542B8C7F.70108@fds-team.de>
+Date: Wed, 01 Oct 2014 07:09:19 +0200
+From: Sebastian Lackner <sebastian@fds-team.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <542B7200.6030902@landley.net>
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
- <542B4DA3.5080105@gmail.com> <542B519B.6010001@landley.net>
- <542B5E44.40303@gmail.com> <542B7200.6030902@landley.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Sep 2014 21:53:56 -0700
-Message-ID: <CALCETrWr--A26UEv_7DeZa-Te1fTBDQgCdZt24n5LWkAnOa6jQ@mail.gmail.com>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-To: Rob Landley <rob@landley.net>
-Cc: frowand.list@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+To: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Anish Bhatt <anish@chelsio.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+References: <cover.1412138935.git.luto@amacapital.net> <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
+In-Reply-To: <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 8:16 PM, Rob Landley <rob@landley.net> wrote:
-> On 09/30/14 20:52, Frank Rowand wrote:
->> On 9/30/2014 5:58 PM, Rob Landley wrote:
->>> If you're going to argue that it should "default y", that's a defensible
->>> choice. But please don't argue for kernel config symbols with a negative
->>> meaning or we'll start having allyesconfig_n brain damage too...
->>
->> Yes, "default y" is a valid answer to my request.
->
-> Works for me.
->
->>>> Instead of using a config option, would adding another kernel
->>>> command line option, such as 'init_fail_is_fatal', work for
->>>> your needs?
->>>
->>> That was the previous series of patches you ignored, which added code so
->>> you can provide _extra_ kernel commands to tell it _not_ to do stuff.
->>> The patches did not generate noticeable enthusiasm.
->>
->> But there also was not a strong push back either.  Just Chuck's suggestion
->> of an alternate syntax, and your suggestion of instead using a config
->> option (and possibly immediately deprecating the config option).
->>
->> You could as easily frame the argument that the added code was to
->> tell the kernel to "_do_ stuff" (panic) instead of "_not_ do stuff".
->> But that is just semantics on my part; whatever.
->>
->> I thought the general trend was to try to avoid adding config options.
->> The strictinit method seems fine to me.
->
-> Embedded guys care:
->
-> http://elinux.org/Linux_Tiny
->
-> http://lkml.iu.edu//hypermail/linux/kernel/1409.2/03763.html
->
->>>> I have a feeling this has already been proposed,
->>>> as the 'strictinit' option mentioned in the changes from v3
->>>> below might be the same concept?
->>>
->>> That was it, yes.
->>>
->>> Having to get your kernel config right (and your kernel command line
->>> right) in order for your system to boot is not really a new concept, is
->>> it? You can still specify "init=/bin/sh" if you want that. (I do it all
->>> the time when I need to edit a system I haven't bothered to look up the
->>> root password to.)
->>
->> Yes, of course I can.  So it falls back to personal preference (as I said,
->> I like that some failed boots will drop into a shell without having to
->> change the kernel command line).
->
-> The config option lets it do that. Default Y preserves the old behavior.
+> +	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
+> +	jz 1f
+> +	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
+> +	popfq_cfi
+> +1:
+> +
 
-I significantly prefer default N.  Scripts that play with init= really
-don't want the fallback, and I can imagine contexts in which it could
-be a security problem.
+Do you think it makes sense to change the order here, so that no jump happens if
+NT is not set (which happens a bit more often, than the other way round)? Just a
+guess though, haven't measured if pipeline effects have such a big influence in this
+case. ;)
 
---Andy
