@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaJALpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:45:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56403 "EHLO
+	id S1751368AbaJALqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:46:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56414 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaJALpi (ORCPT
+	with ESMTP id S1751128AbaJALqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:45:38 -0400
-Date: Wed, 1 Oct 2014 12:45:24 +0100
+	Wed, 1 Oct 2014 07:46:15 -0400
+Date: Wed, 1 Oct 2014 12:45:56 +0100
 From: Mark Brown <broonie@kernel.org>
-To: "Opensource [James Seong-Won Ban]" <James.Ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <Support.Opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20141001114524.GU4273@sirena.org.uk>
-References: <201409300310.s8U3AUfe031634@krsrvapps-01.diasemi.com>
- <20140930124522.GE4273@sirena.org.uk>
- <0ACAE736BB7A70499F1D8D5E6AC1854C01AC2AF92C@SW-EX-MBX01.diasemi.com>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-gpio@vger.kernel.org
+Message-ID: <20141001114555.GV4273@sirena.org.uk>
+References: <1412142466-14932-1-git-send-email-pramod.gurav@smartplayin.com>
+ <20141001113809.GT4273@sirena.org.uk>
+ <542BE9E0.3080007@smartplayin.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XJ5wUQMT/jAb5xue"
+	protocol="application/pgp-signature"; boundary="kM/PxlMMHsUUNZZW"
 Content-Disposition: inline
-In-Reply-To: <0ACAE736BB7A70499F1D8D5E6AC1854C01AC2AF92C@SW-EX-MBX01.diasemi.com>
+In-Reply-To: <542BE9E0.3080007@smartplayin.com>
 X-Cookie: So you're back... about time...
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1] regulator: DA9211 : Fix a bug in update of mask bit
+Subject: Re: [PATCH] ASoC: remove use of gpiochip_remove() retval
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,43 +35,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---XJ5wUQMT/jAb5xue
+--kM/PxlMMHsUUNZZW
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Oct 01, 2014 at 01:02:27AM +0000, Opensource [James Seong-Won Ban] wrote:
+On Wed, Oct 01, 2014 at 05:17:44PM +0530, Pramod Gurav wrote:
+> On Wednesday 01 October 2014 05:08 PM, Mark Brown wrote:
 
-> > Applied, but please try to make sure that your changelogs are more
-> > descriptive - what is the bug?  Please also use subject lines matching
-> > the style for the subsystem.
+> > Applied, I'm assuming that the API change is going to be introduced in a
+> > future kernel version since obviously it'll break the build otherwise.
 
-> The proper operation of mask bit should be set as '0' for enabling the interrupt.
-> The result of mask operation at previous code was the same to new one.
-> But the meaning in the previous code was to set mask bit as '1'.
+> Mark please revert the changes as these are already present in
+> linux-next master. I realized it late. Sorry for trouble.
 
-Right, the point is that this information should've gone in the
-changelog - please bear this in mind for future patches.
+Done.
 
-> What is subject line you said?
-> If you give me an example, it would be very helpful to me.
-
-git shortlog drivers/regulator.  The capitalisation and extra spaces are
-both off.
-
---XJ5wUQMT/jAb5xue
+--kM/PxlMMHsUUNZZW
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUK+lTAAoJECTWi3JdVIfQkvUH/0HJLy0PWFFFBzijr0Qf21RE
-toHxOXa/I2tQ50xgmPccMGqQSK7Gl3ghs9xiwRGtlY36I2lt44SVEC4prpj8CpTt
-Eqd3gP8pFsAfT4B6pv4btSMhr0sZs8Kt4ztP2kasbEiGbFdy4ZSOnHtH0nZOYah5
-Z+n/22bTQL+gjxxphqp3Y4RtpMVLUc37jChFcEMZL1XXYmM5Sz8HE4MiSmyojDAf
-E1JANB7uBdW+pEYGA5vMopc46yvIa4UAKitEh36VtbSoj5pqUUmuIK4gmcy/PJZE
-ZBGh+OEofHlp5TzzGnLW17afUmOD//ISMToJVKcHXW+pmy0S01c/ceBC7/3BIIU=
-=fhzi
+iQEcBAEBAgAGBQJUK+lzAAoJECTWi3JdVIfQCtUIAIONApW90+eh2RzVUdgpQufr
+/KZOAzqcY6qItvrvARtwS2wzr5fS4Jm6kpAGyFdcpCbtrKtu0/fICBm7Zby1lNRO
+6fGdBXzsLbOGW1e68s3hCHSXD3OApcSIYIyrKHRK3Wm3smMfFeHn8EN2xRhsnWRC
+7+ak43OXNTkBmQiQ6Yvl3+ujeyMTYDwdKL1q6quut/RtPeg24grvcscaXxrFzNBL
+4+IQo07DofqEZI65i0ydw4mGVGrMhGCVDaeOH4g8hvFduBbkTRVV/WSIi7Q5yHEU
+XFbQH35CvNhLBEqeWXe9qgCLdE5/wyOs8Emthh/bc0chgeUfImlTSpT+Mmwo6c8=
+=/vwW
 -----END PGP SIGNATURE-----
 
---XJ5wUQMT/jAb5xue--
+--kM/PxlMMHsUUNZZW--
