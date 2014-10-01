@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaJANIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:08:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58078 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaJANIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:08:22 -0400
-Date: Wed, 1 Oct 2014 06:08:22 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH] block: remove artifical max_hw_sectors cap
-Message-ID: <20141001130822.GA5362@infradead.org>
-References: <1410044885-14893-1-git-send-email-hch@lst.de>
+	id S1751428AbaJANKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:10:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861AbaJANKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:10:17 -0400
+Date: Wed, 1 Oct 2014 09:10:08 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Andrew de los Reyes <andrew-vger@gizmolabs.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special
+ devices
+Message-ID: <20141001131008.GB18756@mail.corp.redhat.com>
+References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
+ <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410044885-14893-1-git-send-email-hch@lst.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we still haven't made any progress on this let me explain why
-the limit does not make sense:  It only applies to _FS request,
-which basically have three use cases:
+On Oct 01 2014 or thereabouts, Jiri Kosina wrote:
+> On Tue, 30 Sep 2014, Benjamin Tissoires wrote:
+> 
+> > Jiri, This patch series can be split in 2 if you would like:
+> > - patches 1 to 4 can be scheduled easily for 3.18 IMO
+> > - patches 5 to 13 might need some more reviews, so either 3.18 or 3.19
+> 
+> Benjamin,
+> 
+> thanks for the summary. I'll try to review 1-4 in time for 3.18, but I 
+> can't guarantee that.
+> 
 
- - metadata I/O.  Generally small enough that the limit does not
-   matter at all.
- - buffered reads/writes.  We already have a self-tuning algorithm
-   that limits writeback size, and a readahead size tunable that
-   caps read sizes.  Imposing another confusing limit that does
-   not interact with the visible tunables here is not helpful
- - direct I/O.  Users should get something resembling their request
-   as closely as possible on the write, and this is where our
-   stupid limitation causes the most problems.
+Thanks
 
-On Sat, Sep 06, 2014 at 04:08:05PM -0700, Christoph Hellwig wrote:
-> Set max_sectors to the value the drivers provides as hardware limit by
-> default.  Linux had proper I/O throttling for a long time and doesn't
-> rely on a artifically small maximum I/O size anymore.  By not limiting
-> the I/O size by default we remove an annoying tuning step required for
-> most Linux installation.
-> 
-> Note that both the user, and if absolutely required the driver can still
-> impose a limit for FS requests below max_hw_sectors_kb.
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  block/blk-settings.c       | 4 +---
->  drivers/block/aoe/aoeblk.c | 2 +-
->  include/linux/blkdev.h     | 1 -
->  3 files changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/block/blk-settings.c b/block/blk-settings.c
-> index f1a1795..f52c223 100644
-> --- a/block/blk-settings.c
-> +++ b/block/blk-settings.c
-> @@ -257,9 +257,7 @@ void blk_limits_max_hw_sectors(struct queue_limits *limits, unsigned int max_hw_
->  		       __func__, max_hw_sectors);
->  	}
->  
-> -	limits->max_hw_sectors = max_hw_sectors;
-> -	limits->max_sectors = min_t(unsigned int, max_hw_sectors,
-> -				    BLK_DEF_MAX_SECTORS);
-> +	limits->max_sectors = limits->max_hw_sectors = max_hw_sectors;
->  }
->  EXPORT_SYMBOL(blk_limits_max_hw_sectors);
->  
-> diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
-> index dd73e1f..46c282f 100644
-> --- a/drivers/block/aoe/aoeblk.c
-> +++ b/drivers/block/aoe/aoeblk.c
-> @@ -395,7 +395,7 @@ aoeblk_gdalloc(void *vp)
->  	WARN_ON(d->flags & DEVFL_TKILL);
->  	WARN_ON(d->gd);
->  	WARN_ON(d->flags & DEVFL_UP);
-> -	blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
-> +	blk_queue_max_hw_sectors(q, 1024);
->  	q->backing_dev_info.name = "aoe";
->  	q->backing_dev_info.ra_pages = READ_AHEAD / PAGE_CACHE_SIZE;
->  	d->bufpool = mp;
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 518b465..7e3c172 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1192,7 +1192,6 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
->  enum blk_default_limits {
->  	BLK_MAX_SEGMENTS	= 128,
->  	BLK_SAFE_MAX_SECTORS	= 255,
-> -	BLK_DEF_MAX_SECTORS	= 1024,
->  	BLK_MAX_SEGMENT_SIZE	= 65536,
->  	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
->  };
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
----end quoted text---
+> Do you forsee any issues if the whole lot is queued for 3.19 only?
+
+Nope. It waited since 2011, so it can wait 3 more months :)
+
+Cheers,
+Benjamin
+
