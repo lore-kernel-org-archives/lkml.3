@@ -1,124 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaJAIUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:20:52 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46023 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaJAIUt (ORCPT
+	id S1751345AbaJAIZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:25:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60983 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750944AbaJAIZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:20:49 -0400
-Date: Wed, 1 Oct 2014 01:19:00 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: pipe/page fault oddness.
-In-Reply-To: <CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
-References: <20140930033327.GA14558@redhat.com> <CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com> <20140930043309.GA16196@redhat.com> <CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com> <CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>
- <20140930160510.GA15903@redhat.com> <CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com> <20140930162201.GC15903@redhat.com> <20140930164047.GA18354@redhat.com> <CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
- <20140930182059.GA24431@redhat.com> <CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 1 Oct 2014 04:25:05 -0400
+Date: Wed, 1 Oct 2014 10:21:57 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        lars@metafoo.de, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>
+Subject: Re: [PATCH 6/9] dmaengine: Create a generic dma_slave_caps callback
+Message-ID: <20141001082157.GE6884@lukather>
+References: <1411808085-27792-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1411808085-27792-7-git-send-email-maxime.ripard@free-electrons.com>
+ <20140927092536.GZ5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hUH5gZbnpyIv7Mn4"
+Content-Disposition: inline
+In-Reply-To: <20140927092536.GZ5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014, Linus Torvalds wrote:
-> On Tue, Sep 30, 2014 at 11:20 AM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > page_fault_kernel:    address=__per_cpu_end ip=copy_page_to_iter error_code=0x2
-> 
-> Interesting. "error_code" in particular. The value "2" means that the
-> CPU thinks that the page is not present (bit zero is clear).
-> 
-> (That "address" is useless - it's tried to turn a user address into a
-> kernel symbol, and the percpu symbols are zero-based, so it picks the
-> last of them. The "ip" is useless too, since it doesn't give the
-> offset)
-> 
-> So the CPU thinks it's a write to a not-present page, which means that
-> _PAGE_PRESENT bit is clear.
-> 
-> Now the *kernel* thinks a page is present not just if _PAGE_PRESENT is
-> set, but also if _PAGE_PROTNONE or _PAGE_NUMA are set. Sadly, your
-> trace is not very useful, because inlining has caused pretty much all
-> the cases to be in "handle_mm_fault()", so the trace doesn't really
-> tell which path this all takes.
-> 
-> But we can still do *some* analysis on the trace: do_wp_page()
-> shouldn't have been inlined, so it would have shown up in the trace if
-> it had been called. So I think we can be pretty confident that the
-> ptep_set_access_flags() we see is the one from handle_pte_fault().
-> 
-> And if that is the case, then we know that "pte_present()" is indeed
-> true as far a the kernel is concerned. So with _PAGE_PRESENT not being
-> set (based on the error code), we know that _PAGE_PROTNONE must be
-> set, otherwise we'd have triggered the pte_numa() check and exited
-> through do_numa_page().
-> 
-> So it smells like we have a PROT_NONE VM area (at least the paeg table
-> entries imply that). But "access_error()" should have flagged that (it
-> checks "vma->vm_flags & VM_WRITE"). How do we have a page table entry
-> marked _PAGE_PROTNONE, but VM_WRITE set in the vma?
-> 
-> Or, possibly, we have some confusion about the page tables themselves
-> (corruption, wrong %cr3 value, whatever), explaining why the CPU
-> thinks one thing, but our software page table walker thinks another.
-> 
-> I'm not seeing how this all happens. But I'm adding Kirill to the cc,
-> since he might see something I missed, and he touched some of this
-> code last ("tag, you're it").
-> 
-> Kirill: the thread is on lkml, but basically it boils down to the
-> second byte write in fault_in_pages_writeable() faulting forever,
-> despite handle_mm_fault() apparently thinking that everything is fine.
-> 
-> Also adding Hugh Dickins, just because the more people who know this
-> code that are involved, the better.
 
-I've tried, but failed to explain it.
+--hUH5gZbnpyIv7Mn4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think it's likely related to the VM_BUG_ON(!(val & _PAGE_PRESENT))
-which linux-next has in pte_mknuma(), which Sasha Levin first reported
-hitting in https://lkml.org/lkml/2014/8/26/869 (a resumption of the
-"mm: BUG in unmap_page_range" thread, though its subject bug is fixed).
+Hi Russell,
 
-Mel and I gave it a lot of thought, but that too remains unexplained.
-Sasha could reproduce it fairly easily on linux-next, but could not
-reproduce it on 3.17-rc4 (plus the VM_BUG_ON); maybe Dave is doing
-something different enough to get it on 3.17-rc7.
+On Sat, Sep 27, 2014 at 10:25:36AM +0100, Russell King - ARM Linux wrote:
+> On Sat, Sep 27, 2014 at 10:54:42AM +0200, Maxime Ripard wrote:
+> > dma_slave_caps is very important to the generic layers that might inter=
+act with
+> > dmaengine, such as ASoC. Unfortunately, it has been added as yet another
+> > dma_device callback, and most of the existing drivers haven't implement=
+ed it,
+> > reducing its reliability.
+>=20
+> Many haven't implemented it probably because either (a) they don't get us=
+ed
+> with ASoC, or (b) they aren't aware of the new interface, or (c) can't be
+> bothered with the churn.
 
-I say they're likely related because both could be explained if
-there's some way in which a PROTNONE pte can get left behind after
-the vma has been mprotected back from PROT_NONE to read-writable.
-But we cannot see how (even when racing with page migration).
+For a), I really see this as a chicken-egg issue. ASoC is the only
+user of it because it's the only framework that has a generic layer on
+top, and it's the only framework that has a generic layer because most
+drivers don't implement it.
 
-Irrelevance follows...
+Now, there seems to be a trend to actually use a generic DMA layer in
+other frameworks. SPI gained one recently, I think I saw something
+about some discussions for IIO and I2C too. And in order for this to
+work, we have to make it reliable, and as such, implemented on most
+drivers.
 
-There *appears* to be a risk of hitting the VM_BUG_ON, or with no
-VM_BUG_ON (as in 3.17-rc) pte_mknuma proceeding to add _PAGE_NUMA
-to _PAGE_PROTNONE - making the pte then fail the pte_numa test,
-but pass the pte_special test, hence fail the vm_normal_page test:
-when coming from change_prot_numa serving MPOL_MF_LAZY for mbind.
+> However, trying to return something introduces a bug:
+>=20
+> >  static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma=
+_slave_caps *caps)
+> >  {
+> > +	struct dma_device *device;
+> > +
+> >  	if (!chan || !caps)
+> >  		return -EINVAL;
+> > =20
+> > +	device =3D chan->device;
+> > +
+> >  	/* check if the channel supports slave transactions */
+> > -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
+> > +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
+> >  		return -ENXIO;
+> > =20
+> > -	if (chan->device->device_slave_caps)
+> > -		return chan->device->device_slave_caps(chan, caps);
+> > +	caps->cmd_pause =3D !!device->device_pause;
+> > +	caps->cmd_terminate =3D !!device->device_terminate_all;
+> > +
+> > +	if (device->device_slave_caps)
+> > +		return device->device_slave_caps(chan, caps);
+> > =20
+> > -	return -ENXIO;
+> > +	return 0;
+>=20
+> So this now returns success if the driver doesn't implement device_slave_=
+caps(),
+> but with most of the structure zero.
+>=20
+> Now, consider what effect this has with:
+>=20
+>=20
+>         ret =3D dma_get_slave_caps(chan, &dma_caps);
+>         if (ret =3D=3D 0) {
+>                 if (dma_caps.cmd_pause)
+>                         hw.info |=3D SNDRV_PCM_INFO_PAUSE | SNDRV_PCM_INF=
+O_RESUME;
+>                 if (dma_caps.residue_granularity <=3D DMA_RESIDUE_GRANULA=
+RITY_SEGMENT)
+>                         hw.info |=3D SNDRV_PCM_INFO_BATCH;
+>=20
+>                 if (substream->stream =3D=3D SNDRV_PCM_STREAM_PLAYBACK)
+>                         addr_widths =3D dma_caps.dstn_addr_widths;
+>                 else
+>                         addr_widths =3D dma_caps.src_addr_widths;
+>         }
+>=20
+> addr_widths becomes zero, and we also get SNDRV_PCM_INFO_BATCH turned
+> on for _all_ DMA engine drivers.  The first renders ASoC useless with
+> DMA engine.
+>=20
+> It may be a good way to get people to implement it, but this will cause
+> regressions.
 
-However, that would still not explain Dave's endless refaulting;
-though I was reminded to send you a patch to fix it, except that
-when I came to test the fix, I could not produce the problem, and
-eventually discovered a720094ded8c ("mm: mempolicy: Hide MPOL_NOOP
-and MPOL_MF_LAZY from userspace for now") - that call to
-change_prot_numa is still just dead code, so we're still safe from
-its use on PROT_NONE areas (which task_numa_work carefully avoids).
+Hmmm, nasty indeed. Maybe we could add a test to see if any of the
+field we're going to use are filled, and if not, return an error?
 
-Some time wasted on that, but I learnt a valuable debugging technique:
-#undef EINVAL
-#define EINVAL __LINE__
+Thanks!
+Maxime
 
-Hugh
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--hUH5gZbnpyIv7Mn4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUK7mlAAoJEBx+YmzsjxAgquMP/R4V3vCKSO7E0cKbaj0TTVIf
+IKypHAKyq4KIdH9ieu0OTD6TDJ/9Ax+BB7Ml4Jz+gMA6OM1F1jeEvOL4lDxMXPek
+nkCvKBet6ookwEVJIECxfBVHrTD/Ka+plk+PkiVIDcA5A6SwNOIk7cL2geLMPS8q
++vPw2++3x+UdEjZVK5LaRaKl9sTC2t1fMCk8Pwlc+cAMcid0mD6mT2xTZdrp/Lp2
+X3LZWu1dh99II4RuJrvDIjuEP7dAWhcv59pHQ9mDU92NawtB6sq8SaqmyT0AeifV
+kWwiUnKfZ3v9Lx+Br+eaE40hTnchRBQsmKzkv01Zu2ZQZg90p/U/FhDLptkIm397
+puv59R03ZkAMt7CZ6D1tkuOrsoyb9bUecszoktfBiHCkWgvcD1nKpFkVV1VDfMQL
+q2HNonSVQqUEjmCUTixxx4z6v1PDoRK6t/J7Q07EBStiPDFTszDRNzaSXxgfmU2G
+MzhWKt5TKlLz+2E5nM66+UZkO5huAPCe/2yI2NgKbNCq5NG+27N0ToFPWX+grcwP
+rsi7jvugUigFE8mTOix1UP07gVdWUCwSDysjkfIr5itH5bYBOTuh57eTSVQ9YYHx
+BLaN4lk4bYb+Sy8Y8BV+qWTkJ46mtjqQdizaD5te90bW1NGD9yA15mcgl1sEmm0j
+8QcX9BHM0G4Je/830RQu
+=ZuFl
+-----END PGP SIGNATURE-----
+
+--hUH5gZbnpyIv7Mn4--
