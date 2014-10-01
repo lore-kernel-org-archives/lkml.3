@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbaJAQsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:48:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41546 "EHLO mx1.redhat.com"
+	id S1752991AbaJAQvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:51:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39005 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaJAQsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:48:31 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 1/3] Revert "PCI/MSI: Rename __read_msi_msg() to
-	read_msi_msg()"
-To: linux-pci@vger.kernel.org, bhelgaas@google.com
-Cc: linux-kernel@vger.kernel.org, wangyijing@huawei.com
-Date: Wed, 01 Oct 2014 10:48:22 -0600
-Message-ID: <20141001164822.2709.44994.stgit@gimli.home>
-In-Reply-To: <20141001163814.2709.92885.stgit@gimli.home>
-References: <20141001163814.2709.92885.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S1751236AbaJAQvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:51:08 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2 0/3] ARM: rk3288 : Add PM Domain support
+References: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
+Date: Wed, 01 Oct 2014 09:51:06 -0700
+In-Reply-To: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
+	(jinkun hong's message of "Sun, 28 Sep 2014 03:22:51 -0700")
+Message-ID: <7hoatvvimd.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes for an inconsistent MSI API, read_msi_msg() takes an
-msi_desc arg, but write_msi_msg() takes an irq.  Let's keep the
-API consistent that the __read/write interfaces take an msi_desc
-and the standard interfaces take an irq.
++Geert, Ulf
 
-This reverts 09d4ecd3f067e307211882412f8acd09daaacca2
+"jinkun.hong" <jinkun.hong@rock-chips.com> writes:
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+>
+> Use PM Domain framework to manage the clock.
 
- arch/powerpc/platforms/pseries/msi.c |    2 +-
- arch/x86/pci/xen.c                   |    2 +-
- drivers/pci/msi.c                    |    2 +-
- include/linux/msi.h                  |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+Which clock?  This changelog needs a more thorough description.  Also,
+with this series alone, it's not clear how the power-domain transitions
+ever happen, since I don't see any devices hooked up to your power
+domains, or do I see your platform using runtime PM.  In order for this
+to be reviewed properely, it's important for reviewers to be able to see
+how this PM domain support will be used.
 
-diff --git a/arch/powerpc/platforms/pseries/msi.c b/arch/powerpc/platforms/pseries/msi.c
-index 88f14a6..8ab5add 100644
---- a/arch/powerpc/platforms/pseries/msi.c
-+++ b/arch/powerpc/platforms/pseries/msi.c
-@@ -476,7 +476,7 @@ again:
- 		irq_set_msi_desc(virq, entry);
- 
- 		/* Read config space back so we can restore after reset */
--		read_msi_msg(entry, &msg);
-+		__read_msi_msg(entry, &msg);
- 		entry->msg = msg;
- 	}
- 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index ad03739..093f5f4 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -229,7 +229,7 @@ static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 		return 1;
- 
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
--		read_msi_msg(msidesc, &msg);
-+		__read_msi_msg(msidesc, &msg);
- 		pirq = MSI_ADDR_EXT_DEST_ID(msg.address_hi) |
- 			((msg.address_lo >> MSI_ADDR_DEST_ID_SHIFT) & 0xff);
- 		if (msg.data != XEN_PIRQ_MSI_DATA ||
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index b6565ea..12d0f29 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -249,7 +249,7 @@ void default_restore_msi_irqs(struct pci_dev *dev)
- 	}
- }
- 
--void read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
-+void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg)
- {
- 	BUG_ON(entry->dev->current_state != PCI_D0);
- 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 36c63cf..0bb302f 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -15,7 +15,7 @@ struct irq_data;
- struct msi_desc;
- void mask_msi_irq(struct irq_data *data);
- void unmask_msi_irq(struct irq_data *data);
--void read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-+void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
- void write_msi_msg(unsigned int irq, struct msi_msg *msg);
+Also, remember that the DT is supposed to reflect the hardware, not the
+design choices of linux drivers.  Because of that, it's a little
+surprising to see clocks as properties of a power domain because clocks
+are usually properties of devices.
 
+I suggest you have a look at the sh-mobile implementation of DT-based
+power domains by Geert[1], which shows how he's hooking up device clocks.
+
+Kevin
+
+[1] http://marc.info/?l=linux-pm&m=141166256415448&w=2
