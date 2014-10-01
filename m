@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308AbaJAMch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 08:32:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35109 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047AbaJAMcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 08:32:36 -0400
-From: Hannes Reinecke <hare@suse.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        linux-kernel@vger.kernel.org, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH] block: misplaced rq_complete tracepoint
-Date: Wed,  1 Oct 2014 14:32:31 +0200
-Message-Id: <1412166751-73709-1-git-send-email-hare@suse.de>
-X-Mailer: git-send-email 1.8.5.2
+	id S1751365AbaJAMdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 08:33:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:26105 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaJAMdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 08:33:14 -0400
+Date: Wed, 1 Oct 2014 15:33:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Somya Anand <somyaanand214@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: Android: alarm-dev: Fixed a y2038 issue
+Message-ID: <20141001123304.GD23154@mwanda>
+References: <1412181986-4507-1-git-send-email-somyaanand214@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412181986-4507-1-git-send-email-somyaanand214@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rq_complete tracepoint was never issued for empty requests,
-causing the resulting blktrace information to never show any
-completion for those request.
+On Wed, Oct 01, 2014 at 10:16:26PM +0530, Somya Anand wrote:
+> Fixed y2038 issue by replacing timespec with timespec64.
+> 
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
----
- block/blk-core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This breaks the userspace API.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3aff9f5..eb05abf 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2414,11 +2414,11 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- {
- 	int total_bytes;
- 
-+	trace_block_rq_complete(req->q, req, nr_bytes);
-+
- 	if (!req->bio)
- 		return false;
- 
--	trace_block_rq_complete(req->q, req, nr_bytes);
--
- 	/*
- 	 * For fs requests, rq is just carrier of independent bio's
- 	 * and each partial completion should be handled separately.
--- 
-1.8.5.2
+regards,
+dan carpenter
 
