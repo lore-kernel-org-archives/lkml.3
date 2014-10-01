@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaJAN1N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:27:13 -0400
-Received: from bues.ch ([80.190.117.144]:47230 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaJAN1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:27:12 -0400
-Date: Wed, 1 Oct 2014 15:27:05 +0200
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] ssb: Fix Sparse error in main
-Message-ID: <20141001152705.02f4f34e@wiggum>
-In-Reply-To: <542BAFB3.6030207@smartplayin.com>
-References: <1412147196-7466-1-git-send-email-pramod.gurav@smartplayin.com>
- <1412148544.21730.36.camel@x220>
- <542BAFB3.6030207@smartplayin.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1751575AbaJAN1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:27:40 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:57157 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaJAN1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:27:39 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/WkksWX0=7dNSbjP8muOd0He"; protocol="application/pgp-signature"
+In-Reply-To: <542BE977.3040807@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-1-git-send-email-a.ryabinin@samsung.com>
+ <1411562649-28231-12-git-send-email-a.ryabinin@samsung.com>
+ <CACT4Y+aJ9htaruQ1Nn7+MSGwtNzRb_hfytQo98J1wq5N6oh1BA@mail.gmail.com>
+ <CAPAsAGxLxCxOayqcu=PbgFG6J7JEuL8J3+ouz94p_k0v0Hy=wA@mail.gmail.com>
+ <CACT4Y+Z4N5hpz_ZXFOCCbv7sbz2kzrF6gYHMbasDFNwpdOK30Q@mail.gmail.com>
+ <20141001103930.GG20364@e104818-lin.cambridge.arm.com> <542BE977.3040807@samsung.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Wed, 1 Oct 2014 17:27:11 +0400
+Message-ID: <CACT4Y+ZXcZ=BLGjXamfpV+5R-5pahKGTeMcRoLkcxY7PQGatjw@mail.gmail.com>
+Subject: Re: [PATCH v3 11/13] kmemleak: disable kasan instrumentation for kmemleak
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/WkksWX0=7dNSbjP8muOd0He
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 1, 2014 at 3:45 PM, Andrey Ryabinin <a.ryabinin@samsung.com> wrote:
+> On 10/01/2014 02:39 PM, Catalin Marinas wrote:
+>> On Mon, Sep 29, 2014 at 03:10:01PM +0100, Dmitry Vyukov wrote:
+>>> On Fri, Sep 26, 2014 at 9:36 PM, Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
+>>>> 2014-09-26 21:10 GMT+04:00 Dmitry Vyukov <dvyukov@google.com>:
+>>>>> Looks good to me.
+>>>>>
+>>>>> We can disable kasan instrumentation of this file as well.
+>>>>
+>>>> Yes, but why? I don't think we need that.
+>>>
+>>> Just gut feeling. Such tools usually don't play well together. For
+>>> example, due to asan quarantine lots of leaks will be missed (if we
+>>> pretend that tools work together, end users will use them together and
+>>> miss bugs). I won't be surprised if leak detector touches freed
+>>> objects under some circumstances as well.
+>>> We can do this if/when discover actual compatibility issues, of course.
+>>
+>> I think it's worth testing them together first.
+>>
+>
+> I did test them together. With this patch applied both tools works without problems.
 
-On Wed, 01 Oct 2014 13:09:31 +0530
-Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-
-> On Wednesday 01 October 2014 12:59 PM, Paul Bolle wrote:
-> > On Wed, 2014-10-01 at 12:36 +0530, Pramod Gurav wrote:
-> >> This change fixes below sparse error:
-> >>
-> >> drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
-> >> was not declared. Should it be static?
-> >>
-> >> Cc: Michael Buesch <m@bues.ch>
-> >> Cc: netdev@vger.kernel.org
-> >> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> >> ---
-> >>  drivers/ssb/ssb_private.h |    1 +
-> >>  1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/drivers/ssb/ssb_private.h b/drivers/ssb/ssb_private.h
-> >> index eb507a5..86bbbe3 100644
-> >> --- a/drivers/ssb/ssb_private.h
-> >> +++ b/drivers/ssb/ssb_private.h
-> >> @@ -193,6 +193,7 @@ extern struct ssb_bus *ssb_pci_dev_to_bus(struct p=
-ci_dev *pdev);
-> >>  int ssb_for_each_bus_call(unsigned long data,
-> >>  			  int (*func)(struct ssb_bus *bus, unsigned long data));
-> >>  extern struct ssb_bus *ssb_pcmcia_dev_to_bus(struct pcmcia_device *pd=
-ev);
-> >> +struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func);
-> >> =20
-> >>  struct ssb_freeze_context {
-> >>  	/* Pointer to the bus */
-> >=20
-> > To me this looked like an odd way to silence that warning. So I dug a
-> > bit further.
-> >=20
-> > ssb_sdio_func_to_bus() was added in commit 24ea602e183c ("ssb: Implement
-> > SDIO host bus support"). So it was added in release v2.6.32. I found no
-> > evidence this function was ever used. Can't it be removed?
-> >=20
-> Thanks Paul for review. Initially I too had greped for this function in
-> kernel and found noone using it. But I thought this function might be
-> useful in future. About removing it, may be original author can tell.
-
-
-If it's unused, please remove it.
-
-
-
---=20
-Michael
-
---Sig_/WkksWX0=7dNSbjP8muOd0He
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJULAEpAAoJEPUyvh2QjYsOTycP/1fm+VZJ/UPvhUgso6QEDawL
-IegdwpmygYLVHok8wIFTLPLXGCbdno3MDcwwnjt/UhZOxbFWTIlu5uubhMWPAVkA
-o2Ih83ake89yV/uhRZjW7Gsr0vYH79+46gDSpCGHuQ4GsliJoJ2FWNcN0rk9LIbe
-bZEJYMxwhsep2sExYueJ8wnBVS1Pf1IxLLTSCVdBsf2HxQV6kYl/K5fw5j2o+9ja
-HIYsKHhe41Ij3Vo1RU1MhuOu2TAWhCL19E3szz4AQGBN3j+cycOVOGz2rSPEDDuY
-9KON6eYnXHW4cgw79Rljfx+odVHq72DyYSKO8gqauD7BSvkW36yDWVbEL6b4IaaM
-9L2YKssaRR3Iyjbytzpsl0wg9h5mK+k2a1Yd4OQfFBWITSTvZ8iKWB2lgb2VwmVc
-w3rVPUE62JmVeLZSt5igPp/7ygqaiMWbFOn9I5G8Nl0YDgo8J8uEFNgbUobNcy/l
-8C13VTHp1DIi0GcEaKLBd40tywj49BtpsSwP7PI3kU+1enizPu1KLKZZhtXHSfu9
-imxUu+WktNgZUzhbhnhyFdNK94xIwlp/0gQfA09hFwWquc5snF7rZFI+ZqzO2FQq
-Fm5sHfnR4DJge4hrKyX+hB3nlqpa4NMXMJa0ZzYu8IA4PPNUbl/9IO+sOSh1GNxa
-umkJi4xGfu2SzEjFG5Ny
-=v7Zp
------END PGP SIGNATURE-----
-
---Sig_/WkksWX0=7dNSbjP8muOd0He--
+What do you mean "works without problems"? Are you sure that kmemleak
+still detects all leaks it is intended to detect?
