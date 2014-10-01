@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaJAUDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 16:03:53 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:63650 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaJAUDw convert rfc822-to-8bit (ORCPT
+	id S1751535AbaJAUEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 16:04:04 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:49298 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJAUEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 16:03:52 -0400
+	Wed, 1 Oct 2014 16:04:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <542BB1AF.3060501@ti.com>
-References: <20140930183731.GC3907@piout.net> <542BB1AF.3060501@ti.com>
-From: =?UTF-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau.dev@gmail.com>
-Date: Wed, 1 Oct 2014 22:03:31 +0200
-Message-ID: <CA+sos7-0dBndvU_5J5d=GNtLz1MbCwGCRVDZ5K6sxD=9Qi0YuQ@mail.gmail.com>
-Subject: Re: Differences between tlv320aic3x and tlv320aic31xx
-To: Jyri Sarha <jsarha@ti.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alsa-devel <alsa-devel@alsa-project.org>
+In-Reply-To: <20141001194115.GA6948@svl-evodev-groeck.juniper.net>
+References: <CAAVjN7dwS62EKMnuZc_P1UjkbRVk6RXqJ91GwWZ96bbY5Ct-rg@mail.gmail.com>
+	<CAAVjN7eUmBVcAGPbcn3qsJ9M9uu2nkFoKHqGhhKGekZSceGiMw@mail.gmail.com>
+	<20141001184304.GA6832@svl-evodev-groeck.juniper.net>
+	<CAAVjN7edpkXYMHBm+wLegA_pc0hnm_YZf_z=Ni3h=EbDTmfegQ@mail.gmail.com>
+	<20141001194115.GA6948@svl-evodev-groeck.juniper.net>
+Date: Wed, 1 Oct 2014 13:03:59 -0700
+Message-ID: <CAAVjN7fGRzyu7gxavJUay+K_Mm-0t1T_0Bysk6-sdaqu5=5k5A@mail.gmail.com>
+Subject: Re: Fwd: [Proposal] PM sleep children of inactive I2C bus segments
+ off Masters in multi-master systems
+From: Danielle Costantino <danielle.costantino@gmail.com>
+To: Guenter Roeck <groeck@juniper.net>
+Cc: linux-i2c <linux-i2c@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre, Jyri,
+On Wed, Oct 1, 2014 at 12:41 PM, Guenter Roeck <groeck@juniper.net> wrote:
+> On Wed, Oct 01, 2014 at 11:44:59AM -0700, Danielle Costantino wrote:
+>> Re-sending Proposal:
+>>
+>> Currently I2C mux devices that support multiple master arbitration are
+>> the i2c-mux-pca9541 and i2c-arb-gpio-challenge drivers. I propose to
+>> add the ability to configure an interrupt pin from the Master Selector
+>> device to indicate that bus ownership has been lost. Once the device
+>> loses ownership, all of its children should enter a pm sleep mode (as
+>> you can't talk to them at this point) until master-ship has been
+>> reacquired.
+>>
+> Not sure I understand what you are proposing here.
 
-On Wed, Oct 1, 2014 at 9:47 AM, Jyri Sarha <jsarha@ti.com> wrote:
-> On 09/30/2014 09:37 PM, Alexandre Belloni wrote:
->>
->> Hi,
->>
->> I'm trying to add support for the tlv320aic3104a present on a
->> custom board using an am335x.
->>
->> I see that Benoit seemed to have been successful when using the
->> tlv320aic3x driver with minor modifications.
->>
->> http://mailman.alsa-project.org/pipermail/alsa-devel/2013-January/058966.html
->>
->> On the other hand, in the past, I've used a tlv320aic3100 with the
->> tlv320aic31xx driver.
->>
->> My plan for now is to use the tlv320aic3x driver with snd-soc-evm as
->> this is the one it is using (it is using .codec_dai_name =
->> "tlv320aic3x-hifi").
->>
->> I had no luck until now but I still have to review my pinmuxing. But
->> before I investigate to much, can you confirm what codecs are supported
->> by which driver? I'm pretty sure that would be a nice addition to the
->> documentation too.
->> 0
+Lets say you have a active - standby based multi-master system. If the
+other master forced arbitration (took mastership) the next transation
+on any slaves of that bus would return EAGAIN or EBUSY.
+
+Another point is that once mastership has been lost, the configuration
+of the devices on that bus are no longer known to be valid...therefor
+a re-init of those devices may be needed.
+
+> A typical use case would be a power supply such as the one supported by
+> drivers/hwmon/lineage-pem.c from both an active and standby system
+> controller. The power supply needs to be accessible from both controllers.
+> If one controller looses access, it can only mean that it did not follow
+> the access protocol. Similar, one controller enforcing access means that
+> it either does not follow the access protocol either, or that the other
+> end did not follow the protocol (or maybe the other end died).
 >
+> In all cases, loss of access does not mean that the end device can or should
+> be put in sleep mode, not even logically. All it means is that there was
+> an access protocol error. Not sure if there is anything that can be done
+> about that, but putting the device into sleep mode does not seem to be
+> an appropriate response to me.
 >
-> Hi Alexandre,
-> Based on a brief look at the data sheet I am afraid you will not have any
-> luck using tlv320aic3x driver with tlv320aic3104. tlv320aic31xx is a better
-> match, but sill not close enough.
+>> This has come up as an issue when the master loses control over a bus
+>> the return code of all transactions to its lave devices is EIO (not
+>> very helpful).
+>>
+> But, again, doesn't that mean that there was some access protocol error ?
+> Shouldn't it try to re-acquire mastership instead, and block all accesses
+> to slaves until it acquired it ?
+
+EIO is such a generic error it makes finding weather there was a
+problem communicating or is no longer master of the bus segment.
+
 >
-> Based on the register map you may have a change to get the codec working
-> using tlv320aic32x4 driver. At least the register map appears to be a pretty
-> good match. However, I have no experience either with the driver or the
-> codec.
+> Thanks,
+> Guenter
 
-I've seen that the tlv320aic31xx driver has been available for some
-time now, but I've not yet looked into it. However, the tlv320aic3x
-driver works pretty well with the tlv320aic3104 (at least, it did at
-the time of my post that you referred to). I've used it connected to a
-Freescale i.MX25 through I²S. IIRC, the register map of the
-tlv320aic3104 is just a subset of what this driver provides (apart
-from the unimplemented register page, which I had added support for
-locally, but I have not sent my patches yet), and there is some
-renaming, especially for the I/Os (see the comment in the header of
-this driver). I had also improved some audio controls, but I'm not
-sure if this was required for the tlv320aic3104, or if it was just an
-improvement also applicable to other CODECs supported by this driver.
+Thanks
 
-I agree that some clarification would be required ergarding the
-aic31xx CODECs those two drivers support. It may also be possible to
-merge the 31xx driver into the 3x one.
-
-Best regards,
-Benoît
+-- 
+- Danielle Costantino
