@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaJAPuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 11:50:44 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:37981 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaJAPun (ORCPT
+	id S1751607AbaJAPwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 11:52:05 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:59616 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaJAPwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 11:50:43 -0400
+	Wed, 1 Oct 2014 11:52:03 -0400
+Date: Wed, 1 Oct 2014 08:51:59 -0700
+From: Peter Feiner <pfeiner@google.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>
+Subject: Re: [PATCH 2/4] mm: gup: add get_user_pages_locked and
+ get_user_pages_unlocked
+Message-ID: <20141001155159.GA7019@google.com>
+References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
+ <1412153797-6667-3-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <542C1D2E.9050005@zytor.com>
-References: <cover.1412138935.git.luto@amacapital.net> <0e906bdeba3660c9766248d3d7229e78a423ca5b.1412138935.git.luto@amacapital.net>
- <542C1C28.9050408@zytor.com> <542C1D2E.9050005@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 1 Oct 2014 08:50:21 -0700
-Message-ID: <CALCETrU2_tS-tmWAkW0vscOqQ89JrRrnjCA3P1aiZM-Xvj_oMA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Sebastian Lackner <sebastian@fds-team.de>, X86 ML <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Anish Bhatt <anish@chelsio.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412153797-6667-3-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 1, 2014 8:26 AM, "H. Peter Anvin" <hpa@zytor.com> wrote:
->
-> On 10/01/2014 08:22 AM, H. Peter Anvin wrote:
-> > On 09/30/2014 09:51 PM, Andy Lutomirski wrote:
-> >>
-> >> diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-> >> index 4299eb05023c..44d1dd371454 100644
-> >> --- a/arch/x86/ia32/ia32entry.S
-> >> +++ b/arch/x86/ia32/ia32entry.S
-> >> @@ -151,6 +151,18 @@ ENTRY(ia32_sysenter_target)
-> >>  1:  movl    (%rbp),%ebp
-> >>      _ASM_EXTABLE(1b,ia32_badarg)
-> >>      ASM_CLAC
-> >> +
-> >> +    /*
-> >> +     * Sysenter doesn't filter flags, so we need to clear NT
-> >> +     * ourselves.  To save a few cycles, we can check whether
-> >> +     * NT was set instead of doing an unconditional popfq.
-> >> +     */
-> >> +    testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
-> >> +    jz 1f
-> >> +    pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-> >> +    popfq_cfi
-> >> +1:
-> >> +
-> >
-> > I'm wondering if it would be easier to just remove ASM_CLAC and do this
-> > unconditionally.  On SMAP-enabled hardware then that gives us back some
-> > of the cycles, may make the branch unnecessary.
-> >
->
-> Heck, we can drop the CLD and the STI as well (with some tweaking in
-> ia32_badarg.)
+On Wed, Oct 01, 2014 at 10:56:35AM +0200, Andrea Arcangeli wrote:
+> +static inline long __get_user_pages_locked(struct task_struct *tsk,
+> +					   struct mm_struct *mm,
+> +					   unsigned long start,
+> +					   unsigned long nr_pages,
+> +					   int write, int force,
+> +					   struct page **pages,
+> +					   struct vm_area_struct **vmas,
+> +					   int *locked,
+> +					   bool notify_drop)
+> +{
+> +	int flags = FOLL_TOUCH;
+> +	long ret, pages_done;
+> +	bool lock_dropped;
+> +
+> +	if (locked) {
+> +		/* if VM_FAULT_RETRY can be returned, vmas become invalid */
+> +		BUG_ON(vmas);
+> +		/* check caller initialized locked */
+> +		BUG_ON(*locked != 1);
+> +	}
+> +
+> +	if (pages)
+> +		flags |= FOLL_GET;
+> +	if (write)
+> +		flags |= FOLL_WRITE;
+> +	if (force)
+> +		flags |= FOLL_FORCE;
+> +
+> +	pages_done = 0;
+> +	lock_dropped = false;
+> +	for (;;) {
+> +		ret = __get_user_pages(tsk, mm, start, nr_pages, flags, pages,
+> +				       vmas, locked);
+> +		if (!locked)
+> +			/* VM_FAULT_RETRY couldn't trigger, bypass */
+> +			return ret;
+> +
+> +		/* VM_FAULT_RETRY cannot return errors */
+> +		if (!*locked) {
+> +			BUG_ON(ret < 0);
+> +			BUG_ON(nr_pages == 1 && ret);
 
-I prototyped this, and performance sucked.  I suspect that cld and sti
-are fairly well optimized, that I ended up introducing stalls due to
-stack manipulation, and that Sandy Bridge's popfq microcode is just
-not that fast.  Maybe I did it wrong.  Dunno.  Also, I can't benchmark
-a SMAP machine, since I don't have one.  (Does anyone?  I'm currently
-tempted to wait for Skylake before upgrading all my systems.)
+If I understand correctly, this second BUG_ON is asserting that when
+__get_user_pages is asked for a single page and it is successfully gets the
+page, then it shouldn't have dropped the mmap_sem. If that's the case, then
+you could generalize this assertion to
 
-In fact, I think we should change all the irqrestore code to do
+			BUG_ON(nr_pages == ret);
 
-if (flags & X86_EFLAFS_IF)
-        sti;
+Otherwise, looks good!
 
-I can send a v3 with the unlikely code moved out of line.
-
---Andy
+Peter
