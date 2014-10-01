@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaJASVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:21:53 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42832 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaJASVu (ORCPT
+	id S1753704AbaJASWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:22:51 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:58428 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432AbaJASWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:21:50 -0400
-Date: Wed, 1 Oct 2014 11:21:46 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+	Wed, 1 Oct 2014 14:22:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Darren Hart <dvhart@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-kernel@vger.kernel.org,
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -20,60 +19,28 @@ Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Lee Jones <lee.jones@linaro.org>,
         Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>
 Subject: Re: [PATCH v3 10/15] leds: leds-gpio: Add ACPI probing support
-Message-ID: <20141001182146.GF23115@dtor-glaptop>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1852462.V1jlbi8OPt@vostro.rjw.lan>
- <4835699.XutTNxriDg@vostro.rjw.lan>
- <2780318.hxubhI9Rvq@wuerfel>
- <20141001163025.GE23115@dtor-glaptop>
- <D05191AB.AB380%dvhart@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Date: Wed, 01 Oct 2014 20:22:36 +0200
+Message-ID: <15084898.uePkciO2J1@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <D05191AB.AB380%dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <20141001163025.GE23115@dtor-glaptop> <D05191AB.AB380%dvhart@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:jqf6TvuBkaXpp8MmJKepVGP433eJwIqS/ApqWJJWmgC
+ SmzMjadh3RH5R7zFu3077U1qYqwGjTTKIl54TwfsROnjVJlFwJ
+ 7wPSZuwo6KG57+39Jxx5rtQRqJc4cwb23vYV465HgA9CSliNgJ
+ fwaAPM7Ufla+JmA9mk+Xg/Df/4uUYFvnov7fFXgErmFco7yoIO
+ 5VXYx6pASYXF9qK18DzFdFgf2mRWk37VMMMtBioPwv9o3QqOJV
+ 6sdQJLGmtIHHe4XklM4gZhJqMQw30PZZXZW6QdPY/NbhM9ltEk
+ SO6KPOQdkdjpo4u9bxjUPxJDlRrTvfZKmsiTzqWZJWUgafYZuR
+ vi8HsabT5RrrRtUt51XI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 11:11:46AM -0700, Darren Hart wrote:
-> On 10/1/14, 9:30, "Dmitry Torokhov" <dmitry.torokhov@gmail.com> wrote:
-> 
-> >On Wed, Oct 01, 2014 at 10:13:04AM +0200, Arnd Bergmann wrote:
-> >> On Wednesday 01 October 2014 04:17:02 Rafael J. Wysocki wrote:
-> >> > Index: linux-pm/drivers/leds/leds-gpio.c
-> >> > ===================================================================
-> >> > --- linux-pm.orig/drivers/leds/leds-gpio.c
-> >> > +++ linux-pm/drivers/leds/leds-gpio.c
-> >> > @@ -231,6 +231,13 @@ static const struct of_device_id of_gpio
-> >> >  
-> >> >  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
-> >> >  
-> >> > +static const struct acpi_device_id acpi_gpio_leds_match[] = {
-> >> > +       { "PRP0001" }, /* Device Tree shoehorned into ACPI */
-> >> > +       {},
-> >> > +};
-> >> > +
-> >> > +MODULE_DEVICE_TABLE(acpi, acpi_gpio_leds_match);
-> >> > +
-> >> >  static int gpio_led_probe(struct platform_device *pdev)
-> >> >  {
-> >> >         struct gpio_led_platform_data *pdata =
-> >>dev_get_platdata(&pdev->dev);
-> >> > @@ -286,6 +293,7 @@ static struct platform_driver gpio_led_d
-> >> >                 .name   = "leds-gpio",
-> >> >                 .owner  = THIS_MODULE,
-> >> >                 .of_match_table = of_gpio_leds_match,
-> >> > +               .acpi_match_table = acpi_gpio_leds_match,
-> >> >         },
-> >> >  };
-> >> 
-> >> Is this something you'd have to do in every driver you want to support
-> >> _PRP based probing? For the ".acpi_match_table =" reference, I think
-> >> you could actually provide a generic acpi_device_id table exported from
-> >> core code that you refer to, so each driver just does
-> >> 
-> >> 	.acpi_match_table = acpi_match_by_of_compatible,
+On Wednesday 01 October 2014 11:11:46 Darren Hart wrote:
 > >
 > >No, I think in absence of drv->acpi_match_table ACPI core should just go
 > >and
@@ -83,8 +50,16 @@ On Wed, Oct 01, 2014 at 11:11:46AM -0700, Darren Hart wrote:
 > anything about ACPI and haven't been updated to use the new API. Worse,
 > some of those drivers will assume of node structs and such and potentially
 > panic. Unless I'm sorry mistaken here....
+> 
 
-Does ACPI set dev->of_node pointer? I'd expect them to fail right there...
+I don't think that is a huge danger: most drivers tend to check for
+the presence of dev->of_node before calling any of the DT interfaces,
+you'd only ever enter the probe function if the compatible string matches
+(i.e. an old kernel with a new ACPI table), and most users of ACPI
+systems will disable CONFIG_OF at compile time, so the accessors looking
+at the of_node are not there.
 
--- 
-Dmitry
+In theory it's possible that something goes wrong here, but it's not
+very likely to ever cause problems.
+
+	Arnd
