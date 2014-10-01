@@ -1,80 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaJAQHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:07:31 -0400
-Received: from mail-by2on0089.outbound.protection.outlook.com ([207.46.100.89]:6784
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751535AbaJAQH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:07:29 -0400
-Message-ID: <542C26B6.7010302@opensource.altera.com>
-Date: Wed, 1 Oct 2014 11:07:18 -0500
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752040AbaJAQI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:08:27 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:45557 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaJAQIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 12:08:25 -0400
+Message-ID: <542C26F2.6090206@hitachi.com>
+Date: Thu, 02 Oct 2014 01:08:18 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Pavel Machek <pavel@denx.de>, atull <atull@opensource.altera.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH 1/2] socfpga: hotplug: put cpu1 in wfi
-References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-2-git-send-email-atull@opensource.altera.com> <20141001133527.GA12750@amd> <alpine.DEB.2.10.1410010915440.2332@shineypoop> <20141001150418.GA14609@amd>
-In-Reply-To: <20141001150418.GA14609@amd>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [99.103.66.154]
-X-ClientProxiedBy: BY1PR00CA0026.namprd00.prod.outlook.com (25.160.102.36) To
- CY1PR0301MB1194.namprd03.prod.outlook.com (25.160.165.25)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1194;
-X-Forefront-PRVS: 0351D213B3
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(51884002)(189002)(51704005)(199003)(479174003)(377454003)(64126003)(83506001)(65956001)(66066001)(59896002)(4396001)(31966008)(33656002)(23756003)(99396003)(76482002)(101416001)(10300001)(120916001)(97736003)(86362001)(92726001)(20776003)(87976001)(21056001)(64706001)(65806001)(50986999)(50466002)(85852003)(42186005)(93886004)(65816999)(54356999)(76176999)(87266999)(107046002)(105586002)(85306004)(46102003)(102836001)(77096002)(95666004)(47776003)(80022003)(106356001)(92566001)(80316001);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1194;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v1 0/5] perf/sdt: SDT events listing/probing
+References: <20140930152055.6698.82709.stgit@hemant-fedora>
+In-Reply-To: <20140930152055.6698.82709.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
+
+(2014/10/01 0:29), Hemant Kumar wrote:
+> This patchset helps in listing dtrace style markers(SDT) present in user space
+> applications through perf.
+> Notes/markers are placed at important places by the
+> developers. They have a negligible overhead when not enabled.
+> We can enable them and probe at these places and find some important information
+> like the arguments' values, etc.
+> 
+> We have lots of applications which use SDT markers today, like:
+> Postgresql, MySql, Mozilla, Perl, Python, Java, Ruby, libvirt, QEMU, glib
+> 
+> To add SDT markers into user applications:
+> We need to have this header sys/sdt.h present.
+> sys/sdt.h used is version 3.
+> If not present, install systemtap-sdt-devel package (for fedora-20).
+> 
+> With this patchset,
+> - Use perf sdt-cache --add to add SDT events to a cache.
+>  # perf sdt-cache --add ./user_app
+> 
+>   4 SDT events added for /home/user/user_app!
+> 
+> - Use perf sdt-cache --del to remove SDT events from the cache>
+>  # perf sdt-cache --del ./user_app
+> 
+>  4 events removed for /home/user/user_app!
+> 
+> - Dump the cache onto stdout using perf sdt-cache --dump:
+>  # perf sdt-cache --dump
+>   /home/user/user_app :
+>   %user_app:foo_start
+>   %user_app:fun_start
+> 
+> - To probe and trace an SDT event :
+>   # perf record -e %user_app:foo_start -aR sleep 10
+
+Looks great! :)
+
+However, when I've tried to build, I got below errors..
+
+  CC       util/sdt.o
+util/sdt.c: In function ‘sdt_err’:
+util/sdt.c:72:3: error: implicit declaration of function ‘pr_err’ [-Werror=implicit-function-declaration]
+   pr_err("%s: No SDT events found\n", target);
+   ^
+util/sdt.c:72:3: error: nested extern declaration of ‘pr_err’ [-Werror=nested-externs]
+util/sdt.c: In function ‘file_hash_list__init’:
+util/sdt.c:489:3: error: implicit declaration of function ‘pr_debug’ [-Werror=implicit-function-declaration]
+   pr_debug("Error in madvise\n");
+   ^
+util/sdt.c:489:3: error: nested extern declaration of ‘pr_debug’ [-Werror=nested-externs]
+cc1: all warnings being treated as errors
+
+Perhaps, you might working on the old tree. Could you update it?
+
+Thank you,
+
+> 
+> The support for perf to sdt events has undergone a lot of changes since it was
+> introduced. After a lot of discussions (https://lkml.org/lkml/2014/7/20/284), the
+> patchset is subdivided for ease of review.
+> Previously, a patchset supporting "perf list sdt" was posted, but it didn't make
+> much sense since, only listing SDT events for an ELF won't help.
+> This patchset aims at adding a sub-command "sdt-cache" to perf to manage a cache
+> for management of the SDT events.
+> 
+>  This link shows an example of marker probing with Systemtap:
+>  https://sourceware.org/systemtap/wiki/AddingUserSpaceProbingToApps
+> 
+>  This link provides important info regarding SDT notes:
+>  http://sourceware.org/systemtap/wiki/UserSpaceProbeImplementation
+> 
+>  - Markers in binaries :
+>  These SDT markers are present in the ELF in the section named
+>  ".note.stapsdt".
+>  Here, the name of the marker, its provider, type, location, base
+>  address, semaphore address.
+>  We can retrieve these values using the members name_off and desc_off in
+>  Nhdr structure. If these are not enabled, they are present in the ELF as nop.
+> 
+> Changes since last series :
+> - Changed the entire (linked) list structure to hash lists to manage the SDT events.
+> - Added a sub command "sdt-cache" to perf to manage SDT events in the system.
+> - Added support to add and remove SDT events onto a cache.
+> - Added support to "perf record" to probe and record the SDT events.
+> 
+> TODO:
+> - Add support to add most of the SDT events on a system to the cache.
+> - Recognizing arguments and support to probe on them.
+> 
+> ---
+> 
+> Hemant Kumar (5):
+>       perf/sdt: ELF support for SDT
+>       perf/sdt: Add SDT events into a cache
+>       perf/sdt: Show SDT cache contents
+>       perf/sdt: Delete SDT events from cache
+>       perf/sdt: Add support to perf record to trace SDT events
+> 
+> 
+>  tools/perf/Makefile.perf       |    3 
+>  tools/perf/builtin-record.c    |   21 +
+>  tools/perf/builtin-sdt-cache.c |  108 +++++
+>  tools/perf/builtin.h           |    1 
+>  tools/perf/perf.c              |    1 
+>  tools/perf/util/parse-events.c |    7 
+>  tools/perf/util/parse-events.h |    7 
+>  tools/perf/util/probe-event.c  |  120 ++++-
+>  tools/perf/util/probe-event.h  |    8 
+>  tools/perf/util/probe-finder.c |    3 
+>  tools/perf/util/sdt.c          |  925 ++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/sdt.h          |   30 +
+>  tools/perf/util/symbol-elf.c   |  207 +++++++++
+>  tools/perf/util/symbol.h       |   21 +
+>  14 files changed, 1440 insertions(+), 22 deletions(-)
+>  create mode 100644 tools/perf/builtin-sdt-cache.c
+>  create mode 100644 tools/perf/util/sdt.c
+>  create mode 100644 tools/perf/util/sdt.h
+> 
 
 
-On 10/1/14, 10:04 AM, Pavel Machek wrote:
-> Hi!
-> 
->>>> +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
->>>> +			     rst_manager_base_addr + 0x10);
->>>
->>> Would it be possible to copy reset manager description struct from
->>> u-boot and use it here, instead of raw offset?
->>
->> I will replace this 0x10 with a macro that reflects how the register is 
->> named in the register map.
-> 
-> That would be better than 0x10, but even better would be just copying
-> 
-> struct socfpga_reset_manager {
->         u32     status;
->         u32     ctrl;
->         u32     counts;
->         u32     padding1;
->         u32     mpu_mod_reset;
->         u32     per_mod_reset;
->         u32     per2_mod_reset;
->         u32     brg_mod_reset;
-> };
-> 
-> from u-boot. Unlike macros, structs have advantages that typos lead to
-> easier-to-see failure modes... (And they are easier to read/parse,
-> too).
-> 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Copying from uboot sounds good, but I already know that the CPU reset
-offset is different for our next SOC, Arria 10. The Arria 10 SOC should
-still be able to use the same MSL as Cyclone5 and Arria5, but with a few
-differences. One of them being, the CPU1 reset offset is at 0x20 instead
-of 0x10. So I think having a macro for this one register is a bit
-cleaner than having to define a whole new struct for Arria10.
 
-if (of_machine_is_compatible("altr,socfpga-arria10"))
-	__raw_writel(0, rst_manager_base_addr + 0x20);
-else
-	__raw_writel(0, rst_manager_base_addr + 0x10);
-
-Dinh
