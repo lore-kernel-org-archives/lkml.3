@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaJASnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:43:16 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:53430 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545AbaJASnM (ORCPT
+	id S1754056AbaJASnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:43:14 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:35335 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887AbaJASnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:43:12 -0400
+	Wed, 1 Oct 2014 14:43:09 -0400
 From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
 X-Google-Original-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
         linux-security-module@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 4/4] ima: use path names cache
-Date: Wed,  1 Oct 2014 21:43:10 +0300
-Message-Id: <001f215b384c3079ce0d21cceefa527761017856.1412188590.git.d.kasatkin@samsung.com>
+Subject: [PATCH v2 1/4] integrity: add missing '__init' keyword for integrity_init_keyring()
+Date: Wed,  1 Oct 2014 21:43:07 +0300
+Message-Id: <67d079341460adba5732d593fc856116ad55e626.1412188590.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1412188590.git.d.kasatkin@samsung.com>
 References: <cover.1412188590.git.d.kasatkin@samsung.com>
@@ -24,47 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__getname() uses slab allocation which is faster than kmalloc.
-Make use of it.
+integrity_init_keyring() is used only from kernel '__init'
+functions. Add it there as well.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/ima_api.c  | 4 ++--
- security/integrity/ima/ima_main.c | 3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ security/integrity/digsig.c    | 2 +-
+ security/integrity/integrity.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 8688597..a99eb6d 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -325,11 +325,11 @@ const char *ima_d_path(struct path *path, char **pathbuf)
- {
- 	char *pathname = NULL;
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 8d4fbff..4f643d1 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -63,7 +63,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 	return -EOPNOTSUPP;
+ }
  
--	*pathbuf = kmalloc(PATH_MAX, GFP_KERNEL);
-+	*pathbuf = __getname();
- 	if (*pathbuf) {
- 		pathname = d_absolute_path(path, *pathbuf, PATH_MAX);
- 		if (IS_ERR(pathname)) {
--			kfree(*pathbuf);
-+			__putname(*pathbuf);
- 			*pathbuf = NULL;
- 			pathname = NULL;
- 		}
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 87d7df7..003d6b6 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -246,7 +246,8 @@ out_digsig:
- 		rc = -EACCES;
- 	kfree(xattr_value);
- out_free:
--	kfree(pathbuf);
-+	if (pathbuf)
-+		__putname(pathbuf);
- out:
- 	mutex_unlock(&inode->i_mutex);
- 	if ((rc && must_appraise) && (ima_appraise & IMA_APPRAISE_ENFORCE))
+-int integrity_init_keyring(const unsigned int id)
++int __init integrity_init_keyring(const unsigned int id)
+ {
+ 	const struct cred *cred = current_cred();
+ 	int err = 0;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index c0379d1..aafb468 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -129,7 +129,7 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
+ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
+-int integrity_init_keyring(const unsigned int id);
++int __init integrity_init_keyring(const unsigned int id);
+ #else
+ 
+ static inline int integrity_digsig_verify(const unsigned int id,
 -- 
 1.9.1
 
