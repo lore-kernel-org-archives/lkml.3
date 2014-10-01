@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaJACDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 22:03:23 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64818 "HELO
+	id S1752243AbaJACEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 22:04:30 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:53033 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751738AbaJACDT (ORCPT
+	with SMTP id S1751904AbaJACDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 22:03:19 -0400
+	Tue, 30 Sep 2014 22:03:23 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: linux-kernel@vger.kernel.org
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
@@ -18,9 +18,9 @@ Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
         Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH v3 07/15] gpio: sch: Consolidate core and resume banks
-Date: Wed, 01 Oct 2014 04:15:01 +0200
-Message-ID: <2042155.vjJYp9Phiy@vostro.rjw.lan>
+Subject: [PATCH v3 03/15] ACPI: Allow drivers to match using Device Tree compatible property
+Date: Wed, 01 Oct 2014 04:10:40 +0200
+Message-ID: <3582127.hCPY12ZqpT@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <1852462.V1jlbi8OPt@vostro.rjw.lan>
 References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1852462.V1jlbi8OPt@vostro.rjw.lan>
@@ -33,429 +33,221 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-This is actually a single device with two sets of identical registers,
-which just happen to start from a different offset. Instead of having
-separate GPIO chips created we consolidate them to be single GPIO chip.
+We have lots of existing Device Tree enabled drivers and allocating
+separate _HID for each is not feasible. Instead we allocate special _HID
+"PRP0001" that means that the match should be done using Device Tree
+compatible property using driver's .of_match_table instead.
 
-In addition having a single GPIO chip allows us to handle ACPI GPIO
-translation in the core in a more generic way, since the two GPIO chips
-share the same parent ACPI device.
+If there is a need to distinguish from where the device is enumerated
+(DT/ACPI) driver can check dev->of_node or ACPI_COMPATION(dev).
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/gpio/gpio-sch.c | 293 ++++++++++++++++++------------------------------
- 1 file changed, 112 insertions(+), 181 deletions(-)
+ drivers/acpi/property.c |   34 +++++++++++++++++
+ drivers/acpi/scan.c     |   91 ++++++++++++++++++++++++++++++++++++++++++------
+ include/acpi/acpi_bus.h |    1 
+ include/linux/acpi.h    |    8 +---
+ 4 files changed, 118 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
-index 41e91d70301e..99720c8bc8ed 100644
---- a/drivers/gpio/gpio-sch.c
-+++ b/drivers/gpio/gpio-sch.c
-@@ -29,290 +29,221 @@
+Index: linux-pm/drivers/acpi/property.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/property.c
++++ linux-pm/drivers/acpi/property.c
+@@ -76,6 +76,37 @@ static bool acpi_properties_format_valid
+ 	return true;
+ }
  
- #include <linux/gpio.h>
- 
--static DEFINE_SPINLOCK(gpio_lock);
--
--#define CGEN	(0x00)
--#define CGIO	(0x04)
--#define CGLV	(0x08)
--
--#define RGEN	(0x20)
--#define RGIO	(0x24)
--#define RGLV	(0x28)
--
--static unsigned short gpio_ba;
--
--static int sch_gpio_core_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
--{
--	u8 curr_dirs;
--	unsigned short offset, bit;
--
--	spin_lock(&gpio_lock);
--
--	offset = CGIO + gpio_num / 8;
--	bit = gpio_num % 8;
--
--	curr_dirs = inb(gpio_ba + offset);
--
--	if (!(curr_dirs & (1 << bit)))
--		outb(curr_dirs | (1 << bit), gpio_ba + offset);
-+#define GEN	0x00
-+#define GIO	0x04
-+#define GLV	0x08
++static void acpi_init_of_compatible(struct acpi_device *adev)
++{
++	const union acpi_object *of_compatible;
++	struct acpi_hardware_id *hwid;
++	bool acpi_of = false;
 +
-+struct sch_gpio {
-+	struct gpio_chip chip;
-+	spinlock_t lock;
-+	unsigned short iobase;
-+	unsigned short core_base;
-+	unsigned short resume_base;
-+};
- 
--	spin_unlock(&gpio_lock);
--	return 0;
--}
-+#define to_sch_gpio(c)	container_of(c, struct sch_gpio, chip)
- 
--static int sch_gpio_core_get(struct gpio_chip *gc, unsigned gpio_num)
-+static unsigned sch_gpio_offset(struct sch_gpio *sch, unsigned gpio,
-+				unsigned reg)
- {
--	int res;
--	unsigned short offset, bit;
-+	unsigned base = 0;
- 
--	offset = CGLV + gpio_num / 8;
--	bit = gpio_num % 8;
-+	if (gpio >= sch->resume_base) {
-+		gpio -= sch->resume_base;
-+		base += 0x20;
-+	}
- 
--	res = !!(inb(gpio_ba + offset) & (1 << bit));
--	return res;
-+	return base + reg + gpio / 8;
- }
- 
--static void sch_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num, int val)
-+static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
- {
--	u8 curr_vals;
--	unsigned short offset, bit;
--
--	spin_lock(&gpio_lock);
--
--	offset = CGLV + gpio_num / 8;
--	bit = gpio_num % 8;
--
--	curr_vals = inb(gpio_ba + offset);
--
--	if (val)
--		outb(curr_vals | (1 << bit), gpio_ba + offset);
--	else
--		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
--	spin_unlock(&gpio_lock);
-+	if (gpio >= sch->resume_base)
-+		gpio -= sch->resume_base;
-+	return gpio % 8;
- }
- 
--static int sch_gpio_core_direction_out(struct gpio_chip *gc,
--					unsigned gpio_num, int val)
-+static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
- {
--	u8 curr_dirs;
- 	unsigned short offset, bit;
-+	u8 enable;
- 
--	spin_lock(&gpio_lock);
-+	spin_lock(&sch->lock);
- 
--	offset = CGIO + gpio_num / 8;
--	bit = gpio_num % 8;
--
--	curr_dirs = inb(gpio_ba + offset);
--	if (curr_dirs & (1 << bit))
--		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
-+	offset = sch_gpio_offset(sch, gpio, GEN);
-+	bit = sch_gpio_bit(sch, gpio);
- 
--	spin_unlock(&gpio_lock);
-+	enable = inb(sch->iobase + offset);
-+	if (!(enable & (1 << bit)))
-+		outb(enable | (1 << bit), sch->iobase + offset);
- 
--	/*
--	 * according to the datasheet, writing to the level register has no
--	 * effect when GPIO is programmed as input.
--	 * Actually the the level register is read-only when configured as input.
--	 * Thus presetting the output level before switching to output is _NOT_ possible.
--	 * Hence we set the level after configuring the GPIO as output.
--	 * But we cannot prevent a short low pulse if direction is set to high
--	 * and an external pull-up is connected.
--	 */
--	sch_gpio_core_set(gc, gpio_num, val);
--	return 0;
-+	spin_unlock(&sch->lock);
- }
- 
--static struct gpio_chip sch_gpio_core = {
--	.label			= "sch_gpio_core",
--	.owner			= THIS_MODULE,
--	.direction_input	= sch_gpio_core_direction_in,
--	.get			= sch_gpio_core_get,
--	.direction_output	= sch_gpio_core_direction_out,
--	.set			= sch_gpio_core_set,
--};
--
--static int sch_gpio_resume_direction_in(struct gpio_chip *gc,
--					unsigned gpio_num)
-+static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
- {
-+	struct sch_gpio *sch = to_sch_gpio(gc);
- 	u8 curr_dirs;
- 	unsigned short offset, bit;
- 
--	spin_lock(&gpio_lock);
-+	spin_lock(&sch->lock);
- 
--	offset = RGIO + gpio_num / 8;
--	bit = gpio_num % 8;
-+	offset = sch_gpio_offset(sch, gpio_num, GIO);
-+	bit = sch_gpio_bit(sch, gpio_num);
- 
--	curr_dirs = inb(gpio_ba + offset);
-+	curr_dirs = inb(sch->iobase + offset);
- 
- 	if (!(curr_dirs & (1 << bit)))
--		outb(curr_dirs | (1 << bit), gpio_ba + offset);
-+		outb(curr_dirs | (1 << bit), sch->iobase + offset);
- 
--	spin_unlock(&gpio_lock);
-+	spin_unlock(&sch->lock);
- 	return 0;
- }
- 
--static int sch_gpio_resume_get(struct gpio_chip *gc, unsigned gpio_num)
-+static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
- {
-+	struct sch_gpio *sch = to_sch_gpio(gc);
-+	int res;
- 	unsigned short offset, bit;
- 
--	offset = RGLV + gpio_num / 8;
--	bit = gpio_num % 8;
-+	offset = sch_gpio_offset(sch, gpio_num, GLV);
-+	bit = sch_gpio_bit(sch, gpio_num);
-+
-+	res = !!(inb(sch->iobase + offset) & (1 << bit));
- 
--	return !!(inb(gpio_ba + offset) & (1 << bit));
-+	return res;
- }
- 
--static void sch_gpio_resume_set(struct gpio_chip *gc,
--				unsigned gpio_num, int val)
-+static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
- {
-+	struct sch_gpio *sch = to_sch_gpio(gc);
- 	u8 curr_vals;
- 	unsigned short offset, bit;
- 
--	spin_lock(&gpio_lock);
-+	spin_lock(&sch->lock);
- 
--	offset = RGLV + gpio_num / 8;
--	bit = gpio_num % 8;
-+	offset = sch_gpio_offset(sch, gpio_num, GLV);
-+	bit = sch_gpio_bit(sch, gpio_num);
- 
--	curr_vals = inb(gpio_ba + offset);
-+	curr_vals = inb(sch->iobase + offset);
- 
- 	if (val)
--		outb(curr_vals | (1 << bit), gpio_ba + offset);
-+		outb(curr_vals | (1 << bit), sch->iobase + offset);
- 	else
--		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
-+		outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
- 
--	spin_unlock(&gpio_lock);
-+	spin_unlock(&sch->lock);
- }
- 
--static int sch_gpio_resume_direction_out(struct gpio_chip *gc,
--					unsigned gpio_num, int val)
-+static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
-+				  int val)
- {
-+	struct sch_gpio *sch = to_sch_gpio(gc);
- 	u8 curr_dirs;
- 	unsigned short offset, bit;
- 
--	offset = RGIO + gpio_num / 8;
--	bit = gpio_num % 8;
-+	spin_lock(&sch->lock);
- 
--	spin_lock(&gpio_lock);
-+	offset = sch_gpio_offset(sch, gpio_num, GIO);
-+	bit = sch_gpio_bit(sch, gpio_num);
- 
--	curr_dirs = inb(gpio_ba + offset);
-+	curr_dirs = inb(sch->iobase + offset);
- 	if (curr_dirs & (1 << bit))
--		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
-+		outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
- 
--	spin_unlock(&gpio_lock);
-+	spin_unlock(&sch->lock);
- 
- 	/*
--	* according to the datasheet, writing to the level register has no
--	* effect when GPIO is programmed as input.
--	* Actually the the level register is read-only when configured as input.
--	* Thus presetting the output level before switching to output is _NOT_ possible.
--	* Hence we set the level after configuring the GPIO as output.
--	* But we cannot prevent a short low pulse if direction is set to high
--	* and an external pull-up is connected.
--	*/
--	sch_gpio_resume_set(gc, gpio_num, val);
-+	 * according to the datasheet, writing to the level register has no
-+	 * effect when GPIO is programmed as input.
-+	 * Actually the the level register is read-only when configured as input.
-+	 * Thus presetting the output level before switching to output is _NOT_ possible.
-+	 * Hence we set the level after configuring the GPIO as output.
-+	 * But we cannot prevent a short low pulse if direction is set to high
-+	 * and an external pull-up is connected.
++	/*
++	 * Check if the special PRP0001 ACPI ID is present and in that
++	 * case we fill in Device Tree compatible properties for this
++	 * device.
 +	 */
-+	sch_gpio_set(gc, gpio_num, val);
- 	return 0;
- }
- 
--static struct gpio_chip sch_gpio_resume = {
--	.label			= "sch_gpio_resume",
-+static struct gpio_chip sch_gpio_chip = {
-+	.label			= "sch_gpio",
- 	.owner			= THIS_MODULE,
--	.direction_input	= sch_gpio_resume_direction_in,
--	.get			= sch_gpio_resume_get,
--	.direction_output	= sch_gpio_resume_direction_out,
--	.set			= sch_gpio_resume_set,
-+	.direction_input	= sch_gpio_direction_in,
-+	.get			= sch_gpio_get,
-+	.direction_output	= sch_gpio_direction_out,
-+	.set			= sch_gpio_set,
- };
- 
- static int sch_gpio_probe(struct platform_device *pdev)
- {
-+	struct sch_gpio *sch;
- 	struct resource *res;
--	int err, id;
- 
--	id = pdev->id;
--	if (!id)
--		return -ENODEV;
-+	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
-+	if (!sch)
-+		return -ENOMEM;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
- 	if (!res)
- 		return -EBUSY;
- 
--	if (!request_region(res->start, resource_size(res), pdev->name))
-+	if (!devm_request_region(&pdev->dev, res->start, resource_size(res),
-+				 pdev->name))
- 		return -EBUSY;
- 
--	gpio_ba = res->start;
-+	spin_lock_init(&sch->lock);
-+	sch->iobase = res->start;
-+	sch->chip = sch_gpio_chip;
-+	sch->chip.label = dev_name(&pdev->dev);
-+	sch->chip.dev = &pdev->dev;
- 
--	switch (id) {
-+	switch (pdev->id) {
- 	case PCI_DEVICE_ID_INTEL_SCH_LPC:
--		sch_gpio_core.base = 0;
--		sch_gpio_core.ngpio = 10;
--		sch_gpio_resume.base = 10;
--		sch_gpio_resume.ngpio = 4;
-+		sch->core_base = 0;
-+		sch->resume_base = 10;
-+		sch->chip.ngpio = 14;
++	list_for_each_entry(hwid, &adev->pnp.ids, list) {
++		if (!strcmp(hwid->id, "PRP0001")) {
++			acpi_of = true;
++			break;
++		}
++	}
 +
- 		/*
- 		 * GPIO[6:0] enabled by default
- 		 * GPIO7 is configured by the CMC as SLPIOVR
- 		 * Enable GPIO[9:8] core powered gpios explicitly
- 		 */
--		outb(0x3, gpio_ba + CGEN + 1);
-+		sch_gpio_enable(sch, 8);
-+		sch_gpio_enable(sch, 9);
- 		/*
- 		 * SUS_GPIO[2:0] enabled by default
- 		 * Enable SUS_GPIO3 resume powered gpio explicitly
- 		 */
--		outb(0x8, gpio_ba + RGEN);
-+		sch_gpio_enable(sch, 13);
- 		break;
++	if (!acpi_of)
++		return;
++
++	if (acpi_dev_get_property_array(adev, "compatible", ACPI_TYPE_STRING,
++					&of_compatible)) {
++		acpi_handle_warn(adev->handle,
++				 "PRP0001 requires compatible property\n");
++		return;
++	}
++
++	adev->data.of_compatible = of_compatible;
++}
++
+ void acpi_init_properties(struct acpi_device *adev)
+ {
+ 	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
+@@ -119,6 +150,8 @@ void acpi_init_properties(struct acpi_de
  
- 	case PCI_DEVICE_ID_INTEL_ITC_LPC:
--		sch_gpio_core.base = 0;
--		sch_gpio_core.ngpio = 5;
--		sch_gpio_resume.base = 5;
--		sch_gpio_resume.ngpio = 9;
-+		sch->core_base = 0;
-+		sch->resume_base = 5;
-+		sch->chip.ngpio = 14;
- 		break;
- 
- 	case PCI_DEVICE_ID_INTEL_CENTERTON_ILB:
--		sch_gpio_core.base = 0;
--		sch_gpio_core.ngpio = 21;
--		sch_gpio_resume.base = 21;
--		sch_gpio_resume.ngpio = 9;
-+		sch->core_base = 0;
-+		sch->resume_base = 21;
-+		sch->chip.ngpio = 30;
- 		break;
- 
- 	default:
--		err = -ENODEV;
--		goto err_sch_gpio_core;
-+		return -ENODEV;
+ 		adev->data.pointer = buf.pointer;
+ 		adev->data.properties = properties;
++
++		acpi_init_of_compatible(adev);
+ 		return;
  	}
  
--	sch_gpio_core.dev = &pdev->dev;
--	sch_gpio_resume.dev = &pdev->dev;
--
--	err = gpiochip_add(&sch_gpio_core);
--	if (err < 0)
--		goto err_sch_gpio_core;
-+	platform_set_drvdata(pdev, sch);
- 
--	err = gpiochip_add(&sch_gpio_resume);
--	if (err < 0)
--		goto err_sch_gpio_resume;
--
--	return 0;
--
--err_sch_gpio_resume:
--	gpiochip_remove(&sch_gpio_core);
--
--err_sch_gpio_core:
--	release_region(res->start, resource_size(res));
--	gpio_ba = 0;
--
--	return err;
-+	return gpiochip_add(&sch->chip);
- }
- 
- static int sch_gpio_remove(struct platform_device *pdev)
+@@ -130,6 +163,7 @@ void acpi_init_properties(struct acpi_de
+ void acpi_free_properties(struct acpi_device *adev)
  {
--	struct resource *res;
--	if (gpio_ba) {
--
--		gpiochip_remove(&sch_gpio_core);
--		gpiochip_remove(&sch_gpio_resume);
--
--		res = platform_get_resource(pdev, IORESOURCE_IO, 0);
--
--		release_region(res->start, resource_size(res));
--		gpio_ba = 0;
--	}
-+	struct sch_gpio *sch = platform_get_drvdata(pdev);
- 
-+	gpiochip_remove(&sch->chip);
- 	return 0;
+ 	ACPI_FREE((void *)adev->data.pointer);
++	adev->data.of_compatible = NULL;
+ 	adev->data.pointer = NULL;
+ 	adev->data.properties = NULL;
  }
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -124,17 +124,43 @@ static int create_modalias(struct acpi_d
+ 	if (list_empty(&acpi_dev->pnp.ids))
+ 		return 0;
  
--- 
-1.8.4.5
-
+-	len = snprintf(modalias, size, "acpi:");
+-	size -= len;
++	/*
++	 * If the device has PRP0001 we expose DT compatible modalias
++	 * instead.
++	 */
++	if (acpi_dev->data.of_compatible) {
++		const union acpi_object *of_compatible, *obj;
++		int i;
++
++		len = snprintf(modalias, size, "of:Nprp0001Tacpi");
++
++		of_compatible = acpi_dev->data.of_compatible;
++		for (i = 0; i < of_compatible->package.count; i++) {
++			obj = &of_compatible->package.elements[i];
++
++			count = snprintf(&modalias[len], size, "C%s",
++					 obj->string.pointer);
++			if (count < 0)
++				return -EINVAL;
++			if (count >= size)
++				return -ENOMEM;
++
++			len += count;
++			size -= count;
++		}
++	} else {
++		len = snprintf(modalias, size, "acpi:");
++		size -= len;
+ 
+-	list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
+-		count = snprintf(&modalias[len], size, "%s:", id->id);
+-		if (count < 0)
+-			return -EINVAL;
+-		if (count >= size)
+-			return -ENOMEM;
+-		len += count;
+-		size -= count;
++		list_for_each_entry(id, &acpi_dev->pnp.ids, list) {
++			count = snprintf(&modalias[len], size, "%s:", id->id);
++			if (count < 0)
++				return -EINVAL;
++			if (count >= size)
++				return -ENOMEM;
++			len += count;
++			size -= count;
++		}
+ 	}
+ 
+ 	modalias[len] = '\0';
+@@ -864,6 +890,51 @@ int acpi_match_device_ids(struct acpi_de
+ }
+ EXPORT_SYMBOL(acpi_match_device_ids);
+ 
++/* Performs match for special "PRP0001" shoehorn ACPI ID */
++static bool acpi_of_driver_match_device(struct device *dev,
++					const struct device_driver *drv)
++{
++	struct acpi_device *adev = ACPI_COMPANION(dev);
++	const union acpi_object *of_compatible;
++	int i;
++
++	/*
++	 * If the ACPI device does not have corresponding compatible
++	 * property or the driver in question does not have DT matching
++	 * table we consider the match succesful (matches the ACPI ID).
++	 */
++	of_compatible = adev->data.of_compatible;
++	if (!drv->of_match_table || !of_compatible)
++		return true;
++
++	/* Now we can look for the driver DT compatible strings */
++	for (i = 0; i < of_compatible->package.count; i++) {
++		const struct of_device_id *id;
++		const union acpi_object *obj;
++
++		obj = &of_compatible->package.elements[i];
++
++		for (id = drv->of_match_table; id->compatible[0]; id++)
++			if (!strcasecmp(obj->string.pointer, id->compatible))
++				return true;
++	}
++
++	return false;
++}
++
++bool acpi_driver_match_device(struct device *dev,
++			      const struct device_driver *drv)
++{
++	const struct acpi_device_id *id;
++
++	id = acpi_match_device(drv->acpi_match_table, dev);
++	if (!id)
++		return false;
++
++	return acpi_of_driver_match_device(dev, drv);
++}
++EXPORT_SYMBOL_GPL(acpi_driver_match_device);
++
+ static void acpi_free_power_resources_lists(struct acpi_device *device)
+ {
+ 	int i;
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -341,6 +341,7 @@ struct acpi_device_physical_node {
+ struct acpi_device_data {
+ 	const union acpi_object *pointer;
+ 	const union acpi_object *properties;
++	const union acpi_object *of_compatible;
+ };
+ 
+ /* Device */
+Index: linux-pm/include/linux/acpi.h
+===================================================================
+--- linux-pm.orig/include/linux/acpi.h
++++ linux-pm/include/linux/acpi.h
+@@ -424,12 +424,8 @@ extern int acpi_nvs_for_each_region(int
+ const struct acpi_device_id *acpi_match_device(const struct acpi_device_id *ids,
+ 					       const struct device *dev);
+ 
+-static inline bool acpi_driver_match_device(struct device *dev,
+-					    const struct device_driver *drv)
+-{
+-	return !!acpi_match_device(drv->acpi_match_table, dev);
+-}
+-
++extern bool acpi_driver_match_device(struct device *dev,
++				     const struct device_driver *drv);
+ int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
+ int acpi_device_modalias(struct device *, char *, int);
+ 
 
