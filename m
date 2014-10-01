@@ -1,126 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970AbaJASik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:38:40 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:56262 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752988AbaJASii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:38:38 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] PM / clock_ops: Fix crash in clocks management code if !CONFIG_PM_RUNTIME
-Date: Wed,  1 Oct 2014 20:38:17 +0200
-Message-Id: <1412188697-15317-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	id S1753985AbaJASjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:39:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085AbaJASjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 14:39:12 -0400
+Date: Wed, 1 Oct 2014 20:35:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/11] sched: Debug nested sleeps
+Message-ID: <20141001183549.GA3382@redhat.com>
+References: <20140924081845.572814794@infradead.org> <20140924082242.591637616@infradead.org> <20140929221344.GB12112@redhat.com> <20140930134928.GF4241@worktop.programming.kicks-ass.net> <20140930214732.GA31384@redhat.com> <20141001161058.GE2843@worktop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001161058.GE2843@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike the clocks management code for runtime PM, the code used for
-system suspend does not check the pm_clock_entry.status field.
-If pm_clk_acquire() failed, ce->status will be PCE_STATUS_ERROR, and
-ce->clk will be a negative error code (e.g. 0xfffffffe = -2 = -ENOENT).
+On 10/01, Peter Zijlstra wrote:
+>
+> On Tue, Sep 30, 2014 at 11:47:32PM +0200, Oleg Nesterov wrote:
+>
+> > > > This is minor, but this way CONFIG_DEBUG_ATOMIC_SLEEP will not imply
+> > > > a subtle behavioural change.
+> > >
+> > > You mean the __set_current_state() that's extra?
+> >
+> > Yes, and note that it only does __set_current_state(RUNNING) if
+> > CONFIG_DEBUG_ATOMIC_SLEEP. This means that disabling/enabling this
+> > option can, silently hide/uncover a bug.
+> >
+> > > I would actually argue
+> > > to keep that since it makes the 'problem' much worse.
+> >
+> > OK, I won't insist, but could you explain why the suggested change can
+> > make the problem (and which problem ;) worse?
+>
+> Sure, so the trivial problem is not actually going to sleep in the outer
+> wait primitive because the inner wait primitive reset ->state to
+> TASK_RUNNING.
 
-Depending on the clock implementation, suspend or resume may crash with:
+But this means that fixup_sleep() must not be used?
 
-    Unable to handle kernel NULL pointer dereference at virtual address 00000026
+> So by always setting the ->state to TASK_RUNNING it never goes to sleep
+> and it'll revert to spinning,
 
-(CCF clk_disable() has an IS_ERR_OR_NULL() check, while CCF clk_enable()
- only has a NULL check; pre-CCF implementations may behave differently)
+But I tried to suggest to not set TASK_RUNNING?
 
-While just checking for PCE_STATUS_ERROR would be sufficient, it doesn't
-hurt to use the same state machine as is done for runtime PM, as this
-makes the two versions more similar, and eligible for a future
-consolidation.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-This crash started to happen on armadillo-legacy during s2ram if
-CONFIG_PM_RUNTIME is not set after applying "[PATCH v2 07/11] ARM:
-shmobile: r8a7740/armadillo legacy: Add A4MP pm domain support"
-(http://www.spinics.net/linux/lists/arm-kernel/msg365438.html), as
-there's no NULL clock for the HDMI device.
+Peter, I am sorry for wasting your time, this is really minor, but still
+I'd like to understand.
 
-Most existing code calling pm_clk_suspend()/pm_clk_resume() is protected
-by a check for CONFIG_PM_RUNTIME (davinci, keystone, omap1,
-drivers/sh/pm_runtime.c), so it was not affected by this bug.
+Let me try again. With this series we have
 
-Exceptions are:
-  - arch/arm/mach-shmobile/pm-r8a7779.c (marzen),
-  - arch/arm/mach-shmobile/pm-rmobile.c (r8a7740/armadillo and
-    sh7372/mackerel),
-but it's difficult to assess from the code whether the bug is really
-triggered on these platforms.
+	#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+	#define fixup_sleep()	__set_current_state(TASK_RUNNING)
+	#else
+	#define fixup_sleep()	do { } while (0)
+	#endif
 
-Grygorii Strashko's "[PATCH v1 2/4] ARM: keystone: pm: switch to use
-generic pm domains" is not affected, as pm_clk_add_clk() is only called
-for existing clocks.
+and this means that we do not need __set_current_state(RUNNING) for
+correctness, just we want to shut up the warning in __might_sleep().
+This is fine (and the self-documenting helper is nice), but this means
+that CONFIG_DEBUG_ATOMIC_SLEEP adds a subtle difference.
 
-If it crashes on marzen or mackerel, I think this fix needs to be
-applied to stable, too. I don't have access to marzen or mackerel boards,
-though.
+For example, let's suppose that we do not have 01/11 which fixes
+mutex_lock(). Then this code
 
-How to test:
-  - Build a kernel with CONFIG_PM_SLEEP/CONFIG_SUSPEND enabled, but
-    CONFIG_PM_RUNTIME disabled,
-  - echo 0 > /sys/module/printk/parameters/console_suspend,
-  - echo mem > /sys/power/state,
-  - wake up using e.g. gpio-keys or serial console activity.
----
- drivers/base/power/clock_ops.c | 19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	...
+	fixup_sleep();
+	...
+	mutex_lock(some_mutex);
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index b99e6c06ee678ecb..78369305e0698109 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -368,8 +368,13 @@ int pm_clk_suspend(struct device *dev)
- 
- 	spin_lock_irqsave(&psd->lock, flags);
- 
--	list_for_each_entry_reverse(ce, &psd->clock_list, node)
--		clk_disable(ce->clk);
-+	list_for_each_entry_reverse(ce, &psd->clock_list, node) {
-+		if (ce->status < PCE_STATUS_ERROR) {
-+			if (ce->status == PCE_STATUS_ENABLED)
-+				clk_disable(ce->clk);
-+			ce->status = PCE_STATUS_ACQUIRED;
-+		}
-+	}
- 
- 	spin_unlock_irqrestore(&psd->lock, flags);
- 
-@@ -385,6 +390,7 @@ int pm_clk_resume(struct device *dev)
- 	struct pm_subsys_data *psd = dev_to_psd(dev);
- 	struct pm_clock_entry *ce;
- 	unsigned long flags;
-+	int ret;
- 
- 	dev_dbg(dev, "%s()\n", __func__);
- 
-@@ -394,8 +400,13 @@ int pm_clk_resume(struct device *dev)
- 
- 	spin_lock_irqsave(&psd->lock, flags);
- 
--	list_for_each_entry(ce, &psd->clock_list, node)
--		__pm_clk_enable(dev, ce->clk);
-+	list_for_each_entry(ce, &psd->clock_list, node) {
-+		if (ce->status < PCE_STATUS_ERROR) {
-+			ret = __pm_clk_enable(dev, ce->clk);
-+			if (!ret)
-+				ce->status = PCE_STATUS_ENABLED;
-+		}
-+	}
- 
- 	spin_unlock_irqrestore(&psd->lock, flags);
- 
--- 
-1.9.1
+can hang, but only if !CONFIG_DEBUG_ATOMIC_SLEEP.
+
+So perhaps it makes sense to redefine it
+
+	#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+	#define fixup_sleep()	(current->task_state_change = 0)
+	#else
+	#define fixup_sleep()	do { } while (0)
+	#endif
+
+and change __might_sleep()
+
+	-	if (WARN(current->state != TASK_RUNNING,
+	+	if (WARN(current->state != TASK_RUNNING && current->task_state_change != 0,
+
+?
+
+Oleg.
 
