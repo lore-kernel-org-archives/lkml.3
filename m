@@ -1,30 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaJAO72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 10:59:28 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:43455 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaJAO71 (ORCPT
+	id S1752246AbaJAO7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 10:59:34 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35627 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752102AbaJAO7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 10:59:27 -0400
-Message-ID: <542C1765.7010501@gmail.com>
-Date: Wed, 01 Oct 2014 17:01:57 +0200
-From: Francis Moreau <francis.moro@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 1 Oct 2014 10:59:31 -0400
+Date: Wed, 1 Oct 2014 16:59:27 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v7 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20141001165927.4fc3ab63@bbrezillon>
+In-Reply-To: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Why is max_part default value  0 for loop devices ?
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed,  1 Oct 2014 16:52:57 +0200
+Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
 
-I'm wondering why max_part parameter for loop device is 0 by default.
+> Hello,
+> 
+> This series is being sent for several weeks now and I wonder if I shouldn't
+> split it in several pieces:
+> 1) the MFD driver + its DT doc
+> 2) the PWM driver + its DT doc
+> 3) the DRM/KMS driver + its DT doc
+> 4) support for sama5d3 SoCs/boards
+> 
+> The first reason for doing this is that Lee already accepted the MFD part,
+> and I'm pretty sure he'd like me to stop sending him each new version of this
+> series.
+> The second reason being that smaller series are more likely to be reviewed by
+> subsystem maintainers :-).
+> 
+> Lee, if you still agree with this version, could you take the MTD part (other
 
-Also would it make sense to allow one to change this default value at
-kernel build time ?
+                                                     I meant MFD ^
 
-Thanks.
+> drivers in this series depend on it).
+
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
