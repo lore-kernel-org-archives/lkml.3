@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaJAQZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 12:25:09 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:54819 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbaJAQZI (ORCPT
+	id S1752214AbaJAQ0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 12:26:24 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:52193 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737AbaJAQ0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 12:25:08 -0400
+	Wed, 1 Oct 2014 12:26:22 -0400
+Date: Wed, 1 Oct 2014 09:26:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-metag@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
+        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org
+Subject: Re: [RFC PATCH 10/16] mips: support poweroff through poweroff
+ handler call chain
+Message-ID: <20141001162617.GC11708@roeck-us.net>
+References: <1412100056-15517-1-git-send-email-linux@roeck-us.net>
+ <1412100056-15517-11-git-send-email-linux@roeck-us.net>
+ <20141001133238.GJ19854@linux-mips.org>
 MIME-Version: 1.0
-In-Reply-To: <1412157898-7040-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <CAF0htA4B=jhBu_YmSTj9=BQ-m3_UGRggwop5ZtgPbO9Y45V+aA@mail.gmail.com>
-	<1412157898-7040-1-git-send-email-michael.opdenacker@free-electrons.com>
-Date: Thu, 2 Oct 2014 00:25:07 +0800
-Message-ID: <CAF0htA7Bs-wMp55G1xYR6iPSZ6vZ2Nsc9peL19Pqicf=jrGUAw@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND] score: remove deprecated IRQF_DISABLED
-From: Lennox Wu <lennox.wu@gmail.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Liqin Chen <liqin.linux@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001133238.GJ19854@linux-mips.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-I will merge it and then issue a PULL request this weekend.
-Thanks.
+On Wed, Oct 01, 2014 at 03:32:39PM +0200, Ralf Baechle wrote:
+> On Tue, Sep 30, 2014 at 11:00:50AM -0700, Guenter Roeck wrote:
+> 
+> > The kernel core now supports a poweroff handler call chain
+> > to remove power from the system. Call it if pm_power_off
+> > is set to NULL.
+> > 
+> > Cc: Ralf Baechle <ralf@linux-mips.org>
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> >  arch/mips/kernel/reset.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/arch/mips/kernel/reset.c b/arch/mips/kernel/reset.c
+> > index 07fc524..c3391d7 100644
+> > --- a/arch/mips/kernel/reset.c
+> > +++ b/arch/mips/kernel/reset.c
+> > @@ -41,4 +41,6 @@ void machine_power_off(void)
+> >  {
+> >  	if (pm_power_off)
+> >  		pm_power_off();
+> > +	else
+> > +		do_kernel_poweroff();
+> 
+> I'm happy with this as long as in a later version pm_power_off indeed
+> goes away.
+> 
+Yes, that would be the ultimate goal. Hope we can get there.
 
-2014-10-01 18:04 GMT+08:00 Michael Opdenacker
-<michael.opdenacker@free-electrons.com>:
-> This patch removes the use of the IRQF_DISABLED flag
-> from arch/score/kernel/time.c
->
-> It's a NOOP since 2.6.35 and it will be removed one day.
->
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> Acked-by: Lennox Wu <lennox.wu@gmail.com>
-> ---
->  arch/score/kernel/time.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/score/kernel/time.c b/arch/score/kernel/time.c
-> index f0a43affb201..24770cd9b473 100644
-> --- a/arch/score/kernel/time.c
-> +++ b/arch/score/kernel/time.c
-> @@ -41,7 +41,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
->
->  static struct irqaction timer_irq = {
->         .handler = timer_interrupt,
-> -       .flags = IRQF_DISABLED | IRQF_TIMER,
-> +       .flags = IRQF_TIMER,
->         .name = "timer",
->  };
->
-> --
-> 1.9.1
->
+Guenter
