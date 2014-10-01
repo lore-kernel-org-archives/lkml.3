@@ -1,115 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaJAIZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:25:45 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:49027 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaJAIZm (ORCPT
+	id S1751319AbaJAIaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:30:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:32799 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750987AbaJAIaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:25:42 -0400
-Message-ID: <542BBA81.2000406@monstr.eu>
-Date: Wed, 01 Oct 2014 10:25:37 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Wed, 1 Oct 2014 04:30:04 -0400
+Date: Wed, 1 Oct 2014 10:27:05 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        lars@metafoo.de, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>
+Subject: Re: [PATCH 7/9] dmaengine: Move slave caps to dma_device
+Message-ID: <20141001082705.GF6884@lukather>
+References: <1411808085-27792-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1411808085-27792-8-git-send-email-maxime.ripard@free-electrons.com>
+ <20140927092846.GA5182@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
-CC: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        John Linn <John.Linn@xilinx.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        =?windows-1252?Q?Manuel_Sch=F6lling?= <manuel.schoelling@gmx.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        Ricardo Ribalda <ricardo.ribalda@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] net: xilinx: Remove unnecessary ether_setup after alloc_etherdev
-References: <d43b465eca3e2a53c930f6e02dc4ac8b3c084693.1412143216.git.michal.simek@xilinx.com>
-In-Reply-To: <d43b465eca3e2a53c930f6e02dc4ac8b3c084693.1412143216.git.michal.simek@xilinx.com>
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T"
+	protocol="application/pgp-signature"; boundary="B8ONY/mu/bqBak9m"
+Content-Disposition: inline
+In-Reply-To: <20140927092846.GA5182@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T
-Content-Type: text/plain; charset=windows-1252
+
+--B8ONY/mu/bqBak9m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 10/01/2014 08:00 AM, Michal Simek wrote:
-> From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
+On Sat, Sep 27, 2014 at 10:28:47AM +0100, Russell King - ARM Linux wrote:
+> On Sat, Sep 27, 2014 at 10:54:43AM +0200, Maxime Ripard wrote:
+> > The previous code was relying on the fact that the slave_caps were to be
+> > defined on a per channel basis.
+> >=20
+> > However, this proved to be a bit overkill, since every driver filling t=
+hese so
+> > far were hardcoding it, disregarding which channel was actually given.
+> >=20
+> > Add these capabilities to the dma_device structure, so that drivers can=
+ just
+> > provide them at probe time, and be done with it.
 >=20
-> Calling ether_setup is redundant since alloc_etherdev calls it.
->=20
-> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
->=20
->  drivers/net/ethernet/xilinx/ll_temac_main.c       | 1 -
->  drivers/net/ethernet/xilinx/xilinx_axienet_main.c | 1 -
->  2 files changed, 2 deletions(-)
->=20
-> diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/=
-ethernet/xilinx/ll_temac_main.c
-> index fda5891835d4..629077050fce 100644
-> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> @@ -1012,7 +1012,6 @@ static int temac_of_probe(struct platform_device =
-*op)
->  	if (!ndev)
->  		return -ENOMEM;
->=20
-> -	ether_setup(ndev);
->  	platform_set_drvdata(op, ndev);
->  	SET_NETDEV_DEV(ndev, &op->dev);
->  	ndev->flags &=3D ~IFF_MULTICAST;  /* clear multicast */
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/driver=
-s/net/ethernet/xilinx/xilinx_axienet_main.c
-> index c8fd94133ecd..4ea2d4e6f1d1 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> @@ -1485,7 +1485,6 @@ static int axienet_of_probe(struct platform_devic=
-e *op)
->  	if (!ndev)
->  		return -ENOMEM;
->=20
-> -	ether_setup(ndev);
->  	platform_set_drvdata(op, ndev);
->=20
->  	SET_NETDEV_DEV(ndev, &op->dev);
-> --
-> 1.8.2.3
->=20
+> This is also buggy for the same reason as patch 6.
 
-Please ignore this one it is already applied for axienet.
-Will send v2 just for ll_temac.
+Indeed
 
-Thanks,
-Michal
+> The only way to do this is to either have a flag day, fixing all drivers
+> at once (which isn't going to happen) or leave the caps code as-is, and
+> provide a library function which drivers can hook into the caps callback
+> which retrieves the information from dma_device.
+>=20
+> That way, DMA engine drivers which are using the new method can just
+> install the new function, and those which haven't been updated with
+> capabilities can carry on as they are, and are detectable to drivers.
+
+Which is pretty much the current behaviour, isn't it?
+
+> What would be acceptable is to have the DMA engine registration function
+> spot the lack of DMA caps function and print a warning at boot to
+> encourage people to add it.
+
+That would be an option too.
+
+Maxime
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-
-
---2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T
+--B8ONY/mu/bqBak9m
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1
 
-iEYEARECAAYFAlQruoEACgkQykllyylKDCEBhgCeKHPc4szkECMN7UaTpzIfaagJ
-bBoAoIIJo7dEEsMYXwWY+rPFWah4YB9X
-=N+Nd
+iQIcBAEBAgAGBQJUK7rZAAoJEBx+YmzsjxAgl9gP+wTr87Uk2OOctggPsN/7CjvS
+DUpei0pOiw4v5ZwPF54viU8pq8lTrgIWupD7AVsSYHIJNcjU6CYcjuEMAnsKrPF6
+78rO0F3eYqIcZbbiTRI+7QpzSji0S1q/rPsExwd7xjt6f75lkFM2CiOhZ8RblLT+
+9tDbTCqE7HyrxDGl8+yjREztM4GgFVUm6h1F0Y2Rg059JXzTYB4xZyXc8dVk4dld
+heAfJHmwbTZ3aXfwtbvFrELp/CLgMkl8OFa3EhVXg7yPeR9fXgDd+8x3M1C5s8ms
+HA9B03RMOvO1WpkZuIAbMkfyJAQCPmhWxLGRoHp6ikxzbDVQ6+3+DF6YLfxH/VrD
+oI6MbqgHpuKLrWHd/poQ+rUc0R2fJiY9i9cyncDkx1j2DYSePvnE6i9a08bkDW/J
+nkDzjG+Yv+tmX0SZTeJfQ2/trGvNh5VYvMY/5hriE0wpO/T8lijMCEU3sgl5EH6f
+PgYgezq+gUf0wIT7YH6eJxslHHv4AD1q9K1GmAy2HNwzMklu1ourpKPiPUbMBr9J
+eFBnzX6z0DO45/eYaVaeFz+r6Bn8TvW6EIxYyQ4tRs5WWw5bBhZUyth92oGCmFdy
+Yv32dr0e7fcupzy51K8vA6pCNIgyKetxfsC/oFyDNqXB7CS6J/DP/5djB5JBJHpD
+4y5b2u2VNY/vltghlSQf
+=3ZKi
 -----END PGP SIGNATURE-----
 
---2d9c4B3TCV7M7xxxsgIWtuEnsPUi7sq3T--
+--B8ONY/mu/bqBak9m--
