@@ -1,198 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319AbaJALGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 07:06:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48199 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751063AbaJALGe convert rfc822-to-8bit (ORCPT
+	id S1751411AbaJALIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 07:08:16 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38000 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaJALIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 07:06:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,631,1406617200"; 
-   d="scan'208";a="608079838"
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-To: "'David Miller'" <davem@davemloft.net>
-CC: "'peppe.cavallaro@st.com'" <peppe.cavallaro@st.com>,
-        "'rayagond@vayavyalabs.com'" <rayagond@vayavyalabs.com>,
-        "'vbridgers2013@gmail.com'" <vbridgers2013@gmail.com>,
-        "'srinivas.kandagatla@st.com'" <srinivas.kandagatla@st.com>,
-        "'wens@csie.org'" <wens@csie.org>,
-        "'netdev@vger.kernel.org'" <netdev@vger.kernel.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Index: Ac/dZ73bZ80XzluRRjOKBuh8UQjKqg==
-Date: Wed, 1 Oct 2014 11:06:25 +0000
-Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7F65A6@PGSMSX102.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 1 Oct 2014 07:08:15 -0400
+Message-ID: <542BE095.3010107@linaro.org>
+Date: Wed, 01 Oct 2014 20:08:05 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Kees Cook <keescook@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Deepak Saxena <dsaxena@linaro.org>, "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system call
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com>
+In-Reply-To: <20140826175128.GD23445@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Kweh, Hock Leong
-> Sent: Thursday, September 18, 2014 11:18 AM
-> > From: David Miller [mailto:davem@davemloft.net]
-> > Sent: Wednesday, September 17, 2014 12:56 PM
-> > Are you kidding me?  It's a perfect way to identify this device, it
-> > properly uses PCI_CLASS_NETWORK_ETHERNET (0x0200) in both cases and
-> > this will not match any other function on this PCI device at all.
-> >
-> > Please do as I suggested and use the PCI class for the differentiation
-> > and matching during probing.
-> 
-> Hi David,
-> 
-> Thanks for your feedback so far. Appreciate it.
-> 
-> Sorry to my poorly written description that may have caused some confusion.
-> My sincere apology here.
-> Unfortunately, I don't really grasp your idea clearly based on your responses
-> which I appreciate them a lot.
-> Sorry for the long description below but I hope to clearly pen down my
-> thinking process so that you can follow my thinking incrementally without
-> being confused.
-> 
-> So, let's roll back a bit so that with my following description, you can help
-> correct me if my understanding of using PCI function ID to differentiate PHY
-> port that is associated with each Ethernet controller is wrong:
-> 
-> The high-level idea about the change that I made for STMMAC IP inside
-> Quark is as follow:
-> 
-> (1) Based on Quark-specific PCI ID declared inside stmmac_id_table[],  the
-> probe() function is
->        called to continue setting-up STMMAC for Quark.
-> 
-> @@ -228,11 +303,13 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
-> 
->  #define STMMAC_VENDOR_ID 0x700
->  #define STMMAC_DEVICE_ID 0x1108
-> +#define STMMAC_QUARK_X1000_ID 0x0937
-> 
->  static const struct pci_device_id stmmac_id_table[] = {
->  	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID),
-> PCI_ANY_ID,
->  			PCI_ANY_ID, CHIP_STMICRO},
->  	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC),
-> CHIP_STMICRO},
-> +	{PCI_VDEVICE(INTEL, STMMAC_QUARK_X1000_ID),
-> CHIP_QUARK_X1000},
->  	{}
->  };
-> 
-> (2) Back-ground on STMMAC hardware configuration on Intel Galileo Gen 1 &
-> Gen 2 platforms:
-> Intel Quark SoC has 2 MAC controller as described by lspci output below:
-> 
-> 00:14.6 Class 0200: 8086:0937    ====> 1st MAC controller
-> 00:14.7 Class 0200: 8086:0937    ====> 2nd MAC controller
-> 
-> These Galileo boards use the same Intel Quark SoC and there is only one PHY
-> connect to the 1st MAC [00:14.6 Class 0200: 8086:0937] The 2nd MAC [00:14.7
-> Class 0200: 8086:0937] is NOT connected to any PHY at all.
-> 
-> So, it appears to me that the only way that I can differentiate between 1st &
-> 2nd MAC are based on PCI function ID, i.e. 14.6 & 14.7. Therefore, within the
-> probe() function, for Intel Quark SoC only, the function performs next-level
-> discovery of 1st or 2nd MAC controller through quark_run_time_config()
-> function.
-> For other PCI ID (currently STMICRO_MAC) there is NO next-level discovery
-> involved as rt_config is NULL.
-> Changes shown below:
-> 
-> static struct platform_data platform_info[] = { @@ -59,15 +65,76 @@ static
-> struct platform_data platform_info[] = {
->  		.phy_reset = NULL,
->  		.phy_mask = 0,
->  		.pbl = 32,
-> +		.fixed_burst = 0,
->  		.burst_len = DMA_AXI_BLEN_256,
-> +		.rt_config = NULL,  ===================> no 2nd-level
-> discovery for other PCI ID
-> +	},
-> +	[CHIP_QUARK_X1000] = {
-> +		.phy_addr = 1,
-> +		.interface = PHY_INTERFACE_MODE_RMII,
-> +		.clk_csr = 2,
-> +		.has_gmac = 1,
-> +		.force_sf_dma_mode = 1,
-> +		.multicast_filter_bins = HASH_TABLE_SIZE,
-> +		.unicast_filter_entries = 1,
-> +		.phy_reset = NULL,
-> +		.phy_mask = 0,
-> +		.pbl = 16,
-> +		.fixed_burst = 1,
-> +		.burst_len = DMA_AXI_BLEN_256,
-> +		.rt_config = &quark_run_time_config,       ==========>
-> Quark specific 2nd-level discovery
-> +	},
-> +};
-> 
-> (3) Within quark_run_time_config(), due to the only way to differentiate 1st
-> or 2nd MAC controller according to difference in function ID explained above,
-> the following changes are made:
-> 
-> +static void quark_run_time_config(int chip_id, struct pci_dev *pdev) {
-> +	const char *board_name =
-> dmi_get_system_info(DMI_BOARD_NAME);
-> +	int i;
-> +	int func_num = PCI_FUNC(pdev->devfn);
-> +
-> +	if (!board_name)
-> +		return;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(quark_x1000_phy_info); i++) {
-> +		if ((!strcmp(quark_x1000_phy_info[i].board_name,
-> board_name)) &&
-> +		    quark_x1000_phy_info[i].pci_func_num == func_num)
-> +			platform_info[chip_id].phy_addr =
-> +				quark_x1000_phy_info[i].phy_address;
-> +	}
-> +}
-> 
-> The reasons for the above proposed condition checks, i.e. "board name" &
-> "pci function name" are below:
->   a) As described above, the only difference in both instance of STMMAC IP
-> inside Intel Quark SoC is the function ID,
->        so I have proposed to use function ID to be the decision point here to
-> differentiate 1st MAC from 2nd MAC.
->   b) Allow future expansion of any other Intel Quark platforms with specific
-> need to fix PHY address
->   c) A PHY address set as "-1"  is to mark that the PHY (associated with
-> function ID) is not connected to MAC, which
->       is being used here for the 2 Galileo boards -> 2nd MAC port not connected
-> with PHY.
-> 
-> 
-> Finally, based on the above description, it appears to me that using PCI
-> function ID to decode seems viable for Intel Quark specific hardware
-> configuration.
-> 
-> Appreciate your time and any feedback is very much appreciated.
-> 
-> Thanks.
-> 
-> 
-> Regards,
-> Wilson
+Will,
+
+When I was looking into syscall_trace_exit() more closely, I found
+another (big) problem.
+There are two system calls, execve() and rt_sigreturn(), which change
+'syscallno' in pt_regs to -1 in start_thread() and restore_sigframe(),
+respectively.
+
+Since syscallno is not valid anymore in syscall_trace_exit() for these
+system calls, we cannot create a correct syscall exit record for tracepoint
+in trace_sys_exit() (=> ftrace_syscall_exit()) and for audit in audit_syscall_exit().
+
+This does not happen on arm because syscall numbers are kept in
+thread_info on arm.
+
+How can we deal with this issue?
+
+-Takahiro AKASHI
 
 
-Hi Guys,
-
-Just gently ping for the discussion to carry on before forgetting the context.
-Anyone have any better idea or comments or concern to this topic?
-Hope the above explanation clear out your doubt.
-
-
-Regards,
-Wilson
-
+On 08/27/2014 02:51 AM, Will Deacon wrote:
+> On Fri, Aug 22, 2014 at 01:35:17AM +0100, AKASHI Takahiro wrote:
+>> On 08/22/2014 02:08 AM, Kees Cook wrote:
+>>> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+>>> <takahiro.akashi@linaro.org> wrote:
+>>>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>>>> index 8876049..c54dbcc 100644
+>>>> --- a/arch/arm64/kernel/ptrace.c
+>>>> +++ b/arch/arm64/kernel/ptrace.c
+>>>> @@ -1121,9 +1121,29 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+>>>>
+>>>>    asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>>>>    {
+>>>> +       unsigned int saved_syscallno = regs->syscallno;
+>>>> +
+>>>>           if (test_thread_flag(TIF_SYSCALL_TRACE))
+>>>>                   tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>>>>
+>>>> +       if (IS_SKIP_SYSCALL(regs->syscallno)) {
+>>>> +               /*
+>>>> +                * RESTRICTION: we can't modify a return value of user
+>>>> +                * issued syscall(-1) here. In order to ease this flavor,
+>>>> +                * we need to treat whatever value in x0 as a return value,
+>>>> +                * but this might result in a bogus value being returned.
+>>>> +                */
+>>>> +               /*
+>>>> +                * NOTE: syscallno may also be set to -1 if fatal signal is
+>>>> +                * detected in tracehook_report_syscall_entry(), but since
+>>>> +                * a value set to x0 here is not used in this case, we may
+>>>> +                * neglect the case.
+>>>> +                */
+>>>> +               if (!test_thread_flag(TIF_SYSCALL_TRACE) ||
+>>>> +                               (IS_SKIP_SYSCALL(saved_syscallno)))
+>>>> +                       regs->regs[0] = -ENOSYS;
+>>>> +       }
+>>>> +
+>>>
+>>> I don't have a runtime environment yet for arm64, so I can't test this
+>>> directly myself, so I'm just trying to eyeball this. :)
+>>>
+>>> Once the seccomp logic is added here, I don't think using -2 as a
+>>> special value will work. Doesn't this mean the Oops is possible by the
+>>> user issuing a "-2" syscall? As in, if TIF_SYSCALL_WORK is set, and
+>>> the user passed -2 as the syscall, audit will be called only on entry,
+>>> and then skipped on exit?
+>>
+>> Oops, you're absolutely right. I didn't think of this case.
+>> syscall_trace_enter() should not return a syscallno directly, but always
+>> return -1 if syscallno < 0. (except when secure_computing() returns with -1)
+>> This also implies that tracehook_report_syscall() should also have a return value.
+>>
+>> Will, is this fine with you?
+>
+> Well, the first thing that jumps out at me is why this is being done
+> completely differently for arm64 and arm. I thought adding the new ptrace
+> requests would reconcile the differences?
+>
+> Will
+>
