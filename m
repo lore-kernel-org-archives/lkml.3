@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaJAAlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 20:41:18 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:44163 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJAAlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 20:41:17 -0400
-Message-ID: <542B4DA3.5080105@gmail.com>
-Date: Tue, 30 Sep 2014 17:41:07 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751610AbaJAAnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 20:43:43 -0400
+Received: from mail-bn1bon0134.outbound.protection.outlook.com ([157.56.111.134]:13894
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750996AbaJAAnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Sep 2014 20:43:42 -0400
+Message-ID: <1412124210.13320.330.camel@snotra.buserror.net>
+Subject: Re: [PATCH] powerpc/fsl: Add support for pci(e) machine check
+ exception on E500MC / E5500
+From: Scott Wood <scottwood@freescale.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Jojy Varghese <jojyv@juniper.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Michael Ellerman" <mpe@ellerman.id.au>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <groeck@juniper.net>,
+        "hongtao.jia@freescale.com" <hongtao.jia@freescale.com>
+Date: Tue, 30 Sep 2014 19:43:30 -0500
+In-Reply-To: <20140930155029.GA4724@roeck-us.net>
+References: <D04F3201.10DEB%jojyv@juniper.net>
+	 <1412033466.13320.293.camel@snotra.buserror.net>
+	 <20140930155029.GA4724@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, Rob Landley <rob@landley.net>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v5] init: Disable defaults if init= fails
-References: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
-In-Reply-To: <5c6381879bea68aebb13530442f1cf8a052be97f.1411958379.git.luto@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:9182:1110:33a1:a006]
+X-ClientProxiedBy: BN1PR02CA0030.namprd02.prod.outlook.com (10.141.56.30) To
+ CY1PR0301MB0730.namprd03.prod.outlook.com (25.160.159.148)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0730;
+X-Forefront-PRVS: 0351D213B3
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(479174003)(377454003)(199003)(51704005)(189002)(377424004)(110136001)(76482002)(104166001)(89996001)(101416001)(50466002)(4396001)(102836001)(76176999)(77156001)(50226001)(97736003)(85306004)(21056001)(47776003)(103116003)(87976001)(99396003)(64706001)(19580405001)(105586002)(33646002)(88136002)(31966008)(19580395003)(62966002)(77096002)(92726001)(93916002)(46102003)(107046002)(50986999)(95666004)(120916001)(42186005)(85852003)(87286001)(23676002)(106356001)(92566001)(86362001)(80022003)(20776003)(10300001)(7059020)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0730;H:[IPv6:2601:2:5800:3f7:9182:1110:33a1:a006];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The earliest mention I find of this on lkml is v4.  Was there earlier
-discussion of this elsewhere?  (Just so I have a clue as to the full
-context and don't repeat previous discussion.)  The mention of names
-in the change logs tells me I should be able to find the discussion
-somewhere.
+On Tue, 2014-09-30 at 08:50 -0700, Guenter Roeck wrote:
+> On Mon, Sep 29, 2014 at 06:31:06PM -0500, Scott Wood wrote:
+> > On Mon, 2014-09-29 at 23:03 +0000, Jojy Varghese wrote:
+> > > 
+> > > On 9/29/14 12:06 PM, "Guenter Roeck" <linux@roeck-us.net> wrote:
+> > > 
+> > > >Those are errors related to PCIe hotplug, and are seen with unexpected
+> > > >PCIe
+> > > >device removals (triggered, for example, by removing power from a PCIe
+> > > >adapter).
+> > > >The behavior we see on E5500 is quite similar to the same behavior on
+> > > >E500:
+> > > >If unhandled, the CPU keeps executing the same instruction over and over
+> > > >again
+> > > >if there is an error on a PCIe access and thus stalls. I don't know if
+> > > >this
+> > > >is considered an erratum or expected behavior, but it is one we have to
+> > > >address
+> > > >since we have to be able to handle that condition. 
+> > 
+> > The reason I ask is that the handling for e500 was described as an
+> > erratum workaround.  If it is an erratum it would be nice to know the
+> > erratum number and the full list of affected chips.
+> > 
+> My understanding, which may be wrong, was that this is expected behavior,
+> at least for E5500. I actually thought I had seen it somewhere in the
+> specification (response to PCIe errors), but I don't recall where exactly.
+> 
+> At least for my part I am not aware of an erratum.
 
+Jia Hongtao, can you comment here?
 
-On 9/28/2014 7:40 PM, Andy Lutomirski wrote:
-> If a user puts init=/whatever on the command line and /whatever
-> can't be run, then the kernel will try a few default options before
-> giving up.  If init=/whatever came from a bootloader prompt, then
-> this is unexpected but probably harmless.  On the other hand, if it
-> comes from a script (e.g. a tool like virtme or perhaps a future
-> kselftest script), then the fallbacks are likely to exist, but
-> they'll do the wrong thing.  For example, they might unexpectedly
-> invoke systemd.
-> 
-> This makes a failure to run the specified init= process be fatal.
-> 
-> As a temporary measure, users can set CONFIG_INIT_FALLBACK=y to
-> preserve the old behavior.  If no one speaks up, we can remove that
-> option entirely after a release or two.
+> > > >Ultimately, we'll want
+> > > >to
+> > > >implement PCIe error handlers for the affected drivers, but that will be
+> > > >a next
+> > > >step.
+> > 
+> > For now can we at least print a ratelimited error message?  I don't like
+> > the idea of silently ignoring these errors.  I suppose it's a separate
+> > issue from extending the workaround to cover e500mc, though.
+> > 
+> I don't really like the idea of printing an error message pretty much each time
+> when an unexpected hotplug event occurs.
 
-I'm speaking up already, no need to wait two releases.  I like the
-current behavior where I can fall back into a shell without
-recompiling the kernel and/or changing the boot command line to
-debug an init failure.
+Unexpected events seem like the sort of thing you'd want to log, but my
+concern is that this might not be the only cause of PCI errors.
 
-I would suggest that the current behavior remain the
-default and the choice to make a failure of the specified
-init= process fatal should be an explicit choice.
+-Scott
 
-Instead of using a config option, would adding another kernel
-command line option, such as 'init_fail_is_fatal', work for
-your needs?  I have a feeling this has already been proposed,
-as the 'strictinit' option mentioned in the changes from v3
-below might be the same concept?
-
-Thanks,
-
-Frank
-
-> 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> Changes from v4:
->  - Update the panic message (sorry for the noise)
-> 
-> Changes from v3:
->  - Get rid of the strictinit option.  Now the new behavior is the default
->    unless CONFIG_INIT_FALLBACK=y (Rob Landley)
-> 
-> Changes from v2:
->  - Improve docs further, to leave the door open to giving strictinit
->    some sensible semantics if init= is not set.
->  - Improve error output in the failure case (Shuah Khan).
-> 
-> Changes from v1:
->  - Add missing "if" to the docs (Randy Dunlap)
-> 
->  init/Kconfig | 11 +++++++++++
->  init/main.c  |  7 ++++++-
->  2 files changed, 17 insertions(+), 1 deletion(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index e84c6423a2e5..063029a1556f 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1299,6 +1299,17 @@ source "usr/Kconfig"
->  
->  endif
->  
-> +config INIT_FALLBACK
-> +	bool "Fall back to defaults if init= parameter is bad"
-> +	help
-> +	  If enabled, the kernel will try the default init binaries if an
-> +	  explicit request from the init= parameter fails.
-> +
-> +	  This is a temporary measure to allow broken configurations
-> +	  to continue to boot.
-> +
-> +	  If unsure, say N.
-> +
->  config CC_OPTIMIZE_FOR_SIZE
->  	bool "Optimize for size"
->  	help
-> diff --git a/init/main.c b/init/main.c
-> index bb1aed928f21..2bd6105e5dc5 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -960,8 +960,13 @@ static int __ref kernel_init(void *unused)
->  		ret = run_init_process(execute_command);
->  		if (!ret)
->  			return 0;
-> +#ifndef CONFIG_INIT_FALLBACK
-> +		panic("Requested init %s failed (error %d).",
-> +		      execute_command, ret);
-> +#else
->  		pr_err("Failed to execute %s (error %d).  Attempting defaults...\n",
-> -			execute_command, ret);
-> +		       execute_command, ret);
-> +#endif
->  	}
->  	if (!try_to_run_init_process("/sbin/init") ||
->  	    !try_to_run_init_process("/etc/init") ||
-> 
 
