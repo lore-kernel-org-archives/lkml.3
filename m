@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaJANXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 09:23:55 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:54258 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaJANXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 09:23:54 -0400
-Date: Wed, 1 Oct 2014 15:23:44 +0200 (CEST)
-From: Stefan Wahren <stefan.wahren@i2se.com>
-Reply-To: Stefan Wahren <stefan.wahren@i2se.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: kernel@pengutronix.de, pawel.moll@arm.com, lgirdwood@gmail.com,
-        robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-kernel@vger.kernel.org,
-        shawn.guo@linaro.org, festevam@gmail.com, mark.rutland@arm.com,
-        devicetree@vger.kernel.org
-Message-ID: <2002781663.91096.1412169824110.JavaMail.open-xchange@oxbaltgw04.schlund.de>
-In-Reply-To: <20140929171314.GW16977@sirena.org.uk>
-References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com> <1411779588-22031-3-git-send-email-stefan.wahren@i2se.com> <20140928101650.GL27755@sirena.org.uk> <5428FE7B.8060700@i2se.com> <20140929171314.GW16977@sirena.org.uk>
-Subject: Re: [PATCH 2/2] regulator: add mxs regulator driver
+	id S1751526AbaJAN1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 09:27:13 -0400
+Received: from bues.ch ([80.190.117.144]:47230 "EHLO bues.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053AbaJAN1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 09:27:12 -0400
+Date: Wed, 1 Oct 2014 15:27:05 +0200
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] ssb: Fix Sparse error in main
+Message-ID: <20141001152705.02f4f34e@wiggum>
+In-Reply-To: <542BAFB3.6030207@smartplayin.com>
+References: <1412147196-7466-1-git-send-email-pramod.gurav@smartplayin.com>
+ <1412148544.21730.36.camel@x220>
+ <542BAFB3.6030207@smartplayin.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.6.0-Rev19
-X-Originating-Client: com.openexchange.ox.gui.dhtml
-X-Provags-ID: V02:K0:mRWfa/2a/CaKGk6frR2nM0K7sV/32iR7z8iLhCvL4HT
- FqF5VJ/19jGo0Tysm3uwLaracESUmR1wE1RMV0Hc3yFHODO98v
- xKRDoqtyQgCJEDgg/aMKHRGwwggmXSv/BGH5c3WRuVP5NODRxE
- iVdYPVf53PbYCGbgaqYfiYffxi6uCgkDjKOUzLv9sg535XDu4J
- jz7QtPyV26+TLud3HcOxiTi/nbCSSS5UGb2X/OrDCcJfLljf7j
- 6rAyAthPJCg8fwTHXQ6WAbfD39hAgC4GWVF364xt2o4SgWUEUr
- OlxFNoEREfhHa7ZQS2cS23aQrZ1GOo4WbqlK1OeHTrcXD3XLMJ
- nSc81KCV6kFOzsbv01jGGtjLnCBxd6tm4ASo+BmJ0ijPw1g2cN
- DXjo4d45CL3DVyDpUOhhKV9iEteLndh6SehAHTrKBFSVVtJwth
- KKlKhaOx6Po1sldGejI+Eglv0Uw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/WkksWX0=7dNSbjP8muOd0He"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+--Sig_/WkksWX0=7dNSbjP8muOd0He
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Mark Brown <broonie@kernel.org> hat am 29. September 2014 um 19:13
-> geschrieben:
->
-> > > This really needs a comment to explain what on earth is going on here -
-> > > the whole thing with writing the same thing twice with two delays is
-> > > more than a little odd. It looks like the driver is trying to busy wait
-> > > in cases where the change happens quickly but the comments about "fast"
-> > > and "normal" mode make this unclear.
->
-> > The regulator driver polls for the DC_OK bit in the power status register.
->
-> > Quote for reference manual (p. 935): "High when switching DC-DC
-> > converter control loop has stabilized after a voltage target change."
->
-> > The two loops comes from the different regulator modes
-> > (REGULATOR_MODE_FAST, REGULATOR_MODE_NORMAL).
->
-> > In REGULATOR_MODE_FAST the voltage steping is disabled and changing
-> > voltage should be fast. In REGULATOR_MODE_NORMAL voltage steping is
-> > enabled and it's take a while for reaching the target voltage.
->
-> I don't think you've fully understood what the different modes mean
-> here, that's not normally how a buck convertor works. The different
-> modes would typically control the ability of the regulator to respond
-> quickly to changes in load without drifting off regulation, fast mode
-> makes the regulator less efficient but more responsive to load changes
-> (probably marginally with modern regulators). It should have relatively
-> little to do with the ability to ramp the voltage and certainly not on
-> the scale there.
->
+On Wed, 01 Oct 2014 13:09:31 +0530
+Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
 
-thanks for your explanation.
+> On Wednesday 01 October 2014 12:59 PM, Paul Bolle wrote:
+> > On Wed, 2014-10-01 at 12:36 +0530, Pramod Gurav wrote:
+> >> This change fixes below sparse error:
+> >>
+> >> drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
+> >> was not declared. Should it be static?
+> >>
+> >> Cc: Michael Buesch <m@bues.ch>
+> >> Cc: netdev@vger.kernel.org
+> >> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> >> ---
+> >>  drivers/ssb/ssb_private.h |    1 +
+> >>  1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/drivers/ssb/ssb_private.h b/drivers/ssb/ssb_private.h
+> >> index eb507a5..86bbbe3 100644
+> >> --- a/drivers/ssb/ssb_private.h
+> >> +++ b/drivers/ssb/ssb_private.h
+> >> @@ -193,6 +193,7 @@ extern struct ssb_bus *ssb_pci_dev_to_bus(struct p=
+ci_dev *pdev);
+> >>  int ssb_for_each_bus_call(unsigned long data,
+> >>  			  int (*func)(struct ssb_bus *bus, unsigned long data));
+> >>  extern struct ssb_bus *ssb_pcmcia_dev_to_bus(struct pcmcia_device *pd=
+ev);
+> >> +struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func);
+> >> =20
+> >>  struct ssb_freeze_context {
+> >>  	/* Pointer to the bus */
+> >=20
+> > To me this looked like an odd way to silence that warning. So I dug a
+> > bit further.
+> >=20
+> > ssb_sdio_func_to_bus() was added in commit 24ea602e183c ("ssb: Implement
+> > SDIO host bus support"). So it was added in release v2.6.32. I found no
+> > evidence this function was ever used. Can't it be removed?
+> >=20
+> Thanks Paul for review. Initially I too had greped for this function in
+> kernel and found noone using it. But I thought this function might be
+> useful in future. About removing it, may be original author can tell.
 
-Is it better to let the core handles the ramp delay instead of set_voltage_sel
-with a busy wait?
 
-I've found that polling DC_OK is only reliable for increasing voltages. So i
-think about defining ramp delay in the regulator description.
+If it's unused, please remove it.
 
-Stefan
+
+
+--=20
+Michael
+
+--Sig_/WkksWX0=7dNSbjP8muOd0He
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJULAEpAAoJEPUyvh2QjYsOTycP/1fm+VZJ/UPvhUgso6QEDawL
+IegdwpmygYLVHok8wIFTLPLXGCbdno3MDcwwnjt/UhZOxbFWTIlu5uubhMWPAVkA
+o2Ih83ake89yV/uhRZjW7Gsr0vYH79+46gDSpCGHuQ4GsliJoJ2FWNcN0rk9LIbe
+bZEJYMxwhsep2sExYueJ8wnBVS1Pf1IxLLTSCVdBsf2HxQV6kYl/K5fw5j2o+9ja
+HIYsKHhe41Ij3Vo1RU1MhuOu2TAWhCL19E3szz4AQGBN3j+cycOVOGz2rSPEDDuY
+9KON6eYnXHW4cgw79Rljfx+odVHq72DyYSKO8gqauD7BSvkW36yDWVbEL6b4IaaM
+9L2YKssaRR3Iyjbytzpsl0wg9h5mK+k2a1Yd4OQfFBWITSTvZ8iKWB2lgb2VwmVc
+w3rVPUE62JmVeLZSt5igPp/7ygqaiMWbFOn9I5G8Nl0YDgo8J8uEFNgbUobNcy/l
+8C13VTHp1DIi0GcEaKLBd40tywj49BtpsSwP7PI3kU+1enizPu1KLKZZhtXHSfu9
+imxUu+WktNgZUzhbhnhyFdNK94xIwlp/0gQfA09hFwWquc5snF7rZFI+ZqzO2FQq
+Fm5sHfnR4DJge4hrKyX+hB3nlqpa4NMXMJa0ZzYu8IA4PPNUbl/9IO+sOSh1GNxa
+umkJi4xGfu2SzEjFG5Ny
+=v7Zp
+-----END PGP SIGNATURE-----
+
+--Sig_/WkksWX0=7dNSbjP8muOd0He--
