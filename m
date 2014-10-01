@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaJASgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 14:36:09 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:60109 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753839AbaJASgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 14:36:07 -0400
-Date: Wed, 1 Oct 2014 12:36:03 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wangyijing@huawei.com
-Subject: Re: [PATCH 0/3] Revert MSI msg API churn
-Message-ID: <20141001183603.GA22713@google.com>
-References: <20141001163814.2709.92885.stgit@gimli.home>
+	id S1753930AbaJASgg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 14:36:36 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57515 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753544AbaJASgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 14:36:35 -0400
+Date: Wed, 1 Oct 2014 11:36:32 -0700
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, boot: fix warning on 32-bit builds
+Message-ID: <20141001183632.GA11431@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141001163814.2709.92885.stgit@gimli.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 10:48:16AM -0600, Alex Williamson wrote:
-> The MSI message API has gone through some churn, that I think results
-> in an inconsistent interface.  We now have this:
-> 
-> void read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void write_msi_msg(unsigned int irq, struct msi_msg *msg);
-> 
-> write_msi_msg() takes an irq arg, but read_msi_msg() takes an
-> msi_desc.  Presumably write_msi_msg() was not converted because it
-> has a much larger user base, but this sort of inconsitency results
-> in a poor API.
+Building 32-bit threw a warning on kASLR enabled builds:
 
-Yeah, that isn't good, thanks for noticing.
+arch/x86/boot/compressed/aslr.c: In function ‘mem_avoid_overlap’:
+arch/x86/boot/compressed/aslr.c:198:17: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+   avoid.start = (u64)ptr;
+                 ^
 
-I rebuilt the pci/msi branch and dropped the commits you mentioned.
-The ones that are left are these:
+This fixes the warning; unsigned long should have been used here.
 
-  56b72b409579 PCI/MSI: Use __write_msi_msg() instead of write_msi_msg()
-  1e8f4cc82ede MSI/powerpc: Use __read_msi_msg() instead of read_msi_msg()
-  2b260085e466 PCI/MSI: Use __get_cached_msi_msg() instead of get_cached_msi_msg()
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ arch/x86/boot/compressed/aslr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-which I think are OK.
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index d39189ba7f8e..f302dc45ce08 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -195,7 +195,7 @@ static bool mem_avoid_overlap(struct mem_vector *img)
+ 	while (ptr) {
+ 		struct mem_vector avoid;
+ 
+-		avoid.start = (u64)ptr;
++		avoid.start = (unsigned long)ptr;
+ 		avoid.size = sizeof(*ptr) + ptr->len;
+ 
+ 		if (mem_overlaps(img, &avoid))
+-- 
+1.9.1
 
-> This series reverts a selection of commits to return us to:
-> 
-> void __read_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void __get_cached_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void __write_msi_msg(struct msi_desc *entry, struct msi_msg *msg);
-> void get_cached_msi_msg(unsigned int irq, struct msi_msg *msg);
-> void write_msi_msg(unsigned int irq, struct msi_msg *msg);
-> 
-> I've left the removal of read_msi_msg() since it has no users, but
-> restored get_cached_msi_msg() since it has an imminent user.  This
-> will also cleanup the upcoming merge conflicts in next.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (3):
->       Revert "PCI/MSI: Remove unused get_cached_msi_msg()"
->       Revert "PCI/MSI: Rename __get_cached_msi_msg() to get_cached_msi_msg()"
->       Revert "PCI/MSI: Rename __read_msi_msg() to read_msi_msg()"
-> 
-> 
->  arch/ia64/kernel/msi_ia64.c          |    2 +-
->  arch/ia64/sn/kernel/msi_sn.c         |    2 +-
->  arch/powerpc/platforms/pseries/msi.c |    2 +-
->  arch/x86/kernel/apic/io_apic.c       |    2 +-
->  arch/x86/pci/xen.c                   |    2 +-
->  drivers/pci/msi.c                    |   11 +++++++++--
->  include/linux/msi.h                  |    5 +++--
->  7 files changed, 17 insertions(+), 9 deletions(-)
+
+-- 
+Kees Cook
+Chrome OS Security
