@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaJAKPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 06:15:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33370 "EHLO
+	id S1751370AbaJAKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 06:18:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33401 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751136AbaJAKPO (ORCPT
+	with ESMTP id S1750981AbaJAKSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 06:15:14 -0400
+	Wed, 1 Oct 2014 06:18:07 -0400
+Message-ID: <542BD4DC.40900@free-electrons.com>
+Date: Wed, 01 Oct 2014 12:18:04 +0200
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: nm@ti.com, peter.ujfalusi@ti.com, santosh.shilimkar@ti.com,
-        tony@atomide.com, rnayak@ti.com, r.sricharan@ti.com, afzal@ti.com,
-        akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] [RESEND] drivers: bus: omap_l3: remove deprecated IRQF_DISABLED
-Date: Wed,  1 Oct 2014 12:15:07 +0200
-Message-Id: <1412158507-7229-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com>
-References: <1395130217-17828-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>, dougthompson@xmission.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] EDAC: remove deprecated IRQF_DISABLED
+References: <1381641477-7373-1-git-send-email-michael.opdenacker@free-electrons.com> <20131014095602.GA14274@jtlinux> <5316B065.7070104@free-electrons.com> <20140305064915.GA28317@pd.tnic>
+In-Reply-To: <20140305064915.GA28317@pd.tnic>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the use of the IRQF_DISABLED flag
-from drivers/bus/omap_l3_*
+On 03/05/2014 07:49 AM, Borislav Petkov wrote:
+> On Wed, Mar 05, 2014 at 06:04:37AM +0100, Michael Opdenacker wrote:
+>> My patch still applies to 3.14-rc5, which means that mpc85xx_edac is
+>> still there.
+>>
+>> I'd like to get rid of this patch for good ;)
+> Something like that, right:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/bp/bp.git/commit/?id=e245e3b25f9ef33b166f0f01d19d6418f52ae726
+>
+> ?
+>
+> Its on its way upstream.
 
-It's a NOOP since 2.6.35 and it will be removed one day.
+It didn't get merged indeed. I'll send an update to my patch if this helps.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/bus/omap_l3_noc.c | 4 ++--
- drivers/bus/omap_l3_smx.c | 6 ++----
- 2 files changed, 4 insertions(+), 6 deletions(-)
+Cheers,
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 531ae591783b..547a0fdba583 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -280,7 +280,7 @@ static int omap_l3_probe(struct platform_device *pdev)
- 	 */
- 	l3->debug_irq = platform_get_irq(pdev, 0);
- 	ret = devm_request_irq(l3->dev, l3->debug_irq, l3_interrupt_handler,
--			       IRQF_DISABLED, "l3-dbg-irq", l3);
-+			       0, "l3-dbg-irq", l3);
- 	if (ret) {
- 		dev_err(l3->dev, "request_irq failed for %d\n",
- 			l3->debug_irq);
-@@ -289,7 +289,7 @@ static int omap_l3_probe(struct platform_device *pdev)
- 
- 	l3->app_irq = platform_get_irq(pdev, 1);
- 	ret = devm_request_irq(l3->dev, l3->app_irq, l3_interrupt_handler,
--			       IRQF_DISABLED, "l3-app-irq", l3);
-+			       0, "l3-app-irq", l3);
- 	if (ret)
- 		dev_err(l3->dev, "request_irq failed for %d\n", l3->app_irq);
- 
-diff --git a/drivers/bus/omap_l3_smx.c b/drivers/bus/omap_l3_smx.c
-index acc216491b8a..769d64c0b0fe 100644
---- a/drivers/bus/omap_l3_smx.c
-+++ b/drivers/bus/omap_l3_smx.c
-@@ -238,8 +238,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
- 
- 	l3->debug_irq = platform_get_irq(pdev, 0);
- 	ret = request_irq(l3->debug_irq, omap3_l3_app_irq,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING,
--		"l3-debug-irq", l3);
-+		IRQF_TRIGGER_RISING, "l3-debug-irq", l3);
- 	if (ret) {
- 		dev_err(&pdev->dev, "couldn't request debug irq\n");
- 		goto err1;
-@@ -247,8 +246,7 @@ static int __init omap3_l3_probe(struct platform_device *pdev)
- 
- 	l3->app_irq = platform_get_irq(pdev, 1);
- 	ret = request_irq(l3->app_irq, omap3_l3_app_irq,
--		IRQF_DISABLED | IRQF_TRIGGER_RISING,
--		"l3-app-irq", l3);
-+		IRQF_TRIGGER_RISING, "l3-app-irq", l3);
- 	if (ret) {
- 		dev_err(&pdev->dev, "couldn't request app irq\n");
- 		goto err2;
+Michael.
+
 -- 
-1.9.1
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
