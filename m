@@ -1,114 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751063AbaJAAQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Sep 2014 20:16:20 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56748 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaJAAQS (ORCPT
+	id S1751192AbaJAAWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Sep 2014 20:22:55 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:61048 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJAAWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Sep 2014 20:16:18 -0400
-Date: Wed, 1 Oct 2014 01:16:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mikhail Efremov <sem@altlinux.org>
-Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
-Message-ID: <20141001001615.GT7996@ZenIV.linux.org.uk>
-References: <20140924201813.GI7996@ZenIV.linux.org.uk>
- <20140925044601.GL7996@ZenIV.linux.org.uk>
- <20140926164442.GA26897@ZenIV.linux.org.uk>
- <20140927044555.GS7996@ZenIV.linux.org.uk>
- <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
- <20140927183139.GT7996@ZenIV.linux.org.uk>
- <20140927191657.GU7996@ZenIV.linux.org.uk>
- <20140928074747.GZ7996@ZenIV.linux.org.uk>
- <20140928180556.GA7996@ZenIV.linux.org.uk>
- <20140929184218.GN5015@linux.vnet.ibm.com>
+	Tue, 30 Sep 2014 20:22:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929184218.GN5015@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Aditya Kali <adityakali@google.com>
+Date: Tue, 30 Sep 2014 17:22:32 -0700
+Message-ID: <CAGr1F2FPLCfZjMCoLM3h-8okHcJSkdE7et25_TKU-2Xtx03OTg@mail.gmail.com>
+Subject: uid=0 inside user-namespace and procfs file permissions
+To: Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 11:42:18AM -0700, Paul E. McKenney wrote:
+Hi all,
 
-> Assuming that incrementing the external name's reference count is
-> atomic_add_unless, I could believe this part.  Or if you have some
-> locking that makes it impossible to increment the reference count
-> in any case where there is any risk that it might be decremented
-> to zero, I guess.
-> 
-> Which might well be the pair of write_seqcount_begin() calls in __d_move(),
-> now that I look more carefully.  So if the name has to be in use somewhere
-> before it can be copied, then a copy can only be created if there is at
-> least one copy that is not currently being removed?  If so, OK.
+I am trying to run a process with uid=0 inside userns. But in the when
+I also do capset() after setresuid(0, 0, 0), I am seeing inconsistent
+proc file permissions. Almost all the files in /proc/<pid>/ has global
+'root' as owner and group even if the actual process uid is correctly
+changed.
 
-Huh?  copy_name() does copy a _reference_, not the name itself.  All the
-copying involved is source->d_name.name = target->d_name.name.  And those
-are simply unsigned char *.
+I wrote a simple program that demonstrate the issue:
 
-write_seqcount_begin() is irrelevant here.  Look: all callers of
-__d_move(x, y) are holding references both to x and y.  Contributing to
-the refcount of dentries themselves, that is, not the names.
+1. parent, as global root (uid=0 in init_user_ns) fork()s a child
+2. child:
+    a) unshare(CLONE_NEWUSER)
+    b) [wait for parent to write uid_map]
+    c) setresgid(id, id, id) ; setresuid(0, 0, 0);
+    d) conditionally call capset() to clear capabilities
+    e) execve(/bin/sleep)
+3. parent:
+    a) populates child's uid_map and maps some uid to 0 inside userns. ex:
+    0 99 1
+    b) waitpid()
 
-That gives exclusion between __d_move() and free_dentry() - the latter cannot
-be called until dentry refcount reaches zero.  RCU is completely irrelevant
-here.  In fact, no call chain leads to __d_move() under rcu_read_lock().
-You must hold the target dentry hard, or it could simply be freed right
-under you.
+(the actual program can be found at http://pastebin.com/f4P17VFn for
+your reference).
 
-And __d_move() is taking ->d_lock on all dentries involved (in
-addition to rename_lock serializing it system-wide).
+When there is no capset() call after setresuid(0,0,0), everything is
+fine. But when I do a capset() to clear all capabilities, the 'owner'
+and 'group' of all the files under /proc/<child_pid>/  of the child
+process are reverted to global 'root' user.
 
-What could possibly lead to refcount zero being observed on target of
-__d_move()?  The history of any dentry is this:
-	* it is created by __d_alloc().  Nobody can see it until __d_alloc()
-returns.  Dentry refcount (not to be confused with refcount of external
-name) is 1.
-	* it passes through some (usually - zero) __d_move() calls.
-Some - as the first argument, some - as the second one.  All those
-calls are serialized by global seqlock - callers must hold rename_lock.
-And all of them are done by somebody who is holding a counting reference
-to dentries in question.
-	* counting references to dentry might be taken and dropped;
-eventually refcount reaches zero (under ->d_lock) and no further
-counting references can be taken after that.  See __dentry_kill() - the
-first thing it does is poisoning the refcount, so that any future
-attempt to increment it would fail.  __dentry_kill() (still under ->d_lock
-of dentry, ->d_lock of its parent and ->i_lock of its inode) removes
-dentry from the tree, from hash and from the alias list of inode;
-Then it drops the locks.  At that point the only search structure dentry
-might be found in is shrink list; if it's not on such list, free_dentry()
-is called immediately, otherwise it's marked so that the code processing
-the shrink list in question would, as soon as it gets to that sucker,
-remove it from the shrink list and call the same free_dentry().  And that's
-the only thing done to such dentry by somebody finding it via a shrink list.
-	* once free_dentry() has been reached, dentry can can be only seen
-by RCU lookups, and after the grace period ends it gets physically freed.
+# without capset (2.d):
+root@vm1# id
+uid=0(root) gid=0(root) groups=0(root)
 
-free_dentry() isn't allowed to overlap __d_move(); to have that happen is
-a serious dentry refcounting bug.  No __d_move() is allowed _after_
-free_dentry() has been entered, either.  Again, it would take a refcounting
-bug for dentries to have that happen - basically, double dput() somewhere.
-If that happens, all bets are off, of course - if dentry gets unexpectedly
-freed under somebody who has grabbed a reference to it and has not dropped
-it yet, we are fucked.
+root@vm1# ./userns_uid0
+child_pid: 24277
+proc_file: /proc/24277/uid_map
+proc_file: /proc/24277/gid_map
+child resuming
 
-Nothing outside of __d_move() is allowed to change ->d_name.name.  RCU-critical
-code is allowed to fetch and dereference it, and such code relies upon
-	a) freeing of name seen by somebody who'd done rcu_read_lock() being
-delayed until after the matching rcu_read_unlock()
-	b) store of terminating NUL done by __d_alloc() (and never overwritten
-afterwards) being seen by RCU-critical code that has found the pointer to
-that name in dentry->d_name.name
+^Z
+[1]+  Stopped                 ./userns_uid0
+root@vm1# cat /proc/24277/uid_map
+         0         99          1
+root@vm1# cat /proc/24277/status | grep -e "Uid:" -e "Gid:"
+Uid: 99 99 99 99
+Gid: 99 99 99 99
+root@vm1# ls -l /proc/24277/
+total 0
+dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:31 attr
+-r-------- 1 nobody nobody 0 2014-09-30 16:31 auxv
+-r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cgroup
+--w------- 1 nobody nobody 0 2014-09-30 16:31 clear_refs
+-r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cmdline
+-rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 comm
+-rw-r--r-- 1 nobody nobody 0 2014-09-30 16:31 coredump_filter
+-r--r--r-- 1 nobody nobody 0 2014-09-30 16:31 cpuset
+...
+[All files have owner='nobody' and group='nobody' .. same as that of
+the process]
 
-All other code accessing ->d_name.name is required to hold one of the locks
-that are held by __d_move() and its callers.  Grabbing any of those leads
-to smp_mb() on alpha, which serves as data dependency barrier there, so
-we don't need explicit barrier there as we do in RCU-critical places - guarding
-NUL will be seen.
+With the additional capset() call, the files under /proc/<child_pid>/
+are now owned by global root:
+
+root@vm1# ./userns_uid0 resetcaps
+child_pid: 24706
+proc_file: /proc/24706/uid_map
+proc_file: /proc/24706/gid_map
+child resuming
+resetting caps
+^Z
+[2]+  Stopped                 ./userns_uid0 resetcaps
+root@vm1# cat /proc/24706/uid_map
+         0         99          1
+root@vm1# cat /proc/24706/status | grep -e "Uid:" -e "Gid:"
+Uid: 99 99 99 99
+Gid: 99 99 99 99
+
+[Everything as before till now]
+
+root@vm1# ls -l /proc/24706/
+total 0
+dr-xr-xr-x 2 nobody nobody 0 2014-09-30 16:47 attr
+-r-------- 1 root   root   0 2014-09-30 16:47 auxv
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 cgroup
+--w------- 1 root   root   0 2014-09-30 16:47 clear_refs
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 cmdline
+-rw-r--r-- 1 root   root   0 2014-09-30 16:47 comm
+-rw-r--r-- 1 root   root   0 2014-09-30 16:47 coredump_filter
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 cpuset
+...
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 mountinfo
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 mounts
+-r-------- 1 root   root   0 2014-09-30 16:47 mountstats
+dr-xr-xr-x 5 nobody nobody 0 2014-09-30 16:47 net
+dr-x--x--x 2 root   root   0 2014-09-30 16:47 ns
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 numa_maps
+...
+-r--r--r-- 1 root   root   0 2014-09-30 16:47 status
+-r-------- 1 root   root   0 2014-09-30 16:47 syscall
+dr-xr-xr-x 3 nobody nobody 0 2014-09-30 16:47 task
+..
+
+Only the directories 'attr', 'net' and 'task' are owned by the uid=99.
+Rest all files are owned by global root.
+
+This behavior seems inconsistent. I ran this on 3.17 kernel. Can
+someone with expertise in this area explain if this is expected?
+
+Thanks,
+-- 
+Aditya
