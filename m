@@ -1,401 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082AbaJAG0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 02:26:45 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:52298 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaJAG0n convert rfc822-to-8bit (ORCPT
+	id S1751166AbaJAGgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 02:36:04 -0400
+Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:63009
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750868AbaJAGgD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 02:26:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <542B95C1.9070704@samsung.com>
-References: <1410349980-10473-1-git-send-email-a.hajda@samsung.com>
-	<542A93FD.7020002@samsung.com>
-	<542B95C1.9070704@samsung.com>
-Date: Wed, 1 Oct 2014 11:56:42 +0530
-Message-ID: <CAEC9eQOdJtx7na+NyTVQqP3v3B5kgJSa0K293DzL_R12Q+GcEA@mail.gmail.com>
-Subject: Re: [PATCH] drm/exynos: remove ifdeferry from initialization code
-From: Ajay kumar <ajaynumb@gmail.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Akshu Agrawal <akshua@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 1 Oct 2014 02:36:03 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
+Subject: RE: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Topic: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Index: AQHP1xkurfkrdRvKVEqm7ahNs/szPpwZXj8AgAAfLwCAALGngP//i84AgAEaS8A=
+Date: Wed, 1 Oct 2014 06:35:58 +0000
+Message-ID: <abb0c775ec2549e3abb0a2218b4eef98@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
+ <3366285.QN2R3CQNzG@wuerfel> <20140930123933.GA25395@peterchendt>
+ <10249326.XCThPmSrfL@wuerfel>
+In-Reply-To: <10249326.XCThPmSrfL@wuerfel>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0772;
+x-forefront-prvs: 0351D213B3
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(164054003)(24454002)(199003)(189002)(99396003)(64706001)(80022003)(92566001)(33646002)(77096002)(10300001)(120916001)(107046002)(46102003)(86362001)(66066001)(108616004)(20776003)(110136001)(99286002)(105586002)(31966008)(95666004)(76482002)(50986999)(76176999)(106356001)(106116001)(76576001)(87936001)(85306004)(21056001)(101416001)(74316001)(54356999)(4396001)(85852003)(93886004)(2656002)(97736003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0772;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 11:18 AM, Inki Dae <inki.dae@samsung.com> wrote:
-> On 2014년 09월 30일 20:29, Andrzej Hajda wrote:
->> Hi Inki,
->>
->> Gently ping.
->
-> Hi Andrzej,
->
-> I merged it to local repository to test. But now exynos drm doesn't work
-> correctly since pulling drm-next of Dave regardless of your patch.
->
-> Problems are,
-> 1. error occurs when we try to test modetest with -v option from second
-> times.
-I face a similar issue. For me, modetest -v doesn't work for the first try also.
-I tried to test on snow and peach_pit.
-modetest returns with following error from drm_crtc.c:
-        if (crtc->primary->fb->pixel_format != fb->pixel_format) {
-                DRM_DEBUG_KMS("Page flip is not allowed to change
-frame buffer format.\n");
-                ret = -EINVAL;
-                goto out;
-        }
-This has started coming since 3.15 I think.
+ 
+> Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+> 
+> On Tuesday 30 September 2014 20:39:34 Peter Chen wrote:
+> > Thanks, Arnd. I had not thought setting dma mask is so complicated,
+> > yes, it should check the return value, two things to confirm:
+> >
+> > - dma_coerce_mask_and_coherent or dma_set_mask_and_coherent, the
+> only
+> > difference of these two API is the first one do "dev->dma_mask = &dev-
+> >coherent_dma_mask;"
+> > The reason you suggest choosing dma_set_mask_and_coherent is you do
+> > not want assign dev->dma_mask?
+> 
+> No, that is just the current definition on ARM32 with
+> CONFIG_ARCH_MULTIPLATFORM, and that is going to change soon to be DT
+> aware.
+> dma_set_mask_and_coherent() is supposed to check whether the platform
+> can support the respective mask and return an error if it cannot.
+> 
+> > - The second parameter for dma_set_mask_and_coherent is
+> > DMA_BIT_MASK(32), is it ok?
+> >
+> > I just a little confused of what's the operation is "hardcoding the dma mask"?
+> 
+> dma_coerce_mask_and_coherent() will hardcode the dma mask and override
+> whatever the platform says is necessary.
+> 
 
-Ajay
+So, we should use dma_set_mask_and_coherent() in most of cases in device driver,
+and use dma_coerce_mask_and_coherent() only  when the device's dma_mask is wrong?
 
-> 2. error occurs when we try to test unbind.
->
-> Now we are checking these problems. Can you try to also check it?
->
-> Thanks,
-> Inki Dae
->
->>
->> Andrzej
->>
->> On 09/10/2014 01:53 PM, Andrzej Hajda wrote:
->>> The patch replaces separate calls to driver (de)registration by
->>> loops over the array of drivers. As a result it significantly
->>> decreases number of ifdefs. Additionally it moves device registration
->>> related ifdefs to header file.
->>>
->>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
->>> ---
->>> Hi Inki,
->>>
->>> During testing your component match support patch [1] I have prepared patch
->>> removing most ifdefs from exynos_drm_drv.c. It is based on your patch, but
->>> I can rebase it if necessary.
->>>
->>> [1]: http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/37031
->>>
->>> Regards
->>> Andrzej
->>> ---
->>>  drivers/gpu/drm/exynos/exynos_drm_drv.c | 170 +++++++-------------------------
->>>  drivers/gpu/drm/exynos/exynos_drm_drv.h |  25 +++--
->>>  2 files changed, 48 insertions(+), 147 deletions(-)
->>>
->>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
->>> index b2c710a..a660e46 100644
->>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
->>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
->>> @@ -553,74 +553,54 @@ static const struct component_master_ops exynos_drm_ops = {
->>>      .unbind         = exynos_drm_unbind,
->>>  };
->>>
->>> -static int exynos_drm_platform_probe(struct platform_device *pdev)
->>> -{
->>> -    struct component_match *match;
->>> -    int ret;
->>> -
->>> -    pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->>> -    exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
->>> -
->>> +static struct platform_driver * const exynos_drm_drivers[] = {
->>>  #ifdef CONFIG_DRM_EXYNOS_FIMD
->>> -    ret = platform_driver_register(&fimd_driver);
->>> -    if (ret < 0)
->>> -            return ret;
->>> +    &fimd_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_DP
->>> -    ret = platform_driver_register(&dp_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_fimd_drv;
->>> +    &dp_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_DSI
->>> -    ret = platform_driver_register(&dsi_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_dp_drv;
->>> +    &dsi_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_HDMI
->>> -    ret = platform_driver_register(&mixer_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_dsi_drv;
->>> -    ret = platform_driver_register(&hdmi_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_mixer_drv;
->>> +    &mixer_driver,
->>> +    &hdmi_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_G2D
->>> -    ret = platform_driver_register(&g2d_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_hdmi_drv;
->>> +    &g2d_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_FIMC
->>> -    ret = platform_driver_register(&fimc_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_g2d_drv;
->>> +    &fimc_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_ROTATOR
->>> -    ret = platform_driver_register(&rotator_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_fimc_drv;
->>> +    &rotator_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_GSC
->>> -    ret = platform_driver_register(&gsc_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_rotator_drv;
->>> +    &gsc_driver,
->>>  #endif
->>> -
->>>  #ifdef CONFIG_DRM_EXYNOS_IPP
->>> -    ret = platform_driver_register(&ipp_driver);
->>> -    if (ret < 0)
->>> -            goto err_unregister_gsc_drv;
->>> +    &ipp_driver,
->>> +#endif
->>> +};
->>> +
->>> +static int exynos_drm_platform_probe(struct platform_device *pdev)
->>> +{
->>> +    struct component_match *match;
->>> +    int ret, i;
->>> +
->>> +    pdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
->>> +    exynos_drm_driver.num_ioctls = ARRAY_SIZE(exynos_ioctls);
->>> +
->>> +    for (i = 0; i < ARRAY_SIZE(exynos_drm_drivers); ++i) {
->>> +            ret = platform_driver_register(exynos_drm_drivers[i]);
->>> +            if (ret < 0)
->>> +                    goto err_unregister_drivers;
->>> +    }
->>>
->>>      ret = exynos_platform_device_ipp_register();
->>>      if (ret < 0)
->>> -            goto err_unregister_ipp_drv;
->>> -#endif
->>> +            goto err_unregister_drivers;
->>>
->>>      match = exynos_drm_match_add(&pdev->dev);
->>>      if (IS_ERR(match)) {
->>> @@ -632,96 +612,24 @@ static int exynos_drm_platform_probe(struct platform_device *pdev)
->>>                                              match);
->>>
->>>  err_unregister_ipp_dev:
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_IPP
->>>      exynos_platform_device_ipp_unregister();
->>> -err_unregister_ipp_drv:
->>> -    platform_driver_unregister(&ipp_driver);
->>> -err_unregister_gsc_drv:
->>> -#endif
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_GSC
->>> -    platform_driver_unregister(&gsc_driver);
->>> -err_unregister_rotator_drv:
->>> -#endif
->>> +err_unregister_drivers:
->>> +    while (--i >= 0)
->>> +            platform_driver_unregister(exynos_drm_drivers[i]);
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
->>> -    platform_driver_unregister(&rotator_driver);
->>> -err_unregister_fimc_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_FIMC
->>> -    platform_driver_unregister(&fimc_driver);
->>> -err_unregister_g2d_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_G2D
->>> -    platform_driver_unregister(&g2d_driver);
->>> -err_unregister_hdmi_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_HDMI
->>> -    platform_driver_unregister(&hdmi_driver);
->>> -err_unregister_mixer_drv:
->>> -    platform_driver_unregister(&mixer_driver);
->>> -err_unregister_dsi_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_DSI
->>> -    platform_driver_unregister(&dsi_driver);
->>> -err_unregister_dp_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_DP
->>> -    platform_driver_unregister(&dp_driver);
->>> -err_unregister_fimd_drv:
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_FIMD
->>> -    platform_driver_unregister(&fimd_driver);
->>> -#endif
->>>      return ret;
->>>  }
->>>
->>>  static int exynos_drm_platform_remove(struct platform_device *pdev)
->>>  {
->>> -#ifdef CONFIG_DRM_EXYNOS_IPP
->>> -    exynos_platform_device_ipp_unregister();
->>> -    platform_driver_unregister(&ipp_driver);
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_GSC
->>> -    platform_driver_unregister(&gsc_driver);
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_ROTATOR
->>> -    platform_driver_unregister(&rotator_driver);
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_FIMC
->>> -    platform_driver_unregister(&fimc_driver);
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_G2D
->>> -    platform_driver_unregister(&g2d_driver);
->>> -#endif
->>> -
->>> -#ifdef CONFIG_DRM_EXYNOS_HDMI
->>> -    platform_driver_unregister(&mixer_driver);
->>> -    platform_driver_unregister(&hdmi_driver);
->>> -#endif
->>> +    int i;
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_FIMD
->>> -    platform_driver_unregister(&fimd_driver);
->>> -#endif
->>> +    exynos_platform_device_ipp_unregister();
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_DSI
->>> -    platform_driver_unregister(&dsi_driver);
->>> -#endif
->>> +    for (i = ARRAY_SIZE(exynos_drm_drivers) - 1; i >= 0; --i)
->>> +            platform_driver_unregister(exynos_drm_drivers[i]);
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_DP
->>> -    platform_driver_unregister(&dp_driver);
->>> -#endif
->>>      component_master_del(&pdev->dev, &exynos_drm_ops);
->>>      return 0;
->>>  }
->>> @@ -745,11 +653,9 @@ static int exynos_drm_init(void)
->>>      if (IS_ERR(exynos_drm_pdev))
->>>              return PTR_ERR(exynos_drm_pdev);
->>>
->>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
->>>      ret = exynos_drm_probe_vidi();
->>>      if (ret < 0)
->>>              goto err_unregister_pd;
->>> -#endif
->>>
->>>      ret = platform_driver_register(&exynos_drm_platform_driver);
->>>      if (ret)
->>> @@ -758,11 +664,9 @@ static int exynos_drm_init(void)
->>>      return 0;
->>>
->>>  err_remove_vidi:
->>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
->>>      exynos_drm_remove_vidi();
->>>
->>>  err_unregister_pd:
->>> -#endif
->>>      platform_device_unregister(exynos_drm_pdev);
->>>
->>>      return ret;
->>> @@ -771,9 +675,9 @@ err_unregister_pd:
->>>  static void exynos_drm_exit(void)
->>>  {
->>>      platform_driver_unregister(&exynos_drm_platform_driver);
->>> -#ifdef CONFIG_DRM_EXYNOS_VIDI
->>> +
->>>      exynos_drm_remove_vidi();
->>> -#endif
->>> +
->>>      platform_device_unregister(exynos_drm_pdev);
->>>  }
->>>
->>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.h b/drivers/gpu/drm/exynos/exynos_drm_drv.h
->>> index 69a6fa3..76d5d02 100644
->>> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.h
->>> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.h
->>> @@ -324,15 +324,14 @@ int exynos_platform_device_hdmi_register(void);
->>>   */
->>>  void exynos_platform_device_hdmi_unregister(void);
->>>
->>> -/*
->>> - * this function registers exynos drm ipp platform device.
->>> - */
->>> +#ifdef CONFIG_DRM_EXYNOS_IPP
->>>  int exynos_platform_device_ipp_register(void);
->>> -
->>> -/*
->>> - * this function unregisters exynos drm ipp platform device if it exists.
->>> - */
->>>  void exynos_platform_device_ipp_unregister(void);
->>> +#else
->>> +static inline int exynos_platform_device_ipp_register(void) { return 0; }
->>> +static inline void exynos_platform_device_ipp_unregister(void) {}
->>> +#endif
->>> +
->>>
->>>  #ifdef CONFIG_DRM_EXYNOS_DPI
->>>  struct exynos_drm_display * exynos_dpi_probe(struct device *dev);
->>> @@ -343,15 +342,13 @@ exynos_dpi_probe(struct device *dev) { return NULL; }
->>>  static inline int exynos_dpi_remove(struct device *dev) { return 0; }
->>>  #endif
->>>
->>> -/*
->>> - * this function registers exynos drm vidi platform device/driver.
->>> - */
->>> +#ifdef CONFIG_DRM_EXYNOS_VIDI
->>>  int exynos_drm_probe_vidi(void);
->>> -
->>> -/*
->>> - * this function unregister exynos drm vidi platform device/driver.
->>> - */
->>>  void exynos_drm_remove_vidi(void);
->>> +#else
->>> +static inline int exynos_drm_probe_vidi(void) { return 0; }
->>> +static inline void exynos_drm_remove_vidi(void) {}
->>> +#endif
->>>
->>>  /* This function creates a encoder and a connector, and initializes them. */
->>>  int exynos_drm_create_enc_conn(struct drm_device *dev,
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Peter
+
