@@ -1,107 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaJARUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 13:20:08 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:14780 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaJARUG (ORCPT
+	id S1752299AbaJARWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 13:22:06 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:64831 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaJARWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 13:20:06 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: soc for 3.18 #3
-Date: Wed, 1 Oct 2014 19:20:03 +0200
-Message-ID: <1412184003-13568-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Wed, 1 Oct 2014 13:22:04 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Chris Kohn <ckohn@xilinx.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Michal Simek <michal.simek@xilinx.com>, Jason Wu <huanyu@xilinx.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] staging: Add Xilinx Clocking Wizard driver
+Date: Wed,  1 Oct 2014 10:21:48 -0700
+Message-Id: <1412184108-16688-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+Add a driver for the Xilinx Clocking Wizard soft IP. The clocking wizard
+provides an AXI interface to dynamically reconfigure the clocking
+resources of Xilinx FPGAs.
 
-Another pull-request for 3.18 if you feel it can be stacked up now. This one is
-*only* about removing code: the old !MMU at91x40 and 2 board files plus the whole
-code in at91sam9g45 & at91sam9rl files for implementing this deprecated method:
-as the EK were the only one to use this code, we remove quite a bunch of lines.
-We can use these boards with DT right now.
-As a matter of fact, the diffstat is pretty nice :-)
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/staging/Kconfig                            |   2 +
+ drivers/staging/Makefile                           |   1 +
+ drivers/staging/clocking-wizard/Kconfig            |   9 +
+ drivers/staging/clocking-wizard/Makefile           |   1 +
+ drivers/staging/clocking-wizard/TODO               |  12 +
+ .../clocking-wizard/clk-xlnx-clock-wizard.c        | 304 +++++++++++++++++++++
+ drivers/staging/clocking-wizard/dt-binding.txt     |  30 ++
+ 7 files changed, 359 insertions(+)
+ create mode 100644 drivers/staging/clocking-wizard/Kconfig
+ create mode 100644 drivers/staging/clocking-wizard/Makefile
+ create mode 100644 drivers/staging/clocking-wizard/TODO
+ create mode 100644 drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+ create mode 100644 drivers/staging/clocking-wizard/dt-binding.txt
 
-Thanks, best regards,
-
-The following changes since commit 02037a9719fa89b7e5dc25cb22afc06c4eae406e:
-
-  ARM: at91: document Atmel SMART compatibles (2014-09-22 14:42:40 +0200)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-soc3
-
-for you to fetch changes up to f71529722cf8c209a4e71c1000f0f8b8e74f674f:
-
-  ARM: at91: remove at91sam9rl legacy board support (2014-10-01 19:00:33 +0200)
-
-----------------------------------------------------------------
-Third batch of cleanup/SoC for 3.18:
-- removal of old at91x40 !MMU ARM7TDMI support which was kind of rusty
-- removal of board-sam9m10g45ek.c and board-sam9rlek.c from mach-at91
-  and the code related to these board C files + defconfigs. Use DT for them now!
-
-----------------------------------------------------------------
-Alexandre Belloni (1):
-      ARM: at91: remove at91sam9rl legacy board support
-
-Boris Brezillon (1):
-      ARM: at91: remove at91sam9g45/9m10 legacy board support
-
-Nicolas Ferre (1):
-      ARM: at91: remove no-MMU at91x40 support
-
- arch/arm/configs/at91sam9g45_defconfig       |  172 ---
- arch/arm/configs/at91sam9rl_defconfig        |   83 --
- arch/arm/configs/at91x40_defconfig           |   48 -
- arch/arm/mach-at91/Kconfig                   |   25 +-
- arch/arm/mach-at91/Kconfig.non_dt            |   56 -
- arch/arm/mach-at91/Makefile                  |   12 -
- arch/arm/mach-at91/at91sam9g45.c             |  404 ------
- arch/arm/mach-at91/at91sam9g45_devices.c     | 1915 --------------------------
- arch/arm/mach-at91/at91sam9rl.c              |  333 -----
- arch/arm/mach-at91/at91sam9rl_devices.c      | 1260 -----------------
- arch/arm/mach-at91/at91x40.c                 |   93 --
- arch/arm/mach-at91/at91x40_time.c            |   85 --
- arch/arm/mach-at91/board-eb01.c              |   52 -
- arch/arm/mach-at91/board-sam9m10g45ek.c      |  526 -------
- arch/arm/mach-at91/board-sam9rlek.c          |  332 -----
- arch/arm/mach-at91/generic.h                 |    3 -
- arch/arm/mach-at91/include/mach/at91_dbgu.h  |    3 -
- arch/arm/mach-at91/include/mach/at91x40.h    |   60 -
- arch/arm/mach-at91/include/mach/cpu.h        |    1 -
- arch/arm/mach-at91/include/mach/hardware.h   |    4 -
- arch/arm/mach-at91/include/mach/uncompress.h |    7 -
- arch/arm/mach-at91/setup.c                   |    2 +-
- drivers/rtc/Kconfig                          |    2 +-
- 23 files changed, 7 insertions(+), 5471 deletions(-)
- delete mode 100644 arch/arm/configs/at91sam9g45_defconfig
- delete mode 100644 arch/arm/configs/at91sam9rl_defconfig
- delete mode 100644 arch/arm/configs/at91x40_defconfig
- delete mode 100644 arch/arm/mach-at91/at91sam9g45_devices.c
- delete mode 100644 arch/arm/mach-at91/at91sam9rl_devices.c
- delete mode 100644 arch/arm/mach-at91/at91x40.c
- delete mode 100644 arch/arm/mach-at91/at91x40_time.c
- delete mode 100644 arch/arm/mach-at91/board-eb01.c
- delete mode 100644 arch/arm/mach-at91/board-sam9m10g45ek.c
- delete mode 100644 arch/arm/mach-at91/board-sam9rlek.c
- delete mode 100644 arch/arm/mach-at91/include/mach/at91x40.h
-
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 35b494f5667f..7daf345bec0e 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -118,4 +118,6 @@ source "drivers/staging/skein/Kconfig"
+ 
+ source "drivers/staging/unisys/Kconfig"
+ 
++source "drivers/staging/clocking-wizard/Kconfig"
++
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index e66a5dbd9b02..03fec7f981cc 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -51,3 +51,4 @@ obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
+ obj-$(CONFIG_BT_NOKIA_H4P)	+= nokia_h4p/
+ obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
+ obj-$(CONFIG_UNISYSSPAR)	+= unisys/
++obj-$(CONFIG_COMMON_CLK_XLNX_CLKWZRD)	+= clocking-wizard/
+diff --git a/drivers/staging/clocking-wizard/Kconfig b/drivers/staging/clocking-wizard/Kconfig
+new file mode 100644
+index 000000000000..3243c92f6e6d
+--- /dev/null
++++ b/drivers/staging/clocking-wizard/Kconfig
+@@ -0,0 +1,9 @@
++#
++# Xilinx Clocking Wizard Driver
++#
++
++config COMMON_CLK_XLNX_CLKWZRD
++	bool "Xilinx Clocking Wizard"
++	depends on COMMON_CLK && OF
++	---help---
++	  Support for the Xilinx Clocking Wizard IP core clock generator.
+diff --git a/drivers/staging/clocking-wizard/Makefile b/drivers/staging/clocking-wizard/Makefile
+new file mode 100644
+index 000000000000..5ad352f521fe
+--- /dev/null
++++ b/drivers/staging/clocking-wizard/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_COMMON_CLK_XLNX_CLKWZRD)	+= clk-xlnx-clock-wizard.o
+diff --git a/drivers/staging/clocking-wizard/TODO b/drivers/staging/clocking-wizard/TODO
+new file mode 100644
+index 000000000000..ebe99db7d153
+--- /dev/null
++++ b/drivers/staging/clocking-wizard/TODO
+@@ -0,0 +1,12 @@
++TODO:
++	- support for fractional multiplier
++	- support for fractional divider (output 0 only)
++	- support for set_rate() operations (may benefit from Stephen Boyd's
++	  refactoring of the clk primitives: https://lkml.org/lkml/2014/9/5/766)
++	- review arithmetic
++	  - overflow after multiplication?
++	  - maximize accuracy before divisions
++
++Patches to:
++	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
++	Sören Brinkmann <soren.brinkmann@xilinx.com>
+diff --git a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+new file mode 100644
+index 000000000000..ad126e1c43c1
+--- /dev/null
++++ b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+@@ -0,0 +1,304 @@
++/*
++ * Xilinx 'Clocking Wizard' driver
++ *
++ *  Copyright (C) 2013 - 2014 Xilinx
++ *
++ *  Sören Brinkmann <soren.brinkmann@xilinx.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License v2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/module.h>
++#include <linux/err.h>
++
++#define WZRD_NUM_OUTPUTS	7
++#define WZRD_ACLK_MAX_FREQ	250000000UL
++
++#define WZRD_CLK_CFG_REG(n)	(0x200 + 4 * n)
++
++#define WZRD_CLkOUT0_FRAC_EN	BIT(18)
++#define WZRD_CLkFBOUT_FRAC_EN	BIT(26)
++
++#define WZRD_CLKFBOUT_MULT_SHIFT	8
++#define WZRD_CLKFBOUT_MULT_MASK		(0xff << WZRD_CLKFBOUT_MULT_SHIFT)
++#define WZRD_DIVCLK_DIVIDE_SHIFT	0
++#define WZRD_DIVCLK_DIVIDE_MASK		(0xff << WZRD_DIVCLK_DIVIDE_SHIFT)
++#define WZRD_CLKOUT_DIVIDE_SHIFT	0
++#define WZRD_CLKOUT_DIVIDE_MASK		(0xff << WZRD_DIVCLK_DIVIDE_SHIFT)
++
++enum clk_wzrd_inp_clks {
++	wzrd_clk_in1,
++	wzrd_s_axi_aclk,
++	wzrd_clk_inp_max
++};
++
++enum clk_wzrd_int_clks {
++	wzrd_clk_mul,
++	wzrd_clk_mul_div,
++	wzrd_clk_int_max
++};
++
++/**
++ * struct clk_wzrd:
++ * @clk_data:		Clock data
++ * @nb:			Notifier block
++ * @base:		Memory base
++ * @clkin:		Handle to input clocks
++ * @clks_internal:	Internal clocks
++ * @clkout:		Output clocks
++ * @speed_grade:	Negated speed grade of the device
++ * @suspended:		Flag indicating power state of the device
++ */
++struct clk_wzrd {
++	struct clk_onecell_data clk_data;
++	struct notifier_block nb;
++	void __iomem *base;
++	struct clk *clkin[wzrd_clk_inp_max];
++	struct clk *clks_internal[wzrd_clk_int_max];
++	struct clk *clkout[WZRD_NUM_OUTPUTS];
++	int speed_grade;
++	bool suspended;
++};
++#define to_clk_wzrd(_nb) container_of(_nb, struct clk_wzrd, nb);
++
++/* maximum frequencies for input/output clocks per speed grade */
++static const unsigned long clk_wzrd_max_freq[] = {
++	800000000UL,
++	933000000UL,
++	1066000000UL
++};
++
++static int clk_wzrd_clk_notifier(struct notifier_block *nb, unsigned long event,
++				 void *data)
++{
++	unsigned long max;
++	struct clk_notifier_data *ndata = data;
++	struct clk_wzrd *clk_wzrd = to_clk_wzrd(nb);
++
++	if (clk_wzrd->suspended)
++		return NOTIFY_OK;
++
++	if (ndata->clk == clk_wzrd->clkin[wzrd_clk_in1])
++		max = clk_wzrd_max_freq[clk_wzrd->speed_grade - 1];
++	if (ndata->clk == clk_wzrd->clkin[wzrd_s_axi_aclk])
++		max = WZRD_ACLK_MAX_FREQ;
++
++	switch (event) {
++	case PRE_RATE_CHANGE:
++		if (ndata->new_rate > max)
++			return NOTIFY_BAD;
++		return NOTIFY_OK;
++	case POST_RATE_CHANGE:
++	case ABORT_RATE_CHANGE:
++	default:
++		return NOTIFY_DONE;
++	}
++}
++
++static int clk_wzrd_probe(struct platform_device *pdev)
++{
++	int i, ret;
++	u32 reg;
++	unsigned long rate;
++	const char *clk_name;
++	struct clk_wzrd *clk_wzrd;
++	struct resource *mem;
++	struct device_node *np = pdev->dev.of_node;
++
++	clk_wzrd = devm_kzalloc(&pdev->dev, sizeof(*clk_wzrd), GFP_KERNEL);
++	if (!clk_wzrd)
++		return -ENOMEM;
++	platform_set_drvdata(pdev, clk_wzrd);
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	clk_wzrd->base = devm_ioremap_resource(&pdev->dev, mem);
++	if (IS_ERR(clk_wzrd->base))
++		return PTR_ERR(clk_wzrd->base);
++
++	ret = of_property_read_u32(np, "speed-grade", &clk_wzrd->speed_grade);
++	if (!ret) {
++		clk_wzrd->speed_grade = -clk_wzrd->speed_grade;
++		if (clk_wzrd->speed_grade < 1 || clk_wzrd->speed_grade > 3) {
++			dev_warn(&pdev->dev, "invalid speed grade\n");
++			clk_wzrd->speed_grade = 0;
++		}
++	}
++
++	clk_wzrd->clkin[wzrd_clk_in1] = devm_clk_get(&pdev->dev, "clk_in1");
++	if (IS_ERR(clk_wzrd->clkin[wzrd_clk_in1])) {
++		if (clk_wzrd->clkin[wzrd_clk_in1] != ERR_PTR(-EPROBE_DEFER))
++			dev_err(&pdev->dev, "clk_in1 not found\n");
++		return PTR_ERR(clk_wzrd->clkin[wzrd_clk_in1]);
++	}
++
++	clk_wzrd->clkin[wzrd_s_axi_aclk] = devm_clk_get(&pdev->dev, "s_axi_aclk");
++	if (IS_ERR(clk_wzrd->clkin[wzrd_s_axi_aclk])) {
++		if (clk_wzrd->clkin[wzrd_s_axi_aclk] != ERR_PTR(-EPROBE_DEFER))
++			dev_err(&pdev->dev, "s_axi_aclk not found\n");
++		return PTR_ERR(clk_wzrd->clkin[wzrd_s_axi_aclk]);
++	}
++	ret = clk_prepare_enable(clk_wzrd->clkin[wzrd_s_axi_aclk]);
++	if (ret) {
++		dev_err(&pdev->dev, "enabling s_axi_aclk failed\n");
++		return ret;
++	}
++	rate = clk_get_rate(clk_wzrd->clkin[wzrd_s_axi_aclk]);
++	if (rate > WZRD_ACLK_MAX_FREQ) {
++		dev_err(&pdev->dev, "s_axi_aclk frequency too high\n");
++		ret = -EINVAL;
++		goto err_disable_clk;
++	}
++
++	/* we don't support fractional div/mul yet */
++	reg = readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) & WZRD_CLkFBOUT_FRAC_EN;
++	reg |= readl(clk_wzrd->base + WZRD_CLK_CFG_REG(2)) & WZRD_CLkOUT0_FRAC_EN;
++	if (reg)
++		dev_warn(&pdev->dev, "fractional div/mul not supported\n");
++
++	/* register multiplier */
++	reg = (readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) & WZRD_CLKFBOUT_MULT_MASK) >>
++				WZRD_CLKFBOUT_MULT_SHIFT;
++	clk_name = kasprintf(GFP_KERNEL, "%s_mul", dev_name(&pdev->dev));
++	if (!clk_name) {
++		ret = -ENOMEM;
++		goto err_disable_clk;
++	}
++	clk_wzrd->clks_internal[wzrd_clk_mul] = clk_register_fixed_factor(
++			&pdev->dev, clk_name,
++			__clk_get_name(clk_wzrd->clkin[wzrd_clk_in1]),
++			0, reg,1);
++	kfree(clk_name);
++	if (IS_ERR(clk_wzrd->clks_internal[wzrd_clk_mul])) {
++		dev_err(&pdev->dev, "unable to register fixed-factor clock\n");
++		ret = PTR_ERR(clk_wzrd->clks_internal[wzrd_clk_mul]);
++		goto err_disable_clk;
++	}
++
++	/* register div */
++	reg = (readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) &
++			WZRD_DIVCLK_DIVIDE_MASK) >> WZRD_DIVCLK_DIVIDE_SHIFT;
++	clk_name = kasprintf(GFP_KERNEL, "%s_mul_div", dev_name(&pdev->dev));
++	clk_wzrd->clks_internal[wzrd_clk_mul_div] = clk_register_fixed_factor(
++			&pdev->dev, clk_name,
++			__clk_get_name(clk_wzrd->clks_internal[wzrd_clk_mul]),
++			0, 1, reg);
++	if (IS_ERR(clk_wzrd->clks_internal[wzrd_clk_mul_div])) {
++		dev_err(&pdev->dev, "unable to register divider clock\n");
++		ret = PTR_ERR(clk_wzrd->clks_internal[wzrd_clk_mul_div]);
++		goto err_rm_int_clk;
++	}
++
++	/* register div per output */
++	for (i = WZRD_NUM_OUTPUTS - 1; i >= 0 ; i--) {
++		const char *clkout_name;
++		if (of_property_read_string_index(np, "clock-output-names", i,
++					&clkout_name)) {
++			dev_err(&pdev->dev,
++					"clock output name not specified\n");
++			ret = -EINVAL;
++			goto err_rm_int_clks;
++		}
++		reg = (readl(clk_wzrd->base + WZRD_CLK_CFG_REG(2) + i * 12) &
++				WZRD_CLKOUT_DIVIDE_MASK) >> WZRD_CLKOUT_DIVIDE_SHIFT;
++		clk_wzrd->clkout[i] = clk_register_fixed_factor(&pdev->dev,
++				clkout_name, clk_name, 0, 1, reg);
++		if (IS_ERR(clk_wzrd->clkout[i])) {
++			dev_err(&pdev->dev, "unable to register divider clock\n");
++			ret = PTR_ERR(clk_wzrd->clkout[i]);
++			goto err_rm_int_clks;
++		}
++	}
++
++	kfree(clk_name);
++
++	clk_wzrd->clk_data.clks = clk_wzrd->clkout;
++	clk_wzrd->clk_data.clk_num = ARRAY_SIZE(clk_wzrd->clkout);
++	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_wzrd->clk_data);
++
++	if (clk_wzrd->speed_grade) {
++		clk_wzrd->nb.notifier_call = clk_wzrd_clk_notifier;
++
++		ret = clk_notifier_register(clk_wzrd->clkin[wzrd_clk_in1],
++					    &clk_wzrd->nb);
++		if (ret)
++			dev_warn(&pdev->dev,
++					"unable to register clock notifier\n");
++
++		ret = clk_notifier_register(clk_wzrd->clkin[wzrd_s_axi_aclk],
++					    &clk_wzrd->nb);
++		if (ret)
++			dev_warn(&pdev->dev,
++					"unable to register clock notifier\n");
++	}
++
++	return 0;
++
++err_rm_int_clks:
++	clk_unregister(clk_wzrd->clks_internal[1]);
++err_rm_int_clk:
++	kfree(clk_name);
++	clk_unregister(clk_wzrd->clks_internal[0]);
++err_disable_clk:
++	clk_disable_unprepare(clk_wzrd->clkin[wzrd_s_axi_aclk]);
++
++	return ret;
++}
++
++static int clk_wzrd_remove(struct platform_device *pdev)
++{
++	int i;
++	struct clk_wzrd *clk_wzrd = platform_get_drvdata(pdev);
++
++	of_clk_del_provider(pdev->dev.of_node);
++
++	for (i = 0; i < WZRD_NUM_OUTPUTS; i++)
++		clk_unregister(clk_wzrd->clkout[i]);
++	for (i = 0; i < wzrd_clk_int_max; i++)
++		clk_unregister(clk_wzrd->clks_internal[i]);
++
++	if (clk_wzrd->speed_grade) {
++		clk_notifier_unregister(clk_wzrd->clkin[wzrd_s_axi_aclk],
++					&clk_wzrd->nb);
++		clk_notifier_unregister(clk_wzrd->clkin[wzrd_clk_in1],
++					&clk_wzrd->nb);
++	}
++
++	clk_disable_unprepare(clk_wzrd->clkin[wzrd_s_axi_aclk]);
++
++	return 0;
++}
++
++static const struct of_device_id clk_wzrd_ids[] = {
++	{ .compatible = "xlnx,clocking-wizard" },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, clk_wzrd_ids);
++
++static struct platform_driver clk_wzrd_driver = {
++	.driver = {
++		.name = "clk-wizard",
++		.of_match_table = clk_wzrd_ids,
++	},
++	.probe = clk_wzrd_probe,
++	.remove = clk_wzrd_remove,
++};
++module_platform_driver(clk_wzrd_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Soeren Brinkmann <soren.brinkmann@xilinx.com");
++MODULE_DESCRIPTION("Driver for the Xilinx Clocking Wizard IP core");
+diff --git a/drivers/staging/clocking-wizard/dt-binding.txt b/drivers/staging/clocking-wizard/dt-binding.txt
+new file mode 100644
+index 000000000000..cc3cc5e91440
+--- /dev/null
++++ b/drivers/staging/clocking-wizard/dt-binding.txt
+@@ -0,0 +1,30 @@
++Binding for Xilinx Clocking Wizard IP Core
++
++This binding uses the common clock binding[1]. Details about the devices can be
++found in the product guide[2].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++[2] Clocking Wizard Product Guide
++http://www.xilinx.com/support/documentation/ip_documentation/clk_wiz/v5_1/pg065-clk-wiz.pdf
++
++Required properties:
++ - compatible: Must be 'xlnx,clocking-wizard'
++ - reg: Base and size of the cores register space
++ - clocks: Handle to input clock
++ - clock-names: Tuple containing 'clk_in1' and 's_axi_aclk'
++ - clock-output-names: Names for the output clocks
++
++Optional properties:
++ - speed-grade: Speed grade of the device
++
++Example:
++	clock-generator@40040000 {
++		reg = <0x40040000 0x1000>;
++		compatible = "xlnx,clocking-wizard";
++		speed-grade = <(-1)>;
++		clock-names = "clk_in1", "s_axi_aclk";
++		clocks = <&clkc 15>, <&clkc 15>;
++		clock-output-names = "clk_out0", "clk_out1", "clk_out2",
++				     "clk_out3", "clk_out4", "clk_out5",
++				     "clk_out6", "clk_out7";
++	};
 -- 
-Nicolas Ferre
+2.1.1
+
