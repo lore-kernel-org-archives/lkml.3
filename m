@@ -1,113 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaJAImc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:42:32 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:50719 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaJAIm3 (ORCPT
+	id S1751445AbaJAIqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:46:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51158 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaJAIqb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:42:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Peter Chen <Peter.Chen@freescale.com>
+	Wed, 1 Oct 2014 04:46:31 -0400
+Date: Wed, 1 Oct 2014 09:46:26 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Date: Wed, 01 Oct 2014 10:41:53 +0200
-Message-ID: <1845601.0ISfgfFO3Y@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <abb0c775ec2549e3abb0a2218b4eef98@BN1PR0301MB0772.namprd03.prod.outlook.com>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com> <10249326.XCThPmSrfL@wuerfel> <abb0c775ec2549e3abb0a2218b4eef98@BN1PR0301MB0772.namprd03.prod.outlook.com>
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
+Message-ID: <20141001084626.GZ841@e106497-lin.cambridge.arm.com>
+References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140930174821.GX841@e106497-lin.cambridge.arm.com>
+ <3079787.54pZijGjZM@wuerfel>
+ <2430078.s4snyh5OoF@wuerfel>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:xMd3626+Sv9NxWzeU7sm3+sOEQICGtx+QVCyezeSBjw
- BDG/ZA8n9nqKQ2tOFR2s0hOc372jp1F9ktZU3V6rW7b1nrv2i8
- XxYdodEdYHCdbA6Cjz2eVRj/eMBmMbudGbPhE2FCQh8ksOF8Ms
- zIWpkURvO9yAScpXMkfEepf9B0lOXUY/ntBRhbzyc9oczk/5Yv
- MaBqCk1EYLo7tIft12KeFHh2C7YUlKa84CPJjAwER1asBK0pwb
- a/+1P7+QH8V+0gmX/a0YzG8hruAw409xsHRlfuYTbXgvRySelh
- iZeSBB0uIpnjBcTUoiSxOmkInv21Le+DMl5Dax4s8bYJk/zQIN
- dRZMsHYt6glNNWfjqPuE=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <2430078.s4snyh5OoF@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 01 Oct 2014 08:46:27.0018 (UTC) FILETIME=[300CF2A0:01CFDD54]
+X-MC-Unique: 114100109462815701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 06:35:58 Peter Chen wrote:
-> > Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+On Tue, Sep 30, 2014 at 09:01:14PM +0100, Arnd Bergmann wrote:
+> On Tuesday 30 September 2014 20:54:41 Arnd Bergmann wrote:
+> > On Tuesday 30 September 2014 18:48:21 Liviu Dudau wrote:
+> > > > > > > These are the functions I found that refer to pci_sys_data on arm32:
+> > > > > > > 
+> > > > > > > pcibios_add_bus
+> > > > > > > pcibios_remove_bus
+> > > 
+> > > These are only needed if you want to do per HB processing of the bus
+> > > 
+> > > > > > > pcibios_align_resource
+> > > 
+> > > mvebu is the only user of this function.
+> > > 
+> > > > > > > pci_mmap_page_range
+> > > 
+> > > This is only needed when mapping a PCI resource to userspace. Is that your case here?
+> > > 
+> > > > > > > pci_domain_nr
+> > > > > > > pci_proc_domain
+> > > 
+> > > We have equivalent functionality in the generic patches for those.
+> > > 
 > > 
-> > On Tuesday 30 September 2014 20:39:34 Peter Chen wrote:
-> > > Thanks, Arnd. I had not thought setting dma mask is so complicated,
-> > > yes, it should check the return value, two things to confirm:
-> > >
-> > > - dma_coerce_mask_and_coherent or dma_set_mask_and_coherent, the
-> > only
-> > > difference of these two API is the first one do "dev->dma_mask = &dev-
-> > >coherent_dma_mask;"
-> > > The reason you suggest choosing dma_set_mask_and_coherent is you do
-> > > not want assign dev->dma_mask?
-> > 
-> > No, that is just the current definition on ARM32 with
-> > CONFIG_ARCH_MULTIPLATFORM, and that is going to change soon to be DT
-> > aware.
-> > dma_set_mask_and_coherent() is supposed to check whether the platform
-> > can support the respective mask and return an error if it cannot.
-> > 
-> > > - The second parameter for dma_set_mask_and_coherent is
-> > > DMA_BIT_MASK(32), is it ok?
-> > >
-> > > I just a little confused of what's the operation is "hardcoding the dma mask"?
-> > 
-> > dma_coerce_mask_and_coherent() will hardcode the dma mask and override
-> > whatever the platform says is necessary.
-> > 
+> > We clearly don't need those functions for the new drivers, but that's not
+> > the point. The problem is that when you build a kernel that has both
+> > a traditional host bridge driver and a new one in it, you always get those
+> > functions and they get called from the PCI core, with incorrect arguments.
 > 
-> So, we should use dma_set_mask_and_coherent() in most of cases in device driver,
-> and use dma_coerce_mask_and_coherent() only  when the device's dma_mask is wrong?
+> FWIW, the last time we discussed this, I think I had suggested that the
+> functions that are currently architecture specific and have a generic
+> __weak fallback could become function pointers in a per-host structure
+> passed to pci_scan_root_bus, either a new structure or an extended
+> struct pci_ops. Something along these lines:
+
+Agree to the general idea. But have a look why host drivers need the add_bus ops:
+to add MSI information into the bus!! If we take care of the MSI in the generic
+code there is less of a need for this function at all.
+
+Best regards,
+Liviu
+
+> 
+> diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+> index 7fc42784becb..3da32fc631d0 100644
+> --- a/arch/arm/include/asm/mach/pci.h
+> +++ b/arch/arm/include/asm/mach/pci.h
+> @@ -36,7 +36,6 @@ struct hw_pci {
+>  					  resource_size_t start,
+>  					  resource_size_t size,
+>  					  resource_size_t align);
+> -	void		(*add_bus)(struct pci_bus *bus);
+>  	void		(*remove_bus)(struct pci_bus *bus);
+>  };
+>  
+> @@ -65,7 +64,6 @@ struct pci_sys_data {
+>  					  resource_size_t start,
+>  					  resource_size_t size,
+>  					  resource_size_t align);
+> -	void		(*add_bus)(struct pci_bus *bus);
+>  	void		(*remove_bus)(struct pci_bus *bus);
+>  	void		*private_data;	/* platform controller private data	*/
+>  };
+> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> index 17a26c17f7f5..3cbcf8dc41e4 100644
+> --- a/arch/arm/kernel/bios32.c
+> +++ b/arch/arm/kernel/bios32.c
+> @@ -360,13 +360,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+>  }
+>  EXPORT_SYMBOL(pcibios_fixup_bus);
+>  
+> -void pcibios_add_bus(struct pci_bus *bus)
+> -{
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	if (sys->add_bus)
+> -		sys->add_bus(bus);
+> -}
+> -
+>  void pcibios_remove_bus(struct pci_bus *bus)
+>  {
+>  	struct pci_sys_data *sys = bus->sysdata;
+> @@ -475,7 +468,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+>  		sys->swizzle = hw->swizzle;
+>  		sys->map_irq = hw->map_irq;
+>  		sys->align_resource = hw->align_resource;
+> -		sys->add_bus = hw->add_bus;
+>  		sys->remove_bus = hw->remove_bus;
+>  		INIT_LIST_HEAD(&sys->resources);
+>  
+> diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+> index b1315e197ffb..c9a0ee0429e8 100644
+> --- a/drivers/pci/host/pci-mvebu.c
+> +++ b/drivers/pci/host/pci-mvebu.c
+> @@ -716,6 +716,7 @@ static int mvebu_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
+>  static struct pci_ops mvebu_pcie_ops = {
+>  	.read = mvebu_pcie_rd_conf,
+>  	.write = mvebu_pcie_wr_conf,
+> +	.add_bus = mvebu_pcie_add_bus,
+>  };
+>  
+>  static int mvebu_pcie_setup(int nr, struct pci_sys_data *sys)
+> @@ -823,7 +824,6 @@ static void mvebu_pcie_enable(struct mvebu_pcie *pcie)
+>  	hw.map_irq        = of_irq_parse_and_map_pci;
+>  	hw.ops            = &mvebu_pcie_ops;
+>  	hw.align_resource = mvebu_pcie_align_resource;
+> -	hw.add_bus        = mvebu_pcie_add_bus;
+>  
+>  	pci_common_init(&hw);
+>  }
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index a63a47a70846..be6d56358320 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1885,6 +1885,8 @@ int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+>  
+>  void __weak pcibios_add_bus(struct pci_bus *bus)
+>  {
+> +	if (bus->ops && bus->ops->add_bus)
+> +		bus->ops->add_bus(bus);		
+>  }
+>  
+>  void __weak pcibios_remove_bus(struct pci_bus *bus)
+> 
+> 	Arnd
 > 
 > 
 
-dma_coerce_mask_and_coherent() should really not be used at all. Russell
-introduced it to convert drivers that were incorrectly setting the dma_mask
-pointer themselves to something slightly more palatable.
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
-The initial dma_mask is supposed to be set by the platform for each DMA
-capable device, according to the address width of its upstream bus.
-For DT based probing, we now set it to 32-bit mask but should really set
-it to something smaller if the bus is more limited than that.
-
-For devices created by platform code (board files), the platform should
-call platform_device_register_full() and specify the dma mask in the
-platform_device_info. Older platforms sometimes define a static platform
-device structure that has the dma mask set. This works as well but is
-discouraged for other reasons.
-
-Drivers that require a dma mask that is either smaller than 32-bit (because
-of device specific quirks) or that know that the device is capable of
-larger DMA space and want to use that need to call dma_set_mask or
-dma_set_mask_and_coherent and check the return value.
-
-Ideally all device drivers that want to do DMA should call set_dma_mask
-or set_dma_mask_and_coherent, even if the device has exactly a 32-bit
-connection to the upstream bus.	
-
-One more complication: if the device is not a DMA master itself but
-uses a dma engine, you should not use set_dma_mask_and_coherent()
-but instead use dma_get_mask() on the dmaengine device to query its
-mask, and also use that same pointer to pass into dma_alloc_coherent
-and dma_map_*.
-
-	Arnd
