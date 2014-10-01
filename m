@@ -1,105 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaJAI7b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 04:59:31 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:4222 "EHLO smtp4-g21.free.fr"
+	id S1751573AbaJAI5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 04:57:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23846 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676AbaJAI71 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 04:59:27 -0400
-Date: Wed, 1 Oct 2014 10:59:39 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC:kirkwood: Don't raise an error when no DAI format
-Message-ID: <20141001105939.1f2b6524@armhf>
-In-Reply-To: <20140930181910.GJ4273@sirena.org.uk>
-References: <20140928150342.CC21B786A1D@smtpfb1-g21.free.fr>
-	<20140928151207.GI5182@n2100.arm.linux.org.uk>
-	<20140928180550.5f0b8f03@armhf>
-	<20140930181910.GJ4273@sirena.org.uk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	id S1750782AbaJAI5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 04:57:21 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@kernel.org>,
+        Radim Krcmar <rkrcmar@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>
+Subject: [PATCH 1/4] mm: gup: add FOLL_TRIED
+Date: Wed,  1 Oct 2014 10:56:34 +0200
+Message-Id: <1412153797-6667-2-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
+References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014 19:19:10 +0100
-Mark Brown <broonie@kernel.org> wrote:
+From: Andres Lagar-Cavilla <andreslc@google.com>
 
-> On Sun, Sep 28, 2014 at 06:05:50PM +0200, Jean-Francois Moine wrote:
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > > On Sun, Sep 28, 2014 at 04:19:27PM +0200, Jean-Francois Moine wrote:
-> 
-> > > > This patch prevents the controller to raise an error when
-> > > > the DT audio card definition by the simple card contains the PCM
-> > > > format of one CPU DAI only.
-> 
-> > > I think this is a silly idea - why should every driver have additional code
-> > > to detect when it's called to do thing.  Why doesn't the simple card code
-> > > always pass the required format?
-> 
-> > > Looking at other drivers, no one else does this; they all appear to require
-> > > the proper format to be specified.
-> 
-> > > What some drivers do (eg, omap-mcbsp.c) is to block set_fmt when the
-> > > DAI is already in use - setting a flag "configured" in hw_params, and
-> > > clearing it in shutdown.  Maybe following this will solve your problem.
-> 
-> > > In any case, random drivers doing stuff differently without reason is
-> > > really not a good idea.
-> 
-> > As the simple card is done, the audio hardware definitions of the
-> > platform and all the CPU DAIS are always set in the audio controller.
-> 
-> > When the PCM format is globally defined (platform), the function
-> > set_fmt() is called for all CPU DAIs (then, twice for the kirkwood
-> > controller) with the same value. The DT is:
-> 
-> ...
-> 
-> > The PCM format may also be defined per DAI link. The following DT works
-> > the same as setting globally the format, i.e. there are two calls to
-> > set_fmt() with 'i2s':
-> 
-> > The problem appears when the format is defined in only one DAI link:
-> 
-> > Then, audio does not work.
-> 
-> So this is still a generic rather than driver issue and should be solved
-> outside of the driver - exactly the same issue is going to apply to any
-> other device with a similar shared configuration.  We could either say
-> that the DT is buggy here or we could say that the generic card ought to
-> assume that if only one link specifies a format then it should use that
-> format for other links if possible (since clearly the user doesn't care
-> what it chooses).
+Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+Signed-off-by: Andres Lagar-Cavilla <andreslc@google.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/mm.h | 1 +
+ mm/gup.c           | 4 ++++
+ 2 files changed, 5 insertions(+)
 
-The 'daifmt' of the callback function set_fmt (snd_soc_dai_set_fmt)
-contains 4 parts:
-- the physical format,
-- the clock gating,
-- the signal inversions,
-- the master clock definitions.
-
-As the value '0' is not used in the physical format nor in the master
-clock, this value would have say 'don't change', permitting the
-parameters to be set independently.
-
-But, as you and Russell say 'no', I will let the format definition at
-the platform level in the DT. Setting twice the hardware registers is
-not a problem.
-
-Thanks.
-
-> Please also try to use subject lines matching the style for the
-> subsystem.  You've been working with upstream for a while, you really
-> ought to be familiar with this sort of basic process stuff.
-
-Sorry.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 8981cc8..0f4196a 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1985,6 +1985,7 @@ static inline struct page *follow_page(struct vm_area_struct *vma,
+ #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
+ #define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
+ #define FOLL_MIGRATION	0x400	/* wait for page to replace migration entry */
++#define FOLL_TRIED	0x800	/* a retry, previous pass started an IO */
+ 
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/gup.c b/mm/gup.c
+index 91d044b..af7ea3e 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -281,6 +281,10 @@ static int faultin_page(struct task_struct *tsk, struct vm_area_struct *vma,
+ 		fault_flags |= FAULT_FLAG_ALLOW_RETRY;
+ 	if (*flags & FOLL_NOWAIT)
+ 		fault_flags |= FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT;
++	if (*flags & FOLL_TRIED) {
++		VM_WARN_ON_ONCE(fault_flags & FAULT_FLAG_ALLOW_RETRY);
++		fault_flags |= FAULT_FLAG_TRIED;
++	}
+ 
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
