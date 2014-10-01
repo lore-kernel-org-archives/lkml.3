@@ -1,254 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaJAXkv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 19:40:51 -0400
-Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:39574
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751798AbaJAXks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 19:40:48 -0400
-Date: Thu, 2 Oct 2014 07:40:32 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <sebastian.hesselbarth@gmail.com>, <balbi@ti.com>,
-        <p.zabel@pengutronix.de>, <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20141001234031.GA2757@peterchendt>
-References: <1411468088-5702-1-git-send-email-antoine.tenart@free-electrons.com>
- <1411468088-5702-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140930001206.GA11657@peterchendt>
+	id S1753465AbaJAXpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 19:45:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40563 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaJAXpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 19:45:17 -0400
+Date: Thu, 2 Oct 2014 01:45:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "dbasehore ." <dbasehore@chromium.org>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        xen-devel@lists.xenproject.org, Laxman Dewangan <ldewangan@nvidia.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Biederman <ebiederm@xmission.com>
+Subject: Re: [Xen-devel] [PATCH v1 1/2] genirq: Fix error path for resuming
+ irqs
+In-Reply-To: <CAGAzgso4WUMF+DiOk8=WV62LdMhcQ6osPjdbEwiOnW1JXfUAFA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410020109400.4269@nanos>
+References: <1403913865-31614-1-git-send-email-dbasehore@chromium.org> <CAGAzgsqEwVFHh2+Xtmraxb6Xwt_Rz2iTsOz+R+P-wmc4Vq9-mg@mail.gmail.com> <2820251.cyKiTY1p5v@vostro.rjw.lan> <6351010.TOHuEbTbVD@vostro.rjw.lan>
+ <CAGAzgso4WUMF+DiOk8=WV62LdMhcQ6osPjdbEwiOnW1JXfUAFA@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140930001206.GA11657@peterchendt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(24454002)(199003)(10300001)(68736004)(104016003)(85306004)(57986006)(83506001)(92566001)(21056001)(110136001)(47776003)(20776003)(50466002)(15975445006)(31966008)(102836001)(99396003)(97736003)(6806004)(97756001)(76482002)(107046002)(84676001)(19580405001)(85852003)(19580395003)(120916001)(44976005)(54356999)(4396001)(46406003)(33716001)(15202345003)(50986999)(106466001)(86362001)(87936001)(46102003)(33656002)(76176999)(105606002)(95666004)(64706001)(92726001)(80022003)(23726002)(26826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0636;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0636;
-X-Forefront-PRVS: 0351D213B3
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0666;
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 08:12:07AM +0800, Peter Chen wrote:
-> On Tue, Sep 23, 2014 at 12:28:03PM +0200, Antoine Tenart wrote:
-> > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> > and DMA mask, to support USB2 ChipIdea controllers that don't need
-> > specific functions.
-> > 
-> > Tested on the Marvell Berlin SoCs USB controllers.
-> > 
-> > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > ---
-> >  drivers/usb/chipidea/Makefile       |   1 +
-> >  drivers/usb/chipidea/ci_hdrc_usb2.c | 138 ++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 139 insertions(+)
-> >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> > 
-> > diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> > index 2f099c7df7b5..1fc86a2ca22d 100644
-> > --- a/drivers/usb/chipidea/Makefile
-> > +++ b/drivers/usb/chipidea/Makefile
-> > @@ -10,6 +10,7 @@ ci_hdrc-$(CONFIG_USB_OTG_FSM)		+= otg_fsm.o
-> >  
-> >  # Glue/Bridge layers go here
-> >  
-> > +obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_usb2.o
-> >  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_msm.o
-> >  obj-$(CONFIG_USB_CHIPIDEA)	+= ci_hdrc_zevio.o
-> >  
-> > diff --git a/drivers/usb/chipidea/ci_hdrc_usb2.c b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> > new file mode 100644
-> > index 000000000000..6eae1de587f2
-> > --- /dev/null
-> > +++ b/drivers/usb/chipidea/ci_hdrc_usb2.c
-> > @@ -0,0 +1,138 @@
-> > +/*
-> > + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> > + *
-> > + * Antoine Tenart <antoine.tenart@free-electrons.com>
-> > + *
-> > + * This file is licensed under the terms of the GNU General Public
-> > + * License version 2. This program is licensed "as is" without any
-> > + * warranty of any kind, whether express or implied.
-> > + */
-> > +
-> > +#include <linux/clk.h>
-> > +#include <linux/dma-mapping.h>
-> > +#include <linux/module.h>
-> > +#include <linux/of.h>
-> > +#include <linux/phy/phy.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/usb/chipidea.h>
-> > +#include <linux/usb/hcd.h>
-> > +#include <linux/usb/ulpi.h>
-> > +
-> > +#include "ci.h"
-> > +
-> > +struct ci_hdrc_usb2_priv {
-> > +	struct platform_device	*ci_pdev;
-> > +	struct clk		*clk;
-> > +};
-> > +
-> > +static int ci_hdrc_usb2_dt_probe(struct device *dev,
-> > +				 struct ci_hdrc_platform_data *ci_pdata)
-> > +{
-> > +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
-> > +	if (IS_ERR(ci_pdata->phy)) {
-> > +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
-> > +			return -EPROBE_DEFER;
-> > +
-> > +		/* PHY is optional */
-> > +		ci_pdata->phy = NULL;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct ci_hdrc_platform_data ci_default_pdata = {
-> > +	.capoffset	= DEF_CAPOFFSET,
-> > +	.flags		= CI_HDRC_REQUIRE_TRANSCEIVER |
-> > +			  CI_HDRC_DISABLE_STREAMING,
-> > +};
-> > +
-> > +static int ci_hdrc_usb2_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device *dev = &pdev->dev;
-> > +	struct ci_hdrc_usb2_priv *priv;
-> > +	struct ci_hdrc_platform_data *ci_pdata = dev_get_platdata(&pdev->dev);
-> > +	int ret;
-> > +
-> > +	if (!ci_pdata)
-> > +		ci_pdata = &ci_default_pdata;
-> > +
-> > +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> > +	if (!priv)
-> > +		return -ENOMEM;
-> > +
-> > +	priv->clk = devm_clk_get(dev, NULL);
-> > +	if (!IS_ERR(priv->clk)) {
-> > +		ret = clk_prepare_enable(priv->clk);
-> > +		if (ret) {
-> > +			dev_err(dev, "failed to enable the clock: %d\n", ret);
-> > +			return ret;
-> > +		}
-> > +	}
-> > +
-> > +	if (dev->of_node) {
-> > +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
-> > +		if (ret)
-> > +			goto clk_err;
-> > +	} else {
-> > +		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> > +		if (ret)
-> > +			goto clk_err;
-> > +	}
->
-	
-Hi Antoine, if you pay attention the discussion for this patch, you should
-know to do change for your next revision
+On Wed, 1 Oct 2014, dbasehore . wrote:
+> On Wed, Oct 1, 2014 at 3:30 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 
-- Call below unconditionally:
-> > +		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> > +		if (ret)
-> > +			goto clk_err;
+Please stop top-posting and trim the quoted text. This is not your
+$corp mail drop.
 
--Do not need function ci_hdrc_usb2_dt_probe, we need to cover
-both dt and non-dt, but there is nothing we can to differentiate now,
-The phy handle should be moved to core driver, since your generic phy
-driver are still not accepted, I can't do it by myself. Either you or
-I can do it after your generic phy support series has been accepted.
+> dpm_resume_noirq is not early enough for the Xen stuff, but should be
+> early enough for other stuff. This patch is mostly just a bandage on
+> top of the broken IRQF_EARLY_RESUME code.
 
-> > +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+You are getting it really backwards.
 
-- Others are ok
+The IRQF_EARLY_RESUME stuff was introduced on behalf of XEN and now
+you are claiming in your changelog that:
+ 
+> >> > >> This regression was introduced in 9bab0b7f "genirq: Add IRQF_RESUME_EARLY"
 
-- The sequence of patch sets:
-1. The generic PHY support for chipidea idea
-2. Move getting PHY from individual glue layer to core driver
-3. The generic chipidea driver 
+So you are fixing a 3+ years old regression here? Do you have any
+prove that the code worked before that commit 9bab0b7f went in during
+the 3.2 merge window?
 
-Peter
+No, you don't. Simply because the XEN suspend/resume stuff was not
+working at all before that. So it's not a regression.
 
-> > +
-> > +	ci_pdata->name = dev_name(&pdev->dev);
-> > +
-> > +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> > +					   pdev->num_resources, ci_pdata);
-> > +	if (IS_ERR(priv->ci_pdev)) {
-> > +		ret = PTR_ERR(priv->ci_pdev);
-> > +		if (ret != -EPROBE_DEFER)
-> > +			dev_err(dev,
-> > +				"failed to register ci_hdrc platform device: %d\n",
-> > +				ret);
-> > +		goto clk_err;
-> > +	}
-> > +
-> > +	platform_set_drvdata(pdev, priv);
-> > +
-> > +	pm_runtime_no_callbacks(dev);
-> > +	pm_runtime_enable(dev);
-> > +
-> > +	return 0;
-> > +
-> > +clk_err:
-> > +	if (!IS_ERR(priv->clk))
-> > +		clk_disable_unprepare(priv->clk);
-> > +	return ret;
-> > +}
-> > +
-> > +static int ci_hdrc_usb2_remove(struct platform_device *pdev)
-> > +{
-> > +	struct ci_hdrc_usb2_priv *priv = platform_get_drvdata(pdev);
-> > +
-> > +	pm_runtime_disable(&pdev->dev);
-> > +	ci_hdrc_remove_device(priv->ci_pdev);
-> > +	clk_disable_unprepare(priv->clk);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static const struct of_device_id ci_hdrc_usb2_of_match[] = {
-> > +	{ .compatible = "chipidea,usb2" },
-> > +	{ }
-> > +};
-> > +MODULE_DEVICE_TABLE(of, ci_hdrc_usb2_of_match);
-> > +
-> > +static struct platform_driver ci_hdrc_usb2_driver = {
-> > +	.probe	= ci_hdrc_usb2_probe,
-> > +	.remove	= ci_hdrc_usb2_remove,
-> > +	.driver	= {
-> > +		.name		= "chipidea-usb2",
-> > +		.owner		= THIS_MODULE,
-> > +		.of_match_table	= of_match_ptr(ci_hdrc_usb2_of_match),
-> > +	},
-> > +};
-> > +module_platform_driver(ci_hdrc_usb2_driver);
-> > +
-> > +MODULE_DESCRIPTION("ChipIdea HDRC USB2 binding for ci13xxx");
-> > +MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
-> > +MODULE_LICENSE("GPL");
-> > -- 
-> > 1.9.1
-> > 
-> 
-> -- 
-> Best Regards,
-> Peter Chen
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+It either was a wrong design decision back then which did not take an
+error path into account or the things have changed in a way that this
+mechanism does not work anymore.
 
--- 
-Best Regards,
-Peter Chen
+I agree with Rafael that this should be solved differently. Though I'm
+not really convinced of the proposed syscore solution, simply because
+it will introduce another "tolerated" way for people to work around
+totally unrelated shortcomings of other parts of the suspend/resume
+machinery.
+
+You noticed yourself that
+
+> .... some rtc drivers started using IRQF_EARLY_RESUME. I can't think
+> of any reason those drivers would need to be resumed early. This
+> way, the flag wouldn't even be there for people to mistakenly add.
+
+Now the question is WHY XEN is so special that it needs all these
+extra features and mechanisms all over the place?
+
+I have not looked into the guts of XEN that deep that I can judge that
+and I have no intention to do so as I want to preserve my mental
+sanity, but I have not seen any reasonable explanation WHY:
+
+> dpm_resume_noirq is not early enough for the Xen stuff
+
+Is it just because XEN works that way and XEN folks are not willing or
+able to make it different? Or is there any fundamental and reasonable
+technical reason why XEN needs to have the extra treatment while the
+rest of the world does not?
+
+Thanks,
+
+	tglx
