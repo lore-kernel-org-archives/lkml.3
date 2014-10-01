@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394AbaJAHDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 03:03:06 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:32879 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751074AbaJAHDE (ORCPT
+	id S1751319AbaJAHEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 03:04:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27954 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868AbaJAHEE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 03:03:04 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, Michael Buesch <m@bues.ch>,
-        netdev@vger.kernel.org
-Subject: [PATCH] ssb: Fix Sparse error in main
-Date: Wed,  1 Oct 2014 12:36:36 +0530
-Message-Id: <1412147196-7466-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 1 Oct 2014 03:04:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,630,1406617200"; 
+   d="scan'208";a="581710439"
+From: "Ong, Boon Leong" <boon.leong.ong@intel.com>
+To: "'Bryan O'Donoghue'" <pure.logic@nexus-software.ie>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "hmh@hmh.eng.br" <hmh@hmh.eng.br>
+Subject: RE: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
+Thread-Topic: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
+Thread-Index: AQHP3Qgt8nUkJSPpX0ShwZdRTguIcJwa0EDA
+Date: Wed, 1 Oct 2014 06:59:42 +0000
+Message-ID: <AF233D1473C1364ABD51D28909A1B1B73259F8F5@pgsmsx105.gar.corp.intel.com>
+References: <1412120517-14738-1-git-send-email-pure.logic@nexus-software.ie>
+ <1412120517-14738-3-git-send-email-pure.logic@nexus-software.ie>
+In-Reply-To: <1412120517-14738-3-git-send-email-pure.logic@nexus-software.ie>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change fixes below sparse error:
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Bryan O'Donoghue
+> Sent: Wednesday, October 01, 2014 7:42 AM
+> To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
+> davej@redhat.com; hmh@hmh.eng.br
+> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Bryan O'Donoghue
+> Subject: [PATCH 2/2] x86: Quark: Comment setup_arch for TLB/PGE bugfix
+> 
+> Quark X1000 requires CR3 to be rewritten to flush TLB entries irrespective of
+> the PGE bits in CR4 or PTE.PGE
+> 
+> Add a comment to setup_arch to indicate that the code
+> 
+> load_cr3(swapper_pg_dir);
+> __flush_tlb_all();
+> 
+> Will already have flushed the TLB @ the CR3 reload allowing us to skip over a
+> potential if/else for Quark.
+> 
+> This comment clearly states the bug, the behaviour we rely on and the reason
+> why we only do it this way - one time.
+> 
+> Later on cpu_has_pge() will be false due to a fixup in
+> intel_init_early() and __flush_tlb_all() will work as expected from that point
+> onwards
 
-drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
-was not declared. Should it be static?
-
-Cc: Michael Buesch <m@bues.ch>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/ssb/ssb_private.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/ssb/ssb_private.h b/drivers/ssb/ssb_private.h
-index eb507a5..86bbbe3 100644
---- a/drivers/ssb/ssb_private.h
-+++ b/drivers/ssb/ssb_private.h
-@@ -193,6 +193,7 @@ extern struct ssb_bus *ssb_pci_dev_to_bus(struct pci_dev *pdev);
- int ssb_for_each_bus_call(unsigned long data,
- 			  int (*func)(struct ssb_bus *bus, unsigned long data));
- extern struct ssb_bus *ssb_pcmcia_dev_to_bus(struct pcmcia_device *pdev);
-+struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func);
- 
- struct ssb_freeze_context {
- 	/* Pointer to the bus */
--- 
-1.7.9.5
+s/intel_init_early/early_init_intel
 
