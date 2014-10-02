@@ -1,128 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaJBPgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:36:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59353 "EHLO mail.kernel.org"
+	id S1754470AbaJBPgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:36:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53865 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbaJBPgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:36:19 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Doug Anderson <dianders@chromium.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-rockchip@lists.infradead.org>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/3] ARM: rk3288 : Add PM Domain support
-References: <1411899774-8484-1-git-send-email-jinkun.hong@rock-chips.com>
-	<7hoatvvimd.fsf@deeprootsystems.com>
-	<CAD=FV=VPT5qiyY==nJbb4DqKMBnj0i-_MhLRVG0ikar2qtP4=A@mail.gmail.com>
-	<7h38b7v8pp.fsf@deeprootsystems.com> <542D1F1B.8040501@ti.com>
-Date: Thu, 02 Oct 2014 08:36:16 -0700
-In-Reply-To: <542D1F1B.8040501@ti.com> (Grygorii Strashko's message of "Thu, 2
-	Oct 2014 12:47:07 +0300")
-Message-ID: <7hr3yqtrf3.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754164AbaJBPgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:36:44 -0400
+Message-ID: <542D70F4.5040806@zytor.com>
+Date: Thu, 02 Oct 2014 08:36:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+CC: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH v4 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
+References: <cover.1412189265.git.luto@amacapital.net> <395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net> <CALCETrUPqT3WR9-B4mjS791i+nK0ApDyqf9dr0cB_vSRAbgDGQ@mail.gmail.com>
+In-Reply-To: <CALCETrUPqT3WR9-B4mjS791i+nK0ApDyqf9dr0cB_vSRAbgDGQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grygorii Strashko <grygorii.strashko@ti.com> writes:
+On 10/01/2014 12:49 PM, Andy Lutomirski wrote:
+> On Wed, Oct 1, 2014 at 11:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> The NT flag doesn't do anything in long mode other than causing IRET
+>> to #GP.  Oddly, CPL3 code can still set NT using popf.
+>>
+> 
+> [...]
+> 
+>> +
+>> +       /*
+>> +        * Sysenter doesn't filter flags, so we need to clear NT
+>> +        * ourselves.  To save a few cycles, we can check whether
+>> +        * NT was set instead of doing an unconditional popfq.
+>> +        */
+>> +       testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
+>> +       jnz sysenter_fix_flags
+>> +sysenter_flags_fixed:
+>> +
+> 
+> Because this thread hasn't gone on long enough:
+> 
+> Do we need to clear IOPL here, too?  With patch 2 applied, an IOPL !=
+> 0 program can leak IOPL into another task.  It should be cleared on
+> iret, sysexit (via popf) and sysret (directly), so this shouldn't
+> matter.  Am I missing something?
+> 
+> Adding IOPL to the test will add no overhead for non-iopl-using tasks,
+> but it will slighly slow down 32-bit tasks that use iopl.
+> 
 
-> Hi,
->
-> On 10/01/2014 11:25 PM, Kevin Hilman wrote:
->> Doug Anderson <dianders@chromium.org> writes:
->> 
->>>
->>> On Wed, Oct 1, 2014 at 9:51 AM, Kevin Hilman <khilman@kernel.org> wrote:
->>>> +Geert, Ulf
->>>>
->>>> "jinkun.hong" <jinkun.hong@rock-chips.com> writes:
->>>>
->>>>> From: "jinkun.hong" <jinkun.hong@rock-chips.com>
->>>>>
->>>>> Use PM Domain framework to manage the clock.
->>>>
->>>> Which clock?  This changelog needs a more thorough description.
->>>
->>>
->>> I think what he meant was:
->>>
->>> Use the generic PM Domain framework for Rockchip
->>>
->>> ...but I agree that he could describe it more.
->>>
->>>
->>>> Also,
->>>> with this series alone, it's not clear how the power-domain transitions
->>>> ever happen, since I don't see any devices hooked up to your power
->>>> domains, or do I see your platform using runtime PM.  In order for this
->>>> to be reviewed properely, it's important for reviewers to be able to see
->>>> how this PM domain support will be used.
->>>
->>> I noticed that too.  As the patchset currently stands it only ever disables...
->>>
->>>
->>>> Also, remember that the DT is supposed to reflect the hardware, not the
->>>> design choices of linux drivers.  Because of that, it's a little
->>>> surprising to see clocks as properties of a power domain because clocks
->>>> are usually properties of devices.
->>>
->>> I haven't dug all the way into the hardware to figure out why (or if
->>> this is really necessary), but right now the rockchip power domain
->>> driver only leaves these clocks on during the powering on and powering
->>> off of the power domain.  In other words to turn on the power domain:
->>>
->>> 1. Turn on all clocks
->>> 2. Flip the bit that sets the power domain on
->>> 3. Wait until hardware says power domain is on.
->>> 4. Turn off all the clocks.
->>>
->>> ...and to turn off:
->>>
->>> 1. Turn on all clocks
->>> 2. Flip the bit that sets the power domain off
->>> 3. Wait until hardware says power domain is off.
->>> 2. Turn off all the clocks.
->>>
->>> ...if the above is actually necessary when turning on and off power
->>> domains then it seems like it is actually describing the hardware.
->> 
->> Yes, I understand. The need to have some *device* clocks enabled when
->> powering on/off the power-domain itself is quite common across many
->> SoCs.
->> 
->> My point is that these clocks are actually properties of *devices*, not
->> the power-domain itself.  In the shmobile example I pointed to, the
->> clocks are properties of the devices in DT, and the devices are attached
->> to the powerdomain.  When the devices are connected to the power-domain,
->> the custom attach function looks up all the *device* clocks and and
->> addes them to the power-domain using pm_clk_add.
->
-> Sorry, but this is not quite right :(
-> Patches from Geert will add only first clock for device and not all
-> of them. 
-> The right way to add all clocks for device from DT using 
-> generic PM domain represented in my series:
->  
->  ARM: keystone: pm: switch to use generic pm domains
->  http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735601.html
+As you correctly point out, IOPL is completely irrelevant in ring 0.  We
+have to restore the user space flags before returning to user space, so
+it shouldn't matter.
 
-Thanks for clarifying.
+	-hpa
 
-Kevin
+
