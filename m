@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684AbaJBNwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:52:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212AbaJBNwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:52:39 -0400
-Date: Thu, 2 Oct 2014 09:52:32 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Shaohua Li <shli@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: dm-raid: add RAID discard support
-Message-ID: <20141002135232.GA25298@redhat.com>
-References: <yq1zjdpsqry.fsf@sermon.lab.mkp.net>
- <7C39EB56-623A-4318-A558-258ABA32FF12@redhat.com>
- <20140924142157.33475baa@notabene.brown>
- <5422A4C4.4020707@redhat.com>
- <20141001125625.1e0d356a@notabene.brown>
- <20141001133237.GB16521@redhat.com>
- <20141002093403.25cc832f@notabene.brown>
- <20141002013135.GA21091@redhat.com>
- <20141002120049.58dba551@notabene.brown>
- <20141002140410.1b379f74@notabene.brown>
+	id S1753984AbaJBNw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:52:58 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45509 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746AbaJBNwy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:52:54 -0400
+Date: Thu, 2 Oct 2014 15:52:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>, oleg@redhat.com
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141002135250.GB10583@worktop.programming.kicks-ass.net>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+ <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+ <20141002123150.GC6324@worktop.programming.kicks-ass.net>
+ <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+ <542D57D0.4030904@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141002140410.1b379f74@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <542D57D0.4030904@hurleysoftware.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02 2014 at 12:04am -0400,
-NeilBrown <neilb@suse.de> wrote:
+On Thu, Oct 02, 2014 at 09:49:04AM -0400, Peter Hurley wrote:
+> On 10/02/2014 08:42 AM, Peter Zijlstra wrote:
+> > On Thu, Oct 02, 2014 at 02:31:50PM +0200, Peter Zijlstra wrote:
+> >> @@ -2086,24 +2086,22 @@ static void rfcomm_kill_listener(void)
+> >>  
+> >>  static int rfcomm_run(void *unused)
+> >>  {
+> >> +	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+> >>  	BT_DBG("");
+> >>  
+> >>  	set_user_nice(current, -10);
+> >>  
+> >>  	rfcomm_add_listener(BDADDR_ANY);
+> >>  
+> >> -	while (1) {
+> >> -		set_current_state(TASK_INTERRUPTIBLE);
+> >> -
+> >> -		if (kthread_should_stop())
+> >> -			break;
+> >> +	add_wait_queue(&rfcomm_wq, &wait);
+> >> +	while (!kthread_should_stop()) {
+> >>  
+> >>  		/* Process stuff */
+> >>  		rfcomm_process_sessions();
+> >>  
+> >> -		schedule();
+> >> +		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+> >>  	}
+> >> -	__set_current_state(TASK_RUNNING);
+> >> +	remove_wait_queue(&rfcomm_wq, &wait);
+> >>  
+> >>  	rfcomm_kill_listener();
+> >>  
+> > 
+> > Hmm, I think there's a problem there. If someone were to do
+> > kthread_stop() before wait_woken() we'd not actually stop, because
+> > wait_woken() doesn't test KTHREAD_SHOULD_STOP before calling schedule().
+> 
+> Do you mean this situation?
+> 
+> CPU 0                                    | CPU 1
+>                                          |
+> rfcomm_run()                             | kthread_stop()
+>   ...                                    |
+>   if (!test_bit(KTHREAD_SHOULD_STOP))    |
+>                                          |   set_bit(KTHREAD_SHOULD_STOP)
+>                                          |   wake_up_process()
+>     wait_woken()                         |   wait_for_completion()
+>       set_current_state(INTERRUPTIBLE)   |
+>       if (!WQ_FLAG_WOKEN)                |
+>         schedule_timeout()               |
+>                                          |
+> 
+> Now both tasks are sleeping forever.
 
-> 
-> I plan to submit this to Linus tomorrow, hopefully for 3.7, unless there are
-> complaints. It is in my for-next branch now.
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> From aec6f821ed92fac5ae4f1db50279a3999de5872a Mon Sep 17 00:00:00 2001
-> From: NeilBrown <neilb@suse.de>
-> Date: Thu, 2 Oct 2014 13:45:00 +1000
-> Subject: [PATCH] md/raid5: disable 'DISCARD' by default due to safety
->  concerns.
-> 
-> It has come to my attention (thanks Martin) that 'discard_zeroes_data'
-> is only a hint.  Some devices in some cases don't do what it
-> says on the label.
-> 
-> The use of DISCARD in RAID5 depends on reads from discarded regions
-> being predictably zero.  If a write to a previously discarded region
-> performs a read-modify-write cycle it assumes that the parity block
-> was consistent with the data blocks.  If all were zero, this would
-> be the case.  If some are and some aren't this would not be the case.
-> This could lead to data corruption after a device failure when
-> data needs to be reconstructed from the parity.
-> 
-> As we cannot trust 'discard_zeroes_data', ignore it by default
-> and so disallow DISCARD on all raid4/5/6 arrays.
-> 
-> As many devices are trustworthy, and as there are benefits to using
-> DISCARD, add a module parameter to over-ride this caution and cause
-> DISCARD to work if discard_zeroes_data is set.
-> 
-> If a site want to enable DISCARD on some arrays but not on others they
-> should select DISCARD support at the filesystem level, and set the
-> raid456 module parameter.
->     raid456.devices_handle_discard_safely=Y
-> 
-> As this is a data-safety issue, I believe this patch is suitable for
-> -stable.
-> DISCARD support for RAID456 was added in 3.7
-> 
-> Cc: Shaohua Li <shli@kernel.org>
-> Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
-> Cc: Mike Snitzer <snitzer@redhat.com>
-> Cc: Heinz Mauelshagen <heinzm@redhat.com>
-> Cc: stable@vger.kernel.org (3.7+)
-> Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
-> Signed-off-by: NeilBrown <neilb@suse.de>
+Yep.
 
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+> If yes, then wakeups from signals don't work either, right?
 
-Thanks Neil, I'll get something comparable staged for dm-raid for 3.18
-(less urgency given that dm-raid doesn't yet support discards).
+Its a kthread, there should not be any signals.
