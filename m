@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaJBOdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:33:19 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:65500 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaJBOdR (ORCPT
+	id S1752937AbaJBOfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:35:36 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41644 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaJBOff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:33:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: linux-next: build failure after merge of the arm-soc tree
-Date: Thu, 02 Oct 2014 16:32:42 +0200
-Message-ID: <14357384.nIoLZkacVq@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141002113742.2b521495@canb.auug.org.au>
-References: <20141002113742.2b521495@canb.auug.org.au>
+	Thu, 2 Oct 2014 10:35:35 -0400
+Message-ID: <542D640E.6010200@gmail.com>
+Date: Thu, 02 Oct 2014 22:41:18 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Sv4dqcjwlMiAjpkpwqeUc82Lsn03Lm9/my+fTxoSU1A
- eV/m67YjwkT+hj/pu7aICCzgOqoD1HvkCRH2QgqleR2UBSurOV
- d1YjUskvF1E3FOKy+q1Dg8ItGREfHPHnjxqa4sP9oDvENjBpCw
- O8DzCK1IiHHypQqbYa6YfMyokU65G9hWLgrkzJj8lDATe0IDDM
- 24mRqJXatNhFrFvCruyr/0HIjEQA3cK0JWUEseTFjGQM3PXYiJ
- /p2IfPh7bN3kIAkuTbDIlKZNgcfN+aOaRcF+IE+it0q13vfmxA
- +sGhAL1kbIp9sQKrzu9Lerov1UBEqecsfdquXnxBYNQlw68nbc
- xdXyC3mGDmGAff5cjXBo=
-X-UI-Out-Filterresults: notjunk:1;
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, luca.ellero@brickedbrain.com,
+        lisovy@gmail.com
+CC: devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC depend
+ on HAS_IOMEM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 October 2014 11:37:42 Stephen Rothwell wrote:
-> After merging the arm-soc tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
-> 
-> arch/arm/boot/dts/exynos5250-snow.dts:13:46: fatal error: dt-bindings/clock/maxim,max77686.h: No such file or directory
->  #include <dt-bindings/clock/maxim,max77686.h>
->                                               ^
-> 
-> Caused by commit c04c92ed5614 ("ARM: dts: Add rtc_src clk for s3c-rtc
-> on exynos5250-snow").
-> 
-> Presumably there is some dependency on some tree that someone has
-> forgotten to merge 
-> 
-> I reverted that commit for today.
-> 
-> Which then got to:
-> 
-> /scratch/sfr/next/arch/arm/boot/dts/exynos5420-peach-pit.dts:15:46: fatal error: dt-bindings/clock/maxim,max77802.h: No such file or directory
->  #include <dt-bindings/clock/maxim,max77802.h>
->                                               ^
-> compilation terminated.
-> /scratch/sfr/next/arch/arm/boot/dts/exynos5800-peach-pi.dts:15:46: fatal error: dt-bindings/clock/maxim,max77802.h: No such file or directory
->  #include <dt-bindings/clock/maxim,max77802.h>
->                                               ^
-> compilation terminated.
-> Error: /scratch/sfr/next/arch/arm/boot/dts/hisi-x5hd2.dtsi:417.21-22 syntax error
-> FATAL ERROR: Unable to parse input tree
-> 
-> Caused by 8bd43b6e6df7 ("ARM: dts: Add rtc_src clk for s3c-rtc on
-> exynos Peach boards").
-> 
-> I give up ... please test your trees better ...
+COMEDI_II_PCI20KC needs HAS_IOMEM, so depend on it. The related error (
+with allmodconfig under um):
 
-I'm deeply sorry about that. I actually saw the problem here but was too
-tired to fix it up again by redoing all the merges in our next/late
-branch.
+    CC [M]  drivers/staging/comedi/drivers/ii_pci20kc.o
+  drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_attach’:
+  drivers/staging/comedi/drivers/ii_pci20kc.c:442:2: error: implicit declaration of function ‘ioremap’ [-Werror=implicit-function-declaration]
+    dev->mmio = ioremap(membase, II20K_SIZE);
+    ^
+  drivers/staging/comedi/drivers/ii_pci20kc.c:442:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+    dev->mmio = ioremap(membase, II20K_SIZE);
+              ^
+  drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_detach’:
+  drivers/staging/comedi/drivers/ii_pci20kc.c:512:3: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
+     iounmap(dev->mmio);
+     ^
 
-I've changed the for-next branch now to drop all of next/late, I think
-we're better off not sending any of it for 3.18, especially as I found
-some other problems as well.
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/staging/comedi/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-> I have used the arm-soc tree form next-20141001 for today (which still
-> needs 5 reverts to get it to build :-().
-
-D'oh. I actually fixed these already last friday in the next/dt branch
-but for some reason forgot to include it in for-next.
-I've made sure that everything is included now.
-
-	Arnd
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index a8bc2b5..b709736 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -426,6 +426,7 @@ config COMEDI_AIO_IIRO_16
+ 
+ config COMEDI_II_PCI20KC
+ 	tristate "Intelligent Instruments PCI-20001C carrier support"
++	depends on HAS_IOMEM
+ 	---help---
+ 	  Enable support for Intelligent Instruments PCI-20001C carrier
+ 	  PCI-20001, PCI-20006 and PCI-20341
+-- 
+1.9.3
