@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaJBMn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:43:27 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:34245 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaJBMn0 (ORCPT
+	id S1752679AbaJBMpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:45:20 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:33664 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbaJBMpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:43:26 -0400
-Date: Thu, 2 Oct 2014 13:40:37 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Maarten ter Huurne <maarten@treewalker.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Apelete Seketeli <apelete@seketeli.net>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fonts: Add 6x10 font
-Message-ID: <20141002134037.4d437d7b@alan.etchedpixels.co.uk>
-In-Reply-To: <542A7ADA.4010500@ti.com>
-References: <1410263188-10532-1-git-send-email-maarten@treewalker.org>
-	<542A7ADA.4010500@ti.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Oct 2014 08:45:19 -0400
+From: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heicars2@linux.vnet.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Hendrik Brueckner <brueckner@de.ibm.com>,
+        Harald Freudenberger <freude@de.ibm.com>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Harald Freudenberger <freude@linux.vnet.ibm.com>
+Subject: [PATCH] s390/zcrypt: Toleration of new crypto hardware
+Date: Thu,  2 Oct 2014 14:45:01 +0200
+Message-Id: <1412253901-9938-1-git-send-email-ingo.tuchscherer@de.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100212-0542-0000-0000-00000108244E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Sep 2014 12:41:46 +0300
-Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+s390/zcrypt: Toleration of new crypto hardware
 
-> Hi,
-> 
-> On 09/09/14 14:46, Maarten ter Huurne wrote:
-> > This font is suitable for framebuffer consoles on devices with a
-> > 320x240 screen, to get a reasonable number of characters (53x24) that
-> > are still at a readable size.
-> > 
-> > The font is derived from the existing 6x11 font, but gets 3 extra
-> > lines without sacrificing readability. Also I redesigned a some glyhps
-> > so they are more distinct and better fill the available space.
-> > 
-> > Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
-> > ---
-> >  include/linux/font.h  |    4 +-
-> >  lib/fonts/Kconfig     |    9 +
-> >  lib/fonts/Makefile    |    1 +
-> >  lib/fonts/font_6x10.c | 3086 +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  lib/fonts/fonts.c     |    4 +
-> >  5 files changed, 3103 insertions(+), 1 deletion(-)
-> >  create mode 100644 lib/fonts/font_6x10.c
-> 
-> I think the patch is fine, but there hasn't been any comments or acks
-> for this. I'm a bit reluctant to add this much data to the kernel if
-> there are no users (except you) for this.
-> 
-> So I'd like to hear at least one "yeah, I could maybe use that font"
-> from someone =).
+The zcrypt device driver will accept the new crypto adapter
+in toleration mode. A new sysfs attribute 'raw_hwtype' will 
+expose the raw hardware type.
 
-It only going to get linked if someone asks for it so that seems ok to
-me. We support a variety of panels and the like with 320x240 displays and
-ucLinux platforms so IMHO it makes sense to have such a font available.
+Signed-off-by: Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>
+Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
 
-I am planning to use the font - just ermm.. not in Linux ;)
+Index: linux/drivers/s390/crypto/ap_bus.h
+===================================================================
+--- linux.orig/drivers/s390/crypto/ap_bus.h
++++ linux/drivers/s390/crypto/ap_bus.h
+@@ -161,6 +161,7 @@ struct ap_device {
+ 	ap_qid_t qid;			/* AP queue id. */
+ 	int queue_depth;		/* AP queue depth.*/
+ 	int device_type;		/* AP device type. */
++	int raw_hwtype;			/* AP raw hardware type. */
+ 	unsigned int functions;		/* AP device function bitfield. */
+ 	int unregistered;		/* marks AP device as unregistered */
+ 	struct timer_list timeout;	/* Timer for request timeouts. */
+Index: linux/drivers/s390/crypto/ap_bus.c
+===================================================================
+--- linux.orig/drivers/s390/crypto/ap_bus.c
++++ linux/drivers/s390/crypto/ap_bus.c
+@@ -664,6 +664,17 @@ static ssize_t ap_hwtype_show(struct dev
+ }
+ 
+ static DEVICE_ATTR(hwtype, 0444, ap_hwtype_show, NULL);
++
++static ssize_t ap_raw_hwtype_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	struct ap_device *ap_dev = to_ap_dev(dev);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", ap_dev->raw_hwtype);
++}
++
++static DEVICE_ATTR(raw_hwtype, 0444, ap_raw_hwtype_show, NULL);
++
+ static ssize_t ap_depth_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+ {
+@@ -734,6 +745,7 @@ static DEVICE_ATTR(ap_functions, 0444, a
+ 
+ static struct attribute *ap_dev_attrs[] = {
+ 	&dev_attr_hwtype.attr,
++	&dev_attr_raw_hwtype.attr,
+ 	&dev_attr_depth.attr,
+ 	&dev_attr_request_count.attr,
+ 	&dev_attr_requestq_count.attr,
+@@ -1417,9 +1429,13 @@ static void ap_scan_bus(struct work_stru
+ 				continue;
+ 			}
+ 			break;
++		case 11:
++			ap_dev->device_type = 10;
++			break;
+ 		default:
+ 			ap_dev->device_type = device_type;
+ 		}
++		ap_dev->raw_hwtype = device_type;
+ 
+ 		rc = ap_query_functions(qid, &device_functions);
+ 		if (!rc)
 
-Alan
