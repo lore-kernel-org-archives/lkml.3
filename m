@@ -1,98 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaJBTqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:46:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54875 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaJBTqx (ORCPT
+	id S1753379AbaJBTsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:48:38 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:46663 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaJBTsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:46:53 -0400
-Date: Thu, 2 Oct 2014 12:46:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, stable@vger.kernel.org,
-        linux-api@vger.kernel.org, Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Subject: Re: [PATCHv8.1] fanotify: enable close-on-exec on events' fd when
- requested in fanotify_init()
-Message-Id: <20141002124652.c877efeb35d07064e520a702@linux-foundation.org>
-In-Reply-To: <20141002104410.GB19748@quack.suse.cz>
-References: <cover.1411562410.git.ydroneaud@opteya.com>
-	<9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-	<542481B3.8070300@gmx.de>
-	<1411721898.7778.18.camel@localhost.localdomain>
-	<542666B2.9080700@gmx.de>
-	<1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
-	<20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
-	<20141002104410.GB19748@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Oct 2014 15:48:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <877g0il0gd.fsf@x220.int.ebiederm.org>
+References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
+ <87ppei45ig.fsf@x220.int.ebiederm.org> <CALCETrX5e0cp4QFCv1eAqR1hjoROU9Rh=cRos9U35DaR-py3Eg@mail.gmail.com>
+ <87y4t61a6v.fsf@x220.int.ebiederm.org> <54294B4E.70501@6wind.com>
+ <87y4t2gtd0.fsf@x220.int.ebiederm.org> <542D5726.8070308@6wind.com>
+ <8761g2nurx.fsf@x220.int.ebiederm.org> <CALCETrWxqzUF1x+TmW5G4kuHPP+sUtiRaT6dpZ0mQTJ217QB5w@mail.gmail.com>
+ <877g0il0gd.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 2 Oct 2014 12:48:14 -0700
+Message-ID: <CALCETrWLhfQpT+f=DPTsB4w5Oy+OeiygBrQosf25HDJQaOnPWg@mail.gmail.com>
+Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <cwang@twopensource.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Oct 2014 12:44:10 +0200 Jan Kara <jack@suse.cz> wrote:
+On Thu, Oct 2, 2014 at 12:45 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Thu, Oct 2, 2014 at 12:20 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+>>>
+>>>> Le 29/09/2014 20:43, Eric W. Biederman a écrit :
+>>>>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+>>>>>
+>>>>>> Le 26/09/2014 20:57, Eric W. Biederman a écrit :
+>>>>>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>>>>>
+>>>>>>>> On Fri, Sep 26, 2014 at 11:10 AM, Eric W. Biederman
+>>>>>>>> <ebiederm@xmission.com> wrote:
+>>>>>>>>> I see two ways to go with this.
+>>>>>>>>>
+>>>>>>>>> - A per network namespace table to that you can store ids for ``peer''
+>>>>>>>>>     network namespaces.  The table would need to be populated manually by
+>>>>>>>>>     the likes of ip netns add.
+>>>>>>>>>
+>>>>>>>>>     That flips the order of assignment and makes this idea solid.
+>>>>>> I have a preference for this solution, because it allows to have a full
+>>>>>> broadcast messages. When you have a lot of network interfaces (> 10k),
+>>>>>> it saves a lot of time to avoid another request to get all informations.
+>>>>>
+>>>>> My practical question is how often does it happen that we care?
+>>>> In fact, I don't think that scenarii with a lot of netns have a full mesh of
+>>>> x-netns interfaces. It will be more one "link" netns with the physical
+>>>> interface and all other with one interface with the link part in this "link"
+>>>> netns. Hence, only one nsid is needing in each netns.
+>>>
+>>> I will buy that a full mesh is unlikely.
+>>>
+>>> For people doing simulations anything physical has a limited number of
+>>> links.
+>>>
+>>> For people wanting all to all connectivity setting up an internal
+>>> macvlan (or the equivalent) is likely much simpler and more efficient
+>>> that a full mesh.
+>>>
+>>> So the question in my mind is how do we create these identifiers at need
+>>> (when we create the cross network namespace links) instead of at network
+>>> namespace creation time.  I don't see an answer to that in your patches,
+>>> and perhaps it obvious.
+>>>
+>>
+>> I wonder whether part of the problem is that we're thinking about
+>> scoping wrong.  What if we made the hierarchy more explicit?
+>>
+>> For example, we could give each netns an admin-assigned identifier
+>> (e.g. a 64-bit number, maybe required to be unique, maybe not)
+>> relative to its containing userns.  Then we could come up with a way
+>> to identify user namespaces (i.e. inode number relative to containing
+>> user ns, if that's well-defined).
+>
+> If as suggested we only assign ids when a tunnel (or equivalent) is
+> created between two network namespaces the space cost is a non-issue.
+> The ids become at worst a constant factor addition to the cost of the
+> tunnel.
+>
+> To keep things simple we may want to assign a free id (if one does not
+> exist) when we connect a tunnel to a network namespace.
+>
+>> From user code's perspective, netnses that are in the requester's
+>> userns or its descendents are identified by a path through a (possibly
+>> zero-length) sequence of userns ids followed by a netns id.  Netnses
+>> outside the requester's userns hierarchy cannot be named at all.
+>>
+>> Would this make sense?
+>
+> Nope.  What happens if I migrate 2 of the 4 network namespaces in a user
+> namespace?  The migration potentially fails.  Application migration does
+> not require user namespace migration.
 
-> On Wed 01-10-14 15:36:21, Andrew Morton wrote:
-> > On Mon, 29 Sep 2014 10:49:15 +0200 Yann Droneaud <ydroneaud@opteya.com> wrote:
-> > 
-> > > According to commit 80af258867648 ('fanotify: groups can specify
-> > > their f_flags for new fd'), file descriptors created as part of
-> > > file access notification events inherit flags from the
-> > > event_f_flags argument passed to syscall fanotify_init(2).
-> > > 
-> > > So while it is legal for userspace to call fanotify_init() with
-> > > O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
-> > > silently ignored.
-> > > 
-> > > Indeed event_f_flags are only given to dentry_open(), which only
-> > > seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
-> > > O_DIRECT in open_check_o_direct() and O_LARGEFILE in
-> > > generic_file_open().
-> > > 
-> > > But it seems logical to set close-on-exec flag on the file
-> > > descriptor if userspace is allowed to request it with O_CLOEXEC.
-> > > 
-> > > In fact, according to some lookup on http://codesearch.debian.net/
-> > > and various search engine, there's already some userspace code
-> > > requesting it:
-> > > 
-> > > - in systemd's readahead[2]:
-> > > 
-> > >     fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
-> > > 
-> > > - in clsync[3]:
-> > > 
-> > >     #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
-> > > 
-> > >     int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
-> > > 
-> > > - in examples [4] from "Filesystem monitoring in the Linux
-> > >   kernel" article[5] by Aleksander Morgado:
-> > > 
-> > >     if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
-> > >                                       O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
-> > 
-> > So we have a number of apps which are setting O_CLOEXEC, but it doesn't
-> > actually work.  With this change it *will* work, so the behaviour of
-> > those apps might change, possibly breaking them?
->   Possibly. OTOH I'd dare to say that most of the apps specifying O_CLOEXEC
-> want that behavior and their security may be weakened by the fact that
-> O_CLOEXEC is ignored. So we are weighting possible security issues for apps
-> doing things right (and Mihai mentioned in this thread that at least he has
-> an application which needs O_CLOEXEC working) against possible breakage for
-> apps which just randomly set O_CLOEXEC without wanting. So I'm really for
-> fixing O_CLOEXEC behavior.
+Hmm.  I guess that, as long as those network namespaces aren't
+connected to anything else, migrating like that makes sense and ought
+to work.  Fair enough.
 
-Fair enough, it sounds like the risk is acceptable.
-
-Can we get a new version sent out with all this new info appropriately
-changelogged?
-
+--Andy
