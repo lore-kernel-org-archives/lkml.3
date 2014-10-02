@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaJBKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 06:45:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59495 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394AbaJBKpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 06:45:55 -0400
-Date: Thu, 2 Oct 2014 12:45:52 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Heinrich Schuchardt <xypron.debian@gmx.de>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
-Message-ID: <20141002104552.GC19748@quack.suse.cz>
-References: <1411141516-1918-1-git-send-email-avagin@openvz.org>
- <20140924105155.GA24411@quack.suse.cz>
- <20140924131947.bc083e7f34981bbf73a364f1@linux-foundation.org>
- <20140925083010.GA3096@quack.suse.cz>
+	id S1752018AbaJBKvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 06:51:11 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59006 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaJBKvI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 06:51:08 -0400
+Date: Thu, 2 Oct 2014 12:51:04 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
+Message-ID: <20141002105103.GA13906@ulmo>
+References: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com>
+ <53D7C9EE.60503@wwwdotorg.org>
+ <53FB7288.9050002@wwwdotorg.org>
+ <5408BF77.1020007@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
 Content-Disposition: inline
-In-Reply-To: <20140925083010.GA3096@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5408BF77.1020007@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25-09-14 10:30:10, Jan Kara wrote:
-> On Wed 24-09-14 13:19:47, Andrew Morton wrote:
-> > On Wed, 24 Sep 2014 12:51:55 +0200 Jan Kara <jack@suse.cz> wrote:
-> > 
-> > >   Hello,
-> > > 
-> > >   Andrew, what do you think about the patch below? Al objected that it
-> > > changes userspace visible behavior some time ago and then he didn't react
-> > > to our explanations...
-> > 
-> > Difficult situation.  There's some really important information missing
-> > from the changelog:
-> > 
-> > - Who cares?  Is there some real application which is hurting from
-> >   the current situation?  If so, who, what, how and why.  If not, then
-> >   why change anything?
->   I believe Openvz guys hit this in their application but I'll defer to
-> them for more details.
-> 
-> > - A description of the userspace API change impact.  How did the
-> >   interface change?  What is the risk of this change causing damage to
-> >   real applications?
->   I believe this was covered in the changelog. Without the patch depending
-> on the order of unlinks for hardlinked file you sometimes get events:
-> 4       (IN_ATTRIB)
-> 400     (IN_DELETE_SELF)
-> 8000    (IN_IGNORED)
-> 
-> and sometimes you get events:
-> 4       (IN_ATTRIB)
-> <possibly more events happening for unlinked file>
-> 8       (IN_CLOSE_WRITE)
-> 400     (IN_DELETE_SELF)
-> 8000    (IN_IGNORED)
-> 
-> With the patch you'll always have the second case. So without the patch you
-> don't receive some events if the file has at least 2 hardlinks and then
-> gets unlinked. I think the risk that some application relies on *not* getting
-> those events is pretty low (especially since in the common case of file
-> without hardlinks you will get all those events).
-  Ping Andrew? Do you still need more info or are you now OK to merge the
-patch?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Sep 04, 2014 at 01:37:27PM -0600, Stephen Warren wrote:
+> On 08/25/2014 11:29 AM, Stephen Warren wrote:
+> >On 07/29/2014 10:21 AM, Stephen Warren wrote:
+> >>On 07/29/2014 08:25 AM, Thierry Reding wrote:
+> >>>From: Thierry Reding <treding@nvidia.com>
+> >>>
+> >>>This will allow the Kconfig option to be shared among 32-bit and 64-bit
+> >>>ARM.
+> >>
+> >>This seems fine to me. I'd expect to apply it for 3.18, provided I get
+> >>an ack from Russell as drivers/amba maintainer (hence CCing him without
+> >>trimming the quote).
+> >
+> >Russell,
+> >
+> >Are you OK with this patch? If so, if you could ack it so I can apply
+> >it, that would be great.
+>=20
+> Russell?
+
+Russell,
+
+Can I have your Acked-by on this or would you prefer it to be submitted
+to the patch tracker? Would the patch tracker be the correct place also
+for non-ARM core patches?
+
+Thierry
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJULS4XAAoJEN0jrNd/PrOhu7IP/2OXDcU/5YbDk1d+La+3k975
+mDFA+JgM+fkXks/WbsE2rPcMaubQnnouMqJDg54sE8GYRZxeqDu6j4nj/wSzLDAv
+Z4ztW4YcrIe0ZLm1AUtXCs1tYIOMUdnkZOTdi3CA7o+xl94n2PMo3u+tYpRcyT8R
+QsSOXpVBBPRh+e/W09skFX9kG5NpHWK2lyHyRDo6L5Ey9njILeUce4/k1jEU4bXg
+0nwp/w+2ysm8a3N0hF4oUJg8fD/fQ/sibUbVN3GtuURHIlR+R0rIZBMsxpWWwVeI
+Vcja8nY3TKRSmK3wMYThAUpFKVIC0KvUJIl/ZQJYqrwomcby0AFFhbBw4YC7xPmk
+QpQ/vA/p8fxrRCKipF5KIHaFG3bV76bN/yxQOTyiWEJDKAvnqroNP7znEQfLKjpw
+Wmy47aOqeTXyO9zR3+1AU8km3hCXmiyf0A2Ld0MIyUJuL6sNzDrPXEdxBnt2jkNF
++zQ2MKB+zX7v4RDR1BRXs4WDYzmp6wDQXwgDq6CazXHpxoBWEjCJUnys4ho2eEGJ
+ME6Tr2jUHrGPtF5AA3uKFcpES21Jj3qIFYFcMn3R0IKeqBFmjgKELltV3J3zjfhz
+QlRFsq2KP/mXdRUShY+Y0dLf3kJUl+CjJB+R+Too8xnx5a1wwq4Vv5vrb/ZrNyeQ
+miSPmvZHUfNb5/q9xXY/
+=SkoP
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
