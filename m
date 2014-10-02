@@ -1,128 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaJBOpC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:45:02 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59841 "EHLO
+	id S1752919AbaJBOsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:48:14 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37009 "EHLO
 	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaJBOo6 (ORCPT
+	with ESMTP id S1752257AbaJBOsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:44:58 -0400
-Date: Thu, 2 Oct 2014 16:44:52 +0200
-From: Robert Richter <rric@kernel.org>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: [GIT PULL] arm64, thunder: Enable Cavium Thunder SoC Family
-Message-ID: <20141002144452.GO20170@rric.localhost>
-References: <1410544187-15876-1-git-send-email-rric@kernel.org>
- <20140923104122.GE20170@rric.localhost>
- <20140923104641.GF26472@arm.com>
- <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
- <20140923141429.GH20170@rric.localhost>
- <20141002072938.GM20170@rric.localhost>
+	Thu, 2 Oct 2014 10:48:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002072938.GM20170@rric.localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141002054426.GA4515@bbox>
+References: <1411976727-29421-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140929231022.GC18318@bbox> <20141002053949.GC7433@js1304-P5Q-DELUXE> <20141002054426.GA4515@bbox>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 2 Oct 2014 10:47:51 -0400
+X-Google-Sender-Auth: qJkJgWOWaMw5hkHanbJnsmz7ieQ
+Message-ID: <CALZtONAX0sXvynpWvg+MNayhNnoh=F2vc=MCQLEovfiU6x-HuA@mail.gmail.com>
+Subject: Re: [PATCH v4] zsmalloc: merge size_class to reduce fragmentation
+To: Minchan Kim <minchan.kim@lge.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, juno.choi@lge.com,
+        Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Luigi Semenzato <semenzato@google.com>,
+        "seungho1.park" <seungho1.park@lge.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-([GIT PULL] in the subject)
+On Thu, Oct 2, 2014 at 1:44 AM, Minchan Kim <minchan.kim@lge.com> wrote:
+> On Thu, Oct 02, 2014 at 02:39:49PM +0900, Joonsoo Kim wrote:
+>> On Tue, Sep 30, 2014 at 08:10:22AM +0900, Minchan Kim wrote:
+>> > Hey Joonsoo,
+>> >
+>> > On Mon, Sep 29, 2014 at 04:45:27PM +0900, Joonsoo Kim wrote:
+>> > > zsmalloc has many size_classes to reduce fragmentation and they are
+>> > > in 16 bytes unit, for example, 16, 32, 48, etc., if PAGE_SIZE is 4096.
+>> > > And, zsmalloc has constraint that each zspage has 4 pages at maximum.
+>> > >
+>> > > In this situation, we can see interesting aspect.
+>> > > Let's think about size_class for 1488, 1472, ..., 1376.
+>> > > To prevent external fragmentation, they uses 4 pages per zspage and
+>> > > so all they can contain 11 objects at maximum.
+>> > >
+>> > > 16384 (4096 * 4) = 1488 * 11 + remains
+>> > > 16384 (4096 * 4) = 1472 * 11 + remains
+>> > > 16384 (4096 * 4) = ...
+>> > > 16384 (4096 * 4) = 1376 * 11 + remains
+>> > >
+>> > > It means that they have same characteristics and classification between
+>> > > them isn't needed. If we use one size_class for them, we can reduce
+>> > > fragementation and save some memory since both the 1488 and 1472 sized
+>> > > classes can only fit 11 objects into 4 pages, and an object that's
+>> > > 1472 bytes can fit into an object that's 1488 bytes, merging these
+>> > > classes to always use objects that are 1488 bytes will reduce the total
+>> > > number of size classes. And reducing the total number of size classes
+>> > > reduces overall fragmentation, because a wider range of compressed pages
+>> > > can fit into a single size class, leaving less unused objects in each
+>> > > size class.
+>> > >
+>> > > For this purpose, this patch implement size_class merging. If there is
+>> > > size_class that have same pages_per_zspage and same number of objects
+>> > > per zspage with previous size_class, we don't create new size_class.
+>> > > Instead, we use previous, same characteristic size_class. With this way,
+>> > > above example sizes (1488, 1472, ..., 1376) use just one size_class
+>> > > so we can get much more memory utilization.
+>> > >
+>> > > Below is result of my simple test.
+>> > >
+>> > > TEST ENV: EXT4 on zram, mount with discard option
+>> > > WORKLOAD: untar kernel source code, remove directory in descending order
+>> > > in size. (drivers arch fs sound include net Documentation firmware
+>> > > kernel tools)
+>> > >
+>> > > Each line represents orig_data_size, compr_data_size, mem_used_total,
+>> > > fragmentation overhead (mem_used - compr_data_size) and overhead ratio
+>> > > (overhead to compr_data_size), respectively, after untar and remove
+>> > > operation is executed.
+>> > >
+>> > > * untar-nomerge.out
+>> > >
+>> > > orig_size compr_size used_size overhead overhead_ratio
+>> > > 525.88MB 199.16MB 210.23MB  11.08MB 5.56%
+>> > > 288.32MB  97.43MB 105.63MB   8.20MB 8.41%
+>> > > 177.32MB  61.12MB  69.40MB   8.28MB 13.55%
+>> > > 146.47MB  47.32MB  56.10MB   8.78MB 18.55%
+>> > > 124.16MB  38.85MB  48.41MB   9.55MB 24.58%
+>> > > 103.93MB  31.68MB  40.93MB   9.25MB 29.21%
+>> > >  84.34MB  22.86MB  32.72MB   9.86MB 43.13%
+>> > >  66.87MB  14.83MB  23.83MB   9.00MB 60.70%
+>> > >  60.67MB  11.11MB  18.60MB   7.49MB 67.48%
+>> > >  55.86MB   8.83MB  16.61MB   7.77MB 88.03%
+>> > >  53.32MB   8.01MB  15.32MB   7.31MB 91.24%
+>> > >
+>> > > * untar-merge.out
+>> > >
+>> > > orig_size compr_size used_size overhead overhead_ratio
+>> > > 526.23MB 199.18MB 209.81MB  10.64MB 5.34%
+>> > > 288.68MB  97.45MB 104.08MB   6.63MB 6.80%
+>> > > 177.68MB  61.14MB  66.93MB   5.79MB 9.47%
+>> > > 146.83MB  47.34MB  52.79MB   5.45MB 11.51%
+>> > > 124.52MB  38.87MB  44.30MB   5.43MB 13.96%
+>> > > 104.29MB  31.70MB  36.83MB   5.13MB 16.19%
+>> > >  84.70MB  22.88MB  27.92MB   5.04MB 22.04%
+>> > >  67.11MB  14.83MB  19.26MB   4.43MB 29.86%
+>> > >  60.82MB  11.10MB  14.90MB   3.79MB 34.17%
+>> > >  55.90MB   8.82MB  12.61MB   3.79MB 42.97%
+>> > >  53.32MB   8.01MB  11.73MB   3.73MB 46.53%
+>> > >
+>> > > As you can see above result, merged one has better utilization (overhead
+>> > > ratio, 5th column) and uses less memory (mem_used_total, 3rd column).
+>> > >
+>> > > Changes from v1:
+>> > > - More commit description about what to do in this patch.
+>> > > - Remove nr_obj in size_class, because it isn't need after initialization.
+>> > > - Rename __size_class to size_class, size_class to merged_size_class.
+>> > > - Add code comment for merged_size_class of struct zs_pool.
+>> > > - Add code comment how merging works in zs_create_pool().
+>> > >
+>> > > Changes from v2:
+>> > > - Add more commit description (Dan)
+>> > > - dynamically allocate size_class structure (Dan)
+>> > > - rename objs_per_zspage to get_maxobj_per_zspage (Minchan)
+>> > >
+>> > > Changes from v3:
+>> > > - Add error handling logic in zs_create_pool (Dan)
+>> > >
+>> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> > > ---
+>> > >  mm/zsmalloc.c |   84 +++++++++++++++++++++++++++++++++++++++++++++++----------
+>> > >  1 file changed, 70 insertions(+), 14 deletions(-)
+>> > >
+>> > > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+>> > > index c4a9157..11556ae 100644
+>> > > --- a/mm/zsmalloc.c
+>> > > +++ b/mm/zsmalloc.c
+>> > > @@ -187,6 +187,7 @@ enum fullness_group {
+>> > >  static const int fullness_threshold_frac = 4;
+>> > >
+>> > >  struct size_class {
+>> > > + int ref;
+>> >
+>> > Couldn't we remove the ref from size_class by making zs_destroy_pool
+>> > aware of merged size class like zs_create_pool?
+>> >
+>>
+>> Hello,
+>>
+>> I think that using ref would makes intuitive code. Although there is
+>> some memory overhead, it is really small. So I prefer to this way.
+>>
+>> But, if you think that removing ref is better, I will do it.
+>> Please let me know your final decision.
+>
+> Yeb, please remove the ref. I want to keep size_class small for
+> cache footprint.
 
-On 02.10.14 09:29:38, Robert Richter wrote:
-> On 23.09.14 16:14:29, Robert Richter wrote:
-> > On 23.09.14 12:21:05, Catalin Marinas wrote:
-> > > On Tue, Sep 23, 2014 at 11:46:41AM +0100, Will Deacon wrote:
-> > > > On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
-> > > > > On 12.09.14 19:49:43, Robert Richter wrote:
-> > > > > > From: Robert Richter <rrichter@cavium.com>
-> > > > > > 
-> > > > > > This initial patches enable Cavium Thunder SoC Family. The patches add
-> > > > > > devicetree and Kconfig support and then add Thunder to the defconfig.
-> > > > > > 
-> > > > > > The Thunder system needs more enablement patches for subsystems and
-> > > > > > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
-> > > > > > We will send separate patch sets for these. All of them base on this
-> > > > > > initial patches.
-> > > > > > 
-> > > > > > I sent a separate patch set independently that introduces support for
-> > > > > > dts vendor subdirs. After both patch sets have been applied I will
-> > > > > > send a patch in addition that moves the dts file into a subdirectory.
-> > > > > > 
-> > > > > > I sent another separate patch that sets NR_CPUS to 64 per default.
-> > > > > > 
-> > > > > > The first patch introduces dts files without having a Kconfig option
-> > > > > > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
-> > > > > > added to defconfig in patch 4 as this is my preferred solution. If
-> > > > > > there is still resistance having an ARCH_THUNDER option, just drop
-> > > > > > them.
-> > > > > > 
-> > > > > > Patches are available here:
-> > > > > > 
-> > > > > >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
-> > > > > 
-> > > > > it would be good if these patches could be applied.
-> > > > 
-> > > > Catalin's handling the 3.18 merge window, but this looks like arm-soc
-> > > > material anyway and should go via Olof/Arnd.
-> > > 
-> > > Yes. Olof said he's cherry-picking arm64 SoC patches (or Robert could
-> > > send him a pull request).
-> > 
-> > just in case you want to pull, please pull from:
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
+i think a foreach_size_class() would be useful for zs_destroy_pool(),
+and in case any other size class iterations are added in the future,
+and it wouldn't require the extra ref field.  You can use the fact
+that all merged size classes contain a class->index of the
+highest/largest size_class (because they all point to the same size
+class).  So something like:
 
-Olof, Arnd,
+#define foreach_size_class(pool, class) for(class=pool->size_class[0];
+class; class = class->index+1 < ZS_SIZE_CLASSES ?
+pool->size_class[class->index+1] : NULL)
 
-please pull or apply.
+you would not be able to use that for a failed zs_create_pool() though
+since the lower size classes would still be NULL; but you don't need
+to do everything zs_destroy_pool() does (e.g. no need to check
+fullness groups), so you could just manually iterate in
+zs_create_pool() err case through the previously created classes to
+free them.  You could define foreach_size_class_from(pool, class) to
+help, starting at the previously-created class.
 
-Thanks,
-
--Robert
-
-
-
-The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
-
-  Linux 3.17-rc5 (2014-09-14 17:50:12 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
-
-for you to fetch changes up to 1200e87a26b6b4fe1f473267c83515117e08ee39:
-
-  arm64, defconfig: Enable Cavium Thunder SoC in defconfig (2014-09-23 15:10:55 +0200)
-
-----------------------------------------------------------------
-Enablement patches for Cavium Thunder SoC Family. The patches add
-devicetree and Kconfig support and then add Thunder to the defconfig.
-
-----------------------------------------------------------------
-Radha Mohan Chintakuntla (3):
-      arm64, thunder: Add initial dts for Cavium Thunder SoC
-      arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
-      arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
-
-Robert Richter (1):
-      arm64, defconfig: Enable Cavium Thunder SoC in defconfig
-
- Documentation/devicetree/bindings/arm/cavium-thunder.txt |  10 ++++
- Documentation/devicetree/bindings/arm/cpus.txt           |   1 +
- arch/arm64/Kconfig                                       |   5 ++
- arch/arm64/boot/dts/Makefile                             |   1 +
- arch/arm64/boot/dts/thunder-88xx.dts                     |  67 +++++++++++++++++++++
- arch/arm64/boot/dts/thunder-88xx.dtsi                    | 401 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- arch/arm64/configs/defconfig                             |   1 +
- 7 files changed, 486 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
- create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
- create mode 100644 arch/arm64/boot/dts/thunder-88xx.dtsi
+>
+> --
+> Kind regards,
+> Minchan Kim
