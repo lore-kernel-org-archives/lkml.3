@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaJBV1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 17:27:20 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63944 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaJBV1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 17:27:19 -0400
-Date: Thu, 2 Oct 2014 14:27:03 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Alexey Dobriyan <adobriyan@gmail.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        akpm@linux-foundation.org, rui.xiang@huawei.com,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
-        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
-        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
- directory entries
-Message-ID: <20141002142703.10325f4f@urahara>
-In-Reply-To: <87h9zmji3q.fsf@x220.int.ebiederm.org>
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>
-	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-	<87h9zmpcz5.fsf@x220.int.ebiederm.org>
-	<20141002200639.GA3497@p183.telecom.by>
-	<87h9zmji3q.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752248AbaJBVfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 17:35:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56980 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648AbaJBVfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 17:35:02 -0400
+Message-ID: <1412285674.28143.35.camel@pasglop>
+Subject: Re: [PATCH] powerpc: fix sys_call_table declaration
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Romeo Cane <romeo.cane.ext@coriant.com>
+Cc: Paul Mackerras <paulus@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Fri, 03 Oct 2014 07:34:34 +1000
+In-Reply-To: <20141002144131.GA3855@rcane-VirtualBox>
+References: <20141002144131.GA3855@rcane-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 02 Oct 2014 14:07:37 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Thu, 2014-10-02 at 15:41 +0100, Romeo Cane wrote:
+> Declaring sys_call_table as a pointer causes the compiler to generate the wrong lookup code in arch_syscall_addr
 
-> Alexey Dobriyan <adobriyan@gmail.com> writes:
-> 
-> > On Thu, Oct 02, 2014 at 11:01:50AM -0700, Eric W. Biederman wrote:
-> >> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
-> >> 
-> >> > From: Thierry Herbelot <thierry.herbelot@6wind.com>
-> >> >
-> >> > The current implementation for the directories in /proc is using a single
-> >> > linked list. This is slow when handling directories with large numbers of
-> >> > entries (eg netdevice-related entries when lots of tunnels are opened).
-> >> >
-> >> > This patch enables multiple linked lists. A hash based on the entry name is
-> >> > used to select the linked list for one given entry.
-> >> >
-> >> > The speed creation of netdevices is faster as shorter linked lists must be
-> >> > scanned when adding a new netdevice.
-> >> 
-> >> Is the directory of primary concern /proc/net/dev/snmp6 ?
-> >> 
-> >> Unless I have configured my networking stack weird by mistake that
-> >> is the only directory under /proc/net that grows when we add an
-> >> interface.
-> >> 
-> >> I just want to make certain I am seeing the same things that you are
-> >> seeing.
-> >> 
-> >> I feel silly for overlooking this directory when the rest of the
-> >> scalability work was done.
-> >
-> > Slowdown comes from "duplicate name" check:
-> >
-> >         for (tmp = dir->subdir; tmp; tmp = tmp->next)
-> >                 if (strcmp(tmp->name, dp->name) == 0) {
-> >                         WARN(1, "proc_dir_entry '%s/%s' already registered\n",
-> >                                 dir->name, dp->name);
-> >                         break;
-> >                 }
-> >
-> > Removal can be made O(1) after switching to doubly-linked list.
-> 
-> Yes.  There is the however unfortunate fact that proc directories exist
-> to be used.  If we don't switch to a better data structure than a linked
-> list the actual use will then opening of the files under
-> /proc/net/dev/snmp6/ will become O(N^2).  Which doesn't help much
-> (assuming those files are good for something).
-> 
-> If those files aren't actually useful we should just make registering
-> them a config option.  Deprecate them strongly and let only people who
-> need extreme backwards compatibility enable them.
+Care to elaborate ?
 
-Net-snmp uses them (agent/mibgroup/mibII/kernel_linux.c)
+Ben.
+
+> Signed-off-by: Romeo Cane <romeo.cane.ext@coriant.com>
+> ---
+>  arch/powerpc/include/asm/syscall.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
+> index b54b2ad..528ba9d 100644
+> --- a/arch/powerpc/include/asm/syscall.h
+> +++ b/arch/powerpc/include/asm/syscall.h
+> @@ -17,7 +17,7 @@
+>  
+>  /* ftrace syscalls requires exporting the sys_call_table */
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+> -extern const unsigned long *sys_call_table;
+> +extern const unsigned long sys_call_table[];
+>  #endif /* CONFIG_FTRACE_SYSCALLS */
+>  
+>  static inline long syscall_get_nr(struct task_struct *task,
+
 
