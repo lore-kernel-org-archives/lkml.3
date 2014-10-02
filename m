@@ -1,52 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaJBHbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:31:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39285 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751300AbaJBHbp (ORCPT
+	id S1751419AbaJBHj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:39:26 -0400
+Received: from ozlabs.org ([103.22.144.67]:39398 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaJBHjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:31:45 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org
-Cc: storagedev@hp.com, davem@davemloft.net, gregkh@linuxfoundation.org,
-        joe@perches.com, m.chehab@samsung.com, crope@iki.fi,
-        jg1.han@samsung.com, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] MAINTAINERS: remove Chirag Kantharia, invalid e-mail
-Date: Thu,  2 Oct 2014 09:31:34 +0200
-Message-Id: <1412235094-17520-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 2 Oct 2014 03:39:25 -0400
+Message-ID: <1412235563.6143.33.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH v2 09/17] powerpc/mm: Add new hash_page_mm()
+From: Michael Neuling <mikey@neuling.org>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
+        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Date: Thu, 02 Oct 2014 17:39:23 +1000
+In-Reply-To: <20141002034855.8E3D514017E@ozlabs.org>
+References: <20141002034855.8E3D514017E@ozlabs.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes Chirag Kantharia from the MAINTAINERS file,
-as his e-mail address is now rejected by the HP mail server.
+On Thu, 2014-10-02 at 13:48 +1000, Michael Ellerman wrote:
+> On Tue, 2014-30-09 at 10:34:58 UTC, Michael Neuling wrote:
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> > 
+> > This adds a new function hash_page_mm() based on the existing hash_page().
+> > This version allows any struct mm to be passed in, rather than assuming
+> > current.  This is useful for servicing co-processor faults which are not in the
+> > context of the current running process.
+> 
+> I'm not a big fan. hash_page() is already a train wreck, and this doesn't make
+> it any better.
 
-Making the driver "Orphan" until he gets back
-with a working e-mail address or a new maintainer steps in.
+I can document it to make the situation a bit better.  It's certainly
+not clear which one to use here and under what circumstances.  It's
+basically ask benh territory.  
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- MAINTAINERS | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+> > diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+> > index bbdb054..0a5c8c0 100644
+> > --- a/arch/powerpc/mm/hash_utils_64.c
+> > +++ b/arch/powerpc/mm/hash_utils_64.c
+> > @@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
+> >  		return;
+> >  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
+> >  	copro_flush_all_slbs(mm);
+> > -	if (get_paca_psize(addr) != MMU_PAGE_4K) {
+> > +	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
+> >  		get_paca()->context = mm->context;
+> >  		slb_flush_and_rebolt();
+> 
+> This is a bit fishy.
+> 
+> If that mm is currently running on another cpu you just failed to update it's
+> paca. But I think the call to check_paca_psize() in hash_page() will save you
+> on that cpu.
+> 
+> In fact we might be able to remove that synchronisation from
+> demote_segment_4k() and always leave it up to check_paca_psize()?
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 37054306dc9f..b2e3f7697d39 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4214,9 +4214,8 @@ S:	Maintained
- F:	drivers/media/dvb-frontends/hd29l2*
- 
- HEWLETT-PACKARD SMART2 RAID DRIVER
--M:	Chirag Kantharia <chirag.kantharia@hp.com>
- L:	iss_storagedev@hp.com
--S:	Maintained
-+S:	Orphan
- F:	Documentation/blockdev/cpqarray.txt
- F:	drivers/block/cpqarray.*
- 
--- 
-1.9.1
+Aneesh asked the same thing for v1 and we convinced ourselves it was ok.
+I said this at the time...
 
+I had a chat to benh offline about this and he thinks it's fine.  A
+running process in the same mm context will either have hit this mapping
+or not.  If it's hit it, the page will be invalidated and it'll come in
+via hash_page and have it's segment demoted also (and paca updated).  If
+it hasn't hit, again it'll come into hash_page() and get demoted also.
+
+> > @@ -989,26 +989,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
+> >   * -1 - critical hash insertion error
+> >   * -2 - access not permitted by subpage protection mechanism
+> >   */
+> > -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+> > +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
+> >  {
+> >  	enum ctx_state prev_state = exception_enter();
+> >  	pgd_t *pgdir;
+> >  	unsigned long vsid;
+> > -	struct mm_struct *mm;
+> >  	pte_t *ptep;
+> >  	unsigned hugeshift;
+> >  	const struct cpumask *tmp;
+> >  	int rc, user_region = 0, local = 0;
+> >  	int psize, ssize;
+> >  
+> > -	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
+> > -		ea, access, trap);
+> > +	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
+> > +		__func__, ea, access, trap);
+> >  
+> >  	/* Get region & vsid */
+> >   	switch (REGION_ID(ea)) {
+> >  	case USER_REGION_ID:
+> >  		user_region = 1;
+> > -		mm = current->mm;
+> >  		if (! mm) {
+> >  			DBG_LOW(" user region with no mm !\n");
+> >  			rc = 1;
+> 
+> What about the VMALLOC case where we do:
+> 		mm = &init_mm;
+> 		
+> Is that what you want? It seems odd that you pass an mm to the routine, but
+> then potentially it ends up using a different mm after all depending on the
+> address.
+
+Good point.  We have hash_page() still.  I can make that check in there
+and decide which mm to use and pass that to hash_page_mm().   Then we
+always use mm in hash_page_mm().  hash_page() will then look like this: 
+
+int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+{
+	struct mm_struct *mm = current->mm;
+
+	if (REGION_ID(ea) == VMALLOC_REGION_ID)
+		mm = &init_mm;
+
+	return hash_page_mm(mm, ea, access, trap);
+}
+
+Mikey
