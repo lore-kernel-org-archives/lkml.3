@@ -1,51 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445AbaJBTv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:51:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49411 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945AbaJBTvy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:51:54 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <542D953F.3030701@codeaurora.org>
-Date: Thu, 2 Oct 2014 14:51:50 -0500
-Cc: Georgi Djakov <gdjakov@mm-sol.com>, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
-References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com> <542D953F.3030701@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1878.6)
+	id S1752872AbaJBTw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:52:29 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:36307 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975AbaJBTw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 15:52:28 -0400
+Date: Thu, 2 Oct 2014 15:52:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
+Message-ID: <20141002195214.GA2705@cmpxchg.org>
+References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
+ <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
+ <20140930110622.GB4456@dhcp22.suse.cz>
+ <20141002150135.GA1394@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002150135.GA1394@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Oct 2, 2014, at 1:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-
-> On 09/30/14 10:20, Georgi Djakov wrote:
->> This patch expands the regmap support to allow registration of clock
->> dividers. It just prepares for the introduction of a clkdiv driver,
->> that will be in a separate patch.
->> Such dividers are found in the Qualcomm PMIC chips such as PM8941,
->> PMA8084 and others.
+On Thu, Oct 02, 2014 at 11:01:35AM -0400, Johannes Weiner wrote:
+> On Tue, Sep 30, 2014 at 01:06:22PM +0200, Michal Hocko wrote:
+> > > +/**
+> > > + * page_counter_limit - limit the number of pages allowed
+> > > + * @counter: counter
+> > > + * @limit: limit to set
+> > > + *
+> > > + * Returns 0 on success, -EBUSY if the current number of pages on the
+> > > + * counter already exceeds the specified limit.
+> > > + *
+> > > + * The caller must serialize invocations on the same counter.
+> > > + */
+> > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
+> > > +{
+> > > +	for (;;) {
+> > > +		unsigned long old;
+> > > +		long count;
+> > > +
+> > > +		count = atomic_long_read(&counter->count);
+> > > +
+> > > +		old = xchg(&counter->limit, limit);
+> > > +
+> > > +		if (atomic_long_read(&counter->count) != count) {
+> > > +			counter->limit = old;
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		if (count > limit) {
+> > > +			counter->limit = old;
+> > > +			return -EBUSY;
+> > > +		}
+> > 
+> > Ordering doesn't make much sense to me here. Say you really want to set
+> > limit < count. You are effectively pushing all concurrent charges to
+> > the reclaim even though you would revert your change and return with
+> > EBUSY later on.
+> >
+> > Wouldn't (count > limit) check make more sense right after the first
+> > atomic_long_read?
+> > Also the second count check should be sufficient to check > count and
+> > retry only when the count has increased.
+> > Finally continuous flow of charges can keep this loop running for quite
+> > some time and trigger lockup detector. cond_resched before continue
+> > would handle that. Something like the following:
+> > 
+> > 	for (;;) {
+> > 		unsigned long old;
+> > 		long count;
+> > 
+> > 		count = atomic_long_read(&counter->count);
+> > 		if (count > limit)
+> > 			return -EBUSY;
+> > 
+> > 		old = xchg(&counter->limit, limit);
+> > 
+> > 		/* Recheck for concurrent charges */
+> > 		if (atomic_long_read(&counter->count) > count) {
+> > 			counter->limit = old;
+> > 			cond_resched();
+> > 			continue;
+> > 		}
+> > 
+> > 		return 0;
+> > 	}
 > 
-> We're going to need to rework the Makefile in clk/qcom so that we only
-> build certain pieces of the "library" when we need them. Right now the
-> directory is focused entirely on mmio clock controllers and if we put
-> the pmic clocks in there then we need to figure out a way to only build
-> the pmic pieces if only the pmic driver is selected and only build the
-> mmio pieces if the mmio drivers are selected.
+> This is susceptible to spurious -EBUSY during races with speculative
+> charges and uncharges.  My code avoids that by retrying until we set
+> the limit without any concurrent counter operations first, before
+> moving on to implementing policy and rollback.
+> 
+> Some reclaim activity caused by a limit that the user is trying to set
+> anyway should be okay.  I'd rather have a reliable syscall.
+> 
+> But the cond_resched() is a good idea, I'll add that, thanks.
 
-Would we ever not build the mmio drivers or do you mean something else?
+Thinking more about it, my code doesn't really avoid that if the
+speculative charges persist over the two reads, it just widens the
+window a bit.  But your suggestion seems indeed more readable,
+although I'd invert the second branch.
 
-- k
+How about this delta on top?
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+diff --git a/mm/page_counter.c b/mm/page_counter.c
+index 4bdab1c7a057..7eb17135d4a4 100644
+--- a/mm/page_counter.c
++++ b/mm/page_counter.c
+@@ -19,8 +19,8 @@ int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+ 
+ 	new = atomic_long_sub_return(nr_pages, &counter->count);
+ 
+-	if (WARN_ON_ONCE(new < 0))
+-		atomic_long_add(nr_pages, &counter->count);
++	/* More uncharges than charges? */
++	WARN_ON_ONCE(new < 0);
+ 
+ 	return new > 0;
+ }
+@@ -146,29 +146,29 @@ int page_counter_limit(struct page_counter *counter, unsigned long limit)
+ 		unsigned long old;
+ 		long count;
+ 
+-		count = atomic_long_read(&counter->count);
+ 		/*
++		 * Update the limit while making sure that it's not
++		 * below the (concurrently changing) counter value.
++		 *
+ 		 * The xchg implies two full memory barriers before
+ 		 * and after, so the read-swap-read is ordered and
+ 		 * ensures coherency with page_counter_try_charge():
+ 		 * that function modifies the count before checking
+ 		 * the limit, so if it sees the old limit, we see the
+-		 * modified counter and retry.  This guarantees we
+-		 * never successfully set a limit below the counter.
++		 * modified counter and retry.
+ 		 */
+-		old = xchg(&counter->limit, limit);
+-
+-		if (atomic_long_read(&counter->count) != count) {
+-			counter->limit = old;
+-			continue;
+-		}
++		count = atomic_long_read(&counter->count);
+ 
+-		if (count > limit) {
+-			counter->limit = old;
++		if (count > limit)
+ 			return -EBUSY;
+-		}
+ 
+-		return 0;
++		old = xchg(&counter->limit, limit);
++
++		if (atomic_long_read(&counter->count) <= count)
++			return 0;
++
++		counter->limit = old;
++		cond_resched();
+ 	}
+ }
+ 
