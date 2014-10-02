@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaJBHEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:04:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39149 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751066AbaJBHEy (ORCPT
+	id S1751895AbaJBHFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:05:51 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:55556 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaJBHFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:04:54 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: akpm@linux-foundation.org
-Cc: davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
-        m.chehab@samsung.com, crope@iki.fi, jg1.han@samsung.com,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] MAINTAINERS: fix Mike Miller's e-mail address
-Date: Thu,  2 Oct 2014 09:04:38 +0200
-Message-Id: <1412233478-17115-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 2 Oct 2014 03:05:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412107670-4888-1-git-send-email-fabf@skynet.be>
+References: <1412107670-4888-1-git-send-email-fabf@skynet.be>
+Date: Thu, 2 Oct 2014 11:05:49 +0400
+Message-ID: <CALFYKtBgb+Uf3kvyyAj-w8ywMU=kCByZm-Kr1DGi0w-WVmhXdw@mail.gmail.com>
+Subject: Re: [PATCH 1/1 linux-next] libceph: remove redundant declaration
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sage Weil <sage@inktank.com>,
+        Ceph Development <ceph-devel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces Mike Miller's e-mail address
-(now rejected by the HP mail server) by the
-latest one that he used to submit patches.
+On Wed, Oct 1, 2014 at 12:07 AM, Fabian Frederick <fabf@skynet.be> wrote:
+> ceph_release_page_vector was defined twice in libceph.h
+>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  include/linux/ceph/libceph.h | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/include/linux/ceph/libceph.h b/include/linux/ceph/libceph.h
+> index 279b0af..07bc359 100644
+> --- a/include/linux/ceph/libceph.h
+> +++ b/include/linux/ceph/libceph.h
+> @@ -211,7 +211,6 @@ extern struct page **ceph_get_direct_page_vector(const void __user *data,
+>                                                  bool write_page);
+>  extern void ceph_put_page_vector(struct page **pages, int num_pages,
+>                                  bool dirty);
+> -extern void ceph_release_page_vector(struct page **pages, int num_pages);
+>  extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
+>  extern int ceph_copy_user_to_page_vector(struct page **pages,
+>                                          const void __user *data,
 
-Checked that this one is not rejected.
+Applied.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks,
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 37054306dc9f..6a8677b5ba24 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4230,7 +4230,7 @@ F:	include/linux/cciss*.h
- F:	include/uapi/linux/cciss*.h
- 
- HEWLETT-PACKARD SMART CISS RAID DRIVER (cciss)
--M:	Mike Miller <mike.miller@hp.com>
-+M:	Mike Miller <mikem@beardog.cce.hp.com>
- L:	iss_storagedev@hp.com
- S:	Supported
- F:	Documentation/blockdev/cciss.txt
--- 
-1.9.1
-
+                Ilya
