@@ -1,119 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaJBSfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:35:04 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:58413 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaJBSfB (ORCPT
+	id S1751972AbaJBShG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:37:06 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:16182 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445AbaJBShD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:35:01 -0400
-Date: Thu, 2 Oct 2014 11:34:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Feng Kan <fkan@apm.com>
-Cc: dbaryshkov@gmail.com, linux-kernel@vger.kernel.org, patches@apm.com,
-        linux-pm@vger.kernel.org, ser@kernel.org
-Subject: Re: [PATCH 1/1] power: reset: corrections for simple syscon reboot
- driver
-Message-ID: <20141002183455.GA19250@roeck-us.net>
-References: <1412274255-1315-1-git-send-email-fkan@apm.com>
+	Thu, 2 Oct 2014 14:37:03 -0400
+Date: Thu, 2 Oct 2014 20:37:10 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Jyri Sarha <jsarha@ti.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/2] drm/i2c:tda998x: Use the HDMI audio CODEC
+Message-ID: <20141002203710.03e035f1@armhf>
+In-Reply-To: <542C0A2C.6010802@ti.com>
+References: <cover.1411547014.git.moinejf@free.fr>
+ <4b3d35a14461ed164956b7f5aa77b29170bc393d.1411547014.git.moinejf@free.fr>
+ <542C0A2C.6010802@ti.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412274255-1315-1-git-send-email-fkan@apm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 11:24:15AM -0700, Feng Kan wrote:
-> This patch is to fix some bugs in reboot driver. Which includes auto selection
-> of the MFD_SYSCON for the driver, use of container to locate restart handler,
-> correction of the count down failure timer and ordering of the header file.
+On Wed, 1 Oct 2014 17:05:32 +0300
+Jyri Sarha <jsarha@ti.com> wrote:
+
+> >   	case AFMT_I2S:
+>  >   		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+>  >   		clksel_aip = AIP_CLKSEL_AIP_I2S;
+>  >   		clksel_fs = AIP_CLKSEL_FS_ACLK;
+>  > -		cts_n = CTS_N_M(3) | CTS_N_K(3);
+>  > +
+>  > +		/* with I2S input, the CTS_N predivider depends on
+>  > +		 * the sample width */
+>  > +		switch (priv->audio_sample_format) {
+>  > +		case SNDRV_PCM_FORMAT_S16_LE:
+>  > +			cts_n = CTS_N_M(3) | CTS_N_K(1);
+>  > +			break;
+>  > +		case SNDRV_PCM_FORMAT_S24_LE:
+>  > +			cts_n = CTS_N_M(3) | CTS_N_K(2);
+>  > +			break;
+>  > +		default:  
 > 
-> Signed-off-by: Feng Kan <fkan@apm.com>
-> ---
->  drivers/power/reset/Kconfig         |  3 ++-
->  drivers/power/reset/syscon-reboot.c | 25 ++++++++++---------------
->  2 files changed, 12 insertions(+), 16 deletions(-)
+> Setting the default here does not really help, because
+> priv->audio_sample_format is initialized to SNDRV_PCM_FORMAT_S24_LE in
+> tda998x_encoder_set_config(). But I am Ok with the default being
+> changed for 24 bit samples on i2s interface.
 > 
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index addb26a..3b451e1 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -120,6 +120,7 @@ config POWER_RESET_KEYSTONE
->  
->  config POWER_RESET_SYSCON
->  	bool "Generic SYSCON regmap reset driver"
-> -	depends on POWER_RESET && MFD_SYSCON && OF
-> +	depends on POWER_RESET && OF
-> +	select MFD_SYSCON
->  	help
->  	  Reboot support for generic SYSCON mapped register reset.
-> diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
-> index 948e0ee..90dfdbf 100644
-> --- a/drivers/power/reset/syscon-reboot.c
-> +++ b/drivers/power/reset/syscon-reboot.c
-> @@ -14,14 +14,15 @@
->   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->   * GNU General Public License for more details.
->   */
-> +#include <linux/delay.h>
->  #include <linux/io.h>
-> -#include <linux/of_device.h>
-> -#include <linux/of_address.h>
-> -#include <linux/platform_device.h>
->  #include <linux/notifier.h>
->  #include <linux/mfd/syscon.h>
-> -#include <linux/regmap.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_device.h>
-> +#include <linux/platform_device.h>
->  #include <linux/reboot.h>
-> +#include <linux/regmap.h>
->  
->  struct syscon_reboot_context {
->  	struct regmap *map;
-> @@ -30,21 +31,17 @@ struct syscon_reboot_context {
->  	struct notifier_block restart_handler;
->  };
->  
-> -static struct syscon_reboot_context *syscon_reboot_ctx;
-> -
->  static int syscon_restart_handle(struct notifier_block *this,
->  					unsigned long mode, void *cmd)
->  {
-> -	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
-> -	unsigned long timeout;
-> +	struct syscon_reboot_context *ctx =
-> +			container_of(this, struct syscon_reboot_context,
-> +					restart_handler);
->  
->  	/* Issue the reboot */
-> -	if (ctx->map)
-> -		regmap_write(ctx->map, ctx->offset, ctx->mask);
-> +	regmap_write(ctx->map, ctx->offset, ctx->mask);
->  
-> -	timeout = jiffies + HZ;
-> -	while (time_before(jiffies, timeout))
-> -		cpu_relax();
-> +	mdelay(1000);
->  
->  	pr_emerg("Unable to restart system\n");
->  	return NOTIFY_DONE;
-> @@ -76,8 +73,6 @@ static int syscon_reboot_probe(struct platform_device *pdev)
->  	if (err)
->  		dev_err(dev, "can't register restart notifier (err=%d)\n", err);
->  
-> -	syscon_reboot_ctx = ctx;
-> -
->  	return 0;
+>  > +		case SNDRV_PCM_FORMAT_S32_LE:
+>  > +			cts_n = CTS_N_M(3) | CTS_N_K(3);
+>  > +			break;
+>  > +		}
 
-Since the driver doesn't really do anything if the restart notifier registration
-call fails, you might as well return err here.
+I looked again at the original driver and they set K = 1 for 16 bits
+and K = 3 for 24 or 32 bits.
 
-Nitpick, really, especially since the function in reality never returns an error.
+Anyway, letting K = 3 for 16 bits works for me, so, I will not change
+this code in the next version.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Thanks.
 
-Thanks,
-Guenter
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
