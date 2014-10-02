@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaJBLdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:33:38 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39325 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaJBLdh (ORCPT
+	id S1752080AbaJBLeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:34:09 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:41440 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaJBLeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:33:37 -0400
-From: Nitin Kuppelur <nitinkuppelur@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nitin Kuppelur <nitinkuppelur@gmail.com>
-Subject: [PATCH] Staging: rtl8712 removed unnecessary else after return
-Date: Thu,  2 Oct 2014 13:33:24 +0200
-Message-Id: <1412249604-3415-1-git-send-email-nitinkuppelur@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20141002084745.GF23154@mwanda>
-References: <20141002084745.GF23154@mwanda>
+	Thu, 2 Oct 2014 07:34:07 -0400
+X-IronPort-AV: E=Sophos;i="5.04,638,1406592000"; 
+   d="scan'208";a="178489643"
+Date: Thu, 2 Oct 2014 12:31:55 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <Ian.Campbell@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/arm: remove handling of
+ XENFEAT_grant_map_identity
+In-Reply-To: <542D2A97.3040901@citrix.com>
+Message-ID: <alpine.DEB.2.02.1410021230410.17038@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410021102480.17038@kaball.uk.xensource.com> <1412244417-12251-1-git-send-email-stefano.stabellini@eu.citrix.com> <542D2A97.3040901@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed unnecessary else after return to solve
-checkpatch.pl warning
+On Thu, 2 Oct 2014, David Vrabel wrote:
+> On 02/10/14 11:06, Stefano Stabellini wrote:
+> > Keep the definition of the flag.
+> 
+> If this is going away in Xen, you can get rid of the flag as well.
+> 
+> I think you should explain why it's being removed as well.
 
-Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
----
- drivers/staging/rtl8712/hal_init.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+I want to keep the definition of the flag in Xen to avoid the number
+being reused. I guess there is no need to keep it in Linux though.
 
-diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
-index 81cd654..fbaba11 100644
---- a/drivers/staging/rtl8712/hal_init.c
-+++ b/drivers/staging/rtl8712/hal_init.c
-@@ -387,12 +387,9 @@ uint rtl8712_hal_deinit(struct _adapter *padapter)
- uint rtl871x_hal_init(struct _adapter *padapter)
- {
- 	padapter->hw_init_completed = false;
--	if (padapter->halpriv.hal_bus_init == NULL)
-+	if (padapter->halpriv.hal_bus_init == NULL ||
-+	    padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
- 		return _FAIL;
--	else {
--		if (padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
--			return _FAIL;
--	}
- 	if (rtl8712_hal_init(padapter) == _SUCCESS)
- 		padapter->hw_init_completed = true;
- 	else {
--- 
-1.9.1
 
+> Should this be tagged for stable as well?
+
+Yep
