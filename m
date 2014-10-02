@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaJBDs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 23:48:57 -0400
-Received: from ozlabs.org ([103.22.144.67]:59361 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbaJBDs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 23:48:56 -0400
-In-Reply-To: <1412073306-13812-10-git-send-email-mikey@neuling.org>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        benh@kernel.crashing.org
-From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 09/17] powerpc/mm: Add new hash_page_mm()
-Message-Id: <20141002034855.8E3D514017E@ozlabs.org>
-Date: Thu,  2 Oct 2014 13:48:55 +1000 (EST)
+	id S1753797AbaJBDvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 23:51:54 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43955 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaJBDvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 23:51:53 -0400
+Message-ID: <542CCBCB.9000709@oracle.com>
+Date: Wed, 01 Oct 2014 23:51:39 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        mgorman@suse.de
+Subject: Re: [PATCH 0/5] mm: poison critical mm/ structs
+References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com>	<20141001140725.fd7f1d0cf933fbc2aa9fc1b1@linux-foundation.org>	<542C749B.1040103@oracle.com> <20141001144834.ff3ff0349951df734d159fb3@linux-foundation.org>
+In-Reply-To: <20141001144834.ff3ff0349951df734d159fb3@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-30-09 at 10:34:58 UTC, Michael Neuling wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
+On 10/01/2014 05:48 PM, Andrew Morton wrote:
+> On Wed, 01 Oct 2014 17:39:39 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 > 
-> This adds a new function hash_page_mm() based on the existing hash_page().
-> This version allows any struct mm to be passed in, rather than assuming
-> current.  This is useful for servicing co-processor faults which are not in the
-> context of the current running process.
+>>> It looks fairly cheap - I wonder if it should simply fall under
+>>> CONFIG_DEBUG_VM rather than the new CONFIG_DEBUG_VM_POISON.
+>>
+>> Config options are cheap as well :)
+> 
+> Thing is, lots of people are enabling CONFIG_DEBUG_VM, but a smaller
+> number of people will enable CONFIG_DEBUG_VM_POISON.  Less coverage. 
+> 
+> Defaulting to y if CONFIG_DEBUG_VM might help, but if people do `make
+> oldconfig' when CONFIG_DEBUG_VM=n, their CONFIG_DEBUG_VM_POISON will
+> get set to `n' and will remain that way when they set CONFIG_DEBUG_VM
+> again.
 
-I'm not a big fan. hash_page() is already a train wreck, and this doesn't make
-it any better.
+In that case, what about:
 
-> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index bbdb054..0a5c8c0 100644
-> --- a/arch/powerpc/mm/hash_utils_64.c
-> +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
->  		return;
->  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
->  	copro_flush_all_slbs(mm);
-> -	if (get_paca_psize(addr) != MMU_PAGE_4K) {
-> +	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
->  		get_paca()->context = mm->context;
->  		slb_flush_and_rebolt();
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index db41b15..b2c7038 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -546,6 +546,7 @@ config DEBUG_VM_RB
+ config DEBUG_VM_POISON
+        bool "Poison VM structures"
+        depends on DEBUG_VM
++       def_bool y
+        help
+          Add poison to the beggining and end of various VM structure to
+          detect memory corruption in VM management code.
 
-This is a bit fishy.
-
-If that mm is currently running on another cpu you just failed to update it's
-paca. But I think the call to check_paca_psize() in hash_page() will save you
-on that cpu.
-
-In fact we might be able to remove that synchronisation from
-demote_segment_4k() and always leave it up to check_paca_psize()?
-
-> @@ -989,26 +989,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
->   * -1 - critical hash insertion error
->   * -2 - access not permitted by subpage protection mechanism
->   */
-> -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
->  {
->  	enum ctx_state prev_state = exception_enter();
->  	pgd_t *pgdir;
->  	unsigned long vsid;
-> -	struct mm_struct *mm;
->  	pte_t *ptep;
->  	unsigned hugeshift;
->  	const struct cpumask *tmp;
->  	int rc, user_region = 0, local = 0;
->  	int psize, ssize;
->  
-> -	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
-> -		ea, access, trap);
-> +	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
-> +		__func__, ea, access, trap);
->  
->  	/* Get region & vsid */
->   	switch (REGION_ID(ea)) {
->  	case USER_REGION_ID:
->  		user_region = 1;
-> -		mm = current->mm;
->  		if (! mm) {
->  			DBG_LOW(" user region with no mm !\n");
->  			rc = 1;
-
-What about the VMALLOC case where we do:
-		mm = &init_mm;
-		
-Is that what you want? It seems odd that you pass an mm to the routine, but
-then potentially it ends up using a different mm after all depending on the
-address.
+We'll default to "Y" in 'make oldconfig' and it'll automatically be switched
+on when the user selects CONFIG_DEBUG_VM=y, but we still keep the advantages
+of having it in a different config option.
 
 
-cheers
+Thanks,
+Sasha
+
