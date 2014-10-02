@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbaJBQof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:44:35 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:42171 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783AbaJBQod (ORCPT
+	id S1753328AbaJBQp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:45:57 -0400
+Received: from smtprelay0016.hostedemail.com ([216.40.44.16]:44467 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751648AbaJBQpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:44:33 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: akpm@linux-foundation.org, jcmvbkbc@gmail.com, linux-mm@kvack.org,
+	Thu, 2 Oct 2014 12:45:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:4321:5007:7514:7652:9108:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tooth10_336ae0f5da55a
+X-Filterd-Recvd-Size: 2055
+Message-ID: <1412268351.3247.68.camel@joe-AO725>
+Subject: Re: [PATCH] Fixed all coding style issues for
+ drivers/staging/media/lirc/
+From: Joe Perches <joe@perches.com>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: Amber Thrall <amber.rose.thrall@gmail.com>, jarod@wilsonet.com,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: highmem remove 3 errors
-Date: Thu,  2 Oct 2014 17:44:22 +0100
-Message-Id: <1412268262-4827-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.9.1
+Date: Thu, 02 Oct 2014 09:45:51 -0700
+In-Reply-To: <20141002102938.2b762583@recife.lan>
+References: <1412224802-28431-1-git-send-email-amber.rose.thrall@gmail.com>
+	 <20141002102938.2b762583@recife.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pointers should be foo *bar or (foo *)
+On Thu, 2014-10-02 at 10:29 -0300, Mauro Carvalho Chehab wrote:
+> Em Wed, 01 Oct 2014 21:40:02 -0700 Amber Thrall <amber.rose.thrall@gmail.com> escreveu:
+> > Fixed various coding style issues, including strings over 80 characters long and many 
+> > deprecated printk's have been replaced with proper methods.
+[]
+> > diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
+[]
+> > @@ -623,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
+> >  	if (debug) {
+> >  		dev_info(dev, "raw packet: ");
+> >  		for (i = 0; i < len; ++i)
+> > -			printk("%02x ", buf[i]);
+> > -		printk("\n");
+> > +			dev_info(dev, "%02x ", buf[i]);
+> > +		dev_info(dev, "\n");
+> >  	}
+> 
+> This is wrong, as the second printk should be printk_cont.
+> 
+> The best here would be to change all above to use %*ph.
+> So, just:
+> 
+> 	dev_debug(dev, "raw packet: %*ph\n", len, buf);
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
----
- mm/highmem.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Not quite.
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index 123bcd3..996c1d8 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -130,7 +130,7 @@ unsigned int nr_free_highpages (void)
- static int pkmap_count[LAST_PKMAP];
- static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(kmap_lock);
- 
--pte_t * pkmap_page_table;
-+pte_t *pkmap_page_table;
- 
- /*
-  * Most architectures have no use for kmap_high_get(), so let's abstract
-@@ -291,7 +291,7 @@ void *kmap_high(struct page *page)
- 	pkmap_count[PKMAP_NR(vaddr)]++;
- 	BUG_ON(pkmap_count[PKMAP_NR(vaddr)] < 2);
- 	unlock_kmap();
--	return (void*) vaddr;
-+	return (void *)vaddr;
- }
- 
- EXPORT_SYMBOL(kmap_high);
-@@ -318,7 +318,7 @@ void *kmap_high_get(struct page *page)
- 		pkmap_count[PKMAP_NR(vaddr)]++;
- 	}
- 	unlock_kmap_any(flags);
--	return (void*) vaddr;
-+	return (void *)vaddr;
- }
- #endif
- 
--- 
-1.9.1
+%*ph is length limited and only useful for lengths < 30 or so.
+Even then, it's pretty ugly.
+
+print_hex_dump_debug() is generally better.
+
 
