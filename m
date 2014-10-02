@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaJBN3Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:29:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35394 "EHLO mx2.suse.de"
+	id S1753427AbaJBN3a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:29:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35420 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846AbaJBN3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:29:22 -0400
+	id S1753260AbaJBN30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:29:26 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Dave Jones <davej@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,44 +17,42 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
         Mel Gorman <mgorman@suse.de>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/4] NUMA balancing related fixlets
-Date: Thu,  2 Oct 2014 14:29:14 +0100
-Message-Id: <1412256558-9995-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 3/4] mm: mempolicy: Skip inaccessible VMAs when setting MPOL_MF_LAZY
+Date: Thu,  2 Oct 2014 14:29:17 +0100
+Message-Id: <1412256558-9995-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1412256558-9995-1-git-send-email-mgorman@suse.de>
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following is in reaction to the thread "pipe/page fault oddness".
-The first patch cleans up a lot of mess related to ARCH_USES_NUMA_PROT_NONE.
-It's already in Andrew's tree but included here for context.
+PROT_NUMA VMAs are skipped to avoid problems distinguishing between
+present, prot_none and special entries. MPOL_MF_LAZY is not visible from
+userspace since commit a720094ded8c ("mm: mempolicy: Hide MPOL_NOOP and
+MPOL_MF_LAZY from userspace for now") but it should still skip VMAs the
+same way task_numa_work does.
 
-The second patch removes a race between migration and mprotect, particularly
-from compaction context.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/mempolicy.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-The third patch should have no real effect but it's an oversight that
-should be corrected in case MPOL_MF_LAZY is exposed to userspace.
-
-The fourth patch addresses a problem whereby a split_huge_page can leave
-a pte_numa PTE in the wrong location and is one potential source of the
-bug Dave observed.
-
-Note that none of this prevents a pte_protnone approach being applied on
-top or replacing patch 4 with it.  They should not be in conflict but if
-patch 4 in particular addresses Dave's problem then it may be considerably
-lower risk for 3.17.
-
- arch/powerpc/include/asm/pgtable.h    | 57 ++++++++---------------------------
- arch/powerpc/include/asm/pte-common.h |  5 +++
- arch/x86/Kconfig                      |  1 -
- arch/x86/include/asm/pgtable_types.h  | 14 +++++++++
- include/asm-generic/pgtable.h         | 27 ++++++-----------
- init/Kconfig                          | 11 -------
- mm/huge_memory.c                      |  2 --
- mm/mempolicy.c                        |  4 ++-
- mm/migrate.c                          |  4 ++-
- 9 files changed, 46 insertions(+), 79 deletions(-)
-
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 8f5330d..a5877ce 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -683,7 +683,9 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 		}
+ 
+ 		if (flags & MPOL_MF_LAZY) {
+-			change_prot_numa(vma, start, endvma);
++			/* Similar to task_numa_work, skip inaccessible VMAs */
++			if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
++				change_prot_numa(vma, start, endvma);
+ 			goto next;
+ 		}
+ 
 -- 
 1.8.4.5
 
