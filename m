@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaJBNw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:52:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45509 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746AbaJBNwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:52:54 -0400
-Date: Thu, 2 Oct 2014 15:52:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>, oleg@redhat.com
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002135250.GB10583@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <542D57D0.4030904@hurleysoftware.com>
+	id S1753187AbaJBNz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:55:28 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:56727 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751448AbaJBNz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:55:27 -0400
+Date: Thu, 02 Oct 2014 22:55:14 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] kbuild: Do not reference *-n variables in the Makefile
+Cc: linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <542D54A7.604@suse.cz>
+References: <1412256796-4111-1-git-send-email-mmarek@suse.cz> <542D54A7.604@suse.cz>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20141002225513.350B.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542D57D0.4030904@hurleysoftware.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 09:49:04AM -0400, Peter Hurley wrote:
-> On 10/02/2014 08:42 AM, Peter Zijlstra wrote:
-> > On Thu, Oct 02, 2014 at 02:31:50PM +0200, Peter Zijlstra wrote:
-> >> @@ -2086,24 +2086,22 @@ static void rfcomm_kill_listener(void)
-> >>  
-> >>  static int rfcomm_run(void *unused)
-> >>  {
-> >> +	DEFINE_WAIT_FUNC(wait, woken_wake_function);
-> >>  	BT_DBG("");
-> >>  
-> >>  	set_user_nice(current, -10);
-> >>  
-> >>  	rfcomm_add_listener(BDADDR_ANY);
-> >>  
-> >> -	while (1) {
-> >> -		set_current_state(TASK_INTERRUPTIBLE);
-> >> -
-> >> -		if (kthread_should_stop())
-> >> -			break;
-> >> +	add_wait_queue(&rfcomm_wq, &wait);
-> >> +	while (!kthread_should_stop()) {
-> >>  
-> >>  		/* Process stuff */
-> >>  		rfcomm_process_sessions();
-> >>  
-> >> -		schedule();
-> >> +		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
-> >>  	}
-> >> -	__set_current_state(TASK_RUNNING);
-> >> +	remove_wait_queue(&rfcomm_wq, &wait);
-> >>  
-> >>  	rfcomm_kill_listener();
-> >>  
+Hi Michal,
+
+On Thu, 02 Oct 2014 15:35:35 +0200
+Michal Marek <mmarek@suse.cz> wrote:
+
+> On 2014-10-02 15:33, Michal Marek wrote:
+> > Kconfig options are either 'y', 'm', or undefined.
 > > 
-> > Hmm, I think there's a problem there. If someone were to do
-> > kthread_stop() before wait_woken() we'd not actually stop, because
-> > wait_woken() doesn't test KTHREAD_SHOULD_STOP before calling schedule().
+> > Signed-off-by: Michal Marek <mmarek@suse.cz>
+> > ---
+> >  Makefile | 4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > diff --git a/Makefile b/Makefile
+> > index efbd2cb..106f300 100644
+> > --- a/Makefile
+> > +++ b/Makefile
+> > @@ -868,9 +868,7 @@ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
+> >  		     $(net-y) $(net-m) $(libs-y) $(libs-m)))
+> >  
+> >  vmlinux-alldirs	:= $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
+> > -		     $(init-n) $(init-) \
+> > -		     $(core-n) $(core-) $(drivers-n) $(drivers-) \
+> > -		     $(net-n)  $(net-)  $(libs-n)    $(libs-))))
+> > +		     $(init-) $(core-) $(drivers-) $(net-) $(libs-))))
 > 
-> Do you mean this situation?
+> Actually, all the directories are hardcoded in
+> {init,code,drivers,net,libs}-y; there are currently no Kconfig variables
+> involved. But let's keep this generic and handle *-m and *- just in case.
 > 
-> CPU 0                                    | CPU 1
->                                          |
-> rfcomm_run()                             | kthread_stop()
->   ...                                    |
->   if (!test_bit(KTHREAD_SHOULD_STOP))    |
->                                          |   set_bit(KTHREAD_SHOULD_STOP)
->                                          |   wake_up_process()
->     wait_woken()                         |   wait_for_completion()
->       set_current_state(INTERRUPTIBLE)   |
->       if (!WQ_FLAG_WOKEN)                |
->         schedule_timeout()               |
->                                          |
-> 
-> Now both tasks are sleeping forever.
 
-Yep.
+Agreed and thank you!
 
-> If yes, then wakeups from signals don't work either, right?
+Best Regards
+Masahiro Yamada
 
-Its a kthread, there should not be any signals.
