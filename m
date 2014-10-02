@@ -1,176 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaJBJav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:30:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62215 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaJBJat (ORCPT
+	id S1751398AbaJBJeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:34:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55528 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJBJeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:30:49 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-ac-542d1b47e323
-Message-id: <542D1B4B.7040904@samsung.com>
-Date: Thu, 02 Oct 2014 12:30:51 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, zohar@linux.vnet.ibm.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [Linux-ima-devel] [PATCH v2 3/4] ima: check appraisal flag in the
- ima_file_free() hook
-References: <cover.1412188590.git.d.kasatkin@samsung.com>
- <600aeb6a5b8eca7eb381392e142ca71484717e9c.1412188590.git.d.kasatkin@samsung.com>
- <542D0C33.2010700@polito.it>
-In-reply-to: <542D0C33.2010700@polito.it>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xa7ru0rohBtfuSVp8WVpn8XLGPHaL
-	y7vmsFl86HnEZvFy1zd2i08rJjE7sHnsnHWX3ePBoc0sHrsXfGbyOL2y2OPzJrkA1igum5TU
-	nMyy1CJ9uwSujNnbpAquaVS8ermRrYHxgGIXIweHhICJxMIlKl2MnECmmMSFe+vZuhi5OIQE
-	ljJKnL17mx3CaWSS+Np9mQXCmcUo8e/WJUaQFl4BLYkFB7vYQWwWAVWJ6TevgsXZBPQkNjT/
-	AIuLCkRInLy7hx2iXlDix+R7LCCbRQSOMEpstAAJMwsoSPy6t4kVxBYWSJU4ePc+1BWrGSWe
-	77vBBJLgFNCUuLJjCjNILzPQ/PsXtSB65SU2r3nLDGILAZ3QvXYtG8Q3ihKnJ59jnsAoPAvJ
-	5lkI3bOQdC9gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERIbX3cwLj1mdYhRgINRiYf3
-	QJNOiBBrYllxZe4hRgkOZiUR3nwJ3RAh3pTEyqrUovz4otKc1OJDjEwcnFINjJEn5H5nK/4X
-	vn/88YHEbaGrF8pX5OS99tDPupmk66PJXS8y8U9Y7pY3PCrmB3c+bToSl7WpyKfZtPbXdbY7
-	ek/8EqTPx26+w7N75+1vzZL/a24d2/vqgfb79L6fDSKvtnY4VM6uXchu8v+iIEtu/pn3W29d
-	beP/8uuITunxHxyZSxnd3W9l2ymxFGckGmoxFxUnAgDDRBtBawIAAA==
+	Thu, 2 Oct 2014 05:34:12 -0400
+Date: Thu, 2 Oct 2014 11:34:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: linux-kernel@vger.kernel.org, Kirill Tkhai <ktkhai@parallels.com>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
+ switched_from_dl()
+Message-ID: <20141002093408.GB2849@worktop.programming.kicks-ass.net>
+References: <20140930210412.5258.35299.stgit@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930210412.5258.35299.stgit@localhost>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/14 11:26, Roberto Sassu wrote:
-> On 10/01/2014 08:43 PM, Dmitry Kasatkin wrote:
->> ima_file_free() hook is only used by appraisal module to update hash
->> when file was modified. When there were no integrity checks on inode,
->> S_IMA flag is not set, integrity_iint_find() returns NULL and it
->> quits. When inode is only measured/audited but not appraised, iint
->> is allocated and it will cause calling ima_check_last_writer() which
->> unnecessarily locks i_mutex.
->>
->> Currently ima_file_free() checks 'iint_initialized'. But it looks that
->> it is a mistake and originally 'ima_appraise' had to be used instead.
->> In fact usage of 'iint_initialized' is completely unnecessary because
->> S_IMA flag would not be set if iint was not allocated.
->>
-> Hi Dmitry
->
-> sorry, I think there are two mistakes here.
->
-> First, ima_file_free() is not used by the appraisal module only
-> because, if a file has been written, also the IMA_MEASURED
-> and IMA_AUDITED flags are cleared. Your patch prevents further
-> measurements/audits if a file is modified.
->
-> Second, the lock of i_mutex is necessary, as it protects the
-> access to the fields of the 'integrity_iint_cache' structure.
->
-> My suggestion is to provide a patch that fixes the commit a756024e
-> of Mimi's 'next' branch. The patch should just replace the check
-> of 'iint_initialized' with 'ima_policy_flag'. The removal of
-> 'iint_initialized' could be done in a separate patch.
->
-> Thanks
->
-> Roberto Sassu
+On Wed, Oct 01, 2014 at 01:04:22AM +0400, Kirill Tkhai wrote:
+> From: Kirill Tkhai <ktkhai@parallels.com>
+> 
+> hrtimer_try_to_cancel() may bring a suprise, its call may fail.
 
-Hi Roberto,
+Well, not really a surprise that, its a _try_ operation after all.
 
-You are right. Clearing flags slipped out from my eyes.
-In such case we need to test entire flag as we do in other places.
-But in such case the patch is more about remove iint_initialzed, because
-S_IMA flag would not be set anyway.
-I posted modified version.
+> raw_spin_lock(&rq->lock)
+> ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
+> ...                               raw_spin_lock(&rq->lock)   ...
+>    switched_from_dl()             ...                        ...
+>       hrtimer_try_to_cancel()     ...                        ...
+>    switched_to_fair()             ...                        ...
+> ...                               ...                        ...
+> ...                               ...                        ...
+> raw_spin_unlock(&rq->lock)        ...                        (asquired)
+> ...                               ...                        ...
+> ...                               ...                        ...
+> do_exit()                         ...                        ...
+>    schedule()                     ...                        ...
+>       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
+>       ...                         ...                        ...
+>       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
+>       ...                         ...                        (asquired)
+>       put_task_struct()           ...                        ...
+>           free_task_struct()      ...                        ...
+>       ...                         ...                        raw_spin_unlock(&rq->lock)
+> ...                               (asquired)                 ...
+> ...                               ...                        ...
+> ...                               Surprise!!!                ...
+> 
+> So, let's implement 100% guaranteed way to cancel the timer and let's
+> be sure we are safe even in very unlikely situations.
+> 
+> We do not create any problem with rq unlocking, because it already
+> may happed below in pull_dl_task(). No problem with deadline tasks
+> balancing too.
 
-
-This patch and other patches were posted a week ago on linux-ima-devel
-mailing list.
-I appreciate you would review patches when they come there so we could
-spot more issues before they come to lsm mailing list.
-
-Thanks,
-Dmitry
-
->
->> This patch uses lately introduced ima_policy_flag to test if appraisal
->> was enabled by policy.
->>
->> With this change 'iint_initialized' is no longer used anywhere. Indeed,
->> integrity cache is allocated with SLAB_PANIC and kernel will panic if
->> allocation fails during kernel initialization. So this variable is
->> unnecessary and thus this patch removes it.
->>
->> Changes in v2:
->> * 'iint_initialized' removal patch merged to this patch (requested
->>     by Mimi)
->>
->> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->> ---
->>   security/integrity/iint.c         | 3 ---
->>   security/integrity/ima/ima_main.c | 2 +-
->>   security/integrity/integrity.h    | 3 ---
->>   3 files changed, 1 insertion(+), 7 deletions(-)
->>
->> diff --git a/security/integrity/iint.c b/security/integrity/iint.c
->> index a521edf..cc3eb4d 100644
->> --- a/security/integrity/iint.c
->> +++ b/security/integrity/iint.c
->> @@ -25,8 +25,6 @@ static struct rb_root integrity_iint_tree = RB_ROOT;
->>   static DEFINE_RWLOCK(integrity_iint_lock);
->>   static struct kmem_cache *iint_cache __read_mostly;
->>
->> -int iint_initialized;
->> -
->>   /*
->>    * __integrity_iint_find - return the iint associated with an inode
->>    */
->> @@ -166,7 +164,6 @@ static int __init integrity_iintcache_init(void)
->>   	iint_cache =
->>   	    kmem_cache_create("iint_cache", sizeof(struct integrity_iint_cache),
->>   			      0, SLAB_PANIC, init_once);
->> -	iint_initialized = 1;
->>   	return 0;
->>   }
->>   security_initcall(integrity_iintcache_init);
->> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
->> index 62f59ec..87d7df7 100644
->> --- a/security/integrity/ima/ima_main.c
->> +++ b/security/integrity/ima/ima_main.c
->> @@ -143,7 +143,7 @@ void ima_file_free(struct file *file)
->>   	struct inode *inode = file_inode(file);
->>   	struct integrity_iint_cache *iint;
->>
->> -	if (!iint_initialized || !S_ISREG(inode->i_mode))
->> +	if (!(ima_policy_flag & IMA_APPRAISE) || !S_ISREG(inode->i_mode))
->>   		return;
->>
->>   	iint = integrity_iint_find(inode);
->> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
->> index aafb468..f51ad65 100644
->> --- a/security/integrity/integrity.h
->> +++ b/security/integrity/integrity.h
->> @@ -169,6 +169,3 @@ static inline void integrity_audit_msg(int audit_msgno, struct inode *inode,
->>   {
->>   }
->>   #endif
->> -
->> -/* set during initialization */
->> -extern int iint_initialized;
->>
->
-> ------------------------------------------------------------------------------
-> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
-> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS Reports
-> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
-> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
-> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
-> _______________________________________________
-> Linux-ima-devel mailing list
-> Linux-ima-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
->
-
+That doesn't sound right. pull_dl_task() is an entirely different
+callchain than switched_from(). Now it might still be fine, but you
+cannot compare it with pull_dl_task.
