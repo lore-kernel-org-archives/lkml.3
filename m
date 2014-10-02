@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaJBRKJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 13:10:09 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54245 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752829AbaJBRKH (ORCPT
+	id S1752484AbaJBROi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 13:14:38 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52583 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751926AbaJBROh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 13:10:07 -0400
-Date: Thu, 2 Oct 2014 19:08:48 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Carlo Caione <carlo@caione.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
-Subject: Re: [PATCH 1/6] ARM: meson: add meson8 machine definition
-Message-ID: <20141002170848.GB29052@gmail.com>
-References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
- <1412198986-26534-2-git-send-email-b.galvani@gmail.com>
- <6568653.UtyvOjrQBb@wuerfel>
+	Thu, 2 Oct 2014 13:14:37 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: cpufreq v3.17-rc7 error: "cpufreq: cpufreq_resume: Failed to start governor for policy: f6909a00"
+Date: Thu, 02 Oct 2014 19:34:36 +0200
+Message-ID: <6111663.iIs1ITIHKP@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412267608.19413.68.camel@x220>
+References: <1412250350.3060.9.camel@x41> <2550705.C9YWxWdtP6@vostro.rjw.lan> <1412267608.19413.68.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6568653.UtyvOjrQBb@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 11:28:14AM +0200, Arnd Bergmann wrote:
-> On Wednesday 01 October 2014 23:29:41 Beniamino Galvani wrote:
-> >  DT_MACHINE_START(AML8726_MX, "Amlogic Meson6 platform")
-> >         .dt_compat      = m6_common_board_compat,
-> >  MACHINE_END
-> >  
-> > +DT_MACHINE_START(MESON8, "Amlogic Meson8 platform")
-> > +       .dt_compat      = m8_common_board_compat,
-> > +MACHINE_END
+On Thursday, October 02, 2014 06:33:28 PM Paul Bolle wrote:
+> On Thu, 2014-10-02 at 18:38 +0200, Rafael J. Wysocki wrote:
+> > Can you please try linux-pm.git/linux-next?  There's a commit from Viresh in
+> > there with a chance to fix this and which I'm going to push to Linus shortly?
 > 
-> One more thing: since this is a cortex-a9, don't you have to enable
-> the l2x0 cache controller explicitly? I think you need a
-> ".l2c_aux_mask   = ~0," entry here.
+> Do you mean b1b12babe3b72cfb08b875245e5a5d7c2747c772 ("cpufreq: update
+> 'cpufreq_suspended' after stopping governors")? Does that require
+> anything else from that tree? It doesn't matter much, but if possible I
+> would prefer to add as few patches as I can get away with.
 
-Will do, thanks.
+Yes, that's the commit.  It should work alone too.
 
-Beniamino
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
