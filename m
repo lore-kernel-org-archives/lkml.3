@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaJBFWV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 01:22:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:36321 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749AbaJBFWU convert rfc822-to-8bit (ORCPT
+	id S1752365AbaJBFYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 01:24:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51586 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaJBFY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 01:22:20 -0400
-Message-ID: <1412227337.6143.0.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 06/17] powerpc/powernv: Split out set MSI IRQ chip
- code
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Thu, 02 Oct 2014 15:22:17 +1000
-In-Reply-To: <20141002015729.D379414016B@ozlabs.org>
-References: <20141002015729.D379414016B@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Thu, 2 Oct 2014 01:24:29 -0400
+Date: Thu, 2 Oct 2014 00:24:26 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: Archit Taneja <architt@codeaurora.org>, vinod.koul@intel.com,
+        galak@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] dmaengine: qcom_bam_dma: Generalize BAM register
+ offset calculations
+Message-ID: <20141002052426.GB28494@qualcomm.com>
+References: <1411037575-13153-1-git-send-email-architt@codeaurora.org>
+ <1411965189-24499-1-git-send-email-architt@codeaurora.org>
+ <20140929221406.GE11142@qualcomm.com>
+ <542BB9C7.2000600@smartplayin.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542BB9C7.2000600@smartplayin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 11:57 +1000, Michael Ellerman wrote:
-> On Tue, 2014-30-09 at 10:34:55 UTC, Michael Neuling wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > Some of the MSI IRQ code in pnv_pci_ioda_msi_setup() is generically useful so
-> > split it out.
-> > 
-> > This will be used by some of the cxl PCIe code later.
-> > 
-> > diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-> > index df241b1..329164f 100644
-> > --- a/arch/powerpc/platforms/powernv/pci-ioda.c
-> > +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-> > @@ -1306,14 +1306,36 @@ static void pnv_ioda2_msi_eoi(struct irq_data *d)
-> >  	icp_native_eoi(d);
-> >  }
-> >  
-> > +
-> > +static void set_msi_irq_chip(struct pnv_phb *phb, unsigned int virq)
-> > +{
-> > +	struct irq_data *idata;
-> > +	struct irq_chip *ichip;
-> > +
-> > +	if (phb->type != PNV_PHB_IODA2)
-> > +		return;
-> > +
-> > +	/*
-> > +	 * Change the IRQ chip for the MSI interrupts on PHB3.
-> > +	 * The corresponding IRQ chip should be populated for
-> > +	 * the first time.
-> 
-> Seeing as you're moving this comment can you clarify the wording.
+On Wed, Oct 01, 2014 at 01:52:31PM +0530, Pramod Gurav wrote:
+> Andy,
+> With your change "dmaengine: qcom_bam_dma: Add v1.3.0 driver support"
+> and enabling qcom_bam_dma driver i was seeing some crashes in the kernel
+> on IFC6410. But after reverting you change and applying these changes
+> from Vinod I see IFC6410 booting fine.
 
-Ok.
+We're dropping my changes in favor of these.  So please do revert my change and
+pull in this.
 
-Mikey
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
