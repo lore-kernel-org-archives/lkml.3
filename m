@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452AbaJBTdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:33:52 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:37493 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaJBTdt (ORCPT
+	id S1753354AbaJBTeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:34:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43419 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752590AbaJBTeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:33:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        davem@davemloft.net, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
-References: <542D5726.8070308@6wind.com>
-	<1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412257690-31253-2-git-send-email-nicolas.dichtel@6wind.com>
-Date: Thu, 02 Oct 2014 12:33:22 -0700
-In-Reply-To: <1412257690-31253-2-git-send-email-nicolas.dichtel@6wind.com>
-	(Nicolas Dichtel's message of "Thu, 2 Oct 2014 15:48:07 +0200")
-Message-ID: <87tx3mmflp.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 2 Oct 2014 15:34:12 -0400
+Message-ID: <542DA8B2.6030608@free-electrons.com>
+Date: Thu, 02 Oct 2014 21:34:10 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/4hqNOLXqzCTN+TEeJKIxbFDz3oGGHlAw=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2975]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Nicolas Dichtel <nicolas.dichtel@6wind.com>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 189 ms - load_scoreonly_sql: 0.04 (0.0%),
-	signal_user_changed: 2.6 (1.4%), b_tie_ro: 1.83 (1.0%), parse: 0.81 (0.4%),
-	extract_message_metadata: 15 (7.8%), get_uri_detail_list: 0.69 (0.4%),
-	tests_pri_-1000: 7 (3.6%), tests_pri_-950: 1.40 (0.7%), tests_pri_-900: 1.18
-	(0.6%), tests_pri_-400: 15 (8.1%), check_bayes: 14 (7.5%), b_tokenize: 4.8
-	(2.5%), b_tok_get_all: 4.3 (2.3%), b_comp_prob: 1.65 (0.9%), b_tok_touch_all:
-	1.76 (0.9%), b_finish: 0.57 (0.3%), tests_pri_0: 139 (73.6%), tests_pri_500:
-	3.6 (1.9%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [RFC PATCH net-next v3 1/4] netns: add genl cmd to add and get peer netns ids
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Frans Klaver <fransklaver@gmail.com>
+CC: Jiri Kosina <trivial@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        johannes.thumshirn@men.de, joshc@codeaurora.org, dl9pf@gmx.de,
+        behanw@converseincode.com, kheitke@codeaurora.org,
+        ard.biesheuvel@linaro.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Opdenacker <michael@free-electrons.com>
+Subject: Re: [PATCH] [TRIVIAL] mod_devicetable.h: grammar fix in comment
+References: <1412225138-16158-1-git-send-email-michael.opdenacker@free-electrons.com> <CAH6sp9Ozkhqa=CJa6YXUwoKHn68VvrsohZu099obGN01ZFCwmA@mail.gmail.com>
+In-Reply-To: <CAH6sp9Ozkhqa=CJa6YXUwoKHn68VvrsohZu099obGN01ZFCwmA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+Hi Frans,
 
-> With this patch, a user can define an id for a peer netns by providing a FD or a
-> PID. These ids are local to netns (ie valid only into one netns).
+On 10/02/2014 09:43 AM, Frans Klaver wrote:
+> On Thu, Oct 2, 2014 at 6:45 AM, Michael Opdenacker
+> <michael.opdenacker@free-electrons.com> wrote:
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+>> ---
+>>  include/linux/mod_devicetable.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+>> index 44eeef0da186..745def862580 100644
+>> --- a/include/linux/mod_devicetable.h
+>> +++ b/include/linux/mod_devicetable.h
+>> @@ -69,7 +69,7 @@ struct ieee1394_device_id {
+>>   * @bDeviceClass: Class of device; numbers are assigned
+>>   *     by the USB forum.  Products may choose to implement classes,
+>>   *     or be vendor-specific.  Device classes specify behavior of all
+>> - *     the interfaces on a devices.
+>> + *     the interfaces on a device.
+>>   * @bDeviceSubClass: Subclass of device; associated with bDeviceClass.
+>>   * @bDeviceProtocol: Protocol of device; associated with bDeviceClass.
+>>   * @bInterfaceClass: Class of interface; numbers are assigned
+>> --
+>> 1.9.1
+> Well whaddayaknow, I ran into the same thing last month.
 >
-> This will be useful for netlink messages when a x-netns interface is
-> dumped.
+> https://lkml.org/lkml/2014/9/3/871
 
-You have a "id -> struct net *" table but you don't have a 
-"struct net * -> id" table which looks like it will impact the
-performance of peernet2id at scale.
+Hey, you were first. Happy to drop my identical patch.
 
-Eric
+Thanks :)
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
