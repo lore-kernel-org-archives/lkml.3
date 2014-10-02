@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaJBNsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:48:18 -0400
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:57419 "EHLO
-	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaJBNsO (ORCPT
+	id S1754364AbaJBNtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:49:14 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:52164 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaJBNtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:48:14 -0400
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
-Subject: [RFC PATCH net-next v3 0/4] netns: allow to identify peer netns
-Date: Thu,  2 Oct 2014 15:48:06 +0200
-Message-Id: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <542D5726.8070308@6wind.com>
-References: <542D5726.8070308@6wind.com>
+	Thu, 2 Oct 2014 09:49:08 -0400
+From: Markos Chandras <markos.chandras@imgtec.com>
+To: <linux-mips@linux-mips.org>
+CC: Markos Chandras <markos.chandras@imgtec.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, Jayachandran C <jchandra@broadcom.com>,
+        <netdev@vger.kernel.org>
+Subject: [PATCH] staging: xlr_net: Replace obsolete nlm_cop2_{enable,restore} macros
+Date: Thu, 2 Oct 2014 14:48:49 +0100
+Message-ID: <1412257729-12351-1-git-send-email-markos.chandras@imgtec.com>
+X-Mailer: git-send-email 2.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of this serie is to be able to multicast netlink messages with an
-attribute that identify a peer netns.
-This is needed by the userland to interpret some informations contained in
-netlink messages (like IFLA_LINK value, but also some other attributes in case
-of x-netns netdevice (see also
-http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
-http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
+Commit 64f6ebe63914 ("MIPS: Netlogic: rename nlm_cop2_save/restore")
+replaced nlm_cop2_enable with nlm_cop2_enable_irqsave and
+nlm_cop2_restore with nlm_cop2_disable_irqrestore but it did not
+update the xlr_net driver to use the new macros resulting into build
+problems like this:
 
-Ids of peer netns are set by userland via a new genl messages. These ids are
-stored per netns and are local (ie only valid in the netns where they are set).
-To avoid allocating an int for each peer netns, I use idr_for_each() to retrieve
-the id of a peer netns.
+drivers/staging/netlogic/xlr_net.c: In function 'send_to_rfr_fifo':
+drivers/staging/netlogic/xlr_net.c:128:3: error: implicit declaration of
+function 'nlm_cop2_enable' [-Werror=implicit-function-declaration]
+mflags = nlm_cop2_enable();
+^
+drivers/staging/netlogic/xlr_net.c:130:3: error: implicit declaration of
+function 'nlm_cop2_restore' [-Werror=implicit-function-declaration]
+nlm_cop2_restore(mflags);
 
-Patch 1/4 introduces the netlink API mechanism to set and get these ids.
-Patch 2/4 and 3/4 shows an example of how to use these ids in rtnetlink
-messages. And patch 4/4 shows that the netlink messages can be symetric between
-a GET and a SET.
+Therefore rename these cases as well
 
-iproute2 patches are available, I can send them on demand.
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Jayachandran C <jchandra@broadcom.com>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+---
+ drivers/staging/netlogic/xlr_net.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Here is a small screenshot to show how it can be used by userland:
-$ ip netns add foo
-$ ip netns del foo
-$ ip netns
-$ touch /var/run/netns/init_net
-$ mount --bind /proc/1/ns/net /var/run/netns/init_net
-$ ip netns add foo
-$ ip netns exec foo ip netns set init_net 0
-$ ip netns
-foo
-init_net
-$ ip netns exec foo ip netns
-foo
-init_net (id: 0)
-$ ip netns exec foo ip link add ipip1 link-netnsid 0 type ipip remote 10.16.0.121 local 10.16.0.249
-$ ip netns exec foo ip l ls ipip1
-6: ipip1@NONE: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default 
-    link/ipip 10.16.0.249 peer 10.16.0.121 link-netnsid 0
+diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
+index 9bf407d6241a..469f75f0f818 100644
+--- a/drivers/staging/netlogic/xlr_net.c
++++ b/drivers/staging/netlogic/xlr_net.c
+@@ -125,9 +125,9 @@ static int send_to_rfr_fifo(struct xlr_net_priv *priv, void *addr)
+ 	msg.msg3 = 0;
+ 	stnid = priv->nd->rfr_station;
+ 	do {
+-		mflags = nlm_cop2_enable();
++		mflags = nlm_cop2_enable_irqsave();
+ 		ret = nlm_fmn_send(1, 0, stnid, &msg);
+-		nlm_cop2_restore(mflags);
++		nlm_cop2_disable_irqrestore(mflags);
+ 		if (ret == 0)
+ 			return 0;
+ 	} while (++num_try < 10000);
+@@ -298,9 +298,9 @@ static netdev_tx_t xlr_net_start_xmit(struct sk_buff *skb,
+ 	u32 flags;
+ 
+ 	xlr_make_tx_desc(&msg, virt_to_phys(skb->data), skb);
+-	flags = nlm_cop2_enable();
++	flags = nlm_cop2_enable_irqsave();
+ 	ret = nlm_fmn_send(2, 0, priv->nd->tx_stnid, &msg);
+-	nlm_cop2_restore(flags);
++	nlm_cop2_disable_irqrestore(flags);
+ 	if (ret)
+ 		dev_kfree_skb_any(skb);
+ 	return NETDEV_TX_OK;
+-- 
+2.1.1
 
-The parameter link-netnsid shows us where the interface sends and receives
-packets (and thus we know where encapsulated addresses are set).
-
-RFCv2 -> RFCv3:
-  ids are now defined by userland (via netlink). Ids are stored in each netns
-  (and they are local to this netns).
-  add get_link_net support for ip6 tunnels
-  netnsid is now a s32 instead of a u32
-
-RFCv1 -> RFCv2:
-  remove useless ()
-  ids are now stored in the user ns. It's possible to get an id for a peer netns
-  only if the current netns and the peer netns have the same user ns parent.
-
- MAINTAINERS                  |   1 +
- include/net/ip6_tunnel.h     |   1 +
- include/net/ip_tunnels.h     |   1 +
- include/net/net_namespace.h  |   5 ++
- include/net/rtnetlink.h      |   2 +
- include/uapi/linux/Kbuild    |   1 +
- include/uapi/linux/if_link.h |   1 +
- include/uapi/linux/netns.h   |  31 +++++++
- net/core/net_namespace.c     | 195 +++++++++++++++++++++++++++++++++++++++++++
- net/core/rtnetlink.c         |  38 ++++++++-
- net/ipv4/ip_gre.c            |   2 +
- net/ipv4/ip_tunnel.c         |   8 ++
- net/ipv4/ip_vti.c            |   1 +
- net/ipv4/ipip.c              |   1 +
- net/ipv6/ip6_gre.c           |   1 +
- net/ipv6/ip6_tunnel.c        |   9 ++
- net/ipv6/ip6_vti.c           |   1 +
- net/ipv6/sit.c               |   1 +
- net/netlink/genetlink.c      |   4 +
- 19 files changed, 301 insertions(+), 3 deletions(-)
-
-Comments are welcome.
-
-Regards,
-Nicolas
