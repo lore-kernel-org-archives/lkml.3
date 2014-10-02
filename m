@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaJBTNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:13:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48658 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703AbaJBTNh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:13:37 -0400
-Message-ID: <542DA3B7.8090901@oracle.com>
-Date: Thu, 02 Oct 2014 15:12:55 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752191AbaJBTOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:14:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49078 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357AbaJBTOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 15:14:34 -0400
+Date: Thu, 2 Oct 2014 21:11:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
+	kernel/sched/core.c:7156 __might_sleep()
+Message-ID: <20141002191114.GA30606@redhat.com>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <542D57D0.4030904@hurleysoftware.com> <20141002135250.GB10583@worktop.programming.kicks-ass.net> <20141002135805.GF6324@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] mm: numa: Do not mark PTEs pte_numa when splitting
- huge pages
-References: <1412256558-9995-1-git-send-email-mgorman@suse.de> <1412256558-9995-5-git-send-email-mgorman@suse.de> <CA+55aFzJtoEXEzoyYQ=j+AMxyZNL3Gr3bhXPr3twyuGzvES1PA@mail.gmail.com> <542DA038.9000908@oracle.com> <CA+55aFwybOYtuOn43idiikVDPfBO7pWb4vLjhcM0dYUxTx7odA@mail.gmail.com> <20141002190734.GA15671@node.dhcp.inet.fi>
-In-Reply-To: <20141002190734.GA15671@node.dhcp.inet.fi>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002135805.GF6324@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 03:07 PM, Kirill A. Shutemov wrote:
-> On Thu, Oct 02, 2014 at 12:03:58PM -0700, Linus Torvalds wrote:
->> > On Thu, Oct 2, 2014 at 11:58 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>> > >
->>> > > You've also mentioned that while I can tell you if nothing dies, I can't
->>> > > really tell you if everything is working well. Is there a reasonable way
->>> > > to easily say if NUMA is working properly? Even something that would just
->>> > > tell me "your NUMA balancing seems to be sane" would be good.
->> > 
->> > So not having a NUMA machine (and not really wanting one), I can't
->> > really test things like the migration even *working*.
-> I believe Sasha uses fakenuma in his KVM for that.
+On 10/02, Peter Zijlstra wrote:
+>
+> On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
+> > > If yes, then wakeups from signals don't work either, right?
+> >
+> > Its a kthread, there should not be any signals.
+>
+> That said, in the tty patch we do appear to have this problem.
+>
+> Oleg, do we want something like the below on top to make that work
+> again?
+>
+> ---
+> --- a/kernel/sched/wait.c
+> +++ b/kernel/sched/wait.c
+> @@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
+>  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
+>  	 * also observe all state before the wakeup.
+>  	 */
+> -	if (!(wait->flags & WQ_FLAG_WOKEN))
+> -		timeout = schedule_timeout(timeout);
+> +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
+> +		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
+> +			timeout = schedule_timeout(timeout);
+> +	}
+>  	__set_current_state(TASK_RUNNING);
 
-That's true. You can impose arbitrary configurations on your kernel even without your
-hardware telling you to...
+I am a bit confused... but for what?
 
+schedule() won't sleep if signal_pending_state(mode) anyway, so we
+do not need this correctness-wise. And the caller needs to check
+signal_pending() anyway.
 
-Thanks,
-Sasha
+We can probably add
+
+	if (signal_pending_state(mode, current))
+		return -EINTR;
+
+at the start of wait_woken(), even before set_current_state(mode).
+Then the caller can check "ret < 0" and avoid signal_pending().
+Not sure this makes sense.
+
+Oleg.
+
