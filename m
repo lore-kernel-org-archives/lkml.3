@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaJBHRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:17:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39206 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750987AbaJBHRQ (ORCPT
+	id S1751802AbaJBHSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:18:24 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:64771 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaJBHSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:17:16 -0400
-Message-ID: <542CFBF8.6080703@free-electrons.com>
-Date: Thu, 02 Oct 2014 09:17:12 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 03:18:22 -0400
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: davem@davemloft.net, gregkh@linuxfoundation.org, joe@perches.com,
-        m.chehab@samsung.com, crope@iki.fi, jg1.han@samsung.com,
-        linux-kernel@vger.kernel.org, mikem@beardog.cce.hp.com,
-        ISS StorageDev <iss_storagedev@hp.com>
-Subject: Re: [PATCH] MAINTAINERS: fix Mike Miller's e-mail address
-References: <1412233478-17115-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1412233478-17115-1-git-send-email-michael.opdenacker@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5426B289.7070802@gmail.com>
+References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
+	<CACRpkdZCMD4x+wrvTOrrWK-Dy4_rg6bD2xUAA4jtTGTbT1uDag@mail.gmail.com>
+	<5423C904.60708@gmail.com>
+	<5426B289.7070802@gmail.com>
+Date: Thu, 2 Oct 2014 09:18:21 +0200
+Message-ID: <CACRpkdY4yXZ4NeCnZkdeBSto6oX2q_svxkr6Six29aKwPm-xjA@mail.gmail.com>
+Subject: Re: [PATCH 0/5] pinctrl: samsung: Data structure clean-up
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 09:04 AM, Michael Opdenacker wrote:
-> This replaces Mike Miller's e-mail address
-> (now rejected by the HP mail server) by the
-> latest one that he used to submit patches.
+On Sat, Sep 27, 2014 at 2:50 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On 25.09.2014 09:49, Tomasz Figa wrote:
+>> On 25.09.2014 09:47, Linus Walleij wrote:
+>>> On Tue, Sep 23, 2014 at 9:05 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>>>
+>>>> This series intends to clean up data structures used by pinctrl-samsung driver.
+>>>> More specifically, it separates initial compile time constants from data used
+>>>> at runtime, allowing unused variant data to be dropped and selected structures
+>>>> constified to improve safety.
+>>>
+>>> I like the patch set, tried to apply it but patch 3/5 failed to apply to the
+>>> devel branch for pinctrl.
+>>>
+>>> Can you rebase this on my "devel" branch, include Marek's Tested-by
+>>> tag and resend, and I'll take it for v3.18.
+>>
+>> Sure. Will do that today evening. Probably clashed with some other
+>> changes queued in the meantime.
 >
-> Checked that this one is not rejected.
+> Uhm. I went back home and forgot about this series until now. Sorry.
 >
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> I have rebased it on your "devel" branch, although it seems like this
+> branch is missing [1], which in turn seems to be already present in your
+> "for-next" branch and is going to cause a merge conflict with this
+> series. Should I still proceed with posting the series based on "devel"?
 >
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 37054306dc9f..6a8677b5ba24 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -4230,7 +4230,7 @@ F:	include/linux/cciss*.h
->  F:	include/uapi/linux/cciss*.h
->  
->  HEWLETT-PACKARD SMART CISS RAID DRIVER (cciss)
-> -M:	Mike Miller <mike.miller@hp.com>
-> +M:	Mike Miller <mikem@beardog.cce.hp.com>
->  L:	iss_storagedev@hp.com
->  S:	Supported
->  F:	Documentation/blockdev/cciss.txt
+> [1] f6a8249f9e55d pinctrl: exynos: Lock GPIOs as interrupts when used as
+> EINTs
 
-Oops, copying Mike Miller and the corresponding list too... Blind trust
-in get_maintainer.pl is evil ;)
+Bah I must have accidentally applied the patch to my for-next
+branch instead of devel, and then wiped it out of existence when
+I later reset the for-next branch to devel.
 
-Michael.
+Please resend all 5 rebased on devel.
 
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+Yours,
+Linus Walleij
