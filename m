@@ -1,305 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaJBLli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:41:38 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:38559 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaJBLlh (ORCPT
+	id S1752148AbaJBLm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:42:56 -0400
+Received: from fm1nodo1.polito.it ([130.192.180.11]:36364 "EHLO
+	antispam.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaJBLmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:41:37 -0400
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-To: thierry.reding@gmail.com
-Cc: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        bart.tanghe@thomasmore.be
-Subject: [resend rfc v5]pwm: add BCM2835 PWM driver
-Date: Thu,  2 Oct 2014 13:41:15 +0200
-Message-Id: <1412250075-3082-1-git-send-email-bart.tanghe@thomasmore.be>
-X-Mailer: git-send-email 1.9.1
+	Thu, 2 Oct 2014 07:42:54 -0400
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <542D3A28.5000603@polito.it>
+Date: Thu, 02 Oct 2014 13:42:32 +0200
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Linux-ima-devel] [PATCH v2 3/4] ima: check appraisal flag in
+ the ima_file_free() hook
+References: <cover.1412188590.git.d.kasatkin@samsung.com> <600aeb6a5b8eca7eb381392e142ca71484717e9c.1412188590.git.d.kasatkin@samsung.com> <542D0C33.2010700@polito.it> <542D1B4B.7040904@samsung.com> <542D2398.8000300@polito.it> <542D2C56.9040505@samsung.com>
+In-Reply-To: <542D2C56.9040505@samsung.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add pwm driver for Broadcom BCM2835 processor (Raspberry Pi)
+On 10/02/2014 12:43 PM, Dmitry Kasatkin wrote:
+> On 02/10/14 13:06, Roberto Sassu wrote:
+>> On 10/02/2014 11:30 AM, Dmitry Kasatkin wrote:
+>>> On 02/10/14 11:26, Roberto Sassu wrote:
+>>>> On 10/01/2014 08:43 PM, Dmitry Kasatkin wrote:
+>>>>> ima_file_free() hook is only used by appraisal module to update hash
+>>>>> when file was modified. When there were no integrity checks on inode,
+>>>>> S_IMA flag is not set, integrity_iint_find() returns NULL and it
+>>>>> quits. When inode is only measured/audited but not appraised, iint
+>>>>> is allocated and it will cause calling ima_check_last_writer() which
+>>>>> unnecessarily locks i_mutex.
+>>>>>
+>>>>> Currently ima_file_free() checks 'iint_initialized'. But it looks that
+>>>>> it is a mistake and originally 'ima_appraise' had to be used instead.
+>>>>> In fact usage of 'iint_initialized' is completely unnecessary because
+>>>>> S_IMA flag would not be set if iint was not allocated.
+>>>>>
+>>>> Hi Dmitry
+>>>>
+>>>> sorry, I think there are two mistakes here.
+>>>>
+>>>> First, ima_file_free() is not used by the appraisal module only
+>>>> because, if a file has been written, also the IMA_MEASURED
+>>>> and IMA_AUDITED flags are cleared. Your patch prevents further
+>>>> measurements/audits if a file is modified.
+>>>>
+>>>> Second, the lock of i_mutex is necessary, as it protects the
+>>>> access to the fields of the 'integrity_iint_cache' structure.
+>>>>
+>>>> My suggestion is to provide a patch that fixes the commit a756024e
+>>>> of Mimi's 'next' branch. The patch should just replace the check
+>>>> of 'iint_initialized' with 'ima_policy_flag'. The removal of
+>>>> 'iint_initialized' could be done in a separate patch.
+>>>>
+>>>> Thanks
+>>>>
+>>>> Roberto Sassu
+>>>
+>>> Hi Roberto,
+>>>
+>>> You are right. Clearing flags slipped out from my eyes.
+>>> In such case we need to test entire flag as we do in other places.
+>>> But in such case the patch is more about remove iint_initialzed, because
+>>> S_IMA flag would not be set anyway.
+>>> I posted modified version.
+>>>
+>>
+>> Hi Dmitry
+>>
+>> thanks for the updated version. I would slightly modify the
+>> patch description by saying that your patch completes the switching
+>> to the 'ima_policy_flag' variable in the checks at the beginning
+>> of IMA functions, started with the commit a756024e.
+>>
+> Updated in my tree..
+>
+> http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/commit/?h=ima-next&id=cddb34c121434c71c69cb14069252c3c61c6ae11
+>
 
-Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
----
-Changes in v5:
- - add the correct copyright comments according the university college philosophy
- - better error handling
- - use devm clk lookup
- - define some variables
- - add the clock description 
+Ok, thanks.
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-new file mode 100644
-index 0000000..eea1e8c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-@@ -0,0 +1,24 @@
-+BCM2835 PWM controller (Raspberry Pi controller)
-+
-+Required properties:
-+- compatible: should be "brcm,bcm2835-pwm"
-+- reg: physical base address and length of the controller's registers
-+
-+Examples:
-+
-+pwm@2020c000 {
-+	compatible = "brcm,bcm2835-pwm";
-+	reg = <0x2020c000 0x28>;
-+	clocks = <&clk_pwm>;
-+};
-+
-+clocks {
-+	....
-+		clk_pwm: pwm {
-+			compatible = "fixed-clock";
-+			reg = <3>;
-+			#clock-cells = <0>;
-+			clock-frequency = <9200000>;
-+		};
-+	....
-+};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 22f2f28..a277256 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -62,6 +62,15 @@ config PWM_ATMEL_TCB
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel-tcb.
- 
-+config PWM_BCM2835
-+	tristate "BCM2835 PWM support"
-+	depends on MACH_BCM2835 || MACH_BCM2708
-+	help
-+	  PWM framework driver for BCM2835 controller (Raspberry Pi)
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-bcm2835.
-+
- config PWM_BFIN
- 	tristate "Blackfin PWM support"
- 	depends on BFIN_GPTIMERS
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index d8906ec..9863590 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -3,6 +3,7 @@ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
-+obj-$(CONFIG_PWM_BCM2835)	+= pwm-bcm2835.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
-new file mode 100644
-index 0000000..eaf1876
---- /dev/null
-+++ b/drivers/pwm/pwm-bcm2835.c
-@@ -0,0 +1,204 @@
-+/*
-+ * Copyright 2014 Bart Tanghe <bart.tanghe@thomasmore.be>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+#define DUTY		0x14
-+#define PERIOD		0x10
-+#define CHANNEL		0x10
-+
-+#define PWM_ENABLE	(1 << 0)
-+#define PWM_POLARITY	(1 << 4)
-+
-+#define PWM_CONTROL_MASK	0xff
-+#define PWM_MODE		0x80		/* set timer in pwm mode */
-+#define DEFAULT			0xff		/* set timer in default mode */
-+#define PWM_CONTROL_STRIDE	8
-+#define MIN_PERIOD		108		/* 9.2Mhz max pwm clock */
-+
-+struct bcm2835_pwm {
-+	struct pwm_chip chip;
-+	struct device *dev;
-+	int channel;
-+	unsigned long scaler;
-+	void __iomem *base;
-+	struct clk *clk;
-+};
-+
-+static inline struct bcm2835_pwm  *to_bcm2835_pwm(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct bcm2835_pwm, chip);
-+}
-+
-+static int bcm2835_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base);
-+	value &= ~(PWM_CONTROL_MASK << PWM_CONTROL_STRIDE * pwm->pwm);
-+	value |= (PWM_MODE << (PWM_CONTROL_STRIDE * pwm->pwm));
-+	writel(value, pc->base);
-+	return 0;
-+}
-+
-+static void bcm2835_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base)
-+	value &= ~(PWM_CONTROL_MASK << PWM_CONTROL_STRIDE * pwm->pwm);
-+	value &= (~DEFAULT << (PWM_CONTROL_STRIDE * pwm->pwm));
-+	writel(value, pc->base);
-+}
-+
-+static int bcm2835_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      int duty_ns, int period_ns)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+
-+	if (period_ns <= MIN_PERIOD) {
-+		dev_err(pc->dev, "Period not supported\n");
-+		return -EINVAL;
-+	} else {
-+		writel(duty_ns / pc->scaler,
-+			 pc->base + DUTY + pwm->pwm * CHANNEL);
-+		writel(period_ns / pc->scaler,
-+			pc->base + PERIOD + pwm->pwm * CHANNEL);
-+		return 0;
-+	}
-+}
-+
-+static int bcm2835_pwm_enable(struct pwm_chip *chip,
-+			      struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base);
-+	value |= (PWM_ENABLE << (PWM_CONTROL_STRIDE * pwm->pwm));
-+	writel(value, pc->base);
-+	return 0;
-+}
-+
-+static void bcm2835_pwm_disable(struct pwm_chip *chip,
-+				struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	value = readl(pc->base);
-+	value &= ~(PWM_ENABLE << (PWM_CONTROL_STRIDE * pwm->pwm));
-+	writel(value, pc->base);
-+}
-+
-+static int bcm2835_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				enum pwm_polarity polarity)
-+{
-+	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
-+	u32 value;
-+
-+	if (polarity == PWM_POLARITY_NORMAL) {
-+		value = readl(pc->base);
-+		value &= ~(PWM_POLARITY << PWM_CONTROL_STRIDE * pwm->pwm);
-+	} else if (polarity == PWM_POLARITY_INVERSED) {
-+		value = readl(pc->base);
-+		value |= PWM_POLARITY << (PWM_CONTROL_STRIDE * pwm->pwm);
-+	}
-+	writel(value, pc->base);
-+	return 0;
-+}
-+
-+static const struct pwm_ops bcm2835_pwm_ops = {
-+	.request = bcm2835_pwm_request,
-+	.free = bcm2835_pwm_free,
-+	.config = bcm2835_pwm_config,
-+	.enable = bcm2835_pwm_enable,
-+	.disable = bcm2835_pwm_disable,
-+	.set_polarity = bcm2835_set_polarity,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int bcm2835_pwm_probe(struct platform_device *pdev)
-+{
-+	struct bcm2835_pwm *pwm;
-+	int ret;
-+	struct resource *r;
-+	struct clk *clk;
-+
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm)
-+		return -ENOMEM;
-+
-+	pwm->dev = &pdev->dev;
-+
-+	clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "no clock found: %ld\n", PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
-+
-+	pwm->clk = clk;
-+	ret = clk_prepare_enable(pwm->clk);
-+	if (ret)
-+		return ret;
-+
-+	pwm->scaler = NSEC_PER_SEC / clk_get_rate(clk);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pwm->base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(pwm->base))
-+		return PTR_ERR(pwm->base);
-+
-+	pwm->chip.dev = &pdev->dev;
-+	pwm->chip.ops = &bcm2835_pwm_ops;
-+	pwm->chip.npwm = 2;
-+
-+	platform_set_drvdata(pdev, pwm);
-+
-+	ret = pwmchip_add(&pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static int bcm2835_pwm_remove(struct platform_device *pdev)
-+{
-+	struct bcm2835_pwm *pc = platform_get_drvdata(pdev);
-+	clk_disable_unprepare(pc->clk);
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static const struct of_device_id bcm2835_pwm_of_match[] = {
-+	{ .compatible = "brcm,bcm2835-pwm", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, bcm2835_pwm_of_match);
-+
-+static struct platform_driver bcm2835_pwm_driver = {
-+	.driver = {
-+		.name = "bcm2835-pwm",
-+		.of_match_table = bcm2835_pwm_of_match,
-+	},
-+	.probe = bcm2835_pwm_probe,
-+	.remove = bcm2835_pwm_remove,
-+};
-+module_platform_driver(bcm2835_pwm_driver);
-+
-+MODULE_AUTHOR("Bart Tanghe <bart.tanghe@thomasmore.be");
-+MODULE_DESCRIPTION("Broadcom BCM2835 PWM driver");
-+MODULE_LICENSE("GPL v2");
+Acked-by: Roberto Sassu <roberto.sassu@polito.it>
+
+Roberto Sassu
+
+
+> Dmitry
+>
+>> I noticed that James Morris pulled my previous patches, so also
+>> this one should be pulled after Mimi confirms that it is ok.
+>>
+>>
+>>>
+>>> This patch and other patches were posted a week ago on linux-ima-devel
+>>> mailing list.
+>>> I appreciate you would review patches when they come there so we could
+>>> spot more issues before they come to lsm mailing list.
+>>>
+>>
+>> Ok, sure.
+>>
+>> Thanks
+>>
+>> Roberto Sassu
+>>
+>>
+>>> Thanks,
+>>> Dmitry
+>>>
+>>>>
+>>>>> This patch uses lately introduced ima_policy_flag to test if appraisal
+>>>>> was enabled by policy.
+>>>>>
+>>>>> With this change 'iint_initialized' is no longer used anywhere.
+>>>>> Indeed,
+>>>>> integrity cache is allocated with SLAB_PANIC and kernel will panic if
+>>>>> allocation fails during kernel initialization. So this variable is
+>>>>> unnecessary and thus this patch removes it.
+>>>>>
+>>>>> Changes in v2:
+>>>>> * 'iint_initialized' removal patch merged to this patch (requested
+>>>>>       by Mimi)
+>>>>>
+>>>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>>>>> ---
+>>>>>     security/integrity/iint.c         | 3 ---
+>>>>>     security/integrity/ima/ima_main.c | 2 +-
+>>>>>     security/integrity/integrity.h    | 3 ---
+>>>>>     3 files changed, 1 insertion(+), 7 deletions(-)
+>>>>>
+>>>>> diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+>>>>> index a521edf..cc3eb4d 100644
+>>>>> --- a/security/integrity/iint.c
+>>>>> +++ b/security/integrity/iint.c
+>>>>> @@ -25,8 +25,6 @@ static struct rb_root integrity_iint_tree = RB_ROOT;
+>>>>>     static DEFINE_RWLOCK(integrity_iint_lock);
+>>>>>     static struct kmem_cache *iint_cache __read_mostly;
+>>>>>
+>>>>> -int iint_initialized;
+>>>>> -
+>>>>>     /*
+>>>>>      * __integrity_iint_find - return the iint associated with an inode
+>>>>>      */
+>>>>> @@ -166,7 +164,6 @@ static int __init integrity_iintcache_init(void)
+>>>>>         iint_cache =
+>>>>>             kmem_cache_create("iint_cache", sizeof(struct
+>>>>> integrity_iint_cache),
+>>>>>                       0, SLAB_PANIC, init_once);
+>>>>> -    iint_initialized = 1;
+>>>>>         return 0;
+>>>>>     }
+>>>>>     security_initcall(integrity_iintcache_init);
+>>>>> diff --git a/security/integrity/ima/ima_main.c
+>>>>> b/security/integrity/ima/ima_main.c
+>>>>> index 62f59ec..87d7df7 100644
+>>>>> --- a/security/integrity/ima/ima_main.c
+>>>>> +++ b/security/integrity/ima/ima_main.c
+>>>>> @@ -143,7 +143,7 @@ void ima_file_free(struct file *file)
+>>>>>         struct inode *inode = file_inode(file);
+>>>>>         struct integrity_iint_cache *iint;
+>>>>>
+>>>>> -    if (!iint_initialized || !S_ISREG(inode->i_mode))
+>>>>> +    if (!(ima_policy_flag & IMA_APPRAISE) || !S_ISREG(inode->i_mode))
+>>>>>             return;
+>>>>>
+>>>>>         iint = integrity_iint_find(inode);
+>>>>> diff --git a/security/integrity/integrity.h
+>>>>> b/security/integrity/integrity.h
+>>>>> index aafb468..f51ad65 100644
+>>>>> --- a/security/integrity/integrity.h
+>>>>> +++ b/security/integrity/integrity.h
+>>>>> @@ -169,6 +169,3 @@ static inline void integrity_audit_msg(int
+>>>>> audit_msgno, struct inode *inode,
+>>>>>     {
+>>>>>     }
+>>>>>     #endif
+>>>>> -
+>>>>> -/* set during initialization */
+>>>>> -extern int iint_initialized;
+>>>>>
+>>>>
+>>>> ------------------------------------------------------------------------------
+>>>>
+>>>> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
+>>>> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS
+>>>> Reports
+>>>> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
+>>>> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
+>>>> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
+>>>>
+>>>> _______________________________________________
+>>>> Linux-ima-devel mailing list
+>>>> Linux-ima-devel@lists.sourceforge.net
+>>>> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
+>>>>
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe
+>> linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+
