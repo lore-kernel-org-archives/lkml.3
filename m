@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbaJBOLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:11:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46557 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753316AbaJBOLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:11:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
-   d="scan'208";a="481506774"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20141001130523.d7cf46e735089d681194e8e6@linux-foundation.org>
-References: <1412163121-4295-1-git-send-email-kirill.shutemov@linux.intel.com>
- <20141001130523.d7cf46e735089d681194e8e6@linux-foundation.org>
-Subject: Re: [PATCH 1/3] mm: generalize VM_BUG_ON() macros
-Content-Transfer-Encoding: 7bit
-Message-Id: <20141002141133.B56A6E00A3@blue.fi.intel.com>
-Date: Thu,  2 Oct 2014 17:11:33 +0300 (EEST)
+	id S1752946AbaJBONp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:13:45 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40584 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973AbaJBONo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:13:44 -0400
+Date: Thu, 2 Oct 2014 15:13:29 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 19/24] ptrace: Allow compat to use the native siginfo
+Message-ID: <20141002141328.GE32147@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-20-git-send-email-apinski@cavium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409779158-30963-20-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Wed,  1 Oct 2014 14:31:59 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > This patch makes VM_BUG_ON() to accept one to three arguments after the
-> > condition. Any of these arguments can be page, vma or mm. VM_BUG_ON()
-> > will dump info about the argument using appropriate dump_* function.
-> > 
-> > It's intended to replace separate VM_BUG_ON_PAGE(), VM_BUG_ON_VMA(),
-> > VM_BUG_ON_MM() and allows additional use-cases like:
-> > 
-> >   VM_BUG_ON(cond, vma, page);
-> >   VM_BUG_ON(cond, vma, src_page, dst_page);
-> >   VM_BUG_ON(cond, mm, src_vma, dst_vma);
-> >   ...
-> 
-> I can't say I'm a fan of this.  We don't do this sort of thing anywhere
-> else in the kernel and passing different types to the same thing in
-> different places is unusual and exceptional.  We gain very little from
-> this so why bother?
+On Wed, Sep 03, 2014 at 10:19:13PM +0100, Andrew Pinski wrote:
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 54e7522..40ae023 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -657,7 +657,7 @@ static int ptrace_peek_siginfo(struct task_struct *child,
+>  			break;
+>  
+>  #ifdef CONFIG_COMPAT
+> -		if (unlikely(is_compat_task())) {
+> +		if (unlikely(is_compat_task() && !COMPAT_USE_NATIVE_SIGINFO)) {
+>  			compat_siginfo_t __user *uinfo = compat_ptr(data);
+>  
+>  			if (copy_siginfo_to_user32(uinfo, &info) ||
+> @@ -1126,16 +1126,27 @@ int compat_ptrace_request(struct task_struct *child, compat_long_t request,
+>  
+>  	case PTRACE_GETSIGINFO:
+>  		ret = ptrace_getsiginfo(child, &siginfo);
+> -		if (!ret)
+> -			ret = copy_siginfo_to_user32(
+> -				(struct compat_siginfo __user *) datap,
+> -				&siginfo);
+> +		if (!ret) {
+> +			if (COMPAT_USE_NATIVE_SIGINFO)
+> +				ret = copy_siginfo_to_user(
+> +					(struct siginfo __user *) datap,
+> +					&siginfo);
+> +			else
+> +				ret = copy_siginfo_to_user32(
+> +					(struct compat_siginfo __user *) datap,
+> +					&siginfo);
+> +		}
 
-We had bug like this: lkml.kernel.org/r/53F487EB.7070703@oracle.com where
-it's useful to see more than one structure dumped: vma + page in this
-case.
-
-We can keep inventing new macros: VM_BUG_ON_PAGE_AND_VM() for the case.
-But why not have one to rule them all? ;)
+I haven't read the subsequent patch yet but couldn't you call
+ptrace_request directly from the arm64 code for ILP32 tasks instead of
+compat_ptrace_request()? Is the ILP32 ptrace support the same with the
+LP64 one?
 
 -- 
- Kirill A. Shutemov
+Catalin
