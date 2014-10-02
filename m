@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaJBR1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 13:27:53 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:46339 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaJBR1v (ORCPT
+	id S1752854AbaJBRd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 13:33:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56888 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661AbaJBRdw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 13:27:51 -0400
-Date: Thu, 2 Oct 2014 20:28:14 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        ebiederm@xmission.com, akpm@linux-foundation.org, rui.xiang@huawei.com,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
-        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
-        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
- directory entries
-Message-ID: <20141002172814.GA2435@p183.telecom.by>
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>
- <1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
- <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+	Thu, 2 Oct 2014 13:33:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,640,1406617200"; 
+   d="scan'208";a="608831160"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: "'Jiri Olsa'" <jolsa@redhat.com>
+CC: "acme@kernel.org" <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V6 2/3] perf tools: parse the pmu event prefix and surfix
+Thread-Topic: [PATCH V6 2/3] perf tools: parse the pmu event prefix and
+ surfix
+Thread-Index: AQHPzfQJWPcS38JCSkWkq/xSnz0u7JwAHAwAgBz8gnA=
+Date: Thu, 2 Oct 2014 17:33:07 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F07701604EBA@SHSMSX103.ccr.corp.intel.com>
+References: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
+ <1410462539-5468-3-git-send-email-kan.liang@intel.com>
+ <20140914132312.GA1731@krava.redhat.com>
+In-Reply-To: <20140914132312.GA1731@krava.redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 05:25:01PM +0200, Nicolas Dichtel wrote:
-> +static inline unsigned int proc_pde_name_hash(const unsigned char *name,
-> +					      const unsigned int len)
-> +{
-> +	return full_name_hash(name, len) & PROC_PDE_HASH_MASK;
-> +}
 
-PDE already stands for "proc dir entry" :^)
 
-	Alexey
+> >
+> > +static int
+> > +comp_pmu(const void *p1, const void *p2) {
+> > +	struct perf_pmu_event_symbol *pmu1 =
+> > +			(struct perf_pmu_event_symbol *) p1;
+> > +	struct perf_pmu_event_symbol *pmu2 =
+> > +			(struct perf_pmu_event_symbol *) p2;
+> 
+> please keep it on one line, like:
+> 	const struct perf_pmu_event_symbol *pmu1 = p1;
+> 	const struct perf_pmu_event_symbol *pmu2 = p2;
+> 
+
+
+Removing (struct perf_pmu_event_symbol *) will cause compiler error as below.
+
+util/parse-events.c:877:39: error: initialization discards âconstâ qualifier from pointer target type [-Werror]
+  struct perf_pmu_event_symbol *pmu1 = p1;
+
+If we keep (struct perf_pmu_event_symbol *), we may not keep it on one line. The line will over 80 characters. There will be error from checkpatch.pl.
+
+
+> > +	perf_pmu_events_list =
+> > +		malloc(sizeof(struct perf_pmu_event_symbol) * len);
+> 
+> please keep above on one line
+
+If so, the line will over 80 characters. There will be error from checkpatch.pl.
+
+Kan
+
+
