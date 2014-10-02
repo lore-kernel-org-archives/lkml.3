@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaJBN2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:28:55 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:65143 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbaJBN2x (ORCPT
+	id S1753031AbaJBN3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:29:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47321 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331AbaJBN24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:28:53 -0400
-Message-ID: <542D546C.8030205@gmail.com>
-Date: Thu, 02 Oct 2014 21:34:36 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 09:28:56 -0400
+Message-ID: <542D5314.3050701@codeaurora.org>
+Date: Thu, 02 Oct 2014 16:28:52 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: daniel.lezcano@linaro.org, tglx@linutronix.de
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "richard@nod.at >> Richard Weinberger" <richard@nod.at>
-Subject: [PATCH] drivers/clocksource/Kconfig: Let SH_TIMER_CMT depend on HAS_IOMEM
-Content-Type: text/plain; charset=utf-8
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
+References: <1412029248-22454-1-git-send-email-richard@nod.at> <1412029248-22454-4-git-send-email-richard@nod.at>
+In-Reply-To: <1412029248-22454-4-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SH_TIMER_CMT will use IO memory features which needs HAS_IOMEM, so need
-depend on it. The related error (with allmodconfig under um):
+Hi Richard
 
-    CC      drivers/clocksource/sh_cmt.o
-  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory':
-  drivers/clocksource/sh_cmt.c:920:2: error: implicit declaration of function 'ioremap_nocache' [-Werror=implicit-function-declaration]
-    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
-    ^
-  drivers/clocksource/sh_cmt.c:920:15: warning: assignment makes pointer from integer without a cast [enabled by default]
-    cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
-                 ^
-  drivers/clocksource/sh_cmt.c: In function 'sh_cmt_setup':
-  drivers/clocksource/sh_cmt.c:1034:2: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
-    iounmap(cmt->mapbase);
-    ^
+On 9/30/2014 1:20 AM, Richard Weinberger wrote:
+> Fastmap can miss a PEB if it is in the protection queue
+> and not jet in the used tree.
+> Treat every protected PEB as used.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/mtd/ubi/fastmap.c | 13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+> index 2b0d8d6..2853a69 100644
+> --- a/drivers/mtd/ubi/fastmap.c
+> +++ b/drivers/mtd/ubi/fastmap.c
+> @@ -1195,6 +1195,19 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
+>   		fm_pos += sizeof(*fec);
+>   		ubi_assert(fm_pos <= ubi->fm_size);
+>   	}
+> +
+> +	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
+> +		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/clocksource/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+why not list_for_each_entry_safe?
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 82a2ebe..ee8aeeb 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -172,7 +172,7 @@ config SYS_SUPPORTS_EM_STI
- 
- config SH_TIMER_CMT
- 	bool "Renesas CMT timer driver" if COMPILE_TEST
--	depends on GENERIC_CLOCKEVENTS
-+	depends on GENERIC_CLOCKEVENTS && HAS_IOMEM
- 	default SYS_SUPPORTS_SH_CMT
- 	help
- 	  This enables build of a clocksource and clockevent driver for
+> +			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+> +
+> +			fec->pnum = cpu_to_be32(wl_e->pnum);
+> +			fec->ec = cpu_to_be32(wl_e->ec);
+> +
+> +			used_peb_count++;
+> +			fm_pos += sizeof(*fec);
+> +			ubi_assert(fm_pos <= ubi->fm_size);
+
+Is fm_size ok with this addition or does it needs updating as well?
+
+> +		}
+> +	}
+>   	fmh->used_peb_count = cpu_to_be32(used_peb_count);
+>
+>   	for (node = rb_first(&ubi->scrub); node; node = rb_next(node)) {
+>
+
+Thanks
+Tanya Brokhman
 -- 
-1.9.3
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
