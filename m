@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaJBLUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:20:02 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40492 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaJBLUA (ORCPT
+	id S1752019AbaJBLUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:20:45 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58475 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799AbaJBLUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:20:00 -0400
-Date: Thu, 2 Oct 2014 12:19:51 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Pinski <apinski@cavium.com>,
-        "pinskia@gmail.com" <pinskia@gmail.com>
-Subject: Re: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit
- ABI syscalls to avoid confusion of not splitting the registers
-Message-ID: <20141002111949.GC32147@e104818-lin.cambridge.arm.com>
-References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
- <3318813.yqP9pCQtAB@wuerfel>
- <20141001124226.GI12702@e104818-lin.cambridge.arm.com>
- <3372851.lJtjj0EtDO@wuerfel>
+	Thu, 2 Oct 2014 07:20:43 -0400
+Date: Thu, 2 Oct 2014 12:20:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: atull@opensource.altera.com
+Cc: linux@roeck-us.net, jdelvare@suse.de, lm-sensors@lm-sensors.org,
+        lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Message-ID: <20141002112011.GS4273@sirena.org.uk>
+References: <1412190349-16343-1-git-send-email-atull@opensource.altera.com>
+ <1412190349-16343-4-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+sObS8/rhx1YpqEF"
 Content-Disposition: inline
-In-Reply-To: <3372851.lJtjj0EtDO@wuerfel>
-Thread-Topic: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit
- ABI syscalls to avoid confusion of not splitting the registers
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
+In-Reply-To: <1412190349-16343-4-git-send-email-atull@opensource.altera.com>
+X-Cookie: So you're back... about time...
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 3/4] pmbus: add regulator support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 03:00:54PM +0100, Arnd Bergmann wrote:
-> On Wednesday 01 October 2014 13:42:27 Catalin Marinas wrote:
-> > On Thu, Sep 04, 2014 at 11:11:04AM +0100, Arnd Bergmann wrote:
-> > > On Wednesday 03 September 2014 14:19:02 Andrew Pinski wrote:
-> > > > + * For 32bit abis where 64bit can be passed via one
-> > > > + * register, use the same naming as the 64bit ones
-> > > > + * as they will only have a 64 bit off_t.
-> > > >   */
-> > > > -#if __BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)
-> > > > +#if (__BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)) || \
-> > > > +       defined(__ARCH_WANT_64BIT_SYSCALLS)
-> > > 
-> > > I'm not sure if __ARCH_WANT_64BIT_SYSCALLS is the best name for
-> > > this, since it's really only about off_t. It took me a while
-> > > to understand what you are doing here.
-> > 
-> > I'm not sure I fully get it yet. So with this change, we avoid using
-> > syscall numbers like __NR_ftruncate64 in favour of __NR_ftruncate. Why?
-> > (maybe there's a valid reason, just not getting it).
-> 
-> glibc depends on the name to decide which calling conventions it
-> uses. I assume this is the same on IPL32 ARM.
-> 
-> The general rule is that on a 32-bit architecture, __NR_ftruncate refers
-> to the system call that takes a 32-bit off_t argument, while __NR_ftruncate64
-> refers to the syscall that takes a 64-bit loff_t.
-> 
-> I would assume that the new ABI does not actually allow using 32-bit off_t
-> in applications (that would be silly) and defaults to using 64-bit offsets,
-> but it still needs to generate the right system calls.
 
-OK, so since ILP32 would have a 64-bit off_t, we want to use
-__NR_ftruncate and sys_ftruncate with the off_t argument (rather than
-loff_t).
+--+sObS8/rhx1YpqEF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Either way, ILP32 would still end up calling sys_ftruncate64() (rather
-> > than the native sys_ftruncate()).
-> 
-> sys_ftruncate64 does not exist in 64-bit kernels, it can either call
-> compat_sys_ftruncate64_wrapper or sys_ftruncate. I'd assume it would
-> call the latter and pass a single 64-bit register, but that is another
-> matter.
+On Wed, Oct 01, 2014 at 02:05:49PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+>=20
+> Add support for simple on/off control of each channel.
 
-I think I get it now. Just for the record, we define __NR_ftruncate to
-__NR3264_ftruncate. When we build the syscall table as per patch 21/24,
-given that the kernel is built with __LP64__, we get the following
-macros for the syscall function name:
+This is basically fine but the regulator API has moved on a bit with the
+DT handling over the time you've been working on this.
 
-#define __SC_3264(_nr, _32, _64) __SYSCALL(_nr, _64)
-#define __SC_COMP_3264(_nr, _32, _64, _comp) __SC_3264(_nr, _32, _64)
-...
-__SC_COMP_3264(__NR3264_ftruncate, sys_ftruncate64, sys_ftruncate, \
-	       compat_sys_ftruncate64)
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+>=20
+> v2: Remove '#include <linux/regulator/machine.h>'
+>     Only one regulator per pmbus device
 
-Which would result in using sys_ftruncate rather than sys_ftruncate64.
+Put this after the --- as covered in SubmittingPatches.
 
-I agree, maybe the name could be __ARCH_WANT_64BIT_OFF_T as that's the
-only reason for these definitions.
+> +static int _pmbus_regulator_on_off(struct regulator_dev *rdev, bool enab=
+le)
+> +{
+> +	struct device *dev =3D rdev_get_dev(rdev);
+> +	struct i2c_client *client =3D to_i2c_client(dev->parent);
+> +	u8 page =3D rdev_get_id(rdev);
+> +
+> +	return pmbus_update_byte_data(client, page, PMBUS_OPERATION,
+> +				      PB_OPERATION_CONTROL_ON,
+> +				      enable ? PB_OPERATION_CONTROL_ON : 0);
+> +}
+> +
+> +static int pmbus_regulator_enable(struct regulator_dev *rdev)
+> +{
+> +	return _pmbus_regulator_on_off(rdev, 1);
+> +}
 
--- 
-Catalin
+I'm not sure factoring out the code actually won much here.
+
+> +	np_regulators =3D of_get_child_by_name(dev->of_node, "regulators");
+> +	if (!np_regulators)
+> +		return 0;
+> +
+> +	ret =3D of_regulator_match(dev, np_regulators, info->reg_matches,
+> +				 info->num_regulators);
+> +	of_node_put(np_regulators);
+
+We now have helpers in the regulator core for this - set of_match and
+regulators_node in the regulator descriptor and the core will resolve
+this stuff for you and...
+
+> +		if (pdata && pdata->reg_init_data) {
+> +			config.init_data =3D &pdata->reg_init_data[i];
+> +		} else {
+> +			config.init_data =3D info->reg_matches[i].init_data;
+> +			config.of_node =3D info->reg_matches[i].of_node;
+> +		}
+
+=2E..you can just drop the else case (and check for reg_init_data) here.
+
+--+sObS8/rhx1YpqEF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJULTTqAAoJECTWi3JdVIfQhnUH/AwUcrdQDUulP3HyBFlmY8cW
+tUkKjnLlRHGaCcCZMBkBMxDCPWXlGr+e266u5u9u1t/u/TfWfxS8T69H7a1XnCg7
+4bEyRMpKgcG5S25xRX3ZicOWpQrELpGiHTf0FCiNnrpbIrxsK3yHiSt6YKRki1pf
+XRTcCak9jPyQFHg9NjL18YHJknEjT1qNZYk25B4DliLq9viIS4WNzP90GdEBkgPX
+zp2lLw0hMmz4MH9TQCOyW1wdulIdyoMgLmdKnYEFesy9ZJJnpM2eV/ZjXu/RniNg
+rLJuBRiFEHxc+Xhdg0qA6O4yxm/KqltVDaEZSUBrjHBYYmJT+BnJxWoIxPi3sM8=
+=s8xW
+-----END PGP SIGNATURE-----
+
+--+sObS8/rhx1YpqEF--
