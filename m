@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011AbaJBQb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:31:57 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40933 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751056AbaJBQbz (ORCPT
+	id S1752100AbaJBQdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:33:33 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:56304 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751462AbaJBQdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:31:55 -0400
-X-Sasl-enc: vzgi5l5wbTzJKmO/ScXUIO0sRQ4q61aJewnrFAXYt2za 1412267510
-Date: Thu, 2 Oct 2014 09:31:49 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20141002163149.GA1056@kroah.com>
-References: <20140930180416.5ae64587@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930180416.5ae64587@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 2 Oct 2014 12:33:31 -0400
+Message-ID: <1412267608.19413.68.camel@x220>
+Subject: Re: cpufreq v3.17-rc7 error: "cpufreq: cpufreq_resume: Failed to
+ start governor for policy: f6909a00"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 02 Oct 2014 18:33:28 +0200
+In-Reply-To: <2550705.C9YWxWdtP6@vostro.rjw.lan>
+References: <1412250350.3060.9.camel@x41> <1412250911.3060.13.camel@x41>
+	 <2550705.C9YWxWdtP6@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Oct 2014 16:33:29.0017 (UTC) FILETIME=[98E06A90:01CFDE5E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 06:04:16PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/staging/media/cxd2099/cxd2099.c: In function 'slot_reset':
-> drivers/staging/media/cxd2099/cxd2099.c:537:4: error: expected ';' before 'if'
->     if (ci->ready)
->     ^
-> 
-> Caused by commit 7b86477c0e5b ("staging: media: cxd2099: use
-> usleep_range()").
-> 
-> I have reverted that commit for today.
+On Thu, 2014-10-02 at 18:38 +0200, Rafael J. Wysocki wrote:
+> Can you please try linux-pm.git/linux-next?  There's a commit from Viresh in
+> there with a chance to fix this and which I'm going to push to Linus shortly?
 
-Now fixed, thanks.
+Do you mean b1b12babe3b72cfb08b875245e5a5d7c2747c772 ("cpufreq: update
+'cpufreq_suspended' after stopping governors")? Does that require
+anything else from that tree? It doesn't matter much, but if possible I
+would prefer to add as few patches as I can get away with.
 
-greg k-h
+
+Paul Bolle
+
