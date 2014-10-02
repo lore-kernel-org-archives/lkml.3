@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaJBHSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:18:24 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:64771 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaJBHSW (ORCPT
+	id S1751898AbaJBHUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:20:25 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:56663 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaJBHUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:18:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <5426B289.7070802@gmail.com>
-References: <1411499141-26551-1-git-send-email-tomasz.figa@gmail.com>
-	<CACRpkdZCMD4x+wrvTOrrWK-Dy4_rg6bD2xUAA4jtTGTbT1uDag@mail.gmail.com>
-	<5423C904.60708@gmail.com>
-	<5426B289.7070802@gmail.com>
-Date: Thu, 2 Oct 2014 09:18:21 +0200
-Message-ID: <CACRpkdY4yXZ4NeCnZkdeBSto6oX2q_svxkr6Six29aKwPm-xjA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] pinctrl: samsung: Data structure clean-up
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Oct 2014 03:20:24 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpio: pch: Build context save/restore only for PM
+Date: Thu,  2 Oct 2014 09:20:21 +0200
+Message-Id: <1412234421-11065-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 27, 2014 at 2:50 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
-> On 25.09.2014 09:49, Tomasz Figa wrote:
->> On 25.09.2014 09:47, Linus Walleij wrote:
->>> On Tue, Sep 23, 2014 at 9:05 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->>>
->>>> This series intends to clean up data structures used by pinctrl-samsung driver.
->>>> More specifically, it separates initial compile time constants from data used
->>>> at runtime, allowing unused variant data to be dropped and selected structures
->>>> constified to improve safety.
->>>
->>> I like the patch set, tried to apply it but patch 3/5 failed to apply to the
->>> devel branch for pinctrl.
->>>
->>> Can you rebase this on my "devel" branch, include Marek's Tested-by
->>> tag and resend, and I'll take it for v3.18.
->>
->> Sure. Will do that today evening. Probably clashed with some other
->> changes queued in the meantime.
->
-> Uhm. I went back home and forgot about this series until now. Sorry.
->
-> I have rebased it on your "devel" branch, although it seems like this
-> branch is missing [1], which in turn seems to be already present in your
-> "for-next" branch and is going to cause a merge conflict with this
-> series. Should I still proceed with posting the series based on "devel"?
->
-> [1] f6a8249f9e55d pinctrl: exynos: Lock GPIOs as interrupts when used as
-> EINTs
+From: Thierry Reding <treding@nvidia.com>
 
-Bah I must have accidentally applied the patch to my for-next
-branch instead of devel, and then wiped it out of existence when
-I later reset the for-next branch to devel.
+The pch_gpio_save_reg_conf() and pch_gpio_restore_reg_conf() functions
+are only used in pch_gpio_suspend() and pch_gpio_resume(), respectively.
+Since the latter are only built if PM is enabled, make the former build
+under the same conditions.
 
-Please resend all 5 rebased on devel.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/gpio/gpio-pch.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Yours,
-Linus Walleij
+diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+index e0ac549dccb5..2d9a950ca2d4 100644
+--- a/drivers/gpio/gpio-pch.c
++++ b/drivers/gpio/gpio-pch.c
+@@ -171,6 +171,7 @@ static int pch_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
+ /*
+  * Save register configuration and disable interrupts.
+  */
+@@ -206,6 +207,7 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
+ 		iowrite32(chip->pch_gpio_reg.gpio_use_sel_reg,
+ 			  &chip->reg->gpio_use_sel);
+ }
++#endif
+ 
+ static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
+ {
+-- 
+2.1.0
+
