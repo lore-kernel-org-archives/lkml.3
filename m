@@ -1,550 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaJBOzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:55:33 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:53359 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaJBOzb (ORCPT
+	id S1754242AbaJBO4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:56:04 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:63799 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446AbaJBO4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:55:31 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: shawn.guo@freescale.com, kernel@pengutronix.de
-Cc: b35083@freescale.com, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stefan@agner.ch
-Subject: [PATCH 2/2] ARM: dts: vf500-colibri: add Colibri VF50 support
-Date: Thu,  2 Oct 2014 16:55:24 +0200
-Message-Id: <1412261724-11073-2-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1412261724-11073-1-git-send-email-stefan@agner.ch>
-References: <1412261724-11073-1-git-send-email-stefan@agner.ch>
+	Thu, 2 Oct 2014 10:56:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
+Date: Thu, 02 Oct 2014 16:55:56 +0200
+Message-ID: <2072038.Vir4futZot@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141002143809.GQ1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <3986527.L7rDZAb4g5@wuerfel> <20141002143809.GQ1786@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y8XxXbOxyYmhiBo1pujFbc/ctBXaoc4vRh+A1k3YoDV
+ mZbhYw7svkzRhmBtODEKH0uttFe3/Xp5izoXblNyENdoFDxe0N
+ HERekjK4NbZkgGiEt9OjeeHd20aJ86E9p47uSp7fYzMVJpHgOa
+ Siwr7SHuIX1x+GcFToSRxchNFjVADxg4cxHLa2WuSraQrgMRoY
+ afAV7BpEenUpusRXdUaR3UJZUvs8e13owcItsjFU2cG/kEMBJP
+ UqDHGRbA/hsi7GvYyah0ogAUcUfYGBGjyfcw7bXm8dN8sjEoTN
+ JrMgnjM5ePmBd0u3LIfYWlSb/WuxxmZw1qbfmDM8gvW6A7Pyig
+ qA75Wd+ED/UwDr+0nhyA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Colibri VF50 device tree files vf500-colibri.dtsi and
-vf500-colibri-eval-v3.dts, in line with the Colibri VF61 device tree
-files. However, to minimize dupplication we also add vf-colibri.dtsi
-and vf-colibri-eval-v3.dtsi which contain the common device tree
-nodes.
+On Thursday 02 October 2014 17:38:09 Mika Westerberg wrote:
+> On Thu, Oct 02, 2014 at 04:29:03PM +0200, Arnd Bergmann wrote:
+> > Is this a limitation in the way that the AML syntax and compiler works,
+> > or is this a decision you made specifically for the _DSD syntax and that
+> > could still be changed if there is an overwhelming interest?
+> 
+> It is only limitation of the _DSD device property UUID specification and
+> our implementation. It can be changed if needed.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
-This patchset adds quite some files in order to minimize the amount
-of information duplication. Of course, this comes with the cost of
-higher complexity. I created a drawing which mades it much easier
-to understand:
-https://cloud.agner.ch/public.php?service=files&t=564b091a67ecdab64caad42040b13551
-IMHO, this is still quite straightforward...
+Ok, I see. I think it would be nice if this could be changed in order
+to avoid having to copy the #xxx-cells and xxx-names properties from
+DT, by providing a more natural syntax.
 
- arch/arm/boot/dts/Makefile                  |   1 +
- arch/arm/boot/dts/vf-colibri-eval-v3.dtsi   |  54 ++++++++++
- arch/arm/boot/dts/vf-colibri.dtsi           | 146 ++++++++++++++++++++++++++++
- arch/arm/boot/dts/vf500-colibri-eval-v3.dts |  17 ++++
- arch/arm/boot/dts/vf500-colibri.dtsi        |  20 ++++
- arch/arm/boot/dts/vf610-colibri-eval-v3.dts |  47 +--------
- arch/arm/boot/dts/vf610-colibri.dtsi        | 139 +-------------------------
- 7 files changed, 242 insertions(+), 182 deletions(-)
- create mode 100644 arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
- create mode 100644 arch/arm/boot/dts/vf-colibri.dtsi
- create mode 100644 arch/arm/boot/dts/vf500-colibri-eval-v3.dts
- create mode 100644 arch/arm/boot/dts/vf500-colibri.dtsi
+I'm not blaming you though if you don't want to go through the pain of
+updating the spec though, and I won't complain loudly if you don't.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b51d485..b13c3d1 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -245,6 +245,7 @@ dtb-$(CONFIG_ARCH_MXC) += \
- 	imx6q-tx6q-1110.dtb \
- 	imx6sl-evk.dtb \
- 	imx6sx-sdb.dtb \
-+	vf500-colibri-eval-v3.dtb \
- 	vf610-colibri-eval-v3.dtb \
- 	vf610-cosmic.dtb \
- 	vf610-twr.dtb
-diff --git a/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-new file mode 100644
-index 0000000..80e8fbc
---- /dev/null
-+++ b/arch/arm/boot/dts/vf-colibri-eval-v3.dtsi
-@@ -0,0 +1,54 @@
-+/*
-+ * Copyright 2014 Toradex AG
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+/ {
-+	chosen {
-+		bootargs = "console=ttyLP0,115200";
-+	};
-+};
-+
-+&bl {
-+	brightness-levels = <0 4 8 16 32 64 128 255>;
-+	default-brightness-level = <6>;
-+	status  = "okay";
-+};
-+
-+&esdhc1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_esdhc1>;
-+	bus-width = <4>;
-+	status = "okay";
-+};
-+
-+&fec1 {
-+	phy-mode = "rmii";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_fec1>;
-+	status = "okay";
-+};
-+
-+&pwm0 {
-+	status = "okay";
-+};
-+
-+&pwm1 {
-+	status = "okay";
-+};
-+
-+&uart0 {
-+	status = "okay";
-+};
-+
-+&uart1 {
-+	status = "okay";
-+};
-+
-+&uart2 {
-+	status = "okay";
-+};
-\ No newline at end of file
-diff --git a/arch/arm/boot/dts/vf-colibri.dtsi b/arch/arm/boot/dts/vf-colibri.dtsi
-new file mode 100644
-index 0000000..304383d
---- /dev/null
-+++ b/arch/arm/boot/dts/vf-colibri.dtsi
-@@ -0,0 +1,146 @@
-+/*
-+ * Copyright 2014 Toradex AG
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+/ {
-+	clocks {
-+		enet_ext {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <50000000>;
-+		};
-+	};
-+
-+	bl: backlight {
-+		compatible = "pwm-backlight";
-+		pwms = <&pwm0 0 5000000 0>;
-+		status = "disabled";
-+	};
-+};
-+
-+&adc0 {
-+	status = "okay";
-+};
-+
-+&adc1 {
-+	status = "okay";
-+};
-+
-+&esdhc1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_esdhc1>;
-+	bus-width = <4>;
-+};
-+
-+&fec1 {
-+	phy-mode = "rmii";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_fec1>;
-+};
-+
-+&pwm0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_pwm0>;
-+};
-+
-+&pwm1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_pwm1>;
-+};
-+
-+&uart0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_uart0>;
-+};
-+
-+&uart1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_uart1>;
-+};
-+
-+&uart2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_uart2>;
-+};
-+
-+&usbdev0 {
-+	disable-over-current;
-+	status = "okay";
-+};
-+
-+&usbh1 {
-+	disable-over-current;
-+	status = "okay";
-+};
-+
-+&iomuxc {
-+	vf610-colibri {
-+		pinctrl_esdhc1: esdhc1grp {
-+			fsl,pins = <
-+				VF610_PAD_PTA24__ESDHC1_CLK	0x31ef
-+				VF610_PAD_PTA25__ESDHC1_CMD	0x31ef
-+				VF610_PAD_PTA26__ESDHC1_DAT0	0x31ef
-+				VF610_PAD_PTA27__ESDHC1_DAT1	0x31ef
-+				VF610_PAD_PTA28__ESDHC1_DATA2	0x31ef
-+				VF610_PAD_PTA29__ESDHC1_DAT3	0x31ef
-+				VF610_PAD_PTB20__GPIO_42	0x219d
-+			>;
-+		};
-+
-+		pinctrl_fec1: fec1grp {
-+			fsl,pins = <
-+				VF610_PAD_PTC9__ENET_RMII1_MDC		0x30d2
-+				VF610_PAD_PTC10__ENET_RMII1_MDIO	0x30d3
-+				VF610_PAD_PTC11__ENET_RMII1_CRS		0x30d1
-+				VF610_PAD_PTC12__ENET_RMII_RXD1		0x30d1
-+				VF610_PAD_PTC13__ENET_RMII1_RXD0	0x30d1
-+				VF610_PAD_PTC14__ENET_RMII1_RXER	0x30d1
-+				VF610_PAD_PTC15__ENET_RMII1_TXD1	0x30d2
-+				VF610_PAD_PTC16__ENET_RMII1_TXD0	0x30d2
-+				VF610_PAD_PTC17__ENET_RMII1_TXEN	0x30d2
-+			>;
-+		};
-+
-+		pinctrl_pwm0: pwm0grp {
-+			fsl,pins = <
-+				VF610_PAD_PTB0__FTM0_CH0		0x1182
-+				VF610_PAD_PTB1__FTM0_CH1		0x1182
-+			>;
-+		};
-+
-+		pinctrl_pwm1: pwm1grp {
-+			fsl,pins = <
-+				VF610_PAD_PTB8__FTM1_CH0		0x1182
-+				VF610_PAD_PTB9__FTM1_CH1		0x1182
-+			>;
-+		};
-+
-+		pinctrl_uart0: uart0grp {
-+			fsl,pins = <
-+				VF610_PAD_PTB10__UART0_TX		0x21a2
-+				VF610_PAD_PTB11__UART0_RX		0x21a1
-+			>;
-+		};
-+
-+		pinctrl_uart1: uart1grp {
-+			fsl,pins = <
-+				VF610_PAD_PTB4__UART1_TX		0x21a2
-+				VF610_PAD_PTB5__UART1_RX		0x21a1
-+			>;
-+		};
-+
-+		pinctrl_uart2: uart2grp {
-+			fsl,pins = <
-+				VF610_PAD_PTD0__UART2_TX		0x21a2
-+				VF610_PAD_PTD1__UART2_RX		0x21a1
-+				VF610_PAD_PTD2__UART2_RTS		0x21a2
-+				VF610_PAD_PTD3__UART2_CTS		0x21a1
-+			>;
-+		};
-+	};
-+};
-\ No newline at end of file
-diff --git a/arch/arm/boot/dts/vf500-colibri-eval-v3.dts b/arch/arm/boot/dts/vf500-colibri-eval-v3.dts
-new file mode 100644
-index 0000000..7fc782c
---- /dev/null
-+++ b/arch/arm/boot/dts/vf500-colibri-eval-v3.dts
-@@ -0,0 +1,17 @@
-+/*
-+ * Copyright 2014 Toradex AG
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+/dts-v1/;
-+#include "vf500-colibri.dtsi"
-+#include "vf-colibri-eval-v3.dtsi"
-+
-+/ {
-+	model = "Toradex Colibri VF50 on Colibri Evaluation Board";
-+	compatible = "toradex,vf500-colibri_vf50-on-eval", "toradex,vf500-colibri_vf50", "fsl,vf500";
-+};
-diff --git a/arch/arm/boot/dts/vf500-colibri.dtsi b/arch/arm/boot/dts/vf500-colibri.dtsi
-new file mode 100644
-index 0000000..cee34a3
---- /dev/null
-+++ b/arch/arm/boot/dts/vf500-colibri.dtsi
-@@ -0,0 +1,20 @@
-+/*
-+ * Copyright 2014 Toradex AG
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include "vf500.dtsi"
-+#include "vf-colibri.dtsi"
-+
-+/ {
-+	model = "Toradex Colibri VF50 COM";
-+	compatible = "toradex,vf610-colibri_vf50", "fsl,vf500";
-+
-+	memory {
-+		reg = <0x80000000 0x8000000>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-index 711cf82..10ebe99 100644
---- a/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-+++ b/arch/arm/boot/dts/vf610-colibri-eval-v3.dts
-@@ -9,52 +9,9 @@
- 
- /dts-v1/;
- #include "vf610-colibri.dtsi"
-+#include "vf-colibri-eval-v3.dtsi"
- 
- / {
- 	model = "Toradex Colibri VF61 on Colibri Evaluation Board";
- 	compatible = "toradex,vf610-colibri_vf61-on-eval", "toradex,vf610-colibri_vf61", "fsl,vf610";
--
--	chosen {
--		bootargs = "console=ttyLP0,115200";
--	};
--};
--
--&bl {
--	brightness-levels = <0 4 8 16 32 64 128 255>;
--	default-brightness-level = <6>;
--	status  = "okay";
--};
--
--&esdhc1 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_esdhc1>;
--	bus-width = <4>;
--	status = "okay";
--};
--
--&fec1 {
--	phy-mode = "rmii";
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_fec1>;
--	status = "okay";
--};
--
--&pwm0 {
--	status = "okay";
--};
--
--&pwm1 {
--	status = "okay";
--};
--
--&uart0 {
--	status = "okay";
--};
--
--&uart1 {
--	status = "okay";
--};
--
--&uart2 {
--	status = "okay";
--};
-+};
-\ No newline at end of file
-diff --git a/arch/arm/boot/dts/vf610-colibri.dtsi b/arch/arm/boot/dts/vf610-colibri.dtsi
-index eded7be..4a9ceff 100644
---- a/arch/arm/boot/dts/vf610-colibri.dtsi
-+++ b/arch/arm/boot/dts/vf610-colibri.dtsi
-@@ -8,6 +8,7 @@
-  */
- 
- #include "vf610.dtsi"
-+#include "vf-colibri.dtsi"
- 
- / {
- 	model = "Toradex Colibri VF61 COM";
-@@ -16,145 +17,9 @@
- 	memory {
- 		reg = <0x80000000 0x10000000>;
- 	};
--
--	clocks {
--		enet_ext {
--			compatible = "fixed-clock";
--			#clock-cells = <0>;
--			clock-frequency = <50000000>;
--		};
--	};
--
--	bl: backlight {
--		compatible = "pwm-backlight";
--		pwms = <&pwm0 0 5000000 0>;
--		status = "disabled";
--	};
--};
--
--&adc0 {
--	status = "okay";
--};
--
--&adc1 {
--	status = "okay";
--};
--
--&esdhc1 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_esdhc1>;
--	bus-width = <4>;
--};
--
--&fec1 {
--	phy-mode = "rmii";
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_fec1>;
- };
- 
- &L2 {
- 	arm,data-latency = <2 1 2>;
- 	arm,tag-latency = <3 2 3>;
--};
--
--&pwm0 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_pwm0>;
--};
--
--&pwm1 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_pwm1>;
--};
--
--&uart0 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_uart0>;
--};
--
--&uart1 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_uart1>;
--};
--
--&uart2 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_uart2>;
--};
--
--&usbdev0 {
--	disable-over-current;
--	status = "okay";
--};
--
--&usbh1 {
--	disable-over-current;
--	status = "okay";
--};
--
--&iomuxc {
--	vf610-colibri {
--		pinctrl_esdhc1: esdhc1grp {
--			fsl,pins = <
--				VF610_PAD_PTA24__ESDHC1_CLK	0x31ef
--				VF610_PAD_PTA25__ESDHC1_CMD	0x31ef
--				VF610_PAD_PTA26__ESDHC1_DAT0	0x31ef
--				VF610_PAD_PTA27__ESDHC1_DAT1	0x31ef
--				VF610_PAD_PTA28__ESDHC1_DATA2	0x31ef
--				VF610_PAD_PTA29__ESDHC1_DAT3	0x31ef
--				VF610_PAD_PTB20__GPIO_42	0x219d
--			>;
--		};
--
--		pinctrl_fec1: fec1grp {
--			fsl,pins = <
--				VF610_PAD_PTC9__ENET_RMII1_MDC		0x30d2
--				VF610_PAD_PTC10__ENET_RMII1_MDIO	0x30d3
--				VF610_PAD_PTC11__ENET_RMII1_CRS		0x30d1
--				VF610_PAD_PTC12__ENET_RMII_RXD1		0x30d1
--				VF610_PAD_PTC13__ENET_RMII1_RXD0	0x30d1
--				VF610_PAD_PTC14__ENET_RMII1_RXER	0x30d1
--				VF610_PAD_PTC15__ENET_RMII1_TXD1	0x30d2
--				VF610_PAD_PTC16__ENET_RMII1_TXD0	0x30d2
--				VF610_PAD_PTC17__ENET_RMII1_TXEN	0x30d2
--			>;
--		};
--
--		pinctrl_pwm0: pwm0grp {
--			fsl,pins = <
--				VF610_PAD_PTB0__FTM0_CH0		0x1182
--				VF610_PAD_PTB1__FTM0_CH1		0x1182
--			>;
--		};
--
--		pinctrl_pwm1: pwm1grp {
--			fsl,pins = <
--				VF610_PAD_PTB8__FTM1_CH0		0x1182
--				VF610_PAD_PTB9__FTM1_CH1		0x1182
--			>;
--		};
--
--		pinctrl_uart0: uart0grp {
--			fsl,pins = <
--				VF610_PAD_PTB10__UART0_TX		0x21a2
--				VF610_PAD_PTB11__UART0_RX		0x21a1
--			>;
--		};
--
--		pinctrl_uart1: uart1grp {
--			fsl,pins = <
--				VF610_PAD_PTB4__UART1_TX		0x21a2
--				VF610_PAD_PTB5__UART1_RX		0x21a1
--			>;
--		};
--
--		pinctrl_uart2: uart2grp {
--			fsl,pins = <
--				VF610_PAD_PTD0__UART2_TX		0x21a2
--				VF610_PAD_PTD1__UART2_RX		0x21a1
--				VF610_PAD_PTD2__UART2_RTS		0x21a2
--				VF610_PAD_PTD3__UART2_CTS		0x21a1
--			>;
--		};
--	};
--};
-+};
-\ No newline at end of file
--- 
-2.1.2
+Maybe someone else has an opinion on the matter.
 
+	Arnd
