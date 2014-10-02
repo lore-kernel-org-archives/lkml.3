@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbaJBNtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:49:14 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:52164 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaJBNtI (ORCPT
+	id S1754348AbaJBNtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:49:12 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47893 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751815AbaJBNtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:49:08 -0400
-From: Markos Chandras <markos.chandras@imgtec.com>
-To: <linux-mips@linux-mips.org>
-CC: Markos Chandras <markos.chandras@imgtec.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, Jayachandran C <jchandra@broadcom.com>,
-        <netdev@vger.kernel.org>
-Subject: [PATCH] staging: xlr_net: Replace obsolete nlm_cop2_{enable,restore} macros
-Date: Thu, 2 Oct 2014 14:48:49 +0100
-Message-ID: <1412257729-12351-1-git-send-email-markos.chandras@imgtec.com>
-X-Mailer: git-send-email 2.1.1
+	Thu, 2 Oct 2014 09:49:09 -0400
+Message-ID: <542D57D0.4030904@hurleysoftware.com>
+Date: Thu, 02 Oct 2014 09:49:04 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.65]
+To: Peter Zijlstra <peterz@infradead.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+CC: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        oleg@redhat.com
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 64f6ebe63914 ("MIPS: Netlogic: rename nlm_cop2_save/restore")
-replaced nlm_cop2_enable with nlm_cop2_enable_irqsave and
-nlm_cop2_restore with nlm_cop2_disable_irqrestore but it did not
-update the xlr_net driver to use the new macros resulting into build
-problems like this:
+On 10/02/2014 08:42 AM, Peter Zijlstra wrote:
+> On Thu, Oct 02, 2014 at 02:31:50PM +0200, Peter Zijlstra wrote:
+>> @@ -2086,24 +2086,22 @@ static void rfcomm_kill_listener(void)
+>>  
+>>  static int rfcomm_run(void *unused)
+>>  {
+>> +	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+>>  	BT_DBG("");
+>>  
+>>  	set_user_nice(current, -10);
+>>  
+>>  	rfcomm_add_listener(BDADDR_ANY);
+>>  
+>> -	while (1) {
+>> -		set_current_state(TASK_INTERRUPTIBLE);
+>> -
+>> -		if (kthread_should_stop())
+>> -			break;
+>> +	add_wait_queue(&rfcomm_wq, &wait);
+>> +	while (!kthread_should_stop()) {
+>>  
+>>  		/* Process stuff */
+>>  		rfcomm_process_sessions();
+>>  
+>> -		schedule();
+>> +		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+>>  	}
+>> -	__set_current_state(TASK_RUNNING);
+>> +	remove_wait_queue(&rfcomm_wq, &wait);
+>>  
+>>  	rfcomm_kill_listener();
+>>  
+> 
+> Hmm, I think there's a problem there. If someone were to do
+> kthread_stop() before wait_woken() we'd not actually stop, because
+> wait_woken() doesn't test KTHREAD_SHOULD_STOP before calling schedule().
 
-drivers/staging/netlogic/xlr_net.c: In function 'send_to_rfr_fifo':
-drivers/staging/netlogic/xlr_net.c:128:3: error: implicit declaration of
-function 'nlm_cop2_enable' [-Werror=implicit-function-declaration]
-mflags = nlm_cop2_enable();
-^
-drivers/staging/netlogic/xlr_net.c:130:3: error: implicit declaration of
-function 'nlm_cop2_restore' [-Werror=implicit-function-declaration]
-nlm_cop2_restore(mflags);
+Do you mean this situation?
 
-Therefore rename these cases as well
+CPU 0                                    | CPU 1
+                                         |
+rfcomm_run()                             | kthread_stop()
+  ...                                    |
+  if (!test_bit(KTHREAD_SHOULD_STOP))    |
+                                         |   set_bit(KTHREAD_SHOULD_STOP)
+                                         |   wake_up_process()
+    wait_woken()                         |   wait_for_completion()
+      set_current_state(INTERRUPTIBLE)   |
+      if (!WQ_FLAG_WOKEN)                |
+        schedule_timeout()               |
+                                         |
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Jayachandran C <jchandra@broadcom.com>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
----
- drivers/staging/netlogic/xlr_net.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Now both tasks are sleeping forever.
 
-diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
-index 9bf407d6241a..469f75f0f818 100644
---- a/drivers/staging/netlogic/xlr_net.c
-+++ b/drivers/staging/netlogic/xlr_net.c
-@@ -125,9 +125,9 @@ static int send_to_rfr_fifo(struct xlr_net_priv *priv, void *addr)
- 	msg.msg3 = 0;
- 	stnid = priv->nd->rfr_station;
- 	do {
--		mflags = nlm_cop2_enable();
-+		mflags = nlm_cop2_enable_irqsave();
- 		ret = nlm_fmn_send(1, 0, stnid, &msg);
--		nlm_cop2_restore(mflags);
-+		nlm_cop2_disable_irqrestore(mflags);
- 		if (ret == 0)
- 			return 0;
- 	} while (++num_try < 10000);
-@@ -298,9 +298,9 @@ static netdev_tx_t xlr_net_start_xmit(struct sk_buff *skb,
- 	u32 flags;
- 
- 	xlr_make_tx_desc(&msg, virt_to_phys(skb->data), skb);
--	flags = nlm_cop2_enable();
-+	flags = nlm_cop2_enable_irqsave();
- 	ret = nlm_fmn_send(2, 0, priv->nd->tx_stnid, &msg);
--	nlm_cop2_restore(flags);
-+	nlm_cop2_disable_irqrestore(flags);
- 	if (ret)
- 		dev_kfree_skb_any(skb);
- 	return NETDEV_TX_OK;
--- 
-2.1.1
+If yes, then wakeups from signals don't work either, right?
 
+Regards,
+Peter Hurley
