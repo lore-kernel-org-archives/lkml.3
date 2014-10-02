@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaJBAaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 20:30:46 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:55295 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaJBAao (ORCPT
+	id S1752931AbaJBAmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 20:42:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:55505 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798AbaJBAmy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 20:30:44 -0400
-Date: Wed, 1 Oct 2014 18:30:38 -0600
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        iommu@lists.linux-foundation.org, jroedel@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] iommu/vt-d: Keep RMRR mappings around on driver
- unbind
-Message-ID: <20141002003038.GA30672@anatevka.fc.hp.com>
-Reply-To: Jerry.Hoemann@hp.com
-References: <1412074923-6342-1-git-send-email-joro@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412074923-6342-1-git-send-email-joro@8bytes.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 1 Oct 2014 20:42:54 -0400
+Message-ID: <1412210571.19209.80.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH v2 02/17] powerpc/cell: Move data segment faulting code
+ out of cell platform
+From: Michael Neuling <mikey@neuling.org>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
+        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Date: Thu, 02 Oct 2014 10:42:51 +1000
+In-Reply-To: <20141001064757.BFF88140174@ozlabs.org>
+References: <20141001064757.BFF88140174@ozlabs.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 01:02:01PM +0200, Joerg Roedel wrote:
-> Hi,
+On Wed, 2014-10-01 at 16:47 +1000, Michael Ellerman wrote:
+> On Tue, 2014-30-09 at 10:34:51 UTC, Michael Neuling wrote:
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> > 
+> > __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> > required for a particular EA and mm struct.
+> > 
+> > This code is generically useful for other co-processors.  This moves the code
+> > of the cell platform so it can be used by other powerpc code.  It also adds 1TB
+> > segment handling which Cell didn't have.
 > 
-> here is a patch-set to fix an issue recently discovered when
-> the Intel IOMMU is in use with devices that need RMRR
-> mappings.
+> I'm not loving this.
 > 
-> The problem is that the RMRR mappings are destroyed when the
-> device driver is unbound from the device, causing DMAR
-> faults.
-> 
-> To solve this problem a device driver core change is
-> necessary to catch the right point in time for the IOMMU
-> code to destroy any mappings for a device.
-> 
-> With this patch-set the RMRR mappings are only destroyed
-> when the device is actually removed from the system.
-> 
-> Please review.
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> Joerg Roedel (2):
->   driver core: Add BUS_NOTIFY_REMOVED_DEVICE event
->   iommu/vt-d: Only remove domain when device is removed
-> 
->  drivers/base/core.c         |  3 +++
->  drivers/iommu/intel-iommu.c | 11 +----------
->  include/linux/device.h      | 11 ++++++-----
->  3 files changed, 10 insertions(+), 15 deletions(-)
-> 
-> -- 
-> 1.9.1
+> For starters the name "copro_data_segment()" doesn't contain any verbs, and it
+> doesn't tell me what it does.
 
+Ok.
 
-Joerg,
+> If we give it a name that says what it does, we get copro_get_ea_esid_and_vsid().
+> Or something equally ugly.
 
-I tested on HP Gen7 and Gen9 systems for which we experience dmar faults
-when we rmmod a driver whose device had RMRR regions associated with it.
+Ok
 
-We don't see problem when patch set is applied.
+> And then in patch 10 you move the bulk of the logic into calculate_vsid().
 
-Thanks,
+That was intentional on my part.  I want this patch to be clear that
+we're moving this code out of cell.  Then I wanted the optimisations to
+be in a separate patch.  It does mean we touch the code twice in this
+series, but I was hoping it would make it easier to review.  Alas. :-)
 
-Tested-by: Jerry Hoemann <jerry.hoemann@hp.com>
+> So instead can we:
+>  - add a small helper that does the esid calculation, eg. calculate_esid() ?
+>  - factor out the vsid logic into a helper, calculate_vsid() ?
+>  - rework the spu code to use those, dropping __spu_trap_data_seg()
+>  - use the helpers in the cxl code
 
--- 
+OK, I think I can do that.  I might change the name to something better
+in this patch, but I'll leave these cleanups to the later patch 10.
 
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard
-
-3404 E Harmony Rd. MS 36                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-0707
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+Mikey
 
