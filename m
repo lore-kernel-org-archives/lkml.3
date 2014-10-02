@@ -1,350 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaJBEkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 00:40:17 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63221 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaJBEkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 00:40:15 -0400
-From: Amber Thrall <amber.rose.thrall@gmail.com>
-To: jarod@wilsonet.com, m.chehab@samsung.com
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Amber Thrall <amber.rose.thrall@gmail.com>
-Subject: [PATCH] Fixed all coding style issues for drivers/staging/media/lirc/
-Date: Wed,  1 Oct 2014 21:40:02 -0700
-Message-Id: <1412224802-28431-1-git-send-email-amber.rose.thrall@gmail.com>
-X-Mailer: git-send-email 2.1.2
+	id S1752354AbaJBElW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 00:41:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:44987 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857AbaJBElU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 00:41:20 -0400
+Date: Thu, 2 Oct 2014 14:41:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tanmay Inamdar <tinamdar@apm.com>, Feng Kan <fkan@apm.com>
+Subject: linux-next: manual merge of the crypto tree with the pci tree
+Message-ID: <20141002144113.2e1d92a8@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Nb5t_uRT+n03JH575uBFZE0"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed various coding style issues, including strings over 80 characters long and many 
-deprecated printk's have been replaced with proper methods.
+--Sig_/Nb5t_uRT+n03JH575uBFZE0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Amber Thrall <amber.rose.thrall@gmail.com>
----
- drivers/staging/media/lirc/lirc_bt829.c  |  2 +-
- drivers/staging/media/lirc/lirc_imon.c   |  4 +-
- drivers/staging/media/lirc/lirc_sasem.c  |  6 +--
- drivers/staging/media/lirc/lirc_serial.c | 29 ++++++--------
- drivers/staging/media/lirc/lirc_sir.c    |  3 +-
- drivers/staging/media/lirc/lirc_zilog.c  | 69 +++++++++++++++-----------------
- 6 files changed, 52 insertions(+), 61 deletions(-)
+Hi Herbert,
 
-diff --git a/drivers/staging/media/lirc/lirc_bt829.c b/drivers/staging/media/lirc/lirc_bt829.c
-index 4c806ba..c70ca68 100644
---- a/drivers/staging/media/lirc/lirc_bt829.c
-+++ b/drivers/staging/media/lirc/lirc_bt829.c
-@@ -59,7 +59,7 @@ static bool debug;
- #define dprintk(fmt, args...)						 \
- 	do {								 \
- 		if (debug)						 \
--			printk(KERN_DEBUG DRIVER_NAME ": "fmt, ## args); \
-+			dev_dbg(DRIVER_NAME, ": "fmt, ##args); \
- 	} while (0)
- 
- static int atir_minor;
-diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
-index 7aca44f..bce0408 100644
---- a/drivers/staging/media/lirc/lirc_imon.c
-+++ b/drivers/staging/media/lirc/lirc_imon.c
-@@ -623,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
- 	if (debug) {
- 		dev_info(dev, "raw packet: ");
- 		for (i = 0; i < len; ++i)
--			printk("%02x ", buf[i]);
--		printk("\n");
-+			dev_info(dev, "%02x ", buf[i]);
-+		dev_info(dev, "\n");
- 	}
- 
- 	/*
-diff --git a/drivers/staging/media/lirc/lirc_sasem.c b/drivers/staging/media/lirc/lirc_sasem.c
-index c20ef56..e88e246 100644
---- a/drivers/staging/media/lirc/lirc_sasem.c
-+++ b/drivers/staging/media/lirc/lirc_sasem.c
-@@ -583,10 +583,10 @@ static void incoming_packet(struct sasem_context *context,
- 	}
- 
- 	if (debug) {
--		printk(KERN_INFO "Incoming data: ");
-+		pr_info("Incoming data: ");
- 		for (i = 0; i < 8; ++i)
--			printk(KERN_CONT "%02x ", buf[i]);
--		printk(KERN_CONT "\n");
-+			pr_cont("%02x", buf[i]);
-+		pr_cont("\n");
- 	}
- 
- 	/*
-diff --git a/drivers/staging/media/lirc/lirc_serial.c b/drivers/staging/media/lirc/lirc_serial.c
-index 181b92b..b07671b 100644
---- a/drivers/staging/media/lirc/lirc_serial.c
-+++ b/drivers/staging/media/lirc/lirc_serial.c
-@@ -116,8 +116,7 @@ static bool txsense;	/* 0 = active high, 1 = active low */
- #define dprintk(fmt, args...)					\
- 	do {							\
- 		if (debug)					\
--			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
--			       fmt, ## args);			\
-+			dev_dbg(LIRC_DRIVER_NAME, ": "fmt, ##args); \
- 	} while (0)
- 
- /* forward declarations */
-@@ -356,9 +355,8 @@ static int init_timing_params(unsigned int new_duty_cycle,
- 	/* Derive pulse and space from the period */
- 	pulse_width = period * duty_cycle / 100;
- 	space_width = period - pulse_width;
--	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
--		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
--		"conv_us_to_clocks=%ld\n",
-+	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, clk/jiffy=%ld,
-+			pulse=%ld, space=%ld, conv_us_to_clocks=%ld\n",
- 		freq, duty_cycle, __this_cpu_read(cpu_info.loops_per_jiffy),
- 		pulse_width, space_width, conv_us_to_clocks);
- 	return 0;
-@@ -1075,7 +1073,7 @@ static int __init lirc_serial_init(void)
- 
- 	result = platform_driver_register(&lirc_serial_driver);
- 	if (result) {
--		printk("lirc register returned %d\n", result);
-+		dprintk("lirc register returned %d\n", result);
- 		goto exit_buffer_free;
- 	}
- 
-@@ -1166,22 +1164,20 @@ module_init(lirc_serial_init_module);
- module_exit(lirc_serial_exit_module);
- 
- MODULE_DESCRIPTION("Infra-red receiver driver for serial ports.");
--MODULE_AUTHOR("Ralph Metzler, Trent Piepho, Ben Pfaff, "
--	      "Christoph Bartelmus, Andrei Tanas");
-+MODULE_AUTHOR("Ralph Metzler, Trent Piepho, Ben Pfaff, Christoph Bartelmus, Andrei Tanas");
- MODULE_LICENSE("GPL");
- 
- module_param(type, int, S_IRUGO);
--MODULE_PARM_DESC(type, "Hardware type (0 = home-brew, 1 = IRdeo,"
--		 " 2 = IRdeo Remote, 3 = AnimaX, 4 = IgorPlug,"
--		 " 5 = NSLU2 RX:CTS2/TX:GreenLED)");
-+MODULE_PARM_DESC(type, "Hardware type (0 = home-brew, 1 = IRdeo,
-+	2 = IRdeo Remote, 3 = AnimaX, 4 = IgorPlug,
-+	5 = NSLU2 RX:CTS2/TX:GreenLED)");
- 
- module_param(io, int, S_IRUGO);
- MODULE_PARM_DESC(io, "I/O address base (0x3f8 or 0x2f8)");
- 
- /* some architectures (e.g. intel xscale) have memory mapped registers */
- module_param(iommap, bool, S_IRUGO);
--MODULE_PARM_DESC(iommap, "physical base for memory mapped I/O"
--		" (0 = no memory mapped io)");
-+MODULE_PARM_DESC(iommap, "physical base for memory mapped I/O (0 = no memory mapped io)");
- 
- /*
-  * some architectures (e.g. intel xscale) align the 8bit serial registers
-@@ -1198,13 +1194,12 @@ module_param(share_irq, bool, S_IRUGO);
- MODULE_PARM_DESC(share_irq, "Share interrupts (0 = off, 1 = on)");
- 
- module_param(sense, int, S_IRUGO);
--MODULE_PARM_DESC(sense, "Override autodetection of IR receiver circuit"
--		 " (0 = active high, 1 = active low )");
-+MODULE_PARM_DESC(sense, "Override autodetection of IR receiver circuit
-+		(0 = active high, 1 = active low )");
- 
- #ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
- module_param(txsense, bool, S_IRUGO);
--MODULE_PARM_DESC(txsense, "Sense of transmitter circuit"
--		 " (0 = active high, 1 = active low )");
-+MODULE_PARM_DESC(txsense, "Sense of transmitter circuit (0 = active high, 1 = active low )");
- #endif
- 
- module_param(softcarrier, bool, S_IRUGO);
-diff --git a/drivers/staging/media/lirc/lirc_sir.c b/drivers/staging/media/lirc/lirc_sir.c
-index 2ee55ea..cdbb71f 100644
---- a/drivers/staging/media/lirc/lirc_sir.c
-+++ b/drivers/staging/media/lirc/lirc_sir.c
-@@ -143,8 +143,7 @@ static bool debug;
- #define dprintk(fmt, args...)						\
- 	do {								\
- 		if (debug)						\
--			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "		\
--				fmt, ## args);				\
-+			dev_dbg(LIRC_DRIVER_NAME, ": "fmt, ## args); \
- 	} while (0)
- 
- /* SECTION: Prototypes */
-diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-index 567feba..9c3a3d7 100644
---- a/drivers/staging/media/lirc/lirc_zilog.c
-+++ b/drivers/staging/media/lirc/lirc_zilog.c
-@@ -152,10 +152,9 @@ struct tx_data_struct {
- static struct tx_data_struct *tx_data;
- static struct mutex tx_data_lock;
- 
--#define zilog_notify(s, args...) printk(KERN_NOTICE KBUILD_MODNAME ": " s, \
--					## args)
--#define zilog_error(s, args...) printk(KERN_ERR KBUILD_MODNAME ": " s, ## args)
--#define zilog_info(s, args...) printk(KERN_INFO KBUILD_MODNAME ": " s, ## args)
-+#define zilog_notify(s, args...) dev_notice(KBUILD_MODNAME, ": " s, ## args)
-+#define zilog_error(s, args...) dev_err(KBUILD_MODNAME, ": " s, ## args)
-+#define zilog_info(s, args...) dev_info(KBUILD_MODNAME, ": " s, ## args)
- 
- /* module parameters */
- static bool debug;	/* debug output */
-@@ -165,8 +164,7 @@ static int minor = -1;	/* minor number */
- #define dprintk(fmt, args...)						\
- 	do {								\
- 		if (debug)						\
--			printk(KERN_DEBUG KBUILD_MODNAME ": " fmt,	\
--				 ## args);				\
-+			pr_dbg(KBUILD_MODNAME, ": " fmt, ## args); \
- 	} while (0)
- 
- 
-@@ -382,14 +380,14 @@ static int add_to_buf(struct IR *ir)
- 			zilog_error("i2c_master_send failed with %d\n",	ret);
- 			if (failures >= 3) {
- 				mutex_unlock(&ir->ir_lock);
--				zilog_error("unable to read from the IR chip "
--					    "after 3 resets, giving up\n");
-+				zilog_error("unable to read from the IR chip
-+						after 3 resets, giving up\n");
- 				break;
- 			}
- 
- 			/* Looks like the chip crashed, reset it */
--			zilog_error("polling the IR receiver chip failed, "
--				    "trying reset\n");
-+			zilog_error("polling the IR receiver chip failed,
-+					trying reset\n");
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			if (kthread_should_stop()) {
-@@ -415,8 +413,8 @@ static int add_to_buf(struct IR *ir)
- 		ret = i2c_master_recv(rx->c, keybuf, sizeof(keybuf));
- 		mutex_unlock(&ir->ir_lock);
- 		if (ret != sizeof(keybuf)) {
--			zilog_error("i2c_master_recv failed with %d -- "
--				    "keeping last read buffer\n", ret);
-+			zilog_error("i2c_master_recv failed with %d --
-+					keeping last read buffer\n", ret);
- 		} else {
- 			rx->b[0] = keybuf[3];
- 			rx->b[1] = keybuf[4];
-@@ -720,8 +718,8 @@ static int send_boot_data(struct IR_tx *tx)
- 		zilog_error("unexpected IR TX init response: %02x\n", buf[0]);
- 		return 0;
- 	}
--	zilog_notify("Zilog/Hauppauge IR blaster firmware version "
--		     "%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
-+	zilog_notify("Zilog/Hauppauge IR blaster firmware version
-+			%d.%d.%d loaded\n", buf[1], buf[2], buf[3]);
- 
- 	return 0;
- }
-@@ -803,9 +801,8 @@ static int fw_load(struct IR_tx *tx)
- 	if (!read_uint8(&data, tx_data->endp, &version))
- 		goto corrupt;
- 	if (version != 1) {
--		zilog_error("unsupported code set file version (%u, expected"
--			    "1) -- please upgrade to a newer driver",
--			    version);
-+		zilog_error("unsupported code set file version (%u, expected
-+			1) -- please upgrade to a newer driver", version);
- 		fw_unload_locked();
- 		ret = -EFAULT;
- 		goto out;
-@@ -990,8 +987,8 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 	ret = get_key_data(data_block, code, key);
- 
- 	if (ret == -EPROTO) {
--		zilog_error("failed to get data for code %u, key %u -- check "
--			    "lircd.conf entries\n", code, key);
-+		zilog_error("failed to get data for code %u, key %u -- check
-+				lircd.conf entries\n", code, key);
- 		return ret;
- 	} else if (ret != 0)
- 		return ret;
-@@ -1066,12 +1063,12 @@ static int send_code(struct IR_tx *tx, unsigned int code, unsigned int key)
- 		ret = i2c_master_send(tx->c, buf, 1);
- 		if (ret == 1)
- 			break;
--		dprintk("NAK expected: i2c_master_send "
--			"failed with %d (try %d)\n", ret, i+1);
-+		dprintk("NAK expected: i2c_master_send
-+				failed with %d (try %d)\n", ret, i+1);
- 	}
- 	if (ret != 1) {
--		zilog_error("IR TX chip never got ready: last i2c_master_send "
--			    "failed with %d\n", ret);
-+		zilog_error("IR TX chip never got ready: last i2c_master_send
-+				failed with %d\n", ret);
- 		return ret < 0 ? ret : -EFAULT;
- 	}
- 
-@@ -1173,12 +1170,12 @@ static ssize_t write(struct file *filep, const char __user *buf, size_t n,
- 		 */
- 		if (ret != 0) {
- 			/* Looks like the chip crashed, reset it */
--			zilog_error("sending to the IR transmitter chip "
--				    "failed, trying reset\n");
-+			zilog_error("sending to the IR transmitter chip
-+					failed, trying reset\n");
- 
- 			if (failures >= 3) {
--				zilog_error("unable to send to the IR chip "
--					    "after 3 resets, giving up\n");
-+				zilog_error("unable to send to the IR chip
-+						after 3 resets, giving up\n");
- 				mutex_unlock(&ir->ir_lock);
- 				mutex_unlock(&tx->client_lock);
- 				put_ir_tx(tx, false);
-@@ -1547,8 +1544,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 		/* Proceed only if the Rx client is also ready or not needed */
- 		if (rx == NULL && !tx_only) {
--			zilog_info("probe of IR Tx on %s (i2c-%d) done. Waiting"
--				   " on IR Rx.\n", adap->name, adap->nr);
-+			zilog_info("probe of IR Tx on %s (i2c-%d) done. Waiting
-+					on IR Rx.\n", adap->name, adap->nr);
- 			goto out_ok;
- 		}
- 	} else {
-@@ -1586,8 +1583,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 				       "zilog-rx-i2c-%d", adap->nr);
- 		if (IS_ERR(rx->task)) {
- 			ret = PTR_ERR(rx->task);
--			zilog_error("%s: could not start IR Rx polling thread"
--				    "\n", __func__);
-+			zilog_error("%s: could not start IR Rx polling thread
-+					\n", __func__);
- 			/* Failed kthread, so put back the ir ref */
- 			put_ir_device(ir, true);
- 			/* Failure exit, so put back rx ref from i2c_client */
-@@ -1599,8 +1596,8 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 
- 		/* Proceed only if the Tx client is also ready */
- 		if (tx == NULL) {
--			zilog_info("probe of IR Rx on %s (i2c-%d) done. Waiting"
--				   " on IR Tx.\n", adap->name, adap->nr);
-+			zilog_info("probe of IR Rx on %s (i2c-%d) done. Waiting
-+					on IR Tx.\n", adap->name, adap->nr);
- 			goto out_ok;
- 		}
- 	}
-@@ -1674,9 +1671,9 @@ module_init(zilog_init);
- module_exit(zilog_exit);
- 
- MODULE_DESCRIPTION("Zilog/Hauppauge infrared transmitter driver (i2c stack)");
--MODULE_AUTHOR("Gerd Knorr, Michal Kochanowicz, Christoph Bartelmus, "
--	      "Ulrich Mueller, Stefan Jahn, Jerome Brock, Mark Weaver, "
--	      "Andy Walls");
-+MODULE_AUTHOR("Gerd Knorr, Michal Kochanowicz, Christoph Bartelmus,
-+		Ulrich Mueller, Stefan Jahn, Jerome Brock, Mark Weaver,
-+		Andy Walls");
- MODULE_LICENSE("GPL");
- /* for compat with old name, which isn't all that accurate anymore */
- MODULE_ALIAS("lirc_pvr150");
--- 
-2.1.2
+Today's linux-next merge of the crypto tree got a conflict in
+arch/arm64/boot/dts/apm-storm.dtsi between commit 84ac1f2ca41f ("arm64:
+dts: Add APM X-Gene PCIe device tree nodes") from the pci tree and
+commit ab81873974af ("arm64: dts: add random number generator dts node
+to APM X-Gene platform") from the crypto tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm64/boot/dts/apm-storm.dtsi
+index 403197a0e621,f391972ad135..000000000000
+--- a/arch/arm64/boot/dts/apm-storm.dtsi
++++ b/arch/arm64/boot/dts/apm-storm.dtsi
+@@@ -270,170 -270,18 +270,183 @@@
+  				clock-output-names =3D "rtcclk";
+  			};
+ =20
++ 			rngpkaclk: rngpkaclk@17000000 {
++ 				compatible =3D "apm,xgene-device-clock";
++ 				#clock-cells =3D <1>;
++ 				clocks =3D <&socplldiv2 0>;
++ 				reg =3D <0x0 0x17000000 0x0 0x2000>;
++ 				reg-names =3D "csr-reg";
++ 				csr-offset =3D <0xc>;
++ 				csr-mask =3D <0x10>;
++ 				enable-offset =3D <0x10>;
++ 				enable-mask =3D <0x10>;
++ 				clock-output-names =3D "rngpkaclk";
++ 			};
+++
+ +			pcie0clk: pcie0clk@1f2bc000 {
+ +				status =3D "disabled";
+ +				compatible =3D "apm,xgene-device-clock";
+ +				#clock-cells =3D <1>;
+ +				clocks =3D <&socplldiv2 0>;
+ +				reg =3D <0x0 0x1f2bc000 0x0 0x1000>;
+ +				reg-names =3D "csr-reg";
+ +				clock-output-names =3D "pcie0clk";
+ +			};
+ +
+ +			pcie1clk: pcie1clk@1f2cc000 {
+ +				status =3D "disabled";
+ +				compatible =3D "apm,xgene-device-clock";
+ +				#clock-cells =3D <1>;
+ +				clocks =3D <&socplldiv2 0>;
+ +				reg =3D <0x0 0x1f2cc000 0x0 0x1000>;
+ +				reg-names =3D "csr-reg";
+ +				clock-output-names =3D "pcie1clk";
+ +			};
+ +
+ +			pcie2clk: pcie2clk@1f2dc000 {
+ +				status =3D "disabled";
+ +				compatible =3D "apm,xgene-device-clock";
+ +				#clock-cells =3D <1>;
+ +				clocks =3D <&socplldiv2 0>;
+ +				reg =3D <0x0 0x1f2dc000 0x0 0x1000>;
+ +				reg-names =3D "csr-reg";
+ +				clock-output-names =3D "pcie2clk";
+ +			};
+ +
+ +			pcie3clk: pcie3clk@1f50c000 {
+ +				status =3D "disabled";
+ +				compatible =3D "apm,xgene-device-clock";
+ +				#clock-cells =3D <1>;
+ +				clocks =3D <&socplldiv2 0>;
+ +				reg =3D <0x0 0x1f50c000 0x0 0x1000>;
+ +				reg-names =3D "csr-reg";
+ +				clock-output-names =3D "pcie3clk";
+ +			};
+ +
+ +			pcie4clk: pcie4clk@1f51c000 {
+ +				status =3D "disabled";
+ +				compatible =3D "apm,xgene-device-clock";
+ +				#clock-cells =3D <1>;
+ +				clocks =3D <&socplldiv2 0>;
+ +				reg =3D <0x0 0x1f51c000 0x0 0x1000>;
+ +				reg-names =3D "csr-reg";
+ +				clock-output-names =3D "pcie4clk";
+ +			};
+ +		};
+ +
+ +		pcie0: pcie@1f2b0000 {
+ +			status =3D "disabled";
+ +			device_type =3D "pci";
+ +			compatible =3D "apm,xgene-storm-pcie", "apm,xgene-pcie";
+ +			#interrupt-cells =3D <1>;
+ +			#size-cells =3D <2>;
+ +			#address-cells =3D <3>;
+ +			reg =3D < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
+ +				0xe0 0xd0000000 0x0 0x00040000>; /* PCI config space */
+ +			reg-names =3D "csr", "cfg";
+ +			ranges =3D <0x01000000 0x00 0x00000000 0xe0 0x10000000 0x00 0x00010000=
+   /* io */
+ +				  0x02000000 0x00 0x80000000 0xe1 0x80000000 0x00 0x80000000>; /* mem=
+ */
+ +			dma-ranges =3D <0x42000000 0x80 0x00000000 0x80 0x00000000 0x00 0x8000=
+0000
+ +				      0x42000000 0x00 0x00000000 0x00 0x00000000 0x80 0x00000000>;
+ +			interrupt-map-mask =3D <0x0 0x0 0x0 0x7>;
+ +			interrupt-map =3D <0x0 0x0 0x0 0x1 &gic 0x0 0xc2 0x1
+ +					 0x0 0x0 0x0 0x2 &gic 0x0 0xc3 0x1
+ +					 0x0 0x0 0x0 0x3 &gic 0x0 0xc4 0x1
+ +					 0x0 0x0 0x0 0x4 &gic 0x0 0xc5 0x1>;
+ +			dma-coherent;
+ +			clocks =3D <&pcie0clk 0>;
+ +		};
+ +
+ +		pcie1: pcie@1f2c0000 {
+ +			status =3D "disabled";
+ +			device_type =3D "pci";
+ +			compatible =3D "apm,xgene-storm-pcie", "apm,xgene-pcie";
+ +			#interrupt-cells =3D <1>;
+ +			#size-cells =3D <2>;
+ +			#address-cells =3D <3>;
+ +			reg =3D < 0x00 0x1f2c0000 0x0 0x00010000   /* Controller registers */
+ +				0xd0 0xd0000000 0x0 0x00040000>; /* PCI config space */
+ +			reg-names =3D "csr", "cfg";
+ +			ranges =3D <0x01000000 0x0 0x00000000 0xd0 0x10000000 0x00 0x00010000 =
+  /* io  */
+ +				  0x02000000 0x0 0x80000000 0xd1 0x80000000 0x00 0x80000000>; /* mem =
+*/
+ +			dma-ranges =3D <0x42000000 0x80 0x00000000 0x80 0x00000000 0x00 0x8000=
+0000
+ +				      0x42000000 0x00 0x00000000 0x00 0x00000000 0x80 0x00000000>;
+ +			interrupt-map-mask =3D <0x0 0x0 0x0 0x7>;
+ +			interrupt-map =3D <0x0 0x0 0x0 0x1 &gic 0x0 0xc8 0x1
+ +					 0x0 0x0 0x0 0x2 &gic 0x0 0xc9 0x1
+ +					 0x0 0x0 0x0 0x3 &gic 0x0 0xca 0x1
+ +					 0x0 0x0 0x0 0x4 &gic 0x0 0xcb 0x1>;
+ +			dma-coherent;
+ +			clocks =3D <&pcie1clk 0>;
+ +		};
+ +
+ +		pcie2: pcie@1f2d0000 {
+ +			status =3D "disabled";
+ +			device_type =3D "pci";
+ +			compatible =3D "apm,xgene-storm-pcie", "apm,xgene-pcie";
+ +			#interrupt-cells =3D <1>;
+ +			#size-cells =3D <2>;
+ +			#address-cells =3D <3>;
+ +			reg =3D  < 0x00 0x1f2d0000 0x0 0x00010000   /* Controller registers */
+ +				 0x90 0xd0000000 0x0 0x00040000>; /* PCI config space */
+ +			reg-names =3D "csr", "cfg";
+ +			ranges =3D <0x01000000 0x0 0x00000000 0x90 0x10000000 0x0 0x00010000  =
+ /* io  */
+ +				  0x02000000 0x0 0x80000000 0x91 0x80000000 0x0 0x80000000>; /* mem */
+ +			dma-ranges =3D <0x42000000 0x80 0x00000000 0x80 0x00000000 0x00 0x8000=
+0000
+ +				      0x42000000 0x00 0x00000000 0x00 0x00000000 0x80 0x00000000>;
+ +			interrupt-map-mask =3D <0x0 0x0 0x0 0x7>;
+ +			interrupt-map =3D <0x0 0x0 0x0 0x1 &gic 0x0 0xce 0x1
+ +					 0x0 0x0 0x0 0x2 &gic 0x0 0xcf 0x1
+ +					 0x0 0x0 0x0 0x3 &gic 0x0 0xd0 0x1
+ +					 0x0 0x0 0x0 0x4 &gic 0x0 0xd1 0x1>;
+ +			dma-coherent;
+ +			clocks =3D <&pcie2clk 0>;
+ +		};
+ +
+ +		pcie3: pcie@1f500000 {
+ +			status =3D "disabled";
+ +			device_type =3D "pci";
+ +			compatible =3D "apm,xgene-storm-pcie", "apm,xgene-pcie";
+ +			#interrupt-cells =3D <1>;
+ +			#size-cells =3D <2>;
+ +			#address-cells =3D <3>;
+ +			reg =3D < 0x00 0x1f500000 0x0 0x00010000   /* Controller registers */
+ +				0xa0 0xd0000000 0x0 0x00040000>; /* PCI config space */
+ +			reg-names =3D "csr", "cfg";
+ +			ranges =3D <0x01000000 0x0 0x00000000 0xa0 0x10000000 0x0 0x00010000  =
+ /* io   */
+ +				  0x02000000 0x0 0x80000000 0xa1 0x80000000 0x0 0x80000000>; /* mem  =
+*/
+ +			dma-ranges =3D <0x42000000 0x80 0x00000000 0x80 0x00000000 0x00 0x8000=
+0000
+ +				      0x42000000 0x00 0x00000000 0x00 0x00000000 0x80 0x00000000>;
+ +			interrupt-map-mask =3D <0x0 0x0 0x0 0x7>;
+ +			interrupt-map =3D <0x0 0x0 0x0 0x1 &gic 0x0 0xd4 0x1
+ +					 0x0 0x0 0x0 0x2 &gic 0x0 0xd5 0x1
+ +					 0x0 0x0 0x0 0x3 &gic 0x0 0xd6 0x1
+ +					 0x0 0x0 0x0 0x4 &gic 0x0 0xd7 0x1>;
+ +			dma-coherent;
+ +			clocks =3D <&pcie3clk 0>;
+ +		};
+ +
+ +		pcie4: pcie@1f510000 {
+ +			status =3D "disabled";
+ +			device_type =3D "pci";
+ +			compatible =3D "apm,xgene-storm-pcie", "apm,xgene-pcie";
+ +			#interrupt-cells =3D <1>;
+ +			#size-cells =3D <2>;
+ +			#address-cells =3D <3>;
+ +			reg =3D < 0x00 0x1f510000 0x0 0x00010000   /* Controller registers */
+ +				0xc0 0xd0000000 0x0 0x00200000>; /* PCI config space */
+ +			reg-names =3D "csr", "cfg";
+ +			ranges =3D <0x01000000 0x0 0x00000000 0xc0 0x10000000 0x0 0x00010000  =
+ /* io  */
+ +				  0x02000000 0x0 0x80000000 0xc1 0x80000000 0x0 0x80000000>; /* mem */
+ +			dma-ranges =3D <0x42000000 0x80 0x00000000 0x80 0x00000000 0x00 0x8000=
+0000
+ +				      0x42000000 0x00 0x00000000 0x00 0x00000000 0x80 0x00000000>;
+ +			interrupt-map-mask =3D <0x0 0x0 0x0 0x7>;
+ +			interrupt-map =3D <0x0 0x0 0x0 0x1 &gic 0x0 0xda 0x1
+ +					 0x0 0x0 0x0 0x2 &gic 0x0 0xdb 0x1
+ +					 0x0 0x0 0x0 0x3 &gic 0x0 0xdc 0x1
+ +					 0x0 0x0 0x0 0x4 &gic 0x0 0xdd 0x1>;
+ +			dma-coherent;
+ +			clocks =3D <&pcie4clk 0>;
+  		};
+ =20
+  		serial0: serial@1c020000 {
+
+--Sig_/Nb5t_uRT+n03JH575uBFZE0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJULNdtAAoJEMDTa8Ir7ZwVgGoP/2JgYHCYkrXFICTO10ZF0lDh
+Fog9NzOdmGB+Ijo9Bx2QmUXLiBgZH83zUouNcoK5t7R6a76/r5emkzF4kFXS7vwh
+r3iC1aK7dL5M4ErJfZdc+1onue5V/DcqlGwCavQ2+PWu9P+Ho6vsXHlhB6tQoP5S
+VPQjVtsW5HQbmFUcsMdgF06U2/msVE/WIiCuiPXXqJbIBGmRyNaV5ek0igrv+lfb
+xc1gvKiIoI1GU4fO2j5QxaMH1HQfxx51ShtrU+See4zGW8pHPrzSQdyrxJz+GbMI
+kUNgc+Nokrtp0yv74IG0ZcNN79uz/S7dC1WOdRLJTEpP8QdXL+3YpEns0PIGg9tz
+m0v1upTQOO+XY200J8LypwBikmC2OH64UtBp/6L1W6klZKgDfCF3eWD5bwcvn4Nq
+pICoXe1w01yEaD145yMI2XPwYt0FET/zIIAjSvZMxYJLPo2tjNu3sFiddz6tgDmt
+LsqqrfulTEMPoMeRzn2/MSlelK8GKHccYDQu1+cJ9ehC8N5tW/vFm86wwkFspZq8
+lrAeIzuOJZyX2hjubDBXuFls33+TWkPcUmruds+VpIT06+Ba4VpKKvmaHjoXPIxe
+rAyA0y1rKxeXjQhqUoB6uKIKWWqRPTa7vT8BZX5v6dvMPW8SxtKvMH9wtaJX8nG0
+Yy9Rj9Nhn6BoTAfFXbDl
+=1djS
+-----END PGP SIGNATURE-----
+
+--Sig_/Nb5t_uRT+n03JH575uBFZE0--
