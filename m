@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaJBRlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 13:41:51 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:47615 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaJBRlu (ORCPT
+	id S1753771AbaJBRoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 13:44:13 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:52041
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752028AbaJBRoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 13:41:50 -0400
+	Thu, 2 Oct 2014 13:44:12 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Rostislav Lisovy <lisovy@gmail.com>
+CC: Chen Gang <gang.chen.5i5j@gmail.com>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "luca.ellero@brickedbrain.com" <luca.ellero@brickedbrain.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: RE: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC
+ depend on HAS_IOMEM
+Thread-Topic: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC
+ depend on HAS_IOMEM
+Thread-Index: AQHP3k4gow5hFBlhm02F4sKBzxlCjZwdB36AgAB9KYD//420gA==
+Date: Thu, 2 Oct 2014 17:44:11 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FCE77F@P3PWEX4MB008.ex4.secureserver.net>
+References: <542D640E.6010200@gmail.com>
+	 <DC148C5AA1CEBA4E87973D432B1C2D8825FCE627@P3PWEX4MB008.ex4.secureserver.net>
+ <1412270771.20184.1.camel@lolumad>
+In-Reply-To: <1412270771.20184.1.camel@lolumad>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <201410021531.s92FV353007057@farm-0039.internal.tilera.com>
-References: <201409301938.s8UJcfY4018093@lab-40.internal.tilera.com>
-	<alpine.DEB.2.11.1410010004560.4455@nanos>
-	<CALAqxLWHhmyDp-CeGzs6Jqzcrk-KDX_T4UQpTU79VDTL3oHdJw@mail.gmail.com>
-	<20141001212439.GA12974@sisyphus.home.austad.us>
-	<201410021531.s92FV353007057@farm-0039.internal.tilera.com>
-Date: Thu, 2 Oct 2014 10:41:49 -0700
-Message-ID: <CALAqxLWS4EBfLcjja4i3Bqt9PF-FpRJi5Em3YmhPupwd6BNr2g@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] tile: add clock_gettime support to vDSO
-From: John Stultz <john.stultz@linaro.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Henrik Austad <henrik@austad.us>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s92HiHIE007590
 
-On Thu, Oct 2, 2014 at 7:32 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> This change adds support for clock_gettime with CLOCK_REALTIME
-> and CLOCK_MONOTONIC using vDSO.  It also updates the vdso
-> struct nomenclature used for the clocks to match the x86 code
-> to keep it easier to update going forward.
+On Thursday, October 02, 2014 10:26 AM, Rostislav Lisovy wrote:
 >
-> We also support the *_COARSE clockid_t, for apps that want speed
-> but aren't concerned about fine-grained timestamps; this saves
-> about 20 cycles per call (see http://lwn.net/Articles/342018/).
->
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/include/asm/vdso.h          |  15 ++--
->  arch/tile/kernel/time.c               |  45 ++++++++---
->  arch/tile/kernel/vdso/vdso.lds.S      |   2 +
->  arch/tile/kernel/vdso/vgettimeofday.c | 145 +++++++++++++++++++++++++++++-----
->  4 files changed, 172 insertions(+), 35 deletions(-)
->
-> v2: use the x86 code as a model to address both John Stultz's
->     observation about sub-nanosecond updates, as well as to address
->     Thomas Gleixner's observation about minimizing time spent with
->     the seqlock held.  Note that I kept the "unlikely" that Thomas
->     doubted would help, just for parallelism with the x86 code.
-> v3: rebase onto 3.17-rc7
+> Since "egrep -irn "ioremap" drivers/staging/comedi/drivers | wc -l"
+> shows "39" does it mean that this should be added to all the other
+> drivers as well?
 
 
-Looks ok to me.
+The others are actually pci_ioremap_bar() and those drivers depend on PCI.
+I don't _think_ these drivers require the depends on HAS_IOMEM.
 
-Acked-by: John Stultz <john.stultz@linaro.org>
+The ii_pci20kc driver is goofy in that it's actually an ISA board that uses
+memory mapped I/O.
 
-thanks
--john
+Regards,
+Hartley
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
