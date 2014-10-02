@@ -1,35 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaJBJgH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:36:07 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57300 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJBJgF (ORCPT
+	id S1751304AbaJBJpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:45:46 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:33031 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaJBJpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:36:05 -0400
-Date: Thu, 2 Oct 2014 11:36:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: linux-kernel@vger.kernel.org, Kirill Tkhai <ktkhai@parallels.com>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
-Message-ID: <20141002093600.GC2849@worktop.programming.kicks-ass.net>
-References: <20140930210412.5258.35299.stgit@localhost>
- <20140930210428.5258.32223.stgit@localhost>
+	Thu, 2 Oct 2014 05:45:44 -0400
+X-IronPort-AV: E=Sophos;i="5.04,638,1406592000"; 
+   d="scan'208";a="178466624"
+Message-ID: <542D1EC4.10100@citrix.com>
+Date: Thu, 2 Oct 2014 10:45:40 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930210428.5258.32223.stgit@localhost>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>
+CC: <linux-mips@linux-mips.org>, <linux-ia64@vger.kernel.org>,
+        <linux-c6x-dev@linux-c6x.org>, <linux-parisc@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-metag@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [RFC PATCH 14/16] x86/xen: support poweroff through
+ poweroff handler call chain
+References: <1412100056-15517-1-git-send-email-linux@roeck-us.net> <1412100056-15517-15-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1412100056-15517-15-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 01:04:35AM +0400, Kirill Tkhai wrote:
-> From: Kirill Tkhai <ktkhai@parallels.com>
+On 30/09/14 19:00, Guenter Roeck wrote:
+> The kernel core now supports a poweroff handler call chain
+> to remove power from the system. Call it if pm_power_off
+> is set to NULL.
 > 
-> rq->curr task can't be in "dequeued" state in prio_changed_dl().
-> (The only place we can have that is __schedule()). So, we delete
-> rq->curr check.
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  arch/x86/xen/enlighten.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index c0cb11f..645d00f 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1322,6 +1322,8 @@ static void xen_machine_power_off(void)
+>  {
+>  	if (pm_power_off)
+>  		pm_power_off();
+> +	else
+> +		do_kernel_poweroff();
 
-the CBS timer can throttle it right?
+Why isn't this if (pm_power_off) check in do_kernel_poweroff()?
+
+That way when you finally remove pm_power_off you need only update one
+place.  A quick skim of the other archs suggest this would work for them
+too.
+
+David
