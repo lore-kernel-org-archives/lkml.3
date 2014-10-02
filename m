@@ -1,158 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaJBLN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:13:59 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56014 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaJBLN5 (ORCPT
+	id S1751538AbaJBLUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:20:02 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40492 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaJBLUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:13:57 -0400
-Message-ID: <542D336A.1050401@gmail.com>
-Date: Thu, 02 Oct 2014 14:13:46 +0300
-From: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 07:20:00 -0400
+Date: Thu, 2 Oct 2014 12:19:51 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Pinski <apinski@cavium.com>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit
+ ABI syscalls to avoid confusion of not splitting the registers
+Message-ID: <20141002111949.GC32147@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <3318813.yqP9pCQtAB@wuerfel>
+ <20141001124226.GI12702@e104818-lin.cambridge.arm.com>
+ <3372851.lJtjj0EtDO@wuerfel>
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: micky_ching@realsil.com.cn, fabio.falzoi84@gmail.com,
-        mahati.chamarthy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: rts5208: Clean up coding style in rtsx_chip.c
- to get rid of checkpatch.pl warnings and combine two ifs into one
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3372851.lJtjj0EtDO@wuerfel>
+Thread-Topic: [PATCH 08/24] Allow a 32bit ABI to use the naming of the 64bit
+ ABI syscalls to avoid confusion of not splitting the registers
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 10 occurences of coding style errors where the line exceeds 80 characters by breaking them into more lines.
-Checkpatch.pl reports these errors as: 'WARNING: line over 80 characters'
-Also, removes unnecessary returns in two void functions by removing the return statements.
-Checkpatch.pl reports these errors as: 'WARNING: void function return statements are not generally useful'
-Lastly it combines two if statements into one in rtsx_reset_chip()
+On Wed, Oct 01, 2014 at 03:00:54PM +0100, Arnd Bergmann wrote:
+> On Wednesday 01 October 2014 13:42:27 Catalin Marinas wrote:
+> > On Thu, Sep 04, 2014 at 11:11:04AM +0100, Arnd Bergmann wrote:
+> > > On Wednesday 03 September 2014 14:19:02 Andrew Pinski wrote:
+> > > > + * For 32bit abis where 64bit can be passed via one
+> > > > + * register, use the same naming as the 64bit ones
+> > > > + * as they will only have a 64 bit off_t.
+> > > >   */
+> > > > -#if __BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)
+> > > > +#if (__BITS_PER_LONG == 64 && !defined(__SYSCALL_COMPAT)) || \
+> > > > +       defined(__ARCH_WANT_64BIT_SYSCALLS)
+> > > 
+> > > I'm not sure if __ARCH_WANT_64BIT_SYSCALLS is the best name for
+> > > this, since it's really only about off_t. It took me a while
+> > > to understand what you are doing here.
+> > 
+> > I'm not sure I fully get it yet. So with this change, we avoid using
+> > syscall numbers like __NR_ftruncate64 in favour of __NR_ftruncate. Why?
+> > (maybe there's a valid reason, just not getting it).
+> 
+> glibc depends on the name to decide which calling conventions it
+> uses. I assume this is the same on IPL32 ARM.
+> 
+> The general rule is that on a 32-bit architecture, __NR_ftruncate refers
+> to the system call that takes a 32-bit off_t argument, while __NR_ftruncate64
+> refers to the syscall that takes a 64-bit loff_t.
+> 
+> I would assume that the new ABI does not actually allow using 32-bit off_t
+> in applications (that would be silly) and defaults to using 64-bit offsets,
+> but it still needs to generate the right system calls.
 
-Patch is against Greg KH's staging-next tree.
+OK, so since ILP32 would have a 64-bit off_t, we want to use
+__NR_ftruncate and sys_ftruncate with the off_t argument (rather than
+loff_t).
 
-Signed-off-by: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
----
-Changes in v2:
-  - Combines two if statements into one in rtsx_reset_chip() (thanks Dan Carpenter)
-  - Aligns the second line of a if statement to the opening parenthesis in rtsx_polling_func() (thanks Dan Carpenter)
+> > Either way, ILP32 would still end up calling sys_ftruncate64() (rather
+> > than the native sys_ftruncate()).
+> 
+> sys_ftruncate64 does not exist in 64-bit kernels, it can either call
+> compat_sys_ftruncate64_wrapper or sys_ftruncate. I'd assume it would
+> call the latter and pass a single 64-bit register, but that is another
+> matter.
 
- drivers/staging/rts5208/rtsx_chip.c | 47 ++++++++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 19 deletions(-)
+I think I get it now. Just for the record, we define __NR_ftruncate to
+__NR3264_ftruncate. When we build the syscall table as per patch 21/24,
+given that the kernel is built with __LP64__, we get the following
+macros for the syscall function name:
 
-diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
-index 1411471..20e0712 100644
---- a/drivers/staging/rts5208/rtsx_chip.c
-+++ b/drivers/staging/rts5208/rtsx_chip.c
-@@ -289,12 +289,11 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 	/* Enable ASPM */
- 	if (chip->aspm_l0s_l1_en) {
- 		if (chip->dynamic_aspm) {
--			if (CHK_SDIO_EXIST(chip)) {
--				if (CHECK_PID(chip, 0x5288)) {
--					retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
--					if (retval != STATUS_SUCCESS)
--						TRACE_RET(chip, STATUS_FAIL);
--				}
-+			if (CHK_SDIO_EXIST(chip) && CHECK_PID(chip, 0x5288)) {
-+				retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF,
-+						chip->aspm_l0s_l1_en);
-+				if (retval != STATUS_SUCCESS)
-+					TRACE_RET(chip, STATUS_FAIL);
- 			}
- 		} else {
- 			if (CHECK_PID(chip, 0x5208))
-@@ -310,9 +309,13 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 			if (CHK_SDIO_EXIST(chip)) {
- 				chip->aspm_level[1] = chip->aspm_l0s_l1_en;
- 				if (CHECK_PID(chip, 0x5288))
--					retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 2,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 				else
--					retval = rtsx_write_cfg_dw(chip, 1, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 1,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 
- 				if (retval != STATUS_SUCCESS)
- 					TRACE_RET(chip, STATUS_FAIL);
-@@ -966,7 +969,8 @@ void rtsx_polling_func(struct rtsx_chip *chip)
- 					dev_dbg(rtsx_dev(chip), "SDIO enter ASPM!\n");
- 					rtsx_write_register(chip,
- 						ASPM_FORCE_CTL, 0xFC,
--						0x30 | (chip->aspm_level[1] << 2));
-+						0x30 |
-+						(chip->aspm_level[1] << 2));
- 					chip->sdio_aspm = 1;
- 				}
- 			}
-@@ -988,8 +992,10 @@ void rtsx_polling_func(struct rtsx_chip *chip)
- 
- 			turn_off_led(chip, LED_GPIO);
- 
--			if (chip->auto_power_down && !chip->card_ready && !chip->sd_io)
--				rtsx_force_power_down(chip, SSC_PDCTL | OC_PDCTL);
-+			if (chip->auto_power_down && !chip->card_ready &&
-+			    !chip->sd_io)
-+				rtsx_force_power_down(chip,
-+						SSC_PDCTL | OC_PDCTL);
- 
- 		}
- 	}
-@@ -1081,7 +1087,9 @@ Delink_Stage:
- 					dev_dbg(rtsx_dev(chip), "False card inserted, do force delink\n");
- 
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
- 
- 					rtsx_write_register(chip,
- 							CHANGE_LINK_STATE, 0x0A,
-@@ -1090,14 +1098,19 @@ Delink_Stage:
- 					if (enter_L1)
- 						rtsx_enter_L1(chip);
- 
--					chip->auto_delink_cnt = delink_stage3_cnt + 1;
-+					chip->auto_delink_cnt =
-+						delink_stage3_cnt + 1;
- 				} else {
- 					dev_dbg(rtsx_dev(chip), "No card inserted, do delink\n");
- 
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
- 
--					rtsx_write_register(chip, CHANGE_LINK_STATE, 0x02, 0x02);
-+					rtsx_write_register(chip,
-+							CHANGE_LINK_STATE, 0x02,
-+							0x02);
- 
- 					if (enter_L1)
- 						rtsx_enter_L1(chip);
-@@ -1823,8 +1836,6 @@ void rtsx_enable_aspm(struct rtsx_chip *chip)
- 			}
- 		}
- 	}
--
--	return;
- }
- 
- void rtsx_disable_aspm(struct rtsx_chip *chip)
-@@ -1848,8 +1859,6 @@ void rtsx_disable_aspm(struct rtsx_chip *chip)
- 			wait_timeout(1);
- 		}
- 	}
--
--	return;
- }
- 
- int rtsx_read_ppbuf(struct rtsx_chip *chip, u8 *buf, int buf_len)
+#define __SC_3264(_nr, _32, _64) __SYSCALL(_nr, _64)
+#define __SC_COMP_3264(_nr, _32, _64, _comp) __SC_3264(_nr, _32, _64)
+...
+__SC_COMP_3264(__NR3264_ftruncate, sys_ftruncate64, sys_ftruncate, \
+	       compat_sys_ftruncate64)
+
+Which would result in using sys_ftruncate rather than sys_ftruncate64.
+
+I agree, maybe the name could be __ARCH_WANT_64BIT_OFF_T as that's the
+only reason for these definitions.
+
 -- 
-2.1.2
+Catalin
