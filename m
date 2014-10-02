@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaJBL4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:56:16 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:51242 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaJBL4O convert rfc822-to-8bit (ORCPT
+	id S1752273AbaJBMAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:00:35 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:41976 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaJBMAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:56:14 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <542D1726.3040801@draigBrady.com>
-References: <cover.1411562410.git.ydroneaud@opteya.com> <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
- <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain>
- <542666B2.9080700@gmx.de> <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
- <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
- <1412230855.28184.5.camel@localhost.localdomain> <1412236349-30035-1-git-send-email-ydroneaud@opteya.com>
- <542D1726.3040801@draigBrady.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 2 Oct 2014 13:55:53 +0200
-Message-ID: <CAKgNAkjEMEfgQurTFS5bUyC4U2WkuYBG72ARjNkn=W=OWPSEaw@mail.gmail.com>
-Subject: Re: [PATCH] fanotify: add a flag to allow setting O_CLOEXEC on event fd
-To: =?UTF-8?Q?P=C3=A1draig_Brady?= <P@draigbrady.com>
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        stable@vger.kernel.org, Linux API <linux-api@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Oct 2014 08:00:34 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: jan.kiszka@siemens.com
+Subject: [PATCH] kvm: do not handle APIC access page if in-kernel irqchip is not in use
+Date: Thu,  2 Oct 2014 14:00:25 +0200
+Message-Id: <1412251225-1686-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 11:13 AM, Pádraig Brady <P@draigbrady.com> wrote:
-> On 10/02/2014 08:52 AM, Yann Droneaud wrote:
->> In order to not potentially break applications which were
->> requesting O_CLOEXEC on event file descriptors but which
->> actually need it to be not effective as the kernel currently
->> ignore the flag, so the file descriptor is inherited accross
->> exec regardless of O_CLOEXEC (please forgive me for the
->> wording), this patch introduces FAN_FD_CLOEXEC flag to
->> fanotify_init() so that application can request O_CLOEXEC
->> to be effective.
->> Newer application would use FAN_FD_CLOEXEC flag along
->> O_CLOEXEC to enable close on exec on newly created
->> file descriptor:
->>
->>   fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK|FAN_FD_CLOEXEC,
->>                      O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
->
-> Ugh really?
-> IMHO there should be widespread or at least known breakage with
-> O_CLOEXEC before adding messiness like this.
-> It seems surprising to me that apps that would depend on
-> O_CLOEXEC being ineffective.
->
-> please reconsider this one.
+This fixes the following OOPS:
 
-Agreed. The number of applications for which there are silent (not
-*yet* observed) breakages because O_CLOEXEC is not working as expected
-is likely rather larger than the set of applications that randomly
-specify O_CLOEXEC and then somehow get broken as a result.
+   loaded kvm module (v3.17-rc1-168-gcec26bc)
+   BUG: unable to handle kernel paging request at fffffffffffffffe
+   IP: [<ffffffff81168449>] put_page+0x9/0x30
+   PGD 1e15067 PUD 1e17067 PMD 0
+   Oops: 0000 [#1] PREEMPT SMP
+    [<ffffffffa063271d>] ? kvm_vcpu_reload_apic_access_page+0x5d/0x70 [kvm]
+    [<ffffffffa013b6db>] vmx_vcpu_reset+0x21b/0x470 [kvm_intel]
+    [<ffffffffa0658816>] ? kvm_pmu_reset+0x76/0xb0 [kvm]
+    [<ffffffffa064032a>] kvm_vcpu_reset+0x15a/0x1b0 [kvm]
+    [<ffffffffa06403ac>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+    [<ffffffffa062e540>] kvm_vm_ioctl+0x200/0x780 [kvm]
+    [<ffffffff81212170>] do_vfs_ioctl+0x2d0/0x4b0
+    [<ffffffff8108bd99>] ? __mmdrop+0x69/0xb0
+    [<ffffffff812123d1>] SyS_ioctl+0x81/0xa0
+    [<ffffffff8112a6f6>] ? __audit_syscall_exit+0x1f6/0x2a0
+    [<ffffffff817229e9>] system_call_fastpath+0x16/0x1b
+   Code: c6 78 ce a3 81 4c 89 e7 e8 d9 80 ff ff 0f 0b 4c 89 e7 e8 8f f6 ff ff e9 fa fe ff ff 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 <48> f7 07 00 c0 00 00 55 48 89 e5 75 1e 8b 47 1c 85 c0 74 27 f0
+   RIP  [<ffffffff81193045>] put_page+0x5/0x50
 
-Cheers,
+when not using the in-kernel irqchip ("-machine kernel_irqchip=off"
+with QEMU).
 
-Michael
+Reported-by: Jan Kiszka <jan.kiszka@siemens.com>
+Fixes: 4256f43f9fab91e1c17b5846a240cf4b66a768a8
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/x86.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 6857257f3810..5430e4b0af29 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6030,6 +6030,9 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+ {
+ 	struct page *page = NULL;
+ 
++	if (!irqchip_in_kernel(vcpu->kvm))
++		return;
++
+ 	if (!kvm_x86_ops->set_apic_access_page_addr)
+ 		return;
+ 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.8.3.1
+
