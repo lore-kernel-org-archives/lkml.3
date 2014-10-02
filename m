@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaJBPgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:36:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53865 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164AbaJBPgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:36:44 -0400
-Message-ID: <542D70F4.5040806@zytor.com>
-Date: Thu, 02 Oct 2014 08:36:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-CC: Sebastian Lackner <sebastian@fds-team.de>, Anish Bhatt <anish@chelsio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH v4 1/2] x86_64,entry: Filter RFLAGS.NT on entry from userspace
-References: <cover.1412189265.git.luto@amacapital.net> <395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net> <CALCETrUPqT3WR9-B4mjS791i+nK0ApDyqf9dr0cB_vSRAbgDGQ@mail.gmail.com>
-In-Reply-To: <CALCETrUPqT3WR9-B4mjS791i+nK0ApDyqf9dr0cB_vSRAbgDGQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1754035AbaJBPoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:44:54 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:45046 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502AbaJBPox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:44:53 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: paulmcquad@gmail.com
+Cc: akpm@linux-foundation.org, jcmvbkbc@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: highmem remove 3 errors
+Date: Thu,  2 Oct 2014 16:44:45 +0100
+Message-Id: <1412264685-3368-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 12:49 PM, Andy Lutomirski wrote:
-> On Wed, Oct 1, 2014 at 11:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> The NT flag doesn't do anything in long mode other than causing IRET
->> to #GP.  Oddly, CPL3 code can still set NT using popf.
->>
-> 
-> [...]
-> 
->> +
->> +       /*
->> +        * Sysenter doesn't filter flags, so we need to clear NT
->> +        * ourselves.  To save a few cycles, we can check whether
->> +        * NT was set instead of doing an unconditional popfq.
->> +        */
->> +       testl $X86_EFLAGS_NT,EFLAGS(%rsp)       /* saved EFLAGS match cpu */
->> +       jnz sysenter_fix_flags
->> +sysenter_flags_fixed:
->> +
-> 
-> Because this thread hasn't gone on long enough:
-> 
-> Do we need to clear IOPL here, too?  With patch 2 applied, an IOPL !=
-> 0 program can leak IOPL into another task.  It should be cleared on
-> iret, sysexit (via popf) and sysret (directly), so this shouldn't
-> matter.  Am I missing something?
-> 
-> Adding IOPL to the test will add no overhead for non-iopl-using tasks,
-> but it will slighly slow down 32-bit tasks that use iopl.
-> 
+pointers should be foo *bar or (foo *)
 
-As you correctly point out, IOPL is completely irrelevant in ring 0.  We
-have to restore the user space flags before returning to user space, so
-it shouldn't matter.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ mm/highmem.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-	-hpa
-
+diff --git a/mm/highmem.c b/mm/highmem.c
+index 123bcd3..f6dae74 100644
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -130,7 +130,7 @@ unsigned int nr_free_highpages (void)
+ static int pkmap_count[LAST_PKMAP];
+ static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(kmap_lock);
+ 
+-pte_t * pkmap_page_table;
++pte_t *pkmap_page_table;
+ 
+ /*
+  * Most architectures have no use for kmap_high_get(), so let's abstract
+@@ -291,7 +291,7 @@ void *kmap_high(struct page *page)
+ 	pkmap_count[PKMAP_NR(vaddr)]++;
+ 	BUG_ON(pkmap_count[PKMAP_NR(vaddr)] < 2);
+ 	unlock_kmap();
+-	return (void*) vaddr;
++	return (void *) vaddr;
+ }
+ 
+ EXPORT_SYMBOL(kmap_high);
+@@ -318,7 +318,7 @@ void *kmap_high_get(struct page *page)
+ 		pkmap_count[PKMAP_NR(vaddr)]++;
+ 	}
+ 	unlock_kmap_any(flags);
+-	return (void*) vaddr;
++	return (void *) vaddr;
+ }
+ #endif
+ 
+-- 
+1.9.1
 
