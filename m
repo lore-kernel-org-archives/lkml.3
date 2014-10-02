@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaJBTcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:32:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43406 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753344AbaJBTcG (ORCPT
+	id S1753568AbaJBTcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:32:43 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:61826 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513AbaJBTcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:32:06 -0400
-Message-ID: <542DA834.50305@free-electrons.com>
-Date: Thu, 02 Oct 2014 21:32:04 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 15:32:41 -0400
 MIME-Version: 1.0
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Scott.Benesh@pmcs.com" <Scott.Benesh@pmcs.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "crope@iki.fi" <crope@iki.fi>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ISS StorageDev <iss_storagedev@hp.com>
-Subject: Re: [PATCH] MAINTAINERS: fix Mike Miller's e-mail address
-References: <1412233478-17115-1-git-send-email-michael.opdenacker@free-electrons.com> <542CFBF8.6080703@free-electrons.com> <94D0CD8314A33A4D9D801C0FE68B402958CCA5A9@G4W3202.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958CCA5A9@G4W3202.americas.hpqcorp.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <542DA767.3000601@redhat.com>
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de>
+	<1412256558-9995-5-git-send-email-mgorman@suse.de>
+	<CA+55aFzJtoEXEzoyYQ=j+AMxyZNL3Gr3bhXPr3twyuGzvES1PA@mail.gmail.com>
+	<542DA038.9000908@oracle.com>
+	<CA+55aFwybOYtuOn43idiikVDPfBO7pWb4vLjhcM0dYUxTx7odA@mail.gmail.com>
+	<20141002190734.GA15671@node.dhcp.inet.fi>
+	<CA+55aFzNGCiaL5fWpi_-JJXBhCuS+6CgUa0GpmFHRWWTGXp4fQ@mail.gmail.com>
+	<542DA767.3000601@redhat.com>
+Date: Thu, 2 Oct 2014 12:32:40 -0700
+X-Google-Sender-Auth: QraZTkaif2vk4aN4XmcZq-Sc8UA
+Message-ID: <CA+55aFxhbiMec+bywcvUVO17UU9UC97PLSqqnrv10dtSRzmhAg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mm: numa: Do not mark PTEs pte_numa when splitting
+ huge pages
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Sasha Levin <sasha.levin@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-Thank you for your reply!
-
-On 10/02/2014 04:40 PM, Elliott, Robert (Server Storage) wrote:
-> NAK - Mike Miller is not at HP any more.  The beardog machine is still
-> here but the email accounts are not monitored.
+On Thu, Oct 2, 2014 at 12:28 PM, Rik van Riel <riel@redhat.com> wrote:
 >
-> PMC-Sierra (copying Scott Benesh) will be picking up maintenance of
-> hpsa and maybe cciss.  cpqarray should probably be marked unmaintained
-> or removed from the kernel.
+> They are more useful as sanity tests than anything else.
 
-Scott, would you confirm your interest in becoming the maintainer of
-hpsa and cciss? I'd be happy to submit a MAINTAINERS patch about this.
+.. and that's exactly what I'd like to hear about the protnone patch.
+Did the patch screw something up so that it doesn't count the faults
+properly?
 
-Michael.
-
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+              Linus
