@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaJBNte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:49:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35926 "EHLO mx2.suse.de"
+	id S1754402AbaJBNtu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:49:50 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:52547 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164AbaJBNtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:49:31 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, yamada.m@jp.panasonic.com
-Subject: [PATCH] powerpc/boot: Makefile cleanup
-Date: Thu,  2 Oct 2014 15:49:15 +0200
-Message-Id: <1412257755-4564-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
+	id S1753928AbaJBNts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:49:48 -0400
+Message-ID: <1412257785.1027.40.camel@iivanov-dev>
+Subject: Re: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
+        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Thu, 02 Oct 2014 16:49:45 +0300
+In-Reply-To: <542D5377.90201@metafoo.de>
+References: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
+	 <542D5377.90201@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The $(image-n) variable will never exist, because unset Kconfig options
-are '' and not 'n'.
+On Thu, 2014-10-02 at 15:30 +0200, Lars-Peter Clausen wrote:
+> On 10/02/2014 02:32 PM, Ivan T. Ivanov wrote:
+> > When #iio-cells is greater than '0', the driver could provide
+> > a custom of_xlate function that reads the *args* and returns
+> > the appropriate index in registered IIO channels array.
+> 
+> Do you have an example of a device that doesn't want to use the default 
+> mapping? If yes please include it in the commit message, otherwise it is 
+> fairly hard to say whether this makes sense or not.
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- arch/powerpc/boot/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Still not mainlined. You can find more detailed description of the 
+issue here[1] and driver here[2].
 
-diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
-index ccc25ed..c456d07 100644
---- a/arch/powerpc/boot/Makefile
-+++ b/arch/powerpc/boot/Makefile
-@@ -317,7 +317,7 @@ endif
- # Allow extra targets to be added to the defconfig
- image-y	+= $(subst ",,$(CONFIG_EXTRA_TARGETS))
- 
--initrd-  := $(patsubst zImage%, zImage.initrd%, $(image-n) $(image-))
-+initrd-  := $(patsubst zImage%, zImage.initrd%, $(image-))
- initrd-y := $(patsubst zImage%, zImage.initrd%, \
- 		$(patsubst dtbImage%, dtbImage.initrd%, \
- 		$(patsubst simpleImage%, simpleImage.initrd%, \
--- 
-1.8.4.5
+Regards,
+Ivan
+
+[1] https://lkml.org/lkml/2014/10/2/123
+[2] http://www.spinics.net/lists/devicetree/msg50717.html
+
 
