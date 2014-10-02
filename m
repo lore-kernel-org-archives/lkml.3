@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352AbaJBO5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:57:53 -0400
-Received: from mail-db3on0064.outbound.protection.outlook.com ([157.55.234.64]:40480
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753584AbaJBO5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:57:52 -0400
-X-Greylist: delayed 960 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Oct 2014 10:57:51 EDT
-Date: Thu, 2 Oct 2014 15:41:39 +0100
-From: Romeo Cane <romeo.cane.ext@coriant.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] powerpc: fix sys_call_table declaration
-Message-ID: <20141002144131.GA3855@rcane-VirtualBox>
+	id S1754278AbaJBO5B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:57:01 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39193 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616AbaJBO5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:57:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [217.115.69.135]
-X-ClientProxiedBy: DB4PR07CA029.eurprd07.prod.outlook.com (10.242.229.39) To
- DBXPR04MB143.eurprd04.prod.outlook.com (10.242.140.15)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DBXPR04MB143;
-X-Forefront-PRVS: 03524FBD26
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(64706001)(77096002)(76482002)(33656002)(47776003)(23726002)(101416001)(105586002)(120916001)(19580395003)(10300001)(95666004)(87976001)(85852003)(85306004)(46102003)(80022003)(33716001)(20776003)(66066001)(106356001)(46406003)(42186005)(21056001)(99396003)(92566001)(54356999)(50986999)(102836001)(83506001)(86362001)(107046002)(19580405001)(31966008)(92726001)(97756001)(229853001)(4396001)(97736003)(50466002)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:DBXPR04MB143;H:rcane-VirtualBox;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: coriant.com
+Date: Thu, 2 Oct 2014 22:56:59 +0800
+Message-ID: <CAHkaATT2=WYuUA9yyWJbjChT43Fp-WZqgpgS-Twyd+AKHLHwxQ@mail.gmail.com>
+Subject: [PATCH] [RESEND]arm64: Use phys_addr_t type for physical address
+From: Min-Hua Chen <orca.chen@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Declaring sys_call_table as a pointer causes the compiler to generate the wrong lookup code in arch_syscall_addr
+Change the type of physical address from unsigned long to phys_addr_t,
+make valid_phys_addr_range more readable.
 
-Signed-off-by: Romeo Cane <romeo.cane.ext@coriant.com>
+Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
 ---
- arch/powerpc/include/asm/syscall.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/io.h |    2 +-
+ arch/arm64/mm/mmap.c        |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
-index b54b2ad..528ba9d 100644
---- a/arch/powerpc/include/asm/syscall.h
-+++ b/arch/powerpc/include/asm/syscall.h
-@@ -17,7 +17,7 @@
- 
- /* ftrace syscalls requires exporting the sys_call_table */
- #ifdef CONFIG_FTRACE_SYSCALLS
--extern const unsigned long *sys_call_table;
-+extern const unsigned long sys_call_table[];
- #endif /* CONFIG_FTRACE_SYSCALLS */
- 
- static inline long syscall_get_nr(struct task_struct *task,
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index e0ecdcf..f771e8b 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -243,7 +243,7 @@ extern void __iomem *ioremap_cache(phys_addr_t
+phys_addr, size_t size);
+  * (PHYS_OFFSET and PHYS_MASK taken into account).
+  */
+ #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+-extern int valid_phys_addr_range(unsigned long addr, size_t size);
++extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+ extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+
+ extern int devmem_is_allowed(unsigned long pfn);
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+index 8ed6cb1..1d73662 100644
+--- a/arch/arm64/mm/mmap.c
++++ b/arch/arm64/mm/mmap.c
+@@ -102,7 +102,7 @@ EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
+  * You really shouldn't be using read() or write() on /dev/mem.  This might go
+  * away in the future.
+  */
+-int valid_phys_addr_range(unsigned long addr, size_t size)
++int valid_phys_addr_range(phys_addr_t addr, size_t size)
+ {
+     if (addr < PHYS_OFFSET)
+         return 0;
 -- 
-1.8.3.2
-
+1.7.10.4
