@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaJBJzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:55:07 -0400
-Received: from plane.gmane.org ([80.91.229.3]:53866 "EHLO plane.gmane.org"
+	id S1751777AbaJBJ4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:56:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30788 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaJBJzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:55:05 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-Date: Thu, 02 Oct 2014 12:29:53 +0300
-Message-ID: <542D1B11.8070600@mm-sol.com>
-References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com> <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-Cc: linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        devicetree@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: 37.157.136.206
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-In-Reply-To: <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
+	id S1751488AbaJBJ4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 05:56:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
+   d="scan'208";a="612019812"
+Date: Thu, 2 Oct 2014 12:55:36 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 10/15] leds: leds-gpio: Add ACPI probing support
+Message-ID: <20141002095536.GI1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <2043842.LxdgdYRbIF@wuerfel>
+ <20141001140441.GF1786@lahna.fi.intel.com>
+ <6852466.Q5TXcWChqW@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6852466.Q5TXcWChqW@wuerfel>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 01, 2014 at 04:14:20PM +0200, Arnd Bergmann wrote:
+> On Wednesday 01 October 2014 17:04:41 Mika Westerberg wrote:
+> > 
+> > > On the question what to put into the name and type fields, that is
+> > > unrelated. The type is supposed to be for the 'device_type' property
+> > > in DT, which we should never rely on in a driver that supports both
+> > > APCI and DT. In Linux we only use that for "pci", "cpu" and "memory",
+> > > all of which have their own way of getting probed in ACPI.
+> > > The "name" is normally ignored in DT as well, except for backwards
+> > > compatibility with old bindings, but I would argue that you should not
+> > > just put "prp0001" in there. Either leave it empty like type, or use
+> > > the name of the device as it appears in the ACPI tables, such as "DEV0"
+> > > or "PWM".
+> > 
+> > OK, I think it makes sense to leave them empty. I remember I tried that
+> > at some point but it didn't work without N and T fields. Is there some
+> > example what to put there in case of empty?
+> > 
+> > Something like "of:N*T*Cgpio-leds" perhaps?
+> 
+> Sorry, don't know. If I read the code right, the type field in DT ends
+> up being "<NULL>" for any device that doesn't set the device_type 
+> property, but that seems a bit silly and probably isn't worth copying.
 
-Hi Stan,
+OK, I checked and udev wants to have both N and T but they can be left
+empty. If there are no objections the modalias will look like this:
 
-On 09/24/2014 03:56 PM, Stanimir Varbanov wrote:
+[root@mnw01 ~]# cat /sys/bus/spi/devices/spi-PRP0001\:00/modalias 
+of:Nat25TCatmel,at25
 
-<snip>
-
-> +static int vadc_get_dt_data(struct vadc_priv *vadc, struct device_node *node)
-> +{
-> +	struct iio_chan_spec *iio_chan = vadc->iio_chans;
-> +	const struct vadc_channels *vadc_chan;
-> +	struct vadc_channel_prop prop;
-> +	struct device_node *child;
-> +	int ret, index = 0;
-> +
-> +	for_each_available_child_of_node(node, child) {
-> +		ret = vadc_get_dt_channel_data(vadc->dev, &prop, child);
-> +		if (ret)
-> +			return ret;
-> +
-> +		vadc->chan_props[index] = prop;
-> +
-> +		vadc_chan = &vadc_chans[prop.channel];
-> +
-> +		iio_chan->channel = prop.channel;
-> +		iio_chan->datasheet_name = vadc_chan->datasheet_name;
-> +		iio_chan->info_mask_separate = vadc_chan->info_mask;
-> +		iio_chan->type = vadc_chan->type;
-> +		iio_chan->indexed = 1;
-> +		iio_chan->scan_type.sign = 's';
-> +		iio_chan->scan_type.realbits = 15;
-> +		iio_chan->scan_type.storagebits = 16;
-> +		iio_chan->address = index++;
-> +
-> +		iio_chan++;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-
-<snip>
-
-> +static int vadc_probe(struct platform_device *pdev)
-> +{
-
-<snip>
-
-> +
-> +	indio_dev->dev.parent = dev;
-> +	indio_dev->dev.of_node = node;
-> +	indio_dev->name = pdev->name;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->info = &vadc_info;
-> +	indio_dev->channels = vadc->iio_chans;
-> +	indio_dev->num_channels = vadc->nchannels;
-
-This will not work as we thought. Registration will be fine and entries
-in sysfs are created as expected, but this is breaking numbering scheme
-for client drivers. For us the problem is that iio framework expect channels
-numbering to be linear and channel number should not be greater than
-channel count. For example even if die temperature channel is always 8, if
-I describe only 5 channels in DTS files (4 for reference points measurement)
-and 1 for die temperature, clients could not get OF reference to 
-temperature
-channel using io-channels = <&pm8941_vadc 8>;
-
-Jonathan, please, could you advise us.
-
-Regards,
-Ivan
-
-> +
-> +	return devm_iio_device_register(dev, indio_dev);
-> +}
-> +
->
-
+In other words name is the ACPI device name (AT25) in lower case, T is
+left empty and C is the compatible property.
