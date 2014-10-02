@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771AbaJBRoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 13:44:13 -0400
-Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:52041
-	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752028AbaJBRoM (ORCPT
+	id S1753176AbaJBRtH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 13:49:07 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:48354 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141AbaJBRtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 13:44:12 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Rostislav Lisovy <lisovy@gmail.com>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "luca.ellero@brickedbrain.com" <luca.ellero@brickedbrain.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: RE: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC
- depend on HAS_IOMEM
-Thread-Topic: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC
- depend on HAS_IOMEM
-Thread-Index: AQHP3k4gow5hFBlhm02F4sKBzxlCjZwdB36AgAB9KYD//420gA==
-Date: Thu, 2 Oct 2014 17:44:11 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FCE77F@P3PWEX4MB008.ex4.secureserver.net>
-References: <542D640E.6010200@gmail.com>
-	 <DC148C5AA1CEBA4E87973D432B1C2D8825FCE627@P3PWEX4MB008.ex4.secureserver.net>
- <1412270771.20184.1.camel@lolumad>
-In-Reply-To: <1412270771.20184.1.camel@lolumad>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 2 Oct 2014 13:49:05 -0400
+Date: Thu, 2 Oct 2014 18:49:01 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v2 00/11] perf: Intel Cache QoS Monitoring support
+Message-ID: <20141002174901.GG14343@console-pimps.org>
+References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
+ <8738b7eac2.fsf@tassilo.jf.intel.com>
+ <20141002065124.GF14343@console-pimps.org>
+ <20141002150454.GA12538@two.firstfloor.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002150454.GA12538@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s92HiHIE007590
 
-On Thursday, October 02, 2014 10:26 AM, Rostislav Lisovy wrote:
->
-> Since "egrep -irn "ioremap" drivers/staging/comedi/drivers | wc -l"
-> shows "39" does it mean that this should be added to all the other
-> drivers as well?
+On Thu, 02 Oct, at 05:04:54PM, Andi Kleen wrote:
+> 
+> Yes, we should just get rid of Kconfig and give everyone
+> the same kernel like Windows. Much simpler for everyone, 
+> wouldn't it be?
+> 
+> I'm sure you can easily see the flaws in the argument.
 
+No, not really, since that's not the argument I made.
 
-The others are actually pci_ioremap_bar() and those drivers depend on PCI.
-I don't _think_ these drivers require the depends on HAS_IOMEM.
+What you wrote is like saying: I don't like using electronic brakes on
+my car so I shouldn't use any electronics, ever.
 
-The ii_pci20kc driver is goofy in that it's actually an ISA board that uses
-memory mapped I/O.
-
-Regards,
-Hartley
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Matt Fleming, Intel Open Source Technology Center
