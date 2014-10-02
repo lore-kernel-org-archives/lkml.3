@@ -1,191 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaJBOQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:16:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40006 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718AbaJBOQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:16:34 -0400
-Date: Thu, 2 Oct 2014 16:15:59 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Add option to copy events when queueing
-Message-ID: <20141002141559.GJ9764@krava.brq.redhat.com>
-References: <1412245929-27579-1-git-send-email-yarygin@linux.vnet.ibm.com>
- <1412245929-27579-2-git-send-email-yarygin@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412245929-27579-2-git-send-email-yarygin@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753894AbaJBOQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:16:57 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:45558 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584AbaJBOQz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:16:55 -0400
+From: Rostislav Lisovy <lisovy@gmail.com>
+X-Google-Original-From: Rostislav Lisovy <lisovy@merica.cz>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, Roger Quadros <rogerq@ti.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lisovy@gmail.com, michal.vokac@comap.cz, sojkam1@fel.cvut.cz,
+        Rostislav Lisovy <lisovy@merica.cz>
+Subject: [PATCH v3 2/2] mtd: nand: omap: Synchronize the access to the ECC engine
+Date: Thu,  2 Oct 2014 16:16:44 +0200
+Message-Id: <1412259404-5202-1-git-send-email-lisovy@merica.cz>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <542D46A1.9090905@ti.com>
+References: <542D46A1.9090905@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 02:32:08PM +0400, Alexander Yarygin wrote:
+The AM335x Technical Reference Manual (spruh73j.pdf) says
+"Because the ECC engine includes only one accumulation context,
+it can be allocated to only one chip-select at a time ... "
+(7.1.3.3.12.3). Since the commit 97a288ba2cfa ("ARM: omap2+:
+gpmc-nand: Use dynamic platform_device_alloc()") gpmc-nand
+driver supports multiple NAND flash devices connected to
+the single controller.
+Use global 'struct nand_hw_control' among multiple NAND
+instances to synchronize the access to the single ECC Engine.
 
-SNIP
+Tested with custom AM335x board using 2x NAND flash chips.
 
-> +		if (!oe->buffer) {
-> +			if (oe->copy_on_queue) {
-> +				oe->cur_alloc_size -= new_event->header.size;
-> +				free(new_event);
-> +			}
->  			return NULL;
-> +		}
->  
->  		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
->  		   oe->cur_alloc_size, size, oe->max_alloc_size);
-> @@ -90,15 +110,19 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
->  		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
->  	}
->  
-> +	new->event = new_event;
-> +
->  	return new;
->  }
->  
->  struct ordered_event *
-> -ordered_events__new(struct ordered_events *oe, u64 timestamp)
-> +ordered_events__new(struct ordered_events *oe, u64 timestamp,
-> +		    union perf_event *event)
->  {
->  	struct ordered_event *new;
->  
-> -	new = alloc_event(oe);
-> +	new = alloc_event(oe, event);
-> +
->  	if (new) {
->  		new->timestamp = timestamp;
->  		queue_event(oe, new);
-> @@ -111,6 +135,10 @@ void ordered_events__delete(struct ordered_events *oe, struct ordered_event *eve
->  {
->  	list_move(&event->list, &oe->cache);
->  	oe->nr_events--;
-> +	if (oe->copy_on_queue) {
-> +		oe->cur_alloc_size -= event->event->header.size;
-> +		free(event->event);
-> +	}
->  }
->  
->  static int __ordered_events__flush(struct perf_session *s,
-> @@ -240,6 +268,11 @@ void ordered_events__free(struct ordered_events *oe)
->  
->  		event = list_entry(oe->to_free.next, struct ordered_event, list);
->  		list_del(&event->list);
-> +		if (oe->copy_on_queue) {
-> +			oe->cur_alloc_size -= event->event->header.size;
-> +			free(event->event);
-> +		}
-> +
->  		free(event);
-
-looks ok.. but I was wondering if we could move those repeating
-bits in function.. something like below (untested, just compiled)
-
-thanks,
-jirka
-
-
+Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
 ---
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index f7383ccc6690..583dcefc92fb 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -58,23 +58,41 @@ static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- 	}
- }
+Changes since v2:
+* Do not use custom locks. Use global 'struct nand_hw_control'
+  among multiple NAND instances and it will do the work for us
+  (Roger Quadros)
+
+Changes since v1:
+* Since not all the read/write operations are performed by the
+  omap_read(write)_page_bch() functions use the locks directly on
+  those places that configure the ECC engine (take the lock) and
+  read the result from the ECC engine (release the lock).
+  This approach should cover read/write operations with all
+  possible ECC modes. (Roger Quadros)
+
+
+ drivers/mtd/nand/omap2.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index f0dcdb6..dfae46f 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -144,8 +144,13 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
+ 	0xac, 0x6b, 0xff, 0x99, 0x7b};
+ static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
  
-+static union perf_event *__dup_event(struct ordered_events *oe, union perf_event *event)
-+{
-+	union perf_event *new_event = NULL;
++/* Shared among all NAND instances to synchronize the access to the ECC Engine */
++struct nand_hw_control omap_gpmc_controller = {
++	.lock = __SPIN_LOCK_UNLOCKED(omap_gpmc_controller.lock),
++	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(omap_gpmc_controller.wq),
++};
 +
-+	if (oe->cur_alloc_size < oe->max_alloc_size) {
-+		new_event = memdup(event, event->header.size);
-+		if (new_event)
-+			oe->cur_alloc_size += event->header.size;
-+	}
-+
-+	return new_event;
-+}
-+
-+static union perf_event *dup_event(struct ordered_events *oe, union perf_event *event)
-+{
-+	return oe->copy_on_queue ? __dup_event(oe, event) : event;
-+}
-+
-+static void free_dup_event(struct ordered_events *oe, union perf_event *event)
-+{
-+	if (oe->copy_on_queue) {
-+		oe->cur_alloc_size -= event->header.size;
-+		free(event);
-+	}
-+}
-+
- #define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
- static struct ordered_event *alloc_event(struct ordered_events *oe,
- 					 union perf_event *event)
- {
- 	struct list_head *cache = &oe->cache;
- 	struct ordered_event *new = NULL;
--	union perf_event *new_event = NULL;
+ struct omap_nand_info {
+-	struct nand_hw_control		controller;
+ 	struct omap_nand_platform_data	*pdata;
+ 	struct mtd_info			mtd;
+ 	struct nand_chip		nand;
+@@ -1685,9 +1690,6 @@ static int omap_nand_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, info);
+ 
+-	spin_lock_init(&info->controller.lock);
+-	init_waitqueue_head(&info->controller.wq);
 -
--	if (oe->copy_on_queue) {
--		if (oe->cur_alloc_size < oe->max_alloc_size) {
--			new_event = memdup(event, event->header.size);
--			if (new_event)
--				oe->cur_alloc_size += event->header.size;
--		}
--	} else
--		new_event = event;
-+	union perf_event *new_event;
+ 	info->pdev		= pdev;
+ 	info->gpmc_cs		= pdata->cs;
+ 	info->reg		= pdata->reg;
+@@ -1707,7 +1709,7 @@ static int omap_nand_probe(struct platform_device *pdev)
  
-+	new_event = dup_event(oe, event);
- 	if (!new_event)
- 		return NULL;
+ 	info->phys_base = res->start;
  
-@@ -90,10 +108,7 @@ static struct ordered_event *alloc_event(struct ordered_events *oe,
+-	nand_chip->controller = &info->controller;
++	nand_chip->controller = &omap_gpmc_controller;
  
- 		oe->buffer = malloc(size);
- 		if (!oe->buffer) {
--			if (oe->copy_on_queue) {
--				oe->cur_alloc_size -= new_event->header.size;
--				free(new_event);
--			}
-+			free_dup_event(oe, new_event);
- 			return NULL;
- 		}
- 
-@@ -135,10 +150,7 @@ void ordered_events__delete(struct ordered_events *oe, struct ordered_event *eve
- {
- 	list_move(&event->list, &oe->cache);
- 	oe->nr_events--;
--	if (oe->copy_on_queue) {
--		oe->cur_alloc_size -= event->event->header.size;
--		free(event->event);
--	}
-+	free_dup_event(oe, event->event);
- }
- 
- static int __ordered_events__flush(struct perf_session *s,
-@@ -268,11 +280,7 @@ void ordered_events__free(struct ordered_events *oe)
- 
- 		event = list_entry(oe->to_free.next, struct ordered_event, list);
- 		list_del(&event->list);
--		if (oe->copy_on_queue) {
--			oe->cur_alloc_size -= event->event->header.size;
--			free(event->event);
--		}
--
-+		free_dup_event(oe, event->event);
- 		free(event);
- 	}
- }
+ 	nand_chip->IO_ADDR_W = nand_chip->IO_ADDR_R;
+ 	nand_chip->cmd_ctrl  = omap_hwcontrol;
+-- 
+1.9.1
+
