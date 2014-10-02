@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaJBJZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:25:13 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:54683 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaJBJZK (ORCPT
+	id S1751391AbaJBJ1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:27:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46181 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750992AbaJBJ1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:25:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Beniamino Galvani <b.galvani@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Victor Wan <victor.wan@amlogic.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Carlo Caione <carlo@caione.org>,
-        Jerry Cao <jerry.cao@amlogic.com>
-Subject: Re: [PATCH 1/6] ARM: meson: add meson8 machine definition
-Date: Thu, 02 Oct 2014 11:24:54 +0200
-Message-ID: <11073411.IcmTkIICYA@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412198986-26534-2-git-send-email-b.galvani@gmail.com>
-References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com> <1412198986-26534-2-git-send-email-b.galvani@gmail.com>
+	Thu, 2 Oct 2014 05:27:14 -0400
+Date: Thu, 2 Oct 2014 10:27:21 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Min-Hua Chen <orca.chen@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Use phys_addr_t type for physical address (arm64)
+Message-ID: <20141002092721.GB24016@arm.com>
+References: <CAHkaATTho2U=cy8Ee0BD2oSp=4Vpb0GhTqUzEOCW0Jdw8u0ENw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:M3xBfPXhYcDv/+Nw++nWdhlxbzyS5ZhmG+1OfFFWwvU
- zQbvFdNEsXBF8YFWtWp6qBF4pSrXWd8EdSHgc9uQDRoHalhZt2
- ty5poi8vEKZz7nFaDkpTz6cmbSNKB7MNG0BX+tMfOyGHilj3dj
- d3rD8xKX9JXeprlFJfbh4dLXcJ2Goz1aSsdGdB2PbpijRFD17U
- Q8zxCNGoNqphMAP11ilIgAUGJqst645Z7d790Eg02E9Nrp2Glt
- +NXQAZ96HfK4utepr06/1IqM/v/2+RCYesR25GSQ7dmSQm7kuv
- lPCaFKPUVyHgAqIFKjydjestUC5sOIiaGQHOmS8Pjo5WczHGE6
- VHzqNL6kS/q9fyI5K1/4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHkaATTho2U=cy8Ee0BD2oSp=4Vpb0GhTqUzEOCW0Jdw8u0ENw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 01 October 2014 23:29:41 Beniamino Galvani wrote:
-> 
-> +static const char * const m8_common_board_compat[] = {
-> +       "amlogic,meson8",
-> +       NULL,
-> +};
-> +
->  DT_MACHINE_START(AML8726_MX, "Amlogic Meson6 platform")
->         .dt_compat      = m6_common_board_compat,
->  MACHINE_END
->  
-> +DT_MACHINE_START(MESON8, "Amlogic Meson8 platform")
-> +       .dt_compat      = m8_common_board_compat,
-> +MACHINE_END
-> 
+On Wed, Oct 01, 2014 at 03:26:55PM +0100, Min-Hua Chen wrote:
+> I found that valid_phys_addr_range does not use
+> phys_addr_t to describe physical address.
+> Is it better to change the type from unsigned long to phys_addr_t?
 
-I'd just add the meson8 string to the m6_common_board_compat list and
-rename it.
+Yes, that looks like a sensible change. Both types are 64-bit on arm64, so
+it shouldn't affect functionality. Can you resend as a proper patch (with
+commit message) please?
 
-	Arnd
+Will
+
+> Signed-off-by: Min-Hua Chen<orca.chen@gmail.com>
+> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> index e0ecdcf..f771e8b 100644
+> --- a/arch/arm64/include/asm/io.h
+> +++ b/arch/arm64/include/asm/io.h
+> @@ -243,7 +243,7 @@ extern void __iomem *ioremap_cache(phys_addr_t
+> phys_addr, size_t size);
+>   * (PHYS_OFFSET and PHYS_MASK taken into account).
+>   */
+>  #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+> -extern int valid_phys_addr_range(unsigned long addr, size_t size);
+> +extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
+>  extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
+> 
+>  extern int devmem_is_allowed(unsigned long pfn);
+> diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+> index 8ed6cb1..1d73662 100644
+> --- a/arch/arm64/mm/mmap.c
+> +++ b/arch/arm64/mm/mmap.c
+> @@ -102,7 +102,7 @@ EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
+>   * You really shouldn't be using read() or write() on /dev/mem.  This might go
+>   * away in the future.
+>   */
+> -int valid_phys_addr_range(unsigned long addr, size_t size)
+> +int valid_phys_addr_range(phys_addr_t addr, size_t size)
+>  {
+>      if (addr < PHYS_OFFSET)
+>          return 0;
+> -- 
+> 1.7.10.4
+> 
