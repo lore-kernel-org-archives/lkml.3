@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaJBDce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 23:32:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18016 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaJBDcd (ORCPT
+	id S1752538AbaJBDhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 23:37:54 -0400
+Received: from ozlabs.org ([103.22.144.67]:42336 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382AbaJBDhx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 23:32:33 -0400
-Message-ID: <542CC73F.8050907@oracle.com>
-Date: Wed, 01 Oct 2014 23:32:15 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: pipe/page fault oddness.
-References: <20140930033327.GA14558@redhat.com>	<CA+55aFwmo7ot=h7tpUYhSC49CHKBK2KfGaDJ_fwB0=VNqvTPBQ@mail.gmail.com>	<20140930043309.GA16196@redhat.com>	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>	<20140930160510.GA15903@redhat.com>	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>	<20140930162201.GC15903@redhat.com>	<20140930164047.GA18354@redhat.com>	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>	<20140930182059.GA24431@redhat.com>	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>	<542C7B5E.2020000@oracle.com> <20141001172804.16e5986a@as>
-In-Reply-To: <20141001172804.16e5986a@as>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 1 Oct 2014 23:37:53 -0400
+Message-ID: <1412221071.19209.103.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH v2 07/17] cxl: Add new header for call backs and structs
+From: Michael Neuling <mikey@neuling.org>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
+        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Date: Thu, 02 Oct 2014 13:37:51 +1000
+In-Reply-To: <20141001120010.4813614016A@ozlabs.org>
+References: <20141001120010.4813614016A@ozlabs.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 06:28 PM, Chuck Ebbert wrote:
-> On Wed, 01 Oct 2014 18:08:30 -0400
-> Sasha Levin <sasha.levin@oracle.com> wrote:
+On Wed, 2014-10-01 at 22:00 +1000, Michael Ellerman wrote:
+> On Tue, 2014-30-09 at 10:34:56 UTC, Michael Neuling wrote:
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> > 
+> > This new header add defines for callbacks and structs needed by the rest of the
+>                   adds
+> > kernel to hook into the cxl infrastructure.
+> > 
+> > Empty functions are provided when CONFIG CXL_BASE is not enabled.
+> > 
+> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> >  include/misc/cxl.h | 34 ++++++++++++++++++++++++++++++++++
 > 
->> > On 10/01/2014 04:20 PM, Linus Torvalds wrote:
->>> > > So I'm really sending this patch out in the hope that it will get
->>> > > comments, fixup and possibly even testing by people who actually know
->>> > > the NUMA balancing code. Rik?  Anybody?
->> > 
->> > Hi Linus,
->> > 
->> > I've tried this patch on the same configuration that was triggering
->> > the VM_BUG_ON that Hugh mentioned previously. Surprisingly enough it
->> > ran fine for ~20 minutes before exploding with:
->> > 
->> > [ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
-> That's:
-> 	BUG_ON(is_huge_zero_page(page));
+> include/misc is kind of weird. I guess it's a misc device.
 > 
-> Can you change your scripts to show the source code line when
-> the error is a BUG_ON()? The machine code disassembly after the
-> oops message doesn't really help.
+> Any reason not to have it in arch/powerpc/include ?
+
+We can do either way.  We did consider it a driver so putting it in
+arch/powerpc didn't seem quite right.
+
+I might leave it here unless you really object.
+
 > 
+> > diff --git a/include/misc/cxl.h b/include/misc/cxl.h
+> > new file mode 100644
+> > index 0000000..bde46a3
+> > --- /dev/null
+> > +++ b/include/misc/cxl.h
+> > @@ -0,0 +1,34 @@
+> > +/*
+> > + * Copyright 2014 IBM Corp.
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > + * modify it under the terms of the GNU General Public License
+> > + * as published by the Free Software Foundation; either version
+> > + * 2 of the License, or (at your option) any later version.
+> > + */
+> > +
+> > +#ifndef _MISC_ASM_CXL_H
+> 
+> No ASM.
 
-Hum? The source code line is the first line in the trace:
+Oops, yes.
 
-	[ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
+> 
+> > +#define _MISC_ASM_CXL_H
+> > +
+> > +#define CXL_IRQ_RANGES 4
+> > +
+> > +struct cxl_irq_ranges {
+> > +	irq_hw_number_t offset[CXL_IRQ_RANGES];
+> > +	irq_hw_number_t range[CXL_IRQ_RANGES];
+> > +};
+> > +
+> > +#ifdef CONFIG_CXL_BASE
+> > +
+> > +void cxl_slbia(struct mm_struct *mm);
+> > +void cxl_ctx_get(void);
+> > +void cxl_ctx_put(void);
+> > +bool cxl_ctx_in_use(void);
+> > +
+> > +#else /* CONFIG_CXL_BASE */
+> > +
+> > +#define cxl_slbia(...) do { } while (0)
+> > +#define cxl_ctx_in_use(...) false
+> 
+> Any reason these shouldn't be static inlines?
 
+No, I'll change.
 
-Thanks,
-Sasha
+Mikey
