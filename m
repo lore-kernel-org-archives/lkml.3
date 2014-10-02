@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbaJBNn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:43:29 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:39073 "EHLO lists.s-osg.org"
+	id S1753890AbaJBNoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:44:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35816 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498AbaJBNn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:43:27 -0400
-Date: Thu, 2 Oct 2014 10:43:21 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] s5p-fimc: Only build suspend/resume for PM
-Message-ID: <20141002104321.0b5b6aa2@recife.lan>
-In-Reply-To: <1412239691-28719-1-git-send-email-thierry.reding@gmail.com>
-References: <1412239691-28719-1-git-send-email-thierry.reding@gmail.com>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751857AbaJBNoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:44:17 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        yamada.m@jp.panasonic.com
+Subject: [PATCH] IXP4xx: Makefile cleanup
+Date: Thu,  2 Oct 2014 15:44:02 +0200
+Message-Id: <1412257442-4362-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 02 Oct 2014 10:48:11 +0200
-Thierry Reding <thierry.reding@gmail.com> escreveu:
+obj-pci-n will never be assigned or used. obj-pci-y does not need to be
+initialized, because each Kbuild file is processed separately.
 
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> If power management is disabled these functions become unused, so there
-> is no reason to build them. This fixes a couple of build warnings when
-> PM(_SLEEP,_RUNTIME) is not enabled.
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/media/platform/exynos4-is/fimc-core.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/media/platform/exynos4-is/fimc-core.c b/drivers/media/platform/exynos4-is/fimc-core.c
-> index b70fd996d794..8e7435bfa1f9 100644
-> --- a/drivers/media/platform/exynos4-is/fimc-core.c
-> +++ b/drivers/media/platform/exynos4-is/fimc-core.c
-> @@ -832,6 +832,7 @@ err:
->  	return -ENXIO;
->  }
->  
-> +#if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
->  static int fimc_m2m_suspend(struct fimc_dev *fimc)
->  {
->  	unsigned long flags;
-> @@ -870,6 +871,7 @@ static int fimc_m2m_resume(struct fimc_dev *fimc)
->  
->  	return 0;
->  }
-> +#endif
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ arch/arm/mach-ixp4xx/Makefile | 3 ---
+ 1 file changed, 3 deletions(-)
 
-The patch obviously is correct, but I'm wandering if aren't there a way
-to avoid the if/endif.
+diff --git a/arch/arm/mach-ixp4xx/Makefile b/arch/arm/mach-ixp4xx/Makefile
+index eded94c..2ecc4c9 100644
+--- a/arch/arm/mach-ixp4xx/Makefile
++++ b/arch/arm/mach-ixp4xx/Makefile
+@@ -2,9 +2,6 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-obj-pci-y	:=
+-obj-pci-n	:=
+-
+ obj-pci-$(CONFIG_ARCH_IXDP4XX)		+= ixdp425-pci.o
+ obj-pci-$(CONFIG_MACH_AVILA)		+= avila-pci.o
+ obj-pci-$(CONFIG_MACH_IXDPG425)		+= ixdpg425-pci.o
+-- 
+1.8.4.5
 
-Not tested here, but perhaps if we mark those functions as inline, the
-C compiler would do the right thing without generating any warnings.
-
-If not, maybe we could use some macro like:
-
-#if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
-	#define PM_SLEEP_FUNC
-#else
-	#define PM_SLEEP_FUNC	inline
-#endif
-
-And put it at pm.h.
-
-That should be enough to shut up to warning without adding any footprint
-if PM is disabled.
-
-Regards,
-Mauro
