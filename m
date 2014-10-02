@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaJBODA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:03:00 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:62902 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857AbaJBOC7 (ORCPT
+	id S1753403AbaJBOEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:04:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51383 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaJBOE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:02:59 -0400
+	Thu, 2 Oct 2014 10:04:29 -0400
+Message-ID: <542D5B69.4050609@codeaurora.org>
+Date: Thu, 02 Oct 2014 17:04:25 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20140924124044.GC4992@pengutronix.de>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<1411443545-24951-5-git-send-email-srv_hongzhou.yang@mediatek.com>
-	<CACRpkda-K7w-bY0uSdnZvzEKEeQg38oExoHPSW61kEv9Wv20mA@mail.gmail.com>
-	<20140924124044.GC4992@pengutronix.de>
-Date: Thu, 2 Oct 2014 16:02:58 +0200
-Message-ID: <CACRpkdbtN-BDEwpJO2swnOjCe3UJhD5WOXXKBV0hPOe2M2=k7Q@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] ARM: dts: mt8135: Add pinctrl node for mt8135.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dandan.he@mediatek.com
-Content-Type: text/plain; charset=UTF-8
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] UBI: Fastmap: Calc fastmap size correctly
+References: <1412029248-22454-1-git-send-email-richard@nod.at> <1412029248-22454-3-git-send-email-richard@nod.at>
+In-Reply-To: <1412029248-22454-3-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 2:40 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Sep 24, 2014 at 01:23:09PM +0200, Linus Walleij wrote:
-
->> I haven't got to reviewing the driver, but this looks just wrong.
->>
->> Have the magic numbers in the driver.
->>
->> Use strings to describe functions, not integers.
+On 9/30/2014 1:20 AM, Richard Weinberger wrote:
+> We need to add fm_sb too.
 >
-> Interrupts, clocks, gpios, dma channels, nearly everything in the device tree is
-> arbitrarily numbered. Instead of "irq-i2c0" we have <0 36 IRQ_TYPE_LEVEL_HIGH>
-> in the device tree. These numbers can be resolved efficiently in the
-> driver by shifting them to get a bitmask or by adding them as offset to
-> a register base.
-> Why do you want to make pinctrl different?
-
-Because pin control is about combining groups of pins with
-certain functions.
-
-> Thanks to the recently
-> introduced defines in the device trees these numbers are not magic at
-> all anymore.
-
-Yeah that is good but not what I'm after here.
-
->> We need to move toward standardized device tree bindings
->> for this stuff, and that means using strings, not magic
->> numbers.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>   drivers/mtd/ubi/fastmap.c | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
 >
-> Agreed for standardized device tree bindings, but not for using strings.
+> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+> index 0431b46..2b0d8d6 100644
+> --- a/drivers/mtd/ubi/fastmap.c
+> +++ b/drivers/mtd/ubi/fastmap.c
+> @@ -24,7 +24,8 @@ size_t ubi_calc_fm_size(struct ubi_device *ubi)
+>   {
+>   	size_t size;
+>
+> -	size = sizeof(struct ubi_fm_hdr) + \
+> +	size = sizeof(struct ubi_fm_sb) + \
+> +		sizeof(struct ubi_fm_hdr) + \
+>   		sizeof(struct ubi_fm_scan_pool) + \
+>   		sizeof(struct ubi_fm_scan_pool) + \
+>   		(ubi->peb_count * sizeof(struct ubi_fm_ec)) + \
+>
 
-What is the alternative? Device Tree is very much about strings,
-as is shown by the pin config bindings.
+Reviewed-by: Tanya Brokhman <tlinder@codeaurora.org>
 
-Yours,
-Linus Walleij
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
