@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaJBQrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:47:14 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59285 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbaJBQrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:47:13 -0400
-Date: Thu, 2 Oct 2014 09:46:57 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        ebiederm@xmission.com, akpm@linux-foundation.org, adobriyan@gmail.com,
-        rui.xiang@huawei.com, viro@zeniv.linux.org.uk, oleg@redhat.com,
-        gorcunov@openvz.org, kirill.shutemov@linux.intel.com,
-        grant.likely@secretlab.ca, tytso@mit.edu,
-        Thierry Herbelot <thierry.herbelot@6wind.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
- directory entries
-Message-ID: <20141002094657.1e28e027@urahara>
-In-Reply-To: <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>
-	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+	id S1753533AbaJBQu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:50:27 -0400
+Received: from david.siemens.de ([192.35.17.14]:54851 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263AbaJBQuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 12:50:24 -0400
+Message-ID: <542D8249.5040009@siemens.com>
+Date: Thu, 02 Oct 2014 18:50:17 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm: do not handle APIC access page if in-kernel irqchip
+ is not in use
+References: <1412251225-1686-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1412251225-1686-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  2 Oct 2014 17:25:01 +0200
-Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+On 2014-10-02 14:00, Paolo Bonzini wrote:
+> This fixes the following OOPS:
+> 
+>    loaded kvm module (v3.17-rc1-168-gcec26bc)
+>    BUG: unable to handle kernel paging request at fffffffffffffffe
+>    IP: [<ffffffff81168449>] put_page+0x9/0x30
+>    PGD 1e15067 PUD 1e17067 PMD 0
+>    Oops: 0000 [#1] PREEMPT SMP
+>     [<ffffffffa063271d>] ? kvm_vcpu_reload_apic_access_page+0x5d/0x70 [kvm]
+>     [<ffffffffa013b6db>] vmx_vcpu_reset+0x21b/0x470 [kvm_intel]
+>     [<ffffffffa0658816>] ? kvm_pmu_reset+0x76/0xb0 [kvm]
+>     [<ffffffffa064032a>] kvm_vcpu_reset+0x15a/0x1b0 [kvm]
+>     [<ffffffffa06403ac>] kvm_arch_vcpu_setup+0x2c/0x50 [kvm]
+>     [<ffffffffa062e540>] kvm_vm_ioctl+0x200/0x780 [kvm]
+>     [<ffffffff81212170>] do_vfs_ioctl+0x2d0/0x4b0
+>     [<ffffffff8108bd99>] ? __mmdrop+0x69/0xb0
+>     [<ffffffff812123d1>] SyS_ioctl+0x81/0xa0
+>     [<ffffffff8112a6f6>] ? __audit_syscall_exit+0x1f6/0x2a0
+>     [<ffffffff817229e9>] system_call_fastpath+0x16/0x1b
+>    Code: c6 78 ce a3 81 4c 89 e7 e8 d9 80 ff ff 0f 0b 4c 89 e7 e8 8f f6 ff ff e9 fa fe ff ff 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 <48> f7 07 00 c0 00 00 55 48 89 e5 75 1e 8b 47 1c 85 c0 74 27 f0
+>    RIP  [<ffffffff81193045>] put_page+0x5/0x50
+> 
+> when not using the in-kernel irqchip ("-machine kernel_irqchip=off"
+> with QEMU).
+> 
+> Reported-by: Jan Kiszka <jan.kiszka@siemens.com>
+> Fixes: 4256f43f9fab91e1c17b5846a240cf4b66a768a8
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 6857257f3810..5430e4b0af29 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6030,6 +6030,9 @@ void kvm_vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
+>  {
+>  	struct page *page = NULL;
+>  
+> +	if (!irqchip_in_kernel(vcpu->kvm))
+> +		return;
+> +
+>  	if (!kvm_x86_ops->set_apic_access_page_addr)
+>  		return;
+>  
+> 
 
-> From: Thierry Herbelot <thierry.herbelot@6wind.com>
-> 
-> The current implementation for the directories in /proc is using a single
-> linked list. This is slow when handling directories with large numbers of
-> entries (eg netdevice-related entries when lots of tunnels are opened).
-> 
-> This patch enables multiple linked lists. A hash based on the entry name is
-> used to select the linked list for one given entry.
-> 
-> The speed creation of netdevices is faster as shorter linked lists must be
-> scanned when adding a new netdevice.
-> 
-> Here are some numbers:
-> 
-> dummy30000.batch contains 30 000 times 'link add type dummy'.
-> 
-> Before the patch:
-> time ip -b dummy30000.batch
-> real    2m32.221s
-> user    0m0.380s
-> sys     2m30.610s
-> 
-> After the patch:
-> time ip -b dummy30000.batch
-> real    1m57.190s
-> user    0m0.350s
-> sys     1m56.120s
-> 
-> The single 'subdir' list head is replaced by a subdir hash table. The subdir
-> hash buckets are only allocated for directories. The number of hash buckets
-> is a compile-time parameter.
-> 
-> For all functions which handle directory entries, an additional check on the
-> directory nature of the dir entry ensures that pde_hash_buckets was allocated.
-> This check was not needed as subdir was present for all dir entries, whether
-> actual directories or simple files.
-> 
-> Signed-off-by: Thierry Herbelot <thierry.herbelot@6wind.com>
-> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Works fine here.
 
-I think the speed up is a good idea and makes sense.
-It would be better to use exist hlist macros for hash table rather than
-open coding it.
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
