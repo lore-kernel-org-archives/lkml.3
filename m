@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbaJBTmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:42:00 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:40733 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaJBTl7 (ORCPT
+	id S1752504AbaJBTmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:42:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43471 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752104AbaJBTmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:41:59 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <542DA8B2.6030608@free-electrons.com>
-References: <1412225138-16158-1-git-send-email-michael.opdenacker@free-electrons.com> <CAH6sp9Ozkhqa=CJa6YXUwoKHn68VvrsohZu099obGN01ZFCwmA@mail.gmail.com> <542DA8B2.6030608@free-electrons.com>
+	Thu, 2 Oct 2014 15:42:20 -0400
+Message-ID: <542DAA9A.8060503@free-electrons.com>
+Date: Thu, 02 Oct 2014 21:42:18 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] [TRIVIAL] mod_devicetable.h: grammar fix in comment
-From: Frans Klaver <fransklaver@gmail.com>
-Date: Thu, 02 Oct 2014 21:41:46 +0200
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-CC: Jiri Kosina <trivial@kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        johannes.thumshirn@men.de, joshc@codeaurora.org, dl9pf@gmx.de,
-        behanw@converseincode.com, kheitke@codeaurora.org,
-        ard.biesheuvel@linaro.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Opdenacker <michael@free-electrons.com>
-Message-ID: <9BC1307A-4C4E-4180-AEA7-22B52DD77D42@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        gulsah.1004@gmail.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        cmroliv@gmail.com,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH] staging: nokia_h4: remove deprecated IRQF_DISABLED
+References: <1412195628-9522-1-git-send-email-michael.opdenacker@free-electrons.com> <20141001214221.GF26954@drone.musicnaut.iki.fi>
+In-Reply-To: <20141001214221.GF26954@drone.musicnaut.iki.fi>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 October 2014 21:34:10 CEST, Michael Opdenacker <michael.opdenacker@free-electrons.com> wrote:
->Hi Frans,
+Hi Aaro,
+
+Thank you for reviewing my patch!
+
+On 10/01/2014 11:42 PM, Aaro Koskinen wrote:
+> Hi,
 >
->On 10/02/2014 09:43 AM, Frans Klaver wrote:
->> On Thu, Oct 2, 2014 at 6:45 AM, Michael Opdenacker
->> <michael.opdenacker@free-electrons.com> wrote:
->>> Signed-off-by: Michael Opdenacker
-><michael.opdenacker@free-electrons.com>
->>> ---
->>>  include/linux/mod_devicetable.h | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/include/linux/mod_devicetable.h
->b/include/linux/mod_devicetable.h
->>> index 44eeef0da186..745def862580 100644
->>> --- a/include/linux/mod_devicetable.h
->>> +++ b/include/linux/mod_devicetable.h
->>> @@ -69,7 +69,7 @@ struct ieee1394_device_id {
->>>   * @bDeviceClass: Class of device; numbers are assigned
->>>   *     by the USB forum.  Products may choose to implement classes,
->>>   *     or be vendor-specific.  Device classes specify behavior of
->all
->>> - *     the interfaces on a devices.
->>> + *     the interfaces on a device.
->>>   * @bDeviceSubClass: Subclass of device; associated with
->bDeviceClass.
->>>   * @bDeviceProtocol: Protocol of device; associated with
->bDeviceClass.
->>>   * @bInterfaceClass: Class of interface; numbers are assigned
->>> --
->>> 1.9.1
->> Well whaddayaknow, I ran into the same thing last month.
+> On Wed, Oct 01, 2014 at 10:33:48PM +0200, Michael Opdenacker wrote:
+>> Remove the use of the IRQF_DISABLED flag
+>> from drivers/staging/nokia_h4p/nokia_core.c
 >>
->> https://lkml.org/lkml/2014/9/3/871
->
->Hey, you were first. Happy to drop my identical patch.
->
->Thanks :)
+>> It's a NOOP since 2.6.35 and it will be removed soon.
+> This driver has been deleted from the staging tree already.
 
-I don't mind either way. It should get fixed :) 
+Ok, good to me too. Thanks again,
 
-Cheers, 
-Frans 
+Michael.
 
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
