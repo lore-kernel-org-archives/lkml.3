@@ -1,106 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaJBNsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:48:19 -0400
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:57437 "EHLO
+	id S1754138AbaJBNsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:48:18 -0400
+Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:57419 "EHLO
 	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaJBNsO (ORCPT
+	with ESMTP id S1752687AbaJBNsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 2 Oct 2014 09:48:14 -0400
 From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
 Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Subject: [RFC PATCH net-next v3 2/4] rtnl: add link netns id to interface messages
-Date: Thu,  2 Oct 2014 15:48:08 +0200
-Message-Id: <1412257690-31253-3-git-send-email-nicolas.dichtel@6wind.com>
+        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
+Subject: [RFC PATCH net-next v3 0/4] netns: allow to identify peer netns
+Date: Thu,  2 Oct 2014 15:48:06 +0200
+Message-Id: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
+In-Reply-To: <542D5726.8070308@6wind.com>
 References: <542D5726.8070308@6wind.com>
- <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new attribute (IFLA_LINK_NETNSID) which contains the 'link'
-netns id when this netns is different from the netns where the interface
-stands (for example for x-net interfaces like ip tunnels). When there is no id,
-we put NETNSA_NSINDEX_UNKNOWN into this attribute to indicate to userland that
-the link netns is different from the interface netns. Hence, userland knows that
-some information like IFLA_LINK are not interpretable.
+The goal of this serie is to be able to multicast netlink messages with an
+attribute that identify a peer netns.
+This is needed by the userland to interpret some informations contained in
+netlink messages (like IFLA_LINK value, but also some other attributes in case
+of x-netns netdevice (see also
+http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
+http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
----
- include/net/rtnetlink.h      |  2 ++
- include/uapi/linux/if_link.h |  1 +
- net/core/rtnetlink.c         | 13 +++++++++++++
- 3 files changed, 16 insertions(+)
+Ids of peer netns are set by userland via a new genl messages. These ids are
+stored per netns and are local (ie only valid in the netns where they are set).
+To avoid allocating an int for each peer netns, I use idr_for_each() to retrieve
+the id of a peer netns.
 
-diff --git a/include/net/rtnetlink.h b/include/net/rtnetlink.h
-index e21b9f9653c0..6c6d5393fc34 100644
---- a/include/net/rtnetlink.h
-+++ b/include/net/rtnetlink.h
-@@ -46,6 +46,7 @@ static inline int rtnl_msg_family(const struct nlmsghdr *nlh)
-  *			    to create when creating a new device.
-  *	@get_num_rx_queues: Function to determine number of receive queues
-  *			    to create when creating a new device.
-+ *	@get_link_net: Function to get the i/o netns of the device
-  */
- struct rtnl_link_ops {
- 	struct list_head	list;
-@@ -93,6 +94,7 @@ struct rtnl_link_ops {
- 	int			(*fill_slave_info)(struct sk_buff *skb,
- 						   const struct net_device *dev,
- 						   const struct net_device *slave_dev);
-+	struct net		*(*get_link_net)(const struct net_device *dev);
- };
- 
- int __rtnl_link_register(struct rtnl_link_ops *ops);
-diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-index 0bdb77e16875..938c0c02ed2e 100644
---- a/include/uapi/linux/if_link.h
-+++ b/include/uapi/linux/if_link.h
-@@ -145,6 +145,7 @@ enum {
- 	IFLA_CARRIER,
- 	IFLA_PHYS_PORT_ID,
- 	IFLA_CARRIER_CHANGES,
-+	IFLA_LINK_NETNSID,
- 	__IFLA_MAX
- };
- 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index a6882686ca3a..1b9329512496 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -862,6 +862,7 @@ static noinline size_t if_nlmsg_size(const struct net_device *dev,
- 	       + nla_total_size(1) /* IFLA_OPERSTATE */
- 	       + nla_total_size(1) /* IFLA_LINKMODE */
- 	       + nla_total_size(4) /* IFLA_CARRIER_CHANGES */
-+	       + nla_total_size(4) /* IFLA_LINK_NETNSID */
- 	       + nla_total_size(ext_filter_mask
- 			        & RTEXT_FILTER_VF ? 4 : 0) /* IFLA_NUM_VF */
- 	       + rtnl_vfinfo_size(dev, ext_filter_mask) /* IFLA_VFINFO_LIST */
-@@ -1134,6 +1135,18 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 			goto nla_put_failure;
- 	}
- 
-+	if (dev->rtnl_link_ops &&
-+	    dev->rtnl_link_ops->get_link_net) {
-+		struct net *link_net = dev->rtnl_link_ops->get_link_net(dev);
-+
-+		if (!net_eq(dev_net(dev), link_net)) {
-+			int id = peernet2id(dev_net(dev), link_net);
-+
-+			if (nla_put_s32(skb, IFLA_LINK_NETNSID, id))
-+				goto nla_put_failure;
-+		}
-+	}
-+
- 	if (!(af_spec = nla_nest_start(skb, IFLA_AF_SPEC)))
- 		goto nla_put_failure;
- 
--- 
-2.1.0
+Patch 1/4 introduces the netlink API mechanism to set and get these ids.
+Patch 2/4 and 3/4 shows an example of how to use these ids in rtnetlink
+messages. And patch 4/4 shows that the netlink messages can be symetric between
+a GET and a SET.
 
+iproute2 patches are available, I can send them on demand.
+
+Here is a small screenshot to show how it can be used by userland:
+$ ip netns add foo
+$ ip netns del foo
+$ ip netns
+$ touch /var/run/netns/init_net
+$ mount --bind /proc/1/ns/net /var/run/netns/init_net
+$ ip netns add foo
+$ ip netns exec foo ip netns set init_net 0
+$ ip netns
+foo
+init_net
+$ ip netns exec foo ip netns
+foo
+init_net (id: 0)
+$ ip netns exec foo ip link add ipip1 link-netnsid 0 type ipip remote 10.16.0.121 local 10.16.0.249
+$ ip netns exec foo ip l ls ipip1
+6: ipip1@NONE: <POINTOPOINT,NOARP> mtu 1480 qdisc noop state DOWN mode DEFAULT group default 
+    link/ipip 10.16.0.249 peer 10.16.0.121 link-netnsid 0
+
+The parameter link-netnsid shows us where the interface sends and receives
+packets (and thus we know where encapsulated addresses are set).
+
+RFCv2 -> RFCv3:
+  ids are now defined by userland (via netlink). Ids are stored in each netns
+  (and they are local to this netns).
+  add get_link_net support for ip6 tunnels
+  netnsid is now a s32 instead of a u32
+
+RFCv1 -> RFCv2:
+  remove useless ()
+  ids are now stored in the user ns. It's possible to get an id for a peer netns
+  only if the current netns and the peer netns have the same user ns parent.
+
+ MAINTAINERS                  |   1 +
+ include/net/ip6_tunnel.h     |   1 +
+ include/net/ip_tunnels.h     |   1 +
+ include/net/net_namespace.h  |   5 ++
+ include/net/rtnetlink.h      |   2 +
+ include/uapi/linux/Kbuild    |   1 +
+ include/uapi/linux/if_link.h |   1 +
+ include/uapi/linux/netns.h   |  31 +++++++
+ net/core/net_namespace.c     | 195 +++++++++++++++++++++++++++++++++++++++++++
+ net/core/rtnetlink.c         |  38 ++++++++-
+ net/ipv4/ip_gre.c            |   2 +
+ net/ipv4/ip_tunnel.c         |   8 ++
+ net/ipv4/ip_vti.c            |   1 +
+ net/ipv4/ipip.c              |   1 +
+ net/ipv6/ip6_gre.c           |   1 +
+ net/ipv6/ip6_tunnel.c        |   9 ++
+ net/ipv6/ip6_vti.c           |   1 +
+ net/ipv6/sit.c               |   1 +
+ net/netlink/genetlink.c      |   4 +
+ 19 files changed, 301 insertions(+), 3 deletions(-)
+
+Comments are welcome.
+
+Regards,
+Nicolas
