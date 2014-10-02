@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaJBPWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:22:12 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:50975 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaJBPWL (ORCPT
+	id S1754359AbaJBPXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:23:23 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40630 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaJBPXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:22:11 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] perf tools: Add option to copy events when queueing
-References: <1412245929-27579-1-git-send-email-yarygin@linux.vnet.ibm.com>
-	<1412245929-27579-2-git-send-email-yarygin@linux.vnet.ibm.com>
-	<20141002141559.GJ9764@krava.brq.redhat.com>
-Date: Thu, 02 Oct 2014 19:21:58 +0400
-In-Reply-To: <20141002141559.GJ9764@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 2 Oct 2014 16:15:59 +0200")
-Message-ID: <87tx3m7azt.fsf@linux.vnet.ibm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Thu, 2 Oct 2014 11:23:22 -0400
+Date: Thu, 2 Oct 2014 16:23:13 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 21/24] ARM64:ILP32: Use a seperate syscall table as a few
+ syscalls need to be using the compat syscalls
+Message-ID: <20141002152312.GF32147@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-22-git-send-email-apinski@cavium.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100215-4966-0000-0000-00000186D24A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409779158-30963-22-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Olsa <jolsa@redhat.com> writes:
+On Wed, Sep 03, 2014 at 10:19:15PM +0100, Andrew Pinski wrote:
+> +/*
+> + * sigaltstack needs some special handling as the
+> + * padding for stack_t might not be non-zero.
+> + */
+> +long ilp32_sys_sigaltstack(const stack_t __user *uss_ptr,
+> +                          stack_t __user *uoss_ptr)
+> +{
+> +       stack_t uss, uoss;
+> +       int ret;
+> +       mm_segment_t seg;
+> +
+> +       if (uss_ptr) {
+> +               if (!access_ok(VERIFY_READ, uss_ptr, sizeof(*uss_ptr)))
+> +                       return -EFAULT;
+> +               if (__get_user(uss.ss_sp, &uss_ptr->ss_sp) |
+> +                       __get_user(uss.ss_flags, &uss_ptr->ss_flags) |
+> +                       __get_user(uss.ss_size, &uss_ptr->ss_size))
+> +                       return -EFAULT;
+> +               /* Zero extend the sp address and the size. */
+> +               uss.ss_sp = (void *)(uintptr_t)(unsigned int)(uintptr_t)uss.ss_sp;
 
-[..]
+Do you need the first (uintptr_t) cast here?
 
->
-> looks ok.. but I was wondering if we could move those repeating
-> bits in function.. something like below (untested, just compiled)
->
-> thanks,
-> jirka
->
->
+> +               uss.ss_size = (size_t)(unsigned int)uss.ss_size;
+> +       }
+> +       seg = get_fs();
+> +       set_fs(KERNEL_DS);
+> +       /*
+> +        * Note we need to use uoss as we have changed the segment to the
+> +        * kernel one so passing an user one around is wrong.
+> +        */
 
-[..]
+I wonder whether it would be safe to just zero the top 32 bits of ss_sp
+on the user stack directly. Would we ever expect this to be read-only?
 
-Yep, it's better. Just checked - it works. How should we process?
+> +       ret = sys_sigaltstack((stack_t __force __user *) (uss_ptr ? &uss : NULL),
+> +                             (stack_t __force __user *) &uoss);
 
-Thanks.
+Nitpick: there shouldn't be any space after the type cast.
 
+-- 
+Catalin
