@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243AbaJBUDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 16:03:16 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52447 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJBUDP (ORCPT
+	id S1752565AbaJBUGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 16:06:17 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:53320 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaJBUGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 16:03:15 -0400
-Date: Thu, 2 Oct 2014 13:03:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Lothian <mike@fireburn.co.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Hard lockups under high CPU load with DynTicks - RCU Related?
-Message-ID: <20141002200307.GW5015@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAHbf0-HyGUPcc14HwBjmQnQV9Mauxur3=5O_MqyGmiV9NK4Pnw@mail.gmail.com>
+	Thu, 2 Oct 2014 16:06:15 -0400
+Date: Thu, 2 Oct 2014 23:06:39 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        akpm@linux-foundation.org, rui.xiang@huawei.com,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
+        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
+        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
+Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
+ directory entries
+Message-ID: <20141002200639.GA3497@p183.telecom.by>
+References: <20131003.150947.2179820478039260398.davem@davemloft.net>
+ <1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
+ <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+ <87h9zmpcz5.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHbf0-HyGUPcc14HwBjmQnQV9Mauxur3=5O_MqyGmiV9NK4Pnw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100220-0928-0000-0000-000005574DD1
+In-Reply-To: <87h9zmpcz5.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 23, 2014 at 08:32:02AM +0100, Mike Lothian wrote:
-> Hi
+On Thu, Oct 02, 2014 at 11:01:50AM -0700, Eric W. Biederman wrote:
+> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
 > 
-> I've raised https://bugzilla.kernel.org/show_bug.cgi?id=84131 and
-> attempted to bisect
+> > From: Thierry Herbelot <thierry.herbelot@6wind.com>
+> >
+> > The current implementation for the directories in /proc is using a single
+> > linked list. This is slow when handling directories with large numbers of
+> > entries (eg netdevice-related entries when lots of tunnels are opened).
+> >
+> > This patch enables multiple linked lists. A hash based on the entry name is
+> > used to select the linked list for one given entry.
+> >
+> > The speed creation of netdevices is faster as shorter linked lists must be
+> > scanned when adding a new netdevice.
 > 
-> The bug I'm stumbling on happens on both and Intel Sandybridge and AMD
-> Kabini system - it manifests itself as a hard lockup when the system
-> is under high load
+> Is the directory of primary concern /proc/net/dev/snmp6 ?
 > 
-> If I switch off DynTicks the problem doesn't happen - I bisected by
-> compiling Chromium marking each one good or bad if the system starts
-> to lockup
+> Unless I have configured my networking stack weird by mistake that
+> is the only directory under /proc/net that grows when we add an
+> interface.
 > 
-> I'm not sure if I've filed the bug under the right Product / Component
+> I just want to make certain I am seeing the same things that you are
+> seeing.
 > 
-> Please let me know if you'd like any more diagnostics
+> I feel silly for overlooking this directory when the rest of the
+> scalability work was done.
 
-The commit that your bisection located is a merge commit.  Could you
-please try each of the branches that were merged?  That might allow
-you to pinpoint the actual commit.
+Slowdown comes from "duplicate name" check:
 
-							Thanx, Paul
+        for (tmp = dir->subdir; tmp; tmp = tmp->next)
+                if (strcmp(tmp->name, dp->name) == 0) {
+                        WARN(1, "proc_dir_entry '%s/%s' already registered\n",
+                                dir->name, dp->name);
+                        break;
+                }
 
+Removal can be made O(1) after switching to doubly-linked list.
+
+	Alexey
