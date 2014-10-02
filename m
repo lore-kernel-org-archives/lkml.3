@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953AbaJBN6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:58:13 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48910 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaJBN6L (ORCPT
+	id S1752794AbaJBOAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:00:35 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:51507 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973AbaJBOAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:58:11 -0400
-Date: Thu, 2 Oct 2014 15:58:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>, oleg@redhat.com
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002135805.GF6324@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <542D57D0.4030904@hurleysoftware.com>
- <20141002135250.GB10583@worktop.programming.kicks-ass.net>
+	Thu, 2 Oct 2014 10:00:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002135250.GB10583@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411443545-24951-4-git-send-email-srv_hongzhou.yang@mediatek.com>
+References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
+	<1411443545-24951-4-git-send-email-srv_hongzhou.yang@mediatek.com>
+Date: Thu, 2 Oct 2014 16:00:32 +0200
+Message-ID: <CACRpkdbiKSvX2dipnq3oyc6YSGWFgCk69onzF=-B9UWLjAYNWQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
-> > If yes, then wakeups from signals don't work either, right?
-> 
-> Its a kthread, there should not be any signals.
+On Tue, Sep 23, 2014 at 5:39 AM, Hongzhou.Yang
+<srv_hongzhou.yang@mediatek.com> wrote:
 
-That said, in the tty patch we do appear to have this problem.
+> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
+>
+> Add devicetree bindings for Mediatek SoC pinctrl driver.
+>
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
 
-Oleg, do we want something like the below on top to make that work
-again?
+I have worked on generic pin control bindings a bit because it
+is getting out of hand with all these custom bindings.
 
----
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
- 	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
- 	 * also observe all state before the wakeup.
- 	 */
--	if (!(wait->flags & WQ_FLAG_WOKEN))
--		timeout = schedule_timeout(timeout);
-+	if (!(wait->flags & WQ_FLAG_WOKEN)) {
-+		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
-+			timeout = schedule_timeout(timeout);
-+	}
- 	__set_current_state(TASK_RUNNING);
- 
- 	/*
+See:
+http://marc.info/?l=devicetree&m=141223584006648&w=2
+
+Especially.
+
+> +- mediatek,pinfunc: List of gpio number and function to mux.
+
+A "GPIO number" and a "pin number" is not the same thing at all,
+this is very confusing. Those are two separate number spaces.
+This is likely about the pin numbers.
+
+> +The mediatek,pinfunc can use defines directly,
+> +which are already defind in boot/dts/mt8135-pinfunc.h.
+> +
+> +Optional subnode-properties:
+> +- generic pin configuration option to use, bias-disable, bias-pull-down,
+> +  bias-pull,up, output-low and output-high are valid.
+> +  Example :
+> +       i2c0_pins_a {
+> +               mediatek,pinfunc = <MT8135_PIN_195_SDA1__FUNC_SDA1>;
+> +               bias-disable;
+> +       };
+
+I don't like this approach at all.
+
+I prefer that pins are put into groups named by strings, like "i2c0-pos0"
+inside the driver and then connected to function with a certain
+device-related name, such as "i2c0".
+
+Then put the pin configuration (bias etc) in a separate node in the same
+state definition like that:
+
+i2c0_pins_a {
+         function = "i2c0";
+         groups = "i2c0-pos0";
+};
+i2c0_pins_b {
+         bias-disable;
+};
+
+Yours,
+Linus Walleij
