@@ -1,128 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaJBOlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:41:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52078 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbaJBOls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:41:48 -0400
-Message-ID: <1412260889.4875.11.camel@pengutronix.de>
-Subject: Re: [PATCH v2 3/4] dt-bindings: Add pinctrl bindings for
- mt65xx/mt81xx.
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Hongzhou.Yang" <srv_hongzhou.yang@mediatek.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>, dandan.he@mediatek.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 02 Oct 2014 16:41:29 +0200
-In-Reply-To: <CACRpkdbiKSvX2dipnq3oyc6YSGWFgCk69onzF=-B9UWLjAYNWQ@mail.gmail.com>
-References: <1411443545-24951-1-git-send-email-srv_hongzhou.yang@mediatek.com>
-	 <1411443545-24951-4-git-send-email-srv_hongzhou.yang@mediatek.com>
-	 <CACRpkdbiKSvX2dipnq3oyc6YSGWFgCk69onzF=-B9UWLjAYNWQ@mail.gmail.com>
+	id S1753878AbaJBOoz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:44:55 -0400
+Received: from ou.quest-ce.net ([195.154.187.82]:60899 "EHLO ou.quest-ce.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507AbaJBOow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:44:52 -0400
+Message-ID: <1412261057.5371.8.camel@localhost.localdomain>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, stable@vger.kernel.org,
+        linux-api@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Yann Droneaud <ydroneaud@opteya.com>
+Date: Thu, 02 Oct 2014 16:44:17 +0200
+In-Reply-To: <542D1726.3040801@draigBrady.com>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
+	 <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+	 <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain>
+	 <542666B2.9080700@gmx.de>
+	 <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+	 <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
+	 <1412230855.28184.5.camel@localhost.localdomain>
+	 <1412236349-30035-1-git-send-email-ydroneaud@opteya.com>
+	 <542D1726.3040801@draigBrady.com>
+Organization: OPTEYA
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 37.160.90.1
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: [PATCH] fanotify: add a flag to allow setting O_CLOEXEC on
+ event fd
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 02.10.2014, 16:00 +0200 schrieb Linus Walleij:
-> On Tue, Sep 23, 2014 at 5:39 AM, Hongzhou.Yang
-> <srv_hongzhou.yang@mediatek.com> wrote:
-> 
-> > From: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> >
-> > Add devicetree bindings for Mediatek SoC pinctrl driver.
-> >
-> > Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
-> 
-> I have worked on generic pin control bindings a bit because it
-> is getting out of hand with all these custom bindings.
-> 
-> See:
-> http://marc.info/?l=devicetree&m=141223584006648&w=2
-> 
-> Especially.
-> 
-> > +- mediatek,pinfunc: List of gpio number and function to mux.
-> 
-> A "GPIO number" and a "pin number" is not the same thing at all,
-> this is very confusing. Those are two separate number spaces.
-> This is likely about the pin numbers.
-> 
-> > +The mediatek,pinfunc can use defines directly,
-> > +which are already defind in boot/dts/mt8135-pinfunc.h.
-> > +
-> > +Optional subnode-properties:
-> > +- generic pin configuration option to use, bias-disable, bias-pull-down,
-> > +  bias-pull,up, output-low and output-high are valid.
-> > +  Example :
-> > +       i2c0_pins_a {
-> > +               mediatek,pinfunc = <MT8135_PIN_195_SDA1__FUNC_SDA1>;
-> > +               bias-disable;
-> > +       };
-> 
-> I don't like this approach at all.
-> 
-> I prefer that pins are put into groups named by strings, like "i2c0-pos0"
-> inside the driver and then connected to function with a certain
-> device-related name, such as "i2c0".
-> 
-So we should create artificial software groups where there are none in
-hardware? This sounds really backward to me. Almost every new SoC out
-there has the ability to mux every pin on it's own.
+Hi,
 
-By defining artificial software groups in the driver we are pushing
-constraints in the binding that don't really exist in hardware. So if
-someone comes up with a pin usage that isn't covered by the existing
-groups we need to change the binding. Experience from working with lots
-of hardware engineers tells us that if something can be done (if there
-are no constraints in HW) it will be done sooner or later.
-If the hardware allows this much freedom we should also allow it in the
-pinctrl binding.
-
-> Then put the pin configuration (bias etc) in a separate node in the same
-> state definition like that:
+Le jeudi 02 octobre 2014 à 10:13 +0100, Pádraig Brady a écrit :
+> On 10/02/2014 08:52 AM, Yann Droneaud wrote:
+> > In order to not potentially break applications which were
+> > requesting O_CLOEXEC on event file descriptors but which
+> > actually need it to be not effective as the kernel currently
+> > ignore the flag, so the file descriptor is inherited accross
+> > exec regardless of O_CLOEXEC (please forgive me for the
+> > wording), this patch introduces FAN_FD_CLOEXEC flag to
+> > fanotify_init() so that application can request O_CLOEXEC
+> > to be effective.
+> > Newer application would use FAN_FD_CLOEXEC flag along
+> > O_CLOEXEC to enable close on exec on newly created
+> > file descriptor:
+> > 
+> >   fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK|FAN_FD_CLOEXEC,
+> >                      O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
 > 
-> i2c0_pins_a {
->          function = "i2c0";
->          groups = "i2c0-pos0";
-> };
-> i2c0_pins_b {
->          bias-disable;
-> };
+> Ugh really?
+> IMHO there should be widespread or at least known breakage with
+> O_CLOEXEC before adding messiness like this.
 
-The problem with that is that different pins might need different
-configuration for the same muxed function. To properly reflect this we
-would need to duplicate the pin definitions. One popular example is the
-MMC interface where part of the pins need to have a pull-up, while
-others don't. How would you reflect this with the DT description above?
+You should have read the other part of my message:
 
-Regards,
-Lucas
+> > While I believe fanotify_init() must enable close-on-exec
+> > when requested by userspace to prevent unwelcomed security
+> > issue, I understand your concerns regarding the possible
+> > breakage on userspace application requesting O_CLOEXEC
+> > but relying on it not being enable on file descriptor
+> > created for the events.
+> 
+> > So with a new flag to fanotify_init(), we could allow
+> > newer applications to really enable O_CLOEXEC.
+> 
+> > But I feel bad to have to force application to specify
+> > twice they want close on exec:
+> >  - are you sure ?
+> >  - are you really sure ?
+> >  - is this your final answer ?
+> >  ...
+
+
+I'm not really fond of this option.
+
+> It seems surprising to me that apps that would depend on
+> O_CLOEXEC being ineffective.
+> 
+
+We have seen userspace developers making mistakes, and those mistakes
+were mistakenly ignored by the kernel until someone try to fix the
+mistake on kernel side, which broke the existing userspace application.
+
+> please reconsider this one.
+> 
+
+I'm not going to promote this patch as it's a quick and dirty hack to
+demonstrate what would be the other option.
+
+Regards.
 
 -- 
-Pengutronix e.K.             | Lucas Stach                 |
-Industrial Linux Solutions   | http://www.pengutronix.de/  |
+Yann Droneaud
+OPTEYA
+
 
