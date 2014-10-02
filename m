@@ -1,127 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaJBIbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:31:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:47862 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751319AbaJBIbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:31:19 -0400
-Date: Thu, 2 Oct 2014 18:31:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joern Engel <joern@logfs.org>, Quinn Tran <quinn.tran@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: linux-next: manual merge of the target-updates tree with the scsi
- tree
-Message-ID: <20141002183111.5eb998a7@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1752047AbaJBIfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:35:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56289 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJBIfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 04:35:04 -0400
+Date: Thu, 2 Oct 2014 10:35:00 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: dsa: Fix build warning for !PM_SLEEP
+Message-ID: <20141002083459.GD30167@ulmo>
+References: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
+ <20141001.152452.1973501659924138094.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/pp_jn3utfzg+2+N6=EZxl_K"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
+Content-Disposition: inline
+In-Reply-To: <20141001.152452.1973501659924138094.davem@davemloft.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/pp_jn3utfzg+2+N6=EZxl_K
-Content-Type: text/plain; charset=US-ASCII
+
+--sXc4Kmr5FA7axrvy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Nicholas,
+On Wed, Oct 01, 2014 at 03:24:52PM -0400, David Miller wrote:
+> From: Thierry Reding <thierry.reding@gmail.com>
+> Date: Wed,  1 Oct 2014 13:59:00 +0200
+>=20
+> > From: Thierry Reding <treding@nvidia.com>
+> >=20
+> > The dsa_switch_suspend() and dsa_switch_resume() functions are only used
+> > when PM_SLEEP is enabled, so they need #ifdef CONFIG_PM_SLEEP protection
+> > to avoid a compiler warning.
+> >=20
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+>=20
+> Applied.
+>=20
+> Please, in the future, explicitly indicate what tree your changes
+> are against.  Through trial and error I figured out that this could
+> only apply to net-next, but that's not a good use of my time.
 
-Today's linux-next merge of the target-updates tree got a conflict in
-drivers/scsi/qla2xxx/qla_target.c between commit 33e799775593
-("qla2xxx: Add support for QFull throttling and Term Exchange retry")
-from the scsi tree and commit 55a9066fffd2 ("qla_target: make some
-global functions static") from the target-updates tree.
+I had assumed that working on top of linux-next is what most people were
+doing anyway therefore net-next would be the default to apply patches to
+unless otherwise stated.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+But if this inconveniences you I'll try to remember to explicitly state
+which tree it's based on in the future.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thierry
 
-diff --cc drivers/scsi/qla2xxx/qla_target.c
-index 829752cfd73f,68c90ad441f4..000000000000
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@@ -108,10 -101,7 +108,11 @@@ static void qlt_send_term_exchange(stru
-  	*cmd, struct atio_from_isp *atio, int ha_locked);
-  static void qlt_reject_free_srr_imm(struct scsi_qla_host *ha,
-  	struct qla_tgt_srr_imm *imm, int ha_lock);
- +static void qlt_abort_cmd_on_host_reset(struct scsi_qla_host *vha,
- +	struct qla_tgt_cmd *cmd);
- +static void qlt_alloc_qfull_cmd(struct scsi_qla_host *vha,
- +	struct atio_from_isp *atio, uint16_t status, int qfull);
-+ static void qlt_disable_vha(struct scsi_qla_host *vha);
-  /*
-   * Global Variables
-   */
-@@@ -189,28 -179,7 +190,28 @@@ struct scsi_qla_host *qlt_find_host_by_
-  	return NULL;
-  }
- =20
- +static inline void qlt_incr_num_pend_cmds(struct scsi_qla_host *vha)
- +{
- +	unsigned long flags;
- +
- +	spin_lock_irqsave(&vha->hw->tgt.q_full_lock, flags);
- +
- +	vha->hw->tgt.num_pend_cmds++;
- +	if (vha->hw->tgt.num_pend_cmds > vha->hw->qla_stats.stat_max_pend_cmds)
- +		vha->hw->qla_stats.stat_max_pend_cmds =3D
- +			vha->hw->tgt.num_pend_cmds;
- +	spin_unlock_irqrestore(&vha->hw->tgt.q_full_lock, flags);
- +}
- +static inline void qlt_decr_num_pend_cmds(struct scsi_qla_host *vha)
- +{
- +	unsigned long flags;
- +
- +	spin_lock_irqsave(&vha->hw->tgt.q_full_lock, flags);
- +	vha->hw->tgt.num_pend_cmds--;
- +	spin_unlock_irqrestore(&vha->hw->tgt.q_full_lock, flags);
- +}
- +
-- void qlt_24xx_atio_pkt_all_vps(struct scsi_qla_host *vha,
-+ static void qlt_24xx_atio_pkt_all_vps(struct scsi_qla_host *vha,
-  	struct atio_from_isp *atio)
-  {
-  	ql_dbg(ql_dbg_tgt, vha, 0xe072,
-@@@ -3085,10 -2924,8 +3084,9 @@@ static void qlt_do_ctio_completion(stru
- =20
-  	se_cmd =3D &cmd->se_cmd;
-  	tfo =3D se_cmd->se_tfo;
- +	cmd->cmd_sent_to_fw =3D 0;
- =20
-- 	if (cmd->sg_mapped)
-- 		qlt_unmap_sg(vha, cmd);
-+ 	qlt_unmap_sg(vha, cmd);
- =20
-  	if (unlikely(status !=3D CTIO_SUCCESS)) {
-  		switch (status & 0xFFFF) {
-
---Sig_/pp_jn3utfzg+2+N6=EZxl_K
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--sXc4Kmr5FA7axrvy
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJULQ1UAAoJEMDTa8Ir7ZwVIcYP/3RjVSAhn8ooUN6MeEkifq89
-zQuPx1lFbHxBGjxqAuhWO+MPCE/IoVFRGY+2khlmF3VJ+X08iZPFaUZ5QSRaZFxZ
-LV4HES2c2fjEr1PMs3iX4+CjrJBLyKFebR9zth2FETyCzcY0EFGSrpiBmAR9pun8
-yj3dKyFXfjS91BnAXCPMxUpg3XKWBhW3U2PLPRl4zGacItrxxaR6TmrIL90wm9wr
-fWgY5kUvoaW5ayZgEZMQl8RhYD8q46tqI9Hh3L06FmU7iS4AxbU3a4aUniWD3mVS
-VWIDCFFE8hxyS+kw2iY1RHa29raWz5VWvt6NFb6in6q5c89vvwwuD1QD9p2EIKUs
-TRO+9CukQMpvDAI533OpXu+81yQ6kh4ZaRYFDzyUzg0hS8qJYE/DYR8AT7m+HFhR
-mvRnJvktBHLmaXqM9TP3YqtNZ5/yatAuRJ/WYCMbmVjSlOUg5cw9eRC5M2wDNy45
-fuQdBP5COpVVl+YFjfpzotT9c4/gpqYebdj53JNgjGOVjZMJqIRnl2RxwO0JaFoO
-8Q/USeQY9DGsm/NhLX4UXeFkVBaubCCr+bEHO0zzEVOFiQ2A0fkJiHmv93RgIYnY
-g3qQEf970JnZKhIOKE41eEUTDPanmTbH91oVWamr095z5KWfUGuw+ydZsY8yBzes
-pG1r4lsdy1JZjOiMlq+5
-=1XUd
+iQIcBAEBAgAGBQJULQ4zAAoJEN0jrNd/PrOh25EQAIUNAzqeSp+J/DL7fz4IPRkY
+F3VnIZGAqGdXyPeA6FXPuTPtdjXSysfywQauv5fXlsFH+yjY1rQ4XyTjJh5nrIns
+tnXgC9rBFg80iZ2sgfBeEwtkhNbHHxu1ule5tS86hjyhxQeNr+eB2sbkXQ3uk1+A
+FXmnC7A7wxXUDbpM92Dp54+BatRTFq3ythszufJj5hVACvEK7Qju15EBS8xS/rTg
+ge6Q5WttEWxcy7yTrtwYGngVDGXMhEiuQfFwgf9wxdOoFF2fXyB26s10r1aNGavK
+85O0ksd/Pux+vXiIn7rAEM5MGkefff4tB/6kgybKpRJsrGXeDf+2pwlCIciQUDE8
+NQQUyCnscHwq5cH7u+xa1qb6c0DgD4dp/SjRqvQe5AX94pjofjspO1QVBnY4WU0z
+JSMalqJe2cxxW+swxlDxvO6/qdqjQvX0W0l/y/HOB1T1Sx9mzejybDCzxs4nccT7
+yTeFXl/cQhZIa2n1FCo0267aWz+97/a/pPhX9OpIxiSHwTWbFYiE7rTU8Ts3+Lll
+jW+fRT5g7PcKTlBEpriTg0S45gab6Rltm8XapY0aOH25DRcqEH0D2x/zfteD4XIc
+H4PaP+BYA7YJ6zw0XeFBmiR78e5Aoqjv5eoLlNCRKnSr1EbE8g5qTNzUrMQfEa1r
+hmitv3C6vv5J0oLRWRa5
+=iq5q
 -----END PGP SIGNATURE-----
 
---Sig_/pp_jn3utfzg+2+N6=EZxl_K--
+--sXc4Kmr5FA7axrvy--
