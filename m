@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaJBQdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:33:33 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:56304 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751462AbaJBQdb (ORCPT
+	id S1752161AbaJBQeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:34:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52481 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaJBQeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:33:31 -0400
-Message-ID: <1412267608.19413.68.camel@x220>
-Subject: Re: cpufreq v3.17-rc7 error: "cpufreq: cpufreq_resume: Failed to
- start governor for policy: f6909a00"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 Oct 2014 18:33:28 +0200
-In-Reply-To: <2550705.C9YWxWdtP6@vostro.rjw.lan>
-References: <1412250350.3060.9.camel@x41> <1412250911.3060.13.camel@x41>
-	 <2550705.C9YWxWdtP6@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Oct 2014 16:33:29.0017 (UTC) FILETIME=[98E06A90:01CFDE5E]
-X-RcptDomain: vger.kernel.org
+	Thu, 2 Oct 2014 12:34:20 -0400
+Date: Thu, 2 Oct 2014 09:34:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jerry Stralko <gerb.stralko@gmail.com>
+Cc: gulsah.1004@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] stagging : rtl8821ae : Fixed sparse warning
+Message-ID: <20141002163419.GA13585@kroah.com>
+References: <5421FDBE.1080706@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5421FDBE.1080706@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 18:38 +0200, Rafael J. Wysocki wrote:
-> Can you please try linux-pm.git/linux-next?  There's a commit from Viresh in
-> there with a chance to fix this and which I'm going to push to Linus shortly?
+On Tue, Sep 23, 2014 at 07:09:50PM -0400, Jerry Stralko wrote:
+> Symbol was not declared. Should it be static?
+> 
+> Signed-off-by: Jerry Stralko 
+> ---
+>  drivers/staging/rtl8821ae/base.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Do you mean b1b12babe3b72cfb08b875245e5a5d7c2747c772 ("cpufreq: update
-'cpufreq_suspended' after stopping governors")? Does that require
-anything else from that tree? It doesn't matter much, but if possible I
-would prefer to add as few patches as I can get away with.
-
-
-Paul Bolle
-
+This driver is no longer in the kernel tree :(
