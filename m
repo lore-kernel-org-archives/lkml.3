@@ -1,132 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaJBMcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:32:09 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:47242 "EHLO extserv.mm-sol.com"
+	id S1752531AbaJBMcb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:32:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396AbaJBMcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:32:06 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
-        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
-Date: Thu,  2 Oct 2014 15:32:08 +0300
-Message-Id: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752166AbaJBMby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 08:31:54 -0400
+Date: Thu, 2 Oct 2014 14:31:17 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@kernel.org>,
+        Radim Krcmar <rkrcmar@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+Subject: Re: RFC: get_user_pages_locked|unlocked to leverage VM_FAULT_RETRY
+Message-ID: <20141002123117.GB2342@redhat.com>
+References: <20140926172535.GC4590@redhat.com>
+ <20141001153611.GC2843@worktop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001153611.GC2843@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When #iio-cells is greater than '0', the driver could provide
-a custom of_xlate function that reads the *args* and returns
-the appropriate index in registered IIO channels array.
+On Wed, Oct 01, 2014 at 05:36:11PM +0200, Peter Zijlstra wrote:
+> For all these and the other _fast() users, is there an actual limit to
+> the nr_pages passed in? Because we used to have the 64 pages limit from
+> DIO, but without that we get rather long IRQ-off latencies.
 
-Add simple translation function, suitable for the most 1:1
-mapped channels in IIO chips, and use it when driver did not
-provide custom implementation.
+Ok, I would tend to think this is an issue to solve in gup_fast
+implementation, I wouldn't blame or modify the callers for it.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/iio/inkern.c    | 32 +++++++++++++++++++++++++++-----
- include/linux/iio/iio.h |  8 ++++++++
- 2 files changed, 35 insertions(+), 5 deletions(-)
+I don't think there's anything that prevents gup_fast to enable irqs
+after certain number of pages have been taken, nop; and disable the
+irqs again.
 
-diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-index f084610..6c3e478 100644
---- a/drivers/iio/inkern.c
-+++ b/drivers/iio/inkern.c
-@@ -100,6 +100,28 @@ static int iio_dev_node_match(struct device *dev, void *data)
- 	return dev->of_node == data && dev->type == &iio_device_type;
- }
- 
-+/**
-+ * __of_iio_simple_xlate - translate iiospec to the IIO channel index
-+ * @indio_dev:	pointer to the iio_dev structure
-+ * @iiospec:	IIO specifier as found in the device tree
-+ *
-+ * This is simple translation function, suitable for the most 1:1 mapped
-+ * channels in IIO chips. This function performs only one sanity check:
-+ * whether IIO index is less than num_channels (that is specified in the
-+ * iio_dev).
-+ */
-+static int __of_iio_simple_xlate(struct iio_dev *indio_dev,
-+				const struct of_phandle_args *iiospec)
-+{
-+	if (!iiospec->args_count)
-+		return 0;
-+
-+	if (iiospec->args[0] >= indio_dev->num_channels)
-+		return -EINVAL;
-+
-+	return iiospec->args[0];
-+}
-+
- static int __of_iio_channel_get(struct iio_channel *channel,
- 				struct device_node *np, int index)
- {
-@@ -122,18 +144,18 @@ static int __of_iio_channel_get(struct iio_channel *channel,
- 
- 	indio_dev = dev_to_iio_dev(idev);
- 	channel->indio_dev = indio_dev;
--	index = iiospec.args_count ? iiospec.args[0] : 0;
--	if (index >= indio_dev->num_channels) {
--		err = -EINVAL;
-+	if (!indio_dev->of_xlate)
-+		indio_dev->of_xlate = __of_iio_simple_xlate;
-+	index = indio_dev->of_xlate(indio_dev, &iiospec);
-+	if (index < 0)
- 		goto err_put;
--	}
- 	channel->channel = &indio_dev->channels[index];
- 
- 	return 0;
- 
- err_put:
- 	iio_device_put(indio_dev);
--	return err;
-+	return index;
- }
- 
- static struct iio_channel *of_iio_channel_get(struct device_node *np, int index)
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 15dc6bc..d5bb219 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -13,6 +13,7 @@
- #include <linux/device.h>
- #include <linux/cdev.h>
- #include <linux/iio/types.h>
-+#include <linux/of.h>
- /* IIO TODO LIST */
- /*
-  * Provide means of adjusting timer accuracy.
-@@ -413,6 +414,11 @@ struct iio_buffer_setup_ops {
-  * @currentmode:	[DRIVER] current operating mode
-  * @dev:		[DRIVER] device structure, should be assigned a parent
-  *			and owner
-+ * @of_xlate:		[DRIVER] function pointer to obtain channel specifier
-+ *			index. When #iio-cells is greater than '0', the driver
-+ *			could provide a custom of_xlate function that reads
-+ *			the *args* and returns the appropriate index in
-+ *			registered IIO channels array.
-  * @event_interface:	[INTERN] event chrdevs associated with interrupt lines
-  * @buffer:		[DRIVER] any buffer present
-  * @buffer_list:	[INTERN] list of all buffers currently attached
-@@ -451,6 +457,8 @@ struct iio_dev {
- 	int				currentmode;
- 	struct device			dev;
- 
-+	int (*of_xlate)(struct iio_dev *indio_dev,
-+			const struct of_phandle_args *iiospec);
- 	struct iio_event_interface	*event_interface;
- 
- 	struct iio_buffer		*buffer;
--- 
-1.9.1
+If the TLB flush runs in parallel with gup_fast the result is
+undefined anyway so there's no point to wait all pages to be taken
+before letting the TLB flush go through. All it matters is that
+gup_fast don't take pages that have been invalidated after the
+tlb_flush returns on the other side. So I don't see issues in
+releasing irqs and be latency friendly inside gup_fast fast path loop.
 
+In fact gup_fast should also cond_resched() after releasing irqs, it's
+not just an irq latency matter.
+
+I could fix x86-64 for it in the same patchset unless somebody sees a
+problem in releasing irqs inside the gup_fast fast path loop.
+
+__gup_fast is an entirely different beast and that needs the callers to
+be fixed but I didn't alter its callers.
