@@ -1,84 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaJBGyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:54:44 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:5049 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935AbaJBGym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:54:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 01 Oct 2014 23:54:38 -0700
-From: Vince Hsu <vinceh@nvidia.com>
-To: <viresh.kumar@linaro.org>, <rjw@rjwysocki.net>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <bilhuang@nvidia.com>, <dgreid@google.com>, <olofj@chromium.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: [PATCH] cpufreq: respect the min/max settings from user space
-Date: Thu, 2 Oct 2014 14:55:00 +0800
-Message-ID: <1412232900-11238-1-git-send-email-vinceh@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	id S1751452AbaJBG76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:59:58 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.203]:60600 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842AbaJBG75 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 02:59:57 -0400
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Oct 2014 02:59:57 EDT
+X-Env-Sender: Iwo.Mergler@netcommwireless.com
+X-Msg-Ref: server-14.tower-86.messagelabs.com!1412232750!632750!1
+X-Originating-IP: [220.233.131.78]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.2; banners=netcommwireless.com,-,-
+X-VirusChecked: Checked
+From: Iwo Mergler <Iwo.Mergler@netcommwireless.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+CC: Huang Shijie <shijie8@gmail.com>, Mike Voytovich <mvoytovich@paypal.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Roy Lee <roylee@paypal.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 2 Oct 2014 16:52:29 +1000
+Subject: RE: [PATCH] mtd: nand: gpmi: add proper raw access support
+Thread-Topic: [PATCH] mtd: nand: gpmi: add proper raw access support
+Thread-Index: Ac/chSRWygnTOZO+QISWzXW2ZuzpsgBhXrFP
+Message-ID: <EACD232272DA4849B060F0828564D13B44955ABD8A@ntcex01.corp.netcomm.com.au>
+References: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140911120928.GA1585@localhost.localdomain>
+	<20140911143616.3ebb025a@bbrezillon>
+	<EACD232272DA4849B060F0828564D13B44955ABD82@ntcex01.corp.netcomm.com.au>,<20140930100415.4834971d@bbrezillon>
+In-Reply-To: <20140930100415.4834971d@bbrezillon>
+Accept-Language: en-US, en-AU
+Content-Language: en-AU
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-AU
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the user space tries to set scaling_(max|min)_freq through
-sysfs, the cpufreq_set_policy() asks other driver's opinions
-for the max/min frequencies. Some device drivers, like Tegra
-CPU EDP which is not upstreamed yet though, may constrain the
-CPU maximum frequency dynamically because of board design.
-So if the user space access happens and some driver is capping
-the cpu frequency at the same time, the user_policy->(max|min)
-is overridden by the capped value, and that's not expected by
-the user space. And if the user space is not invoked again,
-the CPU will always be capped by the user_policy->(max|min)
-even no drivers limit the CPU frequency any more.
+On Tue, 30 Sep 2014 18:04:15 +1000
+Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
 
-This patch preserves the user specified min/max settings, so that
-every time the cpufreq policy is updated, the new max/min can
-be re-evaluated correctly based on the user's expection and
-the present device drivers' status.
+> Hi Iwo,
+> 
+> On Mon, 29 Sep 2014 11:22:11 +1000
+> Iwo Mergler <Iwo.Mergler@netcommwireless.com> wrote:
+> 
+> > On Thu, 11 Sep 2014 22:36:16 +1000
+> > Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+> > > 
+> > > Well, I don't know about freescale specific tools, but at least I
+> > > have an example with mtd_nandbiterrs module.
+> > > This module is assuming it can write only the data part of a NAND
+> > > page without modifying the OOB area (see [1]), which in GPMI
+> > > controller case is impossible because raw write function store
+> > > the data as if there were no specific scheme, while there is one:
+> > > (metadata + n x (data_chunk + ECC bytes) + remaining_bytes).
+> > > 
+> > 
+> > Hi Boris,
+> > 
+> > 
+> > just as an aside, only the incremental bit errors test in
+> > nandbiterrs positively requires raw data write.
+> > 
+> > The overwrite test (re-write the same page data repeatedly without
+> > erase), only uses raw access because I was lazy. A normal ECC write
+> > would do just as well.
+> 
+> Okay.
+> Anyway, the test I'm really interested in is the incremental bit
+> errors test :-).
+> 
+> BTW, any reason you chose to implement this test/testsuite as a
+> module ?
+> From my understanding (and tell me if I'm wrong) we could do the same
+> from user-space.
+> 
+> Best Regards,
+> 
+> Boris
+> 
 
-Signed-off-by: Vince Hsu <vinceh@nvidia.com>
----
-Hi,
+Hi Boris,
 
-I'm not sure if any platform that is supported mainlin might have this
-issue, and this patch is complie tested only. We hit the problem when 
-the laptop_mode tool configures the scaling_max_freq and the Tegra
-CPU EDP driver is limiting the CPU maximum frequency.
 
- drivers/cpufreq/cpufreq.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+can't say I have good excuses, but here goes. :-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 24bf76fba141..c007cf2a3d2a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -524,7 +524,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
- static ssize_t store_##file_name					\
- (struct cpufreq_policy *policy, const char *buf, size_t count)		\
- {									\
--	int ret;							\
-+	int ret, temp;						\
- 	struct cpufreq_policy new_policy;				\
- 									\
- 	ret = cpufreq_get_policy(&new_policy, policy->cpu);		\
-@@ -535,8 +535,10 @@ static ssize_t store_##file_name					\
- 	if (ret != 1)							\
- 		return -EINVAL;						\
- 									\
-+	temp = new_policy.object;					\
- 	ret = cpufreq_set_policy(policy, &new_policy);		\
--	policy->user_policy.object = policy->object;			\
-+	if (!ret)							\
-+		policy->user_policy.object = temp;			\
- 									\
- 	return ret ? ret : count;					\
- }
--- 
-1.9.1
+I was writing a NAND driver, so my brain was in kernel mode. It made it
+slightly easier to trace the operations from end-to-end.
 
+It's also possible that I didn't have an userspace at the time and had the
+test compiled in, my memory is a little fuzzy...
+
+Otherwise, yes, you could probably do it from userspace. I'm not sure
+if there is a way to determine the number of corrected bit errors for
+a specific page read. ECCGETSTATS seems to be global.
+
+
+Best regards,
+
+Iwo
+
+______________________________________________________________________
+This communication contains information which may be confidential or privileged. The information is intended solely for the use of the individual or entity named above.  If you are not the intended recipient, be aware that any disclosure, copying, distribution or use of the contents of this information is prohibited.  If you have received this communication in error, please notify me by telephone immediately.
+______________________________________________________________________
