@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaJBSZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:25:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46254 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaJBSZH (ORCPT
+	id S1751576AbaJBSaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:30:18 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:64531 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaJBSaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:25:07 -0400
-Date: Thu, 02 Oct 2014 11:27:08 -0700 (PDT)
-Message-Id: <20141002.112708.1359594783225203915.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hayeswang@realtek.com
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141002141641.0e43a18e@canb.auug.org.au>
-References: <20141002141641.0e43a18e@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 02 Oct 2014 11:25:07 -0700 (PDT)
+	Thu, 2 Oct 2014 14:30:15 -0400
+Date: Thu, 2 Oct 2014 20:29:57 +0200
+From: Carlo Caione <carlo@caione.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Victor Wan <victor.wan@amlogic.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>
+Subject: Re: [PATCH 1/6] ARM: meson: add meson8 machine definition
+Message-ID: <20141002182957.GA15355@nuc>
+References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
+ <1412198986-26534-2-git-send-email-b.galvani@gmail.com>
+ <11073411.IcmTkIICYA@wuerfel>
+ <20141002170519.GA29052@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141002170519.GA29052@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 2 Oct 2014 14:16:41 +1000
-
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/usb/r8152.c between commit 204c87041289 ("r8152: remove
-> clearing bp") from the net tree and commit 8ddfa07778af ("r8152: use
-> usleep_range") from the net-next tree.
+On gio, ott 02, 2014 at 07:05:19 +0200, Beniamino Galvani wrote:
+> On Thu, Oct 02, 2014 at 11:24:54AM +0200, Arnd Bergmann wrote:
+> > On Wednesday 01 October 2014 23:29:41 Beniamino Galvani wrote:
+> > > 
+> > > +static const char * const m8_common_board_compat[] = {
+> > > +       "amlogic,meson8",
+> > > +       NULL,
+> > > +};
+> > > +
+> > >  DT_MACHINE_START(AML8726_MX, "Amlogic Meson6 platform")
+> > >         .dt_compat      = m6_common_board_compat,
+> > >  MACHINE_END
+> > >  
+> > > +DT_MACHINE_START(MESON8, "Amlogic Meson8 platform")
+> > > +       .dt_compat      = m8_common_board_compat,
+> > > +MACHINE_END
+> > > 
+> > 
+> > I'd just add the meson8 string to the m6_common_board_compat list and
+> > rename it.
 > 
-> I fixed it up (the former removed some of the code updated by the
-> latter) and can carry the fix as necessary (no action is required).
+> From what I've seen so far the two families are very similar and share
+> most of the IP cores, so a unique DT machine is a good idea.
+> 
+> Does the MACH_MESON8 Kconfig symbol still make sense or can I drop it
+> and rename MACH_MESON6 to MACH_MESON?
 
-I'm merging net into net-next today and thus resolving this.
+I would still leave two different MACH_ for meson6 and meson8 since the
+two architectures aren't _so_ similar.
 
-Thanks Stephen!
+thanks,
+
+-- 
+Carlo Caione
