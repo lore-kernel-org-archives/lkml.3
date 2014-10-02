@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaJBQp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:45:57 -0400
-Received: from smtprelay0016.hostedemail.com ([216.40.44.16]:44467 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751648AbaJBQpz (ORCPT
+	id S1753117AbaJBQrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:47:14 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59285 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751789AbaJBQrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:45:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:4321:5007:7514:7652:9108:10004:10400:10848:10967:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tooth10_336ae0f5da55a
-X-Filterd-Recvd-Size: 2055
-Message-ID: <1412268351.3247.68.camel@joe-AO725>
-Subject: Re: [PATCH] Fixed all coding style issues for
- drivers/staging/media/lirc/
-From: Joe Perches <joe@perches.com>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Amber Thrall <amber.rose.thrall@gmail.com>, jarod@wilsonet.com,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 Oct 2014 09:45:51 -0700
-In-Reply-To: <20141002102938.2b762583@recife.lan>
-References: <1412224802-28431-1-git-send-email-amber.rose.thrall@gmail.com>
-	 <20141002102938.2b762583@recife.lan>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Thu, 2 Oct 2014 12:47:13 -0400
+Date: Thu, 2 Oct 2014 09:46:57 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        ebiederm@xmission.com, akpm@linux-foundation.org, adobriyan@gmail.com,
+        rui.xiang@huawei.com, viro@zeniv.linux.org.uk, oleg@redhat.com,
+        gorcunov@openvz.org, kirill.shutemov@linux.intel.com,
+        grant.likely@secretlab.ca, tytso@mit.edu,
+        Thierry Herbelot <thierry.herbelot@6wind.com>
+Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
+ directory entries
+Message-ID: <20141002094657.1e28e027@urahara>
+In-Reply-To: <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+References: <20131003.150947.2179820478039260398.davem@davemloft.net>
+	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
+	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 10:29 -0300, Mauro Carvalho Chehab wrote:
-> Em Wed, 01 Oct 2014 21:40:02 -0700 Amber Thrall <amber.rose.thrall@gmail.com> escreveu:
-> > Fixed various coding style issues, including strings over 80 characters long and many 
-> > deprecated printk's have been replaced with proper methods.
-[]
-> > diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
-[]
-> > @@ -623,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
-> >  	if (debug) {
-> >  		dev_info(dev, "raw packet: ");
-> >  		for (i = 0; i < len; ++i)
-> > -			printk("%02x ", buf[i]);
-> > -		printk("\n");
-> > +			dev_info(dev, "%02x ", buf[i]);
-> > +		dev_info(dev, "\n");
-> >  	}
+On Thu,  2 Oct 2014 17:25:01 +0200
+Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+
+> From: Thierry Herbelot <thierry.herbelot@6wind.com>
 > 
-> This is wrong, as the second printk should be printk_cont.
+> The current implementation for the directories in /proc is using a single
+> linked list. This is slow when handling directories with large numbers of
+> entries (eg netdevice-related entries when lots of tunnels are opened).
 > 
-> The best here would be to change all above to use %*ph.
-> So, just:
+> This patch enables multiple linked lists. A hash based on the entry name is
+> used to select the linked list for one given entry.
 > 
-> 	dev_debug(dev, "raw packet: %*ph\n", len, buf);
+> The speed creation of netdevices is faster as shorter linked lists must be
+> scanned when adding a new netdevice.
+> 
+> Here are some numbers:
+> 
+> dummy30000.batch contains 30 000 times 'link add type dummy'.
+> 
+> Before the patch:
+> time ip -b dummy30000.batch
+> real    2m32.221s
+> user    0m0.380s
+> sys     2m30.610s
+> 
+> After the patch:
+> time ip -b dummy30000.batch
+> real    1m57.190s
+> user    0m0.350s
+> sys     1m56.120s
+> 
+> The single 'subdir' list head is replaced by a subdir hash table. The subdir
+> hash buckets are only allocated for directories. The number of hash buckets
+> is a compile-time parameter.
+> 
+> For all functions which handle directory entries, an additional check on the
+> directory nature of the dir entry ensures that pde_hash_buckets was allocated.
+> This check was not needed as subdir was present for all dir entries, whether
+> actual directories or simple files.
+> 
+> Signed-off-by: Thierry Herbelot <thierry.herbelot@6wind.com>
+> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-Not quite.
-
-%*ph is length limited and only useful for lengths < 30 or so.
-Even then, it's pretty ugly.
-
-print_hex_dump_debug() is generally better.
-
-
+I think the speed up is a good idea and makes sense.
+It would be better to use exist hlist macros for hash table rather than
+open coding it.
