@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaJBGv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:51:29 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33654 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJBGv2 (ORCPT
+	id S1751695AbaJBGx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:53:56 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:39540 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaJBGxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:51:28 -0400
-Date: Thu, 2 Oct 2014 07:51:24 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH v2 00/11] perf: Intel Cache QoS Monitoring support
-Message-ID: <20141002065124.GF14343@console-pimps.org>
-References: <1412174192-7010-1-git-send-email-matt@console-pimps.org>
- <8738b7eac2.fsf@tassilo.jf.intel.com>
+	Thu, 2 Oct 2014 02:53:55 -0400
+Date: Thu, 2 Oct 2014 14:53:41 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Matt Mackall <mpm@selenic.com>, Olof Johansson <olof@lixom.net>,
+        linux-kernel@vger.kernel.org, linux-geode@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2] drivers: char: hw_random: printk replacement
+Message-ID: <20141002065341.GA26145@gondor.apana.org.au>
+References: <1410793281-30305-1-git-send-email-sudipm.mukherjee@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8738b7eac2.fsf@tassilo.jf.intel.com>
+In-Reply-To: <1410793281-30305-1-git-send-email-sudipm.mukherjee@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Oct, at 02:42:05PM, Andi Kleen wrote:
-> Matt Fleming <matt@console-pimps.org> writes:
-> >
-> > Changes in v2:
-> >
-> >  - Added Jiri Olsa's Acked-by to PATCH 02/11.
-> >
-> >  - Use x86_match_cpu() in intel_cqm_init() and make sure we grab the
-> >    hotplug lock to prevent races as pointed out by Andi Kleen in
-> >    PATCH 08/11.
-> >
-> >  - Delete a stale comment in commit message of PATCH 10/11.
+On Mon, Sep 15, 2014 at 08:31:20PM +0530, Sudip Mukherjee wrote:
+> as pr_* macros are more preffered over printk, so printk replaced with corresponding pr_* macros
 > 
-> No support for a modular driver?
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> ---
+> 
+> The replacement was done by a bash script to avoid copy paste error. The script is as follows :
+> 
+> OLD="printk(KERN_ERR \?"
+> OLD1="printk(KERN_NOTICE \?"
+> OLD2="printk(KERN_WARNING \?"
+> OLD3="printk(KERN_INFO \?"
+> NEW="pr_err("
+> NEW1="pr_notice("
+> NEW2="pr_warn("
+> NEW3="pr_info("
+> TFILE="/tmp/out.tmp.$$"
+> for f in *.c
+> do
+> sed -e "s/$OLD/$NEW/g" -e "s/$OLD1/$NEW1/g" -e "s/$OLD2/$NEW2/g" -e "s/$OLD3/$NEW3/g" "$f" > $TFILE && mv $TFILE "$f"
+> done
+> 
+> exception is intel-rng.c . 
+> in v1 the build failed due to intel-rng.c . 
+> it has been corrected and has been carefully build tested.
+> 
+>  drivers/char/hw_random/amd-rng.c     |  4 ++--
+>  drivers/char/hw_random/geode-rng.c   |  4 ++--
+>  drivers/char/hw_random/intel-rng.c   | 13 ++++++-------
+>  drivers/char/hw_random/pasemi-rng.c  |  2 +-
+>  drivers/char/hw_random/pseries-rng.c |  2 +-
+>  drivers/char/hw_random/via-rng.c     |  8 ++++----
+>  6 files changed, 16 insertions(+), 17 deletions(-)
 
-I didn't include support for that because none of the other x86 pmu
-drivers are buildable as modules. Is there a reason for that?
-
-It's not clear to me that it would be a worthwhile change to make this
-buildable as a module, since that would require a Kconfig entry and the
-user would be required to make a decision regarding whether or not they
-want to build CQM support.
-
-It's much simpler to just build it in and enable it based on
-CONFIG_PERF_EVENTS + CONFIG_INTEL_CPU. In fact, that's one of the things
-I've always liked about the pmu drivers, if I move to a new machine and
-turn on PERF_EVENTS the correct drivers will be run.
-
+Patch applied.
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
