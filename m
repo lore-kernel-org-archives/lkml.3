@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaJBPxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:53:50 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:54499 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170AbaJBPxs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:53:48 -0400
+	id S1754682AbaJBPx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:53:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754536AbaJBPxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:53:54 -0400
+Message-ID: <542D7479.7000504@redhat.com>
+Date: Thu, 02 Oct 2014 11:51:21 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=
+To: Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] mm: mempolicy: Skip inaccessible VMAs when setting
+ MPOL_MF_LAZY
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de> <1412256558-9995-4-git-send-email-mgorman@suse.de>
+In-Reply-To: <1412256558-9995-4-git-send-email-mgorman@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 02 Oct 2014 17:53:37 +0200
-From: Stefan Agner <stefan@agner.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de, b35083@freescale.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: dts: vf500/vf610: support VF500 SoC
-In-Reply-To: <8882221.sfQOLcQs3p@wuerfel>
-References: <1412261724-11073-1-git-send-email-stefan@agner.ch>
- <8882221.sfQOLcQs3p@wuerfel>
-Message-ID: <20f4e3a1932756c92443d380a7f42f56@agner.ch>
-User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-10-02 17:28, schrieb Arnd Bergmann:
-> On Thursday 02 October 2014 16:55:23 Stefan Agner wrote:
->> The VF500 is essentially the same SoC, but with only one core and
->> without L1 cache. The VF610 is therefore a superset of the VF500.
->> Move allmost all periperals to vf500.dtsi which is then included
->> and enhanced by vf610.dtsi.
->>
->> Signed-off-by: Stefan Agner <stefan@agner.ch>
->> ---
->> Somehow using -M -B switches create a unapplyable patch, hence I
->> generated one without those options. Sorry about that.
->>
->>  arch/arm/boot/dts/vf500.dtsi | 498 ++++++++++++++++++++++++++++++++++++++++++
->>  arch/arm/boot/dts/vf610.dtsi | 507 +------------------------------------------
->>  2 files changed, 510 insertions(+), 495 deletions(-)
->>  create mode 100644 arch/arm/boot/dts/vf500.dtsi
+On 10/02/2014 09:29 AM, Mel Gorman wrote:
+> PROT_NUMA VMAs are skipped to avoid problems distinguishing between
+> present, prot_none and special entries. MPOL_MF_LAZY is not visible from
+> userspace since commit a720094ded8c ("mm: mempolicy: Hide MPOL_NOOP and
+> MPOL_MF_LAZY from userspace for now") but it should still skip VMAs the
+> same way task_numa_work does.
 > 
-> I think it would be better to create one extra file that contains the common
-> parts and is included by both vf500 and vf610.
-> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-I also thought about that. But when looking at the product variants, its
-clear that VF500 really contains only features, which are part of all
-other Vybrids (VF3xx series excluded, but these series is not really
-suitable for Linux due to lack of external memory). So vf500.dtsi would
-always be a oneliner (#include <vf.dtsi>).
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Also I disliked this idea because of the somewhat unclear naming
-(vf.dtsi? vfxxx.dtsi?)
-
---
-Stefan
