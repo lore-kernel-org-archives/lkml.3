@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaJBLzP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:55:15 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:58791 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751208AbaJBLzO (ORCPT
+	id S1752362AbaJBL4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:56:16 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:51242 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaJBL4O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:55:14 -0400
-Message-ID: <1412250911.3060.13.camel@x41>
-Subject: Re: cpufreq v3.17-rc7 error: "cpufreq: cpufreq_resume: Failed to
- start governor for policy: f6909a00"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 02 Oct 2014 13:55:11 +0200
-In-Reply-To: <1412250350.3060.9.camel@x41>
-References: <1412250350.3060.9.camel@x41>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Oct 2014 11:55:12.0033 (UTC) FILETIME=[B8B2D910:01CFDE37]
-X-RcptDomain: vger.kernel.org
+	Thu, 2 Oct 2014 07:56:14 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <542D1726.3040801@draigBrady.com>
+References: <cover.1411562410.git.ydroneaud@opteya.com> <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+ <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain>
+ <542666B2.9080700@gmx.de> <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+ <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
+ <1412230855.28184.5.camel@localhost.localdomain> <1412236349-30035-1-git-send-email-ydroneaud@opteya.com>
+ <542D1726.3040801@draigBrady.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 2 Oct 2014 13:55:53 +0200
+Message-ID: <CAKgNAkjEMEfgQurTFS5bUyC4U2WkuYBG72ARjNkn=W=OWPSEaw@mail.gmail.com>
+Subject: Re: [PATCH] fanotify: add a flag to allow setting O_CLOEXEC on event fd
+To: =?UTF-8?Q?P=C3=A1draig_Brady?= <P@draigbrady.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        stable@vger.kernel.org, Linux API <linux-api@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle schreef op do 02-10-2014 om 13:45 [+0200]:
-> Running v3.17-rc7 I see a new (for me) error, apparently during each
-> resume (from suspend) or thaw (from hibernate):
->      cpufreq: cpufreq_resume: Failed to start governor for policy: f6909a00
+On Thu, Oct 2, 2014 at 11:13 AM, Pádraig Brady <P@draigbrady.com> wrote:
+> On 10/02/2014 08:52 AM, Yann Droneaud wrote:
+>> In order to not potentially break applications which were
+>> requesting O_CLOEXEC on event file descriptors but which
+>> actually need it to be not effective as the kernel currently
+>> ignore the flag, so the file descriptor is inherited accross
+>> exec regardless of O_CLOEXEC (please forgive me for the
+>> wording), this patch introduces FAN_FD_CLOEXEC flag to
+>> fanotify_init() so that application can request O_CLOEXEC
+>> to be effective.
+>> Newer application would use FAN_FD_CLOEXEC flag along
+>> O_CLOEXEC to enable close on exec on newly created
+>> file descriptor:
+>>
+>>   fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK|FAN_FD_CLOEXEC,
+>>                      O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+>
+> Ugh really?
+> IMHO there should be widespread or at least known breakage with
+> O_CLOEXEC before adding messiness like this.
+> It seems surprising to me that apps that would depend on
+> O_CLOEXEC being ineffective.
+>
+> please reconsider this one.
 
-So there are only two recent commits:
-    7106e02baed4 ("cpufreq: release policy->rwsem on error")
-    8e30444e1530 ("cpufreq: fix cpufreq suspend/resume for
-        intel_pstate")
+Agreed. The number of applications for which there are silent (not
+*yet* observed) breakages because O_CLOEXEC is not working as expected
+is likely rather larger than the set of applications that randomly
+specify O_CLOEXEC and then somehow get broken as a result.
 
-Would it be useful to test whether reverting the oldest commit,
-8e30444e1530 ("cpufreq: fix cpufreq suspend/resume for intel_pstate"),
-changes anything?
+Cheers,
+
+Michael
 
 
-Paul Bolle
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
