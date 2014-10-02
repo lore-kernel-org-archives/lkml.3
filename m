@@ -1,109 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaJBNiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:38:22 -0400
-Received: from mga14.intel.com ([192.55.52.115]:3775 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424AbaJBNiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:38:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
-   d="scan'208";a="599806688"
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: jic23@kernel.org, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: daniel.baluta@intel.com, irina.tirdea@intel.com
-Subject: [RFC PATCH 8/8] iio: event_monitor: Add support for activity channel
-Date: Thu,  2 Oct 2014 16:43:59 +0300
-Message-Id: <1412257439-15683-9-git-send-email-daniel.baluta@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
-References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
+	id S1754188AbaJBNjP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:39:15 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40555 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbaJBNjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:39:12 -0400
+Date: Thu, 2 Oct 2014 14:38:57 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Andrew Pinski <apinski@cavium.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pinskia@gmail.com" <pinskia@gmail.com>
+Subject: Re: [PATCH 18/24] ARM64: Add vdso for ILP32 and use it for the
+ signal return
+Message-ID: <20141002133857.GD32147@e104818-lin.cambridge.arm.com>
+References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
+ <1409779158-30963-19-git-send-email-apinski@cavium.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409779158-30963-19-git-send-email-apinski@cavium.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have the following testing scenario:
+On Wed, Sep 03, 2014 at 10:19:12PM +0100, Andrew Pinski wrote:
+> diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+> index f47c064..5311147 100644
+> --- a/arch/arm64/kernel/signal.c
+> +++ b/arch/arm64/kernel/signal.c
+> @@ -242,6 +242,10 @@ static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+> 
+>         if (ka->sa.sa_flags & SA_RESTORER)
+>                 sigtramp = ka->sa.sa_restorer;
+> +#ifdef CONFIG_ARM64_ILP32
+> +       else if (is_ilp32_compat_task())
+> +               sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp_ilp32);
+> +#endif
 
-$ insmod iio_dummy_evgen.ko
-$ insmod iio_dummy.ko
+Could we avoid the #ifdef here given that is_ilp32_compat_task() returns
+0 when !CONFIG_ARM64_ILP32? I haven't tried to compile it.
 
-$ ./iio_event_monitor /dev/iio:device0
-Event: time: 1412254756207353948, type: voltage, channel: 0, evtype: thresh, direction: rising
-Event: time: 1412254762455172908, type: activity(running), channel: 0, evtype: motion, direction: rising
-Event: time: 1412254770823830774, type: activity, channel: 0, evtype: step_detect, direction: rising
+> diff --git a/arch/arm64/kernel/vdso-ilp32/Makefile b/arch/arm64/kernel/vdso-ilp32/Makefile
+> new file mode 100644
+> index 0000000..c8f5472
+> --- /dev/null
+> +++ b/arch/arm64/kernel/vdso-ilp32/Makefile
 
-$ echo 0 > /sys/bus/iio/devices/iio_evgen/poke_ev0
-$ echo 1 > /sys/bus/iio/devices/iio_evgen/poke_ev0
-$ echo 2 > /sys/bus/iio/devices/iio_evgen/poke_ev0
+Do we expect so many ILP32 files as to use a separate vdso-ilp32
+directory? I prefer a single vdso directory.
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
----
- drivers/staging/iio/Documentation/iio_event_monitor.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+> @@ -0,0 +1,72 @@
+> +#
+> +# Building a vDSO image for AArch64.
+> +#
+> +# Author: Will Deacon <will.deacon@arm.com>
+> +# Heavily based on the vDSO Makefiles for other archs.
+> +#
+> +
+> +obj-ilp32-vdso := gettimeofday-ilp32.o note-ilp32.o sigreturn-ilp32.o
+> +
+> +# Build rules
+> +targets := $(obj-ilp32-vdso) vdso-ilp32.so vdso-ilp32.so.dbg
+> +obj-ilp32-vdso := $(addprefix $(obj)/, $(obj-ilp32-vdso))
+> +
+> +ccflags-y := -shared -fno-common -fno-builtin
+> +ccflags-y += -nostdlib -Wl,-soname=linux-ilp32-vdso.so.1 \
+> +               $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
+> +
+> +obj-y += vdso-ilp32.o
+> +extra-y += vdso-ilp32.lds vdso-ilp32-offsets.h
+> +CPPFLAGS_vdso-ilp32.lds += -P -C -U$(ARCH) -mabi=ilp32
+> +
+> +# Force dependency (incbin is bad)
+> +$(obj)/vdso-ilp32.o : $(obj)/vdso-ilp32.so
+> +
+> +# Link rule for the .so file, .lds has to be first
+> +$(obj)/vdso-ilp32.so.dbg: $(src)/vdso-ilp32.lds $(obj-ilp32-vdso)
+> +       $(call if_changed,vdso-ilp32ld)
+> +
+> +# Strip rule for the .so file
+> +$(obj)/%.so: OBJCOPYFLAGS := -S
+> +$(obj)/%.so: $(obj)/%.so.dbg FORCE
+> +       $(call if_changed,objcopy)
+> +
+> +# Generate VDSO offsets using helper script
+> +gen-vdsosym := $(srctree)/$(src)/../vdso/gen_vdso_offsets.sh
+> +quiet_cmd_vdsosym = VDSOSYM $@
+> +define cmd_vdsosym
+> +       $(NM) $< | $(gen-vdsosym) | LC_ALL=C sort > $@ && \
+> +       cp $@ include/generated/
+> +endef
+> +
+> +$(obj)/vdso-ilp32-offsets.h: $(obj)/vdso-ilp32.so.dbg FORCE
+> +       $(call if_changed,vdsosym)
+> +
+> +# Assembly rules for the .S files
+> +#$(obj-ilp32-vdso): %.o: $(src)/../vdso/$(subst -ilp32,,%.S)
+> +#      $(call if_changed_dep,vdso-ilp32as)
+> +
+> +$(obj)/gettimeofday-ilp32.o: $(src)/../vdso/gettimeofday.S
+> +       $(call if_changed_dep,vdso-ilp32as)
+> +
+> +$(obj)/note-ilp32.o: $(src)/../vdso/note.S
+> +       $(call if_changed_dep,vdso-ilp32as)
+> +
+> +$(obj)/sigreturn-ilp32.o: $(src)/../vdso/sigreturn.S
+> +       $(call if_changed_dep,vdso-ilp32as)
 
-diff --git a/drivers/staging/iio/Documentation/iio_event_monitor.c b/drivers/staging/iio/Documentation/iio_event_monitor.c
-index 569d6f8..5df7662 100644
---- a/drivers/staging/iio/Documentation/iio_event_monitor.c
-+++ b/drivers/staging/iio/Documentation/iio_event_monitor.c
-@@ -49,6 +49,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_CCT] = "cct",
- 	[IIO_PRESSURE] = "pressure",
- 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-+	[IIO_ACTIVITY] = "activity",
- };
- 
- static const char * const iio_ev_type_text[] = {
-@@ -57,6 +58,8 @@ static const char * const iio_ev_type_text[] = {
- 	[IIO_EV_TYPE_ROC] = "roc",
- 	[IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
- 	[IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
-+	[IIO_EV_TYPE_MOTION] = "motion",
-+	[IIO_EV_TYPE_STEP_DETECT] = "step_detect",
- };
- 
- static const char * const iio_ev_dir_text[] = {
-@@ -79,6 +82,11 @@ static const char * const iio_modifier_names[] = {
- 	[IIO_MOD_LIGHT_RED] = "red",
- 	[IIO_MOD_LIGHT_GREEN] = "green",
- 	[IIO_MOD_LIGHT_BLUE] = "blue",
-+	[IIO_MOD_RUNNING] = "running",
-+	[IIO_MOD_JOGGING] = "jogging",
-+	[IIO_MOD_WALKING] = "walking",
-+	[IIO_MOD_STILL] = "still",
-+	[IIO_MOD_PED_STEPS] = "steps",
- };
- 
- static bool event_is_known(struct iio_event_data *event)
-@@ -108,6 +116,7 @@ static bool event_is_known(struct iio_event_data *event)
- 	case IIO_CCT:
- 	case IIO_PRESSURE:
- 	case IIO_HUMIDITYRELATIVE:
-+	case IIO_ACTIVITY:
- 		break;
- 	default:
- 		return false;
-@@ -126,6 +135,11 @@ static bool event_is_known(struct iio_event_data *event)
- 	case IIO_MOD_LIGHT_RED:
- 	case IIO_MOD_LIGHT_GREEN:
- 	case IIO_MOD_LIGHT_BLUE:
-+	case IIO_MOD_RUNNING:
-+	case IIO_MOD_JOGGING:
-+	case IIO_MOD_WALKING:
-+	case IIO_MOD_STILL:
-+	case IIO_MOD_PED_STEPS:
- 		break;
- 	default:
- 		return false;
-@@ -137,6 +151,8 @@ static bool event_is_known(struct iio_event_data *event)
- 	case IIO_EV_TYPE_ROC:
- 	case IIO_EV_TYPE_THRESH_ADAPTIVE:
- 	case IIO_EV_TYPE_MAG_ADAPTIVE:
-+	case IIO_EV_TYPE_MOTION:
-+	case IIO_EV_TYPE_STEP_DETECT:
- 		break;
- 	default:
- 		return false;
+So we don't even need many new files, just different compiler flags.
+
+> diff --git a/arch/arm64/kernel/vdso.c b/arch/arm64/kernel/vdso.c
+> index a777ac3..21b3726 100644
+> --- a/arch/arm64/kernel/vdso.c
+> +++ b/arch/arm64/kernel/vdso.c
+> @@ -41,6 +41,12 @@ extern char vdso_start, vdso_end;
+>  static unsigned long vdso_pages;
+>  static struct page **vdso_pagelist;
+> 
+> +#ifdef CONFIG_ARM64_ILP32
+> +extern char vdso_ilp32_start, vdso_ilp32_end;
+> +static unsigned long vdso_ilp32_pages;
+> +static struct page **vdso_ilp32_pagelist;
+> +#endif
+
+I think the compiler could optimise away some of these and avoid the
+#ifdef (similarly in the code where we check for
+is_ilp32_compat_task()).
+
 -- 
-1.9.1
-
+Catalin
