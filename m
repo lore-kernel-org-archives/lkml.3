@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaJBICA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:02:00 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:43694 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJBIB6 (ORCPT
+	id S1752281AbaJBIDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:03:10 -0400
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:64521 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaJBIDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:01:58 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9281tlZ001960, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next] r8152: nway reset after setting eee
-Date: Thu, 2 Oct 2014 16:01:22 +0800
-Message-ID: <1394712342-15778-54-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Thu, 2 Oct 2014 04:03:06 -0400
+Date: Thu, 2 Oct 2014 03:03:00 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pipe/page fault oddness.
+Message-ID: <20141002030300.1d2788ca@as>
+In-Reply-To: <542CC73F.8050907@oracle.com>
+References: <20140930033327.GA14558@redhat.com>
+	<20140930043309.GA16196@redhat.com>
+	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>
+	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>
+	<20140930160510.GA15903@redhat.com>
+	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
+	<20140930162201.GC15903@redhat.com>
+	<20140930164047.GA18354@redhat.com>
+	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
+	<20140930182059.GA24431@redhat.com>
+	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
+	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
+	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
+	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
+	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
+	<542C7B5E.2020000@oracle.com>
+	<20141001172804.16e5986a@as>
+	<542CC73F.8050907@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.190]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Restart autonegotiation is necessary after setting EEE.
+On Wed, 01 Oct 2014 23:32:15 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 3 +++
- 1 file changed, 3 insertions(+)
+> On 10/01/2014 06:28 PM, Chuck Ebbert wrote:
+> > On Wed, 01 Oct 2014 18:08:30 -0400
+> > Sasha Levin <sasha.levin@oracle.com> wrote:
+> > 
+> >> > On 10/01/2014 04:20 PM, Linus Torvalds wrote:
+> >>> > > So I'm really sending this patch out in the hope that it will get
+> >>> > > comments, fixup and possibly even testing by people who actually know
+> >>> > > the NUMA balancing code. Rik?  Anybody?
+> >> > 
+> >> > Hi Linus,
+> >> > 
+> >> > I've tried this patch on the same configuration that was triggering
+> >> > the VM_BUG_ON that Hugh mentioned previously. Surprisingly enough it
+> >> > ran fine for ~20 minutes before exploding with:
+> >> > 
+> >> > [ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
+> > That's:
+> > 	BUG_ON(is_huge_zero_page(page));
+> > 
+> > Can you change your scripts to show the source code line when
+> > the error is a BUG_ON()? The machine code disassembly after the
+> > oops message doesn't really help.
+> > 
+> 
+> Hum? The source code line is the first line in the trace:
+> 
+> 	[ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
+> 
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index a4d4c4a..e4dcfc1 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -3480,6 +3480,9 @@ rtl_ethtool_set_eee(struct net_device *net, struct ethtool_eee *edata)
- 
- 	ret = tp->rtl_ops.eee_set(tp, edata);
- 
-+	if (ret == 0)
-+		ret = mii_nway_restart(&tp->mii);
-+
- 	usb_autopm_put_interface(tp->intf);
- 
- out:
--- 
-1.9.3
-
+I meant, display the contents of that line so we can see what the
+BUG_ON() was triggered by. In some cases you might have a custom patch
+applied or be running a version that some people don't have handy.
