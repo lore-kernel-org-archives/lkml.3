@@ -1,221 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaJBKnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 06:43:35 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:9507 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416AbaJBKnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 06:43:33 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-9a-542d2c529064
-Message-id: <542D2C56.9040505@samsung.com>
-Date: Thu, 02 Oct 2014 13:43:34 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Roberto Sassu <roberto.sassu@polito.it>,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, zohar@linux.vnet.ibm.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [Linux-ima-devel] [PATCH v2 3/4] ima: check appraisal flag in the
- ima_file_free() hook
-References: <cover.1412188590.git.d.kasatkin@samsung.com>
- <600aeb6a5b8eca7eb381392e142ca71484717e9c.1412188590.git.d.kasatkin@samsung.com>
- <542D0C33.2010700@polito.it> <542D1B4B.7040904@samsung.com>
- <542D2398.8000300@polito.it>
-In-reply-to: <542D2398.8000300@polito.it>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/xq7pBOrohBm/nqlh8WVpn8XLGPHaL
-	y7vmsFl86HnEZvFy1zd2i08rJjE7sHnsnHWX3ePBoc0sHrsXfGbyOL2y2OPzJrkA1igum5TU
-	nMyy1CJ9uwSujHO/b7EUzDCueLv+DnsD43vNLkZODgkBE4nXk+exQdhiEhfurQeyuTiEBJYy
-	Suxa/YAdwmlkklixdz8rhDOLUaJn8gUWkBZeAS2JVT+bGUFsFgFViSvHn4HZbAJ6Ehuaf7CD
-	2KICERIn7+5hh6gXlPgx+R5QLweHiMARRomNFiBhZgEFiV/3NrGC2MICqRIH796HuuIlo0Tj
-	qUYmkASngKbE89tbwXqZgebfv6gF0SsvsXnNW2YQWwjohO61a6G+UZQ4Pfkc8wRG4VlINs9C
-	6J6FpHsBI/MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJD4+LKDcfExq0OMAhyMSjy8GQ06
-	IUKsiWXFlbmHGCU4mJVEeJnUdUOEeFMSK6tSi/Lji0pzUosPMTJxcEo1MLY/4Xx96/sXHp28
-	eKdbfK9XzrmT9uWIfdTJF0/2xRRdkXT4f611hq31ROPDUe8uKCUsOtQtazU3adr39yeNP3zM
-	vbiw4fmqZc/+PIuxW3PuWQnTo/jKqdJCRUYFCiEq35dfKY6Zdu7QuecyTj/Km6snqf48IWyt
-	llTadutdwrNN/3Mz3jbVLJ2txFKckWioxVxUnAgAJiFLXW0CAAA=
+	id S1752473AbaJBKoP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 06:44:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59450 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987AbaJBKoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 06:44:13 -0400
+Date: Thu, 2 Oct 2014 12:44:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, stable@vger.kernel.org,
+        linux-api@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Subject: Re: [PATCHv8.1] fanotify: enable close-on-exec on events' fd when
+ requested in fanotify_init()
+Message-ID: <20141002104410.GB19748@quack.suse.cz>
+References: <cover.1411562410.git.ydroneaud@opteya.com>
+ <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
+ <542481B3.8070300@gmx.de>
+ <1411721898.7778.18.camel@localhost.localdomain>
+ <542666B2.9080700@gmx.de>
+ <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
+ <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/10/14 13:06, Roberto Sassu wrote:
-> On 10/02/2014 11:30 AM, Dmitry Kasatkin wrote:
->> On 02/10/14 11:26, Roberto Sassu wrote:
->>> On 10/01/2014 08:43 PM, Dmitry Kasatkin wrote:
->>>> ima_file_free() hook is only used by appraisal module to update hash
->>>> when file was modified. When there were no integrity checks on inode,
->>>> S_IMA flag is not set, integrity_iint_find() returns NULL and it
->>>> quits. When inode is only measured/audited but not appraised, iint
->>>> is allocated and it will cause calling ima_check_last_writer() which
->>>> unnecessarily locks i_mutex.
->>>>
->>>> Currently ima_file_free() checks 'iint_initialized'. But it looks that
->>>> it is a mistake and originally 'ima_appraise' had to be used instead.
->>>> In fact usage of 'iint_initialized' is completely unnecessary because
->>>> S_IMA flag would not be set if iint was not allocated.
->>>>
->>> Hi Dmitry
->>>
->>> sorry, I think there are two mistakes here.
->>>
->>> First, ima_file_free() is not used by the appraisal module only
->>> because, if a file has been written, also the IMA_MEASURED
->>> and IMA_AUDITED flags are cleared. Your patch prevents further
->>> measurements/audits if a file is modified.
->>>
->>> Second, the lock of i_mutex is necessary, as it protects the
->>> access to the fields of the 'integrity_iint_cache' structure.
->>>
->>> My suggestion is to provide a patch that fixes the commit a756024e
->>> of Mimi's 'next' branch. The patch should just replace the check
->>> of 'iint_initialized' with 'ima_policy_flag'. The removal of
->>> 'iint_initialized' could be done in a separate patch.
->>>
->>> Thanks
->>>
->>> Roberto Sassu
->>
->> Hi Roberto,
->>
->> You are right. Clearing flags slipped out from my eyes.
->> In such case we need to test entire flag as we do in other places.
->> But in such case the patch is more about remove iint_initialzed, because
->> S_IMA flag would not be set anyway.
->> I posted modified version.
->>
->
-> Hi Dmitry
->
-> thanks for the updated version. I would slightly modify the
-> patch description by saying that your patch completes the switching
-> to the 'ima_policy_flag' variable in the checks at the beginning
-> of IMA functions, started with the commit a756024e.
->
-Updated in my tree..
+On Wed 01-10-14 15:36:21, Andrew Morton wrote:
+> On Mon, 29 Sep 2014 10:49:15 +0200 Yann Droneaud <ydroneaud@opteya.com> wrote:
+> 
+> > According to commit 80af258867648 ('fanotify: groups can specify
+> > their f_flags for new fd'), file descriptors created as part of
+> > file access notification events inherit flags from the
+> > event_f_flags argument passed to syscall fanotify_init(2).
+> > 
+> > So while it is legal for userspace to call fanotify_init() with
+> > O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
+> > silently ignored.
+> > 
+> > Indeed event_f_flags are only given to dentry_open(), which only
+> > seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
+> > O_DIRECT in open_check_o_direct() and O_LARGEFILE in
+> > generic_file_open().
+> > 
+> > But it seems logical to set close-on-exec flag on the file
+> > descriptor if userspace is allowed to request it with O_CLOEXEC.
+> > 
+> > In fact, according to some lookup on http://codesearch.debian.net/
+> > and various search engine, there's already some userspace code
+> > requesting it:
+> > 
+> > - in systemd's readahead[2]:
+> > 
+> >     fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+> > 
+> > - in clsync[3]:
+> > 
+> >     #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
+> > 
+> >     int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
+> > 
+> > - in examples [4] from "Filesystem monitoring in the Linux
+> >   kernel" article[5] by Aleksander Morgado:
+> > 
+> >     if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+> >                                       O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
+> 
+> So we have a number of apps which are setting O_CLOEXEC, but it doesn't
+> actually work.  With this change it *will* work, so the behaviour of
+> those apps might change, possibly breaking them?
+  Possibly. OTOH I'd dare to say that most of the apps specifying O_CLOEXEC
+want that behavior and their security may be weakened by the fact that
+O_CLOEXEC is ignored. So we are weighting possible security issues for apps
+doing things right (and Mihai mentioned in this thread that at least he has
+an application which needs O_CLOEXEC working) against possible breakage for
+apps which just randomly set O_CLOEXEC without wanting. So I'm really for
+fixing O_CLOEXEC behavior.
 
-http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/commit/?h=ima-next&id=cddb34c121434c71c69cb14069252c3c61c6ae11
-
-Dmitry
-
-> I noticed that James Morris pulled my previous patches, so also
-> this one should be pulled after Mimi confirms that it is ok.
->
->
->>
->> This patch and other patches were posted a week ago on linux-ima-devel
->> mailing list.
->> I appreciate you would review patches when they come there so we could
->> spot more issues before they come to lsm mailing list.
->>
->
-> Ok, sure.
->
-> Thanks
->
-> Roberto Sassu
->
->
->> Thanks,
->> Dmitry
->>
->>>
->>>> This patch uses lately introduced ima_policy_flag to test if appraisal
->>>> was enabled by policy.
->>>>
->>>> With this change 'iint_initialized' is no longer used anywhere.
->>>> Indeed,
->>>> integrity cache is allocated with SLAB_PANIC and kernel will panic if
->>>> allocation fails during kernel initialization. So this variable is
->>>> unnecessary and thus this patch removes it.
->>>>
->>>> Changes in v2:
->>>> * 'iint_initialized' removal patch merged to this patch (requested
->>>>      by Mimi)
->>>>
->>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>>> ---
->>>>    security/integrity/iint.c         | 3 ---
->>>>    security/integrity/ima/ima_main.c | 2 +-
->>>>    security/integrity/integrity.h    | 3 ---
->>>>    3 files changed, 1 insertion(+), 7 deletions(-)
->>>>
->>>> diff --git a/security/integrity/iint.c b/security/integrity/iint.c
->>>> index a521edf..cc3eb4d 100644
->>>> --- a/security/integrity/iint.c
->>>> +++ b/security/integrity/iint.c
->>>> @@ -25,8 +25,6 @@ static struct rb_root integrity_iint_tree = RB_ROOT;
->>>>    static DEFINE_RWLOCK(integrity_iint_lock);
->>>>    static struct kmem_cache *iint_cache __read_mostly;
->>>>
->>>> -int iint_initialized;
->>>> -
->>>>    /*
->>>>     * __integrity_iint_find - return the iint associated with an inode
->>>>     */
->>>> @@ -166,7 +164,6 @@ static int __init integrity_iintcache_init(void)
->>>>        iint_cache =
->>>>            kmem_cache_create("iint_cache", sizeof(struct
->>>> integrity_iint_cache),
->>>>                      0, SLAB_PANIC, init_once);
->>>> -    iint_initialized = 1;
->>>>        return 0;
->>>>    }
->>>>    security_initcall(integrity_iintcache_init);
->>>> diff --git a/security/integrity/ima/ima_main.c
->>>> b/security/integrity/ima/ima_main.c
->>>> index 62f59ec..87d7df7 100644
->>>> --- a/security/integrity/ima/ima_main.c
->>>> +++ b/security/integrity/ima/ima_main.c
->>>> @@ -143,7 +143,7 @@ void ima_file_free(struct file *file)
->>>>        struct inode *inode = file_inode(file);
->>>>        struct integrity_iint_cache *iint;
->>>>
->>>> -    if (!iint_initialized || !S_ISREG(inode->i_mode))
->>>> +    if (!(ima_policy_flag & IMA_APPRAISE) || !S_ISREG(inode->i_mode))
->>>>            return;
->>>>
->>>>        iint = integrity_iint_find(inode);
->>>> diff --git a/security/integrity/integrity.h
->>>> b/security/integrity/integrity.h
->>>> index aafb468..f51ad65 100644
->>>> --- a/security/integrity/integrity.h
->>>> +++ b/security/integrity/integrity.h
->>>> @@ -169,6 +169,3 @@ static inline void integrity_audit_msg(int
->>>> audit_msgno, struct inode *inode,
->>>>    {
->>>>    }
->>>>    #endif
->>>> -
->>>> -/* set during initialization */
->>>> -extern int iint_initialized;
->>>>
->>>
->>> ------------------------------------------------------------------------------
->>>
->>> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
->>> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS
->>> Reports
->>> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
->>> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
->>> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
->>>
->>> _______________________________________________
->>> Linux-ima-devel mailing list
->>> Linux-ima-devel@lists.sourceforge.net
->>> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
->>>
->>
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
