@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaJBTWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:22:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789AbaJBTWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:22:05 -0400
-Date: Thu, 2 Oct 2014 21:18:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
-	kernel/sched/core.c:7156 __might_sleep()
-Message-ID: <20141002191846.GB30606@redhat.com>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <542D57D0.4030904@hurleysoftware.com> <20141002135250.GB10583@worktop.programming.kicks-ass.net> <20141002135805.GF6324@worktop.programming.kicks-ass.net> <542D5E3B.6000309@hurleysoftware.com> <20141002165739.GC10583@worktop.programming.kicks-ass.net>
+	id S1752513AbaJBTYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:24:14 -0400
+Received: from exprod5og126.obsmtp.com ([64.18.0.251]:38145 "HELO
+	exprod5og126.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751656AbaJBTYL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 15:24:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002165739.GC10583@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAErSpo4i4+0c6Qy9w3tKXex2M7Q=Ry8aG-cbO1_uiC8wtD7puQ@mail.gmail.com>
+References: <1411765707-28822-1-git-send-email-tinamdar@apm.com>
+	<20141001191403.GC22713@google.com>
+	<2135522.DVGa59N1mx@wuerfel>
+	<CAErSpo4i4+0c6Qy9w3tKXex2M7Q=Ry8aG-cbO1_uiC8wtD7puQ@mail.gmail.com>
+Date: Thu, 2 Oct 2014 12:24:09 -0700
+Message-ID: <CACoXjc=dymmxz0zC0+0Gj0CE9qtseZnae6C6S2PBEeGU-cvgFA@mail.gmail.com>
+Subject: Re: [PATCH v10 0/4] APM X-Gene PCIe host controller
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches <patches@apm.com>, Jon Masters <jcm@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah, somehow I missed this email, I already replied to the previous one.
-
-On 10/02, Peter Zijlstra wrote:
+On Thu, Oct 2, 2014 at 7:36 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Oct 2, 2014 at 6:20 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Wednesday 01 October 2014 13:14:03 Bjorn Helgaas wrote:
+>>> On Fri, Sep 26, 2014 at 02:08:23PM -0700, Tanmay Inamdar wrote:
+>>> > This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+>>> > driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+>>> > cards.
+>>> >
+>>> > X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+>>> > Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+>>> > support for creating generic pcie bridge from device tree. Liviu's patches
+>>> > are available here
+>>> > https://lkml.org/lkml/2014/9/23/852
+>>> >
+>>> > If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+>>> > patches from Liviu must be applied before the patches in this patch set. Also
+>>> > please use latest xgene u-boot firmware.
+>>>
+>>> I applied these on pci/host-xgene (based on pci/host-generic).  I hope to
+>>> merge these for v3.18.  It'd be nice to have a device tree person like Arnd
+>>> or Rob take a look at the arch/arm64/boot/dts/ bits.
+>>
+>> Those changes should normally go through the arm-soc tree, but we
+>> have not done that so far for arm64 stuff, so I'm not blaming anybody.
+>>
+>> The dts changes all look good to me, and I think it's ok to have them
+>> go through your tree this time.
+>>
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>
+>> In the future, we should all have an eye on this more to ensure that
+>> the .dts changes all go through arm-soc.
 >
-> In any case, if we change wait_woken() like the below, then we can
-> simplify the loops by taking out their signal_pending checks and using
-> the wait_woken() return value instead.
+> The arch/arm64/boot/dts patch is at the tip of my branch, and I'd be
+> more than happy to drop it.  It would be nice to have it in v3.18
+> along with the driver, though, so I'll keep it until somebody chimes
+> in to put it in arm-soc.
+>
 
-Yes, but let me repeat,
+Thanks Bjorn and Arnd.
 
-> +++ b/kernel/sched/wait.c
-> @@ -326,8 +326,14 @@ long wait_woken(wait_queue_t *wait, unsi
->  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
->  	 * also observe all state before the wakeup.
->  	 */
-> -	if (!(wait->flags & WQ_FLAG_WOKEN))
-> -		timeout = schedule_timeout(timeout);
-> +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
-> +		if (___wait_is_interruptible(mode)) {
-
-___wait_is_interruptible() is pointless, signal_pending_state() does
-the same checks. Not to mention it will always return T in this case,
-note that __builtin_constant_p(state) == F.
-
-
-> +		       if (signal_pending_state(mode, current))
-> +			       timeout = -ERESTARTSYS;
-
-OK, but unless I missed something this looks overcomplicated. You can
-simply do this at the start of wait_woken(). Not need to play with
-current->state, no need to clear WQ_FLAG_WOKEN.
-
-Oleg.
-
+> Bjorn
