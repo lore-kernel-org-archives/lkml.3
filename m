@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaJBTVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:21:54 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:41783 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaJBTVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:21:53 -0400
-Date: Thu, 2 Oct 2014 12:20:05 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm: migrate: Close race between migration completion
- and mprotect
-In-Reply-To: <1412275662-16201-2-git-send-email-mgorman@suse.de>
-Message-ID: <alpine.LSU.2.11.1410021211500.7465@eggly.anvils>
-References: <1412275662-16201-1-git-send-email-mgorman@suse.de> <1412275662-16201-2-git-send-email-mgorman@suse.de>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752924AbaJBTWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:22:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789AbaJBTWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 15:22:05 -0400
+Date: Thu, 2 Oct 2014 21:18:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
+	kernel/sched/core.c:7156 __might_sleep()
+Message-ID: <20141002191846.GB30606@redhat.com>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <542D57D0.4030904@hurleysoftware.com> <20141002135250.GB10583@worktop.programming.kicks-ass.net> <20141002135805.GF6324@worktop.programming.kicks-ass.net> <542D5E3B.6000309@hurleysoftware.com> <20141002165739.GC10583@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002165739.GC10583@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Oct 2014, Mel Gorman wrote:
+Ah, somehow I missed this email, I already replied to the previous one.
 
-> A migration entry is marked as write if pte_write was true at the time the
-> entry was created. The VMA protections are not double checked when migration
-> entries are being removed as mprotect marks write-migration-entries as
-> read. It means that potentially we take a spurious fault to mark PTEs write
-> again but it's straight-forward. However, there is a race between write
-> migrations being marked read and migrations finishing. This potentially
-> allows a PTE to be write that should have been read. Close this race by
-> double checking the VMA permissions using maybe_mkwrite when migration
-> completes.
-> 
-> [torvalds@linux-foundation.org: use maybe_mkwrite]
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
+On 10/02, Peter Zijlstra wrote:
+>
+> In any case, if we change wait_woken() like the below, then we can
+> simplify the loops by taking out their signal_pending checks and using
+> the wait_woken() return value instead.
 
-Sort-of-Acked-by: Hugh Dickins <hughd@google.com>
+Yes, but let me repeat,
 
-Safe patch, but I stand by the conclusion we both arrived at when
-looking at this case a few weeks ago: it eliminates the surprise
-we got in seeing a PROTNONE pte with RW set, but does not appear
-to fix any actual bug.  As mprotect proceeds, it's inevitable that
-some of the ptes will have more or less permissions than mprotect
-is imposing, and it doesn't matter, because mprotect has mmap_sem
-exclusively, so faults on the area can only complete either before
-or after the whole mprotect operation.
+> +++ b/kernel/sched/wait.c
+> @@ -326,8 +326,14 @@ long wait_woken(wait_queue_t *wait, unsi
+>  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
+>  	 * also observe all state before the wakeup.
+>  	 */
+> -	if (!(wait->flags & WQ_FLAG_WOKEN))
+> -		timeout = schedule_timeout(timeout);
+> +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
+> +		if (___wait_is_interruptible(mode)) {
 
-> ---
->  mm/migrate.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index f78ec9b..0c07339 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -146,8 +146,11 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
->  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
->  	if (pte_swp_soft_dirty(*ptep))
->  		pte = pte_mksoft_dirty(pte);
-> +
-> +	/* Recheck VMA as permissions can change since migration started  */
->  	if (is_write_migration_entry(entry))
-> -		pte = pte_mkwrite(pte);
-> +		pte = maybe_mkwrite(pte, vma);
-> +
->  #ifdef CONFIG_HUGETLB_PAGE
->  	if (PageHuge(new)) {
->  		pte = pte_mkhuge(pte);
-> -- 
-> 1.8.4.5
+___wait_is_interruptible() is pointless, signal_pending_state() does
+the same checks. Not to mention it will always return T in this case,
+note that __builtin_constant_p(state) == F.
+
+
+> +		       if (signal_pending_state(mode, current))
+> +			       timeout = -ERESTARTSYS;
+
+OK, but unless I missed something this looks overcomplicated. You can
+simply do this at the start of wait_woken(). Not need to play with
+current->state, no need to clear WQ_FLAG_WOKEN.
+
+Oleg.
+
