@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaJBQnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:43:35 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33353 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaJBQnd (ORCPT
+	id S1753779AbaJBQo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:44:28 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:64268 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaJBQo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:43:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/bZc7BPS01Q2CXE40LUCpD
-Date: Thu, 2 Oct 2014 09:43:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 00/13 v10] omap 8250 based UART + DMA
-Message-ID: <20141002164339.GL3122@atomide.com>
-References: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
+	Thu, 2 Oct 2014 12:44:26 -0400
+Message-ID: <542D80E7.6040204@gmail.com>
+Date: Thu, 02 Oct 2014 09:44:23 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, davem@davemloft.net,
+        leitec@staticky.com, andrew@lunn.ch
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/net/dsa/Kconfig: Let NET_DSA_BCM_SF2 depend on
+ HAS_IOMEM
+References: <542D5DAC.4010001@gmail.com>
+In-Reply-To: <542D5DAC.4010001@gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412014009-13315-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140929 11:07]:
-> The queue is getting smaller. The highlights of v9…v10
-> - the DMA stall Frans Klaver reported which popped up in yocto is gone. It
->   also seems that the "ack the err-irq even if nothing happened" in EDMA
->   can be dropped.
-> - the RX- and TX-DMA callbacks are now OMAP-only and no "bugs" flags are
->   introduced into the generic DMA code. This also means that there is
->   custom IRQ routine in case of DMA.
+On 10/02/2014 07:14 AM, Chen Gang wrote:
+> NET_DSA_BCM_SF2 need HAS_IOMEM, so depend on it, the related error (with
+> allmodconfig under um):
+> 
+>     CC [M]  drivers/net/dsa/bcm_sf2.o
+>   drivers/net/dsa/bcm_sf2.c: In function ‘bcm_sf2_sw_setup’:
+>   drivers/net/dsa/bcm_sf2.c:487:3: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
+>      iounmap(*base);
+>      ^
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Looks good to me. For the patches that do not yet have my acks, please
-feel free to add:
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-Reviewed-by: Tony Lindgren <tony@atomide.com>
-Tested-by: Tony Lindgren <tony@atomide.com>
+> ---
+>  drivers/net/dsa/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
+> index ea0697e..9234d80 100644
+> --- a/drivers/net/dsa/Kconfig
+> +++ b/drivers/net/dsa/Kconfig
+> @@ -47,6 +47,7 @@ config NET_DSA_MV88E6171
+>  
+>  config NET_DSA_BCM_SF2
+>  	tristate "Broadcom Starfighter 2 Ethernet switch support"
+> +	depends on HAS_IOMEM
+>  	select NET_DSA
+>  	select NET_DSA_TAG_BRCM
+>  	select FIXED_PHY if NET_DSA_BCM_SF2=y
+> 
 
-It's probably best that I queue the .dts changes separately though
-to avoid pointless merge conflicts.
-
-Regards,
-
-Tony
