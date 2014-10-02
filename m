@@ -1,122 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaJBJw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:52:27 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41398 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaJBJwZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:52:25 -0400
-Message-ID: <1412243541.20287.28.camel@tkhai>
-Subject: Re: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>,
-        "Ingo Molnar" <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Thu, 2 Oct 2014 13:52:21 +0400
-In-Reply-To: <20141002093600.GC2849@worktop.programming.kicks-ass.net>
-References: <20140930210412.5258.35299.stgit@localhost>
-	 <20140930210428.5258.32223.stgit@localhost>
-	 <20141002093600.GC2849@worktop.programming.kicks-ass.net>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1752050AbaJBJxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:53:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23169 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaJBJxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 05:53:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
+   d="scan'208";a="612018545"
+Date: Thu, 2 Oct 2014 12:53:03 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 13/15] input: gpio_keys_polled - Add ACPI probing
+ support
+Message-ID: <20141002095303.GH1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1852462.V1jlbi8OPt@vostro.rjw.lan>
+ <17237242.r7oKCjnQJM@vostro.rjw.lan>
+ <20141001074846.GA17700@dtor-glaptop>
+ <20141001091535.GZ1786@lahna.fi.intel.com>
+ <20141001162802.GD23115@dtor-glaptop>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001162802.GD23115@dtor-glaptop>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 02/10/2014 в 11:36 +0200, Peter Zijlstra пишет:
-> On Wed, Oct 01, 2014 at 01:04:35AM +0400, Kirill Tkhai wrote:
-> > From: Kirill Tkhai <ktkhai@parallels.com>
+On Wed, Oct 01, 2014 at 09:28:02AM -0700, Dmitry Torokhov wrote:
+> On Wed, Oct 01, 2014 at 12:15:35PM +0300, Mika Westerberg wrote:
+> > On Wed, Oct 01, 2014 at 12:48:46AM -0700, Dmitry Torokhov wrote:
+> > > On Wed, Oct 01, 2014 at 04:20:43AM +0200, Rafael J. Wysocki wrote:
+> > > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > > 
+> > > > Allow the driver to probe from ACPI namespace.
+> > > > 
+> > > > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > ---
+> > > >  drivers/input/keyboard/gpio_keys_polled.c |    7 +++++++
+> > > >  1 file changed, 7 insertions(+)
+> > > > 
+> > > > Index: linux-pm/drivers/input/keyboard/gpio_keys_polled.c
+> > > > ===================================================================
+> > > > --- linux-pm.orig/drivers/input/keyboard/gpio_keys_polled.c
+> > > > +++ linux-pm/drivers/input/keyboard/gpio_keys_polled.c
+> > > > @@ -181,6 +181,12 @@ static const struct of_device_id gpio_ke
+> > > >  };
+> > > >  MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
+> > > >  
+> > > > +static const struct acpi_device_id gpio_keys_polled_acpi_match[] = {
+> > > > +	{ "PRP0001" }, /* Device Tree shoehorned into ACPI */
+> > > > +	{ },
+> > > > +};
+> > > > +MODULE_DEVICE_TABLE(acpi, gpio_keys_polled_acpi_match);
+> > > > +
+> > > >  static int gpio_keys_polled_probe(struct platform_device *pdev)
+> > > >  {
+> > > >  	struct device *dev = &pdev->dev;
+> > > > @@ -309,6 +315,7 @@ static struct platform_driver gpio_keys_
+> > > >  		.name	= DRV_NAME,
+> > > >  		.owner	= THIS_MODULE,
+> > > >  		.of_match_table = gpio_keys_polled_of_match,
+> > > > +		.acpi_match_table = gpio_keys_polled_acpi_match,
+> > > o
+> > > Hmm, why do we need the generic "PRP0001" in every driver? The ACPI device
+> > > should have PRP0001 and ACPI bus should know to look into OF matching table
+> > > for such devices.
 > > 
-> > rq->curr task can't be in "dequeued" state in prio_changed_dl().
-> > (The only place we can have that is __schedule()). So, we delete
-> > rq->curr check.
+> > Arnd had a good idea for this. How about,
+> > 
+> > 	.acpi_match_table = acpi_match_by_of_compatible,
+> > 
+> > where acpi_match_by_of_compatible is provided by ACPI core? Does that
+> > work better for you?
 > 
-> the CBS timer can throttle it right?
+> I still do not see the point. ACPI core knows how to handle
+> drv->of_match_table, so unless we need to support ACPI_only binding in a
+> given driver I do not understand why we need to add boilerplate code.
 
-Yeah, it's better to check for on_dl_rq():
+You are right - we can get rid of that completely.
 
-[PATCH]sched/dl: Cleanup prio_changed_dl()
-    
-rq->curr task can't be in "dequeued" state in prio_changed_dl().
-(The only place we can have that is __schedule()). So, we delete
-rq->curr check.
-
-We shouldn't do balancing if deadline task is throttled too.
-
-Also delete "else" branch which is dead code (switched_to_dl()
-is not interested in dequeued tasks and we are not interested
-in balancing in this case).
-    
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 63f8b4a..ccea917 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1638,35 +1638,33 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 			    int oldprio)
- {
--	if (task_on_rq_queued(p) || rq->curr == p) {
-+	if (!on_dl_rq(&p->dl))
-+		return;
- #ifdef CONFIG_SMP
--		/*
--		 * This might be too much, but unfortunately
--		 * we don't have the old deadline value, and
--		 * we can't argue if the task is increasing
--		 * or lowering its prio, so...
--		 */
--		if (!rq->dl.overloaded)
--			pull_dl_task(rq);
--
--		/*
--		 * If we now have a earlier deadline task than p,
--		 * then reschedule, provided p is still on this
--		 * runqueue.
--		 */
--		if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
--		    rq->curr == p)
--			resched_curr(rq);
--#else
--		/*
--		 * Again, we don't know if p has a earlier
--		 * or later deadline, so let's blindly set a
--		 * (maybe not needed) rescheduling point.
--		 */
-+	/*
-+	 * This might be too much, but unfortunately
-+	 * we don't have the old deadline value, and
-+	 * we can't argue if the task is increasing
-+	 * or lowering its prio, so...
-+	 */
-+	if (!rq->dl.overloaded)
-+		pull_dl_task(rq);
-+	/*
-+	 * If we now have a earlier deadline task than p,
-+	 * then reschedule, provided p is still on this
-+	 * runqueue.
-+	 */
-+	if (dl_time_before(rq->dl.earliest_dl.curr, p->dl.deadline) &&
-+	    rq->curr == p)
- 		resched_curr(rq);
-+#else
-+	/*
-+	 * Again, we don't know if p has a earlier
-+	 * or later deadline, so let's blindly set a
-+	 * (maybe not needed) rescheduling point.
-+	 */
-+	resched_curr(rq);
- #endif /* CONFIG_SMP */
--	} else
--		switched_to_dl(rq, p);
- }
- 
- const struct sched_class dl_sched_class = {
-
-
+In case a device has compatible property, .of_match_table and does not
+have .acpi_match_table we match against .of_match_table in ACPI core.
