@@ -1,182 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaJBDEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 23:04:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39417 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaJBDD7 convert rfc822-to-8bit (ORCPT
+	id S1751599AbaJBDI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 23:08:58 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35220 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaJBDI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 23:03:59 -0400
-Date: Wed, 01 Oct 2014 23:03:55 -0400 (EDT)
-Message-Id: <20141001.230355.701078479082003407.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-2
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 01 Oct 2014 20:03:59 -0700 (PDT)
+	Wed, 1 Oct 2014 23:08:57 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCHSET 0/5] perf tools: Speed up dwarf callchain post-unwinding for libunwind (v3)
+Date: Thu,  2 Oct 2014 12:08:50 +0900
+Message-Id: <1412219335-17417-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-1) Don't halt the firmware in r8152 driver, from Hayes Wang.
+This is v3 for libunwind callchain post processing speed up.  It was
+able to reduce 50% of processing time by using global cache provided
+in libunwind.  In this version, I decided to use the existing
+callchain_param.record_mode instead of adding a new field in the
+symbol_conf.
 
-2) Handle full sized 802.1ad frames in bnx2 and tg3 drivers
-   properly, from Vlad Yasevich.
+The patch 4 and 5 are just cleanups so that we can easily find out
+that which part of code uses the thread->priv.
 
-3) Don't sleep while holding tx_clean_lock in netxen driver,
-   fix from Manish Chopra.
+You can also get it from 'perf/callchain-unwind-v3' branch on my tree:
 
-4) Certain kinds of ipv6 routes can end up endlessly failing
-   the route validation test, causing it to be re-looked up
-   over and over again.  This particularly kills input route
-   caching in TCP sockets.  Fix from Hannes Frederic Sowa.
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
 
-5) netvsc_start_xmit() has a use-after-free access to skb->len,
-   fix from K. Y. Srinivasan.
-
-6) Fix matching of inverted containers in ematch module, from
-   Ignacy Gawêdzki.
-
-7) Aggregation of GRO frames via SKB ->frag_list for linear skbs isn't
-   handled properly, regression fix from Eric Dumazet.
-
-8) Don't test return value of ipv4_neigh_lookup(), which returns an
-   error pointer, against NULL.  From WANG Cong.
-
-9) Fix an old regression where we mistakenly allow a double add
-   of the same tunnel.  Fixes from Steffen Klassert.
-
-10) macvtap device delete and open can run in parallel and corrupt
-    lists etc., fix from Vlad Yasevich.
-
-11) Fix build error with IPV6=m NETFILTER_XT_TARGET_TPROXY=y, from
-    Pablo Neira Ayuso.
-
-12) rhashtable_destroy() triggers lockdep splats, fix also from
-    Pablo.
-
-Please pull, thanks a lot!
-
-The following changes since commit b94d525e58dc9638dd3f98094cb468bcfb262039:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-09-24 12:45:24 -0700)
-
-are available in the git repository at:
+Thanks,
+Namhyung
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+Namhyung Kim (5):
+  perf report: Set callchain_param.record_mode for future use
+  perf callchain: Create an address space per thread
+  perf callchain: Use global caching provided by libunwind
+  perf kvm: Use thread_{,_set}_priv helpers
+  perf trace: Use thread_{,_set}_priv helpers
 
-for you to fetch changes up to 439e9575e777bdad1d9da15941e02adf34f4c392:
+ tools/perf/builtin-kvm.c           |  6 ++---
+ tools/perf/builtin-report.c        |  6 +++++
+ tools/perf/builtin-trace.c         | 16 ++++++-------
+ tools/perf/tests/dwarf-unwind.c    |  3 +++
+ tools/perf/util/callchain.h        |  2 ++
+ tools/perf/util/hist.h             |  2 --
+ tools/perf/util/thread.c           |  9 +++++++
+ tools/perf/util/unwind-libunwind.c | 48 ++++++++++++++++++++++++++++++++++----
+ tools/perf/util/unwind.h           | 20 ++++++++++++++++
+ 9 files changed, 94 insertions(+), 18 deletions(-)
 
-  bna: Update Maintainer Email (2014-10-01 22:13:41 -0400)
+-- 
+2.1.0
 
-----------------------------------------------------------------
-David S. Miller (5):
-      Merge branch 'qlcnic'
-      Merge git://git.kernel.org/.../pablo/nf
-      Merge branch 'ipv6_tunnel'
-      Merge branch 'netxen'
-      Merge branch 'r8152'
-
-Eric Dumazet (1):
-      gro: fix aggregation for skb using frag_list
-
-Hannes Frederic Sowa (1):
-      ipv6: remove rt6i_genid
-
-Ignacy Gawêdzki (1):
-      ematch: Fix matching of inverted containers.
-
-KY Srinivasan (1):
-      hyperv: Fix a bug in netvsc_start_xmit()
-
-Kweh, Hock Leong (1):
-      net: stmmac: fix stmmac_pci_probe failed when CONFIG_HAVE_CLK is selected
-
-Manish Chopra (5):
-      qlcnic: Fix memory corruption while reading stats using ethtool.
-      qlcnic: Remove __QLCNIC_DEV_UP bit check to read TX queues statistics.
-      qlcnic: Fix ordering of stats in stats buffer.
-      netxen: Fix BUG "sleeping function called from invalid context"
-      netxen: Fix bug in Tx completion path.
-
-Matan Barak (1):
-      net/mlx4_core: Allow not to specify probe_vf in SRIOV IB mode
-
-Nicolas Dichtel (1):
-      ip6gre: add a rtnl link alias for ip6gretap
-
-Pablo Neira Ayuso (5):
-      netfilter: nft_hash: no need for rcu in the hash set destroy path
-      netfilter: nft_rbtree: no need for spinlock from set destroy path
-      rhashtable: fix lockdep splat in rhashtable_destroy()
-      netfilter: nfnetlink: deliver netlink errors on batch completion
-      netfilter: xt_TPROXY: undefined reference to `udp6_lib_lookup'
-
-Rasesh Mody (1):
-      bna: Update Maintainer Email
-
-Sony Chacko (1):
-      qlcnic: Use qlcnic_83xx_flash_read32() API instead of lockless version of the API.
-
-Soren Brinkmann (1):
-      Revert "net/macb: add pinctrl consumer support"
-
-Steffen Klassert (4):
-      ip_tunnel: Don't allow to add the same tunnel multiple times.
-      ip6_tunnel: Return an error when adding an existing tunnel.
-      ip6_vti: Return an error when adding an existing tunnel.
-      ip6_gre: Return an error when adding an existing tunnel.
-
-Vlad Yasevich (3):
-      macvtap: Fix race between device delete and open.
-      tg3: Allow for recieve of full-size 8021AD frames
-      bnx2: Correctly receive full sized 802.1ad fragmes
-
-WANG Cong (1):
-      neigh: check error pointer instead of NULL for ipv4_neigh_lookup()
-
-hayeswang (4):
-      r8152: fix the carrier off when autoresuming
-      r8152: fix setting RTL8152_UNPLUG
-      r8152: remove clearing bp
-      r8152: disable power cut for RTL8153
-
- MAINTAINERS                                           |  2 +-
- drivers/net/ethernet/broadcom/bnx2.c                  |  5 ++--
- drivers/net/ethernet/broadcom/tg3.c                   |  3 +-
- drivers/net/ethernet/cadence/macb.c                   | 11 -------
- drivers/net/ethernet/mellanox/mlx4/main.c             |  4 +--
- drivers/net/ethernet/qlogic/netxen/netxen_nic_init.c  |  6 ++--
- drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c  |  2 --
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c |  5 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_ethtool.c   | 10 +++----
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c     | 11 +++++--
- drivers/net/hyperv/netvsc_drv.c                       |  3 +-
- drivers/net/macvtap.c                                 | 18 +++++------
- drivers/net/usb/r8152.c                               | 88 ++++++++++++++++++++++++++----------------------------
- include/net/ip6_fib.h                                 |  5 +---
- include/net/net_namespace.h                           | 20 ++-----------
- lib/rhashtable.c                                      |  8 ++---
- net/core/skbuff.c                                     |  3 ++
- net/ipv4/ip_tunnel.c                                  | 11 +++++--
- net/ipv4/route.c                                      |  2 +-
- net/ipv6/addrconf.c                                   |  3 +-
- net/ipv6/addrconf_core.c                              |  7 +++++
- net/ipv6/ip6_fib.c                                    | 20 +++++++++++++
- net/ipv6/ip6_gre.c                                    |  3 ++
- net/ipv6/ip6_tunnel.c                                 |  6 +++-
- net/ipv6/ip6_vti.c                                    |  6 +++-
- net/ipv6/route.c                                      |  4 ---
- net/netfilter/Kconfig                                 |  1 +
- net/netfilter/nfnetlink.c                             | 64 ++++++++++++++++++++++++++++++++++++++-
- net/netfilter/nft_hash.c                              | 12 ++++----
- net/netfilter/nft_rbtree.c                            |  2 --
- net/sched/ematch.c                                    |  6 ++--
- 31 files changed, 217 insertions(+), 134 deletions(-)
