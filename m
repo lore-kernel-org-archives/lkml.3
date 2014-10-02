@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaJBNmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:42:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58478 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaJBNmD (ORCPT
+	id S1753872AbaJBNmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:42:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49257 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaJBNmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:42:03 -0400
-Date: Thu, 2 Oct 2014 15:41:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002134156.GA10583@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <542D4756.4030100@hurleysoftware.com>
- <20141002125409.GG2849@worktop.programming.kicks-ass.net>
- <542D4DA6.2090607@hurleysoftware.com>
+	Thu, 2 Oct 2014 09:42:52 -0400
+Message-ID: <542D5657.3060208@codeaurora.org>
+Date: Thu, 02 Oct 2014 16:42:47 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542D4DA6.2090607@hurleysoftware.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Richard Weinberger <richard@nod.at>, dedeking1@gmail.com
+CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org> <5427CCD8.2090605@nod.at> <5427E6FE.3090906@codeaurora.org> <5427E8CA.8000904@nod.at> <542D49FD.7040204@codeaurora.org> <542D5203.2080601@nod.at>
+In-Reply-To: <542D5203.2080601@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 09:05:42AM -0400, Peter Hurley wrote:
+On 10/2/2014 4:24 PM, Richard Weinberger wrote:
+> Am 02.10.2014 14:50, schrieb Tanya Brokhman:
+>>> Consider the case where you have a board with a fastmap enabled bootloader and a Linux OS.
+>>> The bootloader does a fastmap attach and boots the kernel from UBI and the kernel it self has the rootfs
+>>> on UBI too. If you install a new kernel with your changes applied it will write the fastmap in a different
+>>> format and the bootloader will fail badly. In worst case the board bricks, in best case the bootloader can fall back
+>>> to scanning mode but it will be slow and the customer unhappy.
+>>>
+>>
+>> Ok, I understand the problem now. I wanted to discuss a possible solution before implementing it:
+>> We have a "fastmap version" in fm_sb. At the moment UBI_FM_FMT_VERSION = 1 and any other is not supported. We can use that; Add another fm version (UBI_FM_FMT_VERSION_RD = 2) and
+>> then decide according to it. Meaning, if during attach process we find fm superblock we check it's version, if it's != UBI_FM_FMT_VERSION_RD, we fall back to full scan. The next
+>> fastmap will be written with the new layout (and new version number) so second boot will attach from fastmap without any issues.
+>
+> Yes, if we change the fastmap on-disk layout we need to change UBI_FM_FMT_VERSION.
+> Then other fastmap implementations will notice the change and can hopefully recover.
+> Implementations which do not evaluate UBI_FM_FMT_VERSION deserve breaking. ;-)
 
-> >>> While at it, rename rfcomm_schedule to rfcomm_wake, since that is what
-> >>> it actually does.
-> >>
-> >> rfcomm_schedule() as in schedule_work(), which is how it's used.
-> > 
-> > Not really, all it does is wake the rfcomm_thread. The thread then does
-> > a linear walk of all known sessions looking for work -- which is clearly
-> > suboptimal as well, but I didn't feel like fixing that.
-> > 
-> > Also, the current implementation already disagrees with you, all it
-> > basically does it call wake_up_process() which is a big clue right
-> > there.
-> 
-> You're thinking of it from the point of view of the scheduler, so to you
-> it should be named what it does.
+good. will work on the fix and upload a new set when ready&tested.
 
-Of course I am, that thing is called 'schedule' so its natural to think
-about the scheduler :-)
+>
+> That said, I'll not block a layout change but we have to be sure that it is *really* needed.
 
-> However, from the users' point of view, it's an abstraction of work
-> dispatching; the fact that a kthread (which needs waking) does the work
-> is irrelevant.
+In order to support read-disturb, I think its really needed. There is no 
+other way to save read counter per PEB but in fastmap.
 
-Still a misnomer, see below.
+> I'm currently heavily working on fastmap and my local queue with fastmap fixes keeps growing.
+> If I find a horror bug which needs a fastmap layout change I want to change the layout only once,
+> not twice.
+>
 
-> Consider if the kthread is converted to work_structs instead and your now-
-> renamed rfcomm_wake() is calling schedule_work().
+How do you test all of your fastmap fixes? Some of them are not easy to 
+reproduce (the pq saving for example). Besides heavy stability testing, 
+I was testing my changes manually by a lot of dbg prints in the code and 
+analyzing the logs manually. Not the optimal way....
 
-Then it would probably be less buggy and more efficient -- where I'm
-assuming it would queue work per session and avoid the endless scanning
-of sessions.
+> Thanks,
+> //richard
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
 
-Also schedule_work() is somewhat sanely named in that you schedule the
-work for later execution, so here we can use the term. The thread
-however might already be scheduled or even running, so there it is not
-appropriate.
+Thanks,
+Tanya Brokhman
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
