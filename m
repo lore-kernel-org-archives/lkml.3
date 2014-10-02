@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751786AbaJBJDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:03:24 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38911 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJBJDV (ORCPT
+	id S1752007AbaJBJHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:07:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55416 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaJBJHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:03:21 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9293I9M019048, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net v2] r8152: autoresume before setting MAC address
-Date: Thu, 2 Oct 2014 17:03:12 +0800
-Message-ID: <1394712342-15778-56-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-55-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-55-Taiwan-albertk@realtek.com>
+	Thu, 2 Oct 2014 05:07:48 -0400
+Date: Thu, 2 Oct 2014 11:07:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/11] sched: Debug nested sleeps
+Message-ID: <20141002090745.GC3003@worktop.programming.kicks-ass.net>
+References: <20140924081845.572814794@infradead.org>
+ <20140924082242.591637616@infradead.org>
+ <20140929221344.GB12112@redhat.com>
+ <20140930134928.GF4241@worktop.programming.kicks-ass.net>
+ <20140930214732.GA31384@redhat.com>
+ <20141001161058.GE2843@worktop.programming.kicks-ass.net>
+ <20141001183549.GA3382@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.190]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001183549.GA3382@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resume the device before setting the MAC address.
+On Wed, Oct 01, 2014 at 08:35:49PM +0200, Oleg Nesterov wrote:
+> On 10/01, Peter Zijlstra wrote:
+> > Sure, so the trivial problem is not actually going to sleep in the outer
+> > wait primitive because the inner wait primitive reset ->state to
+> > TASK_RUNNING.
+> 
+> But this means that fixup_sleep() must not be used?
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Right, in case its an actual bug, we'll not use fixup_sleep(). Those are
+only used to annotate the few odd cases.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 604ef21..5ee7582 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -1007,9 +1007,14 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
- 	struct sockaddr *addr = p;
-+	int ret = -EADDRNOTAVAIL;
- 
- 	if (!is_valid_ether_addr(addr->sa_data))
--		return -EADDRNOTAVAIL;
-+		goto out1;
-+
-+	ret = usb_autopm_get_interface(tp->intf);
-+	if (ret < 0)
-+		goto out1;
- 
- 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
- 
-@@ -1017,7 +1022,9 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
- 	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
- 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
- 
--	return 0;
-+	usb_autopm_put_interface(tp->intf);
-+out1:
-+	return ret;
- }
- 
- static void read_bulk_callback(struct urb *urb)
--- 
-1.9.3
+> > So by always setting the ->state to TASK_RUNNING it never goes to sleep
+> > and it'll revert to spinning,
+> 
+> But I tried to suggest to not set TASK_RUNNING?
 
+That's what I understood, because that's the difference between
+CONFIG_DEBUG_ATOMIC_SLEEP and not. Or I made a complete mess of things,
+which could well have happened, I had a terrible headache yesterday.
+
+> Peter, I am sorry for wasting your time, this is really minor, but still
+> I'd like to understand.
+> 
+> Let me try again. With this series we have
+> 
+> 	#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+> 	#define fixup_sleep()	__set_current_state(TASK_RUNNING)
+> 	#else
+> 	#define fixup_sleep()	do { } while (0)
+> 	#endif
+> 
+> and this means that we do not need __set_current_state(RUNNING) for
+> correctness, just we want to shut up the warning in __might_sleep().
+> This is fine (and the self-documenting helper is nice), but this means
+> that CONFIG_DEBUG_ATOMIC_SLEEP adds a subtle difference.
+> 
+> For example, let's suppose that we do not have 01/11 which fixes
+> mutex_lock(). Then this code
+> 
+> 	set_current_state(TASK_UNINTERRUPTIBLE);
+> 	...
+> 	fixup_sleep();
+> 	...
+> 	mutex_lock(some_mutex);
+> 
+> can hang, but only if !CONFIG_DEBUG_ATOMIC_SLEEP.
+
+Right, but we should not use fixup_sleep() in this case, because its an
+actual proper bug, we should fix it, not paper over it. Arguably we
+should use preempt_schedule in mutex_lock() in that particular case, but
+that's another discussion.
+
+> So perhaps it makes sense to redefine it
+> 
+> 	#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+> 	#define fixup_sleep()	(current->task_state_change = 0)
+> 	#else
+> 	#define fixup_sleep()	do { } while (0)
+> 	#endif
+> 
+> and change __might_sleep()
+> 
+> 	-	if (WARN(current->state != TASK_RUNNING,
+> 	+	if (WARN(current->state != TASK_RUNNING && current->task_state_change != 0,
+> 
+> ?
+
+So I'm hesitant to go that way because it adds extra state dependency.
+What if someone 'forgets' to use the *set*state() helpers.
