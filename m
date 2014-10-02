@@ -1,288 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139AbaJBGJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:09:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:34789 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798AbaJBGJ7 convert rfc822-to-8bit (ORCPT
+	id S1751118AbaJBGND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:13:03 -0400
+Received: from mail-yk0-f180.google.com ([209.85.160.180]:63509 "EHLO
+	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaJBGM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:09:59 -0400
-Message-ID: <1412230196.6143.16.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 08/17] powerpc/powerpc: Add new PCIe functions for
- allocating cxl interrupts
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Thu, 02 Oct 2014 16:09:56 +1000
-In-Reply-To: <20141002031659.DB564140188@ozlabs.org>
-References: <20141002031659.DB564140188@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Thu, 2 Oct 2014 02:12:59 -0400
+MIME-Version: 1.0
+X-Originating-IP: [84.208.172.182]
+In-Reply-To: <20140930152419.GF14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
+ <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
+ <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com>
+ <20140930022751.GA14081@wotan.suse.de> <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
+ <20140930152419.GF14081@wotan.suse.de>
+From: Tom Gundersen <teg@jklm.no>
+Date: Thu, 2 Oct 2014 08:12:37 +0200
+Message-ID: <CAG-2HqVBnXUKSRBrJE=gEKA3St5KMfdgAbx2vRfpF3qw_teLOg@mail.gmail.com>
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
+        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
+        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 13:16 +1000, Michael Ellerman wrote:
-> On Tue, 2014-30-09 at 10:34:57 UTC, Michael Neuling wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > This adds a number of functions for allocating IRQs under powernv PCIe for cxl.
-> > 
-> > diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-> > index 329164f..b0b96f0 100644
-> > --- a/arch/powerpc/platforms/powernv/pci-ioda.c
-> > +++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-> > @@ -503,6 +505,138 @@ static struct pnv_ioda_pe *pnv_ioda_get_pe(struct pci_dev *dev)
-> >  		return NULL;
-> >  	return &phb->ioda.pe_array[pdn->pe_number];
-> >  }
-> > +
-> > +struct device_node *pnv_pci_to_phb_node(struct pci_dev *dev)
-> > +{
-> > +        struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +
-> > +        return hose->dn;
-> > +}
-> > +EXPORT_SYMBOL(pnv_pci_to_phb_node);
-> > +
-> > +#ifdef CONFIG_CXL_BASE
-> > +int pnv_phb_to_cxl(struct pci_dev *dev)
-> > +{
-> > +	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +	struct pnv_phb *phb = hose->private_data;
-> > +	struct pnv_ioda_pe *pe;
-> > +	int rc;
-> > +
-> > +	if (!(pe = pnv_ioda_get_pe(dev))) {
-> > +		rc = -ENODEV;
-> > +		goto out;
-> > +	}
-> 
-> That'd be a lot simpler as:
-> 
-> 	pe = pnv_ioda_get_pe(dev);
-> 	if (!pe)
-> 		return -ENODEV;
+On Tue, Sep 30, 2014 at 5:24 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+>> > commit e64fae5573e566ce4fd9b23c68ac8f3096603314
+>> > Author: Kay Sievers <kay.sievers@vrfy.org>
+>> > Date:   Wed Jan 18 05:06:18 2012 +0100
+>> >
+>> >     udevd: kill hanging event processes after 30 seconds
+>> >
+>> >     Some broken kernel drivers load firmware synchronously in the module init
+>> >     path and block modprobe until the firmware request is fulfilled.
+>> >     <...>
+>>
+>> This was a workaround to avoid a deadlock between udev and the kernel.
+>> The 180 s timeout was already in place before this change, and was not
+>> motivated by firmware loading. Also note that this patch was not about
+>> "tracking device drivers", just about avoiding dead-lock.
+>
+> Thanks, can you elaborate on how a deadlock can occur if the kmod
+> worker is not at some point sigkilled?
 
-OK
+This was only relevant whet udev did the firmware loading. modprobe
+would wait for the kernel, which would wait for the firmware loading,
+which would wait for modprobe. This is no longer a problem as udev
+does not do firmware loading any more.
 
-> > +	pe_info(pe, "switch PHB to CXL\n");
-> > +	pe_info(pe, "PHB-ID  : 0x%016llx\n", phb->opal_id);
-> > +	pe_info(pe, "     pe : %i\n", pe->pe_number);
-> 
-> Spacing is a bit weird but maybe it matches something else?
+> Is the issue that if there is no extra worker available and all are
+> idling on sleep / synchronous long work boot will potentially hang
+> unless a new worker becomes available to do more work?
 
-Actually, we switched this to pe_info() based on one of Gavin's reviews,
-so the pe_number and opal_id being printed here are not needed anymore.
-I'm simplifying this into one line.
+Correct.
 
-	pe_info(pe, "Switching PHB to CXL\n");
+> If so I can
+> see the sigkill helping for hanging tasks but it doesn't necessarily
+> mean its a good idea to kill modules loading taking a while. Also
+> what if the sigkill is just avoided for *just* kmod workers?
 
+Depending on the number of devices you have, I suppose we could still
+exhaust the workers.
 
-> 
-> > +
-> > +	if ((rc = opal_pci_set_phb_cxl_mode(phb->opal_id, 1, pe->pe_number)))
-> > +		dev_err(&dev->dev, "opal_pci_set_phb_cxl_mode failed: %i\n", rc);
-> 
-> Again why not:
-> 
-> 	rc = opal_pci_set_phb_cxl_mode(phb->opal_id, 1, pe->pe_number);
-> 	if (rc)
-> 		dev_err(&dev->dev, "opal_pci_set_phb_cxl_mode failed: %i\n", rc);
+>> The way I see it, the current status from systemd's side is: our
+>> short-term work-around is to increase the timeout, and at the moment
+>> it appears no long-term solution is needed (i.e., it seems like the
+>> right thing to do is to make sure insmod can be near instantaneous, it
+>> appears people are working towards this goal, and so far no examples
+>> have cropped up showing that it is fundamentally impossible (once/if
+>> they do, we should of course revisit the problem)).
+>
+> That again would be reactive behaviour, what would prevent avoiding the
+> sigkill only for kmod workers? Is it known the deadlock is immiment?
+> If the amount of workers for kmod that would hit the timeout is
+> considered low I don't see how that's possible and why not just lift
+> the sigkill.
 
-Ok.
-
-> > +out:
-> > +	return rc;
-> > +}
-> > +EXPORT_SYMBOL(pnv_phb_to_cxl);
-> > +
-> 
-> > +int pnv_cxl_alloc_hwirq_ranges(struct cxl_irq_ranges *irqs,
-> > +			       struct pci_dev *dev, int num)
-> 
-> This could use some documentation.
-> 
-> It seems to be that it allocates num irqs in some number of ranges, up to
-> CXL_IRQ_RANGES?
-
-OK
-
-> 
-> > +{
-> > +	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +	struct pnv_phb *phb = hose->private_data;
-> > +	int range = 0;
-> 
-> You reinitialise to 1 below?
-
-Oops
-
-> 
-> > +	int hwirq;
-> > +	int try;
-> 
-> So these can be:
-> 
-> 	int hwirq, try, range;
-> 
-> > +	memset(irqs, 0, sizeof(struct cxl_irq_ranges));
-> > +
-> > +	for (range = 1; range < CXL_IRQ_RANGES && num; range++) {
-> 
-> I think this would be clearer if range was just called "i" as usual.
-
-OK
-
-> Why does it start at 1 ?
-
-0 is used by the data storage interrupt. I'll add a comment to clarify.
-
-> 
-> > +		try = num;
-> > +		while (try) {
-> > +			hwirq = msi_bitmap_alloc_hwirqs(&phb->msi_bmp, try);
-> > +			if (hwirq >= 0)
-> > +				break;
-> > +			try /= 2;
-> > +		}
-> > +		if (!try)
-> > +			goto fail;
-> > +
-> > +		irqs->offset[range] = phb->msi_base + hwirq;
-> > +		irqs->range[range] = try;
-> 
-> irqs->range is irq_hw_number_t but looks like it should just be uint.
-> 
-> > +		pr_devel("cxl alloc irq range 0x%x: offset: 0x%lx  limit: %li\n",
-> > +			 range, irqs->offset[range], irqs->range[range]);
-> > +		num -= try;
-> > +	}
-> > +	if (num)
-> > +		goto fail;
-> > +
-> > +	return 0;
-> > +fail:
-> > +	for (range--; range >= 0; range--) {
-> > +		hwirq = irqs->offset[range] - phb->msi_base;
-> > +		msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
-> > +				       irqs->range[range]);
-> > +		irqs->range[range] = 0;
-> > +	}
-> 
-> Because you zero ranges at the top I think you can replace all of the fail
-> logic with a call to pnv_cxl_release_hwirq_ranges().
-
-Nice.  Will change.
-
-> 
-> 
-> > +	return -ENOSPC;
-> > +}
-> > +EXPORT_SYMBOL(pnv_cxl_alloc_hwirq_ranges);
-> > +
-> > +void pnv_cxl_release_hwirq_ranges(struct cxl_irq_ranges *irqs,
-> > +				  struct pci_dev *dev)
-> > +{
-> > +	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +	struct pnv_phb *phb = hose->private_data;
-> > +	int range = 0;
-> 
-> Unnecessary init again.
-
-Yep. I'll change to 'i' too.
-
-> > +	int hwirq;
-> > +
-> > +	for (range = 0; range < 4; range++) {
-> 
-> Shouldn't 4 be CXL_IRQ_RANGES ?
-
-Yep.
-
-> 
-> > +		hwirq = irqs->offset[range] - phb->msi_base;
-> 
-> That should be inside the if.
-
-Yep.
-
-> 
-> Or better do:
-> 		if (!irqs->range[range])
-> 			continue;
-> 		...
-
-Nice.
-
-> 
-> > +		if (irqs->range[range]) {
-> > +			pr_devel("cxl release irq range 0x%x: offset: 0x%lx  limit: %ld\n",
-> > +				 range, irqs->offset[range],
-> > +				 irqs->range[range]);
-> > +			msi_bitmap_free_hwirqs(&phb->msi_bmp, hwirq,
-> > +					       irqs->range[range]);
-> > +		}
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(pnv_cxl_release_hwirq_ranges);
-> > +
-> > +int pnv_cxl_get_irq_count(struct pci_dev *dev)
-> > +{
-> > +	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +        struct pnv_phb *phb = hose->private_data;
-> 
-> Indentation is fubar.
-
-OK
-
-> 
-> > +	return phb->msi_bmp.irq_count;
-> > +}
-> > +EXPORT_SYMBOL(pnv_cxl_get_irq_count);
-> > +
-> > +#endif /* CONFIG_CXL_BASE */
-> >  #endif /* CONFIG_PCI_MSI */
-> >  
-> >  static int pnv_ioda_configure_pe(struct pnv_phb *phb, struct pnv_ioda_pe *pe)
-> > @@ -1330,6 +1464,33 @@ static void set_msi_irq_chip(struct pnv_phb *phb, unsigned int virq)
-> >  	irq_set_chip(virq, &phb->ioda.irq_chip);
-> >  }
-> >  
-> > +#ifdef CONFIG_CXL_BASE
-> 
-> Why is this here and not in the previous #ifdef CONFIG_CXL_BASE block ?
-
-I can actually move the rest of the cxl code down here too.  So I'll do
-that.
-
-> 
-> > +int pnv_cxl_ioda_msi_setup(struct pci_dev *dev, unsigned int hwirq,
-> > +			   unsigned int virq)
-> > +{
-> > +	struct pci_controller *hose = pci_bus_to_host(dev->bus);
-> > +	struct pnv_phb *phb = hose->private_data;
-> > +	unsigned int xive_num = hwirq - phb->msi_base;
-> > +	struct pnv_ioda_pe *pe;
-> > +	int rc;
-> > +
-> > +	if (!(pe = pnv_ioda_get_pe(dev)))
-> > +		return -ENODEV;
-> > +
-> > +	/* Assign XIVE to PE */
-> > +	rc = opal_pci_set_xive_pe(phb->opal_id, pe->pe_number, xive_num);
-> > +	if (rc) {
-> > +		pr_warn("%s: OPAL error %d setting msi_base 0x%x hwirq 0x%x XIVE 0x%x PE\n",
-> > +			pci_name(dev), rc, phb->msi_base, hwirq, xive_num);
-> 
-> dev_warn() ?
-
-I'm going to move it to the pe_warn() we have here.
+Making kmod a special case is of course possible. However, as long as
+there is no fundamental reason why kmod should get this special
+treatment, this just looks like a work-around to me. We already have a
+work-around, which is to increase the global timeout. If you still
+think we should do something different in systemd, it is probably best
+to take the discussion to systemd-devel to make sure all the relevant
+people are involved.
 
 Cheers,
-Mikey
+
+Tom
