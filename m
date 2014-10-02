@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaJBVY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 17:24:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453AbaJBVY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 17:24:28 -0400
-Date: Thu, 2 Oct 2014 23:21:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] wait: Provide infrastructure to deal with nested
-	blocking
-Message-ID: <20141002212108.GA12446@redhat.com>
-References: <20140924081845.572814794@infradead.org> <20140924082242.051202318@infradead.org> <20140929210221.GA12112@redhat.com> <20141002073739.GF2843@worktop.programming.kicks-ass.net>
+	id S1752623AbaJBV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 17:26:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54419 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247AbaJBV0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 17:26:15 -0400
+Message-ID: <542DC2F5.7080508@codeaurora.org>
+Date: Thu, 02 Oct 2014 14:26:13 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002073739.GF2843@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Kumar Gala <galak@codeaurora.org>
+CC: Georgi Djakov <gdjakov@mm-sol.com>, mturquette@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
+References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com> <542D953F.3030701@codeaurora.org> <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
+In-Reply-To: <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02, Peter Zijlstra wrote:
+On 10/02/14 12:51, Kumar Gala wrote:
+> On Oct 2, 2014, at 1:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 >
-> On Mon, Sep 29, 2014 at 11:02:21PM +0200, Oleg Nesterov wrote:
-> > On 09/24, Peter Zijlstra wrote:
-> > >
-> > > +int woken_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> > > +{
-> > > +	/*
-> > > +	 * Although this function is called under waitqueue lock, LOCK
-> > > +	 * doesn't imply write barrier and the users expects write
-> > > +	 * barrier semantics on wakeup functions.  The following
-> > > +	 * smp_wmb() is equivalent to smp_wmb() in try_to_wake_up()
-> > > +	 * and is paired with set_mb() in wait_woken().
-> > > +	 */
-> > > +	smp_wmb(); /* C */
-> > > +	wait->flags |= WQ_FLAG_WOKEN;
-> >
-> > Perhaps it is just me, but I was a bit confused by the comment above wmb().
-> > Afaics, it is not that "users expects write barrier semantics", just we
-> > need to ensure that
-> >
-> > 	CONDITION = true;
-> > 	wait->flags |= WQ_FLAG_WOKEN;
-> >
-> > can't be reordered (and this differs from smp_wmb() in try_to_wake_up()).
-> > Otherwise we can obviously race with
-> >
-> > 	// wait_woken() -> set_mb()
-> > 	wait->flags &= ~WQ_FLAG_WOKEN;
-> > 	mb();
-> >
-> > 	if (CONDITION)
-> > 		break;
-> >
+>> On 09/30/14 10:20, Georgi Djakov wrote:
+>>> This patch expands the regmap support to allow registration of clock
+>>> dividers. It just prepares for the introduction of a clkdiv driver,
+>>> that will be in a separate patch.
+>>> Such dividers are found in the Qualcomm PMIC chips such as PM8941,
+>>> PMA8084 and others.
+>> We're going to need to rework the Makefile in clk/qcom so that we only
+>> build certain pieces of the "library" when we need them. Right now the
+>> directory is focused entirely on mmio clock controllers and if we put
+>> the pmic clocks in there then we need to figure out a way to only build
+>> the pmic pieces if only the pmic driver is selected and only build the
+>> mmio pieces if the mmio drivers are selected.
+> Would we ever not build the mmio drivers or do you mean something else?
 >
-> Yes, that comment could be clearer. It is however, to me, the 'same' as
-> a regular wakeup in that we need to separate whatever state changes
-> before the wakeup (CONDITION=true typically) from whatever writes are
-> required to affect the wakeup (->state=TASK_RUNNING typically,
+>
 
-Not really, ttwu() needs to serialize CONDITION=true and the reading of
-task->state. And for the waiter its state is write only, it doesn't need
-to check it.
+Yes I mean we may not build the mmio drivers.
 
-While in this case we need to separate CONDITION and WQ_FLAG_WOKEN, and
-the waiter needs to check them in the right order.
-
-But please forget, the code looks clear with or without the comment, and
-"paired with set_mb() in wait_woken()" should explain the intent anyway.
-
-Oleg.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
