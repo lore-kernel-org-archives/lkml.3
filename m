@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaJBS6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:58:37 -0400
-Received: from mout.gmx.net ([212.227.17.22]:65463 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357AbaJBS6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:58:35 -0400
-Message-ID: <542D9FE5.3010009@gmx.de>
-Date: Thu, 02 Oct 2014 20:56:37 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1752221AbaJBS6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:58:49 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50978 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983AbaJBS6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 14:58:47 -0400
+Message-ID: <542DA038.9000908@oracle.com>
+Date: Thu, 02 Oct 2014 14:58:00 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-CC: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] fanotify: prove that structure size is correct
-References: <20140928233538.GA31345@www.outflux.net>
-In-Reply-To: <20140928233538.GA31345@www.outflux.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+CC: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] mm: numa: Do not mark PTEs pte_numa when splitting
+ huge pages
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de>	<1412256558-9995-5-git-send-email-mgorman@suse.de> <CA+55aFzJtoEXEzoyYQ=j+AMxyZNL3Gr3bhXPr3twyuGzvES1PA@mail.gmail.com>
+In-Reply-To: <CA+55aFzJtoEXEzoyYQ=j+AMxyZNL3Gr3bhXPr3twyuGzvES1PA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:kR7UWz4W+k9wvG1rr/ONC7hdhnhkyGfVLOgwSuu5SWzJIN9oZV9
- NreCfFlFXPoE7qX6O16boZ95P60o3QV5R5IImCj5HKh24PIvqtPb6vJlCkF4f38hUvSzmL+
- vbVg6UK3dkQQ+76au839V6l6dor6i42t5yZ3OC5drm+b4+ZrsHlOxK6oNBz8tJ4QZpawvZe
- QoCXma/DhE4HZxqEeXkdw==
-X-UI-Out-Filterresults: notjunk:1;
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/02/2014 12:36 PM, Linus Torvalds wrote:
+> On Thu, Oct 2, 2014 at 6:29 AM, Mel Gorman <mgorman@suse.de> wrote:
+>> > This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
+>> > NUMA type from the pmd to the pte"). If a huge page is being split due
+>> > a protection change and the tail will be in a PROT_NONE vma then NUMA
+>> > hinting PTEs are temporarily created in the protected VMA.
+> So this is the particular bug I was worried about when tracing through the code.
+> 
+> Should I just apply this as-is? And mark it for stable, since this has
+> been around since 3.8 or so. It would seem to be a very safe change to
+> do, regardless of whether this is actually the issue that Dave and
+> maybe Sasha are seeing.
+> 
+> Sasha, I notice that you weren't on the cc for Mel's patches (probably
+> because you got added later to the other thread), but they were all
+> cc'd to lkml so you should see them there. Or I can forward them
+> separately.
 
-On 29.09.2014 01:35, Kees Cook wrote:
-> When building with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS, this copy_to_user
-> wasn't provably correct (the length was in a variable but the structure
-> wasn't). The compiler wasn't able to check that the length was being
-> statically assigned, so include a BUG_ON to notice if this ever changes.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->   fs/notify/fanotify/fanotify_user.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index b13992a41bd9..7bdb43222875 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -216,6 +216,7 @@ static ssize_t copy_event_to_user(struct fsnotify_group *group,
->
->   	fd = fanotify_event_metadata.fd;
->   	ret = -EFAULT;
-> +	BUG_ON(fanotify_event_metadata.event_len != FAN_EVENT_METADATA_LEN);
+I grabbed them and will keep them in my tree for now instead of your
+NUMA-chainsaw-massacre patch.
+
+You've also mentioned that while I can tell you if nothing dies, I can't
+really tell you if everything is working well. Is there a reasonable way
+to easily say if NUMA is working properly? Even something that would just
+tell me "your NUMA balancing seems to be sane" would be good.
 
 
-Thank you for indicating an inconsistency in fanotify_user.c
-
-In fanotify_user.c a mismatch exists between the assumptions made in 
-get_one_event() and copy_event_to_user().
-
-According to the fanotify.7 man page:
-"FAN_EVENT_METADATA_LEN - This is the minimum size (and currently the 
-only size) of any event metadata."
-
-get_one_event() assumes that the event metadata has a length of 
-FAN_EVENT_METADATA_LEN and does not care about the value of event_len.
-
-copy_event_to_user() assumes that event_len specifies the length of the 
-event metadata and does not care about FAN_EVENT_METADATA_LEN.
-
-Due to these different assumptions it cannot be proven inside 
-fanotify_user.c that copy_to_user() is called correctly.
-
-If we want such a prove inside fanotify_user.c, we should change 
-get_one_event() to use the following:
-
-// Get the event without removing it from the group.
-fsnotify_event *evt = fsnotify_peek_notify_event(group);
-// Check we have enough user memory to copy the event.
-if (evt->event_len > count)
-     return ERR_PTR(-EINVAL);
-// Remove the event from the group.
-fsnotify_remove_notify_event(group);
-// Return the pointer we tested.
-// fanotify_remove_notify_event() should return the same pointer.
-return evt;
-
-If after this change you still want a BUG_ON, pass count to 
-copy_event_to_user() and write
-BUG_ON(fanotify_event_metadata.event_len > count);
-
-Best regards
-
-Heinrich Schuchardt
-
->   	if (copy_to_user(buf, &fanotify_event_metadata,
->   			 fanotify_event_metadata.event_len))
->   		goto out_close_fd;
->
-
+Thanks,
+Sasha
