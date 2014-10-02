@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504AbaJBTmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:42:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43471 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752104AbaJBTmU (ORCPT
+	id S1751526AbaJBTnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:43:18 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:37286 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaJBTnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:42:20 -0400
-Message-ID: <542DAA9A.8060503@free-electrons.com>
-Date: Thu, 02 Oct 2014 21:42:18 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 15:43:17 -0400
+Date: Thu, 2 Oct 2014 12:41:30 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: mempolicy: Skip inaccessible VMAs when setting
+ MPOL_MF_LAZY
+In-Reply-To: <20141002191703.GN17501@suse.de>
+Message-ID: <alpine.LSU.2.11.1410021233280.7589@eggly.anvils>
+References: <20141002191703.GN17501@suse.de>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        gulsah.1004@gmail.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        cmroliv@gmail.com,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH] staging: nokia_h4: remove deprecated IRQF_DISABLED
-References: <1412195628-9522-1-git-send-email-michael.opdenacker@free-electrons.com> <20141001214221.GF26954@drone.musicnaut.iki.fi>
-In-Reply-To: <20141001214221.GF26954@drone.musicnaut.iki.fi>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaro,
+On Thu, 2 Oct 2014, Mel Gorman wrote:
 
-Thank you for reviewing my patch!
+> PROT_NUMA VMAs are skipped to avoid problems distinguishing between
+> present, prot_none and special entries. MPOL_MF_LAZY is not visible from
+> userspace since commit a720094ded8c ("mm: mempolicy: Hide MPOL_NOOP and
+> MPOL_MF_LAZY from userspace for now") but it should still skip VMAs the
+> same way task_numa_work does.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
-On 10/01/2014 11:42 PM, Aaro Koskinen wrote:
-> Hi,
->
-> On Wed, Oct 01, 2014 at 10:33:48PM +0200, Michael Opdenacker wrote:
->> Remove the use of the IRQF_DISABLED flag
->> from drivers/staging/nokia_h4p/nokia_core.c
->>
->> It's a NOOP since 2.6.35 and it will be removed soon.
-> This driver has been deleted from the staging tree already.
+Acked-by: Hugh Dickins <hughd@google.com>
 
-Ok, good to me too. Thanks again,
+Yes, this is much the same as the patch I wrote for Linus two days ago,
+then discovered that we don't need until MPOL_MF_LAZY gets brought back
+into MPOL_MF_VALID.  (As a bonus, my patch did also remove the currently
+bogus paragraph of comment above change_prot_numa(); and I would prefer a
+code comment to make clear that we never exercise this path at present.) 
 
-Michael.
-
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+> ---
+>  mm/mempolicy.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 8f5330d..a5877ce 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -683,7 +683,9 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+>  		}
+>  
+>  		if (flags & MPOL_MF_LAZY) {
+> -			change_prot_numa(vma, start, endvma);
+> +			/* Similar to task_numa_work, skip inaccessible VMAs */
+> +			if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
+> +				change_prot_numa(vma, start, endvma);
+>  			goto next;
+>  		}
+>  
