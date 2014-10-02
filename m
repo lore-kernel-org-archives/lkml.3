@@ -1,196 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaJBNvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:51:31 -0400
-Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:57442 "EHLO
-	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbaJBNsO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:48:14 -0400
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Subject: [RFC PATCH net-next v3 3/4] iptunnels: advertise link netns via netlink
-Date: Thu,  2 Oct 2014 15:48:09 +0200
-Message-Id: <1412257690-31253-4-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
-References: <542D5726.8070308@6wind.com>
- <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
+	id S1753684AbaJBNwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212AbaJBNwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:52:39 -0400
+Date: Thu, 2 Oct 2014 09:52:32 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Heinz Mauelshagen <heinzm@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        Shaohua Li <shli@kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: dm-raid: add RAID discard support
+Message-ID: <20141002135232.GA25298@redhat.com>
+References: <yq1zjdpsqry.fsf@sermon.lab.mkp.net>
+ <7C39EB56-623A-4318-A558-258ABA32FF12@redhat.com>
+ <20140924142157.33475baa@notabene.brown>
+ <5422A4C4.4020707@redhat.com>
+ <20141001125625.1e0d356a@notabene.brown>
+ <20141001133237.GB16521@redhat.com>
+ <20141002093403.25cc832f@notabene.brown>
+ <20141002013135.GA21091@redhat.com>
+ <20141002120049.58dba551@notabene.brown>
+ <20141002140410.1b379f74@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002140410.1b379f74@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement rtnl_link_ops->get_link_net() callback so that IFLA_LINK_NETNSID is
-added to rtnetlink messages.
+On Thu, Oct 02 2014 at 12:04am -0400,
+NeilBrown <neilb@suse.de> wrote:
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
----
- include/net/ip6_tunnel.h | 1 +
- include/net/ip_tunnels.h | 1 +
- net/ipv4/ip_gre.c        | 2 ++
- net/ipv4/ip_tunnel.c     | 8 ++++++++
- net/ipv4/ip_vti.c        | 1 +
- net/ipv4/ipip.c          | 1 +
- net/ipv6/ip6_gre.c       | 1 +
- net/ipv6/ip6_tunnel.c    | 9 +++++++++
- net/ipv6/ip6_vti.c       | 1 +
- net/ipv6/sit.c           | 1 +
- 10 files changed, 26 insertions(+)
+> 
+> I plan to submit this to Linus tomorrow, hopefully for 3.7, unless there are
+> complaints. It is in my for-next branch now.
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> From aec6f821ed92fac5ae4f1db50279a3999de5872a Mon Sep 17 00:00:00 2001
+> From: NeilBrown <neilb@suse.de>
+> Date: Thu, 2 Oct 2014 13:45:00 +1000
+> Subject: [PATCH] md/raid5: disable 'DISCARD' by default due to safety
+>  concerns.
+> 
+> It has come to my attention (thanks Martin) that 'discard_zeroes_data'
+> is only a hint.  Some devices in some cases don't do what it
+> says on the label.
+> 
+> The use of DISCARD in RAID5 depends on reads from discarded regions
+> being predictably zero.  If a write to a previously discarded region
+> performs a read-modify-write cycle it assumes that the parity block
+> was consistent with the data blocks.  If all were zero, this would
+> be the case.  If some are and some aren't this would not be the case.
+> This could lead to data corruption after a device failure when
+> data needs to be reconstructed from the parity.
+> 
+> As we cannot trust 'discard_zeroes_data', ignore it by default
+> and so disallow DISCARD on all raid4/5/6 arrays.
+> 
+> As many devices are trustworthy, and as there are benefits to using
+> DISCARD, add a module parameter to over-ride this caution and cause
+> DISCARD to work if discard_zeroes_data is set.
+> 
+> If a site want to enable DISCARD on some arrays but not on others they
+> should select DISCARD support at the filesystem level, and set the
+> raid456 module parameter.
+>     raid456.devices_handle_discard_safely=Y
+> 
+> As this is a data-safety issue, I believe this patch is suitable for
+> -stable.
+> DISCARD support for RAID456 was added in 3.7
+> 
+> Cc: Shaohua Li <shli@kernel.org>
+> Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
+> Cc: Mike Snitzer <snitzer@redhat.com>
+> Cc: Heinz Mauelshagen <heinzm@redhat.com>
+> Cc: stable@vger.kernel.org (3.7+)
+> Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-diff --git a/include/net/ip6_tunnel.h b/include/net/ip6_tunnel.h
-index a5593dab6af7..8648519f4555 100644
---- a/include/net/ip6_tunnel.h
-+++ b/include/net/ip6_tunnel.h
-@@ -69,6 +69,7 @@ int ip6_tnl_xmit_ctl(struct ip6_tnl *t);
- __u16 ip6_tnl_parse_tlv_enc_lim(struct sk_buff *skb, __u8 *raw);
- __u32 ip6_tnl_get_cap(struct ip6_tnl *t, const struct in6_addr *laddr,
- 			     const struct in6_addr *raddr);
-+struct net *ip6_tnl_get_link_net(const struct net_device *dev);
- 
- static inline void ip6tunnel_xmit(struct sk_buff *skb, struct net_device *dev)
- {
-diff --git a/include/net/ip_tunnels.h b/include/net/ip_tunnels.h
-index 7f538ba6e267..c92a99b5b77e 100644
---- a/include/net/ip_tunnels.h
-+++ b/include/net/ip_tunnels.h
-@@ -119,6 +119,7 @@ struct ip_tunnel_net {
- int ip_tunnel_init(struct net_device *dev);
- void ip_tunnel_uninit(struct net_device *dev);
- void  ip_tunnel_dellink(struct net_device *dev, struct list_head *head);
-+struct net *ip_tunnel_get_link_net(const struct net_device *dev);
- int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
- 		       struct rtnl_link_ops *ops, char *devname);
- 
-diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
-index 0485ef18d254..c75974986053 100644
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -827,6 +827,7 @@ static struct rtnl_link_ops ipgre_link_ops __read_mostly = {
- 	.dellink	= ip_tunnel_dellink,
- 	.get_size	= ipgre_get_size,
- 	.fill_info	= ipgre_fill_info,
-+	.get_link_net	= ip_tunnel_get_link_net,
- };
- 
- static struct rtnl_link_ops ipgre_tap_ops __read_mostly = {
-@@ -841,6 +842,7 @@ static struct rtnl_link_ops ipgre_tap_ops __read_mostly = {
- 	.dellink	= ip_tunnel_dellink,
- 	.get_size	= ipgre_get_size,
- 	.fill_info	= ipgre_fill_info,
-+	.get_link_net	= ip_tunnel_get_link_net,
- };
- 
- static int __net_init ipgre_tap_init_net(struct net *net)
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index b75b47b0a223..a8ab238d0df4 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -954,6 +954,14 @@ void ip_tunnel_dellink(struct net_device *dev, struct list_head *head)
- }
- EXPORT_SYMBOL_GPL(ip_tunnel_dellink);
- 
-+struct net *ip_tunnel_get_link_net(const struct net_device *dev)
-+{
-+	struct ip_tunnel *tunnel = netdev_priv(dev);
-+
-+	return tunnel->net;
-+}
-+EXPORT_SYMBOL(ip_tunnel_get_link_net);
-+
- int ip_tunnel_init_net(struct net *net, int ip_tnl_net_id,
- 				  struct rtnl_link_ops *ops, char *devname)
- {
-diff --git a/net/ipv4/ip_vti.c b/net/ipv4/ip_vti.c
-index e453cb724a95..93862411669c 100644
---- a/net/ipv4/ip_vti.c
-+++ b/net/ipv4/ip_vti.c
-@@ -530,6 +530,7 @@ static struct rtnl_link_ops vti_link_ops __read_mostly = {
- 	.changelink	= vti_changelink,
- 	.get_size	= vti_get_size,
- 	.fill_info	= vti_fill_info,
-+	.get_link_net	= ip_tunnel_get_link_net,
- };
- 
- static int __init vti_init(void)
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index ea88ab3102a8..406910d04b1b 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -498,6 +498,7 @@ static struct rtnl_link_ops ipip_link_ops __read_mostly = {
- 	.dellink	= ip_tunnel_dellink,
- 	.get_size	= ipip_get_size,
- 	.fill_info	= ipip_fill_info,
-+	.get_link_net	= ip_tunnel_get_link_net,
- };
- 
- static struct xfrm_tunnel ipip_handler __read_mostly = {
-diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
-index 9a0a1aafe727..10981f568250 100644
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -1659,6 +1659,7 @@ static struct rtnl_link_ops ip6gre_link_ops __read_mostly = {
- 	.dellink	= ip6gre_dellink,
- 	.get_size	= ip6gre_get_size,
- 	.fill_info	= ip6gre_fill_info,
-+	.get_link_net	= ip6_tnl_get_link_net,
- };
- 
- static struct rtnl_link_ops ip6gre_tap_ops __read_mostly = {
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index e01bd0399297..b86d9f4ea5ec 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1699,6 +1699,14 @@ nla_put_failure:
- 	return -EMSGSIZE;
- }
- 
-+struct net *ip6_tnl_get_link_net(const struct net_device *dev)
-+{
-+	struct ip6_tnl *tunnel = netdev_priv(dev);
-+
-+	return tunnel->net;
-+}
-+EXPORT_SYMBOL(ip6_tnl_get_link_net);
-+
- static const struct nla_policy ip6_tnl_policy[IFLA_IPTUN_MAX + 1] = {
- 	[IFLA_IPTUN_LINK]		= { .type = NLA_U32 },
- 	[IFLA_IPTUN_LOCAL]		= { .len = sizeof(struct in6_addr) },
-@@ -1722,6 +1730,7 @@ static struct rtnl_link_ops ip6_link_ops __read_mostly = {
- 	.dellink	= ip6_tnl_dellink,
- 	.get_size	= ip6_tnl_get_size,
- 	.fill_info	= ip6_tnl_fill_info,
-+	.get_link_net	= ip6_tnl_get_link_net,
- };
- 
- static struct xfrm6_tunnel ip4ip6_handler __read_mostly = {
-diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
-index 7f52fd9fa7b0..88e8aadcfac1 100644
---- a/net/ipv6/ip6_vti.c
-+++ b/net/ipv6/ip6_vti.c
-@@ -988,6 +988,7 @@ static struct rtnl_link_ops vti6_link_ops __read_mostly = {
- 	.changelink	= vti6_changelink,
- 	.get_size	= vti6_get_size,
- 	.fill_info	= vti6_fill_info,
-+	.get_link_net	= ip6_tnl_get_link_net,
- };
- 
- static void __net_exit vti6_destroy_tunnels(struct vti6_net *ip6n)
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 0d4e27466f82..02ef387811be 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -1765,6 +1765,7 @@ static struct rtnl_link_ops sit_link_ops __read_mostly = {
- 	.get_size	= ipip6_get_size,
- 	.fill_info	= ipip6_fill_info,
- 	.dellink	= ipip6_dellink,
-+	.get_link_net	= ip_tunnel_get_link_net,
- };
- 
- static struct xfrm_tunnel sit_handler __read_mostly = {
--- 
-2.1.0
+Acked-by: Mike Snitzer <snitzer@redhat.com>
 
+Thanks Neil, I'll get something comparable staged for dm-raid for 3.18
+(less urgency given that dm-raid doesn't yet support discards).
