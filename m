@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaJBOwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:52:51 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48901 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaJBOwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:52:50 -0400
-Message-ID: <542D6819.4000907@gmail.com>
-Date: Thu, 02 Oct 2014 22:58:33 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754093AbaJBOwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:52:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60398 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753951AbaJBOwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:52:09 -0400
+Date: Thu, 2 Oct 2014 16:52:01 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
+        dougthompson@xmission.com, m.chehab@samsung.com,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] edac, amd64_edac: Add F15h M60h support
+Message-ID: <20141002145201.GF16452@pd.tnic>
+References: <1411070230-10298-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141001113235.GC18271@pd.tnic>
+ <542C5995.7050803@amd.com>
 MIME-Version: 1.0
-To: benjamin.romer@unisys.com, david.kershner@unisys.com,
-        regkh@linuxfoundation.org, jkc@redhat.com, sparmaintainer@unisys.com
-CC: devel@driverdev.osuosl.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] drivers/staging/unisys: Let all IOMEM related modules depend
- on HAS_IOMEM
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+In-Reply-To: <542C5995.7050803@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UNISYS_UISLIB, UNISYS_VISORCHIPSET, and UNISYS_VISORUTIL need HAS_IOMEM,
-so depend on it. One of related error (with allmodconfig under um):
+On Wed, Oct 01, 2014 at 02:44:21PM -0500, Aravind Gopalakrishnan wrote:
+> The more I think about this, I'm finding it's hard to do this cleanly.
+> I initially thought I'd just cache this in pvt->dram_type the first time I'm
+> doing this.
+> But, the pvt->ops->dbam_to_cs() mappers get called first before
+> determine_memory_type().
+> 
+> So, If I look for dram_type in f15_m60h_dbam_to_chip_select() it's ugly as
+> that's really the point of
+> having a determine_memory_type().
+> 
+> Also, there's just a lot of if-else statements in determine_memory_type()
+> now.
+> This could benefit from having a per-family low_ops function.
+> And, we can call this early... somewhere in read_mc_regs() so that we have
+> information ready to use in
+> f15_m60h_dbam_to_chip_select() and in init_csrows() which needs dram_type
+> too.
 
-    CC [M]  drivers/staging/unisys/uislib/uislib.o
-  In file included from drivers/staging/unisys/uislib/uislib.c:34:0:
-  drivers/staging/unisys/include/uisutils.h: In function ‘dbg_ioremap_cache’:
-  drivers/staging/unisys/include/uisutils.h:88:2: error: implicit declaration of function ‘ioremap_cache’ [-Werror=implicit-function-declaration]
-    new = ioremap_cache(addr, size);
-    ^
-  drivers/staging/unisys/include/uisutils.h:88:6: warning: assignment makes pointer from integer without a cast [enabled by default]
-    new = ioremap_cache(addr, size);
-        ^
-  drivers/staging/unisys/include/uisutils.h: In function ‘dbg_ioremap’:
-  drivers/staging/unisys/include/uisutils.h:99:2: error: implicit declaration of function ‘ioremap’ [-Werror=implicit-function-declaration]
-    new = ioremap(addr, size);
-    ^
-  drivers/staging/unisys/include/uisutils.h:99:6: warning: assignment makes pointer from integer without a cast [enabled by default]
-    new = ioremap(addr, size);
-        ^
-  drivers/staging/unisys/include/uisutils.h: In function ‘dbg_iounmap’:
-  drivers/staging/unisys/include/uisutils.h:108:2: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
-    iounmap(addr);
-    ^
+Right, this is what I was thinking too: somewhere in read_mc_regs(),
+after having collected ->dclr0, you call determine_memory_type() and
+store it into pvt->dram_type.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/staging/unisys/uislib/Kconfig       | 2 +-
- drivers/staging/unisys/visorchipset/Kconfig | 2 +-
- drivers/staging/unisys/visorutil/Kconfig    | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+> Oh, btw- We can do away with a pvt->dram_ctrl as
+> f15_m60h_dbam_to_chip_select() really just needs the dram_type.
 
-diff --git a/drivers/staging/unisys/uislib/Kconfig b/drivers/staging/unisys/uislib/Kconfig
-index 8d87d9c..6b134e2 100644
---- a/drivers/staging/unisys/uislib/Kconfig
-+++ b/drivers/staging/unisys/uislib/Kconfig
-@@ -4,7 +4,7 @@
- 
- config UNISYS_UISLIB
- 	tristate "Unisys uislib driver"
--	depends on UNISYSSPAR && UNISYS_VISORCHIPSET && UNISYS_CHANNELSTUB
-+	depends on UNISYSSPAR && UNISYS_VISORCHIPSET && UNISYS_CHANNELSTUB && HAS_IOMEM
- 	---help---
- 	If you say Y here, you will enable the Unisys uislib driver.
- 
-diff --git a/drivers/staging/unisys/visorchipset/Kconfig b/drivers/staging/unisys/visorchipset/Kconfig
-index 7ca2fbc..e86836f 100644
---- a/drivers/staging/unisys/visorchipset/Kconfig
-+++ b/drivers/staging/unisys/visorchipset/Kconfig
-@@ -4,7 +4,7 @@
- 
- config UNISYS_VISORCHIPSET
- 	tristate "Unisys visorchipset driver"
--	depends on UNISYSSPAR && UNISYS_VISORUTIL && UNISYS_VISORCHANNEL
-+	depends on UNISYSSPAR && UNISYS_VISORUTIL && UNISYS_VISORCHANNEL && HAS_IOMEM
- 	---help---
- 	If you say Y here, you will enable the Unisys visorchipset driver.
- 
-diff --git a/drivers/staging/unisys/visorutil/Kconfig b/drivers/staging/unisys/visorutil/Kconfig
-index 4ff61a7..74b474e 100644
---- a/drivers/staging/unisys/visorutil/Kconfig
-+++ b/drivers/staging/unisys/visorutil/Kconfig
-@@ -4,7 +4,7 @@
- 
- config UNISYS_VISORUTIL
- 	tristate "Unisys visorutil driver"
--	depends on UNISYSSPAR
-+	depends on UNISYSSPAR && HAS_IOMEM
- 	---help---
- 	If you say Y here, you will enable the Unisys visorutil driver.
- 
+Yes, you make the read of DRAM_CONTROL inside determine_memory_type() as
+we don't need it anywhere else.
+
+If we do, all of a sudden, we'll move it up to read_mc_regs(). IOW, I'm
+trying to centralize all reg reads in read_mc_regs() and use locally
+cached info later so I don't have to access the hardware each time
+needlessly, if it can be helped.
+
+Thanks.
+
 -- 
-1.9.3
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
