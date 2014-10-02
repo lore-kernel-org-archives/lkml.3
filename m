@@ -1,73 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaJBGpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:45:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45516 "EHLO bear.ext.ti.com"
+	id S1751337AbaJBGpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:45:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:46889 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842AbaJBGpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:45:07 -0400
-Message-ID: <542CF446.6090608@ti.com>
-Date: Thu, 2 Oct 2014 09:44:22 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>, pekon <pekon@pek-sem.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <michal.vokac@comap.cz>, <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH 1/2] mtd: nand: omap: Do not use global variables
-References: <1412175554-19391-1-git-send-email-lisovy@merica.cz>
-In-Reply-To: <1412175554-19391-1-git-send-email-lisovy@merica.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1750842AbaJBGpC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 02:45:02 -0400
+Message-ID: <1412232297.6143.18.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH v2 10/17] powerpc/mm: Merge vsid calculation in
+ hash_page() and copro_data_segment()
+From: Michael Neuling <mikey@neuling.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, anton@samba.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
+        imunsie@au1.ibm.com, cbe-oss-dev@lists.ozlabs.org
+Date: Thu, 02 Oct 2014 16:44:57 +1000
+In-Reply-To: <87wq8km7w0.fsf@linux.vnet.ibm.com>
+References: <1412073306-13812-1-git-send-email-mikey@neuling.org>
+	 <1412073306-13812-11-git-send-email-mikey@neuling.org>
+	 <87wq8km7w0.fsf@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/01/2014 05:59 PM, Rostislav Lisovy wrote:
-> Since the commit 97a288ba2cfa ("ARM: omap2+: gpmc-nand: Use
-> dynamic platform_device_alloc()") gpmc-nand driver supports
-> multiple NAND flash devices connected to the single controller.
-> Remove global variable to make the code thread-safe.
+On Wed, 2014-10-01 at 15:25 +0530, Aneesh Kumar K.V wrote:
+> Michael Neuling <mikey@neuling.org> writes:
 > 
-> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
-> ---
->  drivers/mtd/nand/omap2.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> > From: Ian Munsie <imunsie@au1.ibm.com>
+> >
+> > The vsid calculation between hash_page() and copro_data_segment() are very
+> > similar.  This merges these two different versions.
+> >
+> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> > Signed-off-by: Michael Neuling <mikey@neuling.org>
+> > ---
+> >  arch/powerpc/include/asm/mmu-hash64.h |  2 ++
+> >  arch/powerpc/mm/copro_fault.c         | 45 ++++++--------------------
+> >  arch/powerpc/mm/hash_utils_64.c       | 61 ++++++++++++++++++++++-------------
+> >  3 files changed, 50 insertions(+), 58 deletions(-)
+> >
+> > diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+> > index f84e5a5..bf43fb0 100644
+> > --- a/arch/powerpc/include/asm/mmu-hash64.h
+> > +++ b/arch/powerpc/include/asm/mmu-hash64.h
+> > @@ -322,6 +322,8 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
+> >  			   unsigned int local, int ssize);
+> >  struct mm_struct;
+> >  unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
+> > +int calculate_vsid(struct mm_struct *mm, u64 ea,
+> > +		   u64 *vsid, int *psize, int *ssize);
+> >  extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
+> >  extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
+> >  int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
+> > diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> > index 939abdf..ba8bf8e 100644
+> > --- a/arch/powerpc/mm/copro_fault.c
+> > +++ b/arch/powerpc/mm/copro_fault.c
+> > @@ -94,45 +94,18 @@ EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> >  
+> >  int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsid)
+> >  {
+> > -	int psize, ssize;
+> > +	int psize, ssize, rc;
+> >  
+> >  	*esid = (ea & ESID_MASK) | SLB_ESID_V;
+> >  
+> > -	switch (REGION_ID(ea)) {
+> > -	case USER_REGION_ID:
+> > -		pr_devel("copro_data_segment: 0x%llx -- USER_REGION_ID\n", ea);
+> > -#ifdef CONFIG_PPC_MM_SLICES
+> > -		psize = get_slice_psize(mm, ea);
+> > -#else
+> > -		psize = mm->context.user_psize;
+> > -#endif
+> > -		ssize = user_segment_size(ea);
+> > -		*vsid = (get_vsid(mm->context.id, ea, ssize)
+> > -			 << slb_vsid_shift(ssize)) | SLB_VSID_USER;
+> > -		break;
+> > -	case VMALLOC_REGION_ID:
+> > -		pr_devel("copro_data_segment: 0x%llx -- VMALLOC_REGION_ID\n", ea);
+> > -		if (ea < VMALLOC_END)
+> > -			psize = mmu_vmalloc_psize;
+> > -		else
+> > -			psize = mmu_io_psize;
+> > -		ssize = mmu_kernel_ssize;
+> > -		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
+> > -			 << SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> > -		break;
+> > -	case KERNEL_REGION_ID:
+> > -		pr_devel("copro_data_segment: 0x%llx -- KERNEL_REGION_ID\n", ea);
+> > -		psize = mmu_linear_psize;
+> > -		ssize = mmu_kernel_ssize;
+> > -		*vsid = (get_kernel_vsid(ea, mmu_kernel_ssize)
+> > -			 << SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> > -		break;
+> > -	default:
+> > -		/* Future: support kernel segments so that drivers can use the
+> > -		 * CoProcessors */
+> > -		pr_debug("invalid region access at %016llx\n", ea);
+> > -		return 1;
+> > -	}
+> > +	rc = calculate_vsid(mm, ea, vsid, &psize, &ssize);
+> > +	if (rc)
+> > +		return rc;
+> > +	if (REGION_ID(ea) == USER_REGION_ID)
+> > +		*vsid = (*vsid << slb_vsid_shift(ssize)) | SLB_VSID_USER;
+> > +	else
+> > +		*vsid = (*vsid << SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> > +
+> >  	*vsid |= mmu_psize_defs[psize].sllp |
+> >  		((ssize == MMU_SEGSIZE_1T) ? SLB_VSID_B_1T : 0);
+> >  
+> > diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+> > index 0a5c8c0..3fa81ca 100644
+> > --- a/arch/powerpc/mm/hash_utils_64.c
+> > +++ b/arch/powerpc/mm/hash_utils_64.c
+> > @@ -983,6 +983,38 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
+> >  	}
+> >  }
+> >  
+> > +int calculate_vsid(struct mm_struct *mm, u64 ea,
+> > +		   u64 *vsid, int *psize, int *ssize)
+> > +{
+> > +	switch (REGION_ID(ea)) {
+> > +	case USER_REGION_ID:
+> > +		pr_devel("%s: 0x%llx -- USER_REGION_ID\n", __func__, ea);
+> > +		*psize = get_slice_psize(mm, ea);
+> > +		*ssize = user_segment_size(ea);
+> > +		*vsid = get_vsid(mm->context.id, ea, *ssize);
+> > +		return 0;
+> > +	case VMALLOC_REGION_ID:
+> > +		pr_devel("%s: 0x%llx -- VMALLOC_REGION_ID\n", __func__, ea);
+> > +		if (ea < VMALLOC_END)
+> > +			*psize = mmu_vmalloc_psize;
+> > +		else
+> > +			*psize = mmu_io_psize;
+> > +		*ssize = mmu_kernel_ssize;
+> > +		*vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
+> > +		return 0;
+> > +	case KERNEL_REGION_ID:
+> > +		pr_devel("%s: 0x%llx -- KERNEL_REGION_ID\n", __func__, ea);
+> > +		*psize = mmu_linear_psize;
+> > +		*ssize = mmu_kernel_ssize;
+> > +		*vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
+> > +		return 0;
+> > +	default:
+> > +		pr_debug("%s: invalid region access at %016llx\n", __func__, ea);
+> > +		return 1;
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL_GPL(calculate_vsid);
+> > +
+> >  /* Result code is:
+> >   *  0 - handled
+> >   *  1 - normal page fault
+> > @@ -993,7 +1025,7 @@ int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, u
+> >  {
+> >  	enum ctx_state prev_state = exception_enter();
+> >  	pgd_t *pgdir;
+> > -	unsigned long vsid;
+> > +	u64 vsid;
+> >  	pte_t *ptep;
+> >  	unsigned hugeshift;
+> >  	const struct cpumask *tmp;
+> > @@ -1003,35 +1035,20 @@ int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, u
+> >  	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
+> >  		__func__, ea, access, trap);
+> >  
+> > -	/* Get region & vsid */
+> > - 	switch (REGION_ID(ea)) {
+> > -	case USER_REGION_ID:
+> > +	/* Get region */
+> > +	if (REGION_ID(ea) == USER_REGION_ID) {
+> >  		user_region = 1;
+> >  		if (! mm) {
+> >  			DBG_LOW(" user region with no mm !\n");
+> >  			rc = 1;
+> >  			goto bail;
+> >  		}
+> > -		psize = get_slice_psize(mm, ea);
+> > -		ssize = user_segment_size(ea);
+> > -		vsid = get_vsid(mm->context.id, ea, ssize);
+> > -		break;
+> > -	case VMALLOC_REGION_ID:
+> > +	} else
+> >  		mm = &init_mm;
+> > -		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
+> > -		if (ea < VMALLOC_END)
+> > -			psize = mmu_vmalloc_psize;
+> > -		else
+> > -			psize = mmu_io_psize;
+> > -		ssize = mmu_kernel_ssize;
+> > -		break;
+> > -	default:
+> > -		/* Not a valid range
+> > -		 * Send the problem up to do_page_fault 
+> > -		 */
+> > -		rc = 1;
 > 
-> diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-> index 5967b38..24d5c6a 100644
-> --- a/drivers/mtd/nand/omap2.c
-> +++ b/drivers/mtd/nand/omap2.c
-> @@ -146,8 +146,6 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
->  static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
->  #endif
->  
-> -/* oob info generated runtime depending on ecc algorithm and layout selected */
-> -static struct nand_ecclayout omap_oobinfo;
->  
->  struct omap_nand_info {
->  	struct nand_hw_control		controller;
-> @@ -1794,7 +1792,7 @@ static int omap_nand_probe(struct platform_device *pdev)
->  	}
->  
->  	/* populate MTD interface based on ECC scheme */
-> -	ecclayout		= &omap_oobinfo;
-> +	ecclayout		= kzalloc(sizeof(*ecclayout), GFP_KERNEL);
+> 
+> That part is different now. We now handle kernel_region_id in case of
+> hash_page. Earlier we used consider it a problem. 
 
-We should free this in failure path or omap_nand_remove(), or use devm_kzalloc().
+Yeah, that's going to be the kernel linear mapping.  We should probably
+continue to barf as we shouldn't fault on that.  Thanks.
 
-How about making "struct nand_ecclayout" a part of omap_nand_info, so that it gets allocated
-without a separate devm_kzalloc() call?
+I'll fix.
 
->  	switch (info->ecc_opt) {
->  	case OMAP_ECC_HAM1_CODE_SW:
->  		nand_chip->ecc.mode = NAND_ECC_SOFT;
+Mikey
+
+> 
+> > +	rc = calculate_vsid(mm, ea, &vsid, &psize, &ssize);
+> > +	if (rc)
+> >  		goto bail;
+> > -	}
+> > +
+> >  	DBG_LOW(" mm=%p, mm->pgdir=%p, vsid=%016lx\n", mm, mm->pgd, vsid);
+> >  
+> >  	/* Bad address. */
+> > -- 
+> > 1.9.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-cheers,
--roger
