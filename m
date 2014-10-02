@@ -1,45 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaJBLJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:09:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55883 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaJBLJc (ORCPT
+	id S1752116AbaJBLKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:10:11 -0400
+Received: from ujumbe.simbanet.co.ke ([197.220.124.230]:46452 "EHLO
+	ujumbe.simbanet.co.ke" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbaJBLKJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:09:32 -0400
-Date: Thu, 2 Oct 2014 13:09:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002110927.GE2849@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+	Thu, 2 Oct 2014 07:10:09 -0400
+X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Oct 2014 07:10:08 EDT
+Date: Thu, 02 Oct 2014 14:01:02 +0300 (EAT)
+From: "syldon  partners" <info@sandpconsult.org>
+Reply-To: "Dr.Tom Hart" <dr.tom.hart@outlook.com>
+Subject: =?utf-8?B?R3LDvMOfZQ==?=
+Message-ID: <417c1216-ac5b-4463-9890-7fe4d14c873f@mail.sandpconsult.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+X-Originating-IP: [41.203.69.12]
+X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC37 (Win)/7.1.3_GA_3346)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 04:02:28PM +0800, Fengguang Wu wrote:
-> Hi Peter,
-> 
-> We possibly find a rfcomm bug (maintainers CCed) exposed by your debug patch
-> 
-> [    1.861895] NET: Registered protocol family 5
-> [    1.862978] Bluetooth: RFCOMM TTY layer initialized
-> [    1.863099] ------------[ cut here ]------------
-> [    1.863105] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156 __might_sleep+0x17d/0x1a1()
-> [    1.863112] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c14dc381>] rfcomm_run+0xdf/0x130e
-> [    1.863591]  [<c1058b73>] ? kthread_stop+0x53/0x53
-> [    1.864906]  [<c155a411>] dump_stack+0x48/0x60
-> [    1.866298]  [<c14dc381>] ? rfcomm_run+0xdf/0x130e
+Grüße, 
+Hoffe, dass Sie und Ihre Familie heute sind gut? Auf meiner Suche nach einer zuverlässigen Person, ich habe in Kontakt kommen mit you.I bin Dr. Tom Hart, Arbeiten mit den International Financial Data Services (IFDS) hier in Birmingham UK. Ich habe eine sehr wichtige und eine gesicherte Geschäftsvorgang für Sie. Wenn Sie interessiert sein wird, bitte antworten zurück zu mir über meine private E-Mail für weitere Informationen, wenn meine E-Mails und alle Details über sie nicht, bitte löschen. Sie können mich per E-Mail zu erreichen: dr.tom.hart@outlook.com 
 
-Ha yes, rfcomm_run is a complete buggy mess indeed. Lemme go see what I
-can make of it.
+Grüße, 
+Dr. Tom Hart 
+Tel: +4470035910619
