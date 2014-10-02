@@ -1,110 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaJBXIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 19:08:36 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35422 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093AbaJBXIf (ORCPT
+	id S1753589AbaJBXLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 19:11:14 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:63970 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752594AbaJBXLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 19:08:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <542DCB9C.4020703@hurleysoftware.com>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
-	<5426CA0A.7000806@hurleysoftware.com>
-	<CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>
-	<54294C0B.1060705@hurleysoftware.com>
-	<CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
-	<542ABF77.1020402@hurleysoftware.com>
-	<alpine.DEB.2.11.1410010131380.4455@nanos>
-	<542B5DC2.8020806@hurleysoftware.com>
-	<20141002164121.GF1715@laptop.dumpdata.com>
-	<542DCB9C.4020703@hurleysoftware.com>
-Date: Fri, 3 Oct 2014 08:08:33 +0900
-Message-ID: <CAC5umyjHruhnwiKwrHLBAF+g0ZDVouuuNvrisrUH8o963GyytQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Oct 2014 19:11:13 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: Fix "'foo* bar' should be 'foo *bar'" errors
+Date: Thu,  2 Oct 2014 18:10:23 -0500
+Message-Id: <1412291423-27283-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-03 7:03 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
-> On 10/02/2014 12:41 PM, Konrad Rzeszutek Wilk wrote:
->> On Tue, Sep 30, 2014 at 09:49:54PM -0400, Peter Hurley wrote:
->>> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+Fix checkpatch.pl "'foo* bar' should be 'foo *bar'" errors
 
->>> Which is different than if the plan is to ship production units for x86;
->>> then a general purpose solution will be required.
->>>
->>> As to the good design of a general purpose solution for allocating and
->>> mapping huge order pages, you are certainly more qualified to help Akinobu
->>> than I am.
->
-> What Akinobu's patches intend to support is:
->
->         phys_addr = dma_alloc_coherent(dev, 64 * 1024 * 1024, &bus_addr, GFP_KERNEL);
->
-> which raises three issues:
->
-> 1. Where do coherent blocks of this size come from?
-> 2. How to prevent fragmentation of these reserved blocks over time by
->    existing DMA users?
-> 3. Is this support generically required across all iommu implementations on x86?
->
-> Questions 1 and 2 are non-trivial, in the general case, otherwise the page
-> allocator would already do this. Simply dropping in the contiguous memory
-> allocator doesn't work because CMA does not have the same policy and performance
-> as the page allocator, and is already causing performance regressions even
-> in the absence of huge page allocations.
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ drivers/staging/lustre/lustre/include/dt_object.h   | 2 +-
+ drivers/staging/lustre/lustre/include/lu_object.h   | 4 ++--
+ drivers/staging/lustre/lustre/include/lustre_lib.h  | 2 +-
+ drivers/staging/lustre/lustre/include/lustre_net.h  | 2 +-
+ drivers/staging/lustre/lustre/include/obd_class.h   | 2 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c     | 2 +-
+ drivers/staging/lustre/lustre/llite/statahead.c     | 2 +-
+ drivers/staging/lustre/lustre/obdclass/llog_obd.c   | 2 +-
+ drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c | 2 +-
+ drivers/staging/lustre/lustre/ptlrpc/pinger.c       | 2 +-
+ 10 files changed, 11 insertions(+), 11 deletions(-)
 
-Could you take a look at the patches I sent?  Can they fix these issues?
-https://lkml.org/lkml/2014/9/28/110
+diff --git a/drivers/staging/lustre/lustre/include/dt_object.h b/drivers/staging/lustre/lustre/include/dt_object.h
+index 212ebae..c2e7622 100644
+--- a/drivers/staging/lustre/lustre/include/dt_object.h
++++ b/drivers/staging/lustre/lustre/include/dt_object.h
+@@ -617,7 +617,7 @@ struct dt_index_operations {
+ 		int	   (*load)(const struct lu_env *env,
+ 				      const struct dt_it *di, __u64 hash);
+ 		int	(*key_rec)(const struct lu_env *env,
+-				      const struct dt_it *di, void* key_rec);
++				      const struct dt_it *di, void *key_rec);
+ 	} dio_it;
+ };
+ 
+diff --git a/drivers/staging/lustre/lustre/include/lu_object.h b/drivers/staging/lustre/lustre/include/lu_object.h
+index 6015ee5..2ddb2b0 100644
+--- a/drivers/staging/lustre/lustre/include/lu_object.h
++++ b/drivers/staging/lustre/lustre/include/lu_object.h
+@@ -1120,7 +1120,7 @@ struct lu_context_key {
+ };
+ 
+ #define LU_KEY_INIT(mod, type)				    \
+-	static void* mod##_key_init(const struct lu_context *ctx, \
++	static void *mod##_key_init(const struct lu_context *ctx, \
+ 				    struct lu_context_key *key)   \
+ 	{							 \
+ 		type *value;				      \
+@@ -1137,7 +1137,7 @@ struct lu_context_key {
+ 
+ #define LU_KEY_FINI(mod, type)					      \
+ 	static void mod##_key_fini(const struct lu_context *ctx,	    \
+-				    struct lu_context_key *key, void* data) \
++				    struct lu_context_key *key, void *data) \
+ 	{								   \
+ 		type *info = data;					  \
+ 									    \
+diff --git a/drivers/staging/lustre/lustre/include/lustre_lib.h b/drivers/staging/lustre/lustre/include/lustre_lib.h
+index 12c7590..bf13563 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_lib.h
++++ b/drivers/staging/lustre/lustre/include/lustre_lib.h
+@@ -85,7 +85,7 @@ void target_send_reply(struct ptlrpc_request *req, int rc, int fail_id);
+ 
+ /* client.c */
+ 
+-int client_sanobd_setup(struct obd_device *obddev, struct lustre_cfg* lcfg);
++int client_sanobd_setup(struct obd_device *obddev, struct lustre_cfg *lcfg);
+ struct client_obd *client_conn2cli(struct lustre_handle *conn);
+ 
+ struct md_open_data;
+diff --git a/drivers/staging/lustre/lustre/include/lustre_net.h b/drivers/staging/lustre/lustre/include/lustre_net.h
+index 0a024d3..d4da243 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_net.h
++++ b/drivers/staging/lustre/lustre/include/lustre_net.h
+@@ -2951,7 +2951,7 @@ void ptlrpcd_decref(void);
+  * procfs output related functions
+  * @{
+  */
+-const char* ll_opcode2str(__u32 opcode);
++const char *ll_opcode2str(__u32 opcode);
+ #if defined (CONFIG_PROC_FS)
+ void ptlrpc_lprocfs_register_obd(struct obd_device *obd);
+ void ptlrpc_lprocfs_unregister_obd(struct obd_device *obd);
+diff --git a/drivers/staging/lustre/lustre/include/obd_class.h b/drivers/staging/lustre/lustre/include/obd_class.h
+index 882e40b..4a29261 100644
+--- a/drivers/staging/lustre/lustre/include/obd_class.h
++++ b/drivers/staging/lustre/lustre/include/obd_class.h
+@@ -414,7 +414,7 @@ do {							    \
+ #define EXP_MD_COUNTER_INCREMENT(exp, op)
+ #endif
+ 
+-static inline int lprocfs_nid_ldlm_stats_init(struct nid_stat* tmp)
++static inline int lprocfs_nid_ldlm_stats_init(struct nid_stat *tmp)
+ {
+ 	/* Always add in ldlm_stats */
+ 	tmp->nid_ldlm_stats = lprocfs_alloc_stats(LDLM_LAST_OPC - LDLM_FIRST_OPC
+diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
+index a8bcc51..061483f 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@ -2398,7 +2398,7 @@ char *ll_get_fsname(struct super_block *sb, char *buf, int buflen)
+ 	return buf;
+ }
+ 
+-static char* ll_d_path(struct dentry *dentry, char *buf, int bufsize)
++static char *ll_d_path(struct dentry *dentry, char *buf, int bufsize)
+ {
+ 	char *path = NULL;
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/statahead.c b/drivers/staging/lustre/lustre/llite/statahead.c
+index 06b71bc..85d451f 100644
+--- a/drivers/staging/lustre/lustre/llite/statahead.c
++++ b/drivers/staging/lustre/lustre/llite/statahead.c
+@@ -915,7 +915,7 @@ static int do_sa_revalidate(struct inode *dir, struct ll_sa_entry *entry,
+ 	return rc;
+ }
+ 
+-static void ll_statahead_one(struct dentry *parent, const char* entry_name,
++static void ll_statahead_one(struct dentry *parent, const char *entry_name,
+ 			     int entry_name_len)
+ {
+ 	struct inode	     *dir    = parent->d_inode;
+diff --git a/drivers/staging/lustre/lustre/obdclass/llog_obd.c b/drivers/staging/lustre/lustre/obdclass/llog_obd.c
+index da769db..978d886 100644
+--- a/drivers/staging/lustre/lustre/obdclass/llog_obd.c
++++ b/drivers/staging/lustre/lustre/obdclass/llog_obd.c
+@@ -42,7 +42,7 @@
+ #include "llog_internal.h"
+ 
+ /* helper functions for calling the llog obd methods */
+-static struct llog_ctxt* llog_new_ctxt(struct obd_device *obd)
++static struct llog_ctxt *llog_new_ctxt(struct obd_device *obd)
+ {
+ 	struct llog_ctxt *ctxt;
+ 
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
+index 87b9764a..cb99e19 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
+@@ -175,7 +175,7 @@ const char *ll_opcode2str(__u32 opcode)
+ 	return ll_rpc_opcode_table[offset].opname;
+ }
+ 
+-const char* ll_eopcode2str(__u32 opcode)
++const char *ll_eopcode2str(__u32 opcode)
+ {
+ 	LASSERT(ll_eopcode_table[opcode].opcode == opcode);
+ 	return ll_eopcode_table[opcode].opname;
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/pinger.c b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+index 20341b2..18d617c 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/pinger.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
+@@ -428,7 +428,7 @@ EXPORT_SYMBOL(ptlrpc_pinger_del_import);
+  * Register a timeout callback to the pinger list, and the callback will
+  * be called when timeout happens.
+  */
+-struct timeout_item* ptlrpc_new_timeout(int time, enum timeout_event event,
++struct timeout_item *ptlrpc_new_timeout(int time, enum timeout_event event,
+ 					timeout_cb_t cb, void *data)
+ {
+ 	struct timeout_item *ti;
+-- 
+1.9.1
 
-With these patches, normal alloc_pages() is used for allocation first
-and dma_alloc_from_contiguous() is used as a fallback.
-
-> So that's why I raised question 3; is making the necessary compromises to support
-> 64MB coherent DMA allocations across all x86 iommu implementations actually
-> required?
->
-> Prior to Akinobu's patches, the use of CMA by x86 iommu configurations was
-> designed to be limited to testing configurations, as the introductory
-> commit states:
->
-> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
-> Author: Marek Szyprowski <m.szyprowski@samsung.com>
-> Date:   Thu Dec 29 13:09:51 2011 +0100
->
->     X86: integrate CMA with DMA-mapping subsystem
->
->     This patch adds support for CMA to dma-mapping subsystem for x86
->     architecture that uses common pci-dma/pci-nommu implementation. This
->     allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
->
->     Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->     CC: Michal Nazarewicz <mina86@mina86.com>
->     Acked-by: Arnd Bergmann <arnd@arndb.de>
->
->
-> Which brings me to my suggestion: if support for huge coherent DMA is
-> required only for a special test platform, then could not this support
-> be specific to a new iommu configuration, namely iommu=cma, which would
-> get initialized much the same way that iommu=calgary is now.
->
-> The code for such a iommu configuration would mostly duplicate
-> arch/x86/kernel/pci-swiotlb.c and the CMA support would get removed from
-> the other x86 iommu implementations.
-
-I'm not sure I read correctly, though.  Can boot option 'cma=0' also
-help avoiding CMA from IOMMU implementation?
