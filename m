@@ -1,175 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaJBDoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 23:44:05 -0400
-Received: from ozlabs.org ([103.22.144.67]:36729 "EHLO ozlabs.org"
+	id S1753718AbaJBDs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 23:48:57 -0400
+Received: from ozlabs.org ([103.22.144.67]:59361 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753488AbaJBDn5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 23:43:57 -0400
-Message-ID: <1412221434.19209.106.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 13/17] cxl: Add base builtin support
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
+	id S1751341AbaJBDs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 1 Oct 2014 23:48:56 -0400
+In-Reply-To: <1412073306-13812-10-git-send-email-mikey@neuling.org>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        benh@kernel.crashing.org
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Thu, 02 Oct 2014 13:43:54 +1000
-In-Reply-To: <20141001120010.A834E140170@ozlabs.org>
-References: <20141001120010.A834E140170@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+Subject: Re: [PATCH v2 09/17] powerpc/mm: Add new hash_page_mm()
+Message-Id: <20141002034855.8E3D514017E@ozlabs.org>
+Date: Thu,  2 Oct 2014 13:48:55 +1000 (EST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 22:00 +1000, Michael Ellerman wrote:
-> On Tue, 2014-30-09 at 10:35:02 UTC, Michael Neuling wrote:
-> > This also adds the cxl_ctx_in_use() function for use in the mm code to see if
-> > any cxl contexts are currently in use.  This is used by the tlbie() to
-> > determine if it can do local TLB invalidations or not.  This also adds get/put
-> > calls for the cxl driver module to refcount the active cxl contexts.
+On Tue, 2014-30-09 at 10:34:58 UTC, Michael Neuling wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> > diff --git a/drivers/misc/cxl/base.c b/drivers/misc/cxl/base.c
-> > new file mode 100644
-> > index 0000000..f4cbcfb
-> > --- /dev/null
-> > +++ b/drivers/misc/cxl/base.c
-> > @@ -0,0 +1,102 @@
-> > +/*
-> > + * Copyright 2014 IBM Corp.
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > + * modify it under the terms of the GNU General Public License
-> > + * as published by the Free Software Foundation; either version
-> > + * 2 of the License, or (at your option) any later version.
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/rcupdate.h>
-> > +#include <asm/errno.h>
-> > +#include <misc/cxl.h>
-> > +#include "cxl.h"
-> > +
-> > +/* protected by rcu */
-> > +static struct cxl_calls *cxl_calls;
-> > +
-> > +static atomic_t use_count = ATOMIC_INIT(0);
-> ...
-> 
-> > +void cxl_ctx_get(void)
-> > +{
-> > +	atomic_inc(&use_count);
-> > +}
-> > +EXPORT_SYMBOL(cxl_ctx_get);
-> > +
-> > +void cxl_ctx_put(void)
-> > +{
-> > +	atomic_dec(&use_count);
-> > +}
-> > +EXPORT_SYMBOL(cxl_ctx_put);
-> > +
-> > +bool cxl_ctx_in_use(void)
-> > +{
-> > +	return (atomic_read(&use_count) != 0);
-> > +}
-> > +EXPORT_SYMBOL(cxl_ctx_in_use);
-> 
-> So as written this results in a function call for every tlbie(), even when no
-> one has ever used a CAPI adapter, or when none are even in the machine.
+> This adds a new function hash_page_mm() based on the existing hash_page().
+> This version allows any struct mm to be passed in, rather than assuming
+> current.  This is useful for servicing co-processor faults which are not in the
+> context of the current running process.
 
-Yep.
+I'm not a big fan. hash_page() is already a train wreck, and this doesn't make
+it any better.
 
-> I think the patch below is a better trade off. It makes the use_count global,
-> but that's not a biggy. The benefit is that the additional code in tlbie()
-> becomes:
-> 
-> 	ld      r10,-29112(r2)
-> 	lwz     r10,0(r10)
-> 	cmpwi   cr7,r10,0
-> 
-> Which is about as good as it can get.
+> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+> index bbdb054..0a5c8c0 100644
+> --- a/arch/powerpc/mm/hash_utils_64.c
+> +++ b/arch/powerpc/mm/hash_utils_64.c
+> @@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
+>  		return;
+>  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
+>  	copro_flush_all_slbs(mm);
+> -	if (get_paca_psize(addr) != MMU_PAGE_4K) {
+> +	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
+>  		get_paca()->context = mm->context;
+>  		slb_flush_and_rebolt();
 
-Nice.. I'll add.  Thanks.
+This is a bit fishy.
 
-Mikey
+If that mm is currently running on another cpu you just failed to update it's
+paca. But I think the call to check_paca_psize() in hash_page() will save you
+on that cpu.
 
-> 
-> cheers
-> 
-> 
-> diff --git a/drivers/misc/cxl/base.c b/drivers/misc/cxl/base.c
-> index f4cbcfbd8dbc..4401d1c2dd33 100644
-> --- a/drivers/misc/cxl/base.c
-> +++ b/drivers/misc/cxl/base.c
-> @@ -16,7 +16,7 @@
->  /* protected by rcu */
->  static struct cxl_calls *cxl_calls;
->  
-> -static atomic_t use_count = ATOMIC_INIT(0);
-> +atomic_t cxl_use_count = ATOMIC_INIT(0);
->  
->  #ifdef CONFIG_CXL_MODULE
->  
-> @@ -65,24 +65,6 @@ void cxl_slbia(struct mm_struct *mm)
->  }
->  EXPORT_SYMBOL(cxl_slbia);
->  
-> -void cxl_ctx_get(void)
-> -{
-> -	atomic_inc(&use_count);
-> -}
-> -EXPORT_SYMBOL(cxl_ctx_get);
-> -
-> -void cxl_ctx_put(void)
-> -{
-> -	atomic_dec(&use_count);
-> -}
-> -EXPORT_SYMBOL(cxl_ctx_put);
-> -
-> -bool cxl_ctx_in_use(void)
-> -{
-> -	return (atomic_read(&use_count) != 0);
-> -}
-> -EXPORT_SYMBOL(cxl_ctx_in_use);
-> -
->  int register_cxl_calls(struct cxl_calls *calls)
+In fact we might be able to remove that synchronisation from
+demote_segment_4k() and always leave it up to check_paca_psize()?
+
+> @@ -989,26 +989,24 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
+>   * -1 - critical hash insertion error
+>   * -2 - access not permitted by subpage protection mechanism
+>   */
+> -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+> +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
 >  {
->  	if (cxl_calls)
-> diff --git a/include/misc/cxl.h b/include/misc/cxl.h
-> index bde46a330881..6e43dca6a792 100644
-> --- a/include/misc/cxl.h
-> +++ b/include/misc/cxl.h
-> @@ -18,12 +18,24 @@ struct cxl_irq_ranges {
->  };
+>  	enum ctx_state prev_state = exception_enter();
+>  	pgd_t *pgdir;
+>  	unsigned long vsid;
+> -	struct mm_struct *mm;
+>  	pte_t *ptep;
+>  	unsigned hugeshift;
+>  	const struct cpumask *tmp;
+>  	int rc, user_region = 0, local = 0;
+>  	int psize, ssize;
 >  
->  #ifdef CONFIG_CXL_BASE
-> +extern atomic_t cxl_use_count;
+> -	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
+> -		ea, access, trap);
+> +	DBG_LOW("%s(ea=%016lx, access=%lx, trap=%lx\n",
+> +		__func__, ea, access, trap);
 >  
->  void cxl_slbia(struct mm_struct *mm);
-> -void cxl_ctx_get(void);
-> -void cxl_ctx_put(void);
-> -bool cxl_ctx_in_use(void);
->  
-> +static inline bool cxl_ctx_in_use(void)
-> +{
-> +	return (atomic_read(&cxl_use_count) != 0);
-> +}
-> +
-> +static inline void cxl_ctx_get(void)
-> +{
-> +	atomic_inc(&cxl_use_count);
-> +}
-> +
-> +static inline void cxl_ctx_put(void)
-> +{
-> +	atomic_dec(&cxl_use_count);
-> +}
->  #else /* CONFIG_CXL_BASE */
->  
->  #define cxl_slbia(...) do { } while (0)
-> 
+>  	/* Get region & vsid */
+>   	switch (REGION_ID(ea)) {
+>  	case USER_REGION_ID:
+>  		user_region = 1;
+> -		mm = current->mm;
+>  		if (! mm) {
+>  			DBG_LOW(" user region with no mm !\n");
+>  			rc = 1;
 
+What about the VMALLOC case where we do:
+		mm = &init_mm;
+		
+Is that what you want? It seems odd that you pass an mm to the routine, but
+then potentially it ends up using a different mm after all depending on the
+address.
+
+
+cheers
