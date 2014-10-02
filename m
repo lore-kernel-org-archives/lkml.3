@@ -1,170 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaJBKJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 06:09:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:19603 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734AbaJBKJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 06:09:12 -0400
-X-IronPort-AV: E=Sophos;i="5.04,638,1406592000"; 
-   d="scan'208";a="177413607"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 1/2] xen/arm: remove handling of XENFEAT_grant_map_identity
-Date: Thu, 2 Oct 2014 11:06:56 +0100
-Message-ID: <1412244417-12251-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410021102480.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410021102480.17038@kaball.uk.xensource.com>
+	id S1751674AbaJBKWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 06:22:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58372 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaJBKWt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 06:22:49 -0400
+Date: Thu, 2 Oct 2014 11:22:16 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jianqun <jay.xu@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, heiko@sntech.de,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Message-ID: <20141002102216.GN4273@sirena.org.uk>
+References: <1410507807-15795-1-git-send-email-jay.xu@rock-chips.com>
+ <1412238960-4220-1-git-send-email-jay.xu@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Is40wmw6z7H9MUbF"
+Content-Disposition: inline
+In-Reply-To: <1412238960-4220-1-git-send-email-jay.xu@rock-chips.com>
+X-Cookie: So you're back... about time...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] ASoC: rockchip-max98090: add driver for rockchip
+ board using a max98090
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep the definition of the flag.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/enlighten.c |    5 ---
- arch/arm/xen/mm32.c      |   85 +---------------------------------------------
- 2 files changed, 1 insertion(+), 89 deletions(-)
+--Is40wmw6z7H9MUbF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 0e15f01..c7ca936 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -261,11 +261,6 @@ static int __init xen_guest_init(void)
- 
- 	xen_setup_features();
- 
--	if (!xen_feature(XENFEAT_grant_map_identity)) {
--		pr_warn("Please upgrade your Xen.\n"
--				"If your platform has any non-coherent DMA devices, they won't work properly.\n");
--	}
--
- 	if (xen_feature(XENFEAT_dom0))
- 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
- 	else
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-index 3b99860..a5a93fc 100644
---- a/arch/arm/xen/mm32.c
-+++ b/arch/arm/xen/mm32.c
-@@ -5,70 +5,6 @@
- 
- #include <xen/features.h>
- 
--static DEFINE_PER_CPU(unsigned long, xen_mm32_scratch_virt);
--static DEFINE_PER_CPU(pte_t *, xen_mm32_scratch_ptep);
--
--static int alloc_xen_mm32_scratch_page(int cpu)
--{
--	struct page *page;
--	unsigned long virt;
--	pmd_t *pmdp;
--	pte_t *ptep;
--
--	if (per_cpu(xen_mm32_scratch_ptep, cpu) != NULL)
--		return 0;
--
--	page = alloc_page(GFP_KERNEL);
--	if (page == NULL) {
--		pr_warn("Failed to allocate xen_mm32_scratch_page for cpu %d\n", cpu);
--		return -ENOMEM;
--	}
--
--	virt = (unsigned long)__va(page_to_phys(page));
--	pmdp = pmd_offset(pud_offset(pgd_offset_k(virt), virt), virt);
--	ptep = pte_offset_kernel(pmdp, virt);
--
--	per_cpu(xen_mm32_scratch_virt, cpu) = virt;
--	per_cpu(xen_mm32_scratch_ptep, cpu) = ptep;
--
--	return 0;
--}
--
--static int xen_mm32_cpu_notify(struct notifier_block *self,
--				    unsigned long action, void *hcpu)
--{
--	int cpu = (long)hcpu;
--	switch (action) {
--	case CPU_UP_PREPARE:
--		if (alloc_xen_mm32_scratch_page(cpu))
--			return NOTIFY_BAD;
--		break;
--	default:
--		break;
--	}
--	return NOTIFY_OK;
--}
--
--static struct notifier_block xen_mm32_cpu_notifier = {
--	.notifier_call	= xen_mm32_cpu_notify,
--};
--
--static void* xen_mm32_remap_page(dma_addr_t handle)
--{
--	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
--	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
--
--	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
--	local_flush_tlb_kernel_page(virt);
--
--	return (void*)virt;
--}
--
--static void xen_mm32_unmap(void *vaddr)
--{
--	put_cpu_var(xen_mm32_scratch_virt);
--}
--
- 
- /* functions called by SWIOTLB */
- 
-@@ -88,13 +24,7 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	
- 		if (!pfn_valid(pfn))
- 		{
--			/* Cannot map the page, we don't know its physical address.
--			 * Return and hope for the best */
--			if (!xen_feature(XENFEAT_grant_map_identity))
--				return;
--			vaddr = xen_mm32_remap_page(handle) + offset;
--			op(vaddr, len, dir);
--			xen_mm32_unmap(vaddr - offset);
-+			/* TODO: cache flush */
- 		} else {
- 			struct page *page = pfn_to_page(pfn);
- 
-@@ -181,22 +111,9 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
- 
- int __init xen_mm32_init(void)
- {
--	int cpu;
--
- 	if (!xen_initial_domain())
- 		return 0;
- 
--	register_cpu_notifier(&xen_mm32_cpu_notifier);
--	get_online_cpus();
--	for_each_online_cpu(cpu) {
--		if (alloc_xen_mm32_scratch_page(cpu)) {
--			put_online_cpus();
--			unregister_cpu_notifier(&xen_mm32_cpu_notifier);
--			return -ENOMEM;
--		}
--	}
--	put_online_cpus();
--
- 	return 0;
- }
- arch_initcall(xen_mm32_init);
--- 
-1.7.10.4
+On Thu, Oct 02, 2014 at 04:36:00PM +0800, Jianqun wrote:
+> The driver is used for rockchip board using a max98090.
+> Test on RK3288 board with max98090.
 
+I'm missing patch 1?
+
+--Is40wmw6z7H9MUbF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJULSdYAAoJECTWi3JdVIfQJOwH/3/qmoPvZ6T66LIO4NIb7+ur
+x6ttQ4ZXAa2oXU9d8QgXXO5RI2ORsnWW0mKXrVCv2kCuP3NSz67+P6at1o7ZfAVF
+/kngISzBF3Aluj9luzET3MfKjJWofXy0svNk/8+tO26D40NpKXfY+3geHJilGbna
+5e9m0wTG3+Z8NFzxH1NDfTLqEHLesPbJtJp+xI+2F7JbKnv6inyTecZiMGAKrUcq
+SOQMkh1/dNDltOrgZURZbd8NHvWYQI4gJR3tT4913eUmURJsTQADL67Z6dpNVlNi
+QpmAhauyDZV1hUcIc6NzaCVLsm4rDsj7UAFLjqlEK4aF+55g8BzliDYmqdne/yQ=
+=atmM
+-----END PGP SIGNATURE-----
+
+--Is40wmw6z7H9MUbF--
