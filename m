@@ -1,120 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaJBCBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 22:01:55 -0400
-Received: from ozlabs.org ([103.22.144.67]:56092 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300AbaJBCBy convert rfc822-to-8bit (ORCPT
+	id S1751472AbaJBCcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 22:32:21 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:51262 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaJBCcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 22:01:54 -0400
-Message-ID: <1412215312.19209.96.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH v2 04/17] powerpc/msi: Improve IRQ bitmap allocator
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: greg@kroah.com, arnd@arndb.de, benh@kernel.crashing.org, anton@samba.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, jk@ozlabs.org,
-        imunsie@au.ibm.com, cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Date: Thu, 02 Oct 2014 12:01:52 +1000
-In-Reply-To: <20141001071331.CBE1B14017C@ozlabs.org>
-References: <20141001071331.CBE1B14017C@ozlabs.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 1 Oct 2014 22:32:19 -0400
+From: Michael Welling <mwelling@ieee.org>
+To: davem@davemloft.net, tony@atomide.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Michael Welling <mwelling@ieee.org>
+Subject: [PATCH] drivers:ethernet:davinci_emac.c:Fixes flaw in mac address handling.
+Date: Wed,  1 Oct 2014 21:32:05 -0500
+Message-Id: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 17:13 +1000, Michael Ellerman wrote:
-> On Tue, 2014-30-09 at 10:34:53 UTC, Michael Neuling wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > Currently msi_bitmap_alloc_hwirqs() will round up any IRQ allocation requests
->                                                                        request
-> > to the nearest power of 2.  eg. ask for 5 IRQs and you'll get 8.  This wastes a
->                              ^ one space after a period, or die!
-> 
-> > lot of IRQs which can be a scarce resource.
-> > 
-> > For cxl we can require multiple IRQs for every contexts that is attached to the
->                                                  context
-> > accelerator.  For AFU directed accelerators, there may be 1000s of contexts
-> 
-> What is an AFU directed accelerator?
+The code currently checks the mac_addr variable that is clearly
+zero'd out during allocation.
 
->From the documentation in the last patch:
+Further code is added to bring the mac_addr from the partial pdata.
 
-AFU Models
-==========
+Signed-off-by: Michael Welling <mwelling@ieee.org>
+---
+ drivers/net/ethernet/ti/davinci_emac.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-    There are two programming models supported by the AFU.  Dedicated
-    and AFU directed.  AFU may support one or both models.
+diff --git a/drivers/net/ethernet/ti/davinci_emac.c b/drivers/net/ethernet/ti/davinci_emac.c
+index ea71251..e06f97c 100644
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1804,11 +1804,9 @@ davinci_emac_of_get_pdata(struct platform_device *pdev, struct emac_priv *priv)
+ 	np = pdev->dev.of_node;
+ 	pdata->version = EMAC_VERSION_2;
+ 
+-	if (!is_valid_ether_addr(pdata->mac_addr)) {
+-		mac_addr = of_get_mac_address(np);
+-		if (mac_addr)
+-			memcpy(pdata->mac_addr, mac_addr, ETH_ALEN);
+-	}
++	mac_addr = of_get_mac_address(np);
++	if (mac_addr)
++		memcpy(pdata->mac_addr, mac_addr, ETH_ALEN);
+ 
+ 	of_property_read_u32(np, "ti,davinci-ctrl-reg-offset",
+ 			     &pdata->ctrl_reg_offset);
+@@ -1834,6 +1832,8 @@ davinci_emac_of_get_pdata(struct platform_device *pdev, struct emac_priv *priv)
+ 	if (auxdata) {
+ 		pdata->interrupt_enable = auxdata->interrupt_enable;
+ 		pdata->interrupt_disable = auxdata->interrupt_disable;
++		if (is_valid_ether_addr(auxdata->mac_addr))
++			memcpy(pdata->mac_addr, auxdata->mac_addr, ETH_ALEN);
+ 	}
+ 
+ 	match = of_match_device(davinci_emac_of_match, &pdev->dev);
+-- 
+1.7.9.5
 
-    In dedicated model only one MMU context is supported.  In this
-    model, only one userspace process can use the accelerator at time.
-
-    In AFU directed model, up to 16K simultaneous contexts can be
-    supported.  This means up to 16K simultaneous userspace
-    applications may use the accelerator (although specific AFUs may
-    support less).  In this mode, the AFU sends a 16 bit context ID
-    with each of its requests.  This tells the PSL which context is
-    associated with this operation.  If the PSL can't translate a
-    request, the ID can also be accessed by the kernel so it can
-    determine the associated userspace context to service this
-    translation with.
-
->                    
-> > attached, hence we can easily run out of IRQs, especially if we are needlessly
-> > wasting them.
-> > 
-> > This changes the msi_bitmap_alloc_hwirqs() to allocate only the required number
->                 x
-> > of IRQs, hence avoiding this wastage.
-> 
-> The crucial detail you failed to mention is that you maintain the behaviour that
-> allocations are naturally aligned.
-
-ok, I'll add that.
-
-> Can you add a check in the test code at the bottom of the file to confirm that
-> please?
-
-Yep
-> 
-> > diff --git a/arch/powerpc/sysdev/msi_bitmap.c b/arch/powerpc/sysdev/msi_bitmap.c
-> > index 2ff6302..961a358 100644
-> > --- a/arch/powerpc/sysdev/msi_bitmap.c
-> > +++ b/arch/powerpc/sysdev/msi_bitmap.c
-> > @@ -20,32 +20,37 @@ int msi_bitmap_alloc_hwirqs(struct msi_bitmap *bmp, int num)
-> >  	int offset, order = get_count_order(num);
-> >  
-> >  	spin_lock_irqsave(&bmp->lock, flags);
-> > -	/*
-> > -	 * This is fast, but stricter than we need. We might want to add
-> > -	 * a fallback routine which does a linear search with no alignment.
-> > -	 */
-> > -	offset = bitmap_find_free_region(bmp->bitmap, bmp->irq_count, order);
-> > +
-> > +	offset = bitmap_find_next_zero_area(bmp->bitmap, bmp->irq_count, 0,
-> > +					    num, (1 << order) - 1);
-> > +	if (offset > bmp->irq_count)
-> > +		goto err;
-> 
-> Can we get a newline here :)
-
-Ok.
-
-> 
-> > +	bitmap_set(bmp->bitmap, offset, num);
-> >  	spin_unlock_irqrestore(&bmp->lock, flags);
-> >  
-> >  	pr_debug("msi_bitmap: allocated 0x%x (2^%d) at offset 0x%x\n",
-> >  		 num, order, offset);
-> 
-> This print out is a bit confusing now, should probably just drop the order.
-
-Arrh, yep.
-
-Thanks,
-Mikey
