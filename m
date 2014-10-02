@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaJBQ5o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 12:57:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57529 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769AbaJBQ5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 12:57:43 -0400
-Date: Thu, 2 Oct 2014 18:57:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>, oleg@redhat.com
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002165739.GC10583@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <542D57D0.4030904@hurleysoftware.com>
- <20141002135250.GB10583@worktop.programming.kicks-ass.net>
- <20141002135805.GF6324@worktop.programming.kicks-ass.net>
- <542D5E3B.6000309@hurleysoftware.com>
-MIME-Version: 1.0
+	id S1753290AbaJBQ5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 12:57:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752912AbaJBQ5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 12:57:47 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542D5E3B.6000309@hurleysoftware.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] dm-log-userspace: fix memory leak on failure path in dm_ulog_tfr_init()
+From: Brassow Jonathan <jbrassow@redhat.com>
+In-Reply-To: <1412197115-32593-1-git-send-email-khoroshilov@ispras.ru>
+Date: Thu, 2 Oct 2014 11:57:31 -0500
+Cc: Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <FEE6E0C5-985D-4DF1-AC42-8F4E0849195A@redhat.com>
+References: <1412197115-32593-1-git-send-email-khoroshilov@ispras.ru>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 10:16:27AM -0400, Peter Hurley wrote:
-> That's what I meant. And the module load patch too.
+On Oct 1, 2014, at 3:58 PM, Alexey Khoroshilov <khoroshilov@ispras.ru> wrote:
 
-Ah, my bad. I thought you were talking about the rfcomm thing.
+> If cn_add_callback() fails in dm_ulog_tfr_init(), it does not
+> deallocate prealloced memory but calls cn_del_callback().
+> It looks like a misprint.
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
+> 
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-In any case, if we change wait_woken() like the below, then we can
-simplify the loops by taking out their signal_pending checks and using
-the wait_woken() return value instead.
+Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
 
----
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -326,8 +326,14 @@ long wait_woken(wait_queue_t *wait, unsi
- 	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
- 	 * also observe all state before the wakeup.
- 	 */
--	if (!(wait->flags & WQ_FLAG_WOKEN))
--		timeout = schedule_timeout(timeout);
-+	if (!(wait->flags & WQ_FLAG_WOKEN)) {
-+		if (___wait_is_interruptible(mode)) {
-+		       if (signal_pending_state(mode, current))
-+			       timeout = -ERESTARTSYS;
-+		       else
-+			       timeout = schedule_timeout(timeout);
-+		}
-+	}
- 	__set_current_state(TASK_RUNNING);
- 
- 	/*
