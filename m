@@ -1,88 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaJBSYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:24:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751767AbaJBSYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:24:45 -0400
-Date: Thu, 2 Oct 2014 14:24:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hrtimer deadlock caused by nohz_full
-Message-ID: <20141002182409.GA29934@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140925141425.GA21702@redhat.com>
- <alpine.DEB.2.10.1409251630210.4604@nanos>
- <20140925234657.GB14870@lerouge>
+	id S1752020AbaJBSY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:24:57 -0400
+Received: from us-mx2.synaptics.com ([192.147.44.131]:37304 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751789AbaJBSYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 14:24:46 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 02 Oct 2014 11:41:33 -0700
+From: Andrew Duggan <aduggan@synaptics.com>
+To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH] HID: rmi: Scan the report descriptor to determine if the device is suitable for the hid-rmi driver
+Date: Thu, 2 Oct 2014 11:15:20 -0700
+Message-ID: <1412273720-4431-1-git-send-email-aduggan@synaptics.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140925234657.GB14870@lerouge>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.2.20.38]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 01:46:59AM +0200, Frederic Weisbecker wrote:
+On composite HID devices there may be multiple HID devices on separate interfaces, but hid-rmi
+should only bind to the touchpad. Commit e19ff99f256aeeff6c07b373e01883b72e049552 simply checked
+that the interface protocol was set to mouse. Unfortuately, it is not always the case that the
+touchpad has the mouse interface protocol set. This patch takes a different approach and scans
+the report descriptor looking for the Vendor Specific Top Level Collection and the associated
+usages and report IDs needed by the hid-rmi driver to interface with the device.
 
- > > >  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
- > > >  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
- > > >  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
- > > >  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
- > > >  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
- > > >  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
- > > >  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
- > > >  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
- > > >  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
- > > >  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
- > > >  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
- > > >  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
- > > >  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
- > > >  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
- > > >  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
- > > >  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
- > > 
- > > hrtimer_interrupt
- > >   tick_sched_timer
- > >     tick_sched_handle
- > >       update_process_times
- > >         irq_work_run
- > > 	  irq_work_run_list
- > > 	    nohz_full_kick_work_func
- > > 	      __tick_nohz_full_check
- > > 	        tick_nohz_restart
- > >                   hrtimer_cancel
- > > 
- > > And that hrtimer_cancel is:
- > > 
- > > static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
- > > {
- > > 	hrtimer_cancel(&ts->sched_timer);
- > > 
- > > Now, that's really bad because we are in the timer callback of
- > > ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
- > > callback to complete.
- > > 
- > > Frederic !?!?
- > 
- > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
- > 
- > I was about to make the pull request, the branch is acked by peterz.
- > Would you like to pull it? It's all merge window material.
- > 
- > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
- > 	nohz/fixes-v3
+Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+---
+ drivers/hid/hid-core.c | 42 +++++++++++++++++++++++++++++++++++++-----
+ include/linux/hid.h    |  8 +++++++-
+ 2 files changed, 44 insertions(+), 6 deletions(-)
 
-I'm now hitting this with such regularity that it's preventing me from
-tracking down other bugs.  Can we get this merged soon please ?
-
-	Dave
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 12b6e67..498f674 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -686,6 +686,23 @@ static void hid_scan_input_usage(struct hid_parser *parser, u32 usage)
+ 
+ 	if (usage == HID_DG_CONTACTID)
+ 		hid->group = HID_GROUP_MULTITOUCH;
++
++	if (usage == 0xff000004 && parser->global.report_id == 0xb)
++		parser->scan_flags |= HID_SCAN_FLAG_RMI_INPUT_READ;
++
++	if (usage == 0xff000005 && parser->global.report_id == 0xc)
++		parser->scan_flags |= HID_SCAN_FLAG_RMI_ATTN;
++}
++
++static void hid_scan_output_usage(struct hid_parser *parser, u32 usage)
++{
++	struct hid_device *hid = parser->device;
++
++	if (usage == 0xff000002 && parser->global.report_id == 0x9)
++		parser->scan_flags |= HID_SCAN_FLAG_RMI_WRITE;
++
++	if (usage == 0xff000003 && parser->global.report_id == 0xa)
++		parser->scan_flags |= HID_SCAN_FLAG_RMI_OUTPUT_READ;
+ }
+ 
+ static void hid_scan_feature_usage(struct hid_parser *parser, u32 usage)
+@@ -693,6 +710,9 @@ static void hid_scan_feature_usage(struct hid_parser *parser, u32 usage)
+ 	if (usage == 0xff0000c5 && parser->global.report_count == 256 &&
+ 	    parser->global.report_size == 8)
+ 		parser->scan_flags |= HID_SCAN_FLAG_MT_WIN_8;
++
++	if (usage == 0xff000006 && parser->global.report_id == 0xf)
++		parser->scan_flags |= HID_SCAN_FLAG_RMI_MODE;
+ }
+ 
+ static void hid_scan_collection(struct hid_parser *parser, unsigned type)
+@@ -702,6 +722,9 @@ static void hid_scan_collection(struct hid_parser *parser, unsigned type)
+ 	if (((parser->global.usage_page << 16) == HID_UP_SENSOR) &&
+ 	    type == HID_COLLECTION_PHYSICAL)
+ 		hid->group = HID_GROUP_SENSOR_HUB;
++
++	if ((parser->global.usage_page << 16) == HID_UP_MSVENDOR)
++		parser->scan_flags |= HID_SCAN_FLAG_VENDOR_SPECIFIC;
+ }
+ 
+ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+@@ -725,6 +748,10 @@ static int hid_scan_main(struct hid_parser *parser, struct hid_item *item)
+ 			hid_scan_input_usage(parser, parser->local.usage[i]);
+ 		break;
+ 	case HID_MAIN_ITEM_TAG_OUTPUT:
++		if (data & HID_MAIN_ITEM_CONSTANT)
++			break;
++		for (i = 0; i < parser->local.usage_index; i++)
++			hid_scan_output_usage(parser, parser->local.usage[i]);
+ 		break;
+ 	case HID_MAIN_ITEM_TAG_FEATURE:
+ 		for (i = 0; i < parser->local.usage_index; i++)
+@@ -783,11 +810,16 @@ static int hid_scan_report(struct hid_device *hid)
+ 	* Vendor specific handlings
+ 	*/
+ 	if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+-	    (hid->group == HID_GROUP_GENERIC) &&
+-	    /* only bind to the mouse interface of composite USB devices */
+-	    (hid->bus != BUS_USB || hid->type == HID_TYPE_USBMOUSE))
+-		/* hid-rmi should take care of them, not hid-generic */
+-		hid->group = HID_GROUP_RMI;
++	    (hid->group == HID_GROUP_GENERIC)) {
++		if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
++			&& (parser->scan_flags & HID_SCAN_FLAG_RMI_WRITE)
++			&& (parser->scan_flags & HID_SCAN_FLAG_RMI_INPUT_READ)
++			&& (parser->scan_flags & HID_SCAN_FLAG_RMI_OUTPUT_READ)
++			&& (parser->scan_flags & HID_SCAN_FLAG_RMI_ATTN)
++			&& (parser->scan_flags & HID_SCAN_FLAG_RMI_MODE))
++			/* hid-rmi should take care of them, not hid-generic */
++			hid->group = HID_GROUP_RMI;
++	}
+ 
+ 	/*
+ 	 * Vendor specific handlings
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index f53c4a9..82d1f82 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -547,7 +547,13 @@ static inline void hid_set_drvdata(struct hid_device *hdev, void *data)
+ #define HID_GLOBAL_STACK_SIZE 4
+ #define HID_COLLECTION_STACK_SIZE 4
+ 
+-#define HID_SCAN_FLAG_MT_WIN_8			0x00000001
++#define HID_SCAN_FLAG_MT_WIN_8			BIT(0)
++#define HID_SCAN_FLAG_VENDOR_SPECIFIC		BIT(1)
++#define HID_SCAN_FLAG_RMI_WRITE			BIT(2)
++#define HID_SCAN_FLAG_RMI_INPUT_READ		BIT(3)
++#define HID_SCAN_FLAG_RMI_OUTPUT_READ		BIT(3)
++#define HID_SCAN_FLAG_RMI_ATTN			BIT(4)
++#define HID_SCAN_FLAG_RMI_MODE			BIT(5)
+ 
+ struct hid_parser {
+ 	struct hid_global     global;
+-- 
+1.9.1
 
