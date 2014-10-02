@@ -1,124 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaJBSCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:02:22 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:39466 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaJBSCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:02:20 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        akpm@linux-foundation.org, adobriyan@gmail.com, rui.xiang@huawei.com,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
-        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
-        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>
-	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-Date: Thu, 02 Oct 2014 11:01:50 -0700
-In-Reply-To: <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-	(Nicolas Dichtel's message of "Thu, 2 Oct 2014 17:25:01 +0200")
-Message-ID: <87h9zmpcz5.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751868AbaJBSF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:05:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37733 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208AbaJBSFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 14:05:54 -0400
+Date: Thu, 2 Oct 2014 13:05:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Michael Welling <mwelling@ieee.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
+        <pmeerw@pmeerw.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
+ sensor
+Message-ID: <20141002180553.GI7933@saruman>
+Reply-To: <balbi@ti.com>
+References: <20140924143610.GA17997@saruman>
+ <20140925221619.GA10644@saruman>
+ <20140927041959.GA28445@saruman>
+ <20140929140227.GD32403@saruman>
+ <20140929183856.GA11871@sysresccd>
+ <20140929185325.GA1939@saruman>
+ <20140929223833.GA13111@sysresccd>
+ <20140929224638.GA21681@saruman>
+ <20140929234159.GB13111@sysresccd>
+ <20140930212204.GC13806@saruman>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Y4y3EO8f+ZEB+5cffYDs0HMTxdKcJHlU=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: No description available.
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4997]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Nicolas Dichtel <nicolas.dichtel@6wind.com>
-X-Spam-Relay-Country: 
-X-Spam-Timing: total 394 ms - load_scoreonly_sql: 0.05 (0.0%),
-	signal_user_changed: 2.8 (0.7%), b_tie_ro: 1.93 (0.5%), parse: 0.96 (0.2%),
-	extract_message_metadata: 20 (5.0%), get_uri_detail_list: 5 (1.3%),
-	tests_pri_-1000: 5 (1.3%), tests_pri_-950: 1.14 (0.3%), tests_pri_-900: 1.29
-	(0.3%), tests_pri_-400: 30 (7.5%), check_bayes: 28 (7.1%), b_tokenize: 10
-	(2.6%), b_tok_get_all: 9 (2.2%), b_comp_prob: 3.6 (0.9%), b_tok_touch_all:
-	2.2 (0.6%), b_finish: 0.76 (0.2%), tests_pri_0: 325 (82.4%), tests_pri_500:
-	4.5 (1.1%), rewrite_mail: 0.00 (0.0%)
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the directory entries
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FK65GREB+Evh/hTL"
+Content-Disposition: inline
+In-Reply-To: <20140930212204.GC13806@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+--FK65GREB+Evh/hTL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: Thierry Herbelot <thierry.herbelot@6wind.com>
->
-> The current implementation for the directories in /proc is using a single
-> linked list. This is slow when handling directories with large numbers of
-> entries (eg netdevice-related entries when lots of tunnels are opened).
->
-> This patch enables multiple linked lists. A hash based on the entry name is
-> used to select the linked list for one given entry.
->
-> The speed creation of netdevices is faster as shorter linked lists must be
-> scanned when adding a new netdevice.
+Hi,
 
-Is the directory of primary concern /proc/net/dev/snmp6 ?
+On Tue, Sep 30, 2014 at 04:22:04PM -0500, Felipe Balbi wrote:
+> On Mon, Sep 29, 2014 at 06:41:59PM -0500, Michael Welling wrote:
+> > On Mon, Sep 29, 2014 at 05:46:38PM -0500, Felipe Balbi wrote:
+> > > Hi,
+> > >=20
+> > > On Mon, Sep 29, 2014 at 05:38:33PM -0500, Michael Welling wrote:
+> > > > > > > Alright, this is already ridiculous. Andrew, if I resend the =
+patch can
+> > > > > > > you apply it since maintainer has been ignoring this thread a=
+nyway ?
+> > > > > > >=20
+> > > > > >=20
+> > > > > > Do you reall think this is the best way to approach this?
+> > > > >=20
+> > > > > when maintainer doesn't respond for weeks, yeah! Sure it is.
+> > > > >=20
+> > > > > > Perhaps it would be better to explain what each field of the
+> > > > > > configuration register does and then we can move on.
+> > > > >=20
+> > > > > perhaps Jonathan could tell me exactly what he wants because I ca=
+n't
+> > > > > handle back-and-forth anymore. Specially when he complains about =
+stuff
+> > > > > he asked me to modify himself.
+> > > > >
+> > > > > > In particular the OPT3001_CONFIGURATION_L field needs to be exp=
+lained
+> > > > > > such that the ABI can be properly applied.
+> > > > > >=20
+> > > > > > Looking at the docs for the Windows demo program the field is a=
+ssociated
+> > > > > > with a latch configuration. What does this bit field actually d=
+o?
+> > > >=20
+> > > > Still no technical information. Without all the facts how can you e=
+xpect
+> > > > him to tell you what he wants?
+> > >=20
+> > > yeah, because clearly he doesn't know himself, right ?
+> >=20
+> > Could you explain how it works to me then?
+>=20
+> checking how much of the docs I can expose now, gimme a couple days.
 
-Unless I have configured my networking stack weird by mistake that
-is the only directory under /proc/net that grows when we add an
-interface.
+alright, here's a snippet of what's on preliminary docs:
 
-I just want to make certain I am seeing the same things that you are
-seeing.
+Latch field (read or write).
+The latch field controls the functionality of the interrupt reporting
+mechanisms: the INT pin, the flag high field (FH), and flag low field (FL).
+This bit selects the reporting style between a latched window-style compari=
+son
+and a transparent hysteresis-style comparison.
 
-I feel silly for overlooking this directory when the rest of the
-scalability work was done.
+0 =3D The device functions in transparent hysteresis-style comparison opera=
+tion,
+where the three interrupt reporting mechanisms directly reflect the compari=
+son
+of the result register with the high- and low-limit registers with no
+user-controlled clearing event. See the Interrupt Operation, INT Pin, and
+Interrupt Reporting Mechanisms section for further details.
 
-> Here are some numbers:
->
-> dummy30000.batch contains 30 000 times 'link add type dummy'.
->
-> Before the patch:
-> time ip -b dummy30000.batch
-> real    2m32.221s
-> user    0m0.380s
-> sys     2m30.610s
->
-> After the patch:
-> time ip -b dummy30000.batch
-> real    1m57.190s
-> user    0m0.350s
-> sys     1m56.120s
->
-> The single 'subdir' list head is replaced by a subdir hash table. The subdir
-> hash buckets are only allocated for directories. The number of hash buckets
-> is a compile-time parameter.
+1 =3D The device functions in latched window-style comparison operation, la=
+tching
+the interrupt reporting mechanisms until a user-controlled clearing event.
 
-That looks like a nice speed up.  A couple of things.
+[...]
 
-With sysfs and sysctl when faced this class of challenge we used an
-rbtree instead of a hash table.  That should use less memory and scale
-better.
+7.4.2.2 Transparent Hysteresis-Style Comparison Mode
+The transparent hysteresis-style comparison mode is typically used when a
+single digital signal is desired that indicates whether the input light is
+higher than or lower than a light level of interest. If the result register=
+ is
+higher than the high-limit register for a consecutive number of events set =
+by
+the fault count field, the INT line is set to active, the flag high field is
+set to 1, and the flag low field is set to 0. If the result register is low=
+er
+than the lowlimit register for a consecutive number of events set by the fa=
+ult
+count field, the INT line is set to inactive, the flag low field is set to =
+1,
+and the flag high field is set to 0. The INT pin and flag high and flag low
+fields do not change state with configuration reads and writes. The INT pin=
+ and
+flag fields continually report the appropriate comparison of the light to t=
+he
+low-limit and high-limit registers. The device does not respond to the SMBus
+alert response protocol while in either of the two transparent comparison m=
+odes
+(configuration register, latch field =3D 0).
 
-I am concerned about a fixed sized hash table moving the location where
-we fall off a cliff but not removing the cliff itself.
+--=20
+balbi
 
-I suppose it would be possible to use the new fancy resizable hash
-tables but previous work on sysctl and sysfs suggests that we don't look
-up these entries sufficiently to require a hash table.  We just need a
-data structure that doesn't fall over at scale, and the rbtrees seem to
-do that very nicely.
+--FK65GREB+Evh/hTL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> For all functions which handle directory entries, an additional check on the
-> directory nature of the dir entry ensures that pde_hash_buckets was allocated.
-> This check was not needed as subdir was present for all dir entries, whether
-> actual directories or simple files.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-That bit of logic seems reasonable.
+iQIcBAEBAgAGBQJULZQAAAoJEIaOsuA1yqREQTEP/1cZ0zj52i8KKfyHA0r3r0m0
+mJf4kikkBs3Cty/oxC4DLFVb2rR5bfYdSTp2CeFaqdN7/nQf/2PhW+zy0kIIv3JP
+VLThdUcQkIaF+bSYHtHQ/BNzX8LcTbxnEGcHEC7f13VbKkXka0yLCCejvq6wq0ja
+2LGBldi8hiwGvMx/fgIY3GKr3vfFFtIF6Nyw4v6xR/RmgxgzM04S1jB0EVOb++Bx
+OmTxRp7aYr4j86nfPY7QGXGGsO/N3mzlv1siMutChZV39pADfymkZH8WfQh4BBUD
+d9TJBPdNK+eRLw6/8pSEg082vVjbmMRUyloJqrR25fE2/4f3NJTH1CDzn9FTvKGV
+NpekSPsGOVUtlA721Ic32r9XcAekgWT13XgWoUNCo/Z68X7XJb036VdDMPd4WL4v
+gdfr8avOThlCJ/W49tMw2PvCG+DKWwDP4OwzfdcqA4Rd4ujTXJoi5+x01slZkuKe
+ULeOeJ0lluOTcmtg9q21P29VpXsX3GaJg1Yfo/mevUBjOZr036HvmfehBCIj7zIM
+dCCVdKp+aVLcbtyTmzt7uXavwmlz+AqYIYTC8/XOc8Vj/GMqb0HAGhE9igQSdeJM
+OTOLqghUAR9JL9wIcx+8FMowgbfbTXOMN7kPGTEttC4W9XYrmskDpnyy1Zo+j4/U
+n+0HKKA5sFwX6Bcn/UQv
+=Pg79
+-----END PGP SIGNATURE-----
 
-Eric
+--FK65GREB+Evh/hTL--
