@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaJBTo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:44:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54727 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799AbaJBTo6 (ORCPT
+	id S1752849AbaJBTpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:45:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43487 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752025AbaJBTpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:44:58 -0400
-Date: Thu, 2 Oct 2014 12:44:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heinrich Schuchardt <xypron.debian@gmx.de>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
- (v2)
-Message-Id: <20141002124457.d1478b8aa91265e6ff171ab7@linux-foundation.org>
-In-Reply-To: <20141002104552.GC19748@quack.suse.cz>
-References: <1411141516-1918-1-git-send-email-avagin@openvz.org>
-	<20140924105155.GA24411@quack.suse.cz>
-	<20140924131947.bc083e7f34981bbf73a364f1@linux-foundation.org>
-	<20140925083010.GA3096@quack.suse.cz>
-	<20141002104552.GC19748@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 2 Oct 2014 15:45:38 -0400
+Message-ID: <542DAB60.7040807@free-electrons.com>
+Date: Thu, 02 Oct 2014 21:45:36 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Lennox Wu <lennox.wu@gmail.com>
+CC: Liqin Chen <liqin.linux@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH] [RESEND] score: remove deprecated IRQF_DISABLED
+References: <CAF0htA4B=jhBu_YmSTj9=BQ-m3_UGRggwop5ZtgPbO9Y45V+aA@mail.gmail.com>	<1412157898-7040-1-git-send-email-michael.opdenacker@free-electrons.com> <CAF0htA7Bs-wMp55G1xYR6iPSZ6vZ2Nsc9peL19Pqicf=jrGUAw@mail.gmail.com>
+In-Reply-To: <CAF0htA7Bs-wMp55G1xYR6iPSZ6vZ2Nsc9peL19Pqicf=jrGUAw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Oct 2014 12:45:52 +0200 Jan Kara <jack@suse.cz> wrote:
+Hi Lennox,
 
-> > With the patch you'll always have the second case. So without the patch you
-> > don't receive some events if the file has at least 2 hardlinks and then
-> > gets unlinked. I think the risk that some application relies on *not* getting
-> > those events is pretty low (especially since in the common case of file
-> > without hardlinks you will get all those events).
->   Ping Andrew? Do you still need more info or are you now OK to merge the
-> patch?
+On 10/01/2014 06:25 PM, Lennox Wu wrote:
+> Hi Michael,
+> I will merge it and then issue a PULL request this weekend.
+> Thanks.
 
-Resend please, with a completed changelog.
+That would be great. Thanks for taking this patch into account!
+
+Michael.
+
+-- 
+Michael Opdenacker, CEO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
