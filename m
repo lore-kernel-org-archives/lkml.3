@@ -1,201 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaJBX31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 19:29:27 -0400
-Received: from mail-yk0-f182.google.com ([209.85.160.182]:46490 "EHLO
-	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaJBX3Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 19:29:25 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: core: Fix "'foo * bar' should be 'foo *bar'" errors
-Date: Thu,  2 Oct 2014 18:28:41 -0500
-Message-Id: <1412292521-10215-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751876AbaJBX3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 19:29:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46269 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590AbaJBX3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 19:29:50 -0400
+Date: Fri, 3 Oct 2014 01:29:44 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: gregkh@linuxfoundation.org, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
+        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
+        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
+	support
+Message-ID: <20141002232944.GT14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <20140928150329.GC5023@mtj.dyndns.org> <20140929212208.GV17349@wotan.suse.de> <20140929212601.GF15925@htj.dyndns.org> <20140930072159.GC14081@wotan.suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930072159.GC14081@wotan.suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "'foo * bar' should be 'foo *bar'" errors
+On Tue, Sep 30, 2014 at 09:21:59AM +0200, Luis R. Rodriguez wrote:
+> On Mon, Sep 29, 2014 at 05:26:01PM -0400, Tejun Heo wrote:
+> > Hello, Luis.
+> > 
+> > On Mon, Sep 29, 2014 at 11:22:08PM +0200, Luis R. Rodriguez wrote:
+> > > > > +	/* For now lets avoid stupid bug reports */
+> > > > > +	if (!strcmp(bus->name, "pci") ||
+> > > > > +	    !strcmp(bus->name, "pci_express") ||
+> > > > > +	    !strcmp(bus->name, "hid") ||
+> > > > > +	    !strcmp(bus->name, "sdio") ||
+> > > > > +	    !strcmp(bus->name, "gameport") ||
+> > > > > +	    !strcmp(bus->name, "mmc") ||
+> > > > > +	    !strcmp(bus->name, "i2c") ||
+> > > > > +	    !strcmp(bus->name, "platform") ||
+> > > > > +	    !strcmp(bus->name, "usb"))
+> > > > > +		return true;
+> > > > 
+> > > > Ugh... things like this tend to become permanent.  Do we really need
+> > > > this?  And how are we gonna find out what's broken why w/o bug
+> > > > reports?
+> > > 
+> > > Yeah... well we have two options, one is have something like this to
+> > > at least make it generally useful or remove this and let folks who
+> > > care start fixing async for all modules. The downside to removing
+> > > this is it makes async probe pretty much useless on most systems
+> > > right now, it would mean systemd would have to probably consider
+> > > the list above if they wanted to start using this without expecting
+> > > systems to not work.
+> > 
+> > So, I'd much prefer blacklist approach if something like this is a
+> > necessity.  That way, we'd at least know what doesn't work.
+> 
+> For buses? Or do you mean you'd want to wait until we have a decent
+> list of drivers with the sync probe flag set? If the later it may take
+> a while to get that list for this to be somewhat useful.
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_ap.c        |  2 +-
- drivers/staging/rtl8723au/core/rtw_led.c       |  3 ++-
- drivers/staging/rtl8723au/core/rtw_mlme.c      |  2 +-
- drivers/staging/rtl8723au/core/rtw_security.c  | 27 +++++++++++++-------------
- drivers/staging/rtl8723au/core/rtw_wlan_util.c |  2 +-
- 5 files changed, 19 insertions(+), 17 deletions(-)
+OK I'm removing this part and it works well for me now on my laptop
+and an AMD server without a white list, so all the junk above will
+be removed in the next series.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 6b4092f..4c3d4c8 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -1819,7 +1819,7 @@ void rtw_ap_restore_network(struct rtw_adapter *padapter)
- {
- 	struct mlme_priv *mlmepriv = &padapter->mlmepriv;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
--	struct sta_priv * pstapriv = &padapter->stapriv;
-+	struct sta_priv *pstapriv = &padapter->stapriv;
- 	struct sta_info *psta;
- 	struct security_priv *psecuritypriv = &padapter->securitypriv;
- 	struct list_head *phead, *plist, *ptmp;
-diff --git a/drivers/staging/rtl8723au/core/rtw_led.c b/drivers/staging/rtl8723au/core/rtw_led.c
-index 989cda2..fa3dcff 100644
---- a/drivers/staging/rtl8723au/core/rtw_led.c
-+++ b/drivers/staging/rtl8723au/core/rtw_led.c
-@@ -51,7 +51,8 @@ void BlinkWorkItemCallback23a(struct work_struct *work)
- /*	Description: */
- /*		Reset status of led_8723a object. */
- /*  */
--void ResetLedStatus23a(struct led_8723a * pLed) {
-+void ResetLedStatus23a(struct led_8723a *pLed)
-+{
- 
- 	pLed->CurrLedState = RTW_LED_OFF; /*  Current LED state. */
- 	pLed->bLedOn = false; /*  true if LED is ON, false if LED is OFF. */
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme.c b/drivers/staging/rtl8723au/core/rtw_mlme.c
-index 1f60064..00e7ad0 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme.c
-@@ -1766,7 +1766,7 @@ exit:
- 	return ret;
- }
- 
--int rtw_set_auth23a(struct rtw_adapter * adapter,
-+int rtw_set_auth23a(struct rtw_adapter *adapter,
- 		    struct security_priv *psecuritypriv)
- {
- 	struct cmd_obj *pcmd;
-diff --git a/drivers/staging/rtl8723au/core/rtw_security.c b/drivers/staging/rtl8723au/core/rtw_security.c
-index 76371ae..b488622 100644
---- a/drivers/staging/rtl8723au/core/rtw_security.c
-+++ b/drivers/staging/rtl8723au/core/rtw_security.c
-@@ -30,12 +30,12 @@ struct arc4context
- 	u8 state[256];
- };
- 
--static void arcfour_init(struct arc4context	*parc4ctx, u8 * key, u32	key_len)
-+static void arcfour_init(struct arc4context *parc4ctx, u8 *key, u32 key_len)
- {
- 	u32	t, u;
- 	u32	keyindex;
- 	u32	stateindex;
--	u8 * state;
-+	u8 *state;
- 	u32	counter;
- 
- 	state = parc4ctx->state;
-@@ -62,7 +62,7 @@ static u32 arcfour_byte(	struct arc4context	*parc4ctx)
- 	u32 x;
- 	u32 y;
- 	u32 sx, sy;
--	u8 * state;
-+	u8 *state;
- 
- 	state = parc4ctx->state;
- 	x = (parc4ctx->x + 1) & 0xff;
-@@ -78,8 +78,8 @@ static u32 arcfour_byte(	struct arc4context	*parc4ctx)
- }
- 
- static void arcfour_encrypt(	struct arc4context	*parc4ctx,
--	u8 * dest,
--	u8 * src,
-+	u8 *dest,
-+	u8 *src,
- 	u32 len)
- {
- 	u32	i;
-@@ -221,7 +221,7 @@ void rtw_wep_decrypt23a(struct rtw_adapter *padapter,
- 	u8 keyindex;
- 	struct rx_pkt_attrib *prxattrib = &precvframe->attrib;
- 	struct security_priv *psecuritypriv = &padapter->securitypriv;
--	struct sk_buff * skb = precvframe->pkt;
-+	struct sk_buff *skb = precvframe->pkt;
- 
- 	pframe = skb->data;
- 
-@@ -266,7 +266,7 @@ void rtw_wep_decrypt23a(struct rtw_adapter *padapter,
- 
- /* 3		===== TKIP related ===== */
- 
--static u32 secmicgetuint32(u8 * p)
-+static u32 secmicgetuint32(u8 *p)
- /*  Convert from Byte[] to u32 in a portable way */
- {
- 	s32 i;
-@@ -280,7 +280,7 @@ static u32 secmicgetuint32(u8 * p)
- 	return res;
- }
- 
--static void secmicputuint32(u8 * p, u32 val)
-+static void secmicputuint32(u8 *p, u32 val)
- /*  Convert from long to Byte[] in a portable way */
- {
- 	long i;
-@@ -304,7 +304,7 @@ static void secmicclear(struct mic_data *pmicdata)
- 
- }
- 
--void rtw_secmicsetkey23a(struct mic_data *pmicdata, u8 * key)
-+void rtw_secmicsetkey23a(struct mic_data *pmicdata, u8 *key)
- {
- 	/*  Set the key */
- 
-@@ -340,7 +340,7 @@ void rtw_secmicappend23abyte23a(struct mic_data *pmicdata, u8 b)
- 
- }
- 
--void rtw_secmicappend23a(struct mic_data *pmicdata, u8 * src, u32 nbytes)
-+void rtw_secmicappend23a(struct mic_data *pmicdata, u8 *src, u32 nbytes)
- {
- 
- 	/*  This is simple */
-@@ -352,7 +352,7 @@ void rtw_secmicappend23a(struct mic_data *pmicdata, u8 * src, u32 nbytes)
- 
- }
- 
--void rtw_secgetmic23a(struct mic_data *pmicdata, u8 * dst)
-+void rtw_secgetmic23a(struct mic_data *pmicdata, u8 *dst)
- {
- 
- 	/*  Append the minimum padding */
-@@ -374,7 +374,8 @@ void rtw_secgetmic23a(struct mic_data *pmicdata, u8 * dst)
- 
- }
- 
--void rtw_seccalctkipmic23a(u8 * key, u8 *header, u8 *data, u32 data_len, u8 *mic_code, u8 pri)
-+void rtw_seccalctkipmic23a(u8 *key, u8 *header, u8 *data, u32 data_len,
-+			   u8 *mic_code, u8 pri)
- {
- 
- 	struct mic_data	micdata;
-@@ -728,7 +729,7 @@ int rtw_tkip_decrypt23a(struct rtw_adapter *padapter,
- 	struct	sta_info		*stainfo;
- 	struct	rx_pkt_attrib *prxattrib = &precvframe->attrib;
- 	struct	security_priv *psecuritypriv = &padapter->securitypriv;
--	struct sk_buff * skb = precvframe->pkt;
-+	struct sk_buff *skb = precvframe->pkt;
- 	int res = _SUCCESS;
- 
- 	pframe = skb->data;
-diff --git a/drivers/staging/rtl8723au/core/rtw_wlan_util.c b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-index 09c44a5..5c4006a 100644
---- a/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-@@ -1080,7 +1080,7 @@ bool is_ap_in_tkip23a(struct rtw_adapter *padapter)
- 		return false;
- }
- 
--bool should_forbid_n_rate23a(struct rtw_adapter * padapter)
-+bool should_forbid_n_rate23a(struct rtw_adapter *padapter)
- {
- 	u32 i;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
--- 
-1.9.1
-
+  Luis
