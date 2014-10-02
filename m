@@ -1,126 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaJBMqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:46:43 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:64707 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaJBMql (ORCPT
+	id S1752414AbaJBMuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:50:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43098 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaJBMuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:46:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Date: Thu, 02 Oct 2014 14:46:30 +0200
-Message-ID: <15893883.nvuW3ndylz@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141002121508.GM1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <2466832.0XJezjdvYs@wuerfel> <20141002121508.GM1786@lahna.fi.intel.com>
+	Thu, 2 Oct 2014 08:50:10 -0400
+Message-ID: <542D49FD.7040204@codeaurora.org>
+Date: Thu, 02 Oct 2014 15:50:05 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:s0q4W33CCoxE0WNT1sRnmhmo0XvoU2yJyYHR/mnOTax
- o4d1Ob2iMEBIeENGeNs3IuiuqehNPQQZFABYZHB+L5aOSxLBmT
- LuN3h4hRi4R5ToPvmaGdoY6hIBCavV9C7z/5WXBJ3ew7BsWI3J
- SPnzFUcbn3aazylI59scwQE4a8d49scJnoSI/OlN7obV8L6XRh
- beGzqE+19PSX0fYTcOSvNR/AdSjp5J+jflmw9p0qn4wUizNxI/
- NjaXaJMp1MO7x22SSEP2PGM+7JmOP+sDj/A9ekELi4jH/AUUJ6
- Qj1T++OYVuvHjijtvxOBZaakOGyevvxsxZ33u76+DAkvHKXkwU
- zLyaKEvC8yTQfLUywMM0=
-X-UI-Out-Filterresults: notjunk:1;
+To: Richard Weinberger <richard@nod.at>, dedeking1@gmail.com
+CC: Artem Bityutskiy <dedekind1@gmail.com>, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC/PATCH 1/5] mtd: ubi: Read disturb infrastructure
+References: <1411886220-8208-1-git-send-email-tlinder@codeaurora.org> <5427C45C.2080506@nod.at> <5427CB6E.7010007@codeaurora.org> <5427CCD8.2090605@nod.at> <5427E6FE.3090906@codeaurora.org> <5427E8CA.8000904@nod.at>
+In-Reply-To: <5427E8CA.8000904@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
-> > I thought when we had discussed the subsystem specific bindings, the
-> > consensus there was to have subsystem specific accessors and
-> > properties/tables.
-> > 
-> > I would argue that for everything that ACPI already has (interrupts,
-> > registers, gpio, dmaengine, ...) the native method should be used,
-> > possibly using _DSD to provide naming for otherwise anonymous references.
-> 
-> Absolutely. That's precisely what we do in the GPIO patch of this
-> series. E.g we use ACPI GpioIo/GpioInt _CRS resources but give name to
-> the GPIOs with the help of _DSD.
+Hi Richard,
 
-Ok, I've looked at the example again:
+Sorry it took me some time to answer, got per-occupied with some urgent 
+staff.
 
-+       Device (DEV0)
-+       {
-+               Name (_CRS, ResourceTemplate () {
-+                       GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+                               "\\_SB.PCI0.LPC", 0, ResourceConsumer) {0}
-+                       GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+                               "\\_SB.PCI0.LPC", 0, ResourceConsumer) {1}
-+                       ...
-+               })
-+
-+               Name (_DSD, Package () {
-+                       ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+                       Package () {
-+                               Package () {"reset-gpio", {^DEV0, 0, 0, 0}},
-+                               Package () {"shutdown-gpio", {^DEV0, 1, 0, 0}},
-+                       }
-+               })
-+       }
+On 9/28/2014 1:54 PM, Richard Weinberger wrote:
+> Am 28.09.2014 12:46, schrieb Tanya Brokhman:
+>> On 9/28/2014 11:54 AM, Richard Weinberger wrote:
+>>> Am 28.09.2014 10:48, schrieb Tanya Brokhman:
+>>>>>> @@ -424,6 +440,8 @@ struct ubi_fm_sb {
+>>>>>>         __be32 used_blocks;
+>>>>>>         __be32 block_loc[UBI_FM_MAX_BLOCKS];
+>>>>>>         __be32 block_ec[UBI_FM_MAX_BLOCKS];
+>>>>>> +    __be32 block_rc[UBI_FM_MAX_BLOCKS];
+>>>>>> +    __be64 block_let[UBI_FM_MAX_BLOCKS];
+>>>>>
+>>>>> Doesn't this break the fastmap on-disk layout?
+>>>>
+>>>> What do you mean "break"? I verified fastmap feature is working. the whole read-disturb depends on it so I tested this thoroughly.
+>>>
+>>> Did you write a fastmap with your changes applied and then an attach using a fastmap implementation *without*
+>>> you changes?
+>>> I bet it will not work because the disk layout is now different.
+>>
+>> you're right, it wont work. I did a set of attach/detach tests to verify fastmap, but of course with my changes.
+>>
+>>> Linux is not the only user of fastmap. We need to be very careful here.
+>>
+>> Could you please elaborate here? I'm not sure I understand the use case you're referring to.
+>
+> Consider the case where you have a board with a fastmap enabled bootloader and a Linux OS.
+> The bootloader does a fastmap attach and boots the kernel from UBI and the kernel it self has the rootfs
+> on UBI too. If you install a new kernel with your changes applied it will write the fastmap in a different
+> format and the bootloader will fail badly. In worst case the board bricks, in best case the bootloader can fall back
+> to scanning mode but it will be slow and the customer unhappy.
+>
 
-tell me if I'm interpreting this right: you use _CRS to define a reference
-to the actual GPIO controller here, but then in your _DSD you have something
-that is a bit like the DT gpio binding, except that it doesn't refer to
-a GPIO controller but to the GPIO using device itself.
+Ok, I understand the problem now. I wanted to discuss a possible 
+solution before implementing it:
+We have a "fastmap version" in fm_sb. At the moment UBI_FM_FMT_VERSION = 
+1 and any other is not supported. We can use that; Add another fm 
+version (UBI_FM_FMT_VERSION_RD = 2) and then decide according to it. 
+Meaning, if during attach process we find fm superblock we check it's 
+version, if it's != UBI_FM_FMT_VERSION_RD, we fall back to full scan. 
+The next fastmap will be written with the new layout (and new version 
+number) so second boot will attach from fastmap without any issues.
 
-When a driver calls dev_get_named_gpiod_from_child, you then lookup the
-"reset-gpio" (or other) properties to find the reference to the _CRS.
+>
+> Thanks,
+> //richard
+>
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
 
-Why can't you instead have a "gpio-names" property in _DSD that just
-links from a string to an index as we do in all the other bindings?
-It sounds to me like that would be simpler and more consistent with
-the way things are done in ACPI, and have no effect that would be visible
-to the driver.
- 
-> For things that don't have correspondence in ACPI but have well defined
-> existing DT schema, like PWMs, we should follow that.
-
-Only for stuff that is visible to drivers. I think it's important
-that a driver calling pwm_get() today should keep working with
-ACPI when the pwm subsystem is extended to support that.
-
-However, that does not necessarily mean using #pwm-cells and pwm-names
-properties when there is a better way to express the same in ACPI
-syntax. AFAICT, the #foo-names is completely redundant for ACPI
-as the length of a property in a list of similar elements is part
-of the binary data (if not, please correct me), and I already commented
-that I think the foo-names stuff could be encoded in the package
-directly in a way we can't do in DT.
-
-Even if you want to do automatic translation between DT and ACPI,
-I think it would be possible to treat these two the same:
-
-(forgive any syntax errors)
-
-	Name (_DSD, Package () {
-		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-		Package () {
-			Package () { "pwms" { "led-red", ^PWM0, 0, 10 },
-					    { "led-green", ^PWM0, 1, 20 }},
-	}
-
-vs.
-
-	pwm-slave {
-		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
-		pwm-names = "led-red", "led-green";
-	};
-
-
-	Arnd
+Thanks,
+Tanya Brokhman
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
