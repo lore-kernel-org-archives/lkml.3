@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaJBN3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:29:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47321 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752331AbaJBN24 (ORCPT
+	id S1753123AbaJBN3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:29:12 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:43935 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502AbaJBN3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:28:56 -0400
-Message-ID: <542D5314.3050701@codeaurora.org>
-Date: Thu, 02 Oct 2014 16:28:52 +0300
-From: Tanya Brokhman <tlinder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 09:29:08 -0400
+Message-ID: <542D52AC.3040009@roeck-us.net>
+Date: Thu, 02 Oct 2014 06:27:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-References: <1412029248-22454-1-git-send-email-richard@nod.at> <1412029248-22454-4-git-send-email-richard@nod.at>
-In-Reply-To: <1412029248-22454-4-git-send-email-richard@nod.at>
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org
+CC: linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
+        linux-c6x-dev@linux-c6x.org, linux-parisc@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        linux-metag@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [Xen-devel] [RFC PATCH 14/16] x86/xen: support poweroff through
+ poweroff handler call chain
+References: <1412100056-15517-1-git-send-email-linux@roeck-us.net> <1412100056-15517-15-git-send-email-linux@roeck-us.net> <542D1EC4.10100@citrix.com>
+In-Reply-To: <542D1EC4.10100@citrix.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.542D5324.002F,ss=2,re=0.000,recu=0.000,reip=0.000,cl=2,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 14
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard
-
-On 9/30/2014 1:20 AM, Richard Weinberger wrote:
-> Fastmap can miss a PEB if it is in the protection queue
-> and not jet in the used tree.
-> Treat every protected PEB as used.
+On 10/02/2014 02:45 AM, David Vrabel wrote:
+> On 30/09/14 19:00, Guenter Roeck wrote:
+>> The kernel core now supports a poweroff handler call chain
+>> to remove power from the system. Call it if pm_power_off
+>> is set to NULL.
+>>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: H. Peter Anvin <hpa@zytor.com>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>>   arch/x86/xen/enlighten.c | 2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+>> index c0cb11f..645d00f 100644
+>> --- a/arch/x86/xen/enlighten.c
+>> +++ b/arch/x86/xen/enlighten.c
+>> @@ -1322,6 +1322,8 @@ static void xen_machine_power_off(void)
+>>   {
+>>   	if (pm_power_off)
+>>   		pm_power_off();
+>> +	else
+>> +		do_kernel_poweroff();
 >
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->   drivers/mtd/ubi/fastmap.c | 13 +++++++++++++
->   1 file changed, 13 insertions(+)
+> Why isn't this if (pm_power_off) check in do_kernel_poweroff()?
 >
-> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-> index 2b0d8d6..2853a69 100644
-> --- a/drivers/mtd/ubi/fastmap.c
-> +++ b/drivers/mtd/ubi/fastmap.c
-> @@ -1195,6 +1195,19 @@ static int ubi_write_fastmap(struct ubi_device *ubi,
->   		fm_pos += sizeof(*fec);
->   		ubi_assert(fm_pos <= ubi->fm_size);
->   	}
-> +
-> +	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
-> +		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
-
-why not list_for_each_entry_safe?
-
-> +			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
-> +
-> +			fec->pnum = cpu_to_be32(wl_e->pnum);
-> +			fec->ec = cpu_to_be32(wl_e->ec);
-> +
-> +			used_peb_count++;
-> +			fm_pos += sizeof(*fec);
-> +			ubi_assert(fm_pos <= ubi->fm_size);
-
-Is fm_size ok with this addition or does it needs updating as well?
-
-> +		}
-> +	}
->   	fmh->used_peb_count = cpu_to_be32(used_peb_count);
->
->   	for (node = rb_first(&ubi->scrub); node; node = rb_next(node)) {
+> That way when you finally remove pm_power_off you need only update one
+> place.  A quick skim of the other archs suggest this would work for them
+> too.
 >
 
-Thanks
-Tanya Brokhman
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
-hosted by The Linux Foundation
+Good idea. I'll do that for the next version of the patch set.
+
+Guenter
+
+
