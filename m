@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaJBFgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 01:36:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:56234 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaJBFf7 convert rfc822-to-8bit (ORCPT
+	id S1752476AbaJBFiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 01:38:55 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39361 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaJBFix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 01:35:59 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s925ZpQD009887, This message is accepted by code: ctloc85258
-From: Hau <hau@realtek.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 net-next 01/10] r8169:change uppercase numbertolowercase nubmer
-Thread-Topic: [PATCH v2 net-next 01/10] r8169:change uppercase number
- tolowercase nubmer
-Thread-Index: AQHP3a69pqEvy8V0v0iiDHvFDoa515wcSetw
-Date: Thu, 2 Oct 2014 05:35:51 +0000
-Message-ID: <80377ECBC5453840BA8C7155328B5377645AB5@RTITMBSV03.realtek.com.tw>
-References: <1412176641-24393-1-git-send-email-hau@realtek.com>
- <20141001.153434.1528027414789643819.davem@davemloft.net>
-In-Reply-To: <20141001.153434.1528027414789643819.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.119]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Oct 2014 01:38:53 -0400
+Date: Wed, 1 Oct 2014 22:38:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mikhail Efremov <sem@altlinux.org>
+Subject: Re: [PATCH v2] vfs: Don't exchange "short" filenames unconditionally.
+Message-ID: <20141002053847.GI5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140925044601.GL7996@ZenIV.linux.org.uk>
+ <20140926164442.GA26897@ZenIV.linux.org.uk>
+ <20140927044555.GS7996@ZenIV.linux.org.uk>
+ <CA+55aFyw8U94tYVB9Xbo7gh1SC_f9ecKSoFL509bXM122dC46Q@mail.gmail.com>
+ <20140927183139.GT7996@ZenIV.linux.org.uk>
+ <20140927191657.GU7996@ZenIV.linux.org.uk>
+ <20140928074747.GZ7996@ZenIV.linux.org.uk>
+ <20140928180556.GA7996@ZenIV.linux.org.uk>
+ <20140929184218.GN5015@linux.vnet.ibm.com>
+ <20141001001615.GT7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001001615.GT7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100205-7164-0000-0000-00000510DF86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will do that next time.
+On Wed, Oct 01, 2014 at 01:16:15AM +0100, Al Viro wrote:
+> On Mon, Sep 29, 2014 at 11:42:18AM -0700, Paul E. McKenney wrote:
+> 
+> > Assuming that incrementing the external name's reference count is
+> > atomic_add_unless, I could believe this part.  Or if you have some
+> > locking that makes it impossible to increment the reference count
+> > in any case where there is any risk that it might be decremented
+> > to zero, I guess.
+> > 
+> > Which might well be the pair of write_seqcount_begin() calls in __d_move(),
+> > now that I look more carefully.  So if the name has to be in use somewhere
+> > before it can be copied, then a copy can only be created if there is at
+> > least one copy that is not currently being removed?  If so, OK.
+> 
+> Huh?  copy_name() does copy a _reference_, not the name itself.  All the
+> copying involved is source->d_name.name = target->d_name.name.  And those
+> are simply unsigned char *.
+> 
+> write_seqcount_begin() is irrelevant here.  Look: all callers of
+> __d_move(x, y) are holding references both to x and y.  Contributing to
+> the refcount of dentries themselves, that is, not the names.
+> 
+> That gives exclusion between __d_move() and free_dentry() - the latter cannot
+> be called until dentry refcount reaches zero.  RCU is completely irrelevant
+> here.  In fact, no call chain leads to __d_move() under rcu_read_lock().
+> You must hold the target dentry hard, or it could simply be freed right
+> under you.
+> 
+> And __d_move() is taking ->d_lock on all dentries involved (in
+> addition to rename_lock serializing it system-wide).
+> 
+> What could possibly lead to refcount zero being observed on target of
+> __d_move()?  The history of any dentry is this:
+> 	* it is created by __d_alloc().  Nobody can see it until __d_alloc()
+> returns.  Dentry refcount (not to be confused with refcount of external
+> name) is 1.
+> 	* it passes through some (usually - zero) __d_move() calls.
+> Some - as the first argument, some - as the second one.  All those
+> calls are serialized by global seqlock - callers must hold rename_lock.
+> And all of them are done by somebody who is holding a counting reference
+> to dentries in question.
+> 	* counting references to dentry might be taken and dropped;
+> eventually refcount reaches zero (under ->d_lock) and no further
+> counting references can be taken after that.  See __dentry_kill() - the
+> first thing it does is poisoning the refcount, so that any future
+> attempt to increment it would fail.  __dentry_kill() (still under ->d_lock
+> of dentry, ->d_lock of its parent and ->i_lock of its inode) removes
+> dentry from the tree, from hash and from the alias list of inode;
+> Then it drops the locks.  At that point the only search structure dentry
+> might be found in is shrink list; if it's not on such list, free_dentry()
+> is called immediately, otherwise it's marked so that the code processing
+> the shrink list in question would, as soon as it gets to that sucker,
+> remove it from the shrink list and call the same free_dentry().  And that's
+> the only thing done to such dentry by somebody finding it via a shrink list.
+> 	* once free_dentry() has been reached, dentry can can be only seen
+> by RCU lookups, and after the grace period ends it gets physically freed.
+> 
+> free_dentry() isn't allowed to overlap __d_move(); to have that happen is
+> a serious dentry refcounting bug.  No __d_move() is allowed _after_
+> free_dentry() has been entered, either.  Again, it would take a refcounting
+> bug for dentries to have that happen - basically, double dput() somewhere.
+> If that happens, all bets are off, of course - if dentry gets unexpectedly
+> freed under somebody who has grabbed a reference to it and has not dropped
+> it yet, we are fucked.
+> 
+> Nothing outside of __d_move() is allowed to change ->d_name.name.  RCU-critical
+> code is allowed to fetch and dereference it, and such code relies upon
+> 	a) freeing of name seen by somebody who'd done rcu_read_lock() being
+> delayed until after the matching rcu_read_unlock()
+> 	b) store of terminating NUL done by __d_alloc() (and never overwritten
+> afterwards) being seen by RCU-critical code that has found the pointer to
+> that name in dentry->d_name.name
+> 
+> All other code accessing ->d_name.name is required to hold one of the locks
+> that are held by __d_move() and its callers.  Grabbing any of those leads
+> to smp_mb() on alpha, which serves as data dependency barrier there, so
+> we don't need explicit barrier there as we do in RCU-critical places - guarding
+> NUL will be seen.
 
-Thanks.
+Please accept my apologies for the noise!
 
------Original Message-----
-From: David Miller [mailto:davem@davemloft.net] 
-Sent: Thursday, October 02, 2014 3:35 AM
-To: Hau
-Cc: netdev@vger.kernel.org; nic_swsd; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next 01/10] r8169:change uppercase number tolowercase nubmer
+							Thanx, Paul
 
-From: Chun-Hao Lin <hau@realtek.com>
-Date: Wed, 1 Oct 2014 23:17:12 +0800
-
-> Signed-off-by: Chun-Hao Lin <hau@realtek.com>
-
-Series applied, and I fixed the typo in the Subject line here.
-
-But you _(REALLY)_ need to provide a [PATCH net-next 00/xx] posting at the beginning of the patch series which gives an overview of what the patch series does at a high level, and why.
-
-This also allows me to have a sensible post to reply to when I just need to say what I've done with the entire series rather than providing comments on a specific patch.
-
-Thanks.
-
-------Please consider the environment before printing this e-mail.
