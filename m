@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278AbaJBO5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:57:01 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:39193 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752616AbaJBO5A (ORCPT
+	id S1754552AbaJBPA3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:00:29 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46016 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791AbaJBPA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:57:00 -0400
+	Thu, 2 Oct 2014 11:00:26 -0400
+Date: Thu, 2 Oct 2014 09:00:21 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Marti Raudsepp <marti@juffo.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joel Schopp <joel.schopp@amd.com>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [PATCH] PCI: Add ACS support for AMD A88X southbridge devices
+Message-ID: <20141002150021.GA18056@google.com>
+References: <1412255137-28954-1-git-send-email-marti@juffo.org>
 MIME-Version: 1.0
-Date: Thu, 2 Oct 2014 22:56:59 +0800
-Message-ID: <CAHkaATT2=WYuUA9yyWJbjChT43Fp-WZqgpgS-Twyd+AKHLHwxQ@mail.gmail.com>
-Subject: [PATCH] [RESEND]arm64: Use phys_addr_t type for physical address
-From: Min-Hua Chen <orca.chen@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412255137-28954-1-git-send-email-marti@juffo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the type of physical address from unsigned long to phys_addr_t,
-make valid_phys_addr_range more readable.
+On Thu, Oct 02, 2014 at 04:05:37PM +0300, Marti Raudsepp wrote:
+> AMD has confirmed that peer-to-peer between two southbridge functions
+> does not occur.
+> 
+> Joel Schopp at https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
+> >     +-14.4-[01]----05.0  Dialogic Corporation PRI
+> > The legacy PCI should be isolated from the other devices identified.
+> > Not sure what is going on here.
+> >
+> >     +-14.5  Advanced Micro Devices, Inc. [AMD] FCH USB OHCI Controller
+> > This OHCI Controller should also be isolated from the other devices.
+> 
+> Signed-off-by: Marti Raudsepp <marti@juffo.org>
 
-Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
----
- arch/arm64/include/asm/io.h |    2 +-
- arch/arm64/mm/mmap.c        |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Applied with Joel's ack to pci/virtualization for v3.18, thanks!
 
-diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-index e0ecdcf..f771e8b 100644
---- a/arch/arm64/include/asm/io.h
-+++ b/arch/arm64/include/asm/io.h
-@@ -243,7 +243,7 @@ extern void __iomem *ioremap_cache(phys_addr_t
-phys_addr, size_t size);
-  * (PHYS_OFFSET and PHYS_MASK taken into account).
-  */
- #define ARCH_HAS_VALID_PHYS_ADDR_RANGE
--extern int valid_phys_addr_range(unsigned long addr, size_t size);
-+extern int valid_phys_addr_range(phys_addr_t addr, size_t size);
- extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t size);
-
- extern int devmem_is_allowed(unsigned long pfn);
-diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
-index 8ed6cb1..1d73662 100644
---- a/arch/arm64/mm/mmap.c
-+++ b/arch/arm64/mm/mmap.c
-@@ -102,7 +102,7 @@ EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
-  * You really shouldn't be using read() or write() on /dev/mem.  This might go
-  * away in the future.
-  */
--int valid_phys_addr_range(unsigned long addr, size_t size)
-+int valid_phys_addr_range(phys_addr_t addr, size_t size)
- {
-     if (addr < PHYS_OFFSET)
-         return 0;
--- 
-1.7.10.4
+> ---
+>  drivers/pci/quirks.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 80c2d01..ce43316 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3582,6 +3582,11 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+>   * 1002:439d SB7x0/SB8x0/SB9x0 LPC host controller
+>   * 1002:4384 SBx00 PCI to PCI Bridge
+>   * 1002:4399 SB7x0/SB8x0/SB9x0 USB OHCI2 Controller
+> + *
+> + * https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
+> + *
+> + * 1022:780f [AMD] FCH PCI Bridge
+> + * 1022:7809 [AMD] FCH USB OHCI Controller
+>   */
+>  static int pci_quirk_amd_sb_acs(struct pci_dev *dev, u16 acs_flags)
+>  {
+> @@ -3675,6 +3680,8 @@ static const struct pci_dev_acs_enabled {
+>  	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
+> +	{ PCI_VENDOR_ID_AMD, 0x780f, pci_quirk_amd_sb_acs },
+> +	{ PCI_VENDOR_ID_AMD, 0x7809, pci_quirk_amd_sb_acs },
+>  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
+>  	{ 0 }
+>  };
+> -- 
+> 2.1.1
+> 
