@@ -1,38 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaJBNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:18:28 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038AbaJBNS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:18:26 -0400
-Message-ID: <542D50A0.1080802@nod.at>
-Date: Thu, 02 Oct 2014 15:18:24 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Tanya Brokhman <tlinder@codeaurora.org>, dedekind1@gmail.com
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] UBI: Ensure that all fastmap work is done upon WL
- shutdown
-References: <1412029248-22454-1-git-send-email-richard@nod.at> <1412029248-22454-2-git-send-email-richard@nod.at> <542D4D95.6000503@codeaurora.org>
-In-Reply-To: <542D4D95.6000503@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1752562AbaJBNUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:20:40 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:47067 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaJBNUj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:20:39 -0400
+Message-ID: <1412256036.20895.10.camel@lp-lvrv.comap.cz>
+Subject: Re: [PATCH v2 2/2] mtd: nand: omap: Synchronize access to the ECC
+ engine
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, michal.vokac@comap.cz,
+        sojkam1@fel.cvut.cz, Rostislav Lisovy <lisovy@merica.cz>
+Date: Thu, 02 Oct 2014 15:20:36 +0200
+In-Reply-To: <542D4A51.9060907@ti.com>
+References: <1412252173-20454-1-git-send-email-lisovy@merica.cz>
+	 <1412252173-20454-2-git-send-email-lisovy@merica.cz>
+	 <542D4A51.9060907@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.10.2014 15:05, schrieb Tanya Brokhman:
->> +#ifdef CONFIG_MTD_UBI_FASTMAP
->> +    flush_work(&ubi->fm_work);
+Hello Roger;
+Thanks for the review.
+
+On Čt, 2014-10-02 at 15:51 +0300, Roger Quadros wrote:
+> Don't you think this approach is racy?
 > 
-> flush_work returns bool. It might be useful to print that value for debugging.
+> IMHO the lock must be held across the entire page operation
 
-Why would this be useful?
-The sole purpose of this flush is having a barrier.
-If flush_work() had to wait (returns true) for a pending work, fine.
-If where was no work (returns false) to wait for, also fine. :)
+I still think it is done in this way.
 
-Thanks,
-//richard
+> i.e.
+> hold ecc lock
+> ecc.hwctl
+> chip->read/write_buf
+> ecc.calculate
+> ecc.correct
+> release ecc lock
+
+According to my understanding of the code 'ecc.correct' does not access
+the ECC engine directly, it gets the '*read_ecc' and '*calc_ecc' from
+the 'ecc.calculate'.
+
+Once again the work flow you described + my locking approach:
+* ecc.hwctl       <-- mutex_lock() just before accessing the ECC engine
+* chip->read/write_buf
+* ecc.calculate   <-- mutex_unlock() just after reading from ECC engine
+* ecc.correct
+
+> 
+> else we risk simultaneous NAND operations on multiple chips
+> stomping on each other in between the entire sequence.
+> 
+> Then on further investigation isn't nand_get_device() already doing
+> the same
+> thing as you are attempting here?
+> 
+> The chip->controller->lock is meant for serializing NAND controller
+> access.
+> 
+> so instead of adding a new lock in the omap2 nand driver we need to
+> ensure that
+> we are maintaining the same nand_hw_control (controller) structure
+> across multiple NAND chips.
+> 
+> Let's move this controller structure out of omap_nand_info and keep it
+> global to the driver
+> and make sure every NAND instance uses it.
+
+Ok; I will take a look at it. It looks like the appropriate lock to use.
+I am just a bit unsure if the 'spinlock' is the correct synchronization
+primitive here.
+
+Best regards;
+Rostislav
+
