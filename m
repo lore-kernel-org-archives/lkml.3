@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaJBMlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:41:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972AbaJBMlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:41:22 -0400
-Date: Thu, 2 Oct 2014 14:40:43 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andres Lagar-Cavilla <andreslc@google.com>
-Cc: Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>
-Subject: Re: [PATCH 2/4] mm: gup: add get_user_pages_locked and
- get_user_pages_unlocked
-Message-ID: <20141002124043.GC2342@redhat.com>
-References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
- <1412153797-6667-3-git-send-email-aarcange@redhat.com>
- <20141001155159.GA7019@google.com>
- <CAJu=L58vaT7BXfR+RHZ397zJJYL9KwozN0qzCQRadm-=wVYcUw@mail.gmail.com>
+	id S1752577AbaJBMmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:42:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56283 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaJBMmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 08:42:50 -0400
+Date: Thu, 2 Oct 2014 14:42:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Peter Hurley <peter@hurleysoftware.com>, oleg@redhat.com
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+ <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+ <20141002123150.GC6324@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJu=L58vaT7BXfR+RHZ397zJJYL9KwozN0qzCQRadm-=wVYcUw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141002123150.GC6324@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 10:06:27AM -0700, Andres Lagar-Cavilla wrote:
-> On Wed, Oct 1, 2014 at 8:51 AM, Peter Feiner <pfeiner@google.com> wrote:
-> > On Wed, Oct 01, 2014 at 10:56:35AM +0200, Andrea Arcangeli wrote:
-> >> +             /* VM_FAULT_RETRY cannot return errors */
-> >> +             if (!*locked) {
-> >> +                     BUG_ON(ret < 0);
-> >> +                     BUG_ON(nr_pages == 1 && ret);
-> >
-> > If I understand correctly, this second BUG_ON is asserting that when
-> > __get_user_pages is asked for a single page and it is successfully gets the
-> > page, then it shouldn't have dropped the mmap_sem. If that's the case, then
-> > you could generalize this assertion to
-> >
-> >                         BUG_ON(nr_pages == ret);
+On Thu, Oct 02, 2014 at 02:31:50PM +0200, Peter Zijlstra wrote:
+> @@ -2086,24 +2086,22 @@ static void rfcomm_kill_listener(void)
+>  
+>  static int rfcomm_run(void *unused)
+>  {
+> +	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+>  	BT_DBG("");
+>  
+>  	set_user_nice(current, -10);
+>  
+>  	rfcomm_add_listener(BDADDR_ANY);
+>  
+> -	while (1) {
+> -		set_current_state(TASK_INTERRUPTIBLE);
+> -
+> -		if (kthread_should_stop())
+> -			break;
+> +	add_wait_queue(&rfcomm_wq, &wait);
+> +	while (!kthread_should_stop()) {
+>  
+>  		/* Process stuff */
+>  		rfcomm_process_sessions();
+>  
+> -		schedule();
+> +		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+>  	}
+> -	__set_current_state(TASK_RUNNING);
+> +	remove_wait_queue(&rfcomm_wq, &wait);
+>  
+>  	rfcomm_kill_listener();
+>  
 
-Agreed.
+Hmm, I think there's a problem there. If someone were to do
+kthread_stop() before wait_woken() we'd not actually stop, because
+wait_woken() doesn't test KTHREAD_SHOULD_STOP before calling schedule().
 
-> 
-> Even more strict:
->      BUG_ON(ret >= nr_pages);
+We can't unconditionally put a kthread_should_stop() in because
+to_kthread() would explode on a !kthread. The other obvious solution is
+adding a second function, something like wait_woken_or_stop(), but that
+appears somewhat ugly to me.
 
-Agreed too, plus this should be quicker than my weaker check.
-
-Maybe some BUG_ON can be deleted later or converted to VM_BUG_ON, but
-initially I feel safer with the BUG_ON considering that is a slow
-path.
-
-> Reviewed-by: Andres Lagar-Cavilla <andreslc@google.com>
-
-Thanks!
+Oleg, do you see another solution?
