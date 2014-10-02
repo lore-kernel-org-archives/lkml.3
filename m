@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaJBNGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:06:06 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39392 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507AbaJBNGC (ORCPT
+	id S1753446AbaJBNGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:06:36 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:50611 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857AbaJBNGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:06:02 -0400
-From: Marti Raudsepp <marti@juffo.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Joel Schopp <joel.schopp@amd.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Marti Raudsepp <marti@juffo.org>
-Subject: [PATCH] PCI: Add ACS support for AMD A88X southbridge devices
-Date: Thu,  2 Oct 2014 16:05:37 +0300
-Message-Id: <1412255137-28954-1-git-send-email-marti@juffo.org>
-X-Mailer: git-send-email 2.1.1
+	Thu, 2 Oct 2014 09:06:34 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>
+Cc: Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Subject: [PATCH 0/2] Per-user clock constraints
+Date: Thu,  2 Oct 2014 15:04:55 +0200
+Message-Id: <1412255097-15928-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD has confirmed that peer-to-peer between two southbridge functions
-does not occur.
+Hello,
 
-Joel Schopp at https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
->     +-14.4-[01]----05.0  Dialogic Corporation PRI
-> The legacy PCI should be isolated from the other devices identified.
-> Not sure what is going on here.
->
->     +-14.5  Advanced Micro Devices, Inc. [AMD] FCH USB OHCI Controller
-> This OHCI Controller should also be isolated from the other devices.
+these patches add the possibility of setting constraints on the frequency of
+clocks. In contrast to my two previous approaches, this is accomplished with
+per-user clocks, but without requiring changes to existing drivers. An
+exception to the latter are a few boards in mach-omap2, which still register
+their clocks statically and thus had to be changed to initialize struct
+clk_core. Hopefully the whole of clk-private.h can be removed once those boards
+have been converted to initialize their clocks with DTS files.
 
-Signed-off-by: Marti Raudsepp <marti@juffo.org>
----
- drivers/pci/quirks.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+The first patch implements per-user clocks properly, and the second adds the
+constraint API.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 80c2d01..ce43316 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -3582,6 +3582,11 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
-  * 1002:439d SB7x0/SB8x0/SB9x0 LPC host controller
-  * 1002:4384 SBx00 PCI to PCI Bridge
-  * 1002:4399 SB7x0/SB8x0/SB9x0 USB OHCI2 Controller
-+ *
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
-+ *
-+ * 1022:780f [AMD] FCH PCI Bridge
-+ * 1022:7809 [AMD] FCH USB OHCI Controller
-  */
- static int pci_quirk_amd_sb_acs(struct pci_dev *dev, u16 acs_flags)
- {
-@@ -3675,6 +3680,8 @@ static const struct pci_dev_acs_enabled {
- 	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
- 	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
- 	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
-+	{ PCI_VENDOR_ID_AMD, 0x780f, pci_quirk_amd_sb_acs },
-+	{ PCI_VENDOR_ID_AMD, 0x7809, pci_quirk_amd_sb_acs },
- 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
- 	{ 0 }
- };
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (2):
+  clk: Make clk API return per-user struct clk instances
+  clk: Add floor and ceiling constraints to clock rates
+
+ arch/arm/mach-omap2/cclock3xxx_data.c   | 108 +++--
+ arch/arm/mach-omap2/clock.h             |  11 +-
+ arch/arm/mach-omap2/clock_common_data.c |   5 +-
+ drivers/clk/clk.c                       | 723 +++++++++++++++++++++-----------
+ drivers/clk/clk.h                       |   8 +
+ drivers/clk/clkdev.c                    |  23 +-
+ include/linux/clk-private.h             |  40 +-
+ include/linux/clk-provider.h            |  27 +-
+ include/linux/clk.h                     |  18 +
+ 9 files changed, 656 insertions(+), 307 deletions(-)
+
 -- 
-2.1.1
+1.9.3
 
