@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaJBJqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:46:52 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:34219 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaJBJqu (ORCPT
+	id S1751556AbaJBJrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:47:07 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:57306 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaJBJrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:46:50 -0400
+	Thu, 2 Oct 2014 05:47:05 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
 Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v7 0/6] arm64: add seccomp support
-Date: Thu,  2 Oct 2014 18:46:10 +0900
-Message-Id: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v7 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
+Date: Thu,  2 Oct 2014 18:46:11 +0900
+Message-Id: <1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-# Sorry for updating the patch so slowly.
+To allow tracer to be able to change/skip a system call by re-writing
+a syscall number, there are several approaches:
 
-This patch series enables secure computing (system call filtering) on arm64,
-and contains related enhancements and bug fixes.
+(1) modify x8 register with ptrace(PTRACE_SETREGSET), and handle this case
+    later on in syscall_trace_enter(), or
+(2) support ptrace(PTRACE_SET_SYSCALL) as on arm
 
-  NOTE: This versions contain a workaround against possible BUG_ON() failure
-  at audit_syscall_exit(), but doesn't contain an extra optimization, as I
-  submitted for arm, of excluding syscall enter/exit tracing against invalid
-  system calls due to an issue that I reported in:
-       http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/292170.html
+Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
+tracer as well as that secure_computing() expects a changed syscall number
+to be visible, especially case of -1, before this function returns in
+syscall_trace_enter(), we'd better take (2).
 
-The code was tested on ARMv8 fast model with 64-bit/32-bit userspace using:
- * libseccomp v2.1.1 with modifications for arm64, especially its "live"
-   tests: No.20, 21 and 24.
- * modified version of Kees' seccomp test for 'changing/skipping a syscall'
-   and seccomp() system call
- * in-house tests for 'changing/skipping a system call' by tracing with
-   ptrace(PTRACE_SYSCALL) (that is, not via seccomp filter)'
-with and without audit tracing.
-
-
-Changes v6 -> v7:
-* simplified the condition of checking for user-issued syscall(-1) at
-  syscall_trace_enter() [2/6]
-* defines __NR_seccomp_sigreturn only if arch-specific def doesn't exist.
-  As Kees suggests, this is necessary for x86 and others. [3/6]
-* removed "#ifdef __ARCH_SIGSYS" which is always true on arm64. [5/6]
-* changed to call syscall_trace_exit() even if secure_computing fails. [6/6]
-  In v6, syscall_trace_enter() returns RET_SYSCALL_SKIP_TRACE (== -2) and
-  skips syscall_trace_exit() to minimize the overhead, but this case can be
-  easily confused with user-issued (and invalid) syscall(-2).
-  Anyway, this is now a consistent behavior with arm and other archs.
-
-Changes v5 -> v6:
-* rebased to v3.17-rc
-* changed the interface of changing/skipping a system call from re-writing
-  x8 register [v5 1/3] to using dedicated PTRACE_SET_SYSCALL command
-  [1/6, 2/6]
-  Patch [1/6] contains a checkpatch error around a switch statement, but it
-  won't be fixed as in compat_arch_ptrace().
-* added a new system call, seccomp(), for compat task [4/6]
-* added SIGSYS siginfo for compat task [5/6]
-* changed to always execute audit exit tracing to avoid OOPs [2/6, 6/6]
-
-Changes v4 -> v5:
-* rebased to v3.16-rc
-* add patch [1/3] to allow ptrace to change a system call
-  (please note that this patch should be applied even without seccomp.)
-
-Changes v3 -> v4:
-* removed the following patch and moved it to "arm64: prerequisites for
-  audit and ftrace" patchset since it is required for audit and ftrace in
-  case of !COMPAT, too.
-  "arm64: is_compat_task is defined both in asm/compat.h and linux/compat.h"
-
-Changes v2 -> v3:
-* removed unnecessary 'type cast' operations [2/3]
-* check for a return value (-1) of secure_computing() explicitly [2/3]
-* aligned with the patch, "arm64: split syscall_trace() into separate
-  functions for enter/exit" [2/3]
-* changed default of CONFIG_SECCOMP to n [2/3]
-
-Changes v1 -> v2:
-* added generic seccomp.h for arm64 to utilize it [1,2/3] 
-* changed syscall_trace() to return more meaningful value (-EPERM)
-  on seccomp failure case [2/3]
-* aligned with the change in "arm64: make a single hook to syscall_trace()
-  for all syscall features" v2 [2/3]
-* removed is_compat_task() definition from compat.h [3/3]
-
-AKASHI Takahiro (6):
-  arm64: ptrace: add PTRACE_SET_SYSCALL
-  arm64: ptrace: allow tracer to skip a system call
-  asm-generic: add generic seccomp.h for secure computing mode 1
-  arm64: add seccomp syscall for compat task
-  arm64: add SIGSYS siginfo for compat task
-  arm64: add seccomp support
-
- arch/arm64/Kconfig                   |   14 ++++++++++++
- arch/arm64/include/asm/compat.h      |    7 ++++++
- arch/arm64/include/asm/ptrace.h      |    8 +++++++
- arch/arm64/include/asm/seccomp.h     |   25 ++++++++++++++++++++
- arch/arm64/include/asm/unistd.h      |    3 +++
- arch/arm64/include/asm/unistd32.h    |    3 ++-
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
  arch/arm64/include/uapi/asm/ptrace.h |    1 +
- arch/arm64/kernel/entry.S            |    4 ++++
- arch/arm64/kernel/ptrace.c           |   42 ++++++++++++++++++++++++++++++++--
- arch/arm64/kernel/signal32.c         |    6 +++++
- include/asm-generic/seccomp.h        |   30 ++++++++++++++++++++++++
- 11 files changed, 140 insertions(+), 3 deletions(-)
- create mode 100644 arch/arm64/include/asm/seccomp.h
- create mode 100644 include/asm-generic/seccomp.h
+ arch/arm64/kernel/ptrace.c           |   14 +++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
+index 6913643..49c6174 100644
+--- a/arch/arm64/include/uapi/asm/ptrace.h
++++ b/arch/arm64/include/uapi/asm/ptrace.h
+@@ -23,6 +23,7 @@
+ 
+ #include <asm/hwcap.h>
+ 
++#define PTRACE_SET_SYSCALL	23
+ 
+ /*
+  * PSR bits
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index fe63ac5..2842f9f 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -1082,7 +1082,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+-	return ptrace_request(child, request, addr, data);
++	int ret;
++
++	switch (request) {
++		case PTRACE_SET_SYSCALL:
++			task_pt_regs(child)->syscallno = data;
++			ret = 0;
++			break;
++		default:
++			ret = ptrace_request(child, request, addr, data);
++			break;
++	}
++
++	return ret;
+ }
+ 
+ enum ptrace_syscall_dir {
 -- 
 1.7.9.5
 
