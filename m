@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaJBMQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:16:24 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:34746 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaJBMQW (ORCPT
+	id S1752592AbaJBMS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:18:58 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:59233 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaJBMS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:16:22 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-X-Google-Original-From: Rostislav Lisovy <lisovy@merica.cz>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Roger Quadros <rogerq@ti.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lisovy@gmail.com, michal.vokac@comap.cz, sojkam1@fel.cvut.cz,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: [PATCH v2 1/2] mtd: nand: omap: Do not use global variables
-Date: Thu,  2 Oct 2014 14:16:12 +0200
-Message-Id: <1412252173-20454-1-git-send-email-lisovy@merica.cz>
-X-Mailer: git-send-email 1.9.1
+	Thu, 2 Oct 2014 08:18:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Pavel Machek <pavel@denx.de>, Dinh Nguyen <dinguyen@opensource.altera.com>,
+        linux@arm.linux.org.uk, atull <atull@opensource.altera.com>,
+        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com
+Subject: Re: [PATCH 1/2] socfpga: hotplug: put cpu1 in wfi
+Date: Thu, 02 Oct 2014 14:18:09 +0200
+Message-ID: <3341525.7GDFQS2rGu@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141001231646.GB1529@amd>
+References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <542C26B6.7010302@opensource.altera.com> <20141001231646.GB1529@amd>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:i5NGhEzU83c3I67hsjp1TadUd+RhJll4CmhYC1x4qJS
+ FSEtjtGaVQfpAWgZZAnGWal4I/uGedH/qk/JOpUD4+2Em7QTqF
+ EIsnv6UFmWjAV7Pw8Xpb5RPmh2ZlrizLtl2LWR/qhUJ1yAfxLi
+ KHROutPeLQzu5b1jdhiPBMSm3OmAH8glcrxEunQR+7EqCXbimV
+ LbtZJmLBRpay7+v7FsJb5lUZ7KFG7xsyNZbcs1wna5fDktGS2K
+ 1olhKJ43aSMwg/fRUcjr1pqWhTaMIjojsglV8ZZEdwgTcaqc4A
+ vsizoXVdhjzdHcTl59oy7zgG9Q81maijBKWyO7bmqs8Qk0ygUw
+ crA5YDES49IkBFPthQCw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the commit 97a288ba2cfa ("ARM: omap2+: gpmc-nand: Use
-dynamic platform_device_alloc()") gpmc-nand driver supports
-multiple NAND flash devices connected to the single controller.
-Remove global variable to make the code thread-safe.
+On Thursday 02 October 2014 01:16:46 Pavel Machek wrote:
+> > > 
+> > > struct socfpga_reset_manager {
+> > >         u32     status;
+> > >         u32     ctrl;
+> > >         u32     counts;
+> > >         u32     padding1;
+> > >         u32     mpu_mod_reset;
+> > >         u32     per_mod_reset;
+> > >         u32     per2_mod_reset;
+> > >         u32     brg_mod_reset;
+> > > };
+> > > 
+> > > from u-boot. Unlike macros, structs have advantages that typos lead to
+> > > easier-to-see failure modes... (And they are easier to read/parse,
+> > > too).
+> > > 
+> > 
+> > Copying from uboot sounds good, but I already know that the CPU reset
+> > offset is different for our next SOC, Arria 10. The Arria 10 SOC should
+> > still be able to use the same MSL as Cyclone5 and Arria5, but with a few
+> > differences. One of them being, the CPU1 reset offset is at 0x20 instead
+> > of 0x10. So I think having a macro for this one register is a bit
+> > cleaner than having to define a whole new struct for Arria10.
+> 
+> I don't think "whole new struct" is a problem. At least it will be
+> plain to see what changed (which will get easily lost in ifdefs.
+> 
+> struct cyclone5_reset_manager {
+>         struct socfpga_reset_manager common;
+>         u32 brg_mod_reset;
+> }
+> 
+> struct aria10_reset_manager {
+>         struct socfpga_reset_manager common;
+>         char filler[0x10];
+>         u32 brg_mod_reset;
+> }
+> 
+> if (of_machine_is_compatible("altr,socfpga-arria10"))
+>         __raw_writel(0, (struct cyclone5_reset_manager *) rst_manager_base_addr->brg_mod_reset));
+> else
+>         __raw_writel(0, (struct aria10_reset_manager *) rst_manager_base_addr->brg_mod_reset));
+> 
+> ...does not sound that bad. (And you'll need some nice solution for
+> u-boot, anyway...)
 
-Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
----
-Changes since v1:
-* Do not dynamically allocate the 'struct nand_ecclayout' but rather
-  include it in the 'struct omap_nand_info' (Roger Quadros)
+I think it would be better to just add more fields and access a different
+field based on the SoC type than cast the structs around.
 
+Also, never use __raw_writel unless you know exactly what you are doing.
+This should use writel, or possibly writel_relaxed.
 
- drivers/mtd/nand/omap2.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Finally, don't sprinkle of_machine_is_compatible() checks all over the
+place. Make the decision once when you initially probe the machine.
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index 3b357e9..f0dcdb6 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -144,9 +144,6 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
- 	0xac, 0x6b, 0xff, 0x99, 0x7b};
- static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
- 
--/* oob info generated runtime depending on ecc algorithm and layout selected */
--static struct nand_ecclayout omap_oobinfo;
--
- struct omap_nand_info {
- 	struct nand_hw_control		controller;
- 	struct omap_nand_platform_data	*pdata;
-@@ -168,6 +165,8 @@ struct omap_nand_info {
- 	u_char				*buf;
- 	int					buf_len;
- 	struct gpmc_nand_regs		reg;
-+	/* generated on runtime depending on ecc algorithm and layout selected */
-+	struct nand_ecclayout		oobinfo;
- 	/* fields specific for BCHx_HW ECC scheme */
- 	struct device			*elm_dev;
- 	struct device_node		*of_node;
-@@ -1840,7 +1839,7 @@ static int omap_nand_probe(struct platform_device *pdev)
- 	}
- 
- 	/* populate MTD interface based on ECC scheme */
--	ecclayout		= &omap_oobinfo;
-+	ecclayout		= &info->oobinfo;
- 	switch (info->ecc_opt) {
- 	case OMAP_ECC_HAM1_CODE_SW:
- 		nand_chip->ecc.mode = NAND_ECC_SOFT;
--- 
-1.9.1
-
+	Arnd
