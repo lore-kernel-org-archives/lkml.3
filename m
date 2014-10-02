@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaJBNFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:05:46 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52302 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752257AbaJBNFp (ORCPT
+	id S1753350AbaJBNGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:06:06 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:39392 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507AbaJBNGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:05:45 -0400
-Message-ID: <542D4DA6.2090607@hurleysoftware.com>
-Date: Thu, 02 Oct 2014 09:05:42 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <542D4756.4030100@hurleysoftware.com> <20141002125409.GG2849@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141002125409.GG2849@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 2 Oct 2014 09:06:02 -0400
+From: Marti Raudsepp <marti@juffo.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Joel Schopp <joel.schopp@amd.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marti Raudsepp <marti@juffo.org>
+Subject: [PATCH] PCI: Add ACS support for AMD A88X southbridge devices
+Date: Thu,  2 Oct 2014 16:05:37 +0300
+Message-Id: <1412255137-28954-1-git-send-email-marti@juffo.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 08:54 AM, Peter Zijlstra wrote:
-> On Thu, Oct 02, 2014 at 08:38:46AM -0400, Peter Hurley wrote:
->> On 10/02/2014 08:31 AM, Peter Zijlstra wrote:
->>> On Thu, Oct 02, 2014 at 01:09:27PM +0200, Peter Zijlstra wrote:
->>>> On Tue, Sep 30, 2014 at 04:02:28PM +0800, Fengguang Wu wrote:
->>>>> Hi Peter,
->>>>>
->>>>> We possibly find a rfcomm bug (maintainers CCed) exposed by your debug patch
->>>>>
->>>>> [    1.861895] NET: Registered protocol family 5
->>>>> [    1.862978] Bluetooth: RFCOMM TTY layer initialized
->>>>> [    1.863099] ------------[ cut here ]------------
->>>>> [    1.863105] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156 __might_sleep+0x17d/0x1a1()
->>>>> [    1.863112] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c14dc381>] rfcomm_run+0xdf/0x130e
->>>>> [    1.863591]  [<c1058b73>] ? kthread_stop+0x53/0x53
->>>>> [    1.864906]  [<c155a411>] dump_stack+0x48/0x60
->>>>> [    1.866298]  [<c14dc381>] ? rfcomm_run+0xdf/0x130e
->>>>
->>>> Ha yes, rfcomm_run is a complete buggy mess indeed. Lemme go see what I
->>>> can make of it.
->>>
->>> ---
->>> Subject: rfcomm: Fix broken wait construct
->>>
->>> rfcomm_run() is a tad broken in that is has a nested wait loop. One
->>> cannot rely on p->state for the outer wait because the inner wait will
->>> overwrite it.
->>>
->>> While at it, rename rfcomm_schedule to rfcomm_wake, since that is what
->>> it actually does.
->>
->> rfcomm_schedule() as in schedule_work(), which is how it's used.
-> 
-> Not really, all it does is wake the rfcomm_thread. The thread then does
-> a linear walk of all known sessions looking for work -- which is clearly
-> suboptimal as well, but I didn't feel like fixing that.
-> 
-> Also, the current implementation already disagrees with you, all it
-> basically does it call wake_up_process() which is a big clue right
-> there.
+AMD has confirmed that peer-to-peer between two southbridge functions
+does not occur.
 
-You're thinking of it from the point of view of the scheduler, so to you
-it should be named what it does.
+Joel Schopp at https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
+>     +-14.4-[01]----05.0  Dialogic Corporation PRI
+> The legacy PCI should be isolated from the other devices identified.
+> Not sure what is going on here.
+>
+>     +-14.5  Advanced Micro Devices, Inc. [AMD] FCH USB OHCI Controller
+> This OHCI Controller should also be isolated from the other devices.
 
-However, from the users' point of view, it's an abstraction of work
-dispatching; the fact that a kthread (which needs waking) does the work
-is irrelevant.
+Signed-off-by: Marti Raudsepp <marti@juffo.org>
+---
+ drivers/pci/quirks.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Consider if the kthread is converted to work_structs instead and your now-
-renamed rfcomm_wake() is calling schedule_work().
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 80c2d01..ce43316 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3582,6 +3582,11 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
+  * 1002:439d SB7x0/SB8x0/SB9x0 LPC host controller
+  * 1002:4384 SBx00 PCI to PCI Bridge
+  * 1002:4399 SB7x0/SB8x0/SB9x0 USB OHCI2 Controller
++ *
++ * https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
++ *
++ * 1022:780f [AMD] FCH PCI Bridge
++ * 1022:7809 [AMD] FCH USB OHCI Controller
+  */
+ static int pci_quirk_amd_sb_acs(struct pci_dev *dev, u16 acs_flags)
+ {
+@@ -3675,6 +3680,8 @@ static const struct pci_dev_acs_enabled {
+ 	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
+ 	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
+ 	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_AMD, 0x780f, pci_quirk_amd_sb_acs },
++	{ PCI_VENDOR_ID_AMD, 0x7809, pci_quirk_amd_sb_acs },
+ 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
+ 	{ 0 }
+ };
+-- 
+2.1.1
 
-Regards,
-Peter Hurley
