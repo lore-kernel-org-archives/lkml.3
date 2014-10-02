@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaJBWBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 18:01:38 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:41555 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141AbaJBWBg (ORCPT
+	id S1753060AbaJBWDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 18:03:22 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46158 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751885AbaJBWDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 18:01:36 -0400
+	Thu, 2 Oct 2014 18:03:21 -0400
+Message-ID: <542DCB9C.4020703@hurleysoftware.com>
+Date: Thu, 02 Oct 2014 18:03:08 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <20141002182409.GA29934@redhat.com>
-References: <20140925141425.GA21702@redhat.com> <alpine.DEB.2.10.1409251630210.4604@nanos>
- <20140925234657.GB14870@lerouge> <20141002182409.GA29934@redhat.com>
-From: Mike Lothian <mike@fireburn.co.uk>
-Date: Thu, 2 Oct 2014 23:01:16 +0100
-Message-ID: <CAHbf0-F7NPNefH_tqDDA+5OU51x6Q9W6ZOj8xWv=kbXpT8ap2A@mail.gmail.com>
-Subject: Re: hrtimer deadlock caused by nohz_full
-To: Dave Jones <davej@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com> <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos> <542B5DC2.8020806@hurleysoftware.com> <20141002164121.GF1715@laptop.dumpdata.com>
+In-Reply-To: <20141002164121.GF1715@laptop.dumpdata.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this might be the bug I reported here
-https://bugzilla.kernel.org/show_bug.cgi?id=84131
+On 10/02/2014 12:41 PM, Konrad Rzeszutek Wilk wrote:
+> On Tue, Sep 30, 2014 at 09:49:54PM -0400, Peter Hurley wrote:
+>> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+>>> Whether the proposed patchset is the correct solution to support it is
+>>> a completely different question.
+>>
+>> This patchset has been in mainline since 3.16 and has already caused
+>> regressions, so the question of whether this is the correct solution has
+>> already been answered.
+>>
+>>> So either you stop this right now and help Akinobu to find the proper
+>>> solution 
+>>
+>> If this is only a test platform for ARM parts then I don't think it
+>> unreasonable to suggest forking x86 swiotlb support into a iommu=cma
+> 
+> Not sure what you mean by 'forking x86 swiotlb' ? As in have SWIOTLB
+> work under ARM?
 
-On 2 October 2014 19:24, Dave Jones <davej@redhat.com> wrote:
-> On Fri, Sep 26, 2014 at 01:46:59AM +0200, Frederic Weisbecker wrote:
->
->  > > >  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
->  > > >  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
->  > > >  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
->  > > >  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
->  > > >  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
->  > > >  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
->  > > >  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
->  > > >  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
->  > > >  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
->  > > >  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
->  > > >  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
->  > > >  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
->  > > >  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
->  > > >  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
->  > > >  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
->  > > >  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
->  > >
->  > > hrtimer_interrupt
->  > >   tick_sched_timer
->  > >     tick_sched_handle
->  > >       update_process_times
->  > >         irq_work_run
->  > >      irq_work_run_list
->  > >        nohz_full_kick_work_func
->  > >          __tick_nohz_full_check
->  > >            tick_nohz_restart
->  > >                   hrtimer_cancel
->  > >
->  > > And that hrtimer_cancel is:
->  > >
->  > > static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
->  > > {
->  > >    hrtimer_cancel(&ts->sched_timer);
->  > >
->  > > Now, that's really bad because we are in the timer callback of
->  > > ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
->  > > callback to complete.
->  > >
->  > > Frederic !?!?
->  >
->  > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
->  >
->  > I was about to make the pull request, the branch is acked by peterz.
->  > Would you like to pull it? It's all merge window material.
->  >
->  > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->  >      nohz/fixes-v3
->
-> I'm now hitting this with such regularity that it's preventing me from
-> tracking down other bugs.  Can we get this merged soon please ?
->
->         Dave
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+No, that's not what I meant.
+
+>> selector that gets DMA mapping working for this test platform and doesn't
+>> cause a bunch of breakage.
+> 
+> I think you might want to take a look at the IOMMU_DETECT macros
+> and enable CMA there only if the certain devices are available.
+> 
+> That way the normal flow of detecting which IOMMU to use is still present
+> and will turn of CMA if there is no device that would use it.
+> 
+>>
+>> Which is different than if the plan is to ship production units for x86;
+>> then a general purpose solution will be required.
+>>
+>> As to the good design of a general purpose solution for allocating and
+>> mapping huge order pages, you are certainly more qualified to help Akinobu
+>> than I am.
+
+What Akinobu's patches intend to support is:
+
+	phys_addr = dma_alloc_coherent(dev, 64 * 1024 * 1024, &bus_addr, GFP_KERNEL);
+
+which raises three issues:
+
+1. Where do coherent blocks of this size come from?
+2. How to prevent fragmentation of these reserved blocks over time by
+   existing DMA users?
+3. Is this support generically required across all iommu implementations on x86?
+
+Questions 1 and 2 are non-trivial, in the general case, otherwise the page
+allocator would already do this. Simply dropping in the contiguous memory
+allocator doesn't work because CMA does not have the same policy and performance
+as the page allocator, and is already causing performance regressions even
+in the absence of huge page allocations.
+
+So that's why I raised question 3; is making the necessary compromises to support
+64MB coherent DMA allocations across all x86 iommu implementations actually
+required?
+
+Prior to Akinobu's patches, the use of CMA by x86 iommu configurations was
+designed to be limited to testing configurations, as the introductory
+commit states:
+
+commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
+Author: Marek Szyprowski <m.szyprowski@samsung.com>
+Date:   Thu Dec 29 13:09:51 2011 +0100
+
+    X86: integrate CMA with DMA-mapping subsystem
+    
+    This patch adds support for CMA to dma-mapping subsystem for x86
+    architecture that uses common pci-dma/pci-nommu implementation. This
+    allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+    
+    Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+    CC: Michal Nazarewicz <mina86@mina86.com>
+    Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+
+Which brings me to my suggestion: if support for huge coherent DMA is
+required only for a special test platform, then could not this support
+be specific to a new iommu configuration, namely iommu=cma, which would
+get initialized much the same way that iommu=calgary is now.
+
+The code for such a iommu configuration would mostly duplicate
+arch/x86/kernel/pci-swiotlb.c and the CMA support would get removed from
+the other x86 iommu implementations.
+
+Regards,
+Peter Hurley
