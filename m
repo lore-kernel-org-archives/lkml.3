@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbaJBNr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:47:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62415 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973AbaJBNr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:47:26 -0400
-Message-ID: <1412257639.7360.247.camel@ul30vt.home>
-Subject: Re: [PATCH] PCI: Add ACS support for AMD A88X southbridge devices
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Marti Raudsepp <marti@juffo.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joel Schopp <joel.schopp@amd.com>
-Date: Thu, 02 Oct 2014 07:47:19 -0600
-In-Reply-To: <1412255137-28954-1-git-send-email-marti@juffo.org>
-References: <1412255137-28954-1-git-send-email-marti@juffo.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754271AbaJBNsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:48:20 -0400
+Received: from 33.106-14-84.ripe.coltfrance.com ([84.14.106.33]:57446 "EHLO
+	proxy.6wind.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbaJBNsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:48:14 -0400
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+To: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Cc: davem@davemloft.net, ebiederm@xmission.com, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Subject: [RFC PATCH net-next v3 4/4] rtnl: allow to create device with IFLA_LINK_NETNSID set
+Date: Thu,  2 Oct 2014 15:48:10 +0200
+Message-Id: <1412257690-31253-5-git-send-email-nicolas.dichtel@6wind.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
+References: <542D5726.8070308@6wind.com>
+ <1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 16:05 +0300, Marti Raudsepp wrote:
-> AMD has confirmed that peer-to-peer between two southbridge functions
-> does not occur.
-> 
-> Joel Schopp at https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
-> >     +-14.4-[01]----05.0  Dialogic Corporation PRI
-> > The legacy PCI should be isolated from the other devices identified.
-> > Not sure what is going on here.
-> >
-> >     +-14.5  Advanced Micro Devices, Inc. [AMD] FCH USB OHCI Controller
-> > This OHCI Controller should also be isolated from the other devices.
-> 
-> Signed-off-by: Marti Raudsepp <marti@juffo.org>
+This patch adds the ability to create a netdevice in a specified netns and
+then move it into the final netns. In fact, it allows to have a symetry between
+get and set rtnl messages.
 
-The bugzilla comments aren't quite as decisive as I'd like to see for a
-quirk, so I think we should probably get an ACK from Joel before
-including this.  Thanks,
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+---
+ net/core/rtnetlink.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-Alex
-
-> ---
->  drivers/pci/quirks.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 80c2d01..ce43316 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3582,6 +3582,11 @@ struct pci_dev *pci_get_dma_source(struct pci_dev *dev)
->   * 1002:439d SB7x0/SB8x0/SB9x0 LPC host controller
->   * 1002:4384 SBx00 PCI to PCI Bridge
->   * 1002:4399 SB7x0/SB8x0/SB9x0 USB OHCI2 Controller
-> + *
-> + * https://bugzilla.kernel.org/show_bug.cgi?id=81841#c15
-> + *
-> + * 1022:780f [AMD] FCH PCI Bridge
-> + * 1022:7809 [AMD] FCH USB OHCI Controller
->   */
->  static int pci_quirk_amd_sb_acs(struct pci_dev *dev, u16 acs_flags)
->  {
-> @@ -3675,6 +3680,8 @@ static const struct pci_dev_acs_enabled {
->  	{ PCI_VENDOR_ID_ATI, 0x439d, pci_quirk_amd_sb_acs },
->  	{ PCI_VENDOR_ID_ATI, 0x4384, pci_quirk_amd_sb_acs },
->  	{ PCI_VENDOR_ID_ATI, 0x4399, pci_quirk_amd_sb_acs },
-> +	{ PCI_VENDOR_ID_AMD, 0x780f, pci_quirk_amd_sb_acs },
-> +	{ PCI_VENDOR_ID_AMD, 0x7809, pci_quirk_amd_sb_acs },
->  	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, pci_quirk_intel_pch_acs },
->  	{ 0 }
->  };
-
-
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 1b9329512496..57959a85ed2c 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1211,6 +1211,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
+ 	[IFLA_NUM_RX_QUEUES]	= { .type = NLA_U32 },
+ 	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_PORT_ID_LEN },
+ 	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
++	[IFLA_LINK_NETNSID]	= { .type = NLA_S32 },
+ };
+ 
+ static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
+@@ -1983,7 +1984,7 @@ replay:
+ 		struct nlattr *slave_attr[m_ops ? m_ops->slave_maxtype + 1 : 0];
+ 		struct nlattr **data = NULL;
+ 		struct nlattr **slave_data = NULL;
+-		struct net *dest_net;
++		struct net *dest_net, *link_net = NULL;
+ 
+ 		if (ops) {
+ 			if (ops->maxtype && linkinfo[IFLA_INFO_DATA]) {
+@@ -2089,7 +2090,18 @@ replay:
+ 		if (IS_ERR(dest_net))
+ 			return PTR_ERR(dest_net);
+ 
+-		dev = rtnl_create_link(dest_net, ifname, name_assign_type, ops, tb);
++		if (tb[IFLA_LINK_NETNSID]) {
++			int id = nla_get_s32(tb[IFLA_LINK_NETNSID]);
++
++			link_net = get_net_ns_by_id(dest_net, id);
++			if (link_net == NULL) {
++				err =  -EINVAL;
++				goto out;
++			}
++		}
++
++		dev = rtnl_create_link(link_net ? : dest_net, ifname,
++				       name_assign_type, ops, tb);
+ 		if (IS_ERR(dev)) {
+ 			err = PTR_ERR(dev);
+ 			goto out;
+@@ -2117,9 +2129,16 @@ replay:
+ 			}
+ 		}
+ 		err = rtnl_configure_link(dev, ifm);
+-		if (err < 0)
++		if (err < 0) {
+ 			unregister_netdevice(dev);
++			goto out;
++		}
++
++		if (link_net)
++			err = dev_change_net_namespace(dev, dest_net, ifname);
+ out:
++		if (link_net)
++			put_net(link_net);
+ 		put_net(dest_net);
+ 		return err;
+ 	}
+-- 
+2.1.0
 
