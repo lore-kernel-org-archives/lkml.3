@@ -1,97 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaJBGVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:21:07 -0400
-Received: from ou.quest-ce.net ([195.154.187.82]:60648 "EHLO ou.quest-ce.net"
+	id S1751221AbaJBGd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:33:57 -0400
+Received: from sauhun.de ([89.238.76.85]:55781 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185AbaJBGVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:21:05 -0400
-Message-ID: <1412230855.28184.5.camel@localhost.localdomain>
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, Eric Paris <eparis@redhat.com>,
-        Richard Guy Briggs <rgb@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, linux-api@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Lino Sanfilippo <LinoSanfilippo@gmx.de>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Yann Droneaud <ydroneaud@opteya.com>
-Date: Thu, 02 Oct 2014 08:20:55 +0200
-In-Reply-To: <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
-References: <cover.1411562410.git.ydroneaud@opteya.com>
-	 <9d050a2db4f9cf68cd6cb038f16cccb0f73c6e66.1411562410.git.ydroneaud@opteya.com>
-	 <542481B3.8070300@gmx.de> <1411721898.7778.18.camel@localhost.localdomain>
-	 <542666B2.9080700@gmx.de>
-	 <1411980555-10818-1-git-send-email-ydroneaud@opteya.com>
-	 <20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2a01:e35:2e9f:6ac0:1d34:d55:2d28:af2e
-X-SA-Exim-Mail-From: ydroneaud@opteya.com
-Subject: Re: [PATCHv8.1] fanotify: enable close-on-exec on events' fd when
- requested in fanotify_init()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
+	id S1750842AbaJBGdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 02:33:54 -0400
+Date: Thu, 2 Oct 2014 08:34:23 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Rajat Jain <rajatxjain@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over
+ I2C
+Message-ID: <20141002063423.GA1405@katana>
+References: <542A3593.4020108@gmail.com>
+ <CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
+ <20140930211339.GA1264@katana>
+ <CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
+ <20141001072949.GA1322@katana>
+ <CAA93t1qjzAWQqkZQcJYFZxvuhy6o1N2gJ+j=AKgcqE=zup=BJw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
+Content-Disposition: inline
+In-Reply-To: <CAA93t1qjzAWQqkZQcJYFZxvuhy6o1N2gJ+j=AKgcqE=zup=BJw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Le mercredi 01 octobre 2014 à 15:36 -0700, Andrew Morton a écrit :
-> On Mon, 29 Sep 2014 10:49:15 +0200 Yann Droneaud <ydroneaud@opteya.com> wrote:
-> 
-> > According to commit 80af258867648 ('fanotify: groups can specify
-> > their f_flags for new fd'), file descriptors created as part of
-> > file access notification events inherit flags from the
-> > event_f_flags argument passed to syscall fanotify_init(2).
-> > 
-> > So while it is legal for userspace to call fanotify_init() with
-> > O_CLOEXEC as part of its second argument, O_CLOEXEC is currently
-> > silently ignored.
-> > 
-> > Indeed event_f_flags are only given to dentry_open(), which only
-> > seems to care about O_ACCMODE and O_PATH in do_dentry_open(),
-> > O_DIRECT in open_check_o_direct() and O_LARGEFILE in
-> > generic_file_open().
-> > 
-> > But it seems logical to set close-on-exec flag on the file
-> > descriptor if userspace is allowed to request it with O_CLOEXEC.
-> > 
-> > In fact, according to some lookup on http://codesearch.debian.net/
-> > and various search engine, there's already some userspace code
-> > requesting it:
-> > 
-> > - in systemd's readahead[2]:
-> > 
-> >     fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
-> > 
-> > - in clsync[3]:
-> > 
-> >     #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
-> > 
-> >     int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
-> > 
-> > - in examples [4] from "Filesystem monitoring in the Linux
-> >   kernel" article[5] by Aleksander Morgado:
-> > 
-> >     if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
-> >                                       O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
-> 
-> So we have a number of apps which are setting O_CLOEXEC, but it doesn't
-> actually work.  With this change it *will* work, so the behaviour of
-> those apps might change, possibly breaking them?
-> 
-
-In the other hand, not enabling close-on-exec might expose unwanted file
-descriptor to childs, creating security issues. YMMV.
-
--- 
-Yann Droneaud
-OPTEYA
+--gBBFr7Ir9EOA20Yy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
+> I understand and agree. In fact in the internal version of this driver
+> (that I have not yet sent out for review), we do have APIs added
+> similar to what you mention above. Currently I have APIs that:
+> - Enable / Disable PCIe links.
+> - Change the upstream port.
+> - Enable / Disable Non-transparent mode etc.
+
+Now, that sounds better to me...
+
+> However, I did not send them all out for review because I don't have
+> the hardware to try and test them out on ALL the supported devices
+> (also would require considerable amount of time). I have tested those
+> APIs on PEX8713 only, because for e.g.I only have PEX8713 in a HW that
+> connects to 2 CPUs at the same time.
+
+That is a common problem to not have enough hardware to test. You could
+ask on the PCI mailing list for testers. The solution usually lies in
+showing the code rather than not showing the code.
+
+> the switch. Yes, I agree that we can have another layer of abstraction
+> so that we have:
+>=20
+> - The Core logic code (that knows "How do we want the switch to behave")
+> - A PEX8xxx driver (that knows "which registers to program")
+> - A PEX8xxx I2C driver ("How to program those registers") - this driver.
+>=20
+> I do understand that your suggestion is to include and bundle the
+> latter two into this same driver.
+
+It definately should be this way. Nobody else than the PEX8xxx driver
+should be able to send I2C messeges to the device! And this is
+absolutely standard, the logic how to talk to a device knows also how to
+prepare the I2C messages. One reason where it could be factored out is
+if there are multiple ways of transportation possible, like I2C or SPI.
+
+> However since the possibilities
+> (about which APIs to provide) are too much and not enough hardware to
+> test it, would it be acceptable if I include those APIs, but support
+> them for only 1 device (and return error for others)?
+
+Start with what YOU need and show us (all of it). From there, we can
+decide: do we start with one driver and factor out later, do we start
+with a sub-subsystem right away, etc... And there is still the question
+what APIs you provide, how they are implemented and if we really should
+have them in-kernel. I think that question will be more interesting for
+Bjorn because I don't really know much about switches in the PCI world.
+
+> with those APIs, I feel exposing the Read/Write APIs will be useful -
+> because what core logic wants to achieve can be highly device and
+> platform specific.
+
+That could also be solved by fixup-callbacks, but we'd need to see the
+core to tell, really.
+
+> Also, a sysfs interface for this switch is proving
+> to be a very helpful development aid :-) (personal experience :-))
+
+Sure, but such development aids don't need to be upstream. Especially if
+they create ABI such as sysfs-entries.
+
+Thanks and regards,
+
+   Wolfram
+
+--gBBFr7Ir9EOA20Yy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJULPHvAAoJEBQN5MwUoCm2AvEQALNdxeOaK75eMJ4CmFtDgC2Z
+w6VttS2nU4LsgvyvhbaseTGxAGRPxee3kvNegG6s3yqf+U3F8yXs+JAiN+xV/QlK
+jjqsWE6hS+0MN8BFSb10gWaxkfiJbQtQc6r4V3H4Ty9enx4pfhY2MLZ7VReZJspb
+FnWmUFYv9YvCKibIn0G5sNNT/stuT/JXvlruHHh9Y67NPNYkQAyQsLj589ATfdd7
+AOgy2eHOi4khWO2uaw1Zv7ePFY8G1xOaH+0PboLGmj+Hjc8VyZaqc9WEnfXaMYAX
+eHW6e/tVQnTO9ANNctCka40V+wJuEmYJ8dIJW8M30zlPo6ZWsgeYVGsLDQBRUHds
+7z+NvE3wuipRo1mZz7jnv4BxPqbgnjoM7+p0A0YHoSJL7wY1vJUVxctqSkRfpvxa
+ros+J1LRORSkUMNiTN4KibRtGx+B7OUUCaRvF13nzg/ShLBURrVU0uzUOhyWOnTs
+TTzqH+JsUShVQbGVzO6Q3Xx+4G1bNl7lgTDvN4U6aqx3jYiutH/WulHIcuVelWdi
+DaRB5ZVS3xWiT3zeOLXdgFafCsBVyxJLNqUC5F1kSopwvjMjNdL0kByD92ln/OlL
+y2LDpadOjUgO2sve/kQdP4PmK9XDAO+E+oearykXVhezhHk1N617W/W5C77WJo5q
+9EVeALqmZbhgAeHFMic8
+=AWkh
+-----END PGP SIGNATURE-----
+
+--gBBFr7Ir9EOA20Yy--
