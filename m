@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaJBN3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:29:12 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43935 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502AbaJBN3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:29:08 -0400
-Message-ID: <542D52AC.3040009@roeck-us.net>
-Date: Thu, 02 Oct 2014 06:27:08 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org
-CC: linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
-        linux-c6x-dev@linux-c6x.org, linux-parisc@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        linux-metag@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [Xen-devel] [RFC PATCH 14/16] x86/xen: support poweroff through
- poweroff handler call chain
-References: <1412100056-15517-1-git-send-email-linux@roeck-us.net> <1412100056-15517-15-git-send-email-linux@roeck-us.net> <542D1EC4.10100@citrix.com>
-In-Reply-To: <542D1EC4.10100@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020207.542D5324.002F,ss=2,re=0.000,recu=0.000,reip=0.000,cl=2,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 14
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753270AbaJBN3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:29:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752846AbaJBN3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:29:22 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] NUMA balancing related fixlets
+Date: Thu,  2 Oct 2014 14:29:14 +0100
+Message-Id: <1412256558-9995-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 02:45 AM, David Vrabel wrote:
-> On 30/09/14 19:00, Guenter Roeck wrote:
->> The kernel core now supports a poweroff handler call chain
->> to remove power from the system. Call it if pm_power_off
->> is set to NULL.
->>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: H. Peter Anvin <hpa@zytor.com>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   arch/x86/xen/enlighten.c | 2 ++
->>   1 file changed, 2 insertions(+)
->>
->> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
->> index c0cb11f..645d00f 100644
->> --- a/arch/x86/xen/enlighten.c
->> +++ b/arch/x86/xen/enlighten.c
->> @@ -1322,6 +1322,8 @@ static void xen_machine_power_off(void)
->>   {
->>   	if (pm_power_off)
->>   		pm_power_off();
->> +	else
->> +		do_kernel_poweroff();
->
-> Why isn't this if (pm_power_off) check in do_kernel_poweroff()?
->
-> That way when you finally remove pm_power_off you need only update one
-> place.  A quick skim of the other archs suggest this would work for them
-> too.
->
+The following is in reaction to the thread "pipe/page fault oddness".
+The first patch cleans up a lot of mess related to ARCH_USES_NUMA_PROT_NONE.
+It's already in Andrew's tree but included here for context.
 
-Good idea. I'll do that for the next version of the patch set.
+The second patch removes a race between migration and mprotect, particularly
+from compaction context.
 
-Guenter
+The third patch should have no real effect but it's an oversight that
+should be corrected in case MPOL_MF_LAZY is exposed to userspace.
 
+The fourth patch addresses a problem whereby a split_huge_page can leave
+a pte_numa PTE in the wrong location and is one potential source of the
+bug Dave observed.
+
+Note that none of this prevents a pte_protnone approach being applied on
+top or replacing patch 4 with it.  They should not be in conflict but if
+patch 4 in particular addresses Dave's problem then it may be considerably
+lower risk for 3.17.
+
+ arch/powerpc/include/asm/pgtable.h    | 57 ++++++++---------------------------
+ arch/powerpc/include/asm/pte-common.h |  5 +++
+ arch/x86/Kconfig                      |  1 -
+ arch/x86/include/asm/pgtable_types.h  | 14 +++++++++
+ include/asm-generic/pgtable.h         | 27 ++++++-----------
+ init/Kconfig                          | 11 -------
+ mm/huge_memory.c                      |  2 --
+ mm/mempolicy.c                        |  4 ++-
+ mm/migrate.c                          |  4 ++-
+ 9 files changed, 46 insertions(+), 79 deletions(-)
+
+-- 
+1.8.4.5
 
