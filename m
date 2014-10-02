@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaJBOwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:52:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60398 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951AbaJBOwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:52:09 -0400
-Date: Thu, 2 Oct 2014 16:52:01 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de, dan.carpenter@oracle.com,
-        dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] edac, amd64_edac: Add F15h M60h support
-Message-ID: <20141002145201.GF16452@pd.tnic>
-References: <1411070230-10298-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20141001113235.GC18271@pd.tnic>
- <542C5995.7050803@amd.com>
+	id S1754306AbaJBO5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:57:20 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:33215 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaJBO5S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:57:18 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Scott.Benesh@pmcs.com" <Scott.Benesh@pmcs.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "crope@iki.fi" <crope@iki.fi>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] MAINTAINERS: remove iss_storagedev@hp.com list
+Thread-Topic: [PATCH] MAINTAINERS: remove iss_storagedev@hp.com list
+Thread-Index: AQHP3hTxJB1MOjcsxU2y+XMSkP3wqpwc5Ivg
+Date: Thu, 2 Oct 2014 14:56:34 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958CCA64E@G4W3202.americas.hpqcorp.net>
+References: <1412235940-17628-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-Reply-To: <1412235940-17628-1-git-send-email-michael.opdenacker@free-electrons.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <542C5995.7050803@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 02:44:21PM -0500, Aravind Gopalakrishnan wrote:
-> The more I think about this, I'm finding it's hard to do this cleanly.
-> I initially thought I'd just cache this in pvt->dram_type the first time I'm
-> doing this.
-> But, the pvt->ops->dbam_to_cs() mappers get called first before
-> determine_memory_type().
+
+
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Michael Opdenacker
+> Sent: Thursday, 02 October, 2014 2:46 AM
+> To: akpm@linux-foundation.org
+> Cc: davem@davemloft.net; gregkh@linuxfoundation.org; joe@perches.com;
+> m.chehab@samsung.com; crope@iki.fi; jg1.han@samsung.com; linux-
+> kernel@vger.kernel.org; scameron@beardog.cce.hp.com;
+> mikem@beardog.cce.hp.com; Michael Opdenacker
+> Subject: [PATCH] MAINTAINERS: remove iss_storagedev@hp.com list
 > 
-> So, If I look for dram_type in f15_m60h_dbam_to_chip_select() it's ugly as
-> that's really the point of
-> having a determine_memory_type().
+> This removes the iss_storagedev@hp.com mailing list from the MAINTAINERS
+> file, as this address is now rejected by the HP mail server.
 > 
-> Also, there's just a lot of if-else statements in determine_memory_type()
-> now.
-> This could benefit from having a per-family low_ops function.
-> And, we can call this early... somewhere in read_mc_regs() so that we have
-> information ready to use in
-> f15_m60h_dbam_to_chip_select() and in init_csrows() which needs dram_type
-> too.
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  MAINTAINERS | 3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 37054306dc9f..b0ed53797f43 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4215,14 +4215,12 @@ F:	drivers/media/dvb-frontends/hd29l2*
+> 
+>  HEWLETT-PACKARD SMART2 RAID DRIVER
+>  M:	Chirag Kantharia <chirag.kantharia@hp.com>
+> -L:	iss_storagedev@hp.com
+>  S:	Maintained
+>  F:	Documentation/blockdev/cpqarray.txt
+>  F:	drivers/block/cpqarray.*
+> 
+>  HEWLETT-PACKARD SMART ARRAY RAID DRIVER (hpsa)
+>  M:	"Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+> -L:	iss_storagedev@hp.com
+>  S:	Supported
+>  F:	Documentation/scsi/hpsa.txt
+>  F:	drivers/scsi/hpsa*.[ch]
+> @@ -4231,7 +4229,6 @@ F:	include/uapi/linux/cciss*.h
+> 
+>  HEWLETT-PACKARD SMART CISS RAID DRIVER (cciss)
+>  M:	Mike Miller <mike.miller@hp.com>
+> -L:	iss_storagedev@hp.com
+>  S:	Supported
+>  F:	Documentation/blockdev/cciss.txt
+>  F:	drivers/block/cciss*
 
-Right, this is what I was thinking too: somewhere in read_mc_regs(),
-after having collected ->dclr0, you call determine_memory_type() and
-store it into pvt->dram_type.
+NAK - that address is still valid; I just tested it from my gmail
+account.  In fact, that's the only working email address of all
+of those listed.  Chirag, Stephen, and Mike are no longer at HP.
 
-> Oh, btw- We can do away with a pvt->dram_ctrl as
-> f15_m60h_dbam_to_chip_select() really just needs the dram_type.
+I'll prod PMC-Sierra to send an update to MAINTAINERS.
 
-Yes, you make the read of DRAM_CONTROL inside determine_memory_type() as
-we don't need it anywhere else.
+---
+Rob Elliott    HP Server Storage
 
-If we do, all of a sudden, we'll move it up to read_mc_regs(). IOW, I'm
-trying to centralize all reg reads in read_mc_regs() and use locally
-cached info later so I don't have to access the hardware each time
-needlessly, if it can be helped.
 
-Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
