@@ -1,129 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaJBEGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 00:06:05 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33328 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbaJBEGC (ORCPT
+	id S1752290AbaJBEIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 00:08:25 -0400
+Received: from smtprelay0079.hostedemail.com ([216.40.44.79]:45581 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752435AbaJBEIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 00:06:02 -0400
-Message-ID: <542CCF1D.5090609@roeck-us.net>
-Date: Wed, 01 Oct 2014 21:05:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: atull@opensource.altera.com, jdelvare@suse.de
-CC: lm-sensors@lm-sensors.org, lgirdwood@gmail.com, broonie@kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v4 2/4] pmbus: core: add helpers for byte write and read
- modify write
-References: <1412190349-16343-1-git-send-email-atull@opensource.altera.com> <1412190349-16343-3-git-send-email-atull@opensource.altera.com>
-In-Reply-To: <1412190349-16343-3-git-send-email-atull@opensource.altera.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Thu, 2 Oct 2014 00:08:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3866:3870:3874:4321:5007:6742:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357:13972:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: worm61_832da4b87121f
+X-Filterd-Recvd-Size: 2306
+Message-ID: <1412222900.3247.33.camel@joe-AO725>
+Subject: [PATCH] checkpatch: Warn on logging functions with KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul McQuade <paulmcquad@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, neilb@suse.de, sasha.levin@oracle.com,
+        rientjes@google.com, hughd@google.com, paul.gortmaker@windriver.com,
+        liwanp@linux.vnet.ibm.com, n-horiguchi@ah.jp.nec.com,
+        iamjoonsoo.kim@lge.com
+Date: Wed, 01 Oct 2014 21:08:20 -0700
+In-Reply-To: <20141001135055.c849d1a34e9c687775a40a0f@linux-foundation.org>
+References: <1412195730-9629-1-git-send-email-paulmcquad@gmail.com>
+	 <20141001135055.c849d1a34e9c687775a40a0f@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.542CCF29.00B6,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 12:05 PM, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
->
-> Add two helper functions:
->   * pmbus_write_byte_data  = paged byte write
->   * pmbus_update_byte_data = paged byte read/modify/write
->
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
->   drivers/hwmon/pmbus/pmbus_core.c |   31 +++++++++++++++++++++++++++++++
->   1 file changed, 31 insertions(+)
->
-> diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
-> index 291d11f..d6c3701 100644
-> --- a/drivers/hwmon/pmbus/pmbus_core.c
-> +++ b/drivers/hwmon/pmbus/pmbus_core.c
-> @@ -253,6 +253,37 @@ int pmbus_read_byte_data(struct i2c_client *client, int page, u8 reg)
->   }
->   EXPORT_SYMBOL_GPL(pmbus_read_byte_data);
->
-> +int pmbus_write_byte_data(struct i2c_client *client, int page, u8 reg, u8 value)
-> +{
-> +	int rv;
-> +
-> +	rv = pmbus_set_page(client, page);
-> +	if (rv < 0)
-> +		return rv;
-> +
-> +	return i2c_smbus_write_byte_data(client, reg, value);
-> +}
-> +EXPORT_SYMBOL_GPL(pmbus_write_byte_data);
-> +
-> +int pmbus_update_byte_data(struct i2c_client *client, int page, u8 reg,
-> +			   u8 mask, u8 value)
-> +{
-> +	unsigned int tmp;
-> +	int rv;
-> +
-> +	rv = pmbus_read_byte_data(client, page, reg);
-> +	if (rv < 0)
-> +		return rv;
-> +
-> +	tmp = (rv & ~mask) | (value & mask);
-> +
-> +	if (tmp != rv)
-> +		rv = pmbus_write_byte_data(client, page, reg, tmp);
-> +
-> +	return rv;
-> +}
-> +EXPORT_SYMBOL_GPL(pmbus_update_byte_data);
-> +
->   /*
->    * _pmbus_read_byte_data() is similar to pmbus_read_byte_data(), but checks if
->    * a device specific mapping function exists and calls it if necessary.
->
+Warn on probable misuses of logging functions with KERN_<LEVEL>
+like pr_err(KERN_ERR "foo\n");
 
-Results in:
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 
-drivers/hwmon/pmbus/pmbus_core.c:259:5: warning: symbol 'pmbus_write_byte_data' was not declared. Should it be static?
-drivers/hwmon/pmbus/pmbus_core.c:271:5: warning: symbol 'pmbus_update_byte_data' was not declared. Should it be static?
-drivers/hwmon/pmbus/pmbus_core.c:259:5: warning: no previous prototype for 'pmbus_write_byte_data' [-Wmissing-prototypes]
-drivers/hwmon/pmbus/pmbus_core.c:271:5: warning: no previous prototype for 'pmbus_update_byte_data' [-Wmissing-prototypes]
+---
+> > -		printk(KERN_ERR "ksm: register sysfs failed\n");
+> > +		pr_err(KERN_ERR "ksm: register sysfs failed\n");
 
-No need to resubmit. I added a patch to un-export the functions
-and merged patch 2 and 3 together in order to avoid a warning
-after patch 2. We can always export the new helper functions
-later if needed.
+> A quick grep indicates that we have the same mistake in tens of places.
+> checkpatch rule, please?
 
-Guenter
+ scripts/checkpatch.pl | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 52a223e..374abf4 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4447,6 +4447,17 @@ sub process {
+ 			}
+ 		}
+ 
++# check for logging functions with KERN_<LEVEL>
++		if ($line !~ /printk\s*\(/ &&
++		    $line =~ /\b$logFunctions\s*\(.*\b(KERN_[A-Z]+)\b/) {
++			my $level = $1;
++			if (WARN("UNNECESSARY_KERN_LEVEL",
++				 "Possible unnecessary $level\n" . $herecurr) &&
++			    $fix) {
++				$fixed[$fixlinenr] =~ s/\s*$level\s*//;
++			}
++		}
++
+ # check for bad placement of section $InitAttribute (e.g.: __initdata)
+ 		if ($line =~ /(\b$InitAttribute\b)/) {
+ 			my $attr = $1;
+
 
