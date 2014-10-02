@@ -1,183 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaJBMwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 08:52:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36093 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaJBMwF (ORCPT
+	id S1752693AbaJBMyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 08:54:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56334 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488AbaJBMyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 08:52:05 -0400
-Message-ID: <542D4A51.9060907@ti.com>
-Date: Thu, 2 Oct 2014 15:51:29 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 2 Oct 2014 08:54:12 -0400
+Date: Thu, 2 Oct 2014 14:54:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141002125409.GG2849@worktop.programming.kicks-ass.net>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+ <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+ <20141002123150.GC6324@worktop.programming.kicks-ass.net>
+ <542D4756.4030100@hurleysoftware.com>
 MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <michal.vokac@comap.cz>, <sojkam1@fel.cvut.cz>,
-        Rostislav Lisovy <lisovy@merica.cz>
-Subject: Re: [PATCH v2 2/2] mtd: nand: omap: Synchronize access to the ECC
- engine
-References: <1412252173-20454-1-git-send-email-lisovy@merica.cz> <1412252173-20454-2-git-send-email-lisovy@merica.cz>
-In-Reply-To: <1412252173-20454-2-git-send-email-lisovy@merica.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542D4756.4030100@hurleysoftware.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 03:16 PM, Rostislav Lisovy wrote:
-> The AM335x Technical Reference Manual (spruh73j.pdf) says
-> "Because the ECC engine includes only one accumulation context,
-> it can be allocated to only one chip-select at a time ... "
-> (7.1.3.3.12.3). Since the commit 97a288ba2cfa ("ARM: omap2+:
-> gpmc-nand: Use dynamic platform_device_alloc()") gpmc-nand
-> driver supports multiple NAND flash devices connected to
-> the single controller. Use mutexes to restrict access
-> to the ECC engine for single read/write operation at a time.
+On Thu, Oct 02, 2014 at 08:38:46AM -0400, Peter Hurley wrote:
+> On 10/02/2014 08:31 AM, Peter Zijlstra wrote:
+> > On Thu, Oct 02, 2014 at 01:09:27PM +0200, Peter Zijlstra wrote:
+> >> On Tue, Sep 30, 2014 at 04:02:28PM +0800, Fengguang Wu wrote:
+> >>> Hi Peter,
+> >>>
+> >>> We possibly find a rfcomm bug (maintainers CCed) exposed by your debug patch
+> >>>
+> >>> [    1.861895] NET: Registered protocol family 5
+> >>> [    1.862978] Bluetooth: RFCOMM TTY layer initialized
+> >>> [    1.863099] ------------[ cut here ]------------
+> >>> [    1.863105] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156 __might_sleep+0x17d/0x1a1()
+> >>> [    1.863112] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c14dc381>] rfcomm_run+0xdf/0x130e
+> >>> [    1.863591]  [<c1058b73>] ? kthread_stop+0x53/0x53
+> >>> [    1.864906]  [<c155a411>] dump_stack+0x48/0x60
+> >>> [    1.866298]  [<c14dc381>] ? rfcomm_run+0xdf/0x130e
+> >>
+> >> Ha yes, rfcomm_run is a complete buggy mess indeed. Lemme go see what I
+> >> can make of it.
+> > 
+> > ---
+> > Subject: rfcomm: Fix broken wait construct
+> > 
+> > rfcomm_run() is a tad broken in that is has a nested wait loop. One
+> > cannot rely on p->state for the outer wait because the inner wait will
+> > overwrite it.
+> > 
+> > While at it, rename rfcomm_schedule to rfcomm_wake, since that is what
+> > it actually does.
 > 
-> Tested with custom AM335x board using 2x NAND flash chips.
-> 
-> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
-> ---
-> Changes since v1:
-> * Since not all the read/write operations are performed by the
->   omap_read(write)_page_bch() functions use the locks directly on
->   those places that configure the ECC engine (take the lock) and
->   read the result from the ECC engine (release the lock).
->   This approach should cover read/write operations with all
->   possible ECC modes. (Roger Quadros)
-> 
+> rfcomm_schedule() as in schedule_work(), which is how it's used.
 
-Don't you think this approach is racy?
+Not really, all it does is wake the rfcomm_thread. The thread then does
+a linear walk of all known sessions looking for work -- which is clearly
+suboptimal as well, but I didn't feel like fixing that.
 
-IMHO the lock must be held across the entire page operation
-i.e.
-hold ecc lock
-ecc.hwctl
-chip->read/write_buf
-ecc.calculate
-ecc.correct
-release ecc lock
+Also, the current implementation already disagrees with you, all it
+basically does it call wake_up_process() which is a big clue right
+there.
 
-else we risk simultaneous NAND operations on multiple chips
-stomping on each other in between the entire sequence.
-
-Then on further investigation isn't nand_get_device() already doing the same
-thing as you are attempting here?
-
-The chip->controller->lock is meant for serializing NAND controller access.
-
-so instead of adding a new lock in the omap2 nand driver we need to ensure that
-we are maintaining the same nand_hw_control (controller) structure across multiple NAND chips.
-
-Let's move this controller structure out of omap_nand_info and keep it global to the driver
-and make sure every NAND instance uses it.
-
-cheers,
--roger
-
-> 
->  drivers/mtd/nand/omap2.c | 28 +++++++++++++++++++++++++---
->  1 file changed, 25 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-> index f0dcdb6..898cb44 100644
-> --- a/drivers/mtd/nand/omap2.c
-> +++ b/drivers/mtd/nand/omap2.c
-> @@ -24,6 +24,7 @@
->  #include <linux/slab.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> +#include <linux/mutex.h>
->  
->  #include <linux/mtd/nand_bch.h>
->  #include <linux/platform_data/elm.h>
-> @@ -144,6 +145,12 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
->  	0xac, 0x6b, 0xff, 0x99, 0x7b};
->  static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
->  
-> +/*
-> + * Because the ECC engine includes only one accumulation context,
-> + * it can be allocated to only one chip-select at a time
-> + */
-> +static DEFINE_MUTEX(omap_eccengine_lock);
-> +
->  struct omap_nand_info {
->  	struct nand_hw_control		controller;
->  	struct omap_nand_platform_data	*pdata;
-> @@ -926,10 +933,13 @@ static int omap_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
->  	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
->  							mtd);
->  	u32 val;
-> +	int ret = 0;
->  
->  	val = readl(info->reg.gpmc_ecc_config);
-> -	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
-> -		return -EINVAL;
-> +	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs) {
-> +		ret = -EINVAL;
-> +		goto leave;
-> +	}
->  
->  	/* read ecc result */
->  	val = readl(info->reg.gpmc_ecc1_result);
-> @@ -938,7 +948,10 @@ static int omap_calculate_ecc(struct mtd_info *mtd, const u_char *dat,
->  	/* P2048o, P1024o, P512o, P256o, P2048e, P1024e, P512e, P256e */
->  	*ecc_code++ = ((val >> 8) & 0x0f) | ((val >> 20) & 0xf0);
->  
-> -	return 0;
-> +leave:
-> +	/* Release the ECC engine */
-> +	mutex_unlock(&omap_eccengine_lock);
-> +	return ret;
->  }
->  
->  /**
-> @@ -954,6 +967,9 @@ static void omap_enable_hwecc(struct mtd_info *mtd, int mode)
->  	unsigned int dev_width = (chip->options & NAND_BUSWIDTH_16) ? 1 : 0;
->  	u32 val;
->  
-> +	/* ECC Engine is shared among multiple NAND devices */
-> +	mutex_lock(&omap_eccengine_lock);
-> +
->  	/* clear ecc and enable bits */
->  	val = ECCCLEAR | ECC1;
->  	writel(val, info->reg.gpmc_ecc_control);
-> @@ -1132,6 +1148,9 @@ static void __maybe_unused omap_enable_hwecc_bch(struct mtd_info *mtd, int mode)
->  		return;
->  	}
->  
-> +	/* ECC Engine is shared among multiple NAND devices */
-> +	mutex_lock(&omap_eccengine_lock);
-> +
->  	writel(ECC1, info->reg.gpmc_ecc_control);
->  
->  	/* Configure ecc size for BCH */
-> @@ -1252,6 +1271,7 @@ static int __maybe_unused omap_calculate_ecc_bch(struct mtd_info *mtd,
->  			ecc_code[25] = ((val >>  0) & 0xFF);
->  			break;
->  		default:
-> +			mutex_unlock(&omap_eccengine_lock);
->  			return -EINVAL;
->  		}
->  
-> @@ -1280,12 +1300,14 @@ static int __maybe_unused omap_calculate_ecc_bch(struct mtd_info *mtd,
->  		case OMAP_ECC_BCH16_CODE_HW:
->  			break;
->  		default:
-> +			mutex_unlock(&omap_eccengine_lock);
->  			return -EINVAL;
->  		}
->  
->  	ecc_calc += eccbytes;
->  	}
->  
-> +	mutex_unlock(&omap_eccengine_lock);
->  	return 0;
->  }
->  
-> 
 
