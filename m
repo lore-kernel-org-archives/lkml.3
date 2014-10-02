@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628AbaJBTxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:53:24 -0400
-Received: from smtprelay0230.hostedemail.com ([216.40.44.230]:36071 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752400AbaJBTxX (ORCPT
+	id S1752104AbaJBT5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:57:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42513 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaJBT5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:53:23 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:196:334:355:368:369:379:541:599:800:960:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1622:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2687:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6671:7652:7903:9025:9121:10004:10400:10848:11232:11233:11658:11914:12043:12262:12296:12438:12517:12519:12555:12679:12740:13007:13019:13025:13069:13141:13161:13229:13230:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: card21_575356391313d
-X-Filterd-Recvd-Size: 2849
-Message-ID: <1412279593.3247.73.camel@joe-AO725>
-Subject: Re: checkpatch config symbol description false positive
-From: Joe Perches <joe@perches.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vadim Bendebury <vbendeb@chromium.org>
-Date: Thu, 02 Oct 2014 12:53:13 -0700
-In-Reply-To: <1412278315.6504.6.camel@x41>
-References: <CAMuHMdWc1X3Jiw3zFs2GsqXKxg-Ti_5fPOSk+DsyUwjvikwz+g@mail.gmail.com>
-	 <1412278315.6504.6.camel@x41>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Oct 2014 15:57:39 -0400
+Date: Thu, 2 Oct 2014 21:57:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141002195727.GD10583@worktop.programming.kicks-ass.net>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+ <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+ <20141002123150.GC6324@worktop.programming.kicks-ass.net>
+ <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+ <542D57D0.4030904@hurleysoftware.com>
+ <20141002135250.GB10583@worktop.programming.kicks-ass.net>
+ <20141002135805.GF6324@worktop.programming.kicks-ass.net>
+ <20141002191114.GA30606@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002191114.GA30606@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 21:31 +0200, Paul Bolle wrote:
-> Geert Uytterhoeven schreef op do 02-10-2014 om 21:08 [+0200]:
-> > When running checkpatch on
-> > http://marc.info/?l=linux-sh&m=141227657322649&w=2
-> > I get a false positive about the Kconfig symbol I just introduced, incl. a help
-> > text:
-> > 
-> > WARNING: please write a paragraph that describes the config symbol fully
-> > #60: FILE: arch/arm/Kconfig.debug:702:
-> > + config DEBUG_SCIF
+On Thu, Oct 02, 2014 at 09:11:14PM +0200, Oleg Nesterov wrote:
+> On 10/02, Peter Zijlstra wrote:
+> >
+> > On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
+> > > > If yes, then wakeups from signals don't work either, right?
+> > >
+> > > Its a kthread, there should not be any signals.
+> >
+> > That said, in the tty patch we do appear to have this problem.
+> >
+> > Oleg, do we want something like the below on top to make that work
+> > again?
+> >
+> > ---
+> > --- a/kernel/sched/wait.c
+> > +++ b/kernel/sched/wait.c
+> > @@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
+> >  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
+> >  	 * also observe all state before the wakeup.
+> >  	 */
+> > -	if (!(wait->flags & WQ_FLAG_WOKEN))
+> > -		timeout = schedule_timeout(timeout);
+> > +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
+> > +		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
+> > +			timeout = schedule_timeout(timeout);
+> > +	}
+> >  	__set_current_state(TASK_RUNNING);
 > 
-> When you add one single line to your help (say, "Bla bla.") the warning
-> disappears. So you hit this test:
->     "please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($is_start && $is_end && $length < 4);
+> I am a bit confused... but for what?
 > 
-> because the paragraph was just three lines. It seems a length of one,
-> two, or three lines can be OK. It depends. Perhaps the test should just
-> be:
->     [...] && $length);
+> schedule() won't sleep if signal_pending_state(mode) anyway, so we
+> do not need this correctness-wise. And the caller needs to check
+> signal_pending() anyway.
 
-I generally agree.
-I think the 4 line paragraph requirement is a bit much myself.
+Urgh, I always forget how all that signal stuff works. Yes you're right,
+we check that right in __schedule().
 
-There is a patch in -next that allows a command line or a
-.config file override.
-
-commit 77b0cf564fa797e390e0ea29c953ac32bec87994
-Author: Vadim Bendebury <vbendeb@chromium.org>
-Date:   Fri Sep 26 10:19:28 2014 +1000
-
-    checkpatch: allow optional shorter config descriptions
-    
-    This script is used by many other projects, and in some of them the
-    requirement of at least 4 line long description for all Kconfig items is
-    excessive.  This patch adds a command line option to control the required
-    minimum length.
-    
-    Tested running this script over a patch including a two line config
-    description.  The script generated a warning when invoked as is, and did
-    not generate it when invoked with --min-conf-desc-length=2.
-    
-    Signed-off-by: Vadim Bendebury <vbendeb@chromium.org>
-    Acked-by: Joe Perches <joe@perches.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-
-
+I'll just make all what I did go away and we'll keep it simple like it
+was. Sorry for the confusion.
