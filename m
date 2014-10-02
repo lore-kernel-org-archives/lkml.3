@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaJBORU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:17:20 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:30986 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546AbaJBORS (ORCPT
+	id S1754057AbaJBORw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:17:52 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42448 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055AbaJBORu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:17:18 -0400
-X-CheckPoint: {542D5E6D-4-2100090A-C0000000}
-Message-ID: <542D5E6D.5040908@tilera.com>
-Date: Thu, 2 Oct 2014 10:17:17 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 2 Oct 2014 10:17:50 -0400
+Message-ID: <542D5FE5.2040400@gmail.com>
+Date: Thu, 02 Oct 2014 22:23:33 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Henrik Austad <henrik@austad.us>
-CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH] tile: add clock_gettime support to vDSO
-References: <201409301938.s8UJcfY4018093@lab-40.internal.tilera.com> <20141001212439.GA12974@sisyphus.home.austad.us>
-In-Reply-To: <20141001212439.GA12974@sisyphus.home.austad.us>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.9.0.23]
+To: davem@davemloft.net, antoine.tenart@free-electrons.com, arnd@arndb.de,
+        jason@lakedaemon.net, richard@nod.at, mw@semihalf.com,
+        thomas.petazzoni@free-electrons.com
+CC: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/net/ethernet/marvell/Kconfig: Let PXA168_ETH depend
+ on HAS_IOMEM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/1/2014 5:24 PM, Henrik Austad wrote:
-> On Tue, Sep 30, 2014 at 03:29:45PM -0400, Chris Metcalf wrote:
->> >This change adds support for clock_gettime with CLOCK_REALTIME
->> >and CLOCK_MONOTONIC using vDSO.  In addition, with this change
->> >we switch to use seqlocks instead of integer counters.
->> >
->> >We also support the *_COARSE clockid_t, for apps that want speed
->> >but aren't concerned about fine-grained timestamps; this saves
->> >about 20 cycles per call (seehttp://lwn.net/Articles/342018/).
->> >
->> >Signed-off-by: Chris Metcalf<cmetcalf@tilera.com>
-> What rev is this based on? When I apply it to Linus latest (aad7fb916), it
-> fails in arch/tile/kernel/time.c and arch/tile/kernel/vdso/vgettimeofday.c
-> (see below)
+PXA168_ETH need HAS_IOMEM, so depend on it, the related error (with
+allmodconfig under um):
 
-It's based on the linux-tile tree (on kernel.org under cmetcalf/linux-tile.git), which was last synced up at 3.16-rc7. I'll refresh the tree to pick up Thomas's recent changes that were queued for 3.17.  Thanks.
+    CC [M]  drivers/net/ethernet/marvell/pxa168_eth.o
+  drivers/net/ethernet/marvell/pxa168_eth.c: In function ‘pxa168_eth_probe’:
+  drivers/net/ethernet/marvell/pxa168_eth.c:1605:2: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
+    iounmap(pep->base);
+    ^
 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/net/ethernet/marvell/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index bed8fbb..b3b72ad 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -64,7 +64,7 @@ config MVPP2
+ 
+ config PXA168_ETH
+ 	tristate "Marvell pxa168 ethernet support"
+-	depends on CPU_PXA168 || ARCH_BERLIN || COMPILE_TEST
++	depends on (CPU_PXA168 || ARCH_BERLIN || COMPILE_TEST) && HAS_IOMEM
+ 	select PHYLIB
+ 	---help---
+ 	  This driver supports the pxa168 Ethernet ports.
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+1.9.3
