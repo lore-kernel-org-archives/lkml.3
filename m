@@ -1,76 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbaJBIDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:03:10 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:64521 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaJBIDG (ORCPT
+	id S1752426AbaJBIGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:06:51 -0400
+Received: from regular1.263xmail.com ([211.150.99.131]:36654 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932AbaJBIGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:03:06 -0400
-Date: Thu, 2 Oct 2014 03:03:00 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: pipe/page fault oddness.
-Message-ID: <20141002030300.1d2788ca@as>
-In-Reply-To: <542CC73F.8050907@oracle.com>
-References: <20140930033327.GA14558@redhat.com>
-	<20140930043309.GA16196@redhat.com>
-	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>
-	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>
-	<20140930160510.GA15903@redhat.com>
-	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
-	<20140930162201.GC15903@redhat.com>
-	<20140930164047.GA18354@redhat.com>
-	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
-	<20140930182059.GA24431@redhat.com>
-	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
-	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
-	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
-	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
-	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
-	<542C7B5E.2020000@oracle.com>
-	<20141001172804.16e5986a@as>
-	<542CC73F.8050907@oracle.com>
+	Thu, 2 Oct 2014 04:06:45 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <6a3c04475d220913b3f22d19aa9cec86>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <542D078D.2000103@rock-chips.com>
+Date: Thu, 02 Oct 2014 16:06:37 +0800
+From: Jianqun <xjq@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, heiko@sntech.de,
+        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH] ASoC: rockchip-max98090: add driver for rockchip board
+ using a max98090
+References: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com> <1410507588-15719-1-git-send-email-jay.xu@rock-chips.com> <20140912135247.GU7960@sirena.org.uk>
+In-Reply-To: <20140912135247.GU7960@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01 Oct 2014 23:32:15 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
+Hi Mark:
 
-> On 10/01/2014 06:28 PM, Chuck Ebbert wrote:
-> > On Wed, 01 Oct 2014 18:08:30 -0400
-> > Sasha Levin <sasha.levin@oracle.com> wrote:
-> > 
-> >> > On 10/01/2014 04:20 PM, Linus Torvalds wrote:
-> >>> > > So I'm really sending this patch out in the hope that it will get
-> >>> > > comments, fixup and possibly even testing by people who actually know
-> >>> > > the NUMA balancing code. Rik?  Anybody?
-> >> > 
-> >> > Hi Linus,
-> >> > 
-> >> > I've tried this patch on the same configuration that was triggering
-> >> > the VM_BUG_ON that Hugh mentioned previously. Surprisingly enough it
-> >> > ran fine for ~20 minutes before exploding with:
-> >> > 
-> >> > [ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
-> > That's:
-> > 	BUG_ON(is_huge_zero_page(page));
-> > 
-> > Can you change your scripts to show the source code line when
-> > the error is a BUG_ON()? The machine code disassembly after the
-> > oops message doesn't really help.
-> > 
-> 
-> Hum? The source code line is the first line in the trace:
-> 
-> 	[ 2781.566206] kernel BUG at mm/huge_memory.c:1293!
-> 
+I'm still try to use simple-card driver but it hasn't do work from now on,
+could I to update rockchip-max98090.c at the same time ?
 
-I meant, display the contents of that line so we can see what the
-BUG_ON() was triggered by. In some cases you might have a custom patch
-applied or be running a version that some people don't have handy.
+在 09/12/2014 09:52 PM, Mark Brown 写道:
+> On Fri, Sep 12, 2014 at 03:39:48PM +0800, Jianqun wrote:
+>
+>> +#define RK_PLAT_CLK_12M      12000000
+> I'm not sure a define is adding anything here...  it's just a define
+> saying 12MHz that has the value 12MHz.
+>
+Okay
+>> +	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+>> +
+>> +/* Set max98090 as master, i2s clock output 12MHz for max98090 */
+>> +	ret = snd_soc_dai_set_sysclk(cpu_dai, 0,
+> Coding style, comments aren't aligned with the code.
+Okay
+>
+>> +	ret = snd_soc_add_card_controls(card, rk_mc_controls,
+>> +					ARRAY_SIZE(rk_mc_controls));
+>> +	if (ret) {
+>> +		pr_err("unable to add card controls\n");
+>> +		return ret;
+>> +	}
+> Use card->controls.
+Okay
+>
+>> +	snd_soc_dapm_enable_pin(dapm, "Headset Mic");
+>> +	snd_soc_dapm_enable_pin(dapm, "Headphone");
+>> +	snd_soc_dapm_enable_pin(dapm, "Ext Spk");
+>> +	snd_soc_dapm_enable_pin(dapm, "Int Mic");
+>> +
+>> +	snd_soc_dapm_sync(dapm);
+> All pins are enabled by default and sync doesn't do anything during
+> init.
+okay, will to remove sync in next version
+>> +#ifdef CONFIG_PM_SLEEP
+>> +static int snd_rk_prepare(struct device *dev)
+>> +{
+>> +	struct snd_soc_card *card = dev_get_drvdata(dev);
+>> +	struct rk_mc_private *drv = snd_soc_card_get_drvdata(card);
+>> +
+>> +	snd_soc_jack_free_gpios(&drv->hp_jack, 1, &hp_jack_gpio);
+>> +	snd_soc_jack_free_gpios(&drv->mic_jack, 1, &mic_jack_gpio);
+>> +
+>> +	return snd_soc_suspend(dev);
+>> +}
+> Why are you freeing the GPIOs over suspend, that doesn't seem good?
+Okay , will to remove them in next version
+>
+>> +	hp_jack_gpio.gpio = of_get_named_gpio(np, "rockchip,hp-det-gpios", 0);
+>> +	if (hp_jack_gpio.gpio == -EPROBE_DEFER)
+>> +		return -EPROBE_DEFER;
+>> +
+>> +	mic_jack_gpio.gpio = of_get_named_gpio(np, "rockchip,mic-det-gpios", 0);
+>> +	if (mic_jack_gpio.gpio == -EPROBE_DEFER)
+>> +		return -EPROBE_DEFER;
+> This ignores errors other than probe deferral but the init code assumed
+> that these would've succeeded.  Either the init code should handle
+> failure or all errors should be treated as fatal.
+dev_warn will be ok ?
+>> +	platform_set_drvdata(pdev, &card);
+>> +
+>> +	ret = snd_soc_of_parse_card_name(card, "rockchip,model");
+>> +	if (ret)
+>> +		return ret;
+> These need to happen before we register the card since they could be
+> used as soon as we probe.
+okay
+>> +	snd_soc_card_set_drvdata(soc_card, NULL);
+> No need to clear driver data, the core will do it anyway and anything
+> relying on pre-set driver data is broken.
+
+okay
+
+-- 
+Jianqun Xu
+
+****************************************************************************
+*IMPORTANT NOTICE:*This email is from Fuzhou Rockchip Electronics Co.,
+Ltd .The contents of this email and any attachments may contain
+information that is privileged, confidential and/or exempt from
+disclosure under applicable law and relevant NDA. If you are not the
+intended recipient, you are hereby notified that any disclosure,
+copying, distribution, or use of the information is STRICTLY PROHIBITED.
+Please immediately contact the sender as soon as possible and destroy
+the material in its entirety in any format. Thank you.
+****************************************************************************
+
+
