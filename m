@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaJBUH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 16:07:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43588 "EHLO
+	id S1752392AbaJBUL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 16:11:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43600 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751912AbaJBUH5 (ORCPT
+	with ESMTP id S1751074AbaJBUL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 16:07:57 -0400
+	Thu, 2 Oct 2014 16:11:26 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 To: rdunlap@infradead.org, trivial@kernel.org, joe@perches.com,
         akpm@linux-foundation.org, arend@broadcom.com,
@@ -14,11 +14,11 @@ To: rdunlap@infradead.org, trivial@kernel.org, joe@perches.com,
 Cc: linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
 Subject: [PATCH] [RESEND][TRIVIAL] treewide: fix occurrences of "the the "
-Date: Thu,  2 Oct 2014 22:07:47 +0200
-Message-Id: <1412280467-5708-1-git-send-email-michael.opdenacker@free-electrons.com>
+Date: Thu,  2 Oct 2014 22:11:12 +0200
+Message-Id: <1412280672-6081-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <542DA51C.1080209@free-electrons.com>
-References: <542DA51C.1080209@free-electrons.com>
+In-Reply-To: <1412280404.3247.77.camel@joe-AO725>
+References: <1412280404.3247.77.camel@joe-AO725>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
