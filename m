@@ -1,25 +1,43 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaJYCLu (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Fri, 24 Oct 2014 22:11:50 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:30990 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbaJYCLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 22:11:48 -0400
-Message-ID: <544B06DD.70201@huawei.com>
-Date: Sat, 25 Oct 2014 10:11:41 +0800
-From: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+        id S1751978AbaJBFyI (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Thu, 2 Oct 2014 01:54:08 -0400
+Received: from 70.subnet118-97-84.static.astinet.telkom.net.id ([118.97.84.70]:42691
+        "EHLO mail.pelni.co.id" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1751085AbaJBFyG convert rfc822-to-8bit (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 2 Oct 2014 01:54:06 -0400
+X-Greylist: delayed 2181 seconds by postgrey-1.27 at vger.kernel.org; Thu, 02 Oct 2014 01:54:05 EDT
+Date: Thu, 2 Oct 2014 12:07:07 +0700 (WIT)
+From: Standard Loans <banjarmasin@pelni.co.id>
+Reply-To: Standard Loans <standardloancompanymail1@rediffmail.com>
+Message-ID: <813256024.896043.1412226427319.JavaMail.root@pelni.co.id>
+Subject: KREDIT ANGEBOT / LOAN OFFER
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-Subject: test
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.133]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.206.12.56]
+X-Mailer: Zimbra 7.2.6_GA_2926 (zclient/7.2.6_GA_2926)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-test
 
+
+
+Sie benötigen die Finanzierung?
+Haben Sie Geschäfts-oder persönliche Darlehen benötigen?
+Wollen Sie Ihr Unternehmen refinanzieren wollen?
+
+Unser Unternehmen ist in den Vereinigten Staaten und Europa. Wir geben Darlehen an jedem einzelnen Unternehmen und bei 2% Zinsen jährlich. Für weitere Informationen, Kontakt E-standardloancompanymail1@rediffmail.com
+
+Hinweis: Leiten Sie Ihre Antwort auf diese E-Mail NUR: standardloancompanymail1@rediffmail.com
+
+==========================================================
+
+Do you need funding?
+Do you need Business or personal Loan?
+Do you wish to refinance your company?
+
+Our company is based in United States and Europe. We give out loan to any individual and company at 2% interest rate yearly. For more information, Contact Email: standardloancompanymail1@rediffmail.com
