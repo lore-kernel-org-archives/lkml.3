@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaJBDvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 23:51:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43955 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaJBDvx (ORCPT
+	id S1753597AbaJBD7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 23:59:38 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:42089 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaJBD73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 23:51:53 -0400
-Message-ID: <542CCBCB.9000709@oracle.com>
-Date: Wed, 01 Oct 2014 23:51:39 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 1 Oct 2014 23:59:29 -0400
+Date: Wed, 1 Oct 2014 20:59:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Oct 1
+Message-ID: <20141002035924.GA18144@roeck-us.net>
+References: <20141001175411.00be9683@canb.auug.org.au>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        mgorman@suse.de
-Subject: Re: [PATCH 0/5] mm: poison critical mm/ structs
-References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com>	<20141001140725.fd7f1d0cf933fbc2aa9fc1b1@linux-foundation.org>	<542C749B.1040103@oracle.com> <20141001144834.ff3ff0349951df734d159fb3@linux-foundation.org>
-In-Reply-To: <20141001144834.ff3ff0349951df734d159fb3@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141001175411.00be9683@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 05:48 PM, Andrew Morton wrote:
-> On Wed, 01 Oct 2014 17:39:39 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+On Wed, Oct 01, 2014 at 05:54:11PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
->>> It looks fairly cheap - I wonder if it should simply fall under
->>> CONFIG_DEBUG_VM rather than the new CONFIG_DEBUG_VM_POISON.
->>
->> Config options are cheap as well :)
+> Changes since 20140930:
 > 
-> Thing is, lots of people are enabling CONFIG_DEBUG_VM, but a smaller
-> number of people will enable CONFIG_DEBUG_VM_POISON.  Less coverage. 
+> The arm-soc tree still had its build failure for which I reverted
+> 5 commits.
 > 
-> Defaulting to y if CONFIG_DEBUG_VM might help, but if people do `make
-> oldconfig' when CONFIG_DEBUG_VM=n, their CONFIG_DEBUG_VM_POISON will
-> get set to `n' and will remain that way when they set CONFIG_DEBUG_VM
-> again.
+> The net-next tree gained a conflict against the berlin tree, lost
+> its build failure but gained another for which I applied a patch.
+> 
+> The vfio tree gained a conflict against the pci tree.
+> 
+> The tty tree lost its build failure.
+> 
+> The staging tree still had its build failure for which I reverted
+> a commit.
+> 
+> The gpio tree gained conflicts against Linus' tree and the pinctrl tree.
+> 
+> The akpm tree lost a patch that turned up elsewhere.
+> 
+> Non-merge commits (relative to Linus' tree): 8953
+>  7726 files changed, 354879 insertions(+), 267353 deletions(-)
+> 
+> ----------------------------------------------------------------------------
+> 
+Building arm:cm_x2xx_defconfig ... failed
 
-In that case, what about:
+drivers/built-in.o: In function `clk_set_rate':
+:(.text+0xdef44): multiple definition of `clk_set_rate'
+arch/arm/mach-pxa/built-in.o::(.text+0xf78): first defined here
+drivers/built-in.o:(___ksymtab_gpl+clk_disable+0x0): multiple definition of
+`__ksymtab_clk_disable'
+arch/arm/mach-pxa/built-in.o:(___ksymtab+clk_disable+0x0): first defined here
+drivers/built-in.o: In function `clk_disable':
+:(.text+0xddf30): multiple definition of `clk_disable'
+arch/arm/mach-pxa/built-in.o::(.text+0xfbc): first defined here
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index db41b15..b2c7038 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -546,6 +546,7 @@ config DEBUG_VM_RB
- config DEBUG_VM_POISON
-        bool "Poison VM structures"
-        depends on DEBUG_VM
-+       def_bool y
-        help
-          Add poison to the beggining and end of various VM structure to
-          detect memory corruption in VM management code.
+[and more]
 
-We'll default to "Y" in 'make oldconfig' and it'll automatically be switched
-on when the user selects CONFIG_DEBUG_VM=y, but we still keep the advantages
-of having it in a different config option.
+---
+Building m68k:allmodconfig ... failed
 
+drivers/media/rc/ir-hix5hd2.c: In function 'hix5hd2_ir_config':
+drivers/media/rc/ir-hix5hd2.c:100:2: error: implicit declaration of function 'readl_relaxed'
 
-Thanks,
-Sasha
+---
+Building mn10300:asb2303_defconfig ... failed
+Building um:defconfig ... failed
 
+In file included from drivers/base/platform.c:24:0:
+include/linux/pm_domain.h:74:23: error: expected identifier or '(' before '&' token
+make[2]: *** [drivers/base/platform.o] Error 1
+
+---
+Building sparc64:allmodconfig ... failed
+
+drivers/bcma/main.c: In function 'bcma_of_find_child_device':
+drivers/bcma/main.c:150:3: error: implicit declaration of function 'of_translate_address'
+
+---
+
+Guenter
