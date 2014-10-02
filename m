@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686AbaJBOTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 10:19:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbaJBOTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 10:19:32 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org, Lubomir Rintel <lkundrak@v3.sk>
-Subject: [RESEND PATCH] saa7146: Create a device name before it's used
-Date: Thu,  2 Oct 2014 16:19:15 +0200
-Message-Id: <1412259555-19242-1-git-send-email-lkundrak@v3.sk>
+	id S1753110AbaJBOWq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 10:22:46 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52634 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498AbaJBOWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 10:22:45 -0400
+Message-ID: <542D5FB1.3090307@codeaurora.org>
+Date: Thu, 02 Oct 2014 17:22:41 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>,
+        "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dedekind1@gmail.com" <dedekind1@gmail.com>
+Subject: Re: [PATCH 4/4] UBI: Fastmap: Ensure that only one fastmap work is
+ scheduled
+References: <1412029248-22454-1-git-send-email-richard@nod.at>		 <1412029248-22454-5-git-send-email-richard@nod.at>	 <1412059523.3904.11.camel@sauron.fi.intel.com> <542A54E4.2060407@nod.at> <1412062762.2379.2.camel@sauron.fi.intel.com> <542A5F64.5000302@nod.at>
+In-Reply-To: <542A5F64.5000302@nod.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_irq() uses it, tries to create a procfs file with an empty name
-otherwise.
+On 9/30/2014 10:44 AM, Richard Weinberger wrote:
+> Am 30.09.2014 09:39, schrieb Bityutskiy, Artem:
+>> On Tue, 2014-09-30 at 08:59 +0200, Richard Weinberger wrote:
+>>> Am 30.09.2014 08:45, schrieb Bityutskiy, Artem:
+>>>> On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
+>>>>> +       spin_lock(&ubi->wl_lock);
+>>>>> +       ubi->fm_work_scheduled = 0;
+>>>>> +       spin_unlock(&ubi->wl_lock);
+>>>>
+>>>> Andrew Morton once said me that if I am protecting an integer change
+>>>> like this with a spinlock, I have a problem in my locking design. He was
+>>>> right for my particular case.
+>>>>
+>>>> Integer is changes atomic. The only other thing spinlock adds are the
+>>>> barriers.
+>>>
+>>> I've added the spinlock to have a barrier in any case.
+>>
+>> Examples of any?
+>
+> You mean a case where the compiler would reorder code and the barrier is needed?
+> I don't have one, but I'm not that creative as a modern C compiler.
+> If you say that no barrier is needed I'll trust you. :-)
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=83771
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/media/common/saa7146/saa7146_core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+we just implemented the same thing :) It's being tested....
+Why not use atomic_t fm_work_scheduled and save the spin_lock?
 
-diff --git a/drivers/media/common/saa7146/saa7146_core.c b/drivers/media/common/saa7146/saa7146_core.c
-index 97afee6..4418119 100644
---- a/drivers/media/common/saa7146/saa7146_core.c
-+++ b/drivers/media/common/saa7146/saa7146_core.c
-@@ -364,6 +364,9 @@ static int saa7146_init_one(struct pci_dev *pci, const struct pci_device_id *ent
- 		goto out;
- 	}
- 
-+	/* create a nice device name */
-+	sprintf(dev->name, "saa7146 (%d)", saa7146_num);
-+
- 	DEB_EE("pci:%p\n", pci);
- 
- 	err = pci_enable_device(pci);
-@@ -438,9 +441,6 @@ static int saa7146_init_one(struct pci_dev *pci, const struct pci_device_id *ent
- 
- 	/* the rest + print status message */
- 
--	/* create a nice device name */
--	sprintf(dev->name, "saa7146 (%d)", saa7146_num);
--
- 	pr_info("found saa7146 @ mem %p (revision %d, irq %d) (0x%04x,0x%04x)\n",
- 		dev->mem, dev->revision, pci->irq,
- 		pci->subsystem_vendor, pci->subsystem_device);
+>
+> Thanks,
+> //richard
+>
+>
+> ______________________________________________________
+> Linux MTD discussion mailing list
+> http://lists.infradead.org/mailman/listinfo/linux-mtd/
+>
+
+
 -- 
-1.9.3
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, 
+hosted by The Linux Foundation
