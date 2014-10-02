@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaJBPuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:50:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38887 "EHLO mx2.suse.de"
+	id S1754659AbaJBPvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:51:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26171 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175AbaJBPtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:49:41 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Xishi Qiu <qiuxishi@huawei.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 3/4] mm, cma: drain single zone pcplists
-Date: Thu,  2 Oct 2014 17:48:59 +0200
-Message-Id: <1412264940-15738-4-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1412264940-15738-1-git-send-email-vbabka@suse.cz>
-References: <1412264940-15738-1-git-send-email-vbabka@suse.cz>
+	id S1753485AbaJBPvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:51:32 -0400
+Message-ID: <542D73E8.5060307@redhat.com>
+Date: Thu, 02 Oct 2014 11:48:56 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] mm: migrate: Close race between migration completion
+ and mprotect
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de> <1412256558-9995-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1412256558-9995-3-git-send-email-mgorman@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CMA allocation drains pcplists so that pages can merge back to buddy allocator.
-Since it operates on a single zone, we can reduce the pcplists drain to the
-single zone, which is now possible.
+On 10/02/2014 09:29 AM, Mel Gorman wrote:
+> A migration entry is marked as write if pte_write was true at the time the
+> entry was created. The VMA protections are not double checked when migration
+> entries are being removed as mprotect marks write-migration-entries as
+> read. It means that potentially we take a spurious fault to mark PTEs write
+> again but it's straight-forward. However, there is a race between write
+> migrations being marked read and migrations finishing. This potentially
+> allows a PTE to be write that should have been read. Close this race by
+> double checking the VMA permissions when migration completes.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-The change should make CMA allocations faster and not disturbing unrelated
-pcplists anymore.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index bc3db3e..e758159 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6417,7 +6417,7 @@ int alloc_contig_range(unsigned long start, unsigned long end,
- 	 */
- 
- 	lru_add_drain_all();
--	drain_all_pages(NULL);
-+	drain_all_pages(cc.zone);
- 
- 	order = 0;
- 	outer_start = start;
--- 
-1.8.4.5
+Acked-by: Rik van Riel <riel@redhat.com>
 
