@@ -1,98 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaJBJxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:53:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23169 "EHLO mga02.intel.com"
+	id S1751408AbaJBJzH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:55:07 -0400
+Received: from plane.gmane.org ([80.91.229.3]:53866 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbaJBJxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:53:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
-   d="scan'208";a="612018545"
-Date: Thu, 2 Oct 2014 12:53:03 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 13/15] input: gpio_keys_polled - Add ACPI probing
- support
-Message-ID: <20141002095303.GH1786@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1852462.V1jlbi8OPt@vostro.rjw.lan>
- <17237242.r7oKCjnQJM@vostro.rjw.lan>
- <20141001074846.GA17700@dtor-glaptop>
- <20141001091535.GZ1786@lahna.fi.intel.com>
- <20141001162802.GD23115@dtor-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141001162802.GD23115@dtor-glaptop>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1750987AbaJBJzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 05:55:05 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
+Date: Thu, 02 Oct 2014 12:29:53 +0300
+Message-ID: <542D1B11.8070600@mm-sol.com>
+References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com> <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+Cc: linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: 37.157.136.206
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+In-Reply-To: <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 09:28:02AM -0700, Dmitry Torokhov wrote:
-> On Wed, Oct 01, 2014 at 12:15:35PM +0300, Mika Westerberg wrote:
-> > On Wed, Oct 01, 2014 at 12:48:46AM -0700, Dmitry Torokhov wrote:
-> > > On Wed, Oct 01, 2014 at 04:20:43AM +0200, Rafael J. Wysocki wrote:
-> > > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > 
-> > > > Allow the driver to probe from ACPI namespace.
-> > > > 
-> > > > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > ---
-> > > >  drivers/input/keyboard/gpio_keys_polled.c |    7 +++++++
-> > > >  1 file changed, 7 insertions(+)
-> > > > 
-> > > > Index: linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-> > > > ===================================================================
-> > > > --- linux-pm.orig/drivers/input/keyboard/gpio_keys_polled.c
-> > > > +++ linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-> > > > @@ -181,6 +181,12 @@ static const struct of_device_id gpio_ke
-> > > >  };
-> > > >  MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
-> > > >  
-> > > > +static const struct acpi_device_id gpio_keys_polled_acpi_match[] = {
-> > > > +	{ "PRP0001" }, /* Device Tree shoehorned into ACPI */
-> > > > +	{ },
-> > > > +};
-> > > > +MODULE_DEVICE_TABLE(acpi, gpio_keys_polled_acpi_match);
-> > > > +
-> > > >  static int gpio_keys_polled_probe(struct platform_device *pdev)
-> > > >  {
-> > > >  	struct device *dev = &pdev->dev;
-> > > > @@ -309,6 +315,7 @@ static struct platform_driver gpio_keys_
-> > > >  		.name	= DRV_NAME,
-> > > >  		.owner	= THIS_MODULE,
-> > > >  		.of_match_table = gpio_keys_polled_of_match,
-> > > > +		.acpi_match_table = gpio_keys_polled_acpi_match,
-> > > o
-> > > Hmm, why do we need the generic "PRP0001" in every driver? The ACPI device
-> > > should have PRP0001 and ACPI bus should know to look into OF matching table
-> > > for such devices.
-> > 
-> > Arnd had a good idea for this. How about,
-> > 
-> > 	.acpi_match_table = acpi_match_by_of_compatible,
-> > 
-> > where acpi_match_by_of_compatible is provided by ACPI core? Does that
-> > work better for you?
-> 
-> I still do not see the point. ACPI core knows how to handle
-> drv->of_match_table, so unless we need to support ACPI_only binding in a
-> given driver I do not understand why we need to add boilerplate code.
 
-You are right - we can get rid of that completely.
+Hi Stan,
 
-In case a device has compatible property, .of_match_table and does not
-have .acpi_match_table we match against .of_match_table in ACPI core.
+On 09/24/2014 03:56 PM, Stanimir Varbanov wrote:
+
+<snip>
+
+> +static int vadc_get_dt_data(struct vadc_priv *vadc, struct device_node *node)
+> +{
+> +	struct iio_chan_spec *iio_chan = vadc->iio_chans;
+> +	const struct vadc_channels *vadc_chan;
+> +	struct vadc_channel_prop prop;
+> +	struct device_node *child;
+> +	int ret, index = 0;
+> +
+> +	for_each_available_child_of_node(node, child) {
+> +		ret = vadc_get_dt_channel_data(vadc->dev, &prop, child);
+> +		if (ret)
+> +			return ret;
+> +
+> +		vadc->chan_props[index] = prop;
+> +
+> +		vadc_chan = &vadc_chans[prop.channel];
+> +
+> +		iio_chan->channel = prop.channel;
+> +		iio_chan->datasheet_name = vadc_chan->datasheet_name;
+> +		iio_chan->info_mask_separate = vadc_chan->info_mask;
+> +		iio_chan->type = vadc_chan->type;
+> +		iio_chan->indexed = 1;
+> +		iio_chan->scan_type.sign = 's';
+> +		iio_chan->scan_type.realbits = 15;
+> +		iio_chan->scan_type.storagebits = 16;
+> +		iio_chan->address = index++;
+> +
+> +		iio_chan++;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+
+<snip>
+
+> +static int vadc_probe(struct platform_device *pdev)
+> +{
+
+<snip>
+
+> +
+> +	indio_dev->dev.parent = dev;
+> +	indio_dev->dev.of_node = node;
+> +	indio_dev->name = pdev->name;
+> +	indio_dev->modes = INDIO_DIRECT_MODE;
+> +	indio_dev->info = &vadc_info;
+> +	indio_dev->channels = vadc->iio_chans;
+> +	indio_dev->num_channels = vadc->nchannels;
+
+This will not work as we thought. Registration will be fine and entries
+in sysfs are created as expected, but this is breaking numbering scheme
+for client drivers. For us the problem is that iio framework expect channels
+numbering to be linear and channel number should not be greater than
+channel count. For example even if die temperature channel is always 8, if
+I describe only 5 channels in DTS files (4 for reference points measurement)
+and 1 for die temperature, clients could not get OF reference to 
+temperature
+channel using io-channels = <&pm8941_vadc 8>;
+
+Jonathan, please, could you advise us.
+
+Regards,
+Ivan
+
+> +
+> +	return devm_iio_device_register(dev, indio_dev);
+> +}
+> +
+>
+
