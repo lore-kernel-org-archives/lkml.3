@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaJBNfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:35:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35537 "EHLO mx2.suse.de"
+	id S1753488AbaJBNfm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:35:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50870 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410AbaJBNfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:35:37 -0400
-Message-ID: <542D54A7.604@suse.cz>
-Date: Thu, 02 Oct 2014 15:35:35 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: linux-kbuild@vger.kernel.org
-CC: sam@ravnborg.org, yamada.m@jp.panasonic.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kbuild: Do not reference *-n variables in the Makefile
-References: <20141002221754.3504.AA925319@jp.panasonic.com> <1412256796-4111-1-git-send-email-mmarek@suse.cz>
-In-Reply-To: <1412256796-4111-1-git-send-email-mmarek@suse.cz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1752330AbaJBNfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:35:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,638,1406617200"; 
+   d="scan'208";a="582465630"
+From: Imre Deak <imre.deak@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tty/vt: don't set font mappings on vc not supporting this
+Date: Thu,  2 Oct 2014 16:34:31 +0300
+Message-Id: <1412256871-29148-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-02 15:33, Michal Marek wrote:
-> Kconfig options are either 'y', 'm', or undefined.
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
->  Makefile | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index efbd2cb..106f300 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -868,9 +868,7 @@ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
->  		     $(net-y) $(net-m) $(libs-y) $(libs-m)))
->  
->  vmlinux-alldirs	:= $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
-> -		     $(init-n) $(init-) \
-> -		     $(core-n) $(core-) $(drivers-n) $(drivers-) \
-> -		     $(net-n)  $(net-)  $(libs-n)    $(libs-))))
-> +		     $(init-) $(core-) $(drivers-) $(net-) $(libs-))))
+We can call this function for a dummy console that doesn't support
+setting the font mapping, which will result in a null ptr BUG. So check
+for this case and return error for consoles w/o font mapping support.
 
-Actually, all the directories are hardcoded in
-{init,code,drivers,net,libs}-y; there are currently no Kconfig variables
-involved. But let's keep this generic and handle *-m and *- just in case.
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=59321
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+---
+ drivers/tty/vt/consolemap.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Michal
+diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
+index 610b720..59b25e0 100644
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -539,6 +539,12 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 
+ 	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = *vc->vc_uni_pagedir_loc;
++
++	if (!p) {
++		err = -EINVAL;
++
++		goto out_unlock;
++	}
+ 	
+ 	if (p->refcount > 1) {
+ 		int j, k;
+@@ -623,6 +629,7 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
+ 		set_inverse_transl(vc, p, i); /* Update inverse translations */
+ 	set_inverse_trans_unicode(vc, p);
+ 
++out_unlock:
+ 	console_unlock();
+ 	return err;
+ }
+-- 
+1.8.4
+
