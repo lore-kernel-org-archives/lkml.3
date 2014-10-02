@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaJBSoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:44:17 -0400
-Received: from mail-bl2on0062.outbound.protection.outlook.com ([65.55.169.62]:1758
+	id S1752544AbaJBSoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:44:34 -0400
+Received: from mail-bl2on0090.outbound.protection.outlook.com ([65.55.169.90]:22992
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751857AbaJBSoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:44:12 -0400
+	id S1752120AbaJBSoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 14:44:15 -0400
 From: <atull@opensource.altera.com>
 To: <linux@roeck-us.net>, <jdelvare@suse.de>
 CC: <lm-sensors@lm-sensors.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
@@ -16,9 +16,9 @@ CC: <lm-sensors@lm-sensors.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
         <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
         <yvanderv@opensource.altera.com>,
         Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v5 3/4] pmbus: add regulator support
-Date: Thu, 2 Oct 2014 13:37:50 -0500
-Message-ID: <1412275071-6417-4-git-send-email-atull@opensource.altera.com>
+Subject: [PATCH v5 4/4] pmbus: ltc2978: add regulator support
+Date: Thu, 2 Oct 2014 13:37:51 -0500
+Message-ID: <1412275071-6417-5-git-send-email-atull@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
 References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
@@ -39,17 +39,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Tull <atull@opensource.altera.com>
 
-Add support for simple on/off control of each channel.
-
-To add regulator support, the pmbus part driver needs to add
-regulator_desc information and number of regulators to its
-pmbus_driver_info struct.
-
-regulator_desc can be declared using default macro for a
-regulator (PMBUS_REGULATOR) that is in pmbus.h
-
-The regulator_init_data can be intialized from either
-platform data or the device tree.
+Add simple on/off regulator support for ltc2978 and
+other pmbus parts supported by ltc2978.c
 
 Signed-off-by: Alan Tull <atull@opensource.altera.com>
 ---
@@ -61,206 +52,97 @@ v3: Support multiple regulators for each chip
     Move most code to pmbus_core.c
     fixed values for on/off
 
-v4: rename _pmbus_regulator_enable to _pmbus_regulator_on_off
-    simplify _pmbus_regulator_on_off code
-    s/regulator_regulator/regulator/
-    fix break when !CONFIG_REGULATOR
-    remove unused #define PB_OPERATION_CONTROL_SEQ_OFF
+v4: fix a #endif comment
+    simplify probe code, remove added switch statement
+    remove BUG_ON(), add error message and fix num_regulators
 
-v5: use "regulator: of: Provide simplified DT parsing method"
+v5: Kconfig: update list of supported chips
+    use "regulator: of: Provide simplified DT parsing method"
     remove #include <linux/regulator/of_regulator.h>
-    remove of_regulator_match structure in pmbus_driver_info
-    add of_match and regulators_node for regulator_desc macro
-    remove pmbus_regulator_parse_dt
-    remove unneeded 'else' that set init_data and of_node
+    remove of_regulator_match
 ---
- drivers/hwmon/pmbus/pmbus.h      |   26 ++++++++++++
- drivers/hwmon/pmbus/pmbus_core.c |   87 ++++++++++++++++++++++++++++++++++++++
- include/linux/i2c/pmbus.h        |    4 ++
- 3 files changed, 117 insertions(+)
+ drivers/hwmon/pmbus/Kconfig   |   11 +++++++++--
+ drivers/hwmon/pmbus/ltc2978.c |   24 ++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/pmbus/pmbus.h b/drivers/hwmon/pmbus/pmbus.h
-index 3ae79a7..89a23ff 100644
---- a/drivers/hwmon/pmbus/pmbus.h
-+++ b/drivers/hwmon/pmbus/pmbus.h
-@@ -19,6 +19,8 @@
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index 6e1e493..a674cd8 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -47,15 +47,22 @@ config SENSORS_LM25066
+ 	  be called lm25066.
  
+ config SENSORS_LTC2978
+-	tristate "Linear Technologies LTC2974, LTC2978, LTC3880, and LTC3883"
++	tristate "Linear Technologies LTC2978 and compatibles"
+ 	default n
+ 	help
+ 	  If you say yes here you get hardware monitoring support for Linear
+-	  Technology LTC2974, LTC2978, LTC3880, and LTC3883.
++	  Technology LTC2974, LTC2977, LTC2978, LTC3880, LTC3883, and LTM4676.
+ 
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called ltc2978.
+ 
++config SENSORS_LTC2978_REGULATOR
++	boolean "Regulator support for LTC2978 and compatibles"
++	depends on SENSORS_LTC2978 && REGULATOR
++	help
++	  If you say yes here you get regulator support for Linear
++	  Technology LTC2974, LTC2977, LTC2978, LTC3880, LTC3883, and LTM4676.
++
+ config SENSORS_MAX16064
+ 	tristate "Maxim MAX16064"
+ 	default n
+diff --git a/drivers/hwmon/pmbus/ltc2978.c b/drivers/hwmon/pmbus/ltc2978.c
+index e24ed52..efac4bf 100644
+--- a/drivers/hwmon/pmbus/ltc2978.c
++++ b/drivers/hwmon/pmbus/ltc2978.c
+@@ -22,6 +22,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
 +#include <linux/regulator/driver.h>
-+
- #ifndef PMBUS_H
- #define PMBUS_H
- 
-@@ -186,6 +188,11 @@
- #define PMBUS_VIRT_STATUS_VMON		(PMBUS_VIRT_BASE + 35)
- 
- /*
-+ * OPERATION
-+ */
-+#define PB_OPERATION_CONTROL_ON		(1<<7)
-+
-+/*
-  * CAPABILITY
-  */
- #define PB_CAPABILITY_SMBALERT		(1<<4)
-@@ -365,8 +372,27 @@ struct pmbus_driver_info {
- 	 */
- 	int (*identify)(struct i2c_client *client,
- 			struct pmbus_driver_info *info);
-+
-+	/* Regulator functionality, if supported by this chip driver. */
-+	int num_regulators;
-+	const struct regulator_desc *reg_desc;
- };
- 
-+/* Regulator ops */
-+
-+extern struct regulator_ops pmbus_regulator_ops;
-+
-+/* Macro for filling in array of struct regulator_desc */
-+#define PMBUS_REGULATOR(_name, _id)				\
-+	[_id] = {						\
-+		.name = (_name # _id),				\
-+		.id = (_id),					\
-+		.of_match = of_match_ptr(_name # _id),		\
-+		.regulators_node = of_match_ptr("regulators"),	\
-+		.ops = &pmbus_regulator_ops,			\
-+		.owner = THIS_MODULE,				\
-+	}
-+
- /* Function declarations */
- 
- void pmbus_clear_cache(struct i2c_client *client);
-diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
-index d6c3701..f2e47c7 100644
---- a/drivers/hwmon/pmbus/pmbus_core.c
-+++ b/drivers/hwmon/pmbus/pmbus_core.c
-@@ -29,6 +29,8 @@
- #include <linux/hwmon-sysfs.h>
- #include <linux/jiffies.h>
- #include <linux/i2c/pmbus.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
  #include "pmbus.h"
  
- /*
-@@ -1758,6 +1760,84 @@ static int pmbus_init_common(struct i2c_client *client, struct pmbus_data *data,
- 	return 0;
- }
+ enum chips { ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676 };
+@@ -374,6 +375,19 @@ static const struct i2c_device_id ltc2978_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, ltc2978_id);
  
-+#if IS_ENABLED(CONFIG_REGULATOR)
-+static int pmbus_regulator_is_enabled(struct regulator_dev *rdev)
-+{
-+	struct device *dev = rdev_get_dev(rdev);
-+	struct i2c_client *client = to_i2c_client(dev->parent);
-+	u8 page = rdev_get_id(rdev);
-+	int ret;
-+
-+	ret = pmbus_read_byte_data(client, page, PMBUS_OPERATION);
-+	if (ret < 0)
-+		return ret;
-+
-+	return !!(ret & PB_OPERATION_CONTROL_ON);
-+}
-+
-+static int _pmbus_regulator_on_off(struct regulator_dev *rdev, bool enable)
-+{
-+	struct device *dev = rdev_get_dev(rdev);
-+	struct i2c_client *client = to_i2c_client(dev->parent);
-+	u8 page = rdev_get_id(rdev);
-+
-+	return pmbus_update_byte_data(client, page, PMBUS_OPERATION,
-+				      PB_OPERATION_CONTROL_ON,
-+				      enable ? PB_OPERATION_CONTROL_ON : 0);
-+}
-+
-+static int pmbus_regulator_enable(struct regulator_dev *rdev)
-+{
-+	return _pmbus_regulator_on_off(rdev, 1);
-+}
-+
-+static int pmbus_regulator_disable(struct regulator_dev *rdev)
-+{
-+	return _pmbus_regulator_on_off(rdev, 0);
-+}
-+
-+struct regulator_ops pmbus_regulator_ops = {
-+	.enable = pmbus_regulator_enable,
-+	.disable = pmbus_regulator_disable,
-+	.is_enabled = pmbus_regulator_is_enabled,
++#if IS_ENABLED(CONFIG_SENSORS_LTC2978_REGULATOR)
++static const struct regulator_desc ltc2978_reg_desc[] = {
++	PMBUS_REGULATOR("vout_en", 0),
++	PMBUS_REGULATOR("vout_en", 1),
++	PMBUS_REGULATOR("vout_en", 2),
++	PMBUS_REGULATOR("vout_en", 3),
++	PMBUS_REGULATOR("vout_en", 4),
++	PMBUS_REGULATOR("vout_en", 5),
++	PMBUS_REGULATOR("vout_en", 6),
++	PMBUS_REGULATOR("vout_en", 7),
 +};
-+EXPORT_SYMBOL_GPL(pmbus_regulator_ops);
++#endif /* CONFIG_SENSORS_LTC2978_REGULATOR */
 +
-+static int pmbus_regulator_register(struct pmbus_data *data)
-+{
-+	struct device *dev = data->dev;
-+	const struct pmbus_driver_info *info = data->info;
-+	const struct pmbus_platform_data *pdata = dev_get_platdata(dev);
-+	struct regulator_dev *rdev;
-+	int i;
-+
-+	for (i = 0; i < info->num_regulators; i++) {
-+		struct regulator_config config = { };
-+
-+		config.dev = dev;
-+		config.driver_data = data;
-+
-+		if (pdata && pdata->reg_init_data)
-+			config.init_data = &pdata->reg_init_data[i];
-+
-+		rdev = devm_regulator_register(dev, &info->reg_desc[i],
-+					       &config);
-+		if (IS_ERR(rdev)) {
-+			dev_err(dev, "Failed to register %s regulator\n",
-+				info->reg_desc[i].name);
-+			return PTR_ERR(rdev);
-+		}
-+	}
-+
-+	return 0;
-+}
-+#else
-+static int pmbus_regulator_register(struct pmbus_data *data)
-+{
-+	return 0;
-+}
-+#endif
-+
- int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
- 		   struct pmbus_driver_info *info)
+ static int ltc2978_probe(struct i2c_client *client,
+ 			 const struct i2c_device_id *id)
  {
-@@ -1812,8 +1892,15 @@ int pmbus_do_probe(struct i2c_client *client, const struct i2c_device_id *id,
- 		dev_err(dev, "Failed to register hwmon device\n");
- 		goto out_kfree;
+@@ -487,6 +501,16 @@ static int ltc2978_probe(struct i2c_client *client,
+ 	default:
+ 		return -ENODEV;
  	}
 +
-+	ret = pmbus_regulator_register(data);
-+	if (ret)
-+		goto out_unregister;
++#if IS_ENABLED(CONFIG_SENSORS_LTC2978_REGULATOR)
++	info->num_regulators = info->pages;
++	info->reg_desc = ltc2978_reg_desc;
++	if (info->num_regulators > ARRAY_SIZE(ltc2978_reg_desc)) {
++		dev_err(&client->dev, "num_regulators too large!");
++		info->num_regulators = ARRAY_SIZE(ltc2978_reg_desc);
++	}
++#endif
 +
- 	return 0;
+ 	return pmbus_do_probe(client, id, info);
+ }
  
-+out_unregister:
-+	hwmon_device_unregister(data->hwmon_dev);
- out_kfree:
- 	kfree(data->group.attrs);
- 	return ret;
-diff --git a/include/linux/i2c/pmbus.h b/include/linux/i2c/pmbus.h
-index 69280db..ee3c2ab 100644
---- a/include/linux/i2c/pmbus.h
-+++ b/include/linux/i2c/pmbus.h
-@@ -40,6 +40,10 @@
- 
- struct pmbus_platform_data {
- 	u32 flags;		/* Device specific flags */
-+
-+	/* regulator support */
-+	int num_regulators;
-+	struct regulator_init_data *reg_init_data;
- };
- 
- #endif /* _PMBUS_H_ */
 -- 
 1.7.9.5
 
