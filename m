@@ -1,170 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaJBKFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 06:05:22 -0400
-Received: from relay.parallels.com ([195.214.232.42]:43334 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaJBKFQ (ORCPT
+	id S1751580AbaJBKGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 06:06:41 -0400
+Received: from fm2nodo1.polito.it ([130.192.180.12]:34470 "EHLO
+	fm2nodo1.polito.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaJBKGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 06:05:16 -0400
-Message-ID: <1412244310.20287.34.camel@tkhai>
-Subject: Re: [PATCH v2 1/3] sched/dl: Implement cancel_dl_timer() to use in
- switched_from_dl()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Kirill Tkhai <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>,
-        "Ingo Molnar" <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
-Date: Thu, 2 Oct 2014 14:05:10 +0400
-In-Reply-To: <20141002093408.GB2849@worktop.programming.kicks-ass.net>
-References: <20140930210412.5258.35299.stgit@localhost>
-	 <20141002093408.GB2849@worktop.programming.kicks-ass.net>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 2 Oct 2014 06:06:39 -0400
+X-ExtScanner: Niversoft's FindAttachments (free)
+Message-ID: <542D2398.8000300@polito.it>
+Date: Thu, 02 Oct 2014 12:06:16 +0200
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [Linux-ima-devel] [PATCH v2 3/4] ima: check appraisal flag in
+ the ima_file_free() hook
+References: <cover.1412188590.git.d.kasatkin@samsung.com> <600aeb6a5b8eca7eb381392e142ca71484717e9c.1412188590.git.d.kasatkin@samsung.com> <542D0C33.2010700@polito.it> <542D1B4B.7040904@samsung.com>
+In-Reply-To: <542D1B4B.7040904@samsung.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-FEAS-SYSTEM-WL: 130.192.180.41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Чт, 02/10/2014 в 11:34 +0200, Peter Zijlstra пишет:
-> On Wed, Oct 01, 2014 at 01:04:22AM +0400, Kirill Tkhai wrote:
-> > From: Kirill Tkhai <ktkhai@parallels.com>
-> > 
-> > hrtimer_try_to_cancel() may bring a suprise, its call may fail.
-> 
-> Well, not really a surprise that, its a _try_ operation after all.
-> 
-> > raw_spin_lock(&rq->lock)
-> > ...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-> > ...                               raw_spin_lock(&rq->lock)   ...
-> >    switched_from_dl()             ...                        ...
-> >       hrtimer_try_to_cancel()     ...                        ...
-> >    switched_to_fair()             ...                        ...
-> > ...                               ...                        ...
-> > ...                               ...                        ...
-> > raw_spin_unlock(&rq->lock)        ...                        (asquired)
-> > ...                               ...                        ...
-> > ...                               ...                        ...
-> > do_exit()                         ...                        ...
-> >    schedule()                     ...                        ...
-> >       raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-> >       ...                         ...                        ...
-> >       raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-> >       ...                         ...                        (asquired)
-> >       put_task_struct()           ...                        ...
-> >           free_task_struct()      ...                        ...
-> >       ...                         ...                        raw_spin_unlock(&rq->lock)
-> > ...                               (asquired)                 ...
-> > ...                               ...                        ...
-> > ...                               Surprise!!!                ...
-> > 
-> > So, let's implement 100% guaranteed way to cancel the timer and let's
-> > be sure we are safe even in very unlikely situations.
-> > 
-> > We do not create any problem with rq unlocking, because it already
-> > may happed below in pull_dl_task(). No problem with deadline tasks
-> > balancing too.
-> 
-> That doesn't sound right. pull_dl_task() is an entirely different
-> callchain than switched_from(). Now it might still be fine, but you
-> cannot compare it with pull_dl_task.
+On 10/02/2014 11:30 AM, Dmitry Kasatkin wrote:
+> On 02/10/14 11:26, Roberto Sassu wrote:
+>> On 10/01/2014 08:43 PM, Dmitry Kasatkin wrote:
+>>> ima_file_free() hook is only used by appraisal module to update hash
+>>> when file was modified. When there were no integrity checks on inode,
+>>> S_IMA flag is not set, integrity_iint_find() returns NULL and it
+>>> quits. When inode is only measured/audited but not appraised, iint
+>>> is allocated and it will cause calling ima_check_last_writer() which
+>>> unnecessarily locks i_mutex.
+>>>
+>>> Currently ima_file_free() checks 'iint_initialized'. But it looks that
+>>> it is a mistake and originally 'ima_appraise' had to be used instead.
+>>> In fact usage of 'iint_initialized' is completely unnecessary because
+>>> S_IMA flag would not be set if iint was not allocated.
+>>>
+>> Hi Dmitry
+>>
+>> sorry, I think there are two mistakes here.
+>>
+>> First, ima_file_free() is not used by the appraisal module only
+>> because, if a file has been written, also the IMA_MEASURED
+>> and IMA_AUDITED flags are cleared. Your patch prevents further
+>> measurements/audits if a file is modified.
+>>
+>> Second, the lock of i_mutex is necessary, as it protects the
+>> access to the fields of the 'integrity_iint_cache' structure.
+>>
+>> My suggestion is to provide a patch that fixes the commit a756024e
+>> of Mimi's 'next' branch. The patch should just replace the check
+>> of 'iint_initialized' with 'ima_policy_flag'. The removal of
+>> 'iint_initialized' could be done in a separate patch.
+>>
+>> Thanks
+>>
+>> Roberto Sassu
+>
+> Hi Roberto,
+>
+> You are right. Clearing flags slipped out from my eyes.
+> In such case we need to test entire flag as we do in other places.
+> But in such case the patch is more about remove iint_initialzed, because
+> S_IMA flag would not be set anyway.
+> I posted modified version.
+>
 
-I mean that caller of switched_from_dl() already knows about this situation,
-and we do not limit the area of its use.
+Hi Dmitry
 
-Does this sound better?
+thanks for the updated version. I would slightly modify the
+patch description by saying that your patch completes the switching
+to the 'ima_policy_flag' variable in the checks at the beginning
+of IMA functions, started with the commit a756024e.
 
-[PATCH] sched/dl: Implement cancel_dl_timer() to use in switched_from_dl()
-    
-Currently used hrtimer_try_to_cancel() is racy:
+I noticed that James Morris pulled my previous patches, so also
+this one should be pulled after Mimi confirms that it is ok.
 
-raw_spin_lock(&rq->lock)
-...                            dl_task_timer                 raw_spin_lock(&rq->lock)
-...                               raw_spin_lock(&rq->lock)   ...
-   switched_from_dl()             ...                        ...
-      hrtimer_try_to_cancel()     ...                        ...
-   switched_to_fair()             ...                        ...
-...                               ...                        ...
-...                               ...                        ...
-raw_spin_unlock(&rq->lock)        ...                        (asquired)
-...                               ...                        ...
-...                               ...                        ...
-do_exit()                         ...                        ...
-   schedule()                     ...                        ...
-      raw_spin_lock(&rq->lock)    ...                        raw_spin_unlock(&rq->lock)
-      ...                         ...                        ...
-      raw_spin_unlock(&rq->lock)  ...                        raw_spin_lock(&rq->lock)
-      ...                         ...                        (asquired)
-      put_task_struct()           ...                        ...
-          free_task_struct()      ...                        ...
-      ...                         ...                        raw_spin_unlock(&rq->lock)
-...                               (asquired)                 ...
-...                               ...                        ...
-...                               (use after free)           ...
 
-    
-So, let's implement 100% guaranteed way to cancel the timer and let's
-be sure we are safe even in very unlikely situations.
+>
+> This patch and other patches were posted a week ago on linux-ima-devel
+> mailing list.
+> I appreciate you would review patches when they come there so we could
+> spot more issues before they come to lsm mailing list.
+>
 
-rq unlocking does not limit the area of switched_from_dl() use, because
-it already was possible in pull_dl_task() below.
+Ok, sure.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Thanks
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index abfaf3d..63f8b4a 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -555,11 +555,6 @@ void init_dl_task_timer(struct sched_dl_entity *dl_se)
- {
- 	struct hrtimer *timer = &dl_se->dl_timer;
- 
--	if (hrtimer_active(timer)) {
--		hrtimer_try_to_cancel(timer);
--		return;
--	}
--
- 	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	timer->function = dl_task_timer;
- }
-@@ -1567,10 +1562,34 @@ void init_sched_dl_class(void)
- 
- #endif /* CONFIG_SMP */
- 
-+/*
-+ *  Surely cancel task's dl_timer. May drop rq->lock.
-+ */
-+static void cancel_dl_timer(struct rq *rq, struct task_struct *p)
-+{
-+	struct hrtimer *dl_timer = &p->dl.dl_timer;
-+
-+	/* Nobody will change task's class if pi_lock is held */
-+	lockdep_assert_held(&p->pi_lock);
-+
-+	if (hrtimer_active(dl_timer)) {
-+		int ret = hrtimer_try_to_cancel(dl_timer);
-+
-+		if (unlikely(ret == -1)) {
-+			/*
-+			 * Note, p may migrate OR new deadline tasks
-+			 * may appear in rq when we are unlocking it.
-+			 */
-+			raw_spin_unlock(&rq->lock);
-+			hrtimer_cancel(dl_timer);
-+			raw_spin_lock(&rq->lock);
-+		}
-+	}
-+}
-+
- static void switched_from_dl(struct rq *rq, struct task_struct *p)
- {
--	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
--		hrtimer_try_to_cancel(&p->dl.dl_timer);
-+	cancel_dl_timer(rq, p);
- 
- 	__dl_clear_params(p);
- 
+Roberto Sassu
 
+
+> Thanks,
+> Dmitry
+>
+>>
+>>> This patch uses lately introduced ima_policy_flag to test if appraisal
+>>> was enabled by policy.
+>>>
+>>> With this change 'iint_initialized' is no longer used anywhere. Indeed,
+>>> integrity cache is allocated with SLAB_PANIC and kernel will panic if
+>>> allocation fails during kernel initialization. So this variable is
+>>> unnecessary and thus this patch removes it.
+>>>
+>>> Changes in v2:
+>>> * 'iint_initialized' removal patch merged to this patch (requested
+>>>      by Mimi)
+>>>
+>>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>>> ---
+>>>    security/integrity/iint.c         | 3 ---
+>>>    security/integrity/ima/ima_main.c | 2 +-
+>>>    security/integrity/integrity.h    | 3 ---
+>>>    3 files changed, 1 insertion(+), 7 deletions(-)
+>>>
+>>> diff --git a/security/integrity/iint.c b/security/integrity/iint.c
+>>> index a521edf..cc3eb4d 100644
+>>> --- a/security/integrity/iint.c
+>>> +++ b/security/integrity/iint.c
+>>> @@ -25,8 +25,6 @@ static struct rb_root integrity_iint_tree = RB_ROOT;
+>>>    static DEFINE_RWLOCK(integrity_iint_lock);
+>>>    static struct kmem_cache *iint_cache __read_mostly;
+>>>
+>>> -int iint_initialized;
+>>> -
+>>>    /*
+>>>     * __integrity_iint_find - return the iint associated with an inode
+>>>     */
+>>> @@ -166,7 +164,6 @@ static int __init integrity_iintcache_init(void)
+>>>    	iint_cache =
+>>>    	    kmem_cache_create("iint_cache", sizeof(struct integrity_iint_cache),
+>>>    			      0, SLAB_PANIC, init_once);
+>>> -	iint_initialized = 1;
+>>>    	return 0;
+>>>    }
+>>>    security_initcall(integrity_iintcache_init);
+>>> diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
+>>> index 62f59ec..87d7df7 100644
+>>> --- a/security/integrity/ima/ima_main.c
+>>> +++ b/security/integrity/ima/ima_main.c
+>>> @@ -143,7 +143,7 @@ void ima_file_free(struct file *file)
+>>>    	struct inode *inode = file_inode(file);
+>>>    	struct integrity_iint_cache *iint;
+>>>
+>>> -	if (!iint_initialized || !S_ISREG(inode->i_mode))
+>>> +	if (!(ima_policy_flag & IMA_APPRAISE) || !S_ISREG(inode->i_mode))
+>>>    		return;
+>>>
+>>>    	iint = integrity_iint_find(inode);
+>>> diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+>>> index aafb468..f51ad65 100644
+>>> --- a/security/integrity/integrity.h
+>>> +++ b/security/integrity/integrity.h
+>>> @@ -169,6 +169,3 @@ static inline void integrity_audit_msg(int audit_msgno, struct inode *inode,
+>>>    {
+>>>    }
+>>>    #endif
+>>> -
+>>> -/* set during initialization */
+>>> -extern int iint_initialized;
+>>>
+>>
+>> ------------------------------------------------------------------------------
+>> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
+>> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS Reports
+>> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
+>> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
+>> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
+>> _______________________________________________
+>> Linux-ima-devel mailing list
+>> Linux-ima-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/linux-ima-devel
+>>
+>
 
