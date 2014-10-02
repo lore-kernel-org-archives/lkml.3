@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaJBIor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:44:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57318 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaJBIop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:44:45 -0400
-Message-ID: <1412239495.32060.8.camel@linux-0dmf.site>
-Subject: Re: [PATCH net] r8152: autoresume before setting MAC address
-From: Oliver Neukum <oneukum@suse.de>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Date: Thu, 02 Oct 2014 10:44:55 +0200
-In-Reply-To: <1394712342-15778-55-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-55-Taiwan-albertk@realtek.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752496AbaJBIsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:48:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42682 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950AbaJBIsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 04:48:00 -0400
+Date: Thu, 2 Oct 2014 11:47:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Nitin Kuppelur <nitinkuppelur@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] Staging: rtl8712 removed unnecessary else after return
+Message-ID: <20141002084745.GF23154@mwanda>
+References: <542D013E.6030800@gmail.com>
+ <1412235846-3059-1-git-send-email-nitinkuppelur@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412235846-3059-1-git-send-email-nitinkuppelur@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 16:26 +0800, Hayes Wang wrote:
-> Resume the device before setting the MAC address.
+On Thu, Oct 02, 2014 at 09:44:06AM +0200, Nitin Kuppelur wrote:
+> Removed unnecessary else after return to solve
+> checkpatch.pl warning
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
 > ---
->  drivers/net/usb/r8152.c | 16 +++++++++++++---
->  1 file changed, 13 insertions(+), 3 deletions(-)
+>  drivers/staging/rtl8712/hal_init.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index 604ef21..e823358 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-> @@ -1007,9 +1007,16 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
+> diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
+> index 81cd654..e5878e2 100644
+> --- a/drivers/staging/rtl8712/hal_init.c
+> +++ b/drivers/staging/rtl8712/hal_init.c
+> @@ -387,12 +387,9 @@ uint rtl8712_hal_deinit(struct _adapter *padapter)
+>  uint rtl871x_hal_init(struct _adapter *padapter)
 >  {
->  	struct r8152 *tp = netdev_priv(netdev);
->  	struct sockaddr *addr = p;
-> +	int ret;
-> +
-> +	ret = usb_autopm_get_interface(tp->intf);
-> +	if (ret < 0)
-> +		goto out1;
->  
-> -	if (!is_valid_ether_addr(addr->sa_data))
-> -		return -EADDRNOTAVAIL;
+>  	padapter->hw_init_completed = false;
+> -	if (padapter->halpriv.hal_bus_init == NULL)
+> +	if (padapter->halpriv.hal_bus_init == NULL ||
+> +		padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
+>  		return _FAIL;
 
-It would be more legant to check validity before you do
-the pm operation. Error handling would be simpler.
+Align these like this:
 
-	Regards
-		Oliver
+	if (padapter->halpriv.hal_bus_init == NULL ||
+	    padapter->halpriv.hal_bus_init(padapter) != _SUCCESS) 
+		return _FAIL;
+[tab][space][space][space][space]padapter->halpriv.hal_bus_init...
 
+regards,
+dan carpenter
 
