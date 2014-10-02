@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaJBIfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:35:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56289 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaJBIfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:35:04 -0400
-Date: Thu, 2 Oct 2014 10:35:00 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: dsa: Fix build warning for !PM_SLEEP
-Message-ID: <20141002083459.GD30167@ulmo>
-References: <1412164740-32452-1-git-send-email-thierry.reding@gmail.com>
- <20141001.152452.1973501659924138094.davem@davemloft.net>
+	id S1752142AbaJBIhP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:37:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752106AbaJBIhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 04:37:12 -0400
+Date: Thu, 2 Oct 2014 10:36:35 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [BUG] perf tools: off-by-one error in map_groups__find_ams()
+Message-ID: <20141002083635.GF9764@krava.brq.redhat.com>
+References: <CABPqkBQPjpgD_5n0ZMmx971+YO86CO+5mSfcg7a1p4Ys_TgOUA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141001.152452.1973501659924138094.davem@davemloft.net>
+In-Reply-To: <CABPqkBQPjpgD_5n0ZMmx971+YO86CO+5mSfcg7a1p4Ys_TgOUA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 01, 2014 at 09:16:31PM +0200, Stephane Eranian wrote:
+> Hi,
+> 
+> It appears that there is a off-by-one bug in map_groups__find_ams().
+> The upper-bound check in the test below should be >= because
+> end = start + len; The end address is outside the range.
+> 
+> Please confirm.
+> 
+> 
+> int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
+> {
+>                 if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
 
---sXc4Kmr5FA7axrvy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+yep, looks like bug to me
 
-On Wed, Oct 01, 2014 at 03:24:52PM -0400, David Miller wrote:
-> From: Thierry Reding <thierry.reding@gmail.com>
-> Date: Wed,  1 Oct 2014 13:59:00 +0200
->=20
-> > From: Thierry Reding <treding@nvidia.com>
-> >=20
-> > The dsa_switch_suspend() and dsa_switch_resume() functions are only used
-> > when PM_SLEEP is enabled, so they need #ifdef CONFIG_PM_SLEEP protection
-> > to avoid a compiler warning.
-> >=20
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
->=20
-> Applied.
->=20
-> Please, in the future, explicitly indicate what tree your changes
-> are against.  Through trial and error I figured out that this could
-> only apply to net-next, but that's not a good use of my time.
-
-I had assumed that working on top of linux-next is what most people were
-doing anyway therefore net-next would be the default to apply patches to
-unless otherwise stated.
-
-But if this inconveniences you I'll try to remember to explicitly state
-which tree it's based on in the future.
-
-Thierry
-
---sXc4Kmr5FA7axrvy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJULQ4zAAoJEN0jrNd/PrOh25EQAIUNAzqeSp+J/DL7fz4IPRkY
-F3VnIZGAqGdXyPeA6FXPuTPtdjXSysfywQauv5fXlsFH+yjY1rQ4XyTjJh5nrIns
-tnXgC9rBFg80iZ2sgfBeEwtkhNbHHxu1ule5tS86hjyhxQeNr+eB2sbkXQ3uk1+A
-FXmnC7A7wxXUDbpM92Dp54+BatRTFq3ythszufJj5hVACvEK7Qju15EBS8xS/rTg
-ge6Q5WttEWxcy7yTrtwYGngVDGXMhEiuQfFwgf9wxdOoFF2fXyB26s10r1aNGavK
-85O0ksd/Pux+vXiIn7rAEM5MGkefff4tB/6kgybKpRJsrGXeDf+2pwlCIciQUDE8
-NQQUyCnscHwq5cH7u+xa1qb6c0DgD4dp/SjRqvQe5AX94pjofjspO1QVBnY4WU0z
-JSMalqJe2cxxW+swxlDxvO6/qdqjQvX0W0l/y/HOB1T1Sx9mzejybDCzxs4nccT7
-yTeFXl/cQhZIa2n1FCo0267aWz+97/a/pPhX9OpIxiSHwTWbFYiE7rTU8Ts3+Lll
-jW+fRT5g7PcKTlBEpriTg0S45gab6Rltm8XapY0aOH25DRcqEH0D2x/zfteD4XIc
-H4PaP+BYA7YJ6zw0XeFBmiR78e5Aoqjv5eoLlNCRKnSr1EbE8g5qTNzUrMQfEa1r
-hmitv3C6vv5J0oLRWRa5
-=iq5q
------END PGP SIGNATURE-----
-
---sXc4Kmr5FA7axrvy--
+jirka
