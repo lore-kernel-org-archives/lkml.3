@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaJBP6G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:58:06 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:36284 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754416AbaJBP6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:58:04 -0400
-Date: Thu, 2 Oct 2014 11:57:50 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: memcontrol: do not kill uncharge batching in
- free_pages_and_swap_cache
-Message-ID: <20141002155750.GB2035@cmpxchg.org>
-References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
- <1411571338-8178-2-git-send-email-hannes@cmpxchg.org>
- <20140924124234.3fdb59d6cdf7e9c4d6260adb@linux-foundation.org>
- <20140924210322.GA11017@cmpxchg.org>
- <20140925134403.GA11080@dhcp22.suse.cz>
+	id S1754461AbaJBP76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:59:58 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:64795 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaJBP74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:59:56 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 2 Oct 2014 12:06:11 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Cong Wang <cwang@twopensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: perf_fuzzer triggers instant reboot
+In-Reply-To: <alpine.DEB.2.11.1410021106150.11281@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1410021205220.3801@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu> <20140910083136.GP6758@twins.programming.kicks-ass.net> <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu> <541059C9.1040200@oracle.com>
+ <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu> <20140910143306.GD4783@worktop.ger.corp.intel.com> <alpine.DEB.2.11.1409110926120.11483@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.11.1409250052480.26664@vincent-weaver-1.umelst.maine.edu>
+ <CAHA+R7Nu_2KORkf9uP1_HktRA+MLy6TS4vXCPS9Q_JzrcH2SYg@mail.gmail.com> <542789E5.7090805@oracle.com> <20140930172308.GI4241@worktop.programming.kicks-ass.net> <542BE27B.6040006@oracle.com>
+ <alpine.DEB.2.11.1410021106150.11281@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140925134403.GA11080@dhcp22.suse.cz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 03:44:03PM +0200, Michal Hocko wrote:
-> On Wed 24-09-14 17:03:22, Johannes Weiner wrote:
-> [...]
-> > In release_pages, break the lock at least every SWAP_CLUSTER_MAX (32)
-> > pages, then remove the batching from free_pages_and_swap_cache.
-> 
-> Actually I had something like that originally but then decided to
-> not change the break out logic to prevent from strange and subtle
-> regressions. I have focused only on the memcg batching POV and led the
-> rest untouched.
-> 
-> I do agree that lru_lock batching can be improved as well. Your change
-> looks almost correct but you should count all the pages while the lock
-> is held otherwise you might happen to hold the lock for too long just
-> because most pages are off the LRU already for some reason. At least
-> that is what my original attempt was doing. Something like the following
-> on top of the current patch:
+On Thu, 2 Oct 2014, Vince Weaver wrote:
 
-Yep, that makes sense.
+> It looks like this is easily reproducible (just wedged the machine again)
+> so let me check back after testing the patch.
 
-Would you care to send it in such that Andrew can pick it up?  Thanks!
+no, can still wedge the machine even with this patch applied.
+
+Will try messing with ftrace to see if I can figure out what's going on.
+
+Vince
+
