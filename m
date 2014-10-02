@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaJBPqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:46:17 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40653 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaJBPqQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:46:16 -0400
-Date: Thu, 2 Oct 2014 16:46:01 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Andrew Pinski <apinski@cavium.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pinskia@gmail.com" <pinskia@gmail.com>
-Subject: Re: [PATCH 21/24] ARM64:ILP32: Use a seperate syscall table as a few
- syscalls need to be using the compat syscalls
-Message-ID: <20141002154600.GG32147@e104818-lin.cambridge.arm.com>
-References: <1409779158-30963-1-git-send-email-apinski@cavium.com>
- <1409779158-30963-22-git-send-email-apinski@cavium.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409779158-30963-22-git-send-email-apinski@cavium.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754526AbaJBPto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:49:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38889 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754174AbaJBPtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:49:41 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Xishi Qiu <qiuxishi@huawei.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 2/4] mm, page_isolation: drain single zone pcplists
+Date: Thu,  2 Oct 2014 17:48:58 +0200
+Message-Id: <1412264940-15738-3-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1412264940-15738-1-git-send-email-vbabka@suse.cz>
+References: <1412264940-15738-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 10:19:15PM +0100, Andrew Pinski wrote:
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index 9314352..dbedecf 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -643,9 +643,14 @@ ENDPROC(ret_from_fork)
->   */
->         .align  6
->  el0_svc:
-> -       adrp    stbl, sys_call_table            // load syscall table pointer
->         uxtw    scno, w8                        // syscall number in w8
->         mov     sc_nr, #__NR_syscalls
-> +#ifdef CONFIG_ARM64_ILP32
-> +       get_thread_info tsk
-> +       ldr     x16, [tsk, #TI_FLAGS]
-> +       tbnz    x16, #TIF_32BIT, el0_ilp32_svc  // We are using ILP32
-> +#endif
-> +       adrp    stbl, sys_call_table            // load syscall table pointer
->  el0_svc_naked:                                 // compat entry point
->         stp     x0, scno, [sp, #S_ORIG_X0]      // save the original x0 and syscall number
->         enable_dbg_and_irq
+When setting MIGRATETYPE_ISOLATE on a pageblock, pcplists are drained to have
+a better chance that all pages will be successfully isolated and not left
+in the per-cpu caches. Since isolation is always concerned with a single zone,
+we can reduce the pcplists drain to the single zone, which is now possible.
 
-The kernel_entry macro already sets tsk to the current thread_info, so
-no need to re-read it.
+The change should make memory isolation faster and not disturbing unrelated
+pcplists anymore.
 
-You could also move the TI_FLAGS reading unconditionally in el0_svc and
-el0_svc_compat and we only have a tbnz here without the subsequent
-TI_FLAGS read in el0_svc_naked.
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/page_isolation.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index a57f082..3c49ef0 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -67,7 +67,7 @@ out:
+ 
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ 	if (!ret)
+-		drain_all_pages(NULL);
++		drain_all_pages(zone);
+ 	return ret;
+ }
+ 
 -- 
-Catalin
+1.8.4.5
+
