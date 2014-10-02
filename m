@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaJBNz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 09:55:28 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:56727 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbaJBNz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 09:55:27 -0400
-Date: Thu, 02 Oct 2014 22:55:14 +0900
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] kbuild: Do not reference *-n variables in the Makefile
-Cc: linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <542D54A7.604@suse.cz>
-References: <1412256796-4111-1-git-send-email-mmarek@suse.cz> <542D54A7.604@suse.cz>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20141002225513.350B.AA925319@jp.panasonic.com>
+	id S1753839AbaJBN4C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 09:56:02 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:44289 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470AbaJBNz7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 09:55:59 -0400
+Message-ID: <542D5AC6.4010404@gmail.com>
+Date: Thu, 02 Oct 2014 22:01:42 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
+To: wg@grandegger.com, mkl@pengutronix.de, Richard Weinberger <richard@nod.at>
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers/net/can/Kconfig: Let CAN_AT91 depend on HAS_IOMEM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+CAN_AT91 needs HAS_IOMEM, so depends on it. The related error (with
+allmodconfig under um):
 
-On Thu, 02 Oct 2014 15:35:35 +0200
-Michal Marek <mmarek@suse.cz> wrote:
+    CC [M]  drivers/net/can/at91_can.o
+  drivers/net/can/at91_can.c: In function ‘at91_can_probe’:
+  drivers/net/can/at91_can.c:1329:2: error: implicit declaration of function ‘ioremap_nocache’ [-Werror=implicit-function-declaration]
+  addr = ioremap_nocache(res->start, resource_size(res));
+    ^
+  drivers/net/can/at91_can.c:1329:7: warning: assignment makes pointer from integer without a cast [enabled by default]
+    addr = ioremap_nocache(res->start, resource_size(res));
+         ^
+  drivers/net/can/at91_can.c:1384:2: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
+    iounmap(addr);
+    ^
 
-> On 2014-10-02 15:33, Michal Marek wrote:
-> > Kconfig options are either 'y', 'm', or undefined.
-> > 
-> > Signed-off-by: Michal Marek <mmarek@suse.cz>
-> > ---
-> >  Makefile | 4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > diff --git a/Makefile b/Makefile
-> > index efbd2cb..106f300 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -868,9 +868,7 @@ vmlinux-dirs	:= $(patsubst %/,%,$(filter %/, $(init-y) $(init-m) \
-> >  		     $(net-y) $(net-m) $(libs-y) $(libs-m)))
-> >  
-> >  vmlinux-alldirs	:= $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
-> > -		     $(init-n) $(init-) \
-> > -		     $(core-n) $(core-) $(drivers-n) $(drivers-) \
-> > -		     $(net-n)  $(net-)  $(libs-n)    $(libs-))))
-> > +		     $(init-) $(core-) $(drivers-) $(net-) $(libs-))))
-> 
-> Actually, all the directories are hardcoded in
-> {init,code,drivers,net,libs}-y; there are currently no Kconfig variables
-> involved. But let's keep this generic and handle *-m and *- just in case.
-> 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/net/can/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Agreed and thank you!
-
-Best Regards
-Masahiro Yamada
-
+diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+index e78d6b3..98d73aa 100644
+--- a/drivers/net/can/Kconfig
++++ b/drivers/net/can/Kconfig
+@@ -65,7 +65,7 @@ config CAN_LEDS
+ 
+ config CAN_AT91
+ 	tristate "Atmel AT91 onchip CAN controller"
+-	depends on ARCH_AT91 || COMPILE_TEST
++	depends on (ARCH_AT91 || COMPILE_TEST) && HAS_IOMEM
+ 	---help---
+ 	  This is a driver for the SoC CAN controller in Atmel's AT91SAM9263
+ 	  and AT91SAM9X5 processors.
+-- 
+1.9.3
