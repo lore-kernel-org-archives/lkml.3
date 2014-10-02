@@ -1,69 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaJBSTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:19:44 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:39162 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaJBSTn (ORCPT
+	id S1751647AbaJBSYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:24:15 -0400
+Received: from exprod5og117.obsmtp.com ([64.18.0.149]:46821 "HELO
+	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751066AbaJBSYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:19:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141001131008.GB18756@mail.corp.redhat.com>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
- <alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz> <20141001131008.GB18756@mail.corp.redhat.com>
-From: Andrew de los Reyes <andrew-vger@gizmolabs.org>
-Date: Thu, 2 Oct 2014 11:19:21 -0700
-X-Google-Sender-Auth: Pcoq89fYsy9ETNrLPv2B8boFJcw
-Message-ID: <CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
-Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special devices
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 2 Oct 2014 14:24:14 -0400
+From: Feng Kan <fkan@apm.com>
+To: linux@roeck-us.net, dbaryshkov@gmail.com, linux-kernel@vger.kernel.org,
+        patches@apm.com, linux-pm@vger.kernel.org, ser@kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH 1/1] power: reset: corrections for simple syscon reboot driver
+Date: Thu,  2 Oct 2014 11:24:15 -0700
+Message-Id: <1412274255-1315-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've tested these patches successfully on a Chromebook Pixel with the
-following devices:
+This patch is to fix some bugs in reboot driver. Which includes auto selection
+of the MFD_SYSCON for the driver, use of container to locate restart handler,
+correction of the count down failure timer and ordering of the header file.
 
-- T650 touchpad
-- TK820 keyboard/touchpad
-- Original WTP touchpad
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ drivers/power/reset/Kconfig         |  3 ++-
+ drivers/power/reset/syscon-reboot.c | 25 ++++++++++---------------
+ 2 files changed, 12 insertions(+), 16 deletions(-)
 
-I also tested a touch mouse and as expected it continued to function
-as a plain USB mouse. The TK820 was indeed broken into two devices,
-with autorepeat enabled for the keyboard only. The other two devices
-behaved as expected with no perceived regressions.
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index addb26a..3b451e1 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -120,6 +120,7 @@ config POWER_RESET_KEYSTONE
+ 
+ config POWER_RESET_SYSCON
+ 	bool "Generic SYSCON regmap reset driver"
+-	depends on POWER_RESET && MFD_SYSCON && OF
++	depends on POWER_RESET && OF
++	select MFD_SYSCON
+ 	help
+ 	  Reboot support for generic SYSCON mapped register reset.
+diff --git a/drivers/power/reset/syscon-reboot.c b/drivers/power/reset/syscon-reboot.c
+index 948e0ee..90dfdbf 100644
+--- a/drivers/power/reset/syscon-reboot.c
++++ b/drivers/power/reset/syscon-reboot.c
+@@ -14,14 +14,15 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
++#include <linux/delay.h>
+ #include <linux/io.h>
+-#include <linux/of_device.h>
+-#include <linux/of_address.h>
+-#include <linux/platform_device.h>
+ #include <linux/notifier.h>
+ #include <linux/mfd/syscon.h>
+-#include <linux/regmap.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
+ #include <linux/reboot.h>
++#include <linux/regmap.h>
+ 
+ struct syscon_reboot_context {
+ 	struct regmap *map;
+@@ -30,21 +31,17 @@ struct syscon_reboot_context {
+ 	struct notifier_block restart_handler;
+ };
+ 
+-static struct syscon_reboot_context *syscon_reboot_ctx;
+-
+ static int syscon_restart_handle(struct notifier_block *this,
+ 					unsigned long mode, void *cmd)
+ {
+-	struct syscon_reboot_context *ctx = syscon_reboot_ctx;
+-	unsigned long timeout;
++	struct syscon_reboot_context *ctx =
++			container_of(this, struct syscon_reboot_context,
++					restart_handler);
+ 
+ 	/* Issue the reboot */
+-	if (ctx->map)
+-		regmap_write(ctx->map, ctx->offset, ctx->mask);
++	regmap_write(ctx->map, ctx->offset, ctx->mask);
+ 
+-	timeout = jiffies + HZ;
+-	while (time_before(jiffies, timeout))
+-		cpu_relax();
++	mdelay(1000);
+ 
+ 	pr_emerg("Unable to restart system\n");
+ 	return NOTIFY_DONE;
+@@ -76,8 +73,6 @@ static int syscon_reboot_probe(struct platform_device *pdev)
+ 	if (err)
+ 		dev_err(dev, "can't register restart notifier (err=%d)\n", err);
+ 
+-	syscon_reboot_ctx = ctx;
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
-In short, from a functionality perspective I'm happy with these
-patches. I will let others discuss code structure.
-
--andrew
-
-On Wed, Oct 1, 2014 at 6:10 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> On Oct 01 2014 or thereabouts, Jiri Kosina wrote:
->> On Tue, 30 Sep 2014, Benjamin Tissoires wrote:
->>
->> > Jiri, This patch series can be split in 2 if you would like:
->> > - patches 1 to 4 can be scheduled easily for 3.18 IMO
->> > - patches 5 to 13 might need some more reviews, so either 3.18 or 3.19
->>
->> Benjamin,
->>
->> thanks for the summary. I'll try to review 1-4 in time for 3.18, but I
->> can't guarantee that.
->>
->
-> Thanks
->
->> Do you forsee any issues if the whole lot is queued for 3.19 only?
->
-> Nope. It waited since 2011, so it can wait 3 more months :)
->
-> Cheers,
-> Benjamin
->
