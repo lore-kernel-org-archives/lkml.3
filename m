@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaJBVNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 17:13:43 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:48104 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJBVNm (ORCPT
+	id S1753462AbaJBVOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 17:14:04 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41621 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaJBVOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 17:13:42 -0400
-Date: Thu, 2 Oct 2014 17:13:31 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] thermal: step_wise: fix: Prevent from binary
- overflow when trend is dropping
-Message-ID: <20141002211325.GA5016@developer>
-References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
- <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
+	Thu, 2 Oct 2014 17:14:01 -0400
+Date: Thu, 2 Oct 2014 23:13:59 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: sre@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HSI: remove deprecated IRQF_DISABLED
+Message-ID: <20141002211359.GA21093@amd>
+References: <1412195335-9437-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20140912143722.GA22420@xo-6d-61-c0.localdomain>
+ <542DB350.3080707@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <542DB350.3080707@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lukasz,
-
-On Wed, Sep 24, 2014 at 10:27:10AM +0200, Lukasz Majewski wrote:
-> It turns out that some boards can have instance->lower greater than 0 and
-> when thermal trend is dropping it results with next_target equal to -1.
+On Thu 2014-10-02 22:19:28, Michael Opdenacker wrote:
+> On 09/12/2014 04:40 PM, Pavel Machek wrote:
+> > On Wed 2014-10-01 22:28:55, Michael Opdenacker wrote:
+> >> Remove the use of the IRQF_DISABLED flag
+> >> from drivers/hsi/clients/nokia-modem.c
+> >>
+> >> It's a NOOP since 2.6.35 and it will be removed soon.
+> >>
+> >> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> > Acked-by: Pavel Machek <pavel@ucw.cz>
 > 
-> Since the next_target is defined as unsigned long it is interpreted as
-> 0xFFFFFFFF and larger than instance->upper.
-> As a result the next_target is set to instance->upper which ramps up to
-> maximal cooling device target when the temperature is steadily decreasing.
-> 
+> Thanks! Wow, you have a nice system date, writing from the past (Sep. 12).
 
-Thanks for finding a problem and sending a fix.
+My TARDIS is better and better. Normally, I write from 1970 :-).
 
-Can you please explain a little more on how next_target reaches -1 when
-lower is greater than 0?
+Why do all the great machines lack working RTC? Spitz, n900,
+OLPC-1.75...
 
+								Pavel
 
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
->  drivers/thermal/step_wise.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
-> index 3b54c2c..fdd1f52 100644
-> --- a/drivers/thermal/step_wise.c
-> +++ b/drivers/thermal/step_wise.c
-> @@ -77,7 +77,7 @@ static unsigned long get_target_state(struct thermal_instance *instance,
->  			next_target = instance->upper;
->  		break;
->  	case THERMAL_TREND_DROPPING:
-> -		if (cur_state == instance->lower) {
-> +		if (cur_state <= instance->lower) {
->  			if (!throttle)
->  				next_target = THERMAL_NO_TARGET;
->  		} else {
-> -- 
-> 2.0.0.rc2
-> 
+#!/bin/bash
+F=/etc/zaurus.time
+if [ $(date +%s) -lt $(< $F) ];
+    then
+    date -s @$(< $F)
+    fi
+date +%s > $F
 
-
-Eduardo
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
