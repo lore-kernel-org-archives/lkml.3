@@ -1,163 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaJBEE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 00:04:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52932 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919AbaJBEEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 00:04:25 -0400
-Date: Thu, 2 Oct 2014 14:04:10 +1000
-From: NeilBrown <neilb@suse.de>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        Shaohua Li <shli@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] dm-raid: add RAID discard support
-Message-ID: <20141002140410.1b379f74@notabene.brown>
-In-Reply-To: <20141002120049.58dba551@notabene.brown>
-References: <1411491106-23676-1-git-send-email-heinzm@redhat.com>
-	<yq18ulaszpk.fsf@sermon.lab.mkp.net>
-	<20140924093308.120fe616@notabene.brown>
-	<yq1zjdpsqry.fsf@sermon.lab.mkp.net>
-	<7C39EB56-623A-4318-A558-258ABA32FF12@redhat.com>
-	<20140924142157.33475baa@notabene.brown>
-	<5422A4C4.4020707@redhat.com>
-	<20141001125625.1e0d356a@notabene.brown>
-	<20141001133237.GB16521@redhat.com>
-	<20141002093403.25cc832f@notabene.brown>
-	<20141002013135.GA21091@redhat.com>
-	<20141002120049.58dba551@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.23; x86_64-suse-linux-gnu)
+	id S1752338AbaJBEGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 00:06:05 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33328 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751AbaJBEGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 00:06:02 -0400
+Message-ID: <542CCF1D.5090609@roeck-us.net>
+Date: Wed, 01 Oct 2014 21:05:49 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/0AyWikMcAkej.VCMJqRbFG_"; protocol="application/pgp-signature"
+To: atull@opensource.altera.com, jdelvare@suse.de
+CC: lm-sensors@lm-sensors.org, lgirdwood@gmail.com, broonie@kernel.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v4 2/4] pmbus: core: add helpers for byte write and read
+ modify write
+References: <1412190349-16343-1-git-send-email-atull@opensource.altera.com> <1412190349-16343-3-git-send-email-atull@opensource.altera.com>
+In-Reply-To: <1412190349-16343-3-git-send-email-atull@opensource.altera.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.542CCF29.00B6,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/0AyWikMcAkej.VCMJqRbFG_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 10/01/2014 12:05 PM, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+>
+> Add two helper functions:
+>   * pmbus_write_byte_data  = paged byte write
+>   * pmbus_update_byte_data = paged byte read/modify/write
+>
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+>   drivers/hwmon/pmbus/pmbus_core.c |   31 +++++++++++++++++++++++++++++++
+>   1 file changed, 31 insertions(+)
+>
+> diff --git a/drivers/hwmon/pmbus/pmbus_core.c b/drivers/hwmon/pmbus/pmbus_core.c
+> index 291d11f..d6c3701 100644
+> --- a/drivers/hwmon/pmbus/pmbus_core.c
+> +++ b/drivers/hwmon/pmbus/pmbus_core.c
+> @@ -253,6 +253,37 @@ int pmbus_read_byte_data(struct i2c_client *client, int page, u8 reg)
+>   }
+>   EXPORT_SYMBOL_GPL(pmbus_read_byte_data);
+>
+> +int pmbus_write_byte_data(struct i2c_client *client, int page, u8 reg, u8 value)
+> +{
+> +	int rv;
+> +
+> +	rv = pmbus_set_page(client, page);
+> +	if (rv < 0)
+> +		return rv;
+> +
+> +	return i2c_smbus_write_byte_data(client, reg, value);
+> +}
+> +EXPORT_SYMBOL_GPL(pmbus_write_byte_data);
+> +
+> +int pmbus_update_byte_data(struct i2c_client *client, int page, u8 reg,
+> +			   u8 mask, u8 value)
+> +{
+> +	unsigned int tmp;
+> +	int rv;
+> +
+> +	rv = pmbus_read_byte_data(client, page, reg);
+> +	if (rv < 0)
+> +		return rv;
+> +
+> +	tmp = (rv & ~mask) | (value & mask);
+> +
+> +	if (tmp != rv)
+> +		rv = pmbus_write_byte_data(client, page, reg, tmp);
+> +
+> +	return rv;
+> +}
+> +EXPORT_SYMBOL_GPL(pmbus_update_byte_data);
+> +
+>   /*
+>    * _pmbus_read_byte_data() is similar to pmbus_read_byte_data(), but checks if
+>    * a device specific mapping function exists and calls it if necessary.
+>
 
+Results in:
 
-I plan to submit this to Linus tomorrow, hopefully for 3.7, unless there are
-complaints. It is in my for-next branch now.
+drivers/hwmon/pmbus/pmbus_core.c:259:5: warning: symbol 'pmbus_write_byte_data' was not declared. Should it be static?
+drivers/hwmon/pmbus/pmbus_core.c:271:5: warning: symbol 'pmbus_update_byte_data' was not declared. Should it be static?
+drivers/hwmon/pmbus/pmbus_core.c:259:5: warning: no previous prototype for 'pmbus_write_byte_data' [-Wmissing-prototypes]
+drivers/hwmon/pmbus/pmbus_core.c:271:5: warning: no previous prototype for 'pmbus_update_byte_data' [-Wmissing-prototypes]
 
-Thanks,
-NeilBrown
+No need to resubmit. I added a patch to un-export the functions
+and merged patch 2 and 3 together in order to avoid a warning
+after patch 2. We can always export the new helper functions
+later if needed.
 
+Guenter
 
-=46rom aec6f821ed92fac5ae4f1db50279a3999de5872a Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Thu, 2 Oct 2014 13:45:00 +1000
-Subject: [PATCH] md/raid5: disable 'DISCARD' by default due to safety
- concerns.
-
-It has come to my attention (thanks Martin) that 'discard_zeroes_data'
-is only a hint.  Some devices in some cases don't do what it
-says on the label.
-
-The use of DISCARD in RAID5 depends on reads from discarded regions
-being predictably zero.  If a write to a previously discarded region
-performs a read-modify-write cycle it assumes that the parity block
-was consistent with the data blocks.  If all were zero, this would
-be the case.  If some are and some aren't this would not be the case.
-This could lead to data corruption after a device failure when
-data needs to be reconstructed from the parity.
-
-As we cannot trust 'discard_zeroes_data', ignore it by default
-and so disallow DISCARD on all raid4/5/6 arrays.
-
-As many devices are trustworthy, and as there are benefits to using
-DISCARD, add a module parameter to over-ride this caution and cause
-DISCARD to work if discard_zeroes_data is set.
-
-If a site want to enable DISCARD on some arrays but not on others they
-should select DISCARD support at the filesystem level, and set the
-raid456 module parameter.
-    raid456.devices_handle_discard_safely=3DY
-
-As this is a data-safety issue, I believe this patch is suitable for
--stable.
-DISCARD support for RAID456 was added in 3.7
-
-Cc: Shaohua Li <shli@kernel.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>
-Cc: stable@vger.kernel.org (3.7+)
-Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 183588b11fc1..9f0fbecd1eb5 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -64,6 +64,10 @@
- #define cpu_to_group(cpu) cpu_to_node(cpu)
- #define ANY_GROUP NUMA_NO_NODE
-=20
-+static bool devices_handle_discard_safely =3D false;
-+module_param(devices_handle_discard_safely, bool, 0644);
-+MODULE_PARM_DESC(devices_handle_discard_safely,
-+		 "Set to Y if all devices in each array reliably return zeroes on reads =
-from discarded regions");
- static struct workqueue_struct *raid5_wq;
- /*
-  * Stripe cache
-@@ -6208,7 +6212,7 @@ static int run(struct mddev *mddev)
- 		mddev->queue->limits.discard_granularity =3D stripe;
- 		/*
- 		 * unaligned part of discard request will be ignored, so can't
--		 * guarantee discard_zerors_data
-+		 * guarantee discard_zeroes_data
- 		 */
- 		mddev->queue->limits.discard_zeroes_data =3D 0;
-=20
-@@ -6233,6 +6237,18 @@ static int run(struct mddev *mddev)
- 			    !bdev_get_queue(rdev->bdev)->
- 						limits.discard_zeroes_data)
- 				discard_supported =3D false;
-+			/* Unfortunately, discard_zeroes_data is not currently
-+			 * a guarantee - just a hint.  So we only allow DISCARD
-+			 * if the sysadmin has confirmed that only safe devices
-+			 * are in use by setting a module parameter.
-+			 */
-+			if (!devices_handle_discard_safely) {
-+				if (discard_supported) {
-+					pr_info("md/raid456: discard support disabled due to uncertainty.\n");
-+					pr_info("Set raid456.devices_handle_discard_safely=3DY to override.\n=
-");
-+				}
-+				discard_supported =3D false;
-+			}
- 		}
-=20
- 		if (discard_supported &&
-
---Sig_/0AyWikMcAkej.VCMJqRbFG_
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVCzOuznsnt1WYoG5AQIB4xAAvzMtpITo0/kg1yF2RHNL0rU++YL7FZjh
-z5ZVX1k5NU+MZWOZ+FA1zloLbY+oBxJAMYx1AjqqxSzTmH2BbXWKqbcCDBnxR0yw
-706xAk+tYiJwNxE5wNxpdhxHWT9W2jIwBWYlSRThG5m0+L5UrmWBjzGjJ4eWySxG
-b212kCzfmQd89b0v/e/r6CLQsVr0PQTl+de3Nvi4n0LgSAztc+T9ru8l+4VJJu5V
-2La6iDjzyM7VrIuLBRCZaM01WWYC7mawONQ2O9tpJ4o7fixFXah7OtydyUvcdZcn
-jWe8Qbz3m8QZ562CIKiRcuAssOzmSdru5ZE06jqnFWuUk5+DLK7M8+m7k0D3jF4M
-9PE8uffr+RRSOHU5zR8sYiCE78hfBCWolzTOtdqFVxbtzGVvo2oslasXNUhFsJK3
-9spW6C+SvC9XLGuuA673x67FQz9WTMyWpyCR7pg0TOhLmKpPyP5I2Ghd89a9MLDY
-7zXskk8S34kATRUxBkXb2ms+BIX/2u33sacRUF9hZ+HPPm29kaFG0KYQJ+FUXH1h
-9hllPzxIDW09coB1KBjN+kKuxR3uYmdVw8qKrGLS6MkzkR7FCyR1NbMl8lPwiLOs
-xZsbxVlpFFIbOjPIpt3cK6dnb779CpM81uh4VmBmy82YY0gy/4XmUHN48884txW0
-lVA16iZfVeY=
-=TW1W
------END PGP SIGNATURE-----
-
---Sig_/0AyWikMcAkej.VCMJqRbFG_--
