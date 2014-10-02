@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaJBT5k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:57:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42513 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJBT5j (ORCPT
+	id S1752440AbaJBT7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:59:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58224 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaJBT7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:57:39 -0400
-Date: Thu, 2 Oct 2014 21:57:27 +0200
+	Thu, 2 Oct 2014 15:59:08 -0400
+Date: Thu, 2 Oct 2014 21:59:03 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141002195727.GD10583@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <542D57D0.4030904@hurleysoftware.com>
- <20141002135250.GB10583@worktop.programming.kicks-ass.net>
- <20141002135805.GF6324@worktop.programming.kicks-ass.net>
- <20141002191114.GA30606@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: mempolicy: Skip inaccessible VMAs when setting
+ MPOL_MF_LAZY
+Message-ID: <20141002195903.GE10583@worktop.programming.kicks-ass.net>
+References: <20141002191703.GN17501@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141002191114.GA30606@redhat.com>
+In-Reply-To: <20141002191703.GN17501@suse.de>
 User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 09:11:14PM +0200, Oleg Nesterov wrote:
-> On 10/02, Peter Zijlstra wrote:
-> >
-> > On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
-> > > > If yes, then wakeups from signals don't work either, right?
-> > >
-> > > Its a kthread, there should not be any signals.
-> >
-> > That said, in the tty patch we do appear to have this problem.
-> >
-> > Oleg, do we want something like the below on top to make that work
-> > again?
-> >
-> > ---
-> > --- a/kernel/sched/wait.c
-> > +++ b/kernel/sched/wait.c
-> > @@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
-> >  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
-> >  	 * also observe all state before the wakeup.
-> >  	 */
-> > -	if (!(wait->flags & WQ_FLAG_WOKEN))
-> > -		timeout = schedule_timeout(timeout);
-> > +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
-> > +		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
-> > +			timeout = schedule_timeout(timeout);
-> > +	}
-> >  	__set_current_state(TASK_RUNNING);
+On Thu, Oct 02, 2014 at 08:17:03PM +0100, Mel Gorman wrote:
+> PROT_NUMA VMAs are skipped to avoid problems distinguishing between
+> present, prot_none and special entries. MPOL_MF_LAZY is not visible from
+> userspace since commit a720094ded8c ("mm: mempolicy: Hide MPOL_NOOP and
+> MPOL_MF_LAZY from userspace for now") but it should still skip VMAs the
+> same way task_numa_work does.
 > 
-> I am a bit confused... but for what?
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+
+> ---
+>  mm/mempolicy.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> schedule() won't sleep if signal_pending_state(mode) anyway, so we
-> do not need this correctness-wise. And the caller needs to check
-> signal_pending() anyway.
-
-Urgh, I always forget how all that signal stuff works. Yes you're right,
-we check that right in __schedule().
-
-I'll just make all what I did go away and we'll keep it simple like it
-was. Sorry for the confusion.
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 8f5330d..a5877ce 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -683,7 +683,9 @@ queue_pages_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+>  		}
+>  
+>  		if (flags & MPOL_MF_LAZY) {
+> -			change_prot_numa(vma, start, endvma);
+> +			/* Similar to task_numa_work, skip inaccessible VMAs */
+> +			if (vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE))
+> +				change_prot_numa(vma, start, endvma);
+>  			goto next;
+>  		}
+>  
